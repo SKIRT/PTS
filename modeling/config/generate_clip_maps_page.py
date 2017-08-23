@@ -99,7 +99,11 @@ definition.add_positional_optional("sigma_levels", "ascending_real_list", "diffe
 definition.add_optional("default_sigma_level", "real", "default sigma level", default_relative_sigma_level)
 
 # Flags
-definition.add_flag("replot", "replot already existing figures", True)
+definition.add_flag("replot", "replot already existing figures", False)
+definition.add_flag("replot_old", "replot already exising old stellar map plots", False)
+definition.add_flag("replot_young", "replot already existing young stellar map plots", False)
+definition.add_flag("replot_ionizing", "replot already existing ionizing stellar map plots", False)
+definition.add_flag("replot_dust", "replot already existing dust map plots")
 
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)

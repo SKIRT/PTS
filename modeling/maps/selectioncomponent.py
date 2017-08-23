@@ -430,7 +430,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
-                          npixels=1, connectivity=8):
+                          npixels=1, connectivity=8, present=None):
 
         """
         This function ...
@@ -447,13 +447,16 @@ class MapsSelectionComponent(MapsComponent):
 
         # Make the masks
         masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
-                                     rebin_remote_threshold=rebin_remote_threshold, npixels=npixels, connectivity=connectivity)
+                                     rebin_remote_threshold=rebin_remote_threshold, npixels=npixels, connectivity=connectivity, present=present)
 
         # The maps
         maps = dict()
 
         # Make the maps
         for levels in masks:
+
+            # Debugging
+            log.debug("Clipping the map for sigma levels [" + tostr(levels) + "] ...")
 
             # Get the mask
             mask = masks[levels]
@@ -598,7 +601,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
-                        npixels=1, connectivity=8):
+                        npixels=1, connectivity=8, present=None):
 
         """
         Thisn function ...
@@ -610,16 +613,17 @@ class MapsSelectionComponent(MapsComponent):
         :parma rebin_remote_threshold:
         :param npixels:
         :param connectivity:
+        :param present:
         :return:
         """
 
         # Debugging
         log.debug("Making clip masks for the filters: " + tostr(origins) + " ...")
 
-        # Get frame list
+        # Get frame list, IN ORDER OF ORIGINS
         frames = self.dataset.get_framelist_for_filters(origins)
 
-        # Get error map list
+        # Get error map list, IN ORDER OR ORIGINS
         errors = self.dataset.get_errormaplist_for_filters(origins)
 
         # Convolve
@@ -650,12 +654,16 @@ class MapsSelectionComponent(MapsComponent):
         #frame_levels = [levels[name] for name in names]
 
         frame_levels = []
+
+        # LEVELS ARE GIVEN AS A SEQUENCE: SAME FOR EACH FRAME
         if types.is_sequence(levels_dict):
             for _ in range(nframes): frame_levels.append(levels_dict)
 
+        # LEVELS ARE GIVEN AS A DICTIONARY: DEFINED FOR EACH IMAGE NAME
         elif types.is_dictionary(levels_dict):
-            levels_dict = {parse_filter(fltr): levels for fltr, levels in levels_dict.items()}
-            for fltr in frames.filters: frame_levels.append(levels_dict[fltr])
+            #levels_dict = {parse_filter(fltr): levels for fltr, levels in levels_dict.items()}
+            #for fltr in frames.filters: frame_levels.append(levels_dict[fltr])
+            for name in names: frame_levels.append(levels_dict[name]) # name = origin
 
         # Invalid
         else: raise ValueError("Levels must be specified as list (same for each image) or dictionary keyed on filter")
@@ -667,6 +675,15 @@ class MapsSelectionComponent(MapsComponent):
         # Loop over each level combination
         # Loop over the significance level combinations for the different origins
         for sigma_levels in sequences.lists_combinations(*frame_levels):
+
+            # Create dictionary that says which sigma level was used for which frame
+            levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels)})
+
+            # Check
+            if present is not None and levels_dict in present: continue
+
+            # Debugging
+            log.debug("Making clip mask for sigma levels [" + tostr(levels_dict) + "] ...")
 
             masks = []
 
@@ -692,9 +709,6 @@ class MapsSelectionComponent(MapsComponent):
 
             # Invert
             mask.invert()
-
-            # Create dictionary that says which sigma level was used for which frame
-            levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels)})
 
             # Add item to the list
             #item = (levels_dict, mask)

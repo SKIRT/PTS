@@ -30,6 +30,7 @@ from ....magic.core.frame import Frame
 from ..selectioncomponent import MapsSelectionComponent
 from ....core.tools.stringify import tostr
 from ....core.remote.remote import Remote
+from ....core.basics.containers import hashdict
 
 # -----------------------------------------------------------------
 
@@ -99,6 +100,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 2. Load the maps
         self.load_maps()
 
+        # Set the paths
+        self.set_paths()
+
         # 3. Process the maps
         self.process_maps()
 
@@ -142,10 +146,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         else: fs.create_directory(self.clipped_plots_path)
 
         # Create subdirectories
-        if self.config.add_old: self.old_plot_path = fs.create_directory_in(self.clipped_plots_path, "old")
-        if self.config.add_young: self.young_plot_path = fs.create_directory_in(self.clipped_plots_path, "young")
-        if self.config.add_ionizing: self.ionizing_plot_path = fs.create_directory_in(self.clipped_plots_path, "ionizing")
-        if self.config.add_dust: self.dust_plot_path = fs.create_directory_in(self.clipped_plots_path, "dust")
+        if self.config.add_old: self.old_plot_path = fs.create_directory_in(self.clipped_plots_path, "old", clear=self.config.replot_old)
+        if self.config.add_young: self.young_plot_path = fs.create_directory_in(self.clipped_plots_path, "young", clear=self.config.replot_young)
+        if self.config.add_ionizing: self.ionizing_plot_path = fs.create_directory_in(self.clipped_plots_path, "ionizing", clear=self.config.replot_ionizing)
+        if self.config.add_dust: self.dust_plot_path = fs.create_directory_in(self.clipped_plots_path, "dust", clear=self.config.replot_dust)
 
         # Set random
         if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
@@ -340,18 +344,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    # @lazyproperty
-    # def maps_filters(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.get_all_filters()
-
-    # -----------------------------------------------------------------
-
     def load_maps(self):
 
         """
@@ -457,6 +449,174 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Load
             self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
+
+    # -----------------------------------------------------------------
+
+    def set_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the plot paths")
+
+        # Old
+        self.set_old_paths()
+
+        # Young
+        self.set_young_paths()
+
+        # Ionizing
+        self.set_ionizing_paths()
+
+        # Dust
+        self.set_dust_paths()
+
+    # -----------------------------------------------------------------
+
+    def set_old_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting plot paths for the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Get the origins
+            origins = self.old_map_origins[name]
+
+            # Get path
+            dirpath = self.old_plot_map_paths[name]
+
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Make level combinations
+            for sigma_levels in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(origins, sigma_levels)})
+
+                # Determine the filepath
+                filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + ".png")
+
+                # Set the path
+                self.old_plot_paths[name][levels_dict] = filepath
+
+    # -----------------------------------------------------------------
+
+    def set_young_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting plot paths for the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Get the origins
+            origins = self.young_map_origins[name]
+
+            # Get path
+            dirpath = self.young_plot_map_paths[name]
+
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Make level combinations
+            for sigma_levels in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(origins, sigma_levels)})
+
+                # Determine the filepath
+                filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + ".png")
+
+                # Set the path
+                self.young_plot_paths[name][levels_dict] = filepath
+
+    # -----------------------------------------------------------------
+
+    def set_ionizing_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting plot paths for the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Get the origins
+            origins = self.ionizing_map_origins[name]
+
+            # Get path
+            dirpath = self.ionizing_plot_map_paths[name]
+
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Make level combinations
+            for sigma_levels in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(origins, sigma_levels)})
+
+                # Determine the filepath
+                filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + ".png")
+
+                # Set the path
+                self.ionizing_plot_paths[name][levels_dict] = filepath
+
+    # -----------------------------------------------------------------
+
+    def set_dust_paths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting plot paths for the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Get the origins
+            origins = self.dust_map_origins[name]
+
+            # Get path
+            dirpath = self.dust_plot_map_paths[name]
+
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Make level combinations
+            for sigma_levels in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(origins, sigma_levels)})
+
+                # Determine the filepath
+                filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + ".png")
+
+                # Set the path
+                self.dust_plot_paths[name][levels_dict] = filepath
 
     # -----------------------------------------------------------------
 
@@ -745,6 +905,192 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def present_old_plots_level_combinations_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        combinations = []
+
+        # Loop over the level combinations
+        for levels in self.old_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.old_plot_paths[name][levels]
+
+            # Check
+            if fs.is_file(filepath): combinations.append(levels)
+
+        # Return the level combinations
+        return combinations
+
+    # -----------------------------------------------------------------
+
+    def has_all_old_plots_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :param origins:
+        :param sigma_levels:
+        :return:
+        """
+
+        # Loop over the level combinations
+        for levels in self.old_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.old_plot_paths[name][levels]
+
+            # Check
+            if not fs.is_file(filepath): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def present_young_plots_level_combinations_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        combinations = []
+
+        # Loop over the level combinations
+        for levels in self.young_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.young_plot_paths[name][levels]
+
+            # Check
+            if fs.is_file(filepath): combinations.append(levels)
+
+        # Return the level combinations
+        return combinations
+
+    # -----------------------------------------------------------------
+
+    def has_all_young_plots_for(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        # Loop over the level combinations
+        for levels in self.young_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.young_plot_paths[name][levels]
+
+            # Check
+            if not fs.is_file(filepath): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def present_ionizing_plots_level_combinations_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        combinations = []
+
+        # Loop over the level combinations
+        for levels in self.ionizing_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.ionizing_plot_paths[name][levels]
+
+            # Check
+            if fs.is_file(filepath): combinations.append(levels)
+
+        # Return the level combinations
+        return combinations
+
+    # -----------------------------------------------------------------
+
+    def has_all_ionizing_plots_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Loop over the level combinations
+        for levels in self.ionizing_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.ionizing_plot_paths[name][levels]
+
+            # Check
+            if not fs.is_file(filepath): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def present_dust_plots_level_combinations_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        combinations = []
+
+        # Loop over the level combinations
+        for levels in self.dust_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.dust_plot_paths[name][levels]
+
+            # Check
+            if fs.is_file(filepath): combinations.append(levels)
+
+        # Return the level combinations
+        return combinations
+
+    # -----------------------------------------------------------------
+
+    def has_all_dust_plots_for(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Loop over the level combinations
+        for levels in self.dust_plot_paths[name]:
+
+            # Get the filepath
+            filepath = self.dust_plot_paths[name][levels]
+
+            # Check
+            if not fs.is_file(filepath): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
     def clip_old_maps(self):
 
         """
@@ -758,17 +1104,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.old_maps:
 
+            # Check
+            if self.has_all_old_plots_for(name):
+                log.success("All plots for the '" + name + "' image at the requested sigma levels are already present")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' old stellar map ...")
 
             # Get the origins
             origins = self.old_map_origins[name]
 
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins)
+
+            # Debugging
+            log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
+
             # Clip the map
-            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels,
+            maps = self.make_clipped_maps(self.old_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
+                                          present=self.present_old_plots_level_combinations_for(name))
 
             # Replace by a dictionary of maps
             self.old_maps[name] = maps
@@ -791,17 +1149,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.young_maps:
 
+            # Check
+            if self.has_all_young_plots_for(name):
+                log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' young stellar map ...")
 
             # Get the origins
             origins = self.young_map_origins[name]
 
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins)
+
+            # Debugging
+            log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
+
             # Clip the map
-            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels,
+            maps = self.make_clipped_maps(self.young_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
+                                          present=self.present_young_plots_level_combinations_for(name))
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
@@ -824,17 +1194,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
+            # Check
+            if self.has_all_ionizing_plots_for(name):
+                log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' ionizing stellar map ...")
 
             # Get the origins
             origins = self.ionizing_map_origins[name]
 
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins)
+
+            # Debugging
+            log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
+
             # Clip the map
-            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels,
+            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
+                                          present=self.present_ionizing_plots_level_combinations_for(name))
 
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
@@ -857,17 +1239,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.dust_maps:
 
+            # Check
+            if self.has_all_dust_plots_for(name):
+                log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' dust map ...")
 
             # Get the origins
             origins = self.dust_map_origins[name]
 
+            # Get the sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins)
+
+            # Debugging
+            log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
+
             # Clip the map
-            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels,
+            maps = self.make_clipped_maps(self.dust_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
+                                          present=self.present_dust_plots_level_combinations_for(name))
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
@@ -885,9 +1279,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
+        # names = set()
+        # for map_name in self.old_maps:
+        #     names.update(self.old_maps[map_name].keys())
+        # return list(names)
+
+        # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
-        for map_name in self.old_maps:
-            names.update(self.old_maps[map_name].keys())
+        for map_name in self.old_selection:
+            origins = self.old_map_origins[map_name]
+            names.update(origins)
         return list(names)
 
     # -----------------------------------------------------------------
@@ -900,9 +1301,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
+        # names = set()
+        # for map_name in self.young_maps:
+        #     names.update(self.young_maps[map_name].keys())
+        # return list(names)
+
+        # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
-        for map_name in self.young_maps:
-            names.update(self.young_maps[map_name].keys())
+        for map_name in self.young_selection:
+            origins = self.young_map_origins[map_name]
+            names.update(origins)
         return list(names)
 
     # -----------------------------------------------------------------
@@ -915,9 +1323,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
+        # names = set()
+        # for map_name in self.ionizing_maps:
+        #     names.update(self.ionizing_maps[map_name].keys())
+        # return list(names)
+
+        # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
-        for map_name in self.ionizing_maps:
-            names.update(self.ionizing_maps[map_name].keys())
+        for map_name in self.ionizing_selection:
+            origins = self.ionizing_map_origins[map_name]
+            names.update(origins)
         return list(names)
 
     # -----------------------------------------------------------------
@@ -930,9 +1345,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
+        # names = set()
+        # for map_name in self.dust_maps:
+        #     names.update(self.dust_maps[map_name].keys())
+        # return list(names)
+
+        # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
-        for map_name in self.dust_maps:
-            names.update(self.dust_maps[map_name].keys())
+        for map_name in self.dust_selection:
+            origins = self.dust_map_origins[map_name]
+            names.update(origins)
         return list(names)
 
     # -----------------------------------------------------------------
@@ -1019,9 +1441,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.old_maps:
 
-            # Get path
-            dirpath = self.old_plot_map_paths[name]
-
             # Debugging
             log.debug("Making plots of the '" + name + "' old stellar map ...")
 
@@ -1029,10 +1448,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             for levels in self.old_maps[name]:
 
                 # Determine the filepath
-                filepath = fs.join(dirpath, self.levels_to_string(levels) + ".png")
-
-                # Set the path
-                self.old_plot_paths[name][levels] = filepath
+                filepath = self.old_plot_paths[name][levels]
 
                 # Check
                 if fs.is_file(filepath): continue
@@ -1058,9 +1474,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.young_maps:
 
-            # Get path
-            dirpath = self.young_plot_map_paths[name]
-
             # Debugging
             log.debug("Making plots of the '" + name + "' young stellar map ...")
 
@@ -1068,10 +1481,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             for levels in self.young_maps[name]:
 
                 # Determine the filepath
-                filepath = fs.join(dirpath, self.levels_to_string(levels) + ".png")
-
-                # Set the path
-                self.young_plot_paths[name][levels] = filepath
+                filepath = self.young_plot_paths[name][levels]
 
                 # Check
                 if fs.is_file(filepath): continue
@@ -1097,9 +1507,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
-            # Determine the path
-            dirpath = self.ionizing_plot_map_paths[name]
-
             # Debugging
             log.debug("Making plots of the '" + name + "' ionizing stellar map ...")
 
@@ -1107,10 +1514,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             for levels in self.ionizing_maps[name]:
 
                 # Determine the filepath
-                filepath = fs.join(dirpath, self.levels_to_string(levels) + ".png")
-
-                # Set the path
-                self.ionizing_plot_paths[name][levels] = filepath
+                filepath = self.ionizing_plot_paths[name][levels]
 
                 # Check
                 if fs.is_file(filepath): continue
@@ -1136,9 +1540,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.dust_maps:
 
-            # Determine the path
-            dirpath = self.dust_plot_map_paths[name]
-
             # Debugging
             log.debug("Making plots of the '" + name + "' dust map ...")
 
@@ -1146,10 +1547,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             for levels in self.dust_maps[name]:
 
                 # Determine the filepath
-                filepath = fs.join(dirpath, self.levels_to_string(levels) + ".png")
-
-                # Set the path
-                self.dust_plot_paths[name][levels] = filepath
+                filepath = self.dust_plot_paths[name][levels]
 
                 # Check
                 if fs.is_file(filepath): continue
@@ -1159,6 +1557,30 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Save as RGBA
                 self.make_rgba_plot(self.dust_maps[name][levels], filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_sigma_levels_for_origins(self, origins, as_list=False):
+
+        """
+        This function ...
+        :param origins:
+        :param as_list:
+        :return:
+        """
+
+        if as_list:
+
+            levels = []
+            #print(self.sigma_levels_for_images)
+            for origin in origins: levels.append(self.sigma_levels_for_images[origin])
+            return levels
+
+        else:
+
+            levels = dict()
+            for origin in origins: levels[origin] = self.sigma_levels_for_images[origin]
+            return levels
 
     # -----------------------------------------------------------------
 
