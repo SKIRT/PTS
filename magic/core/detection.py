@@ -489,9 +489,13 @@ class Detection(object):
                 no_clip_mask = self.mask
 
         else:
-
             # Perform sigma-clipping on the background if requested
-            if sigma_clip: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+            if sigma_clip:
+                try:
+                    mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                except:
+                    mask = self.mask
+
             else: mask = self.mask
 
             no_clip_mask = None
