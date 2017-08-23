@@ -12,6 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import gc
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ....core.tools import filesystem as fs
@@ -27,6 +31,7 @@ from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_repla
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import browser
 from ....core.tools.stringify import tostr
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -51,6 +56,9 @@ class DustMapsPageGenerator(MapsSelectionComponent):
 
         # Call the constructor of the base class
         super(DustMapsPageGenerator, self).__init__(*args, **kwargs)
+
+        # List of invalid maps
+        self.invalid = []
 
         # The info
         self.info = dict()
@@ -79,6 +87,9 @@ class DustMapsPageGenerator(MapsSelectionComponent):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # Filter the images
+        self.filter_maps()
 
         # Get the image info
         self.get_info()
@@ -145,6 +156,35 @@ class DustMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def filter_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Filtering the maps ...")
+
+        # Loop over the maps
+        for name in self.map_names:
+
+            # Get the path
+            path = self.map_paths[name]
+
+            # Load the map
+            the_map = Frame.from_file(path)
+
+            #print(the_map.center_value)
+
+            # Check
+            if np.isnan(the_map.center_value) or np.isinf(the_map.center_value) or the_map.center_value == 0: self.invalid.append(name)
+
+            # Clean
+            gc.collect()
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def info_kwargs(self):
 
@@ -162,6 +202,7 @@ class DustMapsPageGenerator(MapsSelectionComponent):
         kwargs["filesize"] = False
         kwargs["filter"] = False
         kwargs["wavelength"] = False
+        kwargs["unit"] = False
         return kwargs
 
     # -----------------------------------------------------------------
@@ -368,24 +409,28 @@ class DustMapsPageGenerator(MapsSelectionComponent):
 
             # Fill the info and labels
             infos = []
-            labels = []
+            names = []
+            origins = []
             for name in map_names:
                 infos.append(self.info[name])
-                labels.append(name)
+                names.append(name)
+                origins.append(tostr(self.dust_map_origins[name], delimiter=", "))
 
             # Set thumbnails
             thumbnails = []
-            for label in labels:
-                if label in self.previews: thumbnails.append(html.center(self.previews[label]))
-                elif label in self.thumbnails: thumbnails.append(html.center(self.thumbnails[label]))
+            for name in names:
+                if name in self.previews: thumbnails.append(html.center(self.previews[name]))
+                elif name in self.thumbnails: thumbnails.append(html.center(self.thumbnails[name]))
                 else: thumbnails.append("")
 
             # Make the table
-            label = "Dust map"
+            #label = "Dust map"
+            label = "Origins"
+            strike_rows = [name in self.invalid for name in names]
             self.tables[categories] = html.SimpleTable.from_composites(infos, css_class=self.table_class,
-                                                                   labels=labels, label=label,
+                                                                   labels=origins, label=label,
                                                                    extra_column=thumbnails,
-                                                                   extra_column_label=thumbnail_title)
+                                                                   extra_column_label=thumbnail_title, strike_rows=strike_rows)
 
     # -----------------------------------------------------------------
 
@@ -432,9 +477,12 @@ class DustMapsPageGenerator(MapsSelectionComponent):
         self.page += html.center(html.make_theme_button(classes=classes, images=False))
         self.page += html.newline
 
+        # Loop over the different category lists
         for categories in self.tables:
 
-            self.page += tostr(categories)
+            # Add table with title
+            self.page += html.big(html.bold(tostr(categories, delimiter=" :: ")))
+            self.page += html.newline
             self.page += html.newline
             self.page += self.tables[categories]
             self.page += html.newline

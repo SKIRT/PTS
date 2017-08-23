@@ -51,6 +51,7 @@ from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
 from ..dist_ellipse import distance_ellipse
+from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -1787,6 +1788,30 @@ class Frame(NDDataArray):
         """
 
         return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Pixel.for_coordinate(self.center)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.data[self.pixel_center.y, self.pixel_center.x]
 
     # -----------------------------------------------------------------
 

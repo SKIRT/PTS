@@ -104,9 +104,35 @@ def make_item(css_class=None):
 
 underline_template = "<span style='text-decoration: underline;'>{text}</span>"
 bold_template = "<span style='font-weight:bold'>{text}</span>"
+italic_template = "<span style='font-style:italic'>{text}</span>"
 fontsize_template = "<span style='font-size:{size}px'>{text}</span>"
 small_template = "<small>{text}</small>"
 center_template = "<div style='text-align:center;'>{text}</div>"
+strikethrough_template = "<span style='text-decoration:line-through;'>{text}</span>"
+
+# -----------------------------------------------------------------
+
+def strikethrough(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return strikethrough_template.format(text=text)
+
+# -----------------------------------------------------------------
+
+def italic(text):
+    
+    """
+    This function ...
+    :param text: 
+    :return: 
+    """
+
+    return italic_template.format(text=text)
 
 # -----------------------------------------------------------------
 
@@ -289,6 +315,18 @@ def color(text, color):
     """
 
     return '<font color="' + color + '">' + text + '</font>'
+
+# -----------------------------------------------------------------
+
+def big(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return '<big>' + text + '</big>'
 
 # -----------------------------------------------------------------
 
@@ -1529,7 +1567,7 @@ class SimpleTableCell(object):
     cell = SimpleTableCell('Hello, world!')
     """
 
-    def __init__(self, text, header=False, bgcolor=None, tostr_kwargs=None):
+    def __init__(self, text, header=False, bgcolor=None, tostr_kwargs=None, strike=False, bold=False, italic=False):
 
         """
         Table cell constructor.
@@ -1542,22 +1580,37 @@ class SimpleTableCell(object):
         self.header = header
         self.bgcolor = bgcolor
         self.tostr_kwargs = tostr_kwargs if tostr_kwargs is not None else {}
+        self.strike = strike
+        self.bold = bold
+        self.italic = italic
 
     # -----------------------------------------------------------------
 
     def __str__(self):
 
-        """Return the HTML code for the table cell."""
+        """
+        Return the HTML code for the table cell.
+        """
 
         #if self.header: return '<th>%s</th>' % (self.text)
         #else: return '<td>%s</td>' % (self.text)
 
         if self.header:
-            if self.bgcolor is not None: return "<th bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</th>"
-            else: return "<th>" + tostr(self.text, **self.tostr_kwargs) + "</th>"
+
+            text = tostr(self.text, **self.tostr_kwargs)
+            if self.strike: text = strikethrough(text)
+            if self.bold: text = bold(text)
+            if self.italic: text = italic(text)
+            if self.bgcolor is not None: return "<th bgcolor='" + self.bgcolor + "'>" + text + "</th>"
+            else: return "<th>" + text + "</th>"
+
         else:
-            if self.bgcolor is not None: return "<td bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</td>"
-            else: return "<td>" + tostr(self.text, **self.tostr_kwargs) + "</td>"
+            text = tostr(self.text, **self.tostr_kwargs)
+            if self.strike: text = strikethrough(text)
+            if self.bold: text = bold(text)
+            if self.italic: text = italic(text)
+            if self.bgcolor is not None: return "<td bgcolor='" + self.bgcolor + "'>" + text + "</td>"
+            else: return "<td>" + text + "</td>"
 
 # -----------------------------------------------------------------
 
@@ -1575,7 +1628,7 @@ class SimpleTableRow(object):
     row = SimpleTableRow([cell1, cell2])
     """
 
-    def __init__(self, cells, header=False, bgcolors=None, tostr_kwargs=None):
+    def __init__(self, cells, header=False, bgcolors=None, tostr_kwargs=None, strike=False, bold=False, italic=False):
 
         """Table row constructor.
 
@@ -1590,8 +1643,19 @@ class SimpleTableRow(object):
         # Set cells
         if isinstance(cells[0], SimpleTableCell): self.cells = cells
         else:
-            if bgcolors is not None: self.cells = [SimpleTableCell(cell, header=header, bgcolor=bgcolor, tostr_kwargs=tostr_kwargs) for cell, bgcolor in zip(cells, bgcolors)]
-            else: self.cells = [SimpleTableCell(cell, header=header, tostr_kwargs=tostr_kwargs) for cell in cells]
+            #if bgcolors is not None: self.cells = [SimpleTableCell(cell, header=header, bgcolor=bgcolor, tostr_kwargs=tostr_kwargs) for cell, bgcolor in zip(cells, bgcolors)]
+            #else: self.cells = [SimpleTableCell(cell, header=header, tostr_kwargs=tostr_kwargs) for cell in cells]
+
+            self.cells = []
+            for index in range(len(cells)):
+
+                bgcolor = bgcolors[index] if bgcolors is not None else None
+                # strikei = strike[index] if strike is not None else None
+                # boldi = bold[index] if bold is not None else None
+                # italici = italic[index] if italic is not None else None
+
+                celli = SimpleTableCell(cells[index], header=header, tostr_kwargs=tostr_kwargs, bgcolor=bgcolor, strike=strike, bold=bold, italic=italic)
+                self.cells.append(celli)
 
         # Set header
         self.header = header
@@ -1661,7 +1725,8 @@ class SimpleTable(object):
     table = SimpleTable(rows)
     """
 
-    def __init__(self, rows, header=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader=None):
+    def __init__(self, rows, header=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader=None,
+                 strike_rows=None, bold_rows=None, italic_rows=None):
 
         """
         Table constructor.
@@ -1670,12 +1735,27 @@ class SimpleTable(object):
         header:
         css_class -- table CSS class
         subheader_row:
+        :param strike_rows:
+        :param bold_rows:
+        :param italic_rows:
         """
 
+        # Construct the rows
         if isinstance(rows[0], SimpleTableRow): self.rows = rows
         else:
-            if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors, tostr_kwargs=tostr_kwargs) for row, bcolors in zip(rows, bgcolors)]
-            else: self.rows = [SimpleTableRow(row, tostr_kwargs=tostr_kwargs) for row in rows]
+            #if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors, tostr_kwargs=tostr_kwargs) for row, bcolors in zip(rows, bgcolors)]
+            #else: self.rows = [SimpleTableRow(row, tostr_kwargs=tostr_kwargs) for row in rows]
+
+            self.rows = []
+            for index in range(len(rows)):
+
+                bcolors = bgcolors[index] if bgcolors is not None else None
+                strike = strike_rows[index] if strike_rows is not None else False
+                bold = bold_rows[index] if bold_rows is not None else False
+                italic = italic_rows[index] if italic_rows is not None else False
+
+                row = SimpleTableRow(rows[index], bgcolors=bcolors, strike=strike, bold=bold, italic=italic, tostr_kwargs=tostr_kwargs)
+                self.rows.append(row)
 
         # Check
         if subheader is not None and header is None: raise ValueError("Cannot specify subheader but not header")
@@ -1748,7 +1828,7 @@ class SimpleTable(object):
 
     @classmethod
     def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None, extra_column=None,
-                   extra_column_label=None):
+                   extra_column_label=None, strike_rows=None, bold_rows=None, italic_rows=None):
 
         """
         This function ...
@@ -1759,6 +1839,9 @@ class SimpleTable(object):
         :param column_names:
         :param extra_column:
         :param extra_column_label:
+        :param strike_rows:
+        :param bold_rows:
+        :param italic_rows:
         :return:
         """
 
@@ -1785,13 +1868,14 @@ class SimpleTable(object):
         if extra_column is not None: subheader.append("")
 
         # Create the HTML table
-        return cls(rows, header=header, subheader=subheader, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
+        return cls(rows, header=header, subheader=subheader, css_class=css_class, bgcolors=bgcolors,
+                   tostr_kwargs=tostr_kwargs, strike_rows=strike_rows, bold_rows=bold_rows, italic_rows=italic_rows)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_composites(cls, composites, css_class=None, bgcolors=None, tostr_kwargs=None, labels=None, label="-",
-                        extra_column=None, extra_column_label=None):
+                        extra_column=None, extra_column_label=None, strike_rows=None, bold_rows=None, italic_rows=None):
 
         """
         This function ...
@@ -1803,6 +1887,9 @@ class SimpleTable(object):
         :param label:
         :param extra_column:
         :param extra_column_label:
+        :param strike_rows:
+        :param bold_rows:
+        :param italic_rows:
         :return:
         """
 
@@ -1811,7 +1898,9 @@ class SimpleTable(object):
 
         # Create the HTML table
         return cls.from_table(table, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs,
-                              column_names=table.descriptions, extra_column=extra_column, extra_column_label=extra_column_label)
+                              column_names=table.descriptions, extra_column=extra_column,
+                              extra_column_label=extra_column_label, strike_rows=strike_rows, bold_rows=bold_rows,
+                              italic_rows=italic_rows)
 
     # -----------------------------------------------------------------
 
