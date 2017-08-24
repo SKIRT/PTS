@@ -469,7 +469,7 @@ class Detection(object):
 
             if sigma_clip:
                 try:
-		    if self.mask is not None and np.sum(~self.mask) == 0: raise TypeError('Invalid mask')
+                    if self.mask is not None and np.sum(~self.mask) == 0: raise TypeError('Invalid mask')
                     mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
                 except TypeError:
                     #plotting.plot_box(self.cutout)
@@ -487,8 +487,19 @@ class Detection(object):
 
                 no_clip_mask = None
             else:
-                mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
-                no_clip_mask = self.mask
+                if self.mask is not None and np.sum(~self.mask) == 0:
+                    radius = int(round(0.50 * self.cutout.xsize))
+                    disk = morphology.disk(radius, dtype=bool)
+                    mask = Mask.empty_like(self.cutout)
+                    
+                    x_min = int(round(0.5 * (self.cutout.xsize - disk.shape[1])))
+                    y_min = int(round(0.5 * (self.cutout.ysize - disk.shape[0])))
+                    mask[y_min:y_min+disk.shape[0], x_min:x_min+disk.shape[1]] = disk
+
+                else:
+                    mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+            
+                no_clip_mask = mask
 
         else:
             # Perform sigma-clipping on the background if requested
