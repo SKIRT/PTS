@@ -611,7 +611,7 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
             path = html.get_image_url(self.thumbnails[name])
 
             # Make preview
-            preview = html.image_preview(path, self.thumbnails[name])
+            preview = html.image_preview(path, self.thumbnails[name], title=name)
 
             # Add
             self.previews[name] = preview
@@ -809,11 +809,12 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
                                                                        labels=origins, label=label,
                                                                        extra_columns=extra_columns,
                                                                        extra_column_labels=extra_column_labels,
-                                                                       strike_rows=strike_rows, tostr_kwargs=self.tostr_kwargs)
+                                                                       strike_rows=strike_rows, tostr_kwargs=self.tostr_kwargs,
+                                                                       wrap=False)
 
     # -----------------------------------------------------------------
 
-    @property
+    @abstractproperty
     def title(self):
 
         """
@@ -821,7 +822,7 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
-        return "Dust maps"
+        pass
 
     # -----------------------------------------------------------------
 

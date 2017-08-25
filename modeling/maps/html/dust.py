@@ -99,6 +99,18 @@ class DustMapsPageGenerator(ComponentMapsPageGenerator):
     # -----------------------------------------------------------------
 
     @property
+    def title(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "Dust maps"
+
+    # -----------------------------------------------------------------
+
+    @property
     def sub_name(self):
 
         """

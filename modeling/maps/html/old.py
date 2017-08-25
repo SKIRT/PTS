@@ -99,6 +99,18 @@ class OldMapsPageGenerator(ComponentMapsPageGenerator):
     # -----------------------------------------------------------------
 
     @property
+    def title(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Old stellar maps"
+
+    # -----------------------------------------------------------------
+
+    @property
     def sub_name(self):
 
         """

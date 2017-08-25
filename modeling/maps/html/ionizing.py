@@ -99,6 +99,18 @@ class IonizingMapsPageGenerator(ComponentMapsPageGenerator):
     # -----------------------------------------------------------------
 
     @property
+    def title(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Ionizing stellar maps"
+
+    # -----------------------------------------------------------------
+
+    @property
     def sub_name(self):
 
         """

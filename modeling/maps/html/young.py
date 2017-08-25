@@ -99,6 +99,18 @@ class YoungMapsPageGenerator(ComponentMapsPageGenerator):
     # -----------------------------------------------------------------
 
     @property
+    def title(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Young stellar maps"
+
+    # -----------------------------------------------------------------
+
+    @property
     def sub_name(self):
 
         """
