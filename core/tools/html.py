@@ -420,7 +420,7 @@ def image_preview(url, text, title=None):
     """
 
     code = '<a href="' + url + '" class="preview"'
-    if title is not None: code += 'title="' + title + '"'
+    if title is not None: code += ' title="' + title + '"'
     code += '>'
     code += text
     code += '</a>'

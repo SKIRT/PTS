@@ -43,6 +43,7 @@ from ....core.tools import sequences
 
 page_width = 600
 thumbnail_title = "Thumbnail"
+thumbnails_title = "Thumbnails"
 
 # -----------------------------------------------------------------
 
@@ -759,9 +760,10 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
             for grouped_names in names:
                 thumbnails_group = ""
                 for name in grouped_names:
-                    if name in self.previews: thumbnails_group += html.center(self.previews[name])
-                    elif name in self.thumbnails: thumbnails_group += html.center(self.thumbnails[name])
+                    if name in self.previews: thumbnails_group += self.previews[name]
+                    elif name in self.thumbnails: thumbnails_group += self.thumbnails[name]
                     elif len(grouped_names) > 1: raise RuntimeError("Don't have a thumbnail for the '" + name + "' map")
+                thumbnails_group = html.center(thumbnails_group)
                 thumbnails.append(thumbnails_group)
 
             # Set extra columns
@@ -784,7 +786,7 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
                     nnegatives.append(nnegatives_group)
 
                 extra_columns = [factors, thumbnails, nnegatives]
-                extra_column_labels = ["Factors", thumbnail_title, "Negative values (%)"]
+                extra_column_labels = ["Factors", thumbnails_title, "Negative values (%)"]
             else:
                 extra_columns = [thumbnails]
                 extra_column_labels = [thumbnail_title]
