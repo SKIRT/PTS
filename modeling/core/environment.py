@@ -337,6 +337,10 @@ map_sub_names = [colours_name, ssfr_name, tir_name, attenuation_name, old_name, 
 fluxes_name = "fluxes.dat"
 properties_name = "properties.dat"
 info_name = "info.dat"
+
+# -----------------------------------------------------------------
+
+index_filename = "index.html"
 status_name = "status.html"
 
 # -----------------------------------------------------------------
@@ -435,6 +439,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # NEW: Set the path to the maps/html directory
         self.maps_html_path = fs.create_directory_in(self.maps_path, html_name)
+
+        # Set the paths to other pages
         self.all_maps_html_page_path = fs.join(self.maps_html_path, all_maps_filename)
         self.maps_summary_html_page_path = fs.join(self.maps_html_path, maps_summary_filename)
         self.clip_maps_html_page_path = fs.join(self.maps_html_path, clip_maps_filename)
@@ -454,6 +460,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # NEW
 
+        self.html_index_path = fs.join(self.html_path, index_filename)
         self.html_status_path = fs.join(self.html_path, status_name)
         self.html_images_path = fs.create_directory_in(self.html_path, "images")
 
@@ -790,6 +797,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
+        # NOTE: CAN ONLY BE USED AFTER PREPARATION
+
         # Get the colour map
         import matplotlib.pyplot as plt
         cmap = plt.get_cmap("jet")
@@ -820,9 +829,11 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
+        # NOTE: CAN ONLY BE USED AFTER PREPARATION
+
         colours = dict()
         for name, colour in zip(self.preparation_names, self.plotting_colours):
-            colours[name] = colour
+             colours[name] = colour
         return colours
 
     # -----------------------------------------------------------------

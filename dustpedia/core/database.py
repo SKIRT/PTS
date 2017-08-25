@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import requests
+from collections import OrderedDict
 from lxml import html
 
 # Import astronomical modules
@@ -35,6 +36,7 @@ from ...magic.core.list import FrameList, NamedFrameList
 from ...magic.core.list import CoordinateSystemList, NamedCoordinateSystemList
 from ...core.tools import archive
 from ...core.units.parsing import parse_unit as u
+from ...core.basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
@@ -499,7 +501,7 @@ class DustPediaDatabase(object):
         """
 
         # Initialize dictionary
-        filters = dict()
+        filters = OrderedDict()
 
         # Loop over all the images
         names = self.get_image_names(galaxy_name, error_maps=False)
@@ -517,6 +519,34 @@ class DustPediaDatabase(object):
 
         # Return the dictionary of filters
         return filters
+
+    # -----------------------------------------------------------------
+
+    def get_image_names_and_filters_per_observatory(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize dictionary
+        observatories = DefaultOrderedDict(dict)
+
+        # Get names and filters
+        filters = self.get_image_names_and_filters(galaxy_name)
+
+        # Loop over the filters
+        for name in filters:
+
+            # Get the filter
+            fltr = filters[name]
+
+            # Add to appropriate part of the dictionary
+            observatories[fltr.observatory][name] = fltr
+
+        # Return the dictionary
+        return observatories
 
     # -----------------------------------------------------------------
 
@@ -546,6 +576,31 @@ class DustPediaDatabase(object):
 
         # Return the list of filters
         return filters
+
+    # -----------------------------------------------------------------
+
+    def get_image_filters_per_observatory(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize
+        observatories = DefaultOrderedDict(list)
+
+        # Get filters
+        filters = self.get_image_filters(galaxy_name)
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Add to dict
+            observatories[fltr.observatory].append(fltr)
+
+        # Return
+        return observatories
 
     # -----------------------------------------------------------------
 

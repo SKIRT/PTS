@@ -122,3 +122,4 @@ generate_fitting_page | -- | html.fitting.FittingPageGenerator | arguments | Gen
 generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_attenuation_page | -- | html.attenuation.AttenuationPageGenerator | arguments | Generate the attenuation page
 generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Generate the heating page
+publish | -- | html.publish.Publisher | arguments | Publish the pages

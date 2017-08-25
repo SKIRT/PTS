@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.log import log
 from .component import HTMLPageComponent, stylesheet_url, table_class
 from ...core.tools import html
-from ..fitting.run import load_fitting_run
+from ..fitting.run import FittingRun
 from ..tests.data import M81TestData
 
 # -----------------------------------------------------------------
@@ -106,7 +106,7 @@ class ModelPageGenerator(HTMLPageComponent):
         super(ModelPageGenerator, self).setup(**kwargs)
 
         # Load the fitting run
-        self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
+        self.fitting_run = FittingRun.from_name(self.config.path, self.config.fitting_run)
 
     # -----------------------------------------------------------------
 

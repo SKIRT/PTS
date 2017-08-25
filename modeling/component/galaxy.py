@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import gc
 from abc import ABCMeta
 
+# Import astronomical modules
+from astropy.io.fits import getheader
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.data.sed import ObservedSED
@@ -1177,15 +1180,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_data_image_paths_with_cached(self, lazy=False):
+    def get_data_image_paths_with_cached(self, lazy=False, origins=None, not_origins=None):
 
         """
         This function ...
         :param lazy:
+        :parma origins:
+        :parma not_origins:
         :return:
         """
 
-        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy)
+        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy, origins=origins, not_origins=not_origins)
+
+    # -----------------------------------------------------------------
+
+    def get_data_image_paths_with_cached_for_origin(self, origin, lazy=False):
+
+        """
+        This function ...
+        :param origin:
+        :param lazy:
+        :return:
+        """
+
+        return get_data_image_paths_with_cached_for_origin(self.config.path, origin, self.cache_host_id, lazy=lazy)
 
     # -----------------------------------------------------------------
 
@@ -1493,11 +1511,13 @@ def get_prepared_dataset(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_data_image_paths(modeling_path):
+def get_data_image_paths(modeling_path, origins=None, not_origins=None):
 
     """
     This function ...
     :param modeling_path:
+    :param origins:
+    :param not_origins:
     :return:
     """
 
@@ -1509,35 +1529,101 @@ def get_data_image_paths(modeling_path):
     for image_path, image_name in fs.files_in_path(data_images_path, extension="fits", not_contains="poisson",
                                                    returns=["path", "name"], recursive=True, recursion_level=1):
 
+        # Determine the origin
+        origin = fs.name(fs.directory_of(image_path))
+
+        # Check
+        if origins is not None and origin not in origins: continue
+        if not_origins is not None and origin in not_origins: continue
+
         # Load the primary image frame
-        frame = load_image_frame(image_path)
+        #frame = load_image_frame(image_path)
+
+        # Get filter name
+        header = getheader(image_path)
+        fltr = headers.get_filter(image_name, header)
 
         # Determine name
-        name = frame.filter_name
+        name = str(fltr)
 
         # Add the image path
         paths[name] = image_path
 
         # Free memory
-        gc.collect()
+        #gc.collect()
 
     # Return the paths
     return paths
 
 # -----------------------------------------------------------------
 
-def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False):
+def get_data_image_paths_for_origin(modeling_path, origin):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param origin:
+    :return:
+    """
+
+    # Set path
+    data_images_path = get_data_images_path(modeling_path)
+    origin_path = fs.join(data_images_path, origin)
+
+    # Check path
+    if not fs.is_directory(origin_path): return dict()
+
+    paths = dict()
+
+    # Loop over the images
+    for image_path, image_name in fs.files_in_path(origin_path, extension="fits", not_contains="poisson", returns=["path", "name"]):
+
+        # Get filter name
+        header = getheader(image_path)
+        fltr = headers.get_filter(image_name, header)
+
+        # Determine name
+        name = str(fltr)
+
+        # Add the image path
+        paths[name] = image_path
+
+    # Return the paths
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False, origins=None, not_origins=None):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
     :param lazy:
+    :param origins:
+    :param not_origins:
     :return:
     """
 
-    paths = get_data_image_paths(modeling_path)
+    paths = get_data_image_paths(modeling_path, origins=origins, not_origins=not_origins)
     paths.update(**get_cached_data_image_paths(modeling_path, host_id, lazy=lazy))
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_data_image_paths_with_cached_for_origin(modeling_path, origin, host_id, lazy=False):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param origin:
+    :param host_id:
+    :param lazy:
+    :return:
+    """
+
+    paths = get_data_image_paths_for_origin(modeling_path, origin)
+    paths.update(**get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=lazy))
     return paths
 
 # -----------------------------------------------------------------
@@ -1577,6 +1663,60 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
             fltr = headers.get_filter(image_name)
             if fltr is None:
                 #raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
+                log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
+                continue
+            name = str(fltr)
+        else: name = get_filter_name(image_path, session)
+
+        if name is None: raise RuntimeError("Could not determine the filter name for the '" + image_name + "' image")
+
+        # Add the image path
+        paths[name] = image_path
+
+    # Return the paths
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=False):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param origin:
+    :param host_id:
+    :param lazy:
+    :return:
+    """
+
+    # Create the remote and start (detached) python session
+    remote = Remote(host_id=host_id)
+    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
+    else: session = None
+
+    # Load the environment
+    environment = GalaxyModelingEnvironment(modeling_path)
+
+    paths = dict()
+
+    command_name = "initialize_preparation"
+
+    # Get the remote path
+    remote_data_path = cached_directory_path_for_single_command(environment, command_name, remote)
+    remote_origin_path = fs.join(remote_data_path, origin)
+
+    # Check path
+    if not remote.is_directory(remote_origin_path): return dict() #raise ValueError("The origin directory does not exist")
+
+    # Loop over the images
+    for image_path, image_name in remote.files_in_path(remote_origin_path, extension="fits", not_contains="poisson", returns=["path", "name"]):
+
+        # Get filter name
+        if lazy:
+            # name = str(parse_filter(image_name))
+            fltr = headers.get_filter(image_name)
+            if fltr is None:
+                # raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
                 log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
                 continue
             name = str(fltr)

@@ -16,6 +16,13 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.log import log
 from .component import HTMLPageComponent, table_class, hover_table_class
 from ...core.tools import html
+from ..html.component import stylesheet_url, page_style, sortable_url, preview_url
+from ...magic.view.html import javascripts, css_scripts
+from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+
+# -----------------------------------------------------------------
+
+page_width = 600
 
 # -----------------------------------------------------------------
 
@@ -159,7 +166,7 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Making the history table ...")
 
         # Create the table
-        self.history_table = html.SimpleTable.from_table(self.history.as_tuples(), css_class=hover_table_class)
+        self.history_table = html.SimpleTable.from_table(self.history, css_class=hover_table_class)
 
     # -----------------------------------------------------------------
 
@@ -200,7 +207,27 @@ class StatusPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the status page ...")
 
-        body = self.heading
+        # Create list of css scripts
+        css_paths = css_scripts[:]
+        css_paths.append(stylesheet_url)
+
+        # Create CSS for the page width
+        css = make_page_width(page_width)
+
+        # Make javascripts urls
+        javascript_paths = javascripts[:]
+        javascript_paths.append(sortable_url)
+
+        # Create the page
+        self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths,
+                             javascript_path=javascript_paths, footing=updated_footing())
+
+        #classes = dict()
+        #classes["JS9Menubar"] = "data-backgroundColor"
+        self.page += html.center(html.make_theme_button(images=False))
+        self.page += html.newline
+
+        #body = self.heading
 
         # Create titles
         title_info = html.underline_template.format(text="Galaxy info")
@@ -208,26 +235,26 @@ class StatusPageGenerator(HTMLPageComponent):
         title_history = html.underline_template.format(text="Modeling history")
 
         #body += html.newline + html.line
-        body += html.newline + "Pages:" + html.newline
+        self.page += html.newline + "Pages:" + html.newline
         items = []
         if self.history.finished("fetch_images"): items.append(html.hyperlink(self.data_page_name, "data"))
         if self.history.finished("prepare_data"): items.append(html.hyperlink(self.preparation_page_name, "preparation"))
         if self.history.finished("decompose"): items.append(html.hyperlink(self.components_page_name, "components"))
         if self.history.finished("build_model"): items.append(html.hyperlink(self.maps_page_name, "maps"))
         if self.history.finished("configure_fit"): items.append(html.hyperlink(self.model_page_name, "model"))
-        body += html.unordered_list(items, css_class="b")
-        body += html.line + html.newline
+        self.page += html.unordered_list(items, css_class="b")
+        self.page += html.line + html.newline
 
-        body += title_info + html.newline + html.newline + str(self.info_table) + html.newline
-        body += html.line + html.newline
-        body += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
-        body += html.line + html.newline
-        body += title_history + html.newline + html.newline + str(self.history_table) + html.newline + html.newline
+        self.page += title_info + html.newline + html.newline + str(self.info_table) + html.newline
+        self.page += html.line + html.newline
+        self.page += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
+        self.page += html.line + html.newline
+        self.page += title_history + html.newline + html.newline + str(self.history_table) + html.newline + html.newline
 
-        body += self.footing
+        #body += self.footing
 
         # Create the status page
-        self.make_page(body)
+        #self.make_page(body)
 
     # -----------------------------------------------------------------
 

@@ -38,6 +38,7 @@ slider_url = "http://users.ugent.be/~sjversto/slider.js"
 
 table_class = "realtable"
 hover_table_class = "hovertable"
+sortable_table_class = "sortable"
 
 # -----------------------------------------------------------------
 
@@ -126,6 +127,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def index_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.html_index_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def status_page_path(self):
 
         """
@@ -134,6 +147,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return self.environment.html_status_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_status_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.status_page_path)
 
     # -----------------------------------------------------------------
 
@@ -162,6 +187,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_data_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.data_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def data_page_name(self):
 
         """
@@ -182,6 +219,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return fs.join(self.environment.html_path, "components.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_components_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.components_page_path)
 
     # -----------------------------------------------------------------
 
@@ -210,6 +259,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_preparation_page(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.preparation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def preparation_page_name(self):
 
         """
@@ -230,6 +291,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return fs.join(self.environment.html_path, "model.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.model_page_path)
 
     # -----------------------------------------------------------------
 
@@ -258,6 +331,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def maps_page_name(self):
 
         """
@@ -278,6 +363,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return fs.join(self.environment.html_path, "fitting.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fitting_page_path)
 
     # -----------------------------------------------------------------
 
@@ -306,6 +403,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_heating_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.heating_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_page_name(self):
 
         """
@@ -330,6 +439,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_colours_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.colours_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def colours_page_name(self):
 
         """
@@ -350,6 +471,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return fs.join(self.environment.html_path, "attenuation.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.attenuation_page_path)
 
     # -----------------------------------------------------------------
 
@@ -520,7 +653,8 @@ class HTMLPageComponent(GalaxyModelingComponent):
         log.info("Writing the page ...")
 
         # Write
-        fs.write_text(self.page_path, self.page)
+        #fs.write_text(self.page_path, self.page)
+        self.page.saveto(self.page_path)
 
     # -----------------------------------------------------------------
 

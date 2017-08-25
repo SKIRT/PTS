@@ -1443,10 +1443,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Colour map"
-            self.colour_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                            extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.colour_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                     labels=labels[method], label=label,
+                                                            extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1480,10 +1485,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "sSFR map"
-            self.ssfr_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                          extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.ssfr_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                   labels=labels[method], label=label,
+                                                          extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1517,10 +1527,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "TIR map"
-            self.tir_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                         extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.tir_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                  labels=labels[method], label=label,
+                                                         extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1554,10 +1569,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Attenuation map"
-            self.attenuation_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                                 extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.attenuation_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                          labels=labels[method], label=label,
+                                                                 extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1591,10 +1611,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Old stellar map"
-            self.old_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                         extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.old_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                  labels=labels[method], label=label,
+                                                         extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1628,10 +1653,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Young stellar map"
-            self.young_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                           extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.young_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                    labels=labels[method], label=label,
+                                                           extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1665,10 +1695,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Ionizing stellar map"
-            self.ionizing_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                              extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.ionizing_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                       labels=labels[method], label=label,
+                                                              extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 
@@ -1702,10 +1737,15 @@ class MapsSummaryPageGenerator(MapsComponent):
                 elif label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
                 else: thumbnails.append("")
 
+            # Set extra columns
+            extra_columns = [thumbnails]
+            extra_column_labels = [thumbnail_title]
+
             # Make the table
             label = "Dust map"
-            self.dust_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
-                                                        extra_column=thumbnails, extra_column_label=thumbnail_title)
+            self.dust_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class,
+                                                                   labels=labels[method], label=label,
+                                                        extra_columns=extra_columns, extra_column_labels=extra_column_labels)
 
     # -----------------------------------------------------------------
 

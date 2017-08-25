@@ -25,6 +25,9 @@ from . import headers
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools import types
 from ...core.basics.log import log
+from ...core.filter.filter import parse_filter
+from ...core.units.unit import parse_unit as u
+from ...core.units.unit import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -103,6 +106,71 @@ def get_image_info_strings(image_name, frame, **kwargs):
 
 # -----------------------------------------------------------------
 
+def get_image_info_from_remote_header_file(image_name, frame_path, session, **kwargs):
+
+    """
+    This function ...
+    :param image_name:
+    :param frame_path:
+    :param session:
+    :param kwargs:
+    :return:
+    """
+
+    # Import
+    session.import_package("getheader", from_name="astropy.io.fits")
+    session.import_package("headers", from_name="pts.magic.tools")
+
+    # Load header
+    session.send_line("header = getheader('" + frame_path + "')")
+
+    # Get filter
+    session.send_line("fltr = headers.get_filter('" + image_name + "', header)")
+    filter_name = session.get_simple_variable("str(fltr)")
+
+    # Get wavelength
+    fltr = parse_filter(filter_name)
+    wavelength = fltr.wavelength
+
+    # Get unit
+    session.send_line("unit = headers.get_unit(header)")
+    unit_string = session.get_simple_variable("str(unit)")
+    unit = u(unit_string)
+
+    # Get npixels
+    nxpixels = session.get_simple_variable('header["NAXIS1"]')
+    nypixels = session.get_simple_variable('header["NAXIS2"]')
+
+    # Get the pixelscale
+    session.send_line('pixelscale = headers.get_pixelscale(header)')
+    pixelscale = parse_quantity(session.get_simple_variable('str(pixelscale)'))
+
+    # Get the FWHM
+    session.get_line('fwhm = headers.get_fwhm(header)')
+    fwhm = parse_quantity(session.get_simple_variable('str(fwhm)'))
+
+    # Set the info
+    info = OrderedDict()
+
+    if kwargs.pop("name", True): info["Name"] = image_name
+    if kwargs.pop("path", True): info["Path"] = frame_path
+    if kwargs.pop("filter", True): info["Filter"] = fltr
+    if kwargs.pop("wavelength", True): info["Wavelength"] = wavelength
+    if kwargs.pop("unit", True): info["Unit"] = unit
+    if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
+    if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
+    if kwargs.pop("xsize", True): info["xsize"] = nxpixels
+    if kwargs.pop("ysize", True): info["ysize"] = nypixels
+
+    # if path is not None and kwargs.pop("filesize", True):
+    #     filesize = fs.file_size(path).to("MB")
+    #     info["File size"] = filesize
+
+    # Return the info
+    return info
+
+# -----------------------------------------------------------------
+
 def get_image_info_from_header_file(image_name, frame_path, **kwargs):
 
     """
@@ -157,7 +225,6 @@ def get_image_info_from_header(image_name, header, **kwargs):
     if kwargs.pop("unit", True): info["Unit"] = unit
     if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
-    #if kwargs.pop("shape", True): info["Dimensions"] = (nxpixels, nypixels)
     if kwargs.pop("xsize", True): info["xsize"] = nxpixels
     if kwargs.pop("ysize", True): info["ysize"] = nypixels
 

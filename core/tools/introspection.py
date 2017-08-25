@@ -1841,10 +1841,13 @@ def get_argument_table(subproject):
             splitted = line.split(" | ")
             if len(splitted) != 5: raise SyntaxError("The following row is wrong: '" + line + "'")
 
+            # Remove leading and trailing white space
+            rel_class_path = splitted[2].strip()
+
             # Add entry
             commands.append(splitted[0])
             configuration.append(splitted[1])
-            where.append(splitted[2])
+            where.append(rel_class_path)
             method.append(splitted[3])
             description.append(splitted[4])
             titles.append(last_title)

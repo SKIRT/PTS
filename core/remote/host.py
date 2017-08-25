@@ -41,6 +41,28 @@ def all_host_ids():
 
 # -----------------------------------------------------------------
 
+def ssh_host_ids():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return find_host_ids(protocol="ssh")
+
+# -----------------------------------------------------------------
+
+def smb_host_ids():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return find_host_ids(protocol="smb")
+
+# -----------------------------------------------------------------
+
 def find_host_ids(schedulers=None, protocol="ssh"):
 
     """

@@ -12,19 +12,18 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-from ipyvolume.embed import embed_html
-
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import HTMLPageComponent, table_class
+from .component import HTMLPageComponent, hover_table_class
 from ...core.tools import html
-from ...dustpedia.core.properties import DustPediaProperties
-from ...dustpedia.core.database import get_account
-from ...core.tools import filesystem as fs
-from ...magic.core.frame import Frame
-from ...core.filter.filter import parse_filter
-from ...magic.core.remote import RemoteFrame
 from ..plotting.model import plot_galaxy_components, generate_html
+from ..html.component import stylesheet_url, page_style, sortable_url, preview_url
+from ...magic.view.html import javascripts, css_scripts
+from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+
+# -----------------------------------------------------------------
+
+page_width = 600
 
 # -----------------------------------------------------------------
 
@@ -45,14 +44,15 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Call the constructor of the base class
         super(ComponentsPageGenerator, self).__init__(*args, **kwargs)
 
-        self.bulge_table = None
+        # Plots
         self.bulge_plot = None
-
-        self.disk_table = None
         self.disk_plot = None
-
-        self.model_table = None
         self.model_plot = None
+
+        # Tables
+        self.bulge_table = None
+        self.disk_table = None
+        self.model_table = None
 
     # -----------------------------------------------------------------
 
@@ -107,10 +107,13 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making plots ...")
 
+        # Plot the bulge
         self.plot_bulge()
 
+        # Plot the disk
         self.plot_disk()
 
+        # Plot the model
         self.plot_model()
 
     # -----------------------------------------------------------------
@@ -126,7 +129,7 @@ class ComponentsPageGenerator(HTMLPageComponent):
         log.info("Plotting the bulge component ...")
 
         # Plot, create HTML
-        components = {"bulge": None}
+        components = {"bulge": self.bulge_model}
         kwargs = {}
         box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
         self.bulge_plot = generate_html(box, **kwargs)
@@ -144,7 +147,7 @@ class ComponentsPageGenerator(HTMLPageComponent):
         log.info("Plotting the disk component ...")
 
         # Plot, create HTML
-        components = {"disk": None}
+        components = {"disk": self.disk_model}
         kwargs = {}
         box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
         self.disk_plot = generate_html(box, **kwargs)
@@ -162,7 +165,7 @@ class ComponentsPageGenerator(HTMLPageComponent):
         log.info("Plotting the model (disk + bulge) ...")
 
         # Plot, create HTML
-        components = {"disk": None, "bulge": None}
+        components = {"disk": self.disk_model, "bulge": self.bulge_model}
         kwargs = {}
         box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
         self.model_plot = generate_html(box, **kwargs)
@@ -179,10 +182,41 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables ...")
 
+        # Make bulge table
+        self.make_bulge_table()
 
+        # Make disk table
+        self.make_disk_table()
 
     # -----------------------------------------------------------------
 
+    def make_bulge_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the bulge component table ...")
+
+        # Make the table
+        self.bulge_table = html.SimpleTable.from_composite(self.bulge_model, css_class=hover_table_class)
+
+    # -----------------------------------------------------------------
+
+    def make_disk_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the disk component table ...")
+
+        # Make the table
+        self.disk_table = html.SimpleTable.from_composite(self.disk_model, css_class=hover_table_class)
 
     # -----------------------------------------------------------------
 
@@ -196,14 +230,57 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the HTML ...")
 
-        body = self.heading + html.newline
+        # Generate the page
+        self.generate_page()
 
+    # -----------------------------------------------------------------
 
+    def generate_page(self):
 
-        body += self.footing
+        """
+        This function ...
+        :return:
+        """
 
-        # Make page
-        self.make_page(body)
+        # Create list of css scripts
+        css_paths = css_scripts[:]
+        css_paths.append(stylesheet_url)
+
+        # Create CSS for the page width
+        css = make_page_width(page_width)
+
+        # Make javascripts urls
+        javascript_paths = javascripts[:]
+        javascript_paths.append(sortable_url)
+        javascript_paths.append(preview_url)
+
+        # Create the page
+        self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths,
+                             javascript_path=javascript_paths, footing=updated_footing())
+
+        classes = dict()
+        classes["JS9Menubar"] = "data-backgroundColor"
+        self.page += html.center(html.make_theme_button(classes=classes, images=False))
+        self.page += html.newline
+
+        self.page += "BULGE"
+
+        self.page += self.bulge_table
+        self.page += html.newline + html.newline
+        self.page += self.bulge_plot
+        self.page += html.newline + html.newline
+
+        self.page += "DISK"
+
+        self.page += self.disk_table
+        self.page += html.newline + html.newline
+        self.page += self.disk_plot
+        self.page += html.newline + html.newline
+
+        self.page += "MODEL"
+
+        self.page += self.model_plot
+        self.page += html.newline
 
     # -----------------------------------------------------------------
 
@@ -230,6 +307,6 @@ class ComponentsPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return self.data_page_path
+        return self.components_page_path
 
 # -----------------------------------------------------------------

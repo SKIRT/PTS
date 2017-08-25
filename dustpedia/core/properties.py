@@ -178,7 +178,7 @@ class DustPediaProperties(object):
         table.add_column_info("Calibration uncertainty (%)", float, None, "Percentual calibration uncertainty")
         table.add_column_info("Calibration uncertainty", float, "mag", "Calibration uncertaintity in magnitudes")
 
-        # Loop over the images for M81
+        # Loop over the images
         filters = database.get_image_names_and_filters(galaxy_name)
         for name in filters:
 
@@ -212,6 +212,84 @@ class DustPediaProperties(object):
 
         # Return the table
         return table
+
+    # -----------------------------------------------------------------
+
+    def create_tables(self, galaxy_name, username, password):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param username:
+        :param password:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating tables with the data properties for galaxy '" + galaxy_name + "' ...")
+
+        # Get DustPedia name
+        sample = DustPediaSample()
+        galaxy_name = sample.get_name(galaxy_name)
+
+        # Login to DataBase
+        database = DustPediaDatabase()
+        if username is not None:
+            if password is None: raise ValueError("Password is not specified")
+            database.login(username, password)
+
+        # Loop over the images
+        observatories = database.get_image_names_and_filters_per_observatory(galaxy_name)
+
+        # Dict for tables
+        tables = OrderedDict()
+
+        # Loop over the observatories
+        for observatory in observatories:
+
+            # Create table
+            table = SmartTable()
+            table.add_column_info("Band", str, None, "Band")
+            table.add_column_info("Wavelength", float, "micron", "Filter effective wavelength")
+            table.add_column_info("Pixelscale", float, "arcsec", "Image pixelscale")
+            table.add_column_info("FWHM of PSF", float, "arcsec", "FWHM of the PSF")
+            table.add_column_info("Calibration uncertainty (%)", float, None, "Percentual calibration uncertainty")
+            table.add_column_info("Calibration uncertainty", float, "mag", "Calibration uncertaintity in magnitudes")
+
+            # Loop over the filters
+            for name in observatories[observatory]:
+
+                # Get the filter
+                fltr = observatories[observatory][name]
+
+                # Get filter properties
+                band = fltr.band
+                wavelength = fltr.wavelength
+
+                if observatory == "SDSS": observatory = "APO"
+
+                # Get properties
+                pixelscale = self.data[fltr].pixelscale
+                fwhm = self.data[fltr].fwhm
+                percentual_calibration = self.data[fltr].calibration
+
+                # Get magnitude calibration
+                calibration = calibration_magnitude_for_filter(fltr)
+
+                # Set row values
+                values = [band, wavelength, pixelscale, fwhm, percentual_calibration, calibration]
+
+                # Add entry to the table
+                table.add_row(values)
+
+            # Sort the table
+            table.sort("Wavelength")
+
+            # Add the table
+            tables[observatory] = table
+
+        # Return the dictionary of tables
+        return tables
 
     # -----------------------------------------------------------------
 

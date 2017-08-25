@@ -30,6 +30,9 @@ def create_modeling_progression(modeling_path):
     :return:
     """
 
+    # Check modeling path
+    if modeling_path is None: raise ValueError("Modeling path is not specified")
+
     # Get analysis runs
     analysis_runs = AnalysisRuns(modeling_path)
 
@@ -39,7 +42,7 @@ def create_modeling_progression(modeling_path):
     else: analysis_run_name = prompt_string("analysis_run", "name of the analysis run", choices=analysis_runs.names, default=analysis_runs.last_name, required=True)
 
     # Check whether fitting run has to be choosen
-    analysis_run = AnalysisRun.from_name(modeling_path, analysis_run_name)
+    analysis_run = AnalysisRun.from_name(modeling_path, analysis_run_name) if analysis_run_name is not None else None
     if analysis_run_name is None or not analysis_run.from_fitting:
 
         # Get fitting runs
@@ -51,13 +54,14 @@ def create_modeling_progression(modeling_path):
         else: fitting_run_name = prompt_string("fitting_run", "name of the fitting run", choices=fitting_runs.names, required=True)
 
     # Just take fitting run name for given analysis run
-    else: fitting_run_name = analysis_run.fitting_run_name
+    elif analysis_run is not None: fitting_run_name = analysis_run.fitting_run_name
+    else: raise RuntimeError("We shouldn't get here")
 
     # Get the model suite
     suite = ModelSuite.from_modeling_path(modeling_path)
 
     # Check whether model representation has to be choosen
-    fitting_run = FittingRun.from_name(modeling_path, fitting_run_name)
+    fitting_run = FittingRun.from_name(modeling_path, fitting_run_name) if fitting_run_name is not None else None
     if fitting_run_name is None:
 
         # Choose representation
@@ -66,7 +70,8 @@ def create_modeling_progression(modeling_path):
         else: representation_name = prompt_string("representation", "name of the model representation", choices=suite.representation_names, required=True)
 
     # Else
-    else: representation_name = fitting_run.initial_representation_name
+    elif fitting_run is not None: representation_name = fitting_run.initial_representation_name
+    else: raise RuntimeError("We shouldn't get here")
 
     # Check whether the model name has to be choosen
     if representation_name is None:
@@ -79,6 +84,11 @@ def create_modeling_progression(modeling_path):
 
     # Get the model name for the chosen representation
     else: model_name = suite.get_model_name_for_representation(representation_name)
+
+    #print("MODEL NAME", model_name)
+    #print("REPRESENTATION NAME", representation_name)
+    #print("FITTING RUN NAME", fitting_run_name)
+    #print("ANALYSIS RUN NAME", analysis_run_name)
 
     # Return
     return GalaxyModelingProgression(modeling_path, model_name, representation_name, fitting_run_name, analysis_run_name)

@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
-from pts.modeling.fitting.component import load_fitting_run
+from pts.modeling.fitting.component import FittingRun
 from pts.core.tools import formatting as fmt
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
@@ -49,7 +49,7 @@ environment = GalaxyModelingEnvironment(modeling_path)
 # -----------------------------------------------------------------
 
 # Load the fitting run
-fitting_run = load_fitting_run(modeling_path, config.fitting_run)
+fitting_run = FittingRun.from_name(modeling_path, config.fitting_run)
 
 # -----------------------------------------------------------------
 

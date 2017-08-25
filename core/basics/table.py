@@ -79,12 +79,18 @@ class SmartTable(Table):
         :return:
         """
 
+        # Import tostr function
+        from ..tools.stringify import tostr
+
         # Check number
         if len(composites) == 0: raise ValueError("No input is provided")
 
         # Get names
         labels = kwargs.pop("labels", None)
         label = kwargs.pop("label", "-")
+
+        # Get tostr kwargs
+        tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
         #print(composites)
 
@@ -158,6 +164,11 @@ class SmartTable(Table):
                 # SPECIAL CASE: WAS NONE FOR EACH COMPOSITE
                 elif column_type == "None": real_type = str
 
+                # LISTS OF THINGS -> STRINGS
+                elif column_type.endswith("_list"):
+                    to_string.append(name)
+                    real_type = str
+
                 # NOT RECOGNIZED
                 else: raise ValueError("Column type not recognized: " + str(column_type) + " (" + str(type(column_type)) + ")")
 
@@ -184,7 +195,7 @@ class SmartTable(Table):
                     # Get the value
                     if hasattr(composite, name):
                         value = getattr(composite, name)
-                        if name in to_string: value = str(value)
+                        if name in to_string: value = tostr(value, **tostr_kwargs)
                     else: value = None
 
                 # Add the value
