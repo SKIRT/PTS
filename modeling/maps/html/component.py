@@ -150,6 +150,30 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nmaps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.map_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmaps == 0
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -162,6 +186,9 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
 
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
+
+        # CHECK WHETHER THERE ARE MAPS
+        if self.no_maps: raise RuntimeError("There are no maps yet. Run the appropriate command first to create the maps.")
 
         # Set filtered map names
         self.filtered_map_names = self.map_names
@@ -572,7 +599,9 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
 
             # Determine full plot name
             if self.has_methods_for_sub_name(self.sub_name):
-                full_name = self.component_map_methods[name][-1] + "_" + name
+                method = self.component_map_methods[name][-1]
+                if name.startswith(method): full_name = name
+                else: full_name = method + "_" + name # add the method just as in the AllMapsPageGenerator
             else: full_name = name
 
             # Find the plot file
@@ -580,9 +609,8 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
 
             # Check
             if not fs.is_file(path):
-                #log.warning("The plot for the '" + name + "' map is not present. Run generate_all_maps_page first.")
+                log.error("Didn't find '" + path + "'")
                 raise RuntimeError("The plot for the '" + name + "' map is not present. Run generate_all_maps_page first.")
-                #continue
 
             # Make image
             image = html.image(path, alttext=name, height=self.config.thumbnail_height)
@@ -710,10 +738,9 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
                 # Loop over all the maps
                 for name in map_names:
 
-                    if "_" not in name:
+                    if "__" not in name:
                         grouped[name] = name
                         continue
-
                     base_name, last_part = strings.split_at_last(name, "__")
 
                     if not numbers.is_number(last_part):
@@ -777,16 +804,21 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
                     else: factors_group = ""
                     factors.append(factors_group)
 
-                # Set fractions of negatives
-                nnegatives = []
-                for name in grouped:
-                    # name is actually base_name
-                    if types.is_dictionary(grouped[name]): nnegatives_group = tostr([self.nnegatives[single_name] * 100. for single_name in grouped[name].values()], **self.tostr_kwargs)
-                    else: nnegatives_group = ""
-                    nnegatives.append(nnegatives_group)
+                if sequences.all_false(factors):
+                    extra_columns = [thumbnails]
+                    extra_column_labels = [thumbnail_title]
 
-                extra_columns = [factors, thumbnails, nnegatives]
-                extra_column_labels = ["Factors", thumbnails_title, "Negative values (%)"]
+                else:
+                    # Set fractions of negatives
+                    nnegatives = []
+                    for name in grouped:
+                        # name is actually base_name
+                        if types.is_dictionary(grouped[name]): nnegatives_group = tostr([self.nnegatives[single_name] * 100. for single_name in grouped[name].values()], **self.tostr_kwargs)
+                        else: nnegatives_group = ""
+                        nnegatives.append(nnegatives_group)
+
+                    extra_columns = [factors, thumbnails, nnegatives]
+                    extra_column_labels = ["Factors", thumbnails_title, "Negative values (%)"]
             else:
                 extra_columns = [thumbnails]
                 extra_column_labels = [thumbnail_title]

@@ -1099,3 +1099,31 @@ def is_descending(sequence):
     return sorted(sequence, reverse=True) == sequence
 
 # -----------------------------------------------------------------
+
+def all_true(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    for item in sequence:
+        if not item: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def all_false(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    for item in sequence:
+        if item: return False
+    return True
+
+# -----------------------------------------------------------------
