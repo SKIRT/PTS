@@ -25,6 +25,21 @@ from . import sequences
 
 # -----------------------------------------------------------------
 
+def is_number(value_or_string):
+
+    """
+    This function ...
+    :param value_or_string:
+    :return:
+    """
+
+    try:
+        float(value_or_string)
+        return True
+    except ValueError: return False
+
+# -----------------------------------------------------------------
+
 def is_close(value, other_value, rtol=1.e-5, atol=1.e-8):
 
     """
@@ -251,6 +266,7 @@ def round_to_n_significant_digits(x, n):
     :return: 
     """
 
+    if x == 0: return 0
     return round(x, n-int(floor(log10(abs(x))))-1)
 
 # -----------------------------------------------------------------

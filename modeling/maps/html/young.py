@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.basics.log import log
 from ....core.tools import filesystem as fs
-from ..selectioncomponent import MapsSelectionComponent
+from .all import young_name
+from .component import ComponentMapsPageGenerator
 
 # -----------------------------------------------------------------
 
-class YoungMapsPageGenerator(MapsSelectionComponent):
+class YoungMapsPageGenerator(ComponentMapsPageGenerator):
 
     """
     This class...
@@ -36,50 +36,88 @@ class YoungMapsPageGenerator(MapsSelectionComponent):
         # Call the constructor of the base class
         super(YoungMapsPageGenerator, self).__init__(*args, **kwargs)
 
-
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    @property
+    def map_names(self):
 
         """
-        This function ...
-        :param kwargs:
+        Thisf unction ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-
-
-        # Show
-        if self.config.show: self.show()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(YoungMapsPageGenerator, self).setup(**kwargs)
-
-        # Set the number of allowed open file handles
-        fs.set_nallowed_open_files(self.config.nopen_files)
+        return self.young_map_names
 
     # -----------------------------------------------------------------
 
     @property
-    def maps_sub_path(self):
+    def map_paths(self):
 
         """
         This function ...
         :return:
         """
 
-        return None
+        return self.young_map_paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, young_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map_origins
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sub_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return young_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_maps_html_page_path
 
 # -----------------------------------------------------------------

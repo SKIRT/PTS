@@ -52,6 +52,13 @@ from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
 from ..dist_ellipse import distance_ellipse
 from ..basics.vector import Pixel
+from ..region.region import PixelRegion
+
+# -----------------------------------------------------------------
+
+nan_value = float("nan")
+inf_values = [float("inf"), float("-inf")]
+zero_value = 0.0
 
 # -----------------------------------------------------------------
 
@@ -911,6 +918,54 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def where_smaller_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.less(self._data, value))
+
+    # -----------------------------------------------------------------
+
+    def where_smaller_than_or_equal(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.less_equal(self._data, value))
+
+    # -----------------------------------------------------------------
+
+    def where_greater_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.greater(self._data, value))
+
+    # -----------------------------------------------------------------
+
+    def where_greater_than_or_equal(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.greater_equal(self._data, value))
+
+    # -----------------------------------------------------------------
+
     @property
     def nans(self):
 
@@ -919,7 +974,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.where(float("nan"))
+        return self.where(nan_value)
 
     # -----------------------------------------------------------------
 
@@ -931,24 +986,132 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return [Pixel(x, y) for y, x in np.transpose(np.where(np.isnan(self._data)))]
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.nans))]
 
     # -----------------------------------------------------------------
 
     @property
-    def zeros(self):
+    def nnans(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.where(0.0)
+        return np.sum(self.nans.data)
 
     # -----------------------------------------------------------------
 
     @property
-    def nonzeros(self):
+    def all_nans(self):
+
+        """
+        This function ...
+        """
+
+        return np.all(self.nans.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .mask import union
+        return union(self.where(float("inf")), self.where(float("-inf")))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def infs_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.infs))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.all(self.infs.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ninfs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.infs.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where(zero_value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeroes_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.zeroes))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.all(self.zeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nzeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.zeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeroes(self):
 
         """
         This function ...
@@ -960,43 +1123,43 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def zeros_pixels(self):
+    def all_nonzeroes(self):
 
         """
         This function ...
         :return:
         """
 
-        return [Pixel(x, y) for y, x in np.transpose(np.where(self.zeros))]
+        return np.all(self.nonzeroes.data)
 
     # -----------------------------------------------------------------
 
     @property
-    def zeros_x(self):
+    def zeroes_x(self):
 
         """
         This function ...
         :return:
         """
 
-        return np.where(self.zeros)[1]
+        return np.where(self.zeroes)[1]
 
     # -----------------------------------------------------------------
 
     @property
-    def zeros_y(self):
+    def zeroes_y(self):
 
         """
         This function ...
         :return:
         """
 
-        return np.where(self.zeros)[0]
+        return np.where(self.zeroes)[0]
 
     # -----------------------------------------------------------------
 
     @property
-    def nonzeros_pixels(self):
+    def nonzeroes_pixels(self):
 
         """
         This function ...
@@ -1008,7 +1171,19 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def nonzeros_x(self):
+    def nnonzeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.nonzeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeroes_x(self):
 
         """
         This function ...
@@ -1020,7 +1195,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def nonzeros_y(self):
+    def nonzeroes_y(self):
 
         """
         This function ...
@@ -1028,6 +1203,221 @@ class Frame(NDDataArray):
         """
 
         return np.nonzero(self._data)[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def negatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where_smaller_than(zero_value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def negatives_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.negatives))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnegatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.negatives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_negatives(self):
+
+        """
+        This function ...
+        """
+
+        return np.all(self.negatives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def positives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where_greater_than(zero_value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def positives_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.positives))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npositives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_positives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.all(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    def nnans_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of nan pixels
+        return np.sum(np.equal(self.data[mask], nan_value))
+
+    # -----------------------------------------------------------------
+
+    def ninfs_in(self, region_or_mask):
+
+        """
+        Thisn function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of nan pixels
+        return np.sum(np.equal(self.data[mask], inf_values[0]) + np.equal(self.data[mask], inf_values[1]))
+
+    # -----------------------------------------------------------------
+
+    def nzeroes_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of zero pixels
+        return np.sum(np.equal(self.data[mask], zero_value))
+
+    # -----------------------------------------------------------------
+
+    def nnegatives_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of negative pixels
+        return np.sum(np.less(self.data[mask], zero_value))
+
+    # -----------------------------------------------------------------
+
+    def npositives_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of positive pixels
+        return np.sum(np.greater(self.data[mask], zero_value))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xsize * self.ysize
+
+    # -----------------------------------------------------------------
+
+    def npixels_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the number of pixels
+        return np.sum(mask)
 
     # -----------------------------------------------------------------
 
@@ -1262,6 +1652,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
     def is_constant(self):
 
         """
@@ -1270,6 +1661,24 @@ class Frame(NDDataArray):
         """
 
         return np.nanmax(self._data) == np.nanmin(self._data)
+
+    # -----------------------------------------------------------------
+
+    def is_constant_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return whether constant
+        return np.nanmax(self.data[mask]) == np.nanmin(self.data[mask])
 
     # -----------------------------------------------------------------
 
@@ -1497,7 +1906,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return np.sqrt(np.sum(self._data[self.nans().inverse()]**2))
+        return np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
 
     # -----------------------------------------------------------------
 
@@ -1573,7 +1982,7 @@ class Frame(NDDataArray):
         kernel_psf_filter = kernel.psf_filter
 
         # Skip the calculation for a constant frame
-        if self.is_constant():
+        if self.is_constant:
             self._fwhm = kernel_fwhm
             self._psf_filter = kernel_psf_filter
             return
@@ -1595,7 +2004,7 @@ class Frame(NDDataArray):
         else: new_data = convolve(self._data, kernel.data, normalize_kernel=False)
 
         # Put back NaNs
-        new_data[nans_mask] = float("nan")
+        new_data[nans_mask] = nan_value
 
         # Replace the data and FWHM
         self._data = new_data
@@ -2276,28 +2685,6 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def nans(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Mask(np.isnan(self._data))
-
-    # -----------------------------------------------------------------
-
-    def infs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Mask(np.isinf(self._data))
-
-    # -----------------------------------------------------------------
-
     def replace_nans(self, value):
 
         """
@@ -2307,7 +2694,7 @@ class Frame(NDDataArray):
         """
 
         # Set all NaN pixels to the specified value
-        self._data[np.isnan(self._data)] = value
+        self._data[self.nans] = value
 
     # -----------------------------------------------------------------
 
@@ -2320,9 +2707,21 @@ class Frame(NDDataArray):
         """
 
         # Set all inf pixels to the specified value
-        self._data[np.isinf(self._data)] = value
+        self._data[self.infs] = value
 
     # -----------------------------------------------------------------
+
+    def replace_zeroes(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data[self.zeroes] = value
+
+    #
 
     def replace_negatives(self, value):
 

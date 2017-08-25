@@ -439,6 +439,18 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def has_methods_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.methods_for_sub_name(name) is not None
+
+    # -----------------------------------------------------------------
+
     @property
     def maps_colours_path(self):
 

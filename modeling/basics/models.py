@@ -1251,7 +1251,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return self.map.zeros
+        return self.map.zeroes
 
     # -----------------------------------------------------------------
 
@@ -1263,7 +1263,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return self.map.nonzeros
+        return self.map.nonzeroes
 
     # -----------------------------------------------------------------
 
@@ -1275,7 +1275,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return self.map.zeros_pixels
+        return self.map.zeroes_pixels
 
     # -----------------------------------------------------------------
 

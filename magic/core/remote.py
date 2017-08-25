@@ -697,6 +697,7 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    @property
     def is_constant(self):
 
         """
@@ -704,7 +705,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.session.get_simple_property(self.label, "is_constant()")
+        return self.session.get_simple_property(self.label, "is_constant")
 
     # -----------------------------------------------------------------
 
@@ -735,7 +736,7 @@ class RemoteFrame(object):
         kernel_fwhm = kernel.fwhm
 
         # Skip the calculation for a constant frame
-        if self.is_constant():
+        if self.is_constant:
             self.fwhm = kernel_fwhm
             return
 

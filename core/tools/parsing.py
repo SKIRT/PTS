@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+import warnings
 #import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -827,7 +828,14 @@ def mixed_list(argument):
     """
 
     if argument == "": return []
-    else: return [eval(value) for value in argument.split(",")]
+    else:
+        #return [eval(value) for value in argument.split(",")]
+        values = []
+        for value in argument.split(","):
+            try: value = eval(value)
+            except: warnings.warn("Could not evaluate all elements of the mixed list '" + str(argument) + "', so treating as strings")
+            values.append(value)
+        return values
 
 # -----------------------------------------------------------------
 

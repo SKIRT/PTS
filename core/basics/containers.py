@@ -1054,3 +1054,37 @@ def equal_dictionaries(dict_a, dict_b):
     return True
 
 # -----------------------------------------------------------------
+
+def ordered_by_key(dictionary):
+
+    """
+    This function ...
+    :param dictionary:
+    :return:
+    """
+
+    new = OrderedDict()
+    for key in sorted(dictionary.keys()): new[key] = dictionary[key]
+    return new
+
+# -----------------------------------------------------------------
+
+def ordered_by_value(dictionary):
+
+    """
+    Thisf unction ...
+    :param dictionary:
+    :return:
+    """
+
+    keys = dictionary.keys()
+    values = dictionary.values()
+
+    import numpy as np
+    sorted_indices = np.argsort(values)
+
+    new = OrderedDict()
+    for index in sorted_indices: new[keys[index]] = values[index]
+    return new
+
+# -----------------------------------------------------------------

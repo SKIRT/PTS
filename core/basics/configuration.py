@@ -3954,7 +3954,10 @@ def try_to_convert_to_type(default, user_type):
     elif parent_type(user_type) == "integer" and numbers.is_integer(default): return int(default)
     elif parent_type(user_type) == "real" and numbers.is_integer(default): return float(default)
     elif types.is_string_type(default): return try_to_convert_from_string(default, user_type)
-    else: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
+    else:
+        #raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
+        try: return try_to_convert_from_string(str(default), user_type)
+        except ValueError: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------
 

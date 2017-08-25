@@ -1567,13 +1567,14 @@ class SimpleTableCell(object):
     cell = SimpleTableCell('Hello, world!')
     """
 
-    def __init__(self, text, header=False, bgcolor=None, tostr_kwargs=None, strike=False, bold=False, italic=False):
+    def __init__(self, text, header=False, bgcolor=None, tostr_kwargs=None, strike=False, bold=False, italic=False, wrap=True):
 
         """
         Table cell constructor.
         Keyword arguments:
         text -- text to be displayed
         header -- flag to indicate this cell is a header cell.
+        :param wrap:
         """
 
         self.text = text
@@ -1583,6 +1584,7 @@ class SimpleTableCell(object):
         self.strike = strike
         self.bold = bold
         self.italic = italic
+        self.wrap = wrap
 
     # -----------------------------------------------------------------
 
@@ -1628,7 +1630,7 @@ class SimpleTableRow(object):
     row = SimpleTableRow([cell1, cell2])
     """
 
-    def __init__(self, cells, header=False, bgcolors=None, tostr_kwargs=None, strike=False, bold=False, italic=False):
+    def __init__(self, cells, header=False, bgcolors=None, tostr_kwargs=None, strike=False, bold=False, italic=False, wrap=True):
 
         """Table row constructor.
 
@@ -1654,8 +1656,11 @@ class SimpleTableRow(object):
                 # boldi = bold[index] if bold is not None else None
                 # italici = italic[index] if italic is not None else None
 
-                celli = SimpleTableCell(cells[index], header=header, tostr_kwargs=tostr_kwargs, bgcolor=bgcolor, strike=strike, bold=bold, italic=italic)
+                celli = SimpleTableCell(cells[index], header=header, tostr_kwargs=tostr_kwargs, bgcolor=bgcolor, strike=strike, bold=bold, italic=italic, wrap=wrap)
                 self.cells.append(celli)
+
+        # Set wrap property
+        self.wrap = wrap
 
         # Set header
         self.header = header
@@ -1668,7 +1673,10 @@ class SimpleTableRow(object):
 
         row = []
 
-        row.append('<tr>')
+        if self.wrap: start = "<tr>"
+        else: start = '<tr style="white-space:nowrap;">'
+
+        row.append(start)
         for cell in self.cells: row.append(str(cell))
         row.append('</tr>')
         
@@ -1726,7 +1734,7 @@ class SimpleTable(object):
     """
 
     def __init__(self, rows, header=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader=None,
-                 strike_rows=None, bold_rows=None, italic_rows=None):
+                 strike_rows=None, bold_rows=None, italic_rows=None, wrap=True):
 
         """
         Table constructor.
@@ -1738,6 +1746,7 @@ class SimpleTable(object):
         :param strike_rows:
         :param bold_rows:
         :param italic_rows:
+        :param wrap:
         """
 
         # Construct the rows
@@ -1754,7 +1763,7 @@ class SimpleTable(object):
                 bold = bold_rows[index] if bold_rows is not None else False
                 italic = italic_rows[index] if italic_rows is not None else False
 
-                row = SimpleTableRow(rows[index], bgcolors=bcolors, strike=strike, bold=bold, italic=italic, tostr_kwargs=tostr_kwargs)
+                row = SimpleTableRow(rows[index], bgcolors=bcolors, strike=strike, bold=bold, italic=italic, wrap=wrap, tostr_kwargs=tostr_kwargs)
                 self.rows.append(row)
 
         # Check
@@ -1778,7 +1787,7 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def rasterize(cls, cells, ncolumns=2, header=None, css_class=None, tostr_kwargs=None, subheader=None):
+    def rasterize(cls, cells, ncolumns=2, header=None, css_class=None, tostr_kwargs=None, subheader=None, wrap=True):
 
         """
         This function ...
@@ -1788,6 +1797,7 @@ class SimpleTable(object):
         :param css_class:
         :param tostr_kwargs:
         :param header:
+        :param wrap:
         :return:
         """
 
@@ -1808,7 +1818,7 @@ class SimpleTable(object):
             rows.append(row)
 
         # Create and return
-        return cls(rows, header=header, css_class=css_class, tostr_kwargs=tostr_kwargs, subheader=subheader)
+        return cls(rows, header=header, css_class=css_class, tostr_kwargs=tostr_kwargs, subheader=subheader, wrap=wrap)
 
     # -----------------------------------------------------------------
 
@@ -1827,8 +1837,8 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None, extra_column=None,
-                   extra_column_label=None, strike_rows=None, bold_rows=None, italic_rows=None):
+    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None, extra_columns=None,
+                   extra_column_labels=None, strike_rows=None, bold_rows=None, italic_rows=None, wrap=True):
 
         """
         This function ...
@@ -1837,11 +1847,12 @@ class SimpleTable(object):
         :param bgcolors:
         :param tostr_kwargs:
         :param column_names:
-        :param extra_column:
-        :param extra_column_label:
+        :param extra_columns:
+        :param extra_column_labels:
         :param strike_rows:
         :param bold_rows:
         :param italic_rows:
+        :param wrap:
         :return:
         """
 
@@ -1849,33 +1860,37 @@ class SimpleTable(object):
         if column_names is None: column_names = table.column_names
 
         # Check
-        if extra_column_label is not None and extra_column is None: raise ValueError("Extra column label is specified but extra column is not given")
+        if extra_column_labels is not None and extra_columns is None: raise ValueError("Extra column labels are specified but extra columns are not given")
 
         # Get rows
         #rows = table.as_tuples(add_units=False)
         rows = table.as_lists(add_units=False)
-        if extra_column is not None:
-            for i in range(len(rows)): rows[i].append(extra_column[i])
+        if extra_columns is not None:
+            for column in extra_columns:
+                for i in range(len(rows)): rows[i].append(column[i])
 
         # Set header
         header = column_names
-        if extra_column is not None:
-            label = extra_column_label if extra_column_label is not None else ""
-            header.append(label)
+        if extra_columns is not None:
+            for column_label in extra_column_labels:
+                label = column_label if column_label is not None else ""
+                header.append(label)
 
         # Set subheader
         subheader = table.unit_strings
-        if extra_column is not None: subheader.append("")
+        if extra_columns is not None:
+            for column in extra_columns: subheader.append("")
 
         # Create the HTML table
         return cls(rows, header=header, subheader=subheader, css_class=css_class, bgcolors=bgcolors,
-                   tostr_kwargs=tostr_kwargs, strike_rows=strike_rows, bold_rows=bold_rows, italic_rows=italic_rows)
+                   tostr_kwargs=tostr_kwargs, strike_rows=strike_rows, bold_rows=bold_rows, italic_rows=italic_rows, wrap=wrap)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_composites(cls, composites, css_class=None, bgcolors=None, tostr_kwargs=None, labels=None, label="-",
-                        extra_column=None, extra_column_label=None, strike_rows=None, bold_rows=None, italic_rows=None):
+                        extra_columns=None, extra_column_labels=None, strike_rows=None, bold_rows=None, italic_rows=None,
+                        wrap=True):
 
         """
         This function ...
@@ -1890,6 +1905,7 @@ class SimpleTable(object):
         :param strike_rows:
         :param bold_rows:
         :param italic_rows:
+        :param wrap:
         :return:
         """
 
@@ -1898,14 +1914,15 @@ class SimpleTable(object):
 
         # Create the HTML table
         return cls.from_table(table, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs,
-                              column_names=table.descriptions, extra_column=extra_column,
-                              extra_column_label=extra_column_label, strike_rows=strike_rows, bold_rows=bold_rows,
-                              italic_rows=italic_rows)
+                              column_names=table.descriptions, extra_columns=extra_columns,
+                              extra_column_labels=extra_column_labels, strike_rows=strike_rows, bold_rows=bold_rows,
+                              italic_rows=italic_rows, wrap=wrap)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_composite(cls, composite, css_class=None, bgcolors=None, tostr_kwargs=None, key_label="Property", value_label="Value"):
+    def from_composite(cls, composite, css_class=None, bgcolors=None, tostr_kwargs=None, key_label="Property",
+                       value_label="Value"):
 
         """
         This function ...

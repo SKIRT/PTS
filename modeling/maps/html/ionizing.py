@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.basics.log import log
 from ....core.tools import filesystem as fs
-from ..selectioncomponent import MapsSelectionComponent
+from .all import ionizing_name
+from .component import ComponentMapsPageGenerator
 
 # -----------------------------------------------------------------
 
-class IonizingMapsPageGenerator(MapsSelectionComponent):
+class IonizingMapsPageGenerator(ComponentMapsPageGenerator):
 
     """
     This class...
@@ -36,72 +36,88 @@ class IonizingMapsPageGenerator(MapsSelectionComponent):
         # Call the constructor of the base class
         super(IonizingMapsPageGenerator, self).__init__(*args, **kwargs)
 
-
-
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    @property
+    def map_names(self):
 
         """
-        This function ...
-        :param kwargs:
+        Thisf unction ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-        # 2. Load the maps
-        self.load_maps()
-
-        # Set the paths
-        self.set_paths()
-
-        # 3. Process the maps
-        self.process_maps()
-
-        # 4. Make plots
-        self.make_plots()
-
-        # 5. Make sliders
-        self.make_sliders()
-
-        # 5. Generate the page
-        self.generate_page()
-
-        # 6. Writing
-        self.write()
-
-        # Show
-        if self.config.show: self.show()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(IonizingMapsPageGenerator, self).setup(**kwargs)
-
-        # Set the number of allowed open file handles
-        fs.set_nallowed_open_files(self.config.nopen_files)
-
-    # -----------------------------------------------------------------
+        return self.ionizing_map_names
 
     # -----------------------------------------------------------------
 
     @property
-    def maps_sub_path(self):
+    def map_paths(self):
 
         """
         This function ...
         :return:
         """
 
-        return None
+        return self.ionizing_map_paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, ionizing_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def component_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_map_origins
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sub_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ionizing_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_maps_html_page_path
 
 # -----------------------------------------------------------------

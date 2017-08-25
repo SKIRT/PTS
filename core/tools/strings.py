@@ -37,6 +37,32 @@ multiplication = "\u00D7".decode("utf8")
 
 # -----------------------------------------------------------------
 
+def split_at_last(string, pattern):
+
+    """
+    This function ...
+    :param string:
+    :param pattern:
+    :return:
+    """
+
+    return string.rsplit(pattern, 1)
+
+# -----------------------------------------------------------------
+
+def split_at_first(string, pattern):
+
+    """
+    This function ...
+    :param string:
+    :param pattern:
+    :return:
+    """
+
+    return string.split('mango', 1)
+
+# -----------------------------------------------------------------
+
 def noccurences(string, character):
 
     """
