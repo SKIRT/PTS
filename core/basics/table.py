@@ -336,6 +336,7 @@ class SmartTable(Table):
         for colname in table.colnames:
             key = colname + " mask"
             if key not in table.meta: continue
+            if len(table) != len(table.meta[key]): raise IOError("Length of the table does not correspond to the length of the masks")
             for index in range(len(table)):
                 table[colname].mask[index] = table.meta[key][index]
             del table.meta[key]

@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
 from pts.modeling.maps.collection import MapsCollection
 from pts.core.remote.host import find_host_ids
+from pts.modeling.config.maps import definition
 
 # -----------------------------------------------------------------
 
@@ -38,9 +38,6 @@ ionizing_map_names = ionizing_map_paths.keys()
 dust_map_names = dust_map_paths.keys()
 
 # -----------------------------------------------------------------
-
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Steps
 definition.add_flag("steps", "save the results of intermediate steps", True)

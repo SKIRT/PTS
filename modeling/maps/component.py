@@ -165,7 +165,7 @@ class MapsComponent(GalaxyModelingComponent):
         super(MapsComponent, self).setup(**kwargs)
 
         # Perform some checks to see whether previous output is present
-        self.perform_checks()
+        if self.config.checks: self.perform_checks()
 
     # -----------------------------------------------------------------
 
@@ -235,7 +235,7 @@ class MapsComponent(GalaxyModelingComponent):
             path = self.sub_path_for_command(command_name)
             name = fs.name(path)
 
-            # Check whether teh path is present and not empty
+            # Check whether the path is present and not empty
             if not fs.is_directory(path):
 
                 # Warning

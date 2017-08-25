@@ -5,15 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+# Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# Sigma levels
-definition.add_positional_optional("sigma_levels", "real_list", "different sigma levels for which to generate significance masks", [1., 2., 3., 4.])
+# Flags
+definition.add_flag("checks", "perform checks", True)
 
 # -----------------------------------------------------------------

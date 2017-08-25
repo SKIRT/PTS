@@ -6,12 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.maps import definition
 
 # -----------------------------------------------------------------
-
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add optional
 #definition.add_optional("ssfr_colour", "string", "SSFR colour to use", default="FUV-H", choices=["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"])

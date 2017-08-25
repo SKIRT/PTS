@@ -1954,6 +1954,27 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def is_normalized(self, to=1., rtol=1.e-5, atol=1.e-8):
+
+        """
+        This function ...
+        :param to:
+        :param rtol
+        :parma atol:
+        :return:
+        """
+
+        # In some unit
+        if hasattr(to, "unit"): # quantity
+
+            total = self.sum() * self.unit
+            return np.isclose(total.to(to.unit).value, to.value, atol=atol, rtol=rtol)
+
+        # Numerically
+        else: return np.isclose(self.sum(), to, atol=atol, rtol=rtol)
+
+    # -----------------------------------------------------------------
+
     def convolved(self, *args, **kwargs):
 
         """

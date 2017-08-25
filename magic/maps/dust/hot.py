@@ -252,6 +252,9 @@ class HotDustMapsMaker(Configurable):
             frames = NamedFrameList(old=normalized_old, mips24=self.mips24)
             frames.convolve_and_rebin()
 
+            # CHECK IF OLD IS STILL NORMALIZED
+            if not normalized_old.is_normalized(): raise RuntimeError("Normalization of old stellar map failed")
+
             # Loop over the different factors
             for factor in self.factors:
 
