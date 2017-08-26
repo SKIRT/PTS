@@ -21,6 +21,7 @@ from pts.magic.core.rgba import alpha_methods
 
 # -----------------------------------------------------------------
 
+default_alpha_method = "absolute"
 scales = ["log", "sqrt"]
 
 # -----------------------------------------------------------------
@@ -30,7 +31,7 @@ definition.add_required("filename", "file_path", "path of the FITS file")
 definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("colours", "string", "colour or colour scale", "red")
-definition.add_optional("alpha", "string", "alpha method", "absolute", choices=alpha_methods)
+definition.add_optional("alpha", "string", "alpha method", default_alpha_method, suggestions=alpha_methods)
 definition.add_optional("output", "string", "output filepath", letter="o")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
 definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels")
@@ -62,7 +63,12 @@ if config.max_npixels is not None:
 
     # Determine downsample factor
     if frame.xsize > config.max_npixels or frame.ysize > config.max_npixels:
-        config.downsample = max(frame.xsize, frame.ysize) / float(config.max_npixels)
+
+        factor = max(frame.xsize, frame.ysize) / float(config.max_npixels)
+        # Make integer
+        #numbers.round_up_to_int(factor)
+        #if factor < 2.: factor = 2
+        config.downsample = factor
 
 # Downsample
 if config.downsample is not None:

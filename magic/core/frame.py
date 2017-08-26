@@ -57,7 +57,11 @@ from ..region.region import PixelRegion
 # -----------------------------------------------------------------
 
 nan_value = float("nan")
-inf_values = [float("inf"), float("-inf")]
+
+# -----------------------------------------------------------------
+
+nan_values = [float("nan"), np.NaN]
+inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf]
 zero_value = 0.0
 
 # -----------------------------------------------------------------
@@ -974,7 +978,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.where(nan_value)
+        #from .mask import union
+        #return union(*[self.where(value) for value in nan_values])
+        return newMask(np.isnan(self.data))
 
     # -----------------------------------------------------------------
 
@@ -1021,8 +1027,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        from .mask import union
-        return union(self.where(float("inf")), self.where(float("-inf")))
+        #from .mask import union
+        #return union(*[self.where(value) for value in inf_values])
+        return newMask(np.isinf(self.data))
 
     # -----------------------------------------------------------------
 
@@ -1315,7 +1322,14 @@ class Frame(NDDataArray):
         else: raise ValueError("Argument must be pixel region or mask")
 
         # Return the number of nan pixels
-        return np.sum(np.equal(self.data[mask], nan_value))
+        #return np.sum(np.equal(self.data[mask], nan_value))
+
+        # 2nd attempt
+        #array = self.data[mask]
+        #from .mask import union
+        #return np.sum(union(*[np.equal(array, value) for value in nan_values]))
+
+        return np.sum(np.isnan(self.data[mask]))
 
     # -----------------------------------------------------------------
 
@@ -1333,7 +1347,14 @@ class Frame(NDDataArray):
         else: raise ValueError("Argument must be pixel region or mask")
 
         # Return the number of nan pixels
-        return np.sum(np.equal(self.data[mask], inf_values[0]) + np.equal(self.data[mask], inf_values[1]))
+        #return np.sum(np.equal(self.data[mask], inf_values[0]) + np.equal(self.data[mask], inf_values[1]))
+
+        # 2nd attempt
+        #array = self.data[mask]
+        #from .mask import union
+        #return np.sum(union(*[np.equal(array, value) for value in inf_values]))
+
+        return np.sum(np.isinf(self.data[mask]))
 
     # -----------------------------------------------------------------
 
@@ -2354,8 +2375,20 @@ class Frame(NDDataArray):
         # Check if factor is 1.
         if factor == 1: return
 
+        #print(self.nans.data)
+        #print(self.data[0,0], type(self.data[0,0]), self.data[0,0] is nan_value)
+
+        # REMOVE NANS?
+        self.replace_nans(zero_value)
+        self.replace_infs(zero_value)
+
+        #print(factor)
+        #print(self._data)
+        #print(self.nnans, self.ninfs)
+
         # Calculate the downsampled array
         new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
+        #print(new_data)
 
         new_xsize = new_data.shape[1]
         new_ysize = new_data.shape[0]

@@ -637,7 +637,9 @@ class DataPageGenerator(HTMLPageComponent):
 
             # Get image info
             path = self.additional_image_paths[name]
-            if fs.is_file(path): info = get_image_info_from_header_file(name, path)
+            if fs.is_file(path):
+                print(name, path)
+                info = get_image_info_from_header_file(name, path)
             else: info = get_image_info_from_remote_header_file(name, path, self.session)
 
             if name in self.previews: thumbnails.append(html.center(self.previews[name]))

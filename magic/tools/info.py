@@ -212,7 +212,7 @@ def get_image_info_from_header(image_name, header, **kwargs):
     nxpixels = header["NAXIS1"]
     nypixels = header["NAXIS2"]
 
-    path = kwargs.pop("image_path", False)
+    path = kwargs.pop("image_path", None)
 
     # Set the info
     info = OrderedDict()
