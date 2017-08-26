@@ -1609,7 +1609,7 @@ def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False, origins
     """
 
     paths = get_data_image_paths(modeling_path, origins=origins, not_origins=not_origins)
-    paths.update(**get_cached_data_image_paths(modeling_path, host_id, lazy=lazy, attached=attached))
+    paths.update(**get_cached_data_image_paths(modeling_path, host_id, origins=origins, not_origins=not_origins, lazy=lazy, attached=attached))
     return paths
 
 # -----------------------------------------------------------------
@@ -1632,12 +1632,14 @@ def get_data_image_paths_with_cached_for_origin(modeling_path, origin, host_id, 
 
 # -----------------------------------------------------------------
 
-def get_cached_data_image_paths(modeling_path, host_id, lazy=False, attached=False):
+def get_cached_data_image_paths(modeling_path, host_id, origins=None, not_origins=None, lazy=False, attached=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
+    :param origins:
+    :param not_origins:
     :param lazy:
     :param attached:
     :return:
@@ -1661,6 +1663,13 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False, attached=Fal
     # Loop over the images
     for image_path, image_name in remote.files_in_path(remote_data_path, extension="fits", not_contains="poisson",
                                                    returns=["path", "name"], recursive=True): #, recursion_level=1):
+
+        # Determine the origin
+        origin = fs.name(fs.directory_of(image_path))
+
+        # Check
+        if origins is not None and origin not in origins: continue
+        if not_origins is not None and origin in not_origins: continue
 
         # Get filter name
         if lazy:

@@ -632,6 +632,8 @@ class DataPageGenerator(HTMLPageComponent):
         infos = []
         thumbnails = []
 
+        #print(self.additional_paths)
+
         # Loop over the additional images
         for name in self.additional_paths:
 
