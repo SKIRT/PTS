@@ -198,7 +198,9 @@ def execute_pts_remote(*args, **kwargs):
 
     # If errors popped up
     for line in output:
-        if "error: unrecognized arguments:" in line: raise ValueError("Invalid arguments: " + line.split("unrecognized arguments: ")[1])
+        if "error: unrecognized argument:" in line: raise ValueError("Invalid argument (possibly because of outdated PTS version?): [" + line.split("unrecognized argument: ")[1] + "]")
+        if "error: unrecognized arguments:" in line: raise ValueError("Invalid arguments (possibly because of outdated PTS version?): [" + line.split("unrecognized arguments: ")[1] + "]")
+        if "error: argument" in line and "invalid" in line: raise ValueError("Invalid argument value: " + line.split("value: ")[1])
     if "Error:" in output[-1]: raise RuntimeError(output[-1])
 
     # Return the output lines

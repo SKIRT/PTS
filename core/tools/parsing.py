@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import re
 import warnings
+from decimal import Decimal
 #import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -235,6 +236,46 @@ def boolean(entry):
 
 # -----------------------------------------------------------------
 
+def decimal(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return Decimal(argument)
+
+# -----------------------------------------------------------------
+
+def positive_decimal(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = decimal(argument)
+    if value < 0: raise ValueError("Value is smaller than zero")
+    return value
+
+# -----------------------------------------------------------------
+
+def negative_decimal(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = decimal(argument)
+    if value > 0: raise ValueError("Value is greater than zero")
+    return value
+
+# -----------------------------------------------------------------
+
 def integer(argument):
 
     """
@@ -243,7 +284,19 @@ def integer(argument):
     :return:
     """
 
-    return int(argument)
+    try: return int(argument)
+    except ValueError: # ValueError: invalid literal for int() with base 10:
+
+        from . import numbers
+
+        # Parse as decimal number (to keep precision)
+        value = decimal(argument)
+
+        # Check whether integer
+        if not numbers.is_integer(value): raise ValueError("Not an integer number")
+
+        # Convert to int and return
+        return int(value)
 
 # -----------------------------------------------------------------
 
