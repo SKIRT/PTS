@@ -196,7 +196,9 @@ def execute_pts_remote(*args, **kwargs):
     # Execute
     output = remote.execute(command, show_output=show_output, cwd=cwd)
 
-    # If error popped up
+    # If errors popped up
+    for line in output:
+        if "error: unrecognized arguments:" in line: raise ValueError("Invalid arguments: " + line.split("unrecognized arguments: ")[1])
     if "Error:" in output[-1]: raise RuntimeError(output[-1])
 
     # Return the output lines
