@@ -28,6 +28,7 @@ from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
 from ...core.units.unit import parse_unit as u
 from ...core.units.unit import parse_quantity
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -106,7 +107,7 @@ def get_image_info_strings(image_name, frame, **kwargs):
 
 # -----------------------------------------------------------------
 
-def get_image_info_from_remote_header_file(image_name, frame_path, session, **kwargs):
+def get_image_info_from_remote_header_file(image_name, frame_path, session_or_remote, **kwargs):
 
     """
     This function ...
@@ -116,6 +117,14 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session, **kw
     :param kwargs:
     :return:
     """
+
+    from ...core.remote.remote import Remote
+    from ...core.remote.python import RemotePythonSession
+
+    # Make session
+    if isinstance(session_or_remote, Remote): session = session_or_remote.start_python_session(output_path=session_or_remote.pts_temp_path, attached=True)
+    elif isinstance(session_or_remote, RemotePythonSession): session = session_or_remote
+    else: raise ValueError("Invalid value for 'session_or_remote': " + str(session_or_remote))
 
     # Import
     session.import_package("getheader", from_name="astropy.io.fits")
@@ -129,13 +138,16 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session, **kw
     filter_name = session.get_simple_variable("str(fltr)")
 
     # Get wavelength
-    fltr = parse_filter(filter_name)
-    wavelength = fltr.wavelength
+    if strings.unquote(filter_name) == "None": fltr = wavelength = None
+    else:
+        fltr = parse_filter(filter_name)
+        wavelength = fltr.wavelength
 
     # Get unit
     session.send_line("unit = headers.get_unit(header)")
     unit_string = session.get_simple_variable("str(unit)")
-    unit = u(unit_string)
+    if strings.unquote(unit_string) == "None": unit = None
+    else: unit = u(unit_string)
 
     # Get npixels
     nxpixels = session.get_simple_variable('header["NAXIS1"]')
@@ -143,11 +155,15 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session, **kw
 
     # Get the pixelscale
     session.send_line('pixelscale = headers.get_pixelscale(header)')
-    pixelscale = parse_quantity(session.get_simple_variable('str(pixelscale)'))
+    pixelscale_string = session.get_simple_variable('str(pixelscale)')
+    if strings.unquote(pixelscale_string) == "None": pixelscale = None
+    else: pixelscale = parse_quantity(pixelscale_string)
 
     # Get the FWHM
-    session.get_line('fwhm = headers.get_fwhm(header)')
-    fwhm = parse_quantity(session.get_simple_variable('str(fwhm)'))
+    session.send_line('fwhm = headers.get_fwhm(header)')
+    fwhm_string = session.get_simple_variable('str(fwhm)')
+    if strings.unquote(fwhm_string) == "None": fwhm = None
+    else: fwhm = parse_quantity(fwhm_string)
 
     # Set the info
     info = OrderedDict()

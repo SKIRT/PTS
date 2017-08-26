@@ -633,14 +633,13 @@ class DataPageGenerator(HTMLPageComponent):
         thumbnails = []
 
         # Loop over the additional images
-        for name in self.additional_image_paths:
+        for name in self.additional_paths:
 
             # Get image info
-            path = self.additional_image_paths[name]
-            if fs.is_file(path):
-                print(name, path)
-                info = get_image_info_from_header_file(name, path)
-            else: info = get_image_info_from_remote_header_file(name, path, self.session)
+            path = self.additional_paths[name]
+            if fs.is_file(path): info = get_image_info_from_header_file(name, path)
+            elif self.session is not None: info = get_image_info_from_remote_header_file(name, path, self.session)
+            else: info = get_image_info_from_remote_header_file(name, path, self.remote)
 
             if name in self.previews: thumbnails.append(html.center(self.previews[name]))
             elif name in self.thumbnails: thumbnails.append(html.center(self.thumbnails[name]))

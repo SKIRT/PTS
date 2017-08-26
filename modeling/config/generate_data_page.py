@@ -29,6 +29,7 @@ modeling_path = verify_modeling_cwd()
 # -----------------------------------------------------------------
 
 # Flags
+definition.add_flag("replot", "replot", False)
 definition.add_flag("use_session", "use remote python session to create the images", False)
 
 # Group
