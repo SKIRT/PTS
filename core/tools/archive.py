@@ -31,6 +31,51 @@ extensions = ["bz2", "zip", "gz"]
 
 # -----------------------------------------------------------------
 
+# Signatures for different compressed file formats
+signatures = dict()
+signatures["\x1f\x8b\x08"] = "gz"
+signatures["\x42\x5a\x68"] = "bz2"
+signatures["\x50\x4b\x03\x04"] = "zip"
+signatures["\x52\x61\x72\x21\x1a\x07\x00"] = "rar4"    # 52 61 72 21 1A 07 00
+signatures["\x52\x61\x72\x21\x1a\x07\x01\x00"] = "rar5" # 52 61 72 21 1A 07 01 00
+
+# -----------------------------------------------------------------
+
+max_signature_length = max(len(x) for x in signatures)
+
+# -----------------------------------------------------------------
+
+def is_compressed(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    return compression_type(filepath) is not None
+
+# -----------------------------------------------------------------
+
+def compression_type(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    #
+    file_start = fs.read_start(filepath, max_signature_length)
+
+    for magic, filetype in signatures.items():
+        if file_start.startswith(magic):
+            return filetype
+
+    return None
+
+# -----------------------------------------------------------------
+
 def is_archive(filepath):
 
     """

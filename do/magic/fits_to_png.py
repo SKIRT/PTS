@@ -33,6 +33,8 @@ definition.add_optional("colours", "string", "colour or colour scale", "red")
 definition.add_optional("alpha", "string", "alpha method", "absolute", choices=alpha_methods)
 definition.add_optional("output", "string", "output filepath", letter="o")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
+definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels")
+definition.add_optional("downsample", "positive_real", "downsample with this factor")
 definition.add_flag("show", "show after creating", False)
 config = parse_arguments("fits_to_png", definition)
 
@@ -52,6 +54,24 @@ else:
     # Determine the path
     name = fs.strip_extension(fs.name(config.filename))
     filepath = fs.absolute_path(name + ".png")
+
+# -----------------------------------------------------------------
+
+# Max npixels
+if config.max_npixels is not None:
+
+    # Determine downsample factor
+    if frame.xsize > config.max_npixels or frame.ysize > config.max_npixels:
+        config.downsample = max(frame.xsize, frame.ysize) / float(config.max_npixels)
+
+# Downsample
+if config.downsample is not None:
+
+    # Inform the user
+    log.info("Downsampling the image ...")
+
+    # Downsample
+    frame.downsample(config.downsample)
 
 # -----------------------------------------------------------------
 

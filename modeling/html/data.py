@@ -20,6 +20,7 @@ from ...core.basics.log import log
 from .component import HTMLPageComponent, sortable_table_class
 from ...core.tools import html
 from ...dustpedia.core.properties import DustPediaProperties
+from ...dustpedia.core.database import DustPediaDatabase
 from ...dustpedia.core.database import get_account
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
@@ -32,11 +33,18 @@ from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page
 from ...core.filter.broad import BroadBandFilter
 from ...core.tools.utils import lazyproperty
 from ...magic.tools.info import get_image_info_from_header_file, get_image_info_from_remote_header_file
+from ..data.component import galex, sdss, twomass, spitzer, wise, herschel, planck, other, halpha, data_origins
+from ...core.tools import strings
+from ...magic.tools import headers
 
 # -----------------------------------------------------------------
 
 page_width = 600
 thumbnail_title = "Thumbnail"
+
+# -----------------------------------------------------------------
+
+username, password = get_account()
 
 # -----------------------------------------------------------------
 
@@ -56,6 +64,10 @@ class DataPageGenerator(HTMLPageComponent):
 
         # Call the constructor of the base class
         super(DataPageGenerator, self).__init__(*args, **kwargs)
+
+        # The image paths
+        self.paths = None
+        self.additional_paths = None
 
         # The properties table
         self.properties_table = None
@@ -130,6 +142,9 @@ class DataPageGenerator(HTMLPageComponent):
         # Setup
         self.setup(**kwargs)
 
+        # Get the image paths
+        self.get_image_paths()
+
         # Make plots
         self.make_plots()
 
@@ -166,6 +181,80 @@ class DataPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
+    def get_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the image paths ...")
+
+        # Get paths and additional paths
+        self.paths = self.get_data_image_paths_with_cached(lazy=True, not_origins=[other, halpha], attached=True)
+        # paths = self.get_data_image_paths_with_cached_for_origin(, lazy=True)
+        self.additional_paths = self.get_data_image_paths_with_cached(lazy=True, origins=[other, halpha], attached=True)
+
+        # Present filenames
+        filenames = {fs.name(filepath): name for name, filepath in self.paths.items()}
+
+        # Get the image names and URLs from the DustPedia archive
+        database = DustPediaDatabase()
+        database.login(username, password)
+        all_urls = database.get_image_names_and_urls(self.ngc_name_nospaces, error_maps=False)
+
+        #print("filenames", filenames)
+
+        # Check the paths
+        # Loop over all DustPedia images
+        for name in all_urls:
+
+            #print(name)
+            #continue
+
+            # Skip error maps: normally shouldn't happen!
+            if "_Error" in name: continue
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Find name in paths dictionary
+            if name in filenames: continue # OK
+
+            # Parse the filter
+            fltr = headers.get_filter(name)
+            if fltr is None: raise ValueError("Could not find the filter for the '" + name + "' image")
+            filter_name = str(fltr)
+
+            # Error is missing
+            if not self.config.fetch_missing: raise IOError("The '" + filter_name + "' image is missing from the data/images directory (and remote location)")
+
+            # Warning
+            log.warning("The '" + filter_name + "' image is missing from the data/images directory: fetching ...")
+
+            # Not present
+
+            # Add url to the dictionary
+            if "pacs" in name.lower() or "spire" in name.lower(): origin = herschel
+
+            # Not Herschel
+            else: origin = strings.contains_which(name, data_origins)
+
+            # Determine local directory for origin
+            origin_path = fs.join(self.data_images_path, origin)
+
+            # Determine the path to the image file
+            path = fs.join(origin_path, name)
+
+            # DOWNLOAD
+            database.download_image_from_url(all_urls[name], path)
+
+            # Set the path
+            self.paths[filter_name] = path
+
+    # -----------------------------------------------------------------
+
     def make_plots(self):
 
         """
@@ -178,6 +267,9 @@ class DataPageGenerator(HTMLPageComponent):
 
         # Make image plots
         self.make_image_plots()
+
+        # Make additional image plots
+        self.make_additional_image_plots()
 
     # -----------------------------------------------------------------
 
@@ -226,19 +318,51 @@ class DataPageGenerator(HTMLPageComponent):
         log.debug("Making a plot for the '" + name + "' image ...")
 
         # Local
-        if fs.is_file(path): Frame.from_file(path).saveto_png(output_path, colours=colour)
+        if fs.is_file(path):
+
+            # Load the frame
+            frame = Frame.from_file(path)
+
+            # Downsample
+            if frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
+                downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
+                frame.downsample(downsample_factor)
+
+            # Plot
+            frame.saveto_png(output_path, colours=self.config.colours, interval=self.config.interval, scale=self.config.scale,
+                         alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha)
 
         # Remote session
-        elif self.session is not None: RemoteFrame.from_remote_file(path, self.session).saveto_png(output_path, colours=colour)
+        elif self.session is not None:
+
+            # Check if the file exists remotely
+            if not self.session.is_file(path): raise ValueError("The file [" + path + "] does not exist locally or remotely")
+
+            # Load the frame
+            frame = RemoteFrame.from_remote_file(path, self.session)
+
+            # Downsample
+            if frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
+                downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
+                frame.downsample(downsample_factor)
+
+            # Plot
+            frame.saveto_png(output_path, colours=self.config.colours, interval=self.config.interval, scale=self.config.scale,
+                         alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha)
 
         # Remote
         elif self.remote is not None:
+
+            # Check if the file exists remotely
+            if not self.remote.is_file(path): raise ValueError("The file [" + path + "] does not exist locally or remotely")
 
             # Temporary remote path
             temp_output_path = fs.join(self.remote.pts_temp_path, name + ".png")
 
             # Run the PTS command to create the PNG
-            execute_pts_remote(self.remote, "fits_to_png", path, output=temp_output_path, show=False, show_output=True, colours=colour)
+            execute_pts_remote(self.remote, "fits_to_png", path, output=temp_output_path, show=False, show_output=True,
+                               colours=self.config.colours, interval=self.config.interval, scale=self.config.scale,
+                               alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha, max_npixels=self.config.max_npixels)
 
             # Check whether the remote file exists
             if not self.remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
@@ -264,11 +388,10 @@ class DataPageGenerator(HTMLPageComponent):
         log.info("Making the image plots ...")
 
         # Loop over the images
-        paths = self.get_data_image_paths_with_cached(lazy=True, not_origins=["Other"])
-        for name in paths:
+        for name in self.paths:
 
             # Get the image path
-            path = paths[name]
+            path = self.paths[name]
 
             # Determine the path
             output_path = fs.join(self.images_path, name + ".png")
@@ -284,12 +407,23 @@ class DataPageGenerator(HTMLPageComponent):
             # Make image plot
             self.make_image_plot(name, path, output_path)
 
+    # -----------------------------------------------------------------
+
+    def make_additional_image_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the additional image plots ...")
+
         # Loop over the additional images
-        paths = self.get_data_image_paths_with_cached_for_origin("Other", lazy=True)
-        for name in paths:
+        for name in self.additional_paths:
 
             # Get image path
-            path = paths[name]
+            path = self.additional_paths[name]
 
             # Determine the path
             output_path = fs.join(self.images_path, name + ".png")
@@ -410,8 +544,7 @@ class DataPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables for each observatory ...")
 
-        # Get DustPedia username and password
-        username, password = get_account()
+        # Get DustPedia data properties
         properties = DustPediaProperties()
 
         # Make tables
@@ -457,8 +590,7 @@ class DataPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making table for all observatories ...")
 
-        # Get DustPedia username and password
-        username, password = get_account()
+        # Get DustPedia data properties
         properties = DustPediaProperties()
 
         # Get table

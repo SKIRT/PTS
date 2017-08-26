@@ -1180,30 +1180,33 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_data_image_paths_with_cached(self, lazy=False, origins=None, not_origins=None):
+    def get_data_image_paths_with_cached(self, lazy=False, origins=None, not_origins=None, attached=False):
 
         """
         This function ...
         :param lazy:
         :parma origins:
         :parma not_origins:
+        :param attached:
         :return:
         """
 
-        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy, origins=origins, not_origins=not_origins)
+        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy, origins=origins,
+                                                not_origins=not_origins, attached=attached)
 
     # -----------------------------------------------------------------
 
-    def get_data_image_paths_with_cached_for_origin(self, origin, lazy=False):
+    def get_data_image_paths_with_cached_for_origin(self, origin, lazy=False, attached=False):
 
         """
         This function ...
         :param origin:
         :param lazy:
+        :param attached:
         :return:
         """
 
-        return get_data_image_paths_with_cached_for_origin(self.config.path, origin, self.cache_host_id, lazy=lazy)
+        return get_data_image_paths_with_cached_for_origin(self.config.path, origin, self.cache_host_id, lazy=lazy, attached=attached)
 
     # -----------------------------------------------------------------
 
@@ -1593,7 +1596,7 @@ def get_data_image_paths_for_origin(modeling_path, origin):
 
 # -----------------------------------------------------------------
 
-def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False, origins=None, not_origins=None):
+def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False, origins=None, not_origins=None, attached=False):
 
     """
     This function ...
@@ -1606,12 +1609,12 @@ def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False, origins
     """
 
     paths = get_data_image_paths(modeling_path, origins=origins, not_origins=not_origins)
-    paths.update(**get_cached_data_image_paths(modeling_path, host_id, lazy=lazy))
+    paths.update(**get_cached_data_image_paths(modeling_path, host_id, lazy=lazy, attached=attached))
     return paths
 
 # -----------------------------------------------------------------
 
-def get_data_image_paths_with_cached_for_origin(modeling_path, origin, host_id, lazy=False):
+def get_data_image_paths_with_cached_for_origin(modeling_path, origin, host_id, lazy=False, attached=False):
 
     """
     This function ...
@@ -1619,28 +1622,30 @@ def get_data_image_paths_with_cached_for_origin(modeling_path, origin, host_id, 
     :param origin:
     :param host_id:
     :param lazy:
+    :param attached:
     :return:
     """
 
     paths = get_data_image_paths_for_origin(modeling_path, origin)
-    paths.update(**get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=lazy))
+    paths.update(**get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=lazy, attached=attached))
     return paths
 
 # -----------------------------------------------------------------
 
-def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
+def get_cached_data_image_paths(modeling_path, host_id, lazy=False, attached=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
     :param lazy:
+    :param attached:
     :return:
     """
 
     # Create the remote and start (detached) python session
     remote = Remote(host_id=host_id)
-    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
+    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path, attached=attached)
     else: session = None
 
     # Load the environment
@@ -1663,9 +1668,11 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
             fltr = headers.get_filter(image_name)
             if fltr is None:
                 #raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
-                log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
-                continue
-            name = str(fltr)
+                #log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
+                #continue
+                if session is None: session = remote.start_python_session(output_path=remote.pts_temp_path, attached=attached)
+                name = get_filter_name(image_path, session)
+            else: name = str(fltr)
         else: name = get_filter_name(image_path, session)
 
         if name is None: raise RuntimeError("Could not determine the filter name for the '" + image_name + "' image")
@@ -1678,7 +1685,7 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
 
 # -----------------------------------------------------------------
 
-def get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=False):
+def get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=False, attached=False):
 
     """
     This function ...
@@ -1686,12 +1693,13 @@ def get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=
     :param origin:
     :param host_id:
     :param lazy:
+    :param attached:
     :return:
     """
 
     # Create the remote and start (detached) python session
     remote = Remote(host_id=host_id)
-    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
+    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path, attached=attached)
     else: session = None
 
     # Load the environment
@@ -1717,8 +1725,10 @@ def get_cached_data_image_paths_for_origin(modeling_path, origin, host_id, lazy=
             fltr = headers.get_filter(image_name)
             if fltr is None:
                 # raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
-                log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
-                continue
+                #log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
+                #continue
+                if session is None: session = remote.start_python_session(output_path=remote.pts_temp_path, attached=attached)
+                name = get_filter_name(image_path, session)
             name = str(fltr)
         else: name = get_filter_name(image_path, session)
 

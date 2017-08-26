@@ -195,7 +195,7 @@ def get_filter_name(frame_path, session):
     session.import_package("get_filter", from_name="pts.magic.tools.headers")
     name = fs.name(frame_path[:-5])
     # fltr = headers.get_filter(fs.name(frame_path[:-5]), header)
-    return session.get_simple_variable("str(headers.get_filter('" + name + "', header))")
+    return session.get_simple_variable("str(get_filter('" + name + "', header))")
 
 # -----------------------------------------------------------------
 

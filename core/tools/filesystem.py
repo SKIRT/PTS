@@ -1276,6 +1276,21 @@ def rename_file(directory, original_name, new_name):
 
 # -----------------------------------------------------------------
 
+def rename_file_path(file_path, new_name):
+
+    """
+    This function ...
+    :param file_path:
+    :param new_name:
+    :return:
+    """
+
+    directory = directory_of(file_path)
+    original_name = name(file_path)
+    return rename_file(directory, original_name, new_name)
+
+# -----------------------------------------------------------------
+
 def remove_extension(filepath):
 
     """
@@ -2365,5 +2380,17 @@ def backup_files_in_directory(path, suffix="backup", extension=None, contains=No
 
     paths = files_in_path(path, extension=extension, contains=contains)
     return backup_files(paths, suffix=suffix)
+
+# -----------------------------------------------------------------
+
+def read_start(path, ncharacters):
+
+    """
+    Thisfunction ...
+    :param ncharacters:
+    :return:
+    """
+
+    with open(path) as f: return f.read(ncharacters)
 
 # -----------------------------------------------------------------

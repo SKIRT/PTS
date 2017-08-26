@@ -448,10 +448,8 @@ class DustPediaDatabase(object):
             if "_Error" in name and not error_maps: continue
 
             # Check whether this file is a compressed image
-            if archive.is_archive(name):
-
-                # Get the bare name (without .gz)
-                name = archive.bare_name(name)
+            # Get the bare name (without .gz)
+            if archive.is_archive(name): name = archive.bare_name(name)
 
             # Add an entry to the dictionary
             urls[name] = url
@@ -931,32 +929,60 @@ class DustPediaDatabase(object):
         :return:
         """
 
+        # Download
+        filepath = network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+        # Check if compressed
+        if archive.is_archive(filepath): # based on extension
+
+            # Not compressed
+            if not archive.is_compressed(filepath): # NOT ACTUALLY COMPRESSED
+
+                # Warning
+                log.warning("Image is not compressed but extension is '" + fs.get_extension(filepath) + "': renaming ...")
+
+                # Determine uncompressed name
+                name = archive.bare_name(filepath)
+
+                # Rename the file
+                fs.rename_file_path(filepath, name)
+
+            # Compressed
+            else:
+
+                # Debugging
+                log.debug("Decompressing ...")
+
+                # Decompress
+                archive.decompress_file_in_place(filepath, remove=True)
+
         # Get the filename
-        filename = url.split("imageName=")[1].split("&")[0]
+        # filename = url.split("imageName=")[1].split("&")[0]
 
-        # Download archive, decompress
-        if archive.is_archive(filename):
-
-            # Download to temporary path
-            compressed_path = fs.join(self.temp_path, filename)
-
-            # Remove potential file with same name
-            if fs.is_file(compressed_path): fs.remove_file(compressed_path)
-
-            # Debugging
-            log.debug("Downloading ...")
-
-            # Download compressed file
-            network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
-
-            # Debugging
-            log.debug("Decompressing ...")
-
-            # Decompress
-            archive.decompress_file(compressed_path, path)
-
-        # Regular download
-        else: network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        # OLD CODE: SOMETIMES, THE IMAGE NAME WOULD SAY .GZ BUT NOT ACTUALLY COMPRESSED
+        # # Download archive, decompress
+        # if archive.is_archive(filename):
+        #
+        #     # Download to temporary path
+        #     compressed_path = fs.join(self.temp_path, filename)
+        #
+        #     # Remove potential file with same name
+        #     if fs.is_file(compressed_path): fs.remove_file(compressed_path)
+        #
+        #     # Debugging
+        #     log.debug("Downloading ...")
+        #
+        #     # Download compressed file
+        #     network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        #
+        #     # Debugging
+        #     log.debug("Decompressing ...")
+        #
+        #     # Decompress
+        #     archive.decompress_file(compressed_path, path)
+        #
+        # # Regular download
+        # else: network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 

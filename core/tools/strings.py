@@ -962,3 +962,23 @@ def replace_from_dict(string, replace_dict):
     return string
 
 # -----------------------------------------------------------------
+
+def contains_which(string, patterns, case=True):
+
+    """
+    This function ...
+    :param string:
+    :param patterns:
+    :param case: case sensitive
+    :return:
+    """
+
+    for pattern in patterns:
+        if case:
+            if pattern in string: return pattern
+        else:
+            if pattern.lower() in string.lower(): return pattern
+
+    raise ValueError("None of the patterns are contained in the string")
+
+# -----------------------------------------------------------------

@@ -2351,6 +2351,9 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check if factor is 1.
+        if factor == 1: return
+
         # Calculate the downsampled array
         new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
 
@@ -2412,6 +2415,9 @@ class Frame(NDDataArray):
         :param integers:
         :return:
         """
+
+        # Check
+        if factor == 1: return
 
         if integers:
 

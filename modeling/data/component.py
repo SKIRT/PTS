@@ -19,7 +19,20 @@ from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
-data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck", "Other"]
+galex = "GALEX"
+sdss = "SDSS"
+twomass = "2MASS"
+spitzer = "Spitzer"
+wise = "WISE"
+herschel = "Herschel"
+planck = "Planck"
+other = "Other"
+
+halpha = "Halpha"
+
+# -----------------------------------------------------------------
+
+data_origins = [galex, sdss, halpha, twomass, spitzer, wise, herschel, planck, other]
 
 # -----------------------------------------------------------------
 

@@ -25,6 +25,7 @@ from ...core.tools import network, archive
 from ...magic.core.frame import Frame
 from ...core.tools.serialization import write_dict
 from ...core.launch.pts import launch_local
+from .component import galex, sdss, twomass, spitzer, wise, herschel, planck, other, halpha
 
 # -----------------------------------------------------------------
 
@@ -177,8 +178,7 @@ class ImageFetcher(DataComponent):
                 if not self.config.errors and "_Error" in name: continue
 
                 # Add url to the dictionary
-                if origin == "Herschel":
-
+                if origin == herschel:
                     if "pacs" in name.lower() or "spire" in name.lower(): self.dustpedia_image_urls[origin][name] = all_urls[name]
 
                 # Not Herschel
@@ -229,7 +229,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the GALEX images ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        self.fetch_from_dustpedia("GALEX")
+        self.fetch_from_dustpedia(galex)
 
         # Make the GALEX poisson error maps
         if self.config.make_poisson: self.make_poisson_galex()
@@ -248,7 +248,7 @@ class ImageFetcher(DataComponent):
         log.info("Launching the procedures to create GALEX poisson error mosaic maps ...")
 
         # Determine local output directory path
-        local_output_path = fs.create_directory_in(self.data_images_paths["GALEX"], "temp")
+        local_output_path = fs.create_directory_in(self.data_images_paths[galex], "temp")
 
         # Create the configuration dictionary
         config_dict = dict()
@@ -288,7 +288,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the SDSS images ...")
 
         # Fetch the SDSS data from the DustPedia archive
-        self.fetch_from_dustpedia("SDSS")
+        self.fetch_from_dustpedia(sdss)
 
         # Make the SDSS poisson error maps
         if self.config.make_poisson: self.make_poisson_sdss()
@@ -307,7 +307,7 @@ class ImageFetcher(DataComponent):
         log.info("Launching the procedures to create SDSS poisson error mosaic maps ...")
 
         # Determine the output directory path
-        local_output_path = fs.create_directory_in(self.data_images_paths["SDSS"], "temp")
+        local_output_path = fs.create_directory_in(self.data_images_paths[sdss], "temp")
 
         # Create the configuration dictionary
         config_dict = dict()
@@ -350,7 +350,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the H-alpha image ...")
 
         # Download the Halpha image
-        image_path = network.download_file(self.config.halpha_url, self.data_images_paths["Halpha"])
+        image_path = network.download_file(self.config.halpha_url, self.data_images_paths[halpha])
 
         # Unpack the image file if necessary
         if not image_path.endswith("fits"): image_path = archive.decompress_file_in_place(image_path, remove=True)
@@ -386,7 +386,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the 2MASS images ...")
 
         # Fetch the 2MASS data from the DustPedia archive
-        self.fetch_from_dustpedia("2MASS")
+        self.fetch_from_dustpedia(twomass)
 
     # -----------------------------------------------------------------
 
@@ -401,7 +401,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the Spitzer images ...")
 
         # Fetch the Spitzer data from the DustPedia archive
-        self.fetch_from_dustpedia("Spitzer")
+        self.fetch_from_dustpedia(spitzer)
 
     # -----------------------------------------------------------------
 
@@ -416,7 +416,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the WISE images ...")
 
         # Fetch the WISE data from the DustPedia archive
-        self.fetch_from_dustpedia("WISE")
+        self.fetch_from_dustpedia(wise)
 
     # -----------------------------------------------------------------
 
@@ -436,7 +436,7 @@ class ImageFetcher(DataComponent):
         # Fetch SPIRE
         #self.fetch_from_dustpedia("SPIRE", "Herschel")
 
-        self.fetch_from_dustpedia("Herschel")
+        self.fetch_from_dustpedia(herschel)
 
     # -----------------------------------------------------------------
 
@@ -451,7 +451,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the Planck images ...")
 
         # Fetch the Planck data from the DustPedia archive
-        self.fetch_from_dustpedia("Planck")
+        self.fetch_from_dustpedia(planck)
 
     # -----------------------------------------------------------------
 
@@ -466,7 +466,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching other images ...")
 
         # Download the images
-        paths = network.download_files(self.config.other_urls, self.data_images_path["Other"])
+        paths = network.download_files(self.config.other_urls, self.data_images_path[other])
 
         # Unpack the image files if necessary
         for path in paths:
