@@ -17,6 +17,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.io import fits
+from reproject import reproject_exact, reproject_interp
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
@@ -84,6 +85,18 @@ class Mask(MaskBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def header(self):
 
         """
@@ -104,6 +117,56 @@ class Mask(MaskBase):
 
         # Return the header
         return header
+
+    # -----------------------------------------------------------------
+
+    def rebin(self, reference_wcs, exact=False, parallel=True, threshold=0.5):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
+        :param threshold:
+        :return:
+        """
+
+        # Check whether the frame has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a mask without coordinate system")
+
+        # Calculate rebinned data and footprint of the original image
+        if exact: new_data, footprint = reproject_exact((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
+        else: new_data, footprint = reproject_interp((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape)
+
+        #print(new_data)
+        #print(np.sum(np.isnan(new_data)))
+        #print(new_data > threshold)
+
+        #print(np.isnan(new_data))
+        mask_data = np.logical_or(new_data > threshold, np.isnan(new_data))
+        #print(mask_data)
+
+        # Replace the data and WCS
+        self._data = mask_data
+        self._wcs = reference_wcs.copy()
+
+        # Return the footprint
+        from .frame import Frame
+        return Frame(footprint, wcs=reference_wcs.copy())
+
+    # -----------------------------------------------------------------
+
+    def rebinned(self, reference_wcs, exact=False, parallel=True):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :return:
+        """
+
+        new = self.copy()
+        new.rebin(reference_wcs, exact=exact, parallel=parallel)
+        return new
 
     # -----------------------------------------------------------------
 

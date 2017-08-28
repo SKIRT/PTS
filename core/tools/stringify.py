@@ -451,7 +451,7 @@ def stringify_not_list(value, **kwargs):
     elif types.is_integer_type(value): return "integer", str_from_integer(value, **kwargs)
     elif types.is_real_type(value): return "real", str_from_real(value, **kwargs)
     elif types.is_string_type(value): return "string", value
-    elif types.is_none(value): return "None", "None"
+    elif types.is_none(value): return "None", kwargs.pop("none_string", "None")
 
     # Special
     elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value, **kwargs)

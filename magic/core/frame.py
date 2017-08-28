@@ -57,6 +57,7 @@ from ..region.region import PixelRegion
 # -----------------------------------------------------------------
 
 nan_value = float("nan")
+inf_value = float("inf")
 
 # -----------------------------------------------------------------
 
@@ -905,7 +906,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.equal(self._data, value))
+        return newMask(np.equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None)
         #return newMask(self._data == value)
 
     # -----------------------------------------------------------------
@@ -918,7 +919,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.not_equal(self._data, value))
+        return newMask(np.not_equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None)
 
     # -----------------------------------------------------------------
 
@@ -980,7 +981,7 @@ class Frame(NDDataArray):
 
         #from .mask import union
         #return union(*[self.where(value) for value in nan_values])
-        return newMask(np.isnan(self.data))
+        return newMask(np.isnan(self.data), wcs=self.wcs.copy() if self.wcs is not None else None)
 
     # -----------------------------------------------------------------
 
@@ -1009,6 +1010,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.nans.data)
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_nans(self):
 
         """
@@ -1029,7 +1042,7 @@ class Frame(NDDataArray):
 
         #from .mask import union
         #return union(*[self.where(value) for value in inf_values])
-        return newMask(np.isinf(self.data))
+        return newMask(np.isinf(self.data), wcs=self.wcs.copy() if self.wcs is not None else None)
 
     # -----------------------------------------------------------------
 
@@ -1066,6 +1079,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.infs.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.infs.data)
 
     # -----------------------------------------------------------------
 
@@ -1114,6 +1139,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.zeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.zeroes.data)
 
     # -----------------------------------------------------------------
 
@@ -1250,6 +1287,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_negatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.negatives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_negatives(self):
 
         """
@@ -1293,6 +1342,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_positives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.positives.data)
 
     # -----------------------------------------------------------------
 
@@ -2378,9 +2439,17 @@ class Frame(NDDataArray):
         #print(self.nans.data)
         #print(self.data[0,0], type(self.data[0,0]), self.data[0,0] is nan_value)
 
+        # Get mask of nans and infs
+        if self.has_nans: nans = self.nans
+        else: nans = None
+        if self.has_infs: infs = self.infs
+        else: infs = None
+
         # REMOVE NANS?
-        self.replace_nans(zero_value)
-        self.replace_infs(zero_value)
+        #self.replace_nans(zero_value)
+        #self.replace_infs(zero_value)
+        if nans is not None: self.apply_mask(nans)
+        if infs is not None: self.apply_mask(infs)
 
         #print(factor)
         #print(self._data)
@@ -2417,7 +2486,60 @@ class Frame(NDDataArray):
             new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
             new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
 
-        else: new_wcs = None
+            # Rebin the masks
+            if nans is not None:
+
+                nans.rebin(new_wcs)
+                nans.dilate_rc(2, connectivity=1, iterations=2) # 1 also worked in test
+                #print("NANS", nans.data)
+                new_data[nans.data] = nan_value
+
+            if infs is not None:
+
+                infs.rebin(new_wcs)
+                infs.dilate_rc(2, connectivity=1, iterations=2)  # 1 also worked in test
+                #print("INFS", infs.data)
+                new_data[infs.data] = inf_value
+
+        else:
+
+            new_wcs = None
+
+            # Zoom the masks
+            if nans is not None:
+
+                new_nans_data = ndimage.interpolation.zoom(nans.data.astype(int), zoom=1.0/factor, order=0)
+
+                # Check the shapes
+                if new_nans_data.shape[1] != new_data.shape[1]:
+                    log.warning("Could not downsample the mask of NaN values: all NaNs have been replaced by zero")
+                elif new_nans_data.shape[0] != new_data.shape[0]:
+                    log.warning("Could not downsample the mask of NaN values: all NaNs have been replaced by zero")
+
+                # Apply the masks
+                else:
+
+                    new_nans = newMask.above(new_nans_data, 0.5)
+                    #new_nans = new_nans_data > 0.5
+                    new_nans.dilate_rc(2, connectivity=1, iterations=2)
+                    new_data[new_nans] = nan_value
+
+            if infs is not None:
+
+                new_infs_data = ndimage.interpolation.zoom(infs.data.astype(int), zoom=1.0 / factor, order=0)
+
+                if new_infs_data.shape[1] != new_data.shape[1]:
+                    log.warning("Could not downsample the mask of infinite values: all infinities have been replaced by zero")
+                elif new_infs_data.shape[0] != new_data.shape[0]:
+                    log.warning("Could not downsample the mask of infinite values: all infinities have been replaced by zero")
+
+                # Apply the masks
+                else:
+
+                    new_infs = newMask.above(new_infs_data, 0.5)
+                    #new_infs = new_infs_data > 0.5
+                    new_infs.dilate_rc(2, connectivity=1, iterations=2)
+                    new_data[new_infs] = inf_value
 
         # Set the new data and wcs
         self._data = new_data
@@ -2440,6 +2562,75 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def upsample_integers(self, factor): # For segmentation map class??
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Check whether the upsampling factor is an integer or not
+        if int(factor) == factor:
+
+            new_data = ndimage.zoom(self._data, factor, order=0)
+
+            new_xsize = new_data.shape[1]
+            new_ysize = new_data.shape[0]
+
+            relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+
+            new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
+
+            new_wcs = copy.deepcopy(self.wcs)
+            # Change the center pixel position
+            new_wcs.wcs.crpix[0] = new_center.x
+            new_wcs.wcs.crpix[1] = new_center.y
+
+            # Change the number of pixels
+            new_wcs.naxis1 = new_xsize
+            new_wcs.naxis2 = new_ysize
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+            # Change the pixel scale
+            new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
+            new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
+
+            # return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
+
+            # Set the new data and wcs
+            self._data = new_data
+            self._wcs = new_wcs
+
+        # Upsampling factor is not an integer
+        else:
+
+            old = self.copy()
+
+            self.downsample(1. / factor)
+
+            # print("Checking indices ...")
+            indices = np.unique(old._data)
+
+            # print("indices:", indices)
+
+            # Loop over the indices
+            for index in list(indices):
+                # print(index)
+
+                index = int(index)
+
+                where = Mask(old._data == index)
+
+                # Calculate the downsampled array
+                data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
+                upsampled_where = data > 0.5
+
+                self[upsampled_where] = index
+
+    # -----------------------------------------------------------------
+
     def upsample(self, factor, integers=False):
 
         """
@@ -2449,70 +2640,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Check
+        # Check if factor is 1.
         if factor == 1: return
-
-        if integers:
-
-            # Check whether the upsampling factor is an integer or not
-            if int(factor) == factor:
-
-                new_data = ndimage.zoom(self._data, factor, order=0)
-
-                new_xsize = new_data.shape[1]
-                new_ysize = new_data.shape[0]
-
-                relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
-
-                new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
-
-                new_wcs = copy.deepcopy(self.wcs)
-                # Change the center pixel position
-                new_wcs.wcs.crpix[0] = new_center.x
-                new_wcs.wcs.crpix[1] = new_center.y
-
-                # Change the number of pixels
-                new_wcs.naxis1 = new_xsize
-                new_wcs.naxis2 = new_ysize
-                new_wcs._naxis1 = new_wcs.naxis1
-                new_wcs._naxis2 = new_wcs.naxis2
-
-                # Change the pixel scale
-                new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
-                new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
-
-                #return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
-
-                # Set the new data and wcs
-                self._data = new_data
-                self._wcs = new_wcs
-
-            # Upsampling factor is not an integer
-            else:
-
-                old = self.copy()
-
-                self.downsample(1./factor)
-
-                #print("Checking indices ...")
-                indices = np.unique(old._data)
-
-                #print("indices:", indices)
-
-                # Loop over the indices
-                for index in list(indices):
-
-                    #print(index)
-
-                    index = int(index)
-
-                    where = Mask(old._data == index)
-
-                    # Calculate the downsampled array
-                    data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
-                    upsampled_where = data > 0.5
-
-                    self[upsampled_where] = index
 
         # Just do inverse of downsample
         else: self.downsample(factor)

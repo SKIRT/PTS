@@ -375,6 +375,20 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    def file_size(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..units.parsing import parse_quantity
+        quantity_string = self.get_simple_variable("str(fs.file_size('" + path + "'))")
+        return parse_quantity(quantity_string)
+
+    # -----------------------------------------------------------------
+
     def directories_in_path(self, path, startswith=None, recursive=False):
 
         """

@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.magic.misc.seds import catalog_names
+from pts.magic.services.seds import catalog_names
 
 # -----------------------------------------------------------------
 

@@ -139,7 +139,11 @@ class SmartTable(Table):
                 # Determine column type, unit and description
                 if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
                 else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
+
+                # Determine column unit
                 column_unit = sequences.get_first_not_none_value(units)
+
+                # Determine column description
                 column_description = sequences.get_first_not_none_value(descriptions)
 
                 column_types.append(column_type)
@@ -180,6 +184,9 @@ class SmartTable(Table):
         #    # Add column info
         #    table.add_column_info(name, simple_dtype, unit, description)
 
+        # Set None string
+        if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = "--"
+
         # Add the rows
         for composite_label, composite in zip(labels, composites):
 
@@ -197,6 +204,9 @@ class SmartTable(Table):
                         value = getattr(composite, name)
                         if name in to_string: value = tostr(value, **tostr_kwargs)
                     else: value = None
+
+                #
+                #if value == "None": value = "--"
 
                 # Add the value
                 values.append(value)

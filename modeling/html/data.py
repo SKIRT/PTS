@@ -36,6 +36,7 @@ from ...magic.tools.info import get_image_info_from_header_file, get_image_info_
 from ..data.component import galex, sdss, twomass, spitzer, wise, herschel, planck, other, halpha, data_origins
 from ...core.tools import strings
 from ...magic.tools import headers
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
@@ -639,13 +640,16 @@ class DataPageGenerator(HTMLPageComponent):
 
             # Get image info
             path = self.additional_paths[name]
-            if fs.is_file(path): info = get_image_info_from_header_file(name, path)
-            elif self.session is not None: info = get_image_info_from_remote_header_file(name, path, self.session)
-            else: info = get_image_info_from_remote_header_file(name, path, self.remote)
+            if fs.is_file(path): info = get_image_info_from_header_file(name, path, path=False)
+            elif self.session is not None: info = get_image_info_from_remote_header_file(name, path, self.session, path=False)
+            else: info = get_image_info_from_remote_header_file(name, path, self.remote, path=False)
 
             if name in self.previews: thumbnails.append(html.center(self.previews[name]))
             elif name in self.thumbnails: thumbnails.append(html.center(self.thumbnails[name]))
             else: thumbnails.append("")
+
+            # Make property composite
+            info = SimplePropertyComposite.from_dict(info)
 
             # Add info
             infos.append(info)
@@ -707,7 +711,12 @@ class DataPageGenerator(HTMLPageComponent):
         self.page += html.newline
 
         # Add the table (if existing)
-        if self.table is not None: self.page += self.table
+        if self.table is not None:
+
+            self.page += "DUSTPEDIA DATASET"
+            self.page += html.newline + html.newline
+            self.page += self.table
+            self.page += html.newline + html.newline
 
         # Add tables per observatory
         for observatory in self.tables:
@@ -722,11 +731,14 @@ class DataPageGenerator(HTMLPageComponent):
         # Add additional table
         if self.additional_table is not None:
 
-            self.page += "ADDITIONAL"
+            self.page += "ADDITIONAL DATA"
             self.page += html.newline + html.newline
 
             # Add the table
             self.page += self.additional_table
+
+            # New lines
+            self.page += html.newline + html.newline
 
     # -----------------------------------------------------------------
 

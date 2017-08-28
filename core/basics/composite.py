@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+from collections import OrderedDict
 import warnings
 from abc import ABCMeta
 
@@ -276,7 +277,7 @@ class SimplePropertyComposite(object):
         # Create a new instance
         composite = cls()
 
-        properties = dict()
+        properties = OrderedDict() # to keep order of original dict (possibly an ordered dict as well)
         for key in dictionary:
             ptype, pvalue = stringify(dictionary[key])
             description = key

@@ -79,6 +79,36 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def above(cls, data, threshold, **kwargs):
+
+        """
+        This function ...
+        :param data:
+        :param threshold:
+        :param kwargs:
+        :return:
+        """
+
+        return cls(data > threshold, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def below(cls, data, threshold, **kwargs):
+
+        """
+        This function ...
+        :param data:
+        :param threshold:
+        :param kwargs:
+        :return:
+        """
+
+        return cls(data < threshold, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_region(cls, region, x_size, y_size):
 
         """

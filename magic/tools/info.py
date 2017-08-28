@@ -159,6 +159,12 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session_or_re
     if strings.unquote(pixelscale_string) == "None": pixelscale = None
     else: pixelscale = parse_quantity(pixelscale_string)
 
+    if pixelscale is None:
+        session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
+        session.send_line("wcs = CoordinateSystem(header)")
+        pixelscale_string = session.get_simple_variable('str(wcs.average_pixelscale)')
+        pixelscale = parse_quantity(pixelscale_string)
+
     # Get the FWHM
     session.send_line('fwhm = headers.get_fwhm(header)')
     fwhm_string = session.get_simple_variable('str(fwhm)')
@@ -177,10 +183,7 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session_or_re
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
     if kwargs.pop("xsize", True): info["xsize"] = nxpixels
     if kwargs.pop("ysize", True): info["ysize"] = nypixels
-
-    # if path is not None and kwargs.pop("filesize", True):
-    #     filesize = fs.file_size(path).to("MB")
-    #     info["File size"] = filesize
+    if kwargs.pop("filesize", True): info["File size"] = session.file_size(frame_path)
 
     # Return the info
     return info
