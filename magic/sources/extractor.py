@@ -193,6 +193,18 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def frame_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame.name
+
+    # -----------------------------------------------------------------
+
     def load_regions(self, **kwargs):
 
         """
@@ -208,28 +220,88 @@ class SourceExtractor(Configurable):
         if "galaxy_region" in kwargs: self.galaxy_region = kwargs.pop("galaxy_region")
         else:
             if "name" in kwargs: galaxy_region_path = self.input_path_file("galaxies_" + kwargs["name"] + ".reg")
-            else: galaxy_region_path = self.input_path_file("galaxies.reg")
-            self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
+            else:
+
+                galaxy_region_path = self.input_path_file("galaxies.reg")
+
+                # Check
+                if not fs.is_file(galaxy_region_path):
+                    if self.frame_name is not None:
+                        galaxy_region_path = self.input_path_file("galaxies_" + self.frame_name + ".reg")
+                        if not fs.is_file(galaxy_region_path):
+                            log.warning("No galaxy regions file could be found")
+                            galaxy_region_path = None
+                    else:
+                        log.warning("No galaxy regions file could be found")
+                        galaxy_region_path = None
+
+            # Load the galaxy regions
+            if galaxy_region_path is not None: self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
         if "star_region" in kwargs: self.star_region = kwargs.pop("star_region")
         else:
             if "name" in kwargs: star_region_path = self.input_path_file("stars_" + kwargs["name"] + ".reg")
-            else: star_region_path = self.input_path_file("stars.reg")
+            else:
+
+                star_region_path = self.input_path_file("stars.reg")
+
+                # Check
+                if not fs.is_file(star_region_path):
+                    if self.frame_name is not None:
+                        star_region_path = self.input_path_file("stars_" + self.frame_name + ".reg")
+                        if not fs.is_file(star_region_path):
+                            log.warning("No star regions file could be found")
+                            star_region_path = None
+                    else:
+                        log.warning("No star regions file could be found")
+                        star_region_path = None
+
+            # Load the star regions
             self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
         if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
         else:
             if "name" in kwargs: saturation_region_path = self.input_path_file("saturation_" + kwargs["name"] + ".reg")
-            else: saturation_region_path = self.input_path_file("saturation.reg")
+            else:
+
+                saturation_region_path = self.input_path_file("saturation.reg")
+
+                # Check
+                if not fs.is_file(saturation_region_path):
+                    if self.frame_name is not None:
+                        saturation_region_path = self.input_path_file("saturation_" + self.frame_name + ".reg")
+                        if not fs.is_file(saturation_region_path):
+                            log.warning("No saturation regions file could be found")
+                            saturation_region_path = None
+                    else:
+                        log.warning("No saturation regions file could be found")
+                        saturation_region_path = None
+
+            # Load the saturation regions
             self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
         if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
         else:
             if "name" in kwargs: other_region_path = self.input_path_file("other_sources_" + kwargs["name"] + ".reg")
-            else: other_region_path = self.input_path_file("other_sources.reg")
+            else:
+
+                other_region_path = self.input_path_file("other_sources.reg")
+
+                # Check
+                if not fs.is_file(other_region_path):
+                    if self.frame_name is not None:
+                        other_region_path = self.input_path_file("other_sources_" + self.frame_name + ".reg")
+                        if not fs.is_file(other_region_path):
+                            log.warning("No other regions file could be found")
+                            other_region_path = None
+                    else:
+                        log.warning("No other regions file could be found")
+                        other_region_path = None
+
+            # Load the other regions
             self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
 
         # Debugging
