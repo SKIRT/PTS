@@ -205,6 +205,30 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame.filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame.filter_name
+
+    # -----------------------------------------------------------------
+
     def load_regions(self, **kwargs):
 
         """
@@ -226,17 +250,27 @@ class SourceExtractor(Configurable):
 
                 # Check
                 if not fs.is_file(galaxy_region_path):
-                    if self.frame_name is not None:
+
+                    if self.filter_name is not None:
+
+                        galaxy_region_path = self.input_path_file("galaxies_" + self.filter_name + ".reg")
+                        if not fs.is_file(galaxy_region_path):
+                            log.warning("No galaxy regions file could be found")
+                            galaxy_region_path = None
+
+                    elif self.frame_name is not None:
+
                         galaxy_region_path = self.input_path_file("galaxies_" + self.frame_name + ".reg")
                         if not fs.is_file(galaxy_region_path):
                             log.warning("No galaxy regions file could be found")
                             galaxy_region_path = None
+
                     else:
                         log.warning("No galaxy regions file could be found")
                         galaxy_region_path = None
 
             # Load the galaxy regions
-            if galaxy_region_path is not None: self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
+            if galaxy_region_path is not None: self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs)
 
         # Load the star region
         if "star_region" in kwargs: self.star_region = kwargs.pop("star_region")
@@ -248,17 +282,27 @@ class SourceExtractor(Configurable):
 
                 # Check
                 if not fs.is_file(star_region_path):
-                    if self.frame_name is not None:
+
+                    if self.filter_name is not None:
+
+                        star_region_path = self.input_path_file("stars_" + self.filter_name + ".reg")
+                        if not fs.is_file(star_region_path):
+                            log.warning("No star regions file could be found")
+                            star_region_path = None
+
+                    elif self.frame_name is not None:
+
                         star_region_path = self.input_path_file("stars_" + self.frame_name + ".reg")
                         if not fs.is_file(star_region_path):
                             log.warning("No star regions file could be found")
                             star_region_path = None
+
                     else:
                         log.warning("No star regions file could be found")
                         star_region_path = None
 
             # Load the star regions
-            self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs) if fs.is_file(star_region_path) else None
+            if fs.is_file(star_region_path): self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs)
 
         # Load the saturation region
         if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
@@ -270,7 +314,16 @@ class SourceExtractor(Configurable):
 
                 # Check
                 if not fs.is_file(saturation_region_path):
-                    if self.frame_name is not None:
+
+                    if self.filter_name is not None:
+
+                        saturation_region_path = self.input_path_file("saturation_" + self.filter_name + ".reg")
+                        if not fs.is_file(saturation_region_path):
+                            log.warning("No saturation regions file could be found")
+                            saturation_region_path = None
+
+                    elif self.frame_name is not None:
+
                         saturation_region_path = self.input_path_file("saturation_" + self.frame_name + ".reg")
                         if not fs.is_file(saturation_region_path):
                             log.warning("No saturation regions file could be found")
@@ -280,7 +333,7 @@ class SourceExtractor(Configurable):
                         saturation_region_path = None
 
             # Load the saturation regions
-            self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs) if fs.is_file(saturation_region_path) else None
+            if fs.is_file(saturation_region_path): self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs)
 
         # Load the region of other sources
         if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
@@ -292,7 +345,16 @@ class SourceExtractor(Configurable):
 
                 # Check
                 if not fs.is_file(other_region_path):
-                    if self.frame_name is not None:
+
+                    if self.filter_name is not None:
+
+                        other_region_path = self.input_path_file("other_sources_" + self.filter_name + ".reg")
+                        if not fs.is_file(other_region_path):
+                            log.warning("No other regions file could be found")
+                            other_region_path = None
+
+                    elif self.frame_name is not None:
+
                         other_region_path = self.input_path_file("other_sources_" + self.frame_name + ".reg")
                         if not fs.is_file(other_region_path):
                             log.warning("No other regions file could be found")
@@ -302,7 +364,7 @@ class SourceExtractor(Configurable):
                         other_region_path = None
 
             # Load the other regions
-            self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
+            if fs.is_file(other_region_path): self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs)
 
         # Debugging
         if self.galaxy_region is not None: log.debug("Galaxy regions: PRESENT")
@@ -332,12 +394,32 @@ class SourceExtractor(Configurable):
         if "segments" in kwargs: segments = kwargs.pop("segments")
         else:
             if "name" in kwargs: segments_path = self.input_path_file("segments_" + kwargs["name"] + ".fits")
-            else: segments_path = self.input_path_file("segments.fits")
+            else:
 
-            if not fs.is_file(segments_path): log.warning("No segmentation maps found, using regions to define the to be extracted patches")
-            else: segments = Image.from_file(segments_path, no_filter=True)
+                segments_path = self.input_path_file("segments.fits")
 
-        #print(segments)
+                if not fs.is_file(segments_path):
+
+                    if self.filter_name is not None:
+
+                        segments_path = self.input_path_file("segments_" + self.filter_name + ".fits")
+                        if not fs.is_file(segments_path):
+                            log.warning("No segmentation maps found, will be using regions to define the to be extracted patches")
+                            segments_path = None
+
+                    elif self.frame_name is not None:
+
+                        segments_path = self.input_path_file("segments_" + self.frame_name + ".fits")
+                        if not fs.is_file(segments_path):
+                            log.warning("No segmentation maps found, will be using regions to define the to be extracted patches")
+                            segments_path = None
+
+                    else:
+                        log.warning("No segmentation maps found, will be using regions to define the to be extracted patches")
+                        segments_path = None
+
+                # Load the segments
+                if segments_path is not None: segments = Image.from_file(segments_path, no_filter=True)
 
         # If segments is not None
         if segments is not None:
