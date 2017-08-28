@@ -1575,7 +1575,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' old stellar map masks ...")
 
             # Loop over the levels dicts
-            for levels in self.old_maps[name]:
+            for levels in self.old_masks[name]:
 
                 # Determine the filepath
                 filepath = self.old_mask_plot_paths[name][levels]
@@ -1661,7 +1661,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' young stellar map masks ...")
 
             # Loop over the levels dicts
-            for levels in self.young_maps[name]:
+            for levels in self.young_masks[name]:
 
                 # Determine the filepath
                 filepath = self.young_mask_plot_paths[name][levels]
@@ -1747,7 +1747,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' ionizing stellar map masks ...")
 
             # Loop over the levels dicts
-            for levels in self.ionizing_maps[name]:
+            for levels in self.ionizing_masks[name]:
 
                 # Determine the filepath
                 filepath = self.ionizing_mask_plot_paths[name][levels]
@@ -1833,7 +1833,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' dust map masks ...")
 
             # Loop over the levels dicts
-            for levels in self.dust_maps[name]:
+            for levels in self.dust_masks[name]:
 
                 # Determine the filepath
                 filepath = self.dust_mask_plot_paths[name][levels]
