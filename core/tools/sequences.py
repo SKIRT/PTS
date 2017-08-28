@@ -975,6 +975,21 @@ def is_subset(sequence, other_sequence):
 
 # -----------------------------------------------------------------
 
+def subset(sequence, indices):
+
+    """
+    This function ...
+    :param sequence:
+    :param indices:
+    :return:
+    """
+
+    subset = []
+    for index in indices: subset.append(sequence[index])
+    return subset
+
+# -----------------------------------------------------------------
+
 def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
 
     """
@@ -1001,6 +1016,23 @@ def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
 
 # -----------------------------------------------------------------
 
+def all_except_indices(sequence, indices):
+
+    """
+    This function ...
+    :param sequence:
+    :param indices:
+    :return:
+    """
+
+    new = []
+    for index in sequence:
+        if index in indices: continue
+        new.append(sequence[index])
+    return new
+
+# -----------------------------------------------------------------
+
 def all_except(sequence, ignore):
 
     """
@@ -1018,7 +1050,7 @@ def all_except(sequence, ignore):
 
 # -----------------------------------------------------------------
 
-def make_selection(sequence, selected, not_selected, nrandom=None, all=False, none=False):
+def make_selection(sequence, selected, not_selected, nrandom=None, all=False, none=False, indices=None, not_indices=None):
 
     """
     This function ...
@@ -1028,6 +1060,8 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
     :param nrandom:
     :param all:
     :param none:
+    :param indices:
+    :param not_indices:
     :return:
     """
 
@@ -1039,6 +1073,7 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
     #print(none)
 
     if selected is not None and none: raise ValueError("Selection is made but 'none' is enabled")
+    if indices is not None and none: raise ValueError("Selection is made but 'none' is enabled")
     if all and none: raise ValueError("Cannot enable 'all' and 'none' simultaneously")
 
     # Return empty list
@@ -1048,10 +1083,24 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
     selection = None
 
     # Check
+    if selected is not None and indices is not None: raise ValueError("Cannot specify selection and indices at the same time")
+    if indices is not None and nrandom is not None: raise ValueError("Cannot specify selection and choose random")
+
+    # Check
     if selected is not None and nrandom is not None: raise ValueError("Cannot specifiy selection and choose random")
 
     # Random selection
     if nrandom is not None: selection = random_subset(sequence, nrandom, ignore=not_selected, avoid_duplication=True)
+
+    # Check
+    if selected is not None and not_indices is not None: raise ValueError("Cannot specify both selection and not_indices")
+    if indices is not None and not_indices is not None: raise ValueError("Cannot specify both indices and not_indices")
+
+    # Set selections from indices
+    if indices is not None: selection = subset(sequence, indices)
+
+    # Set selection based on which indices not
+    if not_indices is not None: selection = all_except_indices(sequence, not_indices)
 
     # Check
     if selected is not None and not_selected is not None: raise ValueError("Cannot specify both selection and not_selection")

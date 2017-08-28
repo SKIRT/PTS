@@ -429,3 +429,26 @@ class AlphaMask(object):
         image.saveto(path)
 
 # -----------------------------------------------------------------
+
+def product(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # INTERSECTION = 1 * first * second * ... (1 is neutral element for multiplication)
+    # so for one mask, intersection = 1 * mask = mask
+
+    if len(args) == 1: return AlphaMask(args[0].data)
+
+    arrays = [arg.data for arg in args]
+    # arrays = []
+    # for arg in args:
+    #     if isinstance(arg, MaskBase): arrays.append(arg.data)
+    #     elif isinstance(arg, oldMask): arrays.append(arg)
+    #     else: arrays.append(arg)
+    return AlphaMask(np.product(arrays, axis=0))
+
+# -----------------------------------------------------------------

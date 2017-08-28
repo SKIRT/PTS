@@ -31,6 +31,8 @@ from ..selectioncomponent import MapsSelectionComponent
 from ....core.tools.stringify import tostr
 from ....core.remote.remote import Remote
 from ....core.basics.containers import hashdict
+from ....magic.core.mask import Mask
+from ....magic.core.alpha import AlphaMask
 
 # -----------------------------------------------------------------
 
@@ -81,8 +83,20 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         self.ionizing_plot_paths = defaultdict(dict)
         self.dust_plot_paths = defaultdict(dict)
 
+        # The mask plot paths
+        self.old_mask_plot_paths = defaultdict(dict)
+        self.young_mask_plot_paths = defaultdict(dict)
+        self.ionizing_mask_plot_paths = defaultdict(dict)
+        self.dust_mask_plot_paths = defaultdict(dict)
+
         # The sliders
         self.sliders = None
+
+        # The masks
+        self.old_masks = dict()
+        self.young_masks = dict()
+        self.ionizing_masks = dict()
+        self.dust_masks = dict()
 
     # -----------------------------------------------------------------
 
@@ -158,10 +172,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
 
         # Make selections
-        self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old, none=not self.config.add_old)
-        self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young, none=not self.config.add_young)
-        self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, none=not self.config.add_ionizing)
-        self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, none=not self.config.add_dust)
+        self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old, none=not self.config.add_old, indices=self.config.old_indices, not_indices=self.config.not_old_indices)
+        self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young, none=not self.config.add_young, indices=self.config.young_indices, not_indices=self.config.not_young_indices)
+        self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, none=not self.config.add_ionizing, indices=self.config.ionizing_indices, not_indices=self.config.not_ionizing_indices)
+        self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, none=not self.config.add_dust, indices=self.config.dust_indices, not_indices=self.config.not_dust_indices)
 
         # Prompt for user input (if selections not specified)
         self.prompt()
@@ -510,6 +524,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 # Set the path
                 self.old_plot_paths[name][levels_dict] = filepath
 
+                # Determine the mask filepath
+                mask_filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + "_mask.png")
+
+                # Set the path
+                self.old_mask_plot_paths[name][levels_dict] = mask_filepath
+
     # -----------------------------------------------------------------
 
     def set_young_paths(self):
@@ -545,6 +565,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Set the path
                 self.young_plot_paths[name][levels_dict] = filepath
+
+                # Determine the mask filepath
+                mask_filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + "_mask.png")
+
+                # Set the path
+                self.young_mask_plot_paths[name][levels_dict] = mask_filepath
 
     # -----------------------------------------------------------------
 
@@ -582,6 +608,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 # Set the path
                 self.ionizing_plot_paths[name][levels_dict] = filepath
 
+                # Determine the mask filepath
+                mask_filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + "_mask.png")
+
+                # Set the path
+                self.ionizing_mask_plot_paths[name][levels_dict] = mask_filepath
+
     # -----------------------------------------------------------------
 
     def set_dust_paths(self):
@@ -617,6 +649,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Set the path
                 self.dust_plot_paths[name][levels_dict] = filepath
+
+                # Determine the mask filepath
+                mask_filepath = fs.join(dirpath, self.levels_to_string(levels_dict) + "_mask.png")
+
+                # Set the path
+                self.dust_mask_plot_paths[name][levels_dict] = mask_filepath
 
     # -----------------------------------------------------------------
 
@@ -1130,14 +1168,19 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
+            maps, masks = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_old_plots_level_combinations_for(name))
+                                          present=self.present_old_plots_level_combinations_for(name),
+                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
 
             # Replace by a dictionary of maps
             self.old_maps[name] = maps
+
+            # Set the masks
+            self.old_masks[name] = masks
 
             # Cleanup
             gc.collect()
@@ -1175,14 +1218,19 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels,
+            maps, masks = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_young_plots_level_combinations_for(name))
+                                          present=self.present_young_plots_level_combinations_for(name),
+                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
+
+            # Set the masks
+            self.young_masks[name] = masks
 
             # Cleanup
             gc.collect()
@@ -1220,14 +1268,19 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels,
+            maps, masks = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_ionizing_plots_level_combinations_for(name))
+                                          present=self.present_ionizing_plots_level_combinations_for(name),
+                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
 
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
+
+            # Set the masks
+            self.ionizing_masks[name] = masks
 
             # Cleanup
             gc.collect()
@@ -1265,14 +1318,19 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels,
+            maps, masks = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_dust_plots_level_combinations_for(name))
+                                          present=self.present_dust_plots_level_combinations_for(name),
+                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
+
+            # Set the masks
+            self.dust_masks[name] = masks
 
             # Cleanup
             gc.collect()
@@ -1412,6 +1470,21 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def make_mask_plot(self, mask, filepath):
+
+        """
+        This function ...
+        :param mask:
+        :param filepath:
+        :return:
+        """
+
+        if isinstance(mask, AlphaMask): mask.saveto_png(filepath, colour="black", alpha=True) # alpha to recognize alpha masks
+        elif isinstance(mask, Mask): mask.saveto_png(filepath, colour="black", alpha=False) # no alpha to recognize regular masks
+        else: raise ValueError("Not a valid mask")
+
+    # -----------------------------------------------------------------
+
     def make_plots(self):
 
         """
@@ -1446,8 +1519,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Inform the user
         log.info("Making plots of the old stellar maps ...")
 
+        # Maps
+        self.make_old_map_plots()
+
+        # Masks
+        self.make_old_mask_plots()
+
+    # -----------------------------------------------------------------
+
+    def make_old_map_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the maps
-        for name in self.old_maps:
+        for name in self.old_map_names:
 
             # Debugging
             log.debug("Making plots of the '" + name + "' old stellar map ...")
@@ -1467,6 +1555,44 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 # Save as RGBA
                 self.make_rgba_plot(self.old_maps[name][levels], filepath)
 
+            # Clear
+            del self.old_maps[name]
+            gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def make_old_mask_plots(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Loop over the maps
+        for name in self.old_map_names:
+
+            # Debugging
+            log.debug("Making plots of the '" + name + "' old stellar map masks ...")
+
+            # Loop over the levels dicts
+            for levels in self.old_maps[name]:
+
+                # Determine the filepath
+                filepath = self.old_mask_plot_paths[name][levels]
+
+                # Check
+                if fs.is_file(filepath): continue
+
+                # Debugging
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
+
+                # Save as PNG file
+                self.make_mask_plot(self.old_masks[name][levels], filepath)
+
+            # Clear
+            del self.old_masks[name]
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def make_young_plots(self):
@@ -1479,8 +1605,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Inform the user
         log.info("Making plots of the young stellar maps ...")
 
+        # Maps
+        self.make_young_map_plots()
+
+        # Masks
+        self.make_young_mask_plots()
+
+    # -----------------------------------------------------------------
+
+    def make_young_map_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the maps
-        for name in self.young_maps:
+        for name in self.young_map_names:
 
             # Debugging
             log.debug("Making plots of the '" + name + "' young stellar map ...")
@@ -1500,6 +1641,44 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 # Save as RGBA
                 self.make_rgba_plot(self.young_maps[name][levels], filepath)
 
+            # Clear
+            del self.young_maps[name]
+            gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def make_young_mask_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the masp
+        for name in self.young_map_names:
+
+            # Debugging
+            log.debug("Making plots of the '" + name + "' young stellar map masks ...")
+
+            # Loop over the levels dicts
+            for levels in self.young_maps[name]:
+
+                # Determine the filepath
+                filepath = self.young_mask_plot_paths[name][levels]
+
+                # Check
+                if fs.is_file(filepath): continue
+
+                # Debugging
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
+
+                # Save as PNG
+                self.make_mask_plot(self.young_masks[name][levels], filepath)
+
+            # Clear
+            del self.young_masks[name]
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def make_ionizing_plots(self):
@@ -1512,8 +1691,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Inform the user
         log.info("Making plots of the ionizing stellar maps ...")
 
+        # Maps
+        self.make_ionizing_map_plots()
+
+        # Masks
+        self.make_ionizing_mask_plots()
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_map_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the maps
-        for name in self.ionizing_maps:
+        for name in self.ionizing_map_names:
 
             # Debugging
             log.debug("Making plots of the '" + name + "' ionizing stellar map ...")
@@ -1533,6 +1727,44 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 # Save as RGBA
                 self.make_rgba_plot(self.ionizing_maps[name][levels], filepath)
 
+            # Clear
+            del self.ionizing_maps[name]
+            gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_mask_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_map_names:
+
+            # Debugging
+            log.debug("Making plots of the '" + name + "' ionizing stellar map masks ...")
+
+            # Loop over the levels dicts
+            for levels in self.ionizing_maps[name]:
+
+                # Determine the filepath
+                filepath = self.ionizing_mask_plot_paths[name][levels]
+
+                # Check
+                if fs.is_file(filepath): continue
+
+                # Debugging
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
+
+                # Save as PNG
+                self.make_mask_plot(self.ionizing_masks[name][levels], filepath)
+
+            # Clear
+            del self.ionizing_masks[name]
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def make_dust_plots(self):
@@ -1545,8 +1777,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Inform the user
         log.info("Making plots of the dust maps ...")
 
+        # Maps
+        self.make_dust_map_plots()
+
+        # Masks
+        self.make_dust_mask_plots()
+
+    # -----------------------------------------------------------------
+
+    def make_dust_map_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the maps
-        for name in self.dust_maps:
+        for name in self.dust_map_names:
 
             # Debugging
             log.debug("Making plots of the '" + name + "' dust map ...")
@@ -1565,6 +1812,44 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Save as RGBA
                 self.make_rgba_plot(self.dust_maps[name][levels], filepath)
+
+            # Clear
+            del self.dust_maps[name]
+            gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def make_dust_mask_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_map_names:
+
+            # Debugging
+            log.debug("Making plots of the '" + name + "' dust map masks ...")
+
+            # Loop over the levels dicts
+            for levels in self.dust_maps[name]:
+
+                # Determine the filepath
+                filepath = self.dust_mask_plot_paths[name][levels]
+
+                # Check
+                if fs.is_file(filepath): continue
+
+                # Debugging
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
+
+                # Save as PNG
+                self.make_mask_plot(self.dust_masks[name][levels], filepath)
+
+            # Clear
+            del self.dust_masks[name]
+            gc.collect()
 
     # -----------------------------------------------------------------
 

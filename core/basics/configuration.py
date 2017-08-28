@@ -1457,7 +1457,7 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list") and choices is not None:
                 # Check whether they are all in the choices
                 for item in value:
-                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+                    if not item in choices: raise ValueError("Element '" + str(item) + "' not recognized. Options are: " + stringify.stringify(choices)[1])
 
             # Convert from list into string if string contains spaces and was the last required argument
             if real_type.__name__ == "string" and isinstance(value, list): value = " ".join(value)
@@ -1482,7 +1482,7 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list") and choices is not None and value is not None:
                 # Check whether they are all in the choices
                 for item in value:
-                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+                    if not item in choices: raise ValueError("Element '" + str(item) + "' not recognized. Options are: " + stringify.stringify(choices)[1])
 
             # Set the value
             settings[name] = value
@@ -1504,7 +1504,7 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list") and choices is not None and value is not None:
                 # Check whether they are all in the choices
                 for item in value:
-                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+                    if not item in choices: raise ValueError("Element '" + str(item) + "' not recognized. Options are: " + stringify.stringify(choices)[1])
 
             # Set the value
             settings[name] = value
