@@ -18,6 +18,7 @@ from .component import HTMLPageComponent, stylesheet_url, table_class
 from ...core.tools import html
 from ..fitting.run import FittingRun
 from ..tests.data import M81TestData
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -106,7 +107,10 @@ class ModelPageGenerator(HTMLPageComponent):
         super(ModelPageGenerator, self).setup(**kwargs)
 
         # Load the fitting run
-        self.fitting_run = FittingRun.from_name(self.config.path, self.config.fitting_run)
+        #self.fitting_run = FittingRun.from_name(self.config.path, self.config.fitting_run)
+
+        # Set the scripts path
+        self.scripts_path = fs.create_directory_in(self.html_path, "scripts_model")
 
     # -----------------------------------------------------------------
 
@@ -172,7 +176,7 @@ class ModelPageGenerator(HTMLPageComponent):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Making the table of the old stellar bulge parameters ....")
 
         # Make the table
         self.old_bulge_table = html.SimpleTable.from_composite(data.bulge, css_class=table_class)
@@ -183,8 +187,11 @@ class ModelPageGenerator(HTMLPageComponent):
 
         """
         This function ...
-        :return: 
+        :return:
         """
+
+        # Inform the user
+        log.info("Making the table of the old stellar disk parameters ...")
 
         self.old_disk_table = html.SimpleTable.from_composite(data.old_deprojection, css_class=table_class)
 
@@ -197,6 +204,9 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the table of the young stellar disk parameters ...")
+
         self.young_table = html.SimpleTable.from_composite(data.young_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
@@ -208,6 +218,9 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the table of the ionizing stellar disk parameters ...")
+
         self.ionizing_table = html.SimpleTable.from_composite(data.ionizing_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
@@ -218,6 +231,9 @@ class ModelPageGenerator(HTMLPageComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making the table of the dust disk parameters ...")
 
         self.dust_table = html.SimpleTable.from_composite(data.dust_deprojection, css_class=table_class)
 
@@ -263,11 +279,19 @@ class ModelPageGenerator(HTMLPageComponent):
         #ionizing = self.definition.ionizing_stars_deprojection
         #dust = self.definition.dust_deprojection
 
+        plot_kwargs = dict()
+        plot_kwargs["width"] = widget_width
+        plot_kwargs["height"] = widget_height
+        plot_kwargs["style"] = widget_style
+
+        render_kwargs = dict()
+        render_kwargs["only_body"] = True
+
         # Generate HTML
-        self.old_model = data.render_components_html(old_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
-        self.young_model = data.render_components_html(young_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
-        self.ionizing_model = data.render_components_html(ionizing_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
-        self.dust_model = data.render_components_html(dust_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
+        self.old_model = data.render_components_html(old_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.young_model = data.render_components_html(young_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.ionizing_model = data.render_components_html(ionizing_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.dust_model = data.render_components_html(dust_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -337,7 +361,9 @@ class ModelPageGenerator(HTMLPageComponent):
         log.info("Writing ...")
 
         # Write models page
-        self.write_page()
+        #self.write_page()
+        from ...core.tools import filesystem as fs
+        fs.write_text(self.page_path, self.page)
 
     # -----------------------------------------------------------------
 

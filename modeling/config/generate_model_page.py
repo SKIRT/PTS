@@ -18,9 +18,9 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Fitting run setting
-if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
-elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
-else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
+# # Fitting run setting
+# if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
+# elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
+# else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
 
 # -----------------------------------------------------------------

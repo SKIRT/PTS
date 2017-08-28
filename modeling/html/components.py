@@ -20,10 +20,18 @@ from ..plotting.model import plot_galaxy_components, generate_html
 from ..html.component import stylesheet_url, page_style, sortable_url, preview_url
 from ...magic.view.html import javascripts, css_scripts
 from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+from ...core.tools.utils import lazyproperty
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 page_width = 600
+
+# -----------------------------------------------------------------
+
+widget_width = 400
+widget_height = 500
+widget_style = "minimal"
 
 # -----------------------------------------------------------------
 
@@ -95,6 +103,9 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Call the setup function of the base class
         super(ComponentsPageGenerator, self).setup(**kwargs)
 
+        # Set the scripts path
+        self.scripts_path = fs.create_directory_in(self.html_path, "scripts_components")
+
     # -----------------------------------------------------------------
 
     def make_plots(self):
@@ -118,6 +129,36 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def make_plot_data_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["width"] = widget_width
+        kwargs["height"] = widget_height
+        kwargs["style"] = widget_style
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def render_kwargs(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["only_body"] = True
+        return kwargs
+
+    # -----------------------------------------------------------------
+
     def plot_bulge(self):
 
         """
@@ -130,9 +171,9 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
         # Plot, create HTML
         components = {"bulge": self.bulge_model}
-        kwargs = {}
-        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
-        self.bulge_plot = generate_html(box, **kwargs)
+        box = plot_galaxy_components(components, draw=True, show=False, **self.make_plot_data_kwargs)
+        title = "Bulge model"
+        self.bulge_plot = generate_html(box, title, self.scripts_path, **self.render_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -148,9 +189,9 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
         # Plot, create HTML
         components = {"disk": self.disk_model}
-        kwargs = {}
-        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
-        self.disk_plot = generate_html(box, **kwargs)
+        box = plot_galaxy_components(components, draw=True, show=False, **self.make_plot_data_kwargs)
+        title = "Disk model"
+        self.disk_plot = generate_html(box, title, self.scripts_path, **self.render_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -166,9 +207,9 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
         # Plot, create HTML
         components = {"disk": self.disk_model, "bulge": self.bulge_model}
-        kwargs = {}
-        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
-        self.model_plot = generate_html(box, **kwargs)
+        box = plot_galaxy_components(components, draw=True, show=False, **self.make_plot_data_kwargs)
+        title = "Model"
+        self.model_plot = generate_html(box, title, self.scripts_path, **self.render_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -264,21 +305,21 @@ class ComponentsPageGenerator(HTMLPageComponent):
         self.page += html.newline
 
         self.page += "BULGE"
-
+        self.page += html.newline + html.newline
         self.page += self.bulge_table
         self.page += html.newline + html.newline
         self.page += self.bulge_plot
         self.page += html.newline + html.newline
 
         self.page += "DISK"
-
+        self.page += html.newline + html.newline
         self.page += self.disk_table
         self.page += html.newline + html.newline
         self.page += self.disk_plot
         self.page += html.newline + html.newline
 
         self.page += "MODEL"
-
+        self.page += html.newline + html.newline
         self.page += self.model_plot
         self.page += html.newline
 

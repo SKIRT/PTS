@@ -1735,10 +1735,6 @@ def make_replace_infs_by_nans(display=None, quote_character='"'):
 
 # -----------------------------------------------------------------
 
-
-
-# -----------------------------------------------------------------
-
 def add_region_aux_file(name, path, image=None):
 
     """

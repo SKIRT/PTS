@@ -209,6 +209,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def html_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.html_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def object_name(self):
 
         """

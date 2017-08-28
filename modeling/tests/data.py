@@ -299,6 +299,7 @@ class M81TestData(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
     def young_scale_height(self):
 
         """
@@ -313,6 +314,7 @@ class M81TestData(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
     def ionizing_scale_height(self):
 
         """
@@ -469,6 +471,7 @@ class M81TestData(object):
         return DeprojectionModel3D.from_wcs(self.wcs, self.properties.center, self.properties.distance,
                                                           self.properties.position_angle, self.properties.inclination,
                                                           young_map_path, self.young_scale_height)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -536,15 +539,22 @@ class M81TestData(object):
 
     # -----------------------------------------------------------------
 
-    def render_components_html(self, components, **kwargs):
+    def render_components_html(self, components, output_path, plot_kwargs=None, render_kwargs=None):
 
         """
         This function ...
         :param components:
+        :param output_path:
+        :param plot_kwargs:
+        :param render_kwargs:
         :return:
         """
 
-        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
-        return generate_html(box, **kwargs)
+        if plot_kwargs is None: plot_kwargs = {}
+        if render_kwargs is None: render_kwargs = {}
+
+        title = "Bulge and disk"
+        box = plot_galaxy_components(components, draw=True, show=False, **plot_kwargs)
+        return generate_html(box, title, output_path, **render_kwargs)
 
 # -----------------------------------------------------------------

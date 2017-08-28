@@ -650,7 +650,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
-                        npixels=1, connectivity=8, present=None):
+                        npixels=1, connectivity=8, present=None, fuzzy=False):
 
         """
         Thisn function ...
@@ -663,6 +663,7 @@ class MapsSelectionComponent(MapsComponent):
         :param npixels:
         :param connectivity:
         :param present:
+        :param fuzzy:
         :return:
         """
 
@@ -745,7 +746,14 @@ class MapsSelectionComponent(MapsComponent):
                 frame = frames[name]
                 errormap = errors[name]
                 level = sigma_levels[index]
-                mask = frame > level * errormap
+
+                # Create the mask
+                if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level)
+                else:
+                    #mask = self.create_mask_for_level(significance, level)
+                    mask = frame > level * errormap
+
+                # Add the mask
                 masks.append(mask)
 
             # Create intersection mask

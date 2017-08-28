@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 from IPython.display import display
 #from ipywidgets import embed_snippet, embed_minimal_html
@@ -29,26 +30,15 @@ import ipywidgets
 from astropy.io.fits import Header
 import ipyvolume.pylab as p3
 import ipyvolume
-from ipyvolume.embed import embed_html, template, get_state, add_referring_widgets
+#from ipyvolume.embed import embed_html, template, get_state, add_referring_widgets, template_external
+
+from ipywidgets import embed as wembed
+from ipyvolume.utils import download_to_file, download_to_bytes
+
+from ipyvolume.embed import save_ipyvolumejs, save_requirejs, save_embed_js, save_font_awesome
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.log import log
-
-# -----------------------------------------------------------------
-
-body_template = """<script src="https://unpkg.com/jupyter-js-widgets@~2.0.20/dist/embed.js"></script>
-<script type="application/vnd.jupyter.widget-state+json">
-{json_data}
-</script>
-{widget_views}"""
-
-# -----------------------------------------------------------------
-
-widget_view_template = """<script type="application/vnd.jupyter.widget-view+json">
-{{
-    "model_id": "{model_id}"
-}}
-</script>"""
 
 # -----------------------------------------------------------------
 
@@ -348,62 +338,200 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
     else: return data
 
 # -----------------------------------------------------------------
+#
+# def generate_html_old(widgets, title, drop_defaults=False, all=False, as_dict=False, only_body=False, **kwargs):
+#
+#     """
+#     This function ...
+#     :param widgets:
+#     :param drop_defaults:
+#     :param all:
+#     :param title:
+#     :param external_json:
+#     :param as_dict:
+#     :param only_body:
+#     :param kwargs:
+#     :return:
+#     """
+#
+#     try:
+#         widgets[0]
+#     except (IndexError, TypeError):
+#         widgets = [widgets]
+#
+#     # collect the state of all relevant widgets
+#     state = {}
+#     previous = 0 + ipyvolume.serialize.performance
+#     try:
+#         # we cannot serialize binary buffers yet into the json format, so go back to json
+#         # style, and afterwards set it back
+#         ipyvolume.serialize.performance = 0
+#         if all:
+#             state = ipywidgets.Widget.get_manager_state(drop_defaults=drop_defaults)["state"]
+#         for widget in widgets:
+#             if not all:
+#                 get_state(widget, state, drop_defaults=drop_defaults)
+#         # it may be that other widgets refer to the collected widgets, such as layouts, include those as well
+#         while add_referring_widgets(state):
+#             pass
+#     finally:
+#         ipyvolume.serialize.performance = previous
+#
+#     values = dict(extra_script_head="", body_pre="", body_post="")
+#     values.update(kwargs)
+#     widget_views = ""
+#     for widget in widgets:
+#         widget_views += widget_view_template_external.format(**dict(model_id=widget.model_id))
+#     json_data = dict(version_major=1, version_minor=0, state=state)
+#     values.update(dict(title=title,
+#               json_data=json.dumps(json_data),
+#                    widget_views=widget_views))
+#
+#     #print(values.keys())
+#
+#     # Return
+#     if as_dict: return values
+#     elif only_body: return body_template_external.format(**values)
+#     else:
+#         html_code = template_external.format(**values)
+#         return html_code
 
-def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embed example", template=template, widget_view_template=widget_view_template, as_dict=False, only_body=False, **kwargs):
+# -----------------------------------------------------------------
+
+html_template = u"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    {extra_script_head}
+</head>
+<body>
+{body_pre}
+{snippet}
+{body_post}
+</body>
+</html>
+"""
+
+# -----------------------------------------------------------------
+
+html_body_template = u"""
+{body_pre}
+{snippet}
+{body_post}
+"""
+
+# -----------------------------------------------------------------
+
+# FROM NEW IPYVOLUME VERSION (embed_html)
+# widgets, title, drop_defaults=False, all=False, as_dict=False, only_body=False, **kwargs
+def generate_html(widgets, title, path, makedirs=True, all_states=False,
+               offline=False,
+               drop_defaults=False,
+               template_options=(("extra_script_head", ""), ("body_pre", ""), ("body_post", "")),
+               devmode=False, offline_cors=False, only_body=False, as_dict=False,):
+
+    """ Write a minimal HTML file with widget views embedded.
+
+    :type filepath: str
+    :param filepath: The file to write the HTML output to.
+    :type widgets: widget or collection of widgets or None
+    :param widgets:The widgets to include views for. If None, all DOMWidgets are included (not just the displayed ones).
+    :param makedirs: whether to make directories in the filename path, if they do not already exist
+    :param title: title for the html page
+    :param all_states: if True, the state of all widgets know to the widget manager is included, else only those in widgets
+    :param offline: if True, use local urls for required js/css packages and download all js/css required packages
+    (if not already available), such that the html can be viewed with no internet connection
+    :param scripts_path: the directory to save required js/css packages to (relative to the filepath)
+    :type drop_defaults: bool
+    :param drop_defaults: Whether to drop default values from the widget states
+    :param template: template string for the html, must contain at least {title} and {snippet} place holders
+    :param template_options: list or dict of additional template options
+    :param devmode: if True, attempt to get index.js from local js/dist directory
+    :param devmode: if True, attempt to get index.js from local js/dist folder
+    :param offline_cors: if True, sets crossorigin attribute to anonymous, this allows for the return of error data
+    from js scripts but can block local loading of the scripts in some browsers
 
     """
-    This function ...
-    :param widgets:
-    :param drop_defaults:
-    :param all:
-    :param title:
-    :param external_json:
-    :param template:
-    :param widget_view_template:
-    :param as_dict:
-    :param only_body:
-    :param kwargs:
-    :return:
-    """
 
-    try:
-        widgets[0]
-    except (IndexError, TypeError):
-        widgets = [widgets]
+    #dir_name_dst = os.path.dirname(os.path.abspath(filepath))
+    #if not os.path.exists(dir_name_dst) and makedirs: os.makedirs(dir_name_dst)
 
-    # collect the state of all relevant widgets
-    state = {}
-    previous = 0 + ipyvolume.serialize.performance
-    try:
-        # we cannot serialize binary buffers yet into the json format, so go back to json
-        # style, and afterwards set it back
-        ipyvolume.serialize.performance = 0
-        if all:
-            state = ipywidgets.Widget.get_manager_state(drop_defaults=drop_defaults)["state"]
-        for widget in widgets:
-            if not all:
-                get_state(widget, state, drop_defaults=drop_defaults)
-        # it may be that other widgets refer to the collected widgets, such as layouts, include those as well
-        while add_referring_widgets(state):
-            pass
-    finally:
-        ipyvolume.serialize.performance = previous
+    template_opts = {"extra_script_head": "", "body_pre": "", "body_post": ""}
+    template_opts.update(dict(template_options))
 
-    values = dict(extra_script_head="", body_pre="", body_post="")
-    values.update(kwargs)
-    widget_views = ""
-    for widget in widgets:
-        widget_views += widget_view_template.format(**dict(model_id=widget.model_id))
-    json_data = dict(version_major=1, version_minor=0, state=state)
-    values.update(dict(title=title,
-              json_data=json.dumps(json_data),
-                   widget_views=widget_views))
-
-    # Return
-    if as_dict: return values
-    elif only_body: return body_template.format(**values)
+    if all_states: state = None
     else:
-        html_code = template.format(**values)
+        state = wembed.dependency_state(widgets, drop_defaults=drop_defaults)
+
+    # if not offline:
+    #
+    #     # we have to get the snippet (rather than just call embed_minimal_html), because if the new template includes
+    #     # {} characters (such as in the bokeh example) then an error is raised when trying to format
+    #     snippet = wembed.embed_snippet(widgets, state=state, requirejs=True, drop_defaults=drop_defaults)
+    #     directory = os.path.dirname(filepath)
+
+    #else:
+    if True:
+
+        #if not os.path.isabs(scripts_path):
+        #    scripts_path = os.path.join(os.path.dirname(filepath), scripts_path)
+
+        # ensure script path is above filepath
+        # rel_script_path = os.path.relpath(scripts_path, os.path.dirname(filepath))
+        # if rel_script_path.startswith(".."):
+        #     raise ValueError("The scripts_path must have the same root directory as the filepath")
+        # elif rel_script_path=='.':
+        #     rel_script_path = ''
+        # else:
+        #     rel_script_path += '/'
+
+        scripts_path = path
+        rel_script_path = path
+        if not rel_script_path.endswith("/"): rel_script_path += "/"
+
+        fname_pyv = save_ipyvolumejs(scripts_path, devmode=devmode)
+        fname_require = save_requirejs(os.path.join(scripts_path))
+        fname_embed = save_embed_js(os.path.join(scripts_path))
+        fname_fontawe = save_font_awesome(os.path.join(scripts_path))
+
+        subsnippet = wembed.embed_snippet(widgets, embed_url=rel_script_path+fname_embed,
+                                          requirejs=False, drop_defaults=drop_defaults, state=state)
+        if not offline_cors:
+            # TODO DIRTY hack, we need to do this cleaner upstream
+            subsnippet = subsnippet.replace(' crossorigin="anonymous"', '')
+
+        cors_attribute = 'crossorigin="anonymous"' if offline_cors else ' '
+        snippet = """
+<link href="{rel_script_path}{fname_fontawe}/css/font-awesome.min.css" rel="stylesheet">    
+<script src="{rel_script_path}{fname_require}"{cors} data-main='./{rel_script_path}' ></script>
+<script>
+    require.config({{
+      map: {{
+        '*': {{
+          'ipyvolume': '{fname_pyv}',
+        }}
+      }}}})
+</script>
+{subsnippet}
+        """.format(rel_script_path=rel_script_path, fname_fontawe=fname_fontawe, fname_require=fname_require,
+                   fname_pyv=os.path.splitext(fname_pyv)[0],
+                   subsnippet=subsnippet, cors=cors_attribute)
+
+    # Generate HTML
+    template_opts['snippet'] = snippet
+    template_opts['title'] = title
+
+    # Give
+    if as_dict: return template_opts
+    elif only_body:
+        html_code = html_body_template.format(**template_opts)
         return html_code
+    else:
+        html_code = html_template.format(**template_opts)
+        return html_code
+
+    #with io.open(filepath, "w", encoding='utf8') as f:
+    #    f.write(html_code)
 
 # -----------------------------------------------------------------

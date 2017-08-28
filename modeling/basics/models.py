@@ -1256,7 +1256,7 @@ class DeprojectionModel3D(Model3D):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def map_nonzeros(self):
+    def map_nonzeroes(self):
 
         """
         This function ...
@@ -1280,38 +1280,38 @@ class DeprojectionModel3D(Model3D):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def map_nonzeros_pixels(self):
+    def map_nonzeroes_pixels(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.map.nonzeros_pixels
+        return self.map.nonzeroes_pixels
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def map_nonzeros_x(self):
+    def map_nonzeroes_x(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.map.nonzeros_x
+        return self.map.nonzeroes_x
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def map_nonzeros_y(self):
+    def map_nonzeroes_y(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.map.nonzeros_y
+        return self.map.nonzeroes_y
 
     # -----------------------------------------------------------------
 
@@ -1323,7 +1323,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return np.min(self.map_nonzeros_x)
+        return np.min(self.map_nonzeroes_x)
 
     # -----------------------------------------------------------------
 
@@ -1335,7 +1335,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return np.max(self.map_nonzeros_x)
+        return np.max(self.map_nonzeroes_x)
 
     # -----------------------------------------------------------------
 
@@ -1347,7 +1347,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return np.min(self.map_nonzeros_y)
+        return np.min(self.map_nonzeroes_y)
 
     # -----------------------------------------------------------------
 
@@ -1359,7 +1359,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        return np.max(self.map_nonzeros_y)
+        return np.max(self.map_nonzeroes_y)
 
     # -----------------------------------------------------------------
 

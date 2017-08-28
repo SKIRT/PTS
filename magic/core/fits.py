@@ -433,7 +433,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             flat_header.remove(key)
 
     # Check CTYPE1
-    if len(flat_header["CTYPE1"]) != 8:
+    if "CTYPE1" in flat_header and len(flat_header["CTYPE1"]) != 8:
         ndashes = strings.noccurences(flat_header["CTYPE1"], "-")
         to_replace = "-" * ndashes
         difference = len(flat_header["CTYPE1"]) - 8
@@ -443,7 +443,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         flat_header["CTYPE1"] = flat_header["CTYPE1"].replace(to_replace, replacement)
 
     # Check CTYPE2
-    if len(flat_header["CTYPE2"]) != 8:
+    if "CTYPE2" in flat_header and len(flat_header["CTYPE2"]) != 8:
         ndashes = strings.noccurences(flat_header["CTYPE2"], "-")
         to_replace = "-" * ndashes
         difference = len(flat_header["CTYPE2"]) - 8
