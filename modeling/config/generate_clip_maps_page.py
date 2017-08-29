@@ -14,7 +14,8 @@ from pts.modeling.config.maps import definition
 # -----------------------------------------------------------------
 
 #relative_sigma_levels = [0.5, 1., 1.5]
-relative_sigma_levels = [1., 1.2, 1.5]
+#relative_sigma_levels = [1., 1.2, 1.5]
+relative_sigma_levels = [0.5, 0.75, 0.85, 1.]
 default_relative_sigma_level = 1.0
 
 # -----------------------------------------------------------------
@@ -22,6 +23,10 @@ default_relative_sigma_level = 1.0
 scales = ["log", "sqrt"]
 default_colour = "jet"
 default_interval = "pts"
+
+# -----------------------------------------------------------------
+
+default_mask_color = "black"
 
 # -----------------------------------------------------------------
 
@@ -122,6 +127,7 @@ definition.add_flag("replot_old", "replot already exising old stellar map plots"
 definition.add_flag("replot_young", "replot already existing young stellar map plots", False)
 definition.add_flag("replot_ionizing", "replot already existing ionizing stellar map plots", False)
 definition.add_flag("replot_dust", "replot already existing dust map plots")
+definition.add_flag("replot_image_masks", "replot the image masks")
 
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
@@ -131,6 +137,10 @@ definition.add_optional("image_width", "positive_integer", "width of the image")
 definition.add_optional("image_height", "positive_integer", "height of the image", 300)
 
 # -----------------------------------------------------------------
+
+# For masks
+definition.add_optional("mask_colour", "string", "colour for the mask", default=default_mask_color)
+#definition.add_flag("mask_alpha", "use alpha for the mask", True) # we allow alpha for alpha masks and not for regular masks, to tell them apart
 
 # For masking
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)

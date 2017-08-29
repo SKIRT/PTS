@@ -19,7 +19,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
-from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
+from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts
 from ....core.tools import browser
@@ -39,8 +39,13 @@ from ....core.basics import containers
 # -----------------------------------------------------------------
 
 clipped_name = "clipped"
+image_masks_name = "image_masks"
 ncolumns = 2
 colour_map = "jet"
+
+# -----------------------------------------------------------------
+
+page_width = 1000
 
 # -----------------------------------------------------------------
 
@@ -60,6 +65,14 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Call the constructor of the base class
         super(ClipMapsPageGenerator, self).__init__(*args, **kwargs)
+
+        # Paths
+        self.clipped_plots_path = None
+        self.image_mask_plots_path = None
+
+        # Plot paths for image masks
+        self.image_mask_plot_paths = dict()
+        self.image_mask_plot_paths_images = defaultdict(dict)
 
         # Plot paths
         self.old_plot_path = None
@@ -128,6 +141,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 5. Make plots
         self.make_plots()
 
+        # Make image mask plots
+        self.plot_image_masks()
+
         # 6. Make sliders
         self.make_sliders()
 
@@ -170,6 +186,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         if self.config.add_ionizing: self.ionizing_plot_path = fs.create_directory_in(self.clipped_plots_path, "ionizing", clear=self.config.replot_ionizing)
         if self.config.add_dust: self.dust_plot_path = fs.create_directory_in(self.clipped_plots_path, "dust", clear=self.config.replot_dust)
 
+        # Create directory to contain the image mask plots
+        self.image_mask_plots_path = fs.join(self.maps_html_path, image_masks_name)
+        if fs.is_directory(self.image_mask_plots_path):
+            if self.config.replot or self.config.replot_image_masks: fs.clear_directory(self.image_mask_plots_path)
+        else: fs.create_directory(self.image_mask_plots_path)
+
         # Set random
         if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
 
@@ -188,6 +210,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Create plot directories for each image
         self.create_plot_directories()
 
+        # Create plot directories for image masks
+        self.create_image_mask_plot_directories()
+
     # -----------------------------------------------------------------
 
     def prompt(self):
@@ -198,7 +223,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Prompting for user input ...")
+        log.info("Prompting for user input (if necessary) ...")
 
         # Old
         if not self.has_old_selection: self.prompt_old()
@@ -324,6 +349,30 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Set
             self.dust_plot_map_paths[name] = dirpath
+
+    # -----------------------------------------------------------------
+
+    def create_image_mask_plot_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the plot directories for the image masks ...")
+
+        # Loop over the images
+        for name in self.image_names:
+
+            # Determine the path
+            path = fs.join(self.image_mask_plots_path, name)
+
+            # Set
+            self.image_mask_plot_paths[name] = path
+
+            # Create the directory if necessary
+            if not fs.is_directory(path): fs.create_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -1780,8 +1829,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
-        if isinstance(mask, AlphaMask): mask.saveto_png(filepath, colour="black", alpha=True) # alpha to recognize alpha masks
-        elif isinstance(mask, Mask): mask.saveto_png(filepath, colour="black", alpha=False) # no alpha to recognize regular masks
+        if isinstance(mask, AlphaMask): mask.saveto_png(filepath, colour=self.config.mask_colour, alpha=True) # alpha to recognize alpha masks
+        elif isinstance(mask, Mask): mask.saveto_png(filepath, colour=self.config.mask_colour, alpha=False) # no alpha to recognize regular masks
         else: raise ValueError("Not a valid mask")
 
     # -----------------------------------------------------------------
@@ -2322,6 +2371,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
+        # Return the filepath
         return filepath
 
     # -----------------------------------------------------------------
@@ -2508,6 +2558,130 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def has_all_mask_plots_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the plot path for this image
+        plot_path = self.image_mask_plot_paths[name]
+
+        # Loop over the levels
+        for level in self.sigma_levels_for_images[name]:
+
+            # Determine path
+            path = fs.join(plot_path, str(level) + ".png")
+
+            # Determine mask path
+            #mask_path = fs.join(plot_path, str(level) + "_mask.png")
+
+            # Check
+            # if fs.is_file(path) and fs.is_file(mask_path): pass
+            # else: has_all = False
+            #if not fs.is_file(path) or not fs.is_file(mask_path): return False
+            if not fs.is_file(path): return False
+
+        # Return
+        return True
+
+    # -----------------------------------------------------------------
+
+    def plot_image_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the image masks ...")
+
+        # Loop over the images
+        for name in self.image_names:
+
+            # Get the sigma levels
+            levels = self.sigma_levels_for_images[name]
+
+            # Get plot path
+            plot_path = self.image_mask_plot_paths[name]
+
+            # Check whether not all plots are already present
+            # if self.has_all_plots(name): continue
+            if self.has_all_mask_plots_for_image(name):
+                log.success("All mask plots for the '" + name + "' image are already present")
+                for level in levels:
+                    path = fs.join(plot_path, str(level) + ".png")
+                    self.image_mask_plot_paths_images[name][level] = path
+                continue
+
+            # Debugging
+            log.debug("Plotting the masks for the '" + name + "' image ...")
+
+            # Get frame
+            frame = self.dataset.get_frame(name)
+
+            # Crop the frame
+            frame.crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+            # Get error map and crop as well
+            errormap = self.dataset.get_errormap(name)
+            errormap.rebin(frame.wcs)
+
+            # Create the significance map
+            significance = frame / errormap
+
+            # Create the plots for the different levels
+            for level in levels:
+                path = self.plot_image_mask_for_level(name, significance, plot_path, level)
+                self.image_mask_plot_paths_images[name][level] = path
+
+    # -----------------------------------------------------------------
+
+    def plot_image_mask_for_level(self, name, significance, plot_path, level):
+
+        """
+        This function ...
+        :param name:
+        :param significance:
+        :param plot_path:
+        :param level:
+        :return:
+        """
+
+        # Determine path
+        path = fs.join(plot_path, str(level) + ".png")
+
+        # Check
+        if fs.is_file(path):
+            log.success("The image mask plot for the '" + name + "' image at a sigma level of '" + str(level) + "' is already present")
+            return path
+
+        # Debugging
+        log.debug("Making plot for the '" + name + "' image mask at a sigma level of '" + str(level) + "' ...")
+
+        # Create the mask
+        if self.config.fuzzy_mask: mask = self.create_fuzzy_mask_for_level(significance, level, self.config.fuzziness, offset=self.config.fuzzy_min_significance_offset)
+        else: mask = self.create_mask_for_level(significance, level)
+
+        # FINISH MASK: keep largest and fill holes
+        mask = mask.largest(npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+        mask.fill_holes()
+
+        # Save the mask
+        if self.config.fuzzy_mask: alpha = True
+        else: alpha = False
+
+        # Save the mask plot
+        mask.saveto_png(path, colour=self.config.mask_colour, alpha=alpha)
+
+        # Return the path
+        return path
+
+    # -----------------------------------------------------------------
+
     def make_sliders(self):
 
         """
@@ -2533,7 +2707,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         paths["dust"] = self.dust_plot_paths
 
         # Make the slider
-        self.sliders = html.make_multi_image_sliders(names, paths, self.image_names, self.sigma_levels_for_images, self.default_sigma_levels_for_images, width=None, height=None, basic=True, img_class=None)
+        # image_names, urls, regulator_names, labels, default
+        self.sliders = html.make_multi_image_sliders(names, paths, self.image_names, self.sigma_levels_for_images,
+                                                     self.default_sigma_levels_for_images, width=self.image_width,
+                                                     height=self.image_height, basic=True, img_class=None,
+                                                     label_images=self.image_mask_plot_paths_images, table_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -2550,8 +2728,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         css_paths = css_scripts[:]
         css_paths.append(stylesheet_url)
 
+        # Create CSS for the page width
+        css = make_page_width(page_width)
+
         # Create the page
-        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
+        self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
 
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
