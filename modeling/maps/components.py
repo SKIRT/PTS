@@ -1476,7 +1476,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
                                                  remote=self.remote, npixels=self.config.min_npixels,
                                                  connectivity=self.config.connectivity,
-                                                 rebin_remote_threshold=self.config.rebin_remote_threshold)
+                                                 rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                                 fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                                 fuzziness_offset=self.config.fuzzy_min_significance_offset)
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -1514,7 +1516,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
                                                    remote=self.remote, npixels=self.config.min_npixels,
                                                    connectivity=self.config.connectivity,
-                                                   rebin_remote_threshold=self.config.rebin_remote_threshold)
+                                                   rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                                   fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                                   fuzziness_offset=self.config.fuzzy_min_significance_offset)
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -1552,7 +1556,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
                                                       remote=self.remote, npixels=self.config.min_npixels,
                                                       connectivity=self.config.connectivity,
-                                                      rebin_remote_threshold=self.config.rebin_remote_threshold)
+                                                      rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                                      fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                                      fuzziness_offset=self.config.fuzzy_min_significance_offset)
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -1590,7 +1596,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
                                                   remote=self.remote, npixels=self.config.min_npixels,
                                                   connectivity=self.config.connectivity,
-                                                  rebin_remote_threshold=self.config.rebin_remote_threshold)
+                                                  rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                                  fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                                  fuzziness_offset=self.config.fuzzy_min_significance_offset)
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True

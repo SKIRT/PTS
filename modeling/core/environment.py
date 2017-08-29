@@ -42,6 +42,7 @@ from ...core.tools.serialization import load_dict
 
 config_filename = "modeling.cfg"
 history_filename = "history.dat"
+commands_filename = "commands.txt"
 
 # -----------------------------------------------------------------
 
@@ -133,6 +134,15 @@ class ModelingEnvironment(object):
             from .history import ModelingHistory
             history = ModelingHistory()
             history.saveto(self.history_file_path)
+
+        # Determine the path to the commands file
+        self.commands_file_path = fs.join(self.path, commands_filename)
+
+        # Initialize the commands file
+        if not fs.is_file(self.commands_file_path):
+            from .commands import ModelingCommands
+            commands = ModelingCommands()
+            commands.saveto(self.commands_file_path)
 
         # Get the full paths to the necessary subdirectories and CREATE THEM
         self.fit_path = fs.create_directory_in(self.path, fit_name)

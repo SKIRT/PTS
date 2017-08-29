@@ -124,4 +124,12 @@ definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust sca
 definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
 definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 
+# For plotting mask
+#definition.add_flag("mask_alpha", "use alpha for the mask", True) -> No: we write masks as FITS files, not as PNG plots
+
+# For masking
+definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
+definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
+definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
+
 # -----------------------------------------------------------------
