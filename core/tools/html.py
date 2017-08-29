@@ -1451,7 +1451,7 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     # script += "\n"
 
     # Initialize images
-    script += function_name + '()\n'
+    script += function_name + '();\n'
     script += "\n"
 
     # # Make function for each regulator
@@ -1486,7 +1486,7 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
         regulator_ids_image = [make_usable(regulator_name) for regulator_name in regulator_names_image]
         dependencies[image_id] = regulator_ids_image
 
-        regulator_ids_value_names = [regulator_id + "_value" for regulator_id in regulator_ids_image]
+        regulator_ids_value_names = [strings.replace_first_digit_by_word(regulator_id) + "_value" for regulator_id in regulator_ids_image]
 
         script += 'function ' + image_change_function_name + '(' + tostr(regulator_ids_value_names) + ')\n'
         script += '{\n'
@@ -1532,7 +1532,7 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
         slider_id = slider_ids[regulator_id]
 
         script += '    var val_' + regulator_id + ' = document.getElementById("' + slider_id + '").value;\n'
-        script += '    var index_' + regulator_id + ' = val - 1;\n'
+        script += '    var index_' + regulator_id + ' = val_' + regulator_id + ' - 1;\n'
         script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index_' + regulator_id + '];\n'
         script += '\n'
 

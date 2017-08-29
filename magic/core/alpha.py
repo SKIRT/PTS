@@ -443,12 +443,12 @@ def product(*args):
 
     if len(args) == 1: return AlphaMask(args[0].data)
 
-    arrays = [arg.data for arg in args]
+    arrays = [arg.as_real() for arg in args]
     # arrays = []
     # for arg in args:
     #     if isinstance(arg, MaskBase): arrays.append(arg.data)
     #     elif isinstance(arg, oldMask): arrays.append(arg)
     #     else: arrays.append(arg)
-    return AlphaMask(np.product(arrays, axis=0))
+    return AlphaMask.from_real(np.product(arrays, axis=0))
 
 # -----------------------------------------------------------------

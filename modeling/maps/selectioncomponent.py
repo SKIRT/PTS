@@ -833,14 +833,22 @@ class MapsSelectionComponent(MapsComponent):
         # Determine the maximum significance
         max_significance = np.nanmax(significance)
 
+        # Debugging
+        log.debug("Maximal significance: " + str(max_significance))
+
         # Construct value range
         lower_relative = 1. - fuzziness  # example: 1. - 0.1
         upper_relative = 1. + fuzziness
 
         # ADAPT IF THE RANGE IS TOO BROAD
-        if level * upper_relative > max_significance: upper_relative = 1.
+        if level * upper_relative > max_significance - offset:
+            log.warning("Changing the upper relative sigma level for the fuzzy edge from " + str(upper_relative) + " to 1")
+            upper_relative = 1.
 
         value_range = RealRange.around(level, lower_relative, upper_relative)
+
+        # Debugging
+        log.debug("Sigma level range for fuzzy edge: " + str(value_range))
 
         # Check maximum of the range
         if value_range.max + offset > max_significance: raise ValueError("This should not happen")

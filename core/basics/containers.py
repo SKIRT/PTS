@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import numpy as np
 from collections import OrderedDict, Callable
 
 # Import the relevant PTS classes and modules
@@ -1080,11 +1081,75 @@ def ordered_by_value(dictionary):
     keys = dictionary.keys()
     values = dictionary.values()
 
-    import numpy as np
     sorted_indices = np.argsort(values)
 
     new = OrderedDict()
     for index in sorted_indices: new[keys[index]] = values[index]
     return new
+
+# -----------------------------------------------------------------
+
+def equal_dicts(dict_a, dict_b):
+
+    """
+    This function ...
+    :param dict_a:
+    :param dict_b:
+    :return:
+    """
+
+    if list(sorted(dict_a.keys())) != list(sorted(dict_b.keys())): return False
+
+    for key in dict_a:
+        if dict_a[key] != dict_b[key]: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def close_dicts(dict_a, dict_b, rtol=1.e-5, atol=1.e-8):
+
+    """
+    This function ...
+    :param dict_a:
+    :param dict_b:
+    :param rtol:
+    :param atol:
+    :return:
+    """
+
+    if list(sorted(dict_a.keys())) != list(sorted(dict_b.keys())): return False
+
+    for key in dict_a:
+        if types.is_real_type(dict_a[key]) or types.is_real_type(dict_b[key]):
+            if not np.isclose(dict_a[key], dict_b[key], rtol=rtol, atol=atol): return False
+        else:
+            if dict_a[key] != dict_b[key]: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def dicts_differences(dict_a, dict_b):
+
+    """
+    This function ...
+    :param dict_a:
+    :param dict_b:
+    :return:
+    """
+
+    if list(sorted(dict_a.keys())) != list(sorted(dict_b.keys())): return "keys: " + str(dict_a.keys()) + " vs " + str(dict_b.keys())
+
+    differences = OrderedDict()
+    for key in dict_a:
+        if dict_a[key] == dict_b[key]: differences[key] = "OK"
+        elif types.is_real_type(dict_a) or types.is_real_type(dict_b[key]):
+            adiff = abs(dict_a[key] - dict_b[key])
+            rdiff = adiff / dict_a[key]
+            differences[key] = repr(dict_a[key]) + " vs " + repr(dict_b[key]) + " (adiff = " + repr(adiff) + ", rdiff = " + repr(rdiff) + ")"
+        else: differences[key] = str(dict_a[key]) + " vs " + str(dict_b[key])
+
+    return differences
 
 # -----------------------------------------------------------------
