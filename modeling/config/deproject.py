@@ -12,6 +12,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 methods = ["skirt", "pts"]
 default_method = "pts"
+default_downsample_factor = 2.
 
 # -----------------------------------------------------------------
 
@@ -20,6 +21,9 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Method
 definition.add_optional("method", "string", "method for deprojection", default_method, choices=methods)
+
+# Downsample
+definition.add_optional("downsample_factor", "positive_real", "downsample factor of the deprojected map w.r.t the original map", default_downsample_factor)
 
 # Writing
 definition.add_section("writing", "writing options")

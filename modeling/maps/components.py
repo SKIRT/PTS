@@ -3595,6 +3595,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         deprojector.config.method = "pts"
         deprojector.config.writing.deprojections = True
         deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = self.config.downsample_factor
 
         # Run the deprojector
         deprojector.run(maps=self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path)
@@ -3621,6 +3622,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         deprojector.config.method = "pts"
         deprojector.config.writing.deprojections = True
         deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = self.config.downsample_factor
 
         # Run the deprojector
         deprojector.run(maps=self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path)
@@ -3647,6 +3649,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         deprojector.config.method = "pts"
         deprojector.config.writing.deprojections = True
         deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = self.config.downsample_factor
 
         # Run the deprojector
         deprojector.run(maps=self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
@@ -3673,6 +3676,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         deprojector.config.method = "pts"
         deprojector.config.writing.deprojections = True
         deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = self.config.downsample_factor
 
         # Run the deprojector
         deprojector.run(maps=self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path)

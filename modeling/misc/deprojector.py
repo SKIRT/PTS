@@ -478,19 +478,24 @@ class Deprojector(GalaxyModelingComponent):
 
         unit = "pc"
 
-        shape = 128
-
         # Loop over the components
         for name in self.deprojections:
 
             # Debugging
             log.debug("Computing the deprojected surface density of the '" + name + "' map ...")
 
+            # Determine the number of pixels
+            npixels = int(round(float(max(self.maps[name].xsize, self.maps[name].ysize)) / self.config.downsample_factor))
+            shape = (npixels, npixels)
+
+            # Debugging
+            log.debug("Using " + str(npixels) + " x " + str(npixels) + " pixels for the deprojected map")
+
             # Set the model limits
-            x_range_scalar = self.deprojections[name].x_range.to(unit).value.as_tuple()
-            y_range_scalar = self.deprojections[name].y_range.to(unit).value.as_tuple()
+            x_range_scalar = self.deprojections[name].x_range.to(unit).value * 2.
+            y_range_scalar = self.deprojections[name].y_range.to(unit).value * 2.
             #z_range_scalar = self.deprojections[name].z_range.to(unit).value.as_tuple()
-            limits = [x_range_scalar, y_range_scalar]
+            limits = [x_range_scalar.as_tuple(), y_range_scalar.as_tuple()]
 
             # Create coordinate data
             x, y = xy(shape=shape, limits=limits)
