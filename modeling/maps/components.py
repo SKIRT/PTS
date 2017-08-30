@@ -26,6 +26,7 @@ from ..misc.deprojector import Deprojector
 from ...core.remote.remote import Remote
 from ...magic.core.mask import Mask
 from ...magic.core.detection import Detection
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -266,40 +267,154 @@ class ComponentMapsMaker(MapsSelectionComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def rerun_steps(self):
+    def rerun_steps_old(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.config.rerun is None: return []
-        else: return steps_after_and_including(self.config.rerun)
+        if self.config.rerun_old is None: return []
+        else: return steps_after_and_including(self.config.rerun_old)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def has_rerun_steps(self):
+    def has_rerun_steps_old(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-        return len(self.rerun_steps) > 0
+        return len(self.rerun_steps_old) > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def not_rerun_steps(self):
+    def not_rerun_steps_old(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.config.rerun is None: return steps
-        else: return steps_before(self.config.rerun)
+        if self.config.rerun_old is None: return steps
+        else: return steps_before(self.config.rerun_old)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def rerun_steps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun_young is None: return []
+        else: return steps_after_and_including(self.config.rerun_young)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_rerun_steps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.rerun_steps_young) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def not_rerun_steps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun_young is None: return steps
+        else: return steps_before(self.config.rerun_young)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def rerun_steps_ionizing(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if self.config.rerun_ionizing is None: return []
+        else: return steps_after_and_including(self.config.rerun_ionizing)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_rerun_steps_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return len(self.rerun_steps_ionizing) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def not_rerun_steps_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun_ionizing is None: return steps
+        else: return steps_before(self.config.rerun_ionizing)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def rerun_steps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun_dust is None: return []
+        else: return steps_after_and_including(self.config.rerun_dust)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_rerun_steps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.rerun_steps_dust) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def not_rerun_steps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun_dust is None: return steps
+        else: return steps_before(self.config.rerun_dust)
 
     # -----------------------------------------------------------------
 
@@ -749,11 +864,14 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Setting rerun for the old stellar maps ...")
 
+        # Debugging
+        if self.has_rerun_steps_old: log.debug("Rerun steps: " + tostr(self.rerun_steps_old))
+
         # Loop over the old stellar maps
         for name in self.old_selection:
 
             # Loop over the rerun steps
-            for step in self.rerun_steps:
+            for step in self.rerun_steps_old:
 
                 # Debugging
                 log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' old stellar map ...")
@@ -767,7 +885,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(mask_path): fs.remove_file(mask_path)
 
             # Remove the end result
-            if self.has_rerun_steps:
+            if self.has_rerun_steps_old:
 
                 # Debugging
                 log.debug("Removing the end results for the '" + name + "' old stellar map ...")
@@ -796,11 +914,14 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Setting rerun for the young stellar maps ...")
 
+        # Debugging
+        if self.has_rerun_steps_young: log.debug("Rerun steps: " + tostr(self.rerun_steps_young))
+
         # Loop over the young stellar maps
         for name in self.young_selection:
 
             # Loop over the rerun steps
-            for step in self.rerun_steps:
+            for step in self.rerun_steps_young:
 
                 # Debugging
                 log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' young stellar map ...")
@@ -814,7 +935,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(mask_path): fs.remove_file(mask_path)
 
             # Remove the end result
-            if self.has_rerun_steps:
+            if self.has_rerun_steps_young:
 
                 # Debugging
                 log.debug("Removing the end results for the '" + name + "' young stellar map ...")
@@ -843,11 +964,14 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Setting rerun for the ionizing stellar maps ...")
 
+        # Debugging
+        if self.has_rerun_steps_ionizing: log.debug("Rerun steps: " + tostr(self.rerun_steps_ionizing))
+
         # Loop over the ionizing stellar maps
         for name in self.ionizing_selection:
 
             # Loop over the rerun steps
-            for step in self.rerun_steps:
+            for step in self.rerun_steps_ionizing:
 
                 # Debugging
                 log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' ionizing stellar map ...")
@@ -861,7 +985,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(mask_path): fs.remove_file(mask_path)
 
             # Remove the end result
-            if self.has_rerun_steps:
+            if self.has_rerun_steps_ionizing:
 
                 # Debugging
                 log.debug("Removing the end results for the '" + name + "' ionizing stellar map ...")
@@ -890,11 +1014,14 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Setting rerun for the dust maps ...")
 
+        # Debugging
+        if self.has_rerun_steps_dust: log.debug("Rerun steps: " + tostr(self.rerun_steps_dust))
+
         # Loop over the dust maps
         for name in self.dust_selection:
 
             # Loop over the rerun steps
-            for step in self.rerun_steps:
+            for step in self.rerun_steps_dust:
 
                 # Debugging
                 log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' dust map ...")
@@ -908,7 +1035,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(mask_path): fs.remove_file(mask_path)
 
             # Remove the end result
-            if self.has_rerun_steps:
+            if self.has_rerun_steps_dust:
 
                 # Debugging
                 log.debug("Removing the end results for the '" + name + "' dust map ...")
@@ -2081,7 +2208,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.truncation_ellipse * self.config.interpolate_old
+        ellipse = self.truncation_ellipse * self.config.interpolate_old
+        ellipse.angle += self.config.interpolation_angle_offset_old
+        return ellipse
 
     # -----------------------------------------------------------------
 
@@ -2139,7 +2268,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.truncation_ellipse * self.config.interpolate_young
+        ellipse = self.truncation_ellipse * self.config.interpolate_young
+        ellipse.angle += self.config.interpolation_angle_offset_young
+        return ellipse
 
     # -----------------------------------------------------------------
 
@@ -2197,7 +2328,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.truncation_ellipse * self.config.interpolate_ionizing
+        ellipse = self.truncation_ellipse * self.config.interpolate_ionizing
+        ellipse.angle += self.config.interpolation_angle_offset_ionizing
+        return ellipse
 
     # -----------------------------------------------------------------
 
@@ -2255,7 +2388,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.truncation_ellipse * self.config.interpolate_dust
+        ellipse = self.truncation_ellipse * self.config.interpolate_dust
+        ellipse.angle += self.config.interpolation_angle_offset_dust
+        return ellipse
 
     # -----------------------------------------------------------------
 

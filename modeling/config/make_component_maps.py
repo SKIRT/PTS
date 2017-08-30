@@ -158,13 +158,19 @@ default_interpolation_method = "pts"
 # -----------------------------------------------------------------
 
 # INTERPOLATION OF CORE OF THE MAPS
-definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.05])
+definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.06])
 definition.add_optional("interpolate_young", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse")
 definition.add_optional("interpolate_ionizing", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse")
 definition.add_optional("interpolate_dust", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse")
 definition.add_optional("source_outer_factor", "real", "outer factor", 1.4)
 definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
 definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)
+
+# ALSO FOR INTERPOLATION
+definition.add_optional("interpolation_angle_offset_old", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True, suggestions=["-18 deg"], convert_suggestions=True)
+definition.add_optional("interpolation_angle_offset_young", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
+definition.add_optional("interpolation_angle_offset_ionizing", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
+definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 
 # -----------------------------------------------------------------
 

@@ -1778,7 +1778,8 @@ class ConfigurationDefinition(object):
     # -----------------------------------------------------------------
 
     def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False,
-                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None, default_alias=None):
+                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None,
+                     default_alias=None, convert_choices=False, convert_suggestions=False):
 
         """
         This function ...
@@ -1795,6 +1796,8 @@ class ConfigurationDefinition(object):
         :param max_value:
         :param forbidden:
         :param default_alias:
+        :param convert_choices:
+        :param convert_suggestions:
         :return:
         """
 
@@ -1812,6 +1815,14 @@ class ConfigurationDefinition(object):
             # Convert or check default value
             if convert_default: default = parse_default(default, user_type, real_type)
             else: default = check_default(default, user_type)
+
+        # Convert choices
+        if choices is not None and convert_choices:
+            choices = [parse_default(choice, user_type, real_type) for choice in choices]
+
+        # Convert suggestions
+        if suggestions is not None and convert_suggestions:
+            suggestions = [parse_default(suggestion, user_type, real_type) for suggestion in suggestions]
 
         # Check default
         if default is not None and choices is not None:

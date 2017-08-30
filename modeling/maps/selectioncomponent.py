@@ -665,6 +665,9 @@ class MapsSelectionComponent(MapsComponent):
         # Invert
         #mask.invert()
 
+        # Set the WCS
+        if wcs is not None: mask.wcs = wcs
+
         # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
         if not fuzzy: mask.invert()
 
