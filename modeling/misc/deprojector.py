@@ -110,6 +110,9 @@ class Deprojector(GalaxyModelingComponent):
         # 5. Deproject
         self.deproject()
 
+        # Clear
+        self.clear()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -606,6 +609,39 @@ class Deprojector(GalaxyModelingComponent):
 
             # Set the deprojected map
             self.deprojected[name] = frame
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing ...")
+
+        # Clear maps if not desired as output
+        if not self.config.writing.maps: self.clear_maps()
+
+    # -----------------------------------------------------------------
+
+    def clear_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.maps:
+
+            # Determine the path
+            path = fs.join(self.output_paths[name], "map.fits")
+
+            # Remove if existing
+            if fs.is_file(path): fs.remove_file(path)
 
 # -----------------------------------------------------------------
 

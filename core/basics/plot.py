@@ -58,7 +58,36 @@ pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
+plotting_libraries = ["matplotlib", "bokeh"]
+
+# -----------------------------------------------------------------
+
 class Plot(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # The plot path
+        self.path = None
+
+# -----------------------------------------------------------------
+
+class BokehPlot(Plot):
+
+    """
+    This class ...
+    """
+
+# -----------------------------------------------------------------
+
+class MPLPlot(Plot):
         
     """
     This class ...
@@ -71,13 +100,13 @@ class Plot(object):
         :param size:
         """
 
+        # Call the constructor of the base class
+        super(MPLPlot, self).__init__()
+
         # Setup the figure
         self.figure = plt.figure(figsize=size)
         plt.clf()
         self.ax = self.figure.gca()
-
-        # The plot path
-        self.path = None
 
         # Properties
         self.add_borders = False

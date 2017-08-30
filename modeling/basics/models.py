@@ -1030,7 +1030,7 @@ class ExponentialDiskModel3D(Model3D):
         radialscale = self.radial_scale.to(unit).value
 
         # Define the function
-        def exponentialdisk(x, y, z):
+        def exponentialdisk(x, y):
 
             radius = np.sqrt(x ** 2 + y ** 2)
 
@@ -2203,7 +2203,7 @@ class DeprojectionModel3D(Model3D):
         deltax_scalar = self.deltax.to(unit).value
 
         # Define the density function
-        def deprojection(x, y, z):
+        def deprojection(x, y):
 
             # Project and rotate coordinates
             x = self.project_array(x)
@@ -2218,7 +2218,7 @@ class DeprojectionModel3D(Model3D):
             nx = xy.shape[0]
             ny = xy.shape[1]
 
-            xy = xy[:, :, 0]
+            #xy = xy[:, :, 0]
 
             arrangement_x = range(self.xsize) * self.ysize
             lists = [[value] * self.xsize for value in range(self.ysize)]
@@ -2235,7 +2235,7 @@ class DeprojectionModel3D(Model3D):
             data = ndimage.map_coordinates(self.map.data, mapping, mode='constant', cval=cval)
 
             # Reshape into the
-            deprojected = data.reshape((ny, nx, 1))
+            deprojected = data.reshape((ny, nx))
 
             # Normalize?
             if normalize: deprojected /= np.sum(deprojected)
@@ -2322,7 +2322,7 @@ class DeprojectionModel3D(Model3D):
             #nz = xy.shape[2]
 
             #print(xy[:,:,0])
-            xy = xy[:,:,0]
+            xy = xy[:, :, 0]
             #print(xy)
 
             arrangement_x = range(self.xsize) * self.ysize

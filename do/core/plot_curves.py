@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.basics.curve import Curve
-from pts.core.basics.plot import Plot
+from pts.core.basics.plot import MPLPlot
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -37,7 +37,7 @@ for filepath in config.files:
 
 # -----------------------------------------------------------------
 
-plot = Plot()
+plot = MPLPlot()
 for name in curves: plot.add_curve(curves[name], name)
 
 # -----------------------------------------------------------------

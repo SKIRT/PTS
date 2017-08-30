@@ -96,7 +96,7 @@ definition.add_flag("all_dust", "select all dust maps")
 definition.add_flag("all", "select all maps")
 
 # Levels
-definition.add_optional("levels", "string_real_dictionary", "significance levels for the different images")
+definition.add_optional("levels", "filter_real_dictionary", "significance levels for the different images")
 definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
 definition.add_flag("all_levels", "use the default sigma level for all maps")
 

@@ -43,6 +43,7 @@ from ..basics.vector import Pixel
 from ...core.units.unit import PhotometricUnit
 from ...core.filter.filter import parse_filter
 from .mask import Mask as newMask
+from .alpha import AlphaMask
 from ..convolution.kernels import get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.units.parsing import parse_unit as u
@@ -2268,8 +2269,8 @@ class Frame(NDDataArray):
 
         center = region.center
 
-        angle = - region.angle + Angle(-90., "deg")
-        # angle = region.angle
+        #angle = - region.angle + Angle(-90., "deg")
+        angle = region.angle
 
         # Determine the ratio of semimajor and semiminor
         ratio = region.semiminor / region.semimajor
@@ -2284,10 +2285,16 @@ class Frame(NDDataArray):
         alpha_channel[inside_min] = 1
         alpha_channel[outside_max] = 0
 
+        # Create alpha mask
+        alpha = AlphaMask.from_real(alpha_channel, wcs=self.wcs)
+
         #alpha_channel = self.alpha * alpha_channel
 
         # Apply alpha
         self._data *= alpha_channel
+
+        # Return the alpha mask
+        return alpha
 
     # -----------------------------------------------------------------
 

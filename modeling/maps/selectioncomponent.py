@@ -891,6 +891,6 @@ class MapsSelectionComponent(MapsComponent):
         ellipse = ellipse.to_pixel(the_map.wcs)
 
         # Soften edges
-        the_map.soften_edges(ellipse, softening_range)
+        return the_map.soften_edges(ellipse, softening_range)
 
 # -----------------------------------------------------------------

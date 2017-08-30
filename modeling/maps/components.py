@@ -24,6 +24,7 @@ from ...core.basics.range import RealRange
 from ...core.tools import sequences
 from ..misc.deprojector import Deprojector
 from ...core.remote.remote import Remote
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -132,10 +133,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.dust_deprojection_path = None
 
         # The clip masks
-        self.old_masks = dict()
-        self.young_masks = dict()
-        self.ionizing_masks = dict()
-        self.dust_masks = dict()
+        self.old_clip_masks = dict()
+        self.young_clip_masks = dict()
+        self.ionizing_clip_masks = dict()
+        self.dust_clip_masks = dict()
+
+        # The softening masks
+        self.old_softening_masks = dict()
+        self.young_softening_masks = dict()
+        self.ionizing_softening_masks = dict()
+        self.dust_softening_masks = dict()
 
         # The deprojected maps
         self.old_deprojected = dict()
@@ -161,6 +168,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # 3. Load the maps
         self.load_maps()
+
+        # Load the masks
+        self.load_masks()
 
         # 4. Process the maps
         self.process_maps()
@@ -338,6 +348,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Levels
         if not self.has_levels: self.prompt_levels()
+        else: self.check_levels()
 
     # -----------------------------------------------------------------
 
@@ -367,6 +378,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Set the level
             self.levels[fltr] = level
+
+    # -----------------------------------------------------------------
+
+    def check_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the specified significance levels ...")
+
+        # Check whether all filters are present
+        for fltr in self.selection_origins:
+
+            # Check
+            if fltr not in self.levels: raise ValueError("The level for the '" + str(fltr) + "' filter is not specified")
+
+            # Convert to float to make sure
+            self.levels[fltr] = float(self.levels[fltr])
 
     # -----------------------------------------------------------------
 
@@ -419,6 +451,66 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         map_path = fs.join(self.dust_steps_path, name)
         return fs.is_directory(map_path) and not fs.is_empty(map_path)
+
+    # -----------------------------------------------------------------
+
+    def has_old_step(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        filepath = fs.join(map_path, step + ".fits")
+        return fs.is_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def has_young_step(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        filepath = fs.join(map_path, step + ".fits")
+        return fs.is_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def has_ionizing_step(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        filepath = fs.join(map_path, step + ".fits")
+        return fs.is_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def has_dust_step(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        filepath = fs.join(map_path, step + ".fits")
+        return fs.is_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -711,6 +803,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def old_step_path_for_mask(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the MASK path
+        return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
     def young_step_path_for_map(self, name, step):
 
         """
@@ -725,6 +834,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the map path
         return fs.join(map_path, step + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def young_step_path_for_mask(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the MASK path
+        return fs.join(map_path, step + "_mask.fits")
 
     # -----------------------------------------------------------------
 
@@ -745,6 +871,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def ionizing_step_path_for_mask(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the MASK path
+        return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
     def dust_step_path_for_map(self, name, step):
 
         """
@@ -759,6 +902,215 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the map path
         return fs.join(map_path, step + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def dust_step_path_for_mask(self, name, step):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the MASK path
+        return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
+    def load_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the masks ...")
+
+        # Old
+        self.load_old_masks()
+
+        # Young
+        self.load_young_masks()
+
+        # Ionizing
+        self.load_ionizing_masks()
+
+        # Dust
+        self.load_dust_masks()
+
+    # -----------------------------------------------------------------
+
+    def load_old_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading clipping and softening masks for the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' old stellar map masks ...")
+
+            # Check whether the clipping step output is present
+            if self.has_old_step(name, clip_step):
+
+                # Inform
+                log.success("Found a " + clip_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.old_step_path_for_mask(name, clip_step)
+
+                # Load the mask
+                self.old_clip_masks[name] = Mask.from_file(path)
+
+            # Check whether the softening step output is present
+            if self.has_old_step(name, softened_step):
+
+                # Inform
+                log.success("Found a " + softened_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.old_step_path_for_mask(name, softened_step)
+
+                # Load the mask
+                self.old_softening_masks[name] = Mask.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_young_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading clipping and softening masks for the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' young stellar map masks ...")
+
+            # Check whether the clipping step output is present
+            if self.has_young_step(name, clip_step):
+
+                # Inform
+                log.success("Found a " + clip_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.young_step_path_for_mask(name, clip_step)
+
+                # Load the mask
+                self.young_clip_masks[name] = Mask.from_file(path)
+
+            # Check whether the softening step output is present
+            if self.has_young_step(name, softened_step):
+
+                # Inform
+                log.success("Found a " + softened_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.young_step_path_for_mask(name, softened_step)
+
+                # Load the mask
+                self.young_softening_masks[name] = Mask.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading clipping and softening masks for the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' ionizing stellar map masks ...")
+
+            # Check whether the clipping step output is present
+            if self.has_ionizing_step(name, clip_step):
+
+                # Inform
+                log.success("Found a " + clip_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.ionizing_step_path_for_mask(name, clip_step)
+
+                # Load the mask
+                self.ionizing_clip_masks[name] = Mask.from_file(path)
+
+            # Check whether the softening step output is present
+            if self.has_ionizing_step(name, softened_step):
+
+                # Inform
+                log.success("Found a " + softened_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.ionizing_step_path_for_mask(name, softened_step)
+
+                # Load the mask
+                self.ionizing_softening_masks[name] = Mask.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading clipping and softening masks for the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' dust map masks ...")
+
+            # Check whether the clipping step output is present
+            if self.has_dust_step(name, clip_step):
+
+                # Inform
+                log.success("Found a " + clip_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.dust_step_path_for_mask(name, clip_step)
+
+                # Load the mask
+                self.dust_clip_masks[name] = Mask.from_file(path)
+
+            # Check whether the softening step output is present
+            if self.has_dust_step(name, softened_step):
+
+                # Inform
+                log.success("Found a " + softened_step + " mask for the '" + name + "' map")
+
+                # Determine mask path
+                path = self.dust_step_path_for_mask(name, softened_step)
+
+                # Load the mask
+                self.dust_softening_masks[name] = Mask.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -1448,6 +1800,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def has_old_clip_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.old_masks_path, name + "_clip.fits")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
     def clip_old_maps(self):
 
         """
@@ -1464,7 +1830,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_clipped_old(name):
                 log.success("The '" + name + "' old stellar map is already clipped")
-                continue
+                if name not in self.old_clip_masks and not self.has_old_clip_mask(name): log.warning("Yet the clip mask is not present: performing clipping step again ...")
+                else: continue
 
             # Debugging
             log.debug("Clipping the '" + name + "' old stellar map ...")
@@ -1473,7 +1840,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
+            self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
                                                  remote=self.remote, npixels=self.config.min_npixels,
                                                  connectivity=self.config.connectivity,
                                                  rebin_remote_threshold=self.config.rebin_remote_threshold,
@@ -1485,6 +1852,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, clip_step))
+
+            # Save the mask
+            if self.config.steps: self.old_clip_masks[name].saveto(self.old_step_path_for_mask(name, clip_step))
+
+    # -----------------------------------------------------------------
+
+    def has_young_clip_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.young_masks_path, name + "_clip.fits")
+        return fs.is_file(path)
 
     # -----------------------------------------------------------------
 
@@ -1504,7 +1888,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_clipped_young(name):
                 log.success("The '" + name + "' young stellar map is already clipped")
-                continue
+                if name not in self.young_clip_masks and not self.has_young_clip_mask(name): log.warning("Yet the clip mask is not present: performing clipping step again ...")
+                else: continue
 
             # Debugging
             log.debug("Clipping the '" + name + "' young stellar map ...")
@@ -1513,7 +1898,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
+            self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
                                                    remote=self.remote, npixels=self.config.min_npixels,
                                                    connectivity=self.config.connectivity,
                                                    rebin_remote_threshold=self.config.rebin_remote_threshold,
@@ -1525,6 +1910,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, clip_step))
+
+            # Save the mask
+            if self.config.steps: self.young_clip_masks[name].saveto(self.young_step_path_for_mask(name, clip_step))
+
+    # -----------------------------------------------------------------
+
+    def has_ionizing_clip_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.ionizing_masks_path, name + "_clip.fits")
+        return fs.is_file(path)
 
     # -----------------------------------------------------------------
 
@@ -1544,7 +1946,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_clipped_ionizing(name):
                 log.success("The '" + name + "' ionizing stellar map is already clipped")
-                continue
+                if name not in self.ionizing_clip_masks and not self.has_ionizing_clip_mask(name): log.warning("Yet the clip mask is not present: performing clipping step again ...")
+                else: continue
 
             # Debugging
             log.debug("Clipping the '" + name + "' ionizing stellar map ...")
@@ -1553,7 +1956,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
+            self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
                                                       remote=self.remote, npixels=self.config.min_npixels,
                                                       connectivity=self.config.connectivity,
                                                       rebin_remote_threshold=self.config.rebin_remote_threshold,
@@ -1565,6 +1968,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, clip_step))
+
+            # Save the mask
+            if self.config.steps: self.ionizing_clip_masks[name].saveto(self.ionizing_step_path_for_mask(name, clip_step))
+
+    # -----------------------------------------------------------------
+
+    def has_dust_clip_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.dust_masks_path, name + "_clip.fits")
+        return fs.is_file(path)
 
     # -----------------------------------------------------------------
 
@@ -1584,7 +2004,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_clipped_dust(name):
                 log.success("The '" + name + "' dust map is already clipped")
-                continue
+                if name not in self.dust_clip_masks and not self.has_dust_clip_mask(name): log.warning("Yet the clip mask is not present: performing clipping step again ...")
+                else: continue
 
             # Debugging
             log.debug("Clipping the '" + name + "' dust map ...")
@@ -1593,7 +2014,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
+            self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
                                                   remote=self.remote, npixels=self.config.min_npixels,
                                                   connectivity=self.config.connectivity,
                                                   rebin_remote_threshold=self.config.rebin_remote_threshold,
@@ -1605,6 +2026,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, clip_step))
+
+            # Save the mask
+            if self.config.steps: self.dust_clip_masks[name].saveto(self.dust_step_path_for_mask(name, clip_step))
 
     # -----------------------------------------------------------------
 
@@ -1716,6 +2140,62 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def has_old_softening_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.old_masks_path, name + "_softening.fits")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def has_young_softening_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.young_masks_path, name + "_softening.fits")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def has_ionizing_softening_mask(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.ionizing_masks_path, name + "_softening.fits")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def has_dust_softening_mask(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.dust_masks_path, name + "_softening.fits")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
     def soften_edges_old(self):
 
         """
@@ -1732,19 +2212,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_softened_old(name):
                 log.success("The '" + name + "' old stellar map is already softened")
-                continue
+                if name not in self.old_softening_masks and not self.has_old_softening_mask(name):
+                    log.warning("Yet the softening mask is not present: performing softening step again ...")
+                else: continue
 
             # Debugging
             log.debug("Softening the edges of the '" + name + "' old stellar map ...")
 
-            # Soften
-            self.soften_map(self.old_maps[name], self.softening_ellipse, self.softening_range)
+            # Soften the map, get the mask
+            alpha_mask = self.soften_map(self.old_maps[name], self.softening_ellipse, self.softening_range)
+
+            # Set the mask
+            self.old_softening_masks[name] = alpha_mask
 
             # Set flag
             self.old_maps[name].metadata[softened_step] = True
 
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, softened_step))
+
+            # Save the mask
+            if self.config.steps: self.old_softening_masks[name].saveto(self.old_step_path_for_mask(name, softened_step))
 
     # -----------------------------------------------------------------
 
@@ -1764,19 +2252,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_softened_young(name):
                 log.success("The '" + name + "' young stellar map is already softened")
+                if name not in self.young_softening_masks and not self.has_young_softening_mask(name):
+                    log.warning("Yet the softening mask is not present: performing softening step again ...")
                 continue
 
             # Debugging
             log.debug("Softening the edges of the '" + name + "' young stellar map ...")
 
             # Soften
-            self.soften_map(self.young_maps[name], self.softening_ellipse, self.softening_range)
+            alpha_mask = self.soften_map(self.young_maps[name], self.softening_ellipse, self.softening_range)
+
+            # Set the mask
+            self.young_softening_masks[name] = alpha_mask
 
             # Set flag
             self.young_maps[name].metadata[softened_step] = True
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, softened_step))
+
+            # Save the mask
+            if self.config.steps: self.young_softening_masks[name].saveto(self.young_step_path_for_mask(name, softened_step))
 
     # -----------------------------------------------------------------
 
@@ -1796,19 +2292,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_softened_ionizing(name):
                 log.success("The '" + name + "' ionizing stellar map is already softened")
+                if name not in self.ionizing_softening_masks and not self.has_ionizing_softening_mask(name):
+                    log.warning("Yet the softening mask is not present: performing softening step again ...")
                 continue
 
             # Debugging
             log.debug("Softening the edges of the '" + name + "' ionizing stellar map ...")
 
-            # Soften
-            self.soften_map(self.ionizing_maps[name], self.softening_ellipse, self.softening_range)
+            # Soften the map, get the mask
+            alpha_mask = self.soften_map(self.ionizing_maps[name], self.softening_ellipse, self.softening_range)
+
+            # Set the mask
+            self.ionizing_softening_masks[name] = alpha_mask
 
             # Set flag
             self.ionizing_maps[name].metadata[softened_step] = True
 
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, softened_step))
+
+            # Save the mask
+            if self.config.steps: self.ionizing_softening_masks[name].saveto(self.ionizing_step_path_for_map(name, softened_step))
 
     # -----------------------------------------------------------------
 
@@ -1828,19 +2332,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_softened_dust(name):
                 log.success("The '" + name + "' dust map is already softened")
+                if name not in self.dust_softening_masks and not self.has_dust_softening_mask(name):
+                    log.warning("Yet the softening mask is not present: performing softening step again ...")
                 continue
 
             # Debugging
             log.debug("Softening the edges of the '" + name + "' dust map ...")
 
-            # Soften the map
-            self.soften_map(self.dust_maps[name], self.softening_ellipse, self.softening_range)
+            # Soften the map, get the alpha mask
+            alpha_mask = self.soften_map(self.dust_maps[name], self.softening_ellipse, self.softening_range)
+
+            # Set the mask
+            self.dust_softening_masks[name] = alpha_mask
 
             # Set flag
             self.dust_maps[name].metadata[softened_step] = True
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, softened_step))
+
+            # Save the mask
+            if self.config.steps: self.dust_softening_masks[name].saveto(self.dust_step_path_for_mask(name, softened_step))
 
     # -----------------------------------------------------------------
 
@@ -1932,7 +2444,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Set settings
         deprojector.config.method = "pts"
-        deprojector.config.writing.deprojections = False
+        deprojector.config.writing.deprojections = True
+        deprojector.config.writing.maps = False
 
         # Run the deprojector
         deprojector.run(maps=self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path)
@@ -1957,7 +2470,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Set settings
         deprojector.config.method = "pts"
-        deprojector.config.writing.deprojections = False
+        deprojector.config.writing.deprojections = True
+        deprojector.config.writing.maps = False
 
         # Run the deprojector
         deprojector.run(maps=self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path)
@@ -1982,7 +2496,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Set settings
         deprojector.config.method = "pts"
-        deprojector.config.writing.deprojections = False
+        deprojector.config.writing.deprojections = True
+        deprojector.config.writing.maps = False
 
         # Run the deprojector
         deprojector.run(maps=self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
@@ -2007,7 +2522,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Set settings
         deprojector.config.method = "pts"
-        deprojector.config.writing.deprojections = False
+        deprojector.config.writing.deprojections = True
+        deprojector.config.writing.maps = False
 
         # Run the deprojector
         deprojector.run(maps=self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path)
@@ -2031,7 +2547,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.write_maps()
 
         # Write the clip masks
-        self.write_masks()
+        self.write_clip_masks()
+
+        # Write the softening masks
+        self.write_softening_masks()
 
         # Write the deprojected maps
         self.write_deprojected()
@@ -2158,7 +2677,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def write_masks(self):
+    def write_clip_masks(self):
 
         """
         This function ...
@@ -2169,20 +2688,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Writing the clip masks ...")
 
         # Old
-        self.write_old_masks()
+        self.write_old_clip_masks()
 
         # Young
-        self.write_young_masks()
+        self.write_young_clip_masks()
 
         # Ionizing
-        self.write_ionizing_masks()
+        self.write_ionizing_clip_masks()
 
         # Dust
-        self.write_dust_masks()
+        self.write_dust_clip_masks()
 
     # -----------------------------------------------------------------
 
-    def write_old_masks(self):
+    def write_old_clip_masks(self):
 
         """
         This function ...
@@ -2190,23 +2709,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Writing the masks of the old stellar maps ...")
+        log.info("Writing the clip masks of the old stellar maps ...")
 
         # Loop over the masks
-        for name in self.old_masks:
+        for name in self.old_clip_masks:
 
             # Debugging
             log.debug("Writing the '" + name + "' old stellar mask ...")
 
             # Determine the path
-            path = fs.join(self.old_masks_path, name + ".fits")
+            path = fs.join(self.old_masks_path, name + "_clip.fits")
 
             # Write
-            self.old_masks[name].saveto(path)
+            self.old_clip_masks[name].saveto(path)
 
     # -----------------------------------------------------------------
 
-    def write_young_masks(self):
+    def write_young_clip_masks(self):
 
         """
         This function ...
@@ -2214,23 +2733,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Writing the masks of the young stellar maps ...")
+        log.info("Writing the clip masks of the young stellar maps ...")
 
         # Loop over the masks
-        for name in self.young_masks:
+        for name in self.young_clip_masks:
 
             # Debugging
             log.debug("Writing the '" + name + "' young stellar mask ...")
 
             # Determine the path
-            path = fs.join(self.young_masks_path, name + ".fits")
+            path = fs.join(self.young_masks_path, name + "_clip.fits")
 
             # Write
-            self.young_masks[name].saveto(path)
+            self.young_clip_masks[name].saveto(path)
 
     # -----------------------------------------------------------------
 
-    def write_ionizing_masks(self):
+    def write_ionizing_clip_masks(self):
 
         """
         This function ...
@@ -2238,23 +2757,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Writing the masks of the ionizing stellar maps ...")
+        log.info("Writing the clip masks of the ionizing stellar maps ...")
 
         # Loop over the masks
-        for name in self.ionizing_masks:
+        for name in self.ionizing_clip_masks:
 
             # Debugging
             log.debug("Writing the '" + name + "' ionizing stellar mask ...")
 
             # Determine the path
-            path = fs.join(self.ionizing_masks_path, name + ".fits")
+            path = fs.join(self.ionizing_masks_path, name + "_clip.fits")
 
             # Write
-            self.ionizing_masks[name].saveto(path)
+            self.ionizing_clip_masks[name].saveto(path)
 
     # -----------------------------------------------------------------
 
-    def write_dust_masks(self):
+    def write_dust_clip_masks(self):
 
         """
         This function ...
@@ -2262,19 +2781,139 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Writing the masks of the dust maps ...")
+        log.info("Writing the clip masks of the dust maps ...")
 
         # Loop over the masks
-        for name in self.dust_masks:
+        for name in self.dust_clip_masks:
 
             # Debugging
             log.debug("Writing the '" + name + "' dust mask ...")
 
             # Determine the path
-            path = fs.join(self.dust_masks_path, name + ".fits")
+            path = fs.join(self.dust_masks_path, name + "_clip.fits")
 
             # Write
-            self.dust_masks[name].saveto(path)
+            self.dust_clip_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_softening_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the softening masks ...")
+
+        # Old
+        self.write_old_softening_masks()
+
+        # Young
+        self.write_young_softening_masks()
+
+        # Ionizing
+        self.write_ionizing_softening_masks()
+
+        # Dust
+        self.write_dust_softening_masks()
+
+    # -----------------------------------------------------------------
+
+    def write_old_softening_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the softening masks of the old stellar maps ...")
+
+        # Loop over the masks
+        for name in self.old_softening_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' old stellar mask ...")
+
+            # Determine the path
+            path = fs.join(self.old_masks_path, name + "_softening.fits")
+
+            # Write
+            self.old_softening_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_softening_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the softening masks of the young stellar maps ...")
+
+        # Loop over the masks
+        for name in self.young_softening_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' young stellar mask ...")
+
+            # Determine the path
+            path = fs.join(self.young_masks_path, name + "_softening.fits")
+
+            # Write
+            self.young_softening_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_softening_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the softening masks of the ionizing stellar maps ...")
+
+        # Loop over the masks
+        for name in self.ionizing_softening_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' ionizing stellar mask ...")
+
+            # Determine the path
+            path = fs.join(self.ionizing_masks_path, name + "_softening.fits")
+
+            # Write
+            self.ionizing_softening_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_softening_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the softening masks of the dust maps ...")
+
+        # Loop over the masks
+        for name in self.dust_softening_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' dust mask ...")
+
+            # Determine the filepath
+            path = fs.join(self.dust_masks_path, name + "_softening.fits")
+
+            # Write
+            self.dust_softening_masks[name].saveto(path)
 
     # -----------------------------------------------------------------
 

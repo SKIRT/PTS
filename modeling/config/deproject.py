@@ -24,5 +24,6 @@ definition.add_optional("method", "string", "method for deprojection", default_m
 # Writing
 definition.add_section("writing", "writing options")
 definition.sections["writing"].add_flag("deprojections", "write the deprojections", True)
+definition.sections["writing"].add_flag("maps", "write the maps (or don't clear them)", True)
 
 # -----------------------------------------------------------------

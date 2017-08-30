@@ -73,7 +73,7 @@ analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analy
 
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
-deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject maps
+deproject | -- | misc.deprojector.Deprojector | arguments | Deproject maps
 info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 
 # PLOTTING

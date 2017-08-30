@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.basics.plot import Plot
 from ...core.tools import filesystem as fs
 from ..analyse.database import load_database, get_runs
 from ...core.tools.serialization import write_dict
