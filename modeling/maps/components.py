@@ -2275,7 +2275,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
             # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
 
             # Replace the pixels by the background
             source.background.replace(self.old_maps[name], where=alpha_mask)
@@ -2338,7 +2338,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
             # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
 
             # Replace the pixels by the background
             source.background.replace(self.young_maps[name], where=alpha_mask)
@@ -2401,7 +2401,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
             # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
 
             # Replace the pixels by the background
             source.background.replace(self.ionizing_maps[name], where=alpha_mask)
@@ -2464,7 +2464,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
             # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
 
             # Replace the pixels by the background
             source.background.replace(self.dust_maps[name], where=alpha_mask)

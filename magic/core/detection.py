@@ -106,7 +106,7 @@ class Detection(object):
         source = cls.from_rectangle(frame, shape.bounding_box, factor)
 
         # Calculate the shift for the shape to be in the source cutout
-        shift = PixelStretch(source.x_min, source.y_min)
+        #shift = PixelStretch(source.x_min, source.y_min)
 
         #print(shape.center)
         #print(shift)
@@ -114,7 +114,7 @@ class Detection(object):
         #print(source.cutout.shape)
 
         # Create a mask based on the shape, shifted into the source cutout
-        mask = (shape - shift).to_mask(source.cutout.xsize, source.cutout.ysize)
+        mask = (shape - source.shift).to_mask(source.cutout.xsize, source.cutout.ysize)
 
         #from ..tools import plotting
         #plotting.plot_mask(mask)
@@ -294,6 +294,18 @@ class Detection(object):
         """
 
         return self.cutout.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shift(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelStretch(self.x_min, self.y_min)
 
     # -----------------------------------------------------------------
 
