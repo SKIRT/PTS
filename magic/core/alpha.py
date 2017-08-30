@@ -19,10 +19,12 @@ import numpy as np
 # Import astronomical modules
 from astropy.io import fits
 from photutils import detect_sources
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from ..basics.vector import PixelShape
+from ..dist_ellipse import distance_ellipse
 
 # -----------------------------------------------------------------
 
@@ -48,6 +50,44 @@ class AlphaMask(object):
 
         # The path
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ellipse(cls, ellipse, shape, factor_range, wcs=None):
+
+        """
+        Thisf unction ...
+        :param ellipse:
+        :param shape:
+        :param factor_range:
+        :param wcs:
+        :return:
+        """
+
+        center = ellipse.center
+
+        # angle = - region.angle + Angle(-90., "deg")
+        angle = ellipse.angle + Angle(90., "deg")
+
+        # Determine the ratio of semimajor and semiminor
+        ratio = ellipse.semiminor / ellipse.semimajor
+        radius = distance_ellipse(shape, center, ratio, angle) / ellipse.semiminor
+
+        outside_max = radius > factor_range.max
+        inside_min = radius < factor_range.min
+
+        test = (factor_range.max - radius) / factor_range.span
+
+        alpha_channel = test
+        alpha_channel[inside_min] = 1
+        alpha_channel[outside_max] = 0
+
+        # Create alpha mask
+        alpha = cls.from_real(alpha_channel, wcs=wcs)
+
+        # Return
+        return alpha
 
     # -----------------------------------------------------------------
 

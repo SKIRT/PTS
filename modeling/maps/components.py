@@ -25,6 +25,7 @@ from ...core.tools import sequences
 from ..misc.deprojector import Deprojector
 from ...core.remote.remote import Remote
 from ...magic.core.mask import Mask
+from ...magic.core.alpha import AlphaMask
 from ...magic.core.detection import Detection
 from ...core.tools.stringify import tostr
 
@@ -2128,6 +2129,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def interpolation_softening_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return numbers.geometric_mean(self.config.interpolation_softening_start, self.config.interpolation_softening_end)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def interpolation_softening_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return RealRange(self.config.interpolation_softening_start / self.interpolation_softening_radius, self.config.interpolation_softening_end / self.interpolation_softening_radius)
+
+    # -----------------------------------------------------------------
+
     def interpolate_maps(self):
 
         """
@@ -2249,8 +2274,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Estimate the background
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
+            # Create alpha mask
+            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+
             # Replace the pixels by the background
-            source.background.replace(self.old_maps[name], where=source.mask)
+            source.background.replace(self.old_maps[name], where=alpha_mask)
 
             # Set flag
             self.old_maps[name].metadata[interpolate_step] = True
@@ -2309,8 +2337,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Estimate the background
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
+            # Create alpha mask
+            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+
             # Replace the pixels by the background
-            source.background.replace(self.young_maps[name], where=source.mask)
+            source.background.replace(self.young_maps[name], where=alpha_mask)
 
             # Set flag
             self.young_maps[name].metadata[interpolate_step] = True
@@ -2369,8 +2400,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Estimate the background
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
+            # Create alpha mask
+            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+
             # Replace the pixels by the background
-            source.background.replace(self.ionizing_maps[name], where=source.mask)
+            source.background.replace(self.ionizing_maps[name], where=alpha_mask)
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_step] = True
@@ -2429,8 +2463,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Estimate the background
             source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
+            # Create alpha mask
+            alpha_mask = AlphaMask.from_ellipse(ellipse, self.interpolation_softening_range, wcs=self.old_maps[name])
+
             # Replace the pixels by the background
-            source.background.replace(self.dust_maps[name], where=source.mask)
+            source.background.replace(self.dust_maps[name], where=alpha_mask)
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_step] = True
@@ -3424,7 +3461,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, softened_step))
 
             # Save the mask
-            if self.config.steps: self.ionizing_softening_masks[name].saveto(self.ionizing_step_path_for_map(name, softened_step))
+            if self.config.steps: self.ionizing_softening_masks[name].saveto(self.ionizing_step_path_for_mask(name, softened_step))
 
     # -----------------------------------------------------------------
 

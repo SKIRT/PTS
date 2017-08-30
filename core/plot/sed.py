@@ -232,8 +232,11 @@ class SEDPlotter(Configurable):
 
         # Create the plot
         if self.config.library == mpl: self.plt = MPLPlot(size=figsize)
-        elif self.config.libary == bokeh: self.plt = BokehPlot()
-        else: raise ValueError("Invalid libary: " + self.config.libary)
+        elif self.config.library == bokeh: self.plt = BokehPlot()
+        else: raise ValueError("Invalid libary: " + self.config.library)
+
+        self.plt.show()
+        exit()
 
     # -----------------------------------------------------------------
 

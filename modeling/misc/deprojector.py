@@ -136,7 +136,7 @@ class Deprojector(GalaxyModelingComponent):
         if "map" in kwargs:
             if "name" not in kwargs: raise ValueError("When passing only one map, a name must be specified")
             name = kwargs.pop("name")
-            self.maps[name] = kwargs.pop("name")
+            self.maps[name] = kwargs.pop("map")
 
         # Get the maps
         elif "maps" in kwargs: self.maps = kwargs.pop("maps")

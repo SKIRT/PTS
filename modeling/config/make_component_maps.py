@@ -172,6 +172,10 @@ definition.add_optional("interpolation_angle_offset_young", "angle", "offset of 
 definition.add_optional("interpolation_angle_offset_ionizing", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 
+# MORE FOR INTERPOLATION
+definition.add_optional("interpolation_softening_start", "real", "relative radius for softening to start (relative to interpolation ellipse)", 0.8)
+definition.add_optional("interpolation_softening_end", "real", "relative radius for softening to end (relative to interpolation ellipse", 1.2)
+
 # -----------------------------------------------------------------
 
 # CLEAR ALL
