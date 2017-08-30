@@ -2015,8 +2015,16 @@ class Frame(NDDataArray):
             factor = to / sum
             unit = None
 
+        # Debugging
+        log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize ...")
+
         # Multiply the frame with the conversion factor
-        self.__imul__(factor)
+        try: self.__imul__(factor)
+        except TypeError:
+            print(np.nanmax(self.data))
+            from ..tools import plotting
+            plotting.plot_box(self)
+            exit()
 
         # Set the unit to None
         self.unit = unit
@@ -2270,7 +2278,7 @@ class Frame(NDDataArray):
         center = region.center
 
         #angle = - region.angle + Angle(-90., "deg")
-        angle = region.angle
+        angle = region.angle + Angle(90., "deg")
 
         # Determine the ratio of semimajor and semiminor
         ratio = region.semiminor / region.semimajor

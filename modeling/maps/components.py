@@ -25,6 +25,7 @@ from ...core.tools import sequences
 from ..misc.deprojector import Deprojector
 from ...core.remote.remote import Remote
 from ...magic.core.mask import Mask
+from ...magic.core.detection import Detection
 
 # -----------------------------------------------------------------
 
@@ -35,11 +36,17 @@ deprojected_name = "deprojected"
 # -----------------------------------------------------------------
 
 correct_step = "corrected"
+interpolate_step = "interpolated"
 truncate_step = "truncated"
 crop_step = "cropped"
 clip_step = "clipped"
 softened_step = "softened"
-steps = [correct_step, truncate_step, crop_step, clip_step, softened_step]
+steps = [correct_step, interpolate_step, truncate_step, crop_step, clip_step, softened_step]
+
+# -----------------------------------------------------------------
+
+clip_suffix = "clip"
+softening_suffix = "softening"
 
 # -----------------------------------------------------------------
 
@@ -83,7 +90,7 @@ def steps_after(step):
     for stepi in reversed(steps):
         if stepi == step: break
         after.append(stepi)
-    return reversed(after)
+    return list(reversed(after))
 
 # -----------------------------------------------------------------
 
@@ -166,6 +173,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 2. Prompt
         self.prompt()
 
+        # 3. Set rerun
+        if self.rerun: self.set_rerun()
+
+        # 4. Remove other
+        if self.remove: self.remove_other()
+
         # 3. Load the maps
         self.load_maps()
 
@@ -196,6 +209,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
+
+        # Clear all?
+        if self.config.clear_all:
+            fs.clear_directory(self.old_component_maps_path)
+            fs.clear_directory(self.young_component_maps_path)
+            fs.clear_directory(self.ionizing_component_maps_path)
+            fs.clear_directory(self.dust_component_maps_path)
 
         # Set the steps paths
         self.old_steps_path = fs.join(self.old_component_maps_path, steps_name)
@@ -235,6 +255,51 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Levels
         if self.config.levels is not None: self.levels = self.config.levels
+
+        # Set rerun options
+        if self.config.rerun is not None:
+            self.config.rerun_old = self.config.rerun
+            self.config.rerun_young = self.config.rerun
+            self.config.rerun_ionizing = self.config.rerun
+            self.config.rerun_dust = self.config.rerun
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def rerun_steps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun is None: return []
+        else: return steps_after_and_including(self.config.rerun)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_rerun_steps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return len(self.rerun_steps) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def not_rerun_steps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun is None: return steps
+        else: return steps_before(self.config.rerun)
 
     # -----------------------------------------------------------------
 
@@ -590,6 +655,574 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def rerun(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.rerun_old or self.rerun_young or self.rerun_ionizing or self.rerun_dust
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rerun_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.rerun_old is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rerun_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.rerun_young is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rerun_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.rerun_ionizing is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rerun_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.rerun_dust is not None
+
+    # -----------------------------------------------------------------
+
+    def set_rerun(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting things in order for rerunning certain processing steps ...")
+
+        # Old
+        if self.rerun_old: self.set_rerun_old()
+
+        # Young
+        if self.rerun_young: self.set_rerun_young()
+
+        # Ionizing
+        if self.rerun_ionizing: self.set_rerun_ionizing()
+
+        # Dust
+        if self.rerun_dust: self.set_rerun_dust()
+
+    # -----------------------------------------------------------------
+
+    def set_rerun_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting rerun for the old stellar maps ...")
+
+        # Loop over the old stellar maps
+        for name in self.old_selection:
+
+            # Loop over the rerun steps
+            for step in self.rerun_steps:
+
+                # Debugging
+                log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' old stellar map ...")
+
+                # Determine the path for the intermediate map and potential mask
+                map_path = self.old_step_path_for_map(name, step)
+                mask_path = self.old_step_path_for_mask(name, step)
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(mask_path): fs.remove_file(mask_path)
+
+            # Remove the end result
+            if self.has_rerun_steps:
+
+                # Debugging
+                log.debug("Removing the end results for the '" + name + "' old stellar map ...")
+
+                # Set the paths
+                map_path = fs.join(self.old_component_maps_path, name + ".fits")
+                clip_mask_path = fs.join(self.old_masks_path, name + "_" + clip_suffix + ".fits")
+                softening_mask_path = fs.join(self.old_masks_path, name + "_" + softening_suffix + ".fits")
+                deprojection_path = fs.join(self.old_deprojection_path, name + ".fits")
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(clip_mask_path): fs.remove_file(clip_mask_path)
+                if fs.is_file(softening_mask_path): fs.remove_file(softening_mask_path)
+                if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    def set_rerun_young(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting rerun for the young stellar maps ...")
+
+        # Loop over the young stellar maps
+        for name in self.young_selection:
+
+            # Loop over the rerun steps
+            for step in self.rerun_steps:
+
+                # Debugging
+                log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' young stellar map ...")
+
+                # Determine the path for the intermediate map and potential mask
+                map_path = self.young_step_path_for_map(name, step)
+                mask_path = self.young_step_path_for_mask(name, step)
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(mask_path): fs.remove_file(mask_path)
+
+            # Remove the end result
+            if self.has_rerun_steps:
+
+                # Debugging
+                log.debug("Removing the end results for the '" + name + "' young stellar map ...")
+
+                # Set the paths
+                map_path = fs.join(self.young_component_maps_path, name + ".fits")
+                clip_mask_path = fs.join(self.young_masks_path, name + "_" + clip_suffix + ".fits")
+                softening_mask_path = fs.join(self.young_masks_path, name + "_" + softening_suffix + ".fits")
+                deprojection_path = fs.join(self.young_deprojection_path, name + ".fits")
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(clip_mask_path): fs.remove_file(clip_mask_path)
+                if fs.is_file(softening_mask_path): fs.remove_file(softening_mask_path)
+                if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    def set_rerun_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting rerun for the ionizing stellar maps ...")
+
+        # Loop over the ionizing stellar maps
+        for name in self.ionizing_selection:
+
+            # Loop over the rerun steps
+            for step in self.rerun_steps:
+
+                # Debugging
+                log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' ionizing stellar map ...")
+
+                # Determine the path for the intermediate map and potential mask
+                map_path = self.ionizing_step_path_for_map(name, step)
+                mask_path = self.ionizing_step_path_for_mask(name, step)
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(mask_path): fs.remove_file(mask_path)
+
+            # Remove the end result
+            if self.has_rerun_steps:
+
+                # Debugging
+                log.debug("Removing the end results for the '" + name + "' ionizing stellar map ...")
+
+                # Set the paths
+                map_path = fs.join(self.ionizing_component_maps_path, name + ".fits")
+                clip_mask_path = fs.join(self.ionizing_masks_path, name + "_" + clip_suffix + ".fits")
+                softening_mask_path = fs.join(self.ionizing_masks_path, name + "_" + softening_suffix + ".fits")
+                deprojection_path = fs.join(self.ionizing_deprojection_path, name + ".fits")
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(clip_mask_path): fs.remove_file(clip_mask_path)
+                if fs.is_file(softening_mask_path): fs.remove_file(softening_mask_path)
+                if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    def set_rerun_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting rerun for the dust maps ...")
+
+        # Loop over the dust maps
+        for name in self.dust_selection:
+
+            # Loop over the rerun steps
+            for step in self.rerun_steps:
+
+                # Debugging
+                log.debug("Removing the intermediate output from the '" + step + "' step for the '" + name + "' dust map ...")
+
+                # Determine the path for the intermediate map and potential mask
+                map_path = self.dust_step_path_for_map(name, step)
+                mask_path = self.dust_step_path_for_mask(name, step)
+
+                # Remove if present
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(mask_path): fs.remove_file(mask_path)
+
+            # Remove the end result
+            if self.has_rerun_steps:
+
+                # Debugging
+                log.debug("Removing the end results for the '" + name + "' dust map ...")
+
+                # Set the paths
+                map_path = fs.join(self.dust_component_maps_path, name + ".fits")
+                clip_mask_path = fs.join(self.dust_masks_path, name + "_" + clip_suffix + ".fits")
+                softening_mask_path = fs.join(self.dust_masks_path, name + "_" + softening_suffix + ".fits")
+                deprojection_path = fs.join(self.dust_deprojection_path, name + ".fits")
+
+                # If present, remove
+                if fs.is_file(map_path): fs.remove_file(map_path)
+                if fs.is_file(clip_mask_path): fs.remove_file(clip_mask_path)
+                if fs.is_file(softening_mask_path): fs.remove_file(softening_mask_path)
+                if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.remove_old or self.remove_young or self.remove_ionizing or self.remove_dust
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_old(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.config.remove_other_old
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.remove_other_young
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.remove_other_ionizing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_dust(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.config.remove_other_dust
+
+    # -----------------------------------------------------------------
+
+    def remove_other(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing maps other than those that are selected ...")
+
+        # Old
+        if self.remove_old: self.remove_other_old()
+
+        # Young
+        if self.remove_young: self.remove_other_young()
+
+        # Ionizing
+        if self.remove_ionizing: self.remove_other_ionizing()
+
+        # Dust
+        if self.remove_dust: self.remove_other_dust()
+
+    # -----------------------------------------------------------------
+
+    def remove_other_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing other old stellar maps ...")
+
+        # Loop over the FITS files in the directory
+        for filepath, filename in fs.files_in_path(self.old_component_maps_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.old_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the FITS files in the masks directory
+        for filepath, filename in fs.files_in_path(self.old_masks_path, extension="fits", returns=["path", "name"]):
+
+            # Determine map name
+            if filename.endswith(clip_suffix): map_name = filename.split(clip_suffix)[0]
+            elif filename.endswith(softening_suffix): map_name = filename.split(softening_suffix)[0]
+            else: raise ValueError("Unrecognized file: '" + filename)
+
+            # Check whether map name in selection
+            if map_name in self.old_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the directories in the steps directory
+        for dirpath, dirname in fs.directories_in_path(self.old_steps_path, returns=["path", "name"]):
+
+            # Check whether filename is in the selection
+            if dirname in self.old_selection: continue
+
+            # otherwise, remove it
+            fs.remove_directory(dirpath)
+
+        # Loop over the FITS files in the deprojected directory
+        for filepath, filename in fs.files_in_path(self.old_deprojection_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.old_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def remove_other_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing other young stellar maps ...")
+
+        # Loop over the FITS files in the directory
+        for filepath, filename in fs.files_in_path(self.young_component_maps_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.young_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the FITS files in the masks directory
+        for filepath, filename in fs.files_in_path(self.young_masks_path, extension="fits", returns=["path", "name"]):
+
+            # Determine map name
+            if filename.endswith(clip_suffix): map_name = filename.split(clip_suffix)[0]
+            elif filename.endswith(softening_suffix): map_name = filename.split(softening_suffix)[0]
+            else: raise ValueError("Unrecognized file: '" + filename)
+
+            # Check whether map name in selection
+            if map_name in self.young_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the directories in the steps directory
+        for dirpath, dirname in fs.directories_in_path(self.young_steps_path, returns=["path", "name"]):
+
+            # Check whether filename is in the selection
+            if dirname in self.young_selection: continue
+
+            # otherwise, remove it
+            fs.remove_directory(dirpath)
+
+        # Loop over the FITS files in the deprojected directory
+        for filepath, filename in fs.files_in_path(self.young_deprojection_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.young_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+    #  -----------------------------------------------------------------
+
+    def remove_other_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing other ionizing stellar maps ...")
+
+        # Loop over the FITS files in the directory
+        for filepath, filename in fs.files_in_path(self.ionizing_component_maps_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.ionizing_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the FITS files in the masks directory
+        for filepath, filename in fs.files_in_path(self.ionizing_masks_path, extension="fits", returns=["path", "name"]):
+
+            # Determine map name
+            if filename.endswith(clip_suffix): map_name = filename.split(clip_suffix)[0]
+            elif filename.endswith(softening_suffix): map_name = filename.split(softening_suffix)[0]
+            else: raise ValueError("Unrecognized file: '" + filename)
+
+            # Check whether map name in selection
+            if map_name in self.ionizing_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the directories in the steps directory
+        for dirpath, dirname in fs.directories_in_path(self.ionizing_steps_path, returns=["path", "name"]):
+
+            # Check whether filename is in the selection
+            if dirname in self.ionizing_selection: continue
+
+            # otherwise, remove it
+            fs.remove_directory(dirpath)
+
+        # Loop over the FITS files in the deprojected directory
+        for filepath, filename in fs.files_in_path(self.ionizing_deprojection_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.ionizing_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def remove_other_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing other young stellar maps ...")
+
+        # Loop over the FITS files in the directory
+        for filepath, filename in fs.files_in_path(self.dust_component_maps_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.dust_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the FITS files in the masks directory
+        for filepath, filename in fs.files_in_path(self.dust_masks_path, extension="fits", returns=["path", "name"]):
+
+            # Determine map name
+            if filename.endswith(clip_suffix): map_name = filename.split(clip_suffix)[0]
+            elif filename.endswith(softening_suffix): map_name = filename.split(softening_suffix)[0]
+            else: raise ValueError("Unrecognized file: '" + filename)
+
+            # Check whether map name in selection
+            if map_name in self.dust_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+        # Loop over the directories in the steps directory
+        for dirpath, dirname in fs.directories_in_path(self.dust_steps_path, returns=["path", "name"]):
+
+            # Check whether filename is in the selection
+            if dirname in self.dust_selection: continue
+
+            # otherwise, remove it
+            fs.remove_directory(dirpath)
+
+        # Loop over the FITS files in the deprojected directory
+        for filepath, filename in fs.files_in_path(self.dust_deprojection_path, extension="fits", returns=["path", "name"]):
+
+            # Check whether the filename is in the selection
+            if filename in self.dust_selection: continue
+
+            # Otherwise, remove it
+            fs.remove_file(filepath)
+
+    # -----------------------------------------------------------------
+
     def load_maps(self):
 
         """
@@ -798,6 +1431,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         map_path = fs.join(self.old_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
 
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
         # Return the map path
         return fs.join(map_path, step + ".fits")
 
@@ -814,6 +1450,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         map_path = fs.join(self.old_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
@@ -832,6 +1471,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         map_path = fs.join(self.young_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
 
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
         # Return the map path
         return fs.join(map_path, step + ".fits")
 
@@ -848,6 +1490,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         map_path = fs.join(self.young_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
@@ -866,6 +1511,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         map_path = fs.join(self.ionizing_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
 
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
         # Return the map path
         return fs.join(map_path, step + ".fits")
 
@@ -882,6 +1530,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         map_path = fs.join(self.ionizing_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
@@ -900,6 +1551,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         map_path = fs.join(self.dust_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
 
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
         # Return the map path
         return fs.join(map_path, step + ".fits")
 
@@ -916,6 +1570,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         map_path = fs.join(self.dust_steps_path, name)
         if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Check the step
+        if step not in steps: raise ValueError("Invalid step: '" + step + "'")
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
@@ -1127,6 +1784,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Correct
         self.correct_maps()
 
+        # 2. Interpolate the cores
+        self.interpolate_maps()
+
         # 2. Truncate
         self.truncate_maps()
 
@@ -1150,6 +1810,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Inform the user
         log.info("Correcting the maps ...")
+
+        # Old
+        self.correct_old_maps()
+
+        # Young
+        self.correct_young_maps()
+
+        # Ionizing
+        self.correct_ionizing_maps()
+
+        # Dust
+        self.correct_dust_maps()
 
     # -----------------------------------------------------------------
 
@@ -1313,6 +1985,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Check
             if self.is_corrected_dust(name):
                 log.success("The '" + name + "' dust map is already corrected")
+                continue
 
             # Debugging
             log.debug("Correcting the '" + name + "' dust map ...")
@@ -1325,6 +1998,310 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.step: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, correct_step))
+
+    # -----------------------------------------------------------------
+
+    def interpolate_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the maps ...")
+
+        # Old
+        self.interpolate_old_maps()
+
+        # Young
+        self.interpolate_young_maps()
+
+        # Ionizing
+        self.interpolate_ionizing_maps()
+
+        # Dust
+        self.interpolate_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_old(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.old_maps[name].metadata[interpolate_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_young(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.young_maps[name].metadata[interpolate_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_ionizing(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.ionizing_maps[name].metadata[interpolate_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_dust(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_maps[name].metadata[interpolate_step]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def interpolation_ellipse_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.interpolate_old
+
+    # -----------------------------------------------------------------
+
+    def interpolate_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # No interpolation?
+            if self.config.interpolate_old is None:
+                self.old_maps[name].metadata[interpolate_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_old(name):
+                log.success("The '" + name + "' old stellar map is already interpolated")
+                continue
+
+            # Debugging
+            log.debug("Interpolating the '" + name + "' old stellar map ...")
+
+            # Create interpolation ellipse
+            ellipse = self.interpolation_ellipse_old.to_pixel(self.old_maps[name].wcs)
+
+            # Create a source
+            source = Detection.from_shape(self.old_maps[name], ellipse, self.config.source_outer_factor)
+
+            # Estimate the background
+            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+            # Replace the pixels by the background
+            source.background.replace(self.old_maps[name], where=source.mask)
+
+            # Set flag
+            self.old_maps[name].metadata[interpolate_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, interpolate_step))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def interpolation_ellipse_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.interpolate_young
+
+    # -----------------------------------------------------------------
+
+    def interpolate_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # No interpolation?
+            if self.config.interpolate_young is None:
+                self.young_maps[name].metadata[interpolate_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_young(name):
+                log.success("The '" + name + "' young stellar map is already interpolated")
+                continue
+
+            # Debugging
+            log.debug("Interpolating the '" + name + "' young stellar map ...")
+
+            # Create interpolation ellipse
+            ellipse = self.interpolation_ellipse_young.to_pixel(self.young_maps[name].wcs)
+
+            # Create a source
+            source = Detection.from_shape(self.young_maps[name], ellipse, self.config.source_outer_factor)
+
+            # Estimate the background
+            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+            # Replace the pixels by the background
+            source.background.replace(self.young_maps[name], where=source.mask)
+
+            # Set flag
+            self.young_maps[name].metadata[interpolate_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, interpolate_step))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def interpolation_ellipse_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.interpolate_ionizing
+
+    # -----------------------------------------------------------------
+
+    def interpolate_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # No interpolation?
+            if self.config.interpolate_ionizing is None:
+                self.ionizing_maps[name].metadata[interpolate_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_ionizing(name):
+                log.success("The '" + name + "' ionizing stellar map is already interpolated")
+                continue
+
+            # Debugging
+            log.debug("Interpolating the '" + name + "' ionizing stellar map ...")
+
+            # Create interpolation ellipse
+            ellipse = self.interpolation_ellipse_ionizing.to_pixel(self.ionizing_maps[name].wcs)
+
+            # Create a source
+            source = Detection.from_shape(self.ionizing_maps[name], ellipse, self.config.source_outer_factor)
+
+            # Estimate the background
+            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+            # Replace the pixels by the background
+            source.background.replace(self.ionizing_maps[name], where=source.mask)
+
+            # Set flag
+            self.ionizing_maps[name].metadata[interpolate_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, interpolate_step))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def interpolation_ellipse_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.interpolate_dust
+
+    # -----------------------------------------------------------------
+
+    def interpolate_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # No interpolation?
+            if self.config.interpolate_dust is None:
+                self.dust_maps[name].metadata[interpolate_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_dust(name):
+                log.success("The '" + name + "' dust map is already interpolated")
+                continue
+
+            # Debugging
+            log.debug("Interpolating the '" + name + "' dust map ...")
+
+            # Create interpolation ellipse
+            ellipse = self.interpolation_ellipse_dust.to_pixel(self.dust_maps[name].wcs)
+
+            # Create a source
+            source = Detection.from_shape(self.dust_maps[name], ellipse, self.config.source_outer_factor)
+
+            # Estimate the background
+            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+            # Replace the pixels by the background
+            source.background.replace(self.dust_maps[name], where=source.mask)
+
+            # Set flag
+            self.dust_maps[name].metadata[interpolate_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, interpolate_step))
 
     # -----------------------------------------------------------------
 

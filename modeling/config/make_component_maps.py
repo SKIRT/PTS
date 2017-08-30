@@ -10,6 +10,8 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.maps.collection import MapsCollection
 from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
+from pts.modeling.maps.components import steps
+from pts.magic.core.cutout import interpolation_methods
 
 # -----------------------------------------------------------------
 
@@ -131,5 +133,42 @@ definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
 definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
+
+# -----------------------------------------------------------------
+
+# ADVANCED
+definition.add_optional("rerun", "string", "rerun the map processing (for all maps) from this step", choices=steps)
+definition.add_optional("rerun_old", "string", "rerun the map processing (for all old stellar maps) from this step", choices=steps)
+definition.add_optional("rerun_young", "string", "rerun the map processing (for all young stellar maps) from this step", choices=steps)
+definition.add_optional("rerun_ionizing", "string", "rerun the map processing (for all ionizing stellar maps) from this step", choices=steps)
+definition.add_optional("rerun_dust", "string", "rerun the map processing (for all dust maps) from this step", choices=steps)
+
+# ADVANCED
+# to save space
+definition.add_flag("remove_other", "remove maps, masks and intermediate results for maps other than those that are selected", False)
+definition.add_flag("remove_other_old", "remove other old stellar maps", False)
+definition.add_flag("remove_other_young", "remove other young stellar maps", False)
+definition.add_flag("remove_other_ionizing", "remove other ionizing stellar maps", False)
+definition.add_flag("remove_other_dust", "remove other dust maps", False)
+
+# -----------------------------------------------------------------
+
+default_interpolation_method = "pts"
+
+# -----------------------------------------------------------------
+
+# INTERPOLATION OF CORE OF THE MAPS
+definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.05])
+definition.add_optional("interpolate_young", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse")
+definition.add_optional("interpolate_ionizing", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse")
+definition.add_optional("interpolate_dust", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse")
+definition.add_optional("source_outer_factor", "real", "outer factor", 1.4)
+definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
+definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)
+
+# -----------------------------------------------------------------
+
+# CLEAR ALL
+definition.add_flag("clear_all", "clear all previous results")
 
 # -----------------------------------------------------------------
