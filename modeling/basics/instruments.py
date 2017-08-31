@@ -84,6 +84,45 @@ class Instrument(SimplePropertyComposite):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_deprojection(cls, deprojection):
+
+        """
+        This function ...
+        :param deprojection:
+        :return:
+        """
+
+        return cls.from_projection(deprojection.projection)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection_faceon(cls, deprojection):
+
+        """
+        This function ...
+        :param deprojection:
+        :return:
+        """
+
+        return cls.from_projection(deprojection.faceon_projection)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection_edgeon(cls, deprojection):
+
+        """
+        This function ...
+        :param deprojection:
+        :return:
+        """
+
+        return cls.from_projection(deprojection.edgeon_projection)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_wcs(cls, wcs, center, distance, inclination, azimuth, position_angle):
 
         """

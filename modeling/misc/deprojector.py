@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.simulation.execute import SkirtExec
+from ...core.launch.launcher import SKIRTLauncher
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ..basics.instruments import FrameInstrument
@@ -25,10 +26,20 @@ from ..component.galaxy import GalaxyModelingComponent
 from ..build.suite import create_deprojection_for_map
 from ...core.tools.stringify import tostr
 from ..plotting.model import xy
+from ...core.tools.utils import lazyproperty
+from ...core.prep.smile import SKIRTSmileSchema
+from ...core.simulation.definition import SingleSimulationDefinition
+from ...core.simulation.parallelization import Parallelization
+from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
 
 # -----------------------------------------------------------------
 
 template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+
+# -----------------------------------------------------------------
+
+faceon_name = "faceon"
+edgeon_name = "edgeon"
 
 # -----------------------------------------------------------------
 
@@ -50,7 +61,13 @@ class Deprojector(GalaxyModelingComponent):
         super(Deprojector, self).__init__(*args, **kwargs)
 
         # The SKIRT execution environment
-        self.skirt = SkirtExec()
+        #self.skirt = SkirtExec()
+
+        # Create the SKIRT launcher
+        self.launcher = SKIRTLauncher()
+
+        # Smile
+        self.smile = SKIRTSmileSchema()
 
         ##
 
@@ -87,6 +104,9 @@ class Deprojector(GalaxyModelingComponent):
 
         # The ski file paths
         self.ski_paths = dict()
+
+        # The dust grids
+        self.dust_grids = dict()
 
     # -----------------------------------------------------------------
 
@@ -511,6 +531,65 @@ class Deprojector(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    # @lazyproperty
+    # def stellar_ski_template(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Load ski template
+    #     ski_template = LabeledSkiFile(template_ski_path)
+    #
+    #     # Convert to oligochromatic simulation
+    #     ski_template.to_oligochromatic(1. * u("micron"))
+    #
+    #     # Remove the dust system
+    #     ski_template.remove_dust_system()
+    #
+    #     # Set number of packages per wavelength
+    #     ski_template.setpackages(0)
+    #
+    #     # Add one instrument
+    #     ski_template.remove_all_instruments()
+    #
+    #     # Return
+    #     return ski_template
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski_template(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ski =  self.smile.create_oligochromatic_template()
+
+        # Remove the existing instruments
+        ski.remove_all_instruments()
+
+        # Remove the stellar system
+        ski.remove_stellar_system()
+
+        # Set the number of photon packages
+        ski.setpackages(0)
+
+        # Enable writing options
+        #ski.enable_all_writing_options()
+
+        # Disable writing stellar density (we don't have a stellar system)
+        # BUT DON'T CALL THE FUNCTION WHEN THE SKIRT VERSION DOES NOT SUPPORT WRITING STELLAR DENSITY
+        #if self.smile.supports_writing_stellar_density: ski.set_write_stellar_density(False)
+
+        # Return the ski template
+        return ski
+
+    # -----------------------------------------------------------------
+
     def deproject_skirt(self):
 
         """
@@ -521,12 +600,21 @@ class Deprojector(GalaxyModelingComponent):
         # Inform the user
         log.info("Deprojecting by launching SKIRT simulations ...")
 
-        # Creat the ski files
-        self.create_ski()
+        # Create the dust grids
+        self.create_dust_grids()
+
+        # Create the ski files
+        self.create_ski_files()
+
+        # Write the ski files
+        self.write_ski_files()
+
+        # Launch SKIRT
+        self.launch()
 
     # -----------------------------------------------------------------
 
-    def create_ski(self):
+    def create_dust_grids(self):
 
         """
         This function ...
@@ -534,86 +622,227 @@ class Deprojector(GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Creating ski files ...")
+        log.info("Creating the dust grids ...")
 
-        # Create instrument
-        # self.instrument = FrameInstrument.from_projection(self.earth_projection)
-        self.instrument = FrameInstrument.from_projection(self.faceon_projection)
+        # Loop over the deprojections
+        for name in self.deprojections:
 
-        # Load ski template
-        self.ski_template = LabeledSkiFile(template_ski_path)
+            deprojection = self.deprojections[name]
 
-        # Convert to oligochromatic simulation
-        self.ski_template.to_oligochromatic(1. * u("micron"))
+            # Set minimum level
+            if self.config.dg.grid_type == "bintree": min_level = self.config.dg.bintree_min_level
+            elif self.config.dg.grid_type == "octtree": min_level = self.config.dg.octtree_min_level
+            else: min_level = None
 
-        # Remove the dust system
-        self.ski_template.remove_dust_system()
+            # Set max ndivisions per pixel
+            max_ndivisions_per_pixel = 1. / self.config.dg.rel_scale  # default 1/0.5 = 2 divisions along each direction per pixel
 
-        # Set number of packages per wavelength
-        self.ski_template.setpackages(1e6)
+            # Create the dust grid
+            # grid_type, deprojection, distance, sky_ellipse, min_level, max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.
+            dust_grid = create_one_dust_grid_for_galaxy_from_deprojection(self.config.dg.grid_type, deprojection,
+                                                                               self.galaxy_distance,
+                                                                               self.truncation_ellipse,
+                                                                               min_level, self.config.dg.max_mass_fraction,
+                                                                               max_ndivisions_per_pixel,
+                                                                               self.config.dg.scale_heights)
 
-        # Add one instrument
-        self.ski_template.remove_all_instruments()
-        self.ski_template.add_instrument("faceon", self.instrument)
-
-        # Old
-
-        # old_ski = self.ski_template.copy()
-        # old_ski.remove_stellar_components_except("Evolved stellar disk")
-        # # old_ski.remove_dust_system()
-        # old_ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections["old stars"])
-        # self.ski_files["old stars"] = old_ski
-        #
-        # young_ski = self.ski_template.copy()
-        # young_ski.remove_stellar_components_except("Young stars")
-        # young_ski.set_stellar_component_geometry("Young stars", self.deprojections["young stars"])
-        # self.ski_files["young stars"] = young_ski
-        #
-        # ionizing_ski = self.ski_template.copy()
-        # ionizing_ski.remove_stellar_components_except("Ionizing stars")
-        # ionizing_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["ionizing stars"])
-        # self.ski_files["ionizing stars"] = ionizing_ski
-        #
-        # dust_ski = self.ski_template.copy()
-        # dust_ski.remove_stellar_components_except("Ionizing stars")
-        # dust_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["dust"])
-        # self.ski_files["dust"] = dust_ski
+            # Set the dust grid
+            self.dust_grids[name] = dust_grid
 
     # -----------------------------------------------------------------
 
-    def launch_skirt(self):
+    def create_ski_files(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the ski files ...")
+
+        # Loop over the components
+        for name in self.deprojections:
+
+            # Debugging
+            log.debug("Creating a ski file for the deprojection of the '" + name + "' map ...")
+
+            # Make copy
+            ski = self.ski_template.copy()
+
+            # FOR STELLAR GEOMETRIES:
+            # Add faceon instrument
+            #faceon = FrameInstrument.from_deprojection_faceon(self.deprojections[name])
+            #ski.add_instrument(faceon_name, faceon)
+
+            # Add edgeon instrument
+            #edgeon = FrameInstrument.from_deprojection_edgeon(self.deprojections[name])
+            #ski.add_instrument(edgeon_name, edgeon)
+
+            # Set component
+            #ski.remove_stellar_components_except("Evolved stellar disk")
+            #ski.remove_dust_system()
+            #ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections[name])
+
+            # Add the dust component
+            #map_filename = add_dust_component(self.ski, name, component)
+
+            # If map filename is defined, set path in dictionary
+            #if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
+
+            # USE DUST GEOMETRY
+
+            # Set filename for deprojection model
+            #map_filename = "map.fits"
+            deprojection = self.deprojections[name]
+            deprojection.filename = fs.name(deprojection.filename)
+
+            # Get title
+            title = name
+
+            # Set the geometry
+            ski.set_dust_component_geometry(title, deprojection)
+
+            dust_grid = self.dust_grids[name]
+
+            # Set the dust grid
+            ski.set_dust_grid(dust_grid)
+
+            # Enable writing options
+            ski.enable_all_writing_options()
+
+            # Add the ski file
+            self.ski_files[name] = ski
+
+    # -----------------------------------------------------------------
+
+    def write_ski_files(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the ski files ...")
+
         # Loop over the ski files
         for name in self.ski_files:
 
-            #
+            # Determine path
+            filepath = fs.join(self.output_paths[name], name + ".ski")
+
+            # Save the ski file
+            self.ski_files[name].saveto(filepath)
+
+            # Set the path
+            self.ski_paths[name] = filepath
+
+    # -----------------------------------------------------------------
+
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching ...")
+
+        # Loop over the maps
+        for name in self.maps:
+
+            # Write the ski file
+            #self.write_ski()
+
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
+            input_map_paths = [self.deprojections[name].filepath]
 
-            #prefix = fs.strip_extension(fs.name(ski_path))
+            # Debugging
+            log.debug("Launching SKIRT for the '" + name + "' map ...")
 
-            # Perform the SKIRT simulation
-            simulation = self.skirt.execute(ski_path, inpath=self.maps_path, outpath=out_path, single=True)
+            # Create simulation definition
+            definition = SingleSimulationDefinition(ski_path, out_path, input_map_paths)
 
+            # Determine parallelization scheme (do singleprocessing)
+            ncores = 2
+            nthreads_per_core = 2
+            nprocesses = 1
+            parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
+
+            # Set settings
+            self.launcher.config.progress_bar = True
+            self.launcher.config.finish_after = "Writing dust cell properties"  # finish after this line has been printed (when the next one comes)
+            # self.launcher.config.finish_at = ""
+
+            # Run
+            self.launcher.run(definition=definition, parallelization=parallelization)
+            simulation = self.launcher.simulation
+
+            # FOR STELLAR:
             # Determine path
-            frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
+            #frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
 
             # Open the output frame
-            frame = Frame.from_file(frame_path)
+            #frame = Frame.from_file(frame_path)
+
+            gridxy_filename = simulation.prefix() + "_ds_grhoxy.fits"
+            geometryxy_filename = simulation.prefix() + "_ds_trhoxy.fits"
+
+            grid_xy_path = fs.join(out_path, gridxy_filename)
+            geometry_xy_path = fs.join(out_path, geometryxy_filename)
+
+            # Open the output frame
+            frame = Frame.from_file(geometry_xy_path)
 
             # Set wcs
-            frame.wcs = self.reference_wcs
+            frame.wcs = self.maps[name].wcs
 
             # Save frame
-            frame.saveto(frame_path)
+            #frame.saveto(frame_path)
 
             # Set the deprojected map
             self.deprojected[name] = frame
+
+    # -----------------------------------------------------------------
+
+    # def launch(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     #
+    #
+    #     # Loop over the ski files
+    #     for name in self.ski_files:
+    #
+    #         #
+    #         ski_path = self.ski_paths[name]
+    #         out_path = self.output_paths[name]
+    #
+    #         #prefix = fs.strip_extension(fs.name(ski_path))
+    #
+    #         # Perform the SKIRT simulation
+    #         simulation = self.skirt.execute(ski_path, inpath=self.maps_path, outpath=out_path, single=True)
+    #
+    #         # Determine path
+    #         frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
+    #
+    #         # Open the output frame
+    #         frame = Frame.from_file(frame_path)
+    #
+    #         # Set wcs
+    #         frame.wcs = self.reference_wcs
+    #
+    #         # Save frame
+    #         frame.saveto(frame_path)
+    #
+    #         # Set the deprojected map
+    #         self.deprojected[name] = frame
 
     # -----------------------------------------------------------------
 

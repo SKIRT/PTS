@@ -1665,46 +1665,6 @@ class DeprojectionModel3D(Model3D):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def deprojected_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        smile = SKIRTSmileSchema()
-        ski = smile.create_oligochromatic_template()
-
-        # Save
-        ski.saveto(ski_path, fix=True)
-
-        # Create SKIRT launcher
-        #launcher = SingleImageSKIRTLauncher()
-
-        # Load ski template
-        #ski_template = LabeledSkiFile(template_ski_path)
-
-        # Convert to oligochromatic simulation
-        #ski_template.to_oligochromatic(1. * u("micron"))
-
-        # Remove the dust system
-        ski_template.remove_dust_system()
-
-        # Set number of packages per wavelength
-        ski.setpackages(1e6)
-
-        # Add one instrument
-        ski.remove_all_instruments()
-        ski.add_instrument("faceon", instrument)
-
-        # Make the map
-        total_value = 1. # Normalize to unity
-        deprojected_map = self.launcher.run(ski_path, out_path, self.wcs, total_value, progress_bar=True)
-        return deprojected_map
-
-    # -----------------------------------------------------------------
-
     @property
     def xmax(self):
 
