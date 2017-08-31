@@ -153,6 +153,24 @@ definition.add_flag("remove_other_dust", "remove other dust maps", False)
 
 # -----------------------------------------------------------------
 
+# REDEPROJECT
+
+definition.add_flag("redeproject", "redeproject all maps")
+definition.add_flag("redeproject_old", "redeproject the old stellar maps")
+definition.add_flag("redeproject_young", "redeproject the young stellar maps")
+definition.add_flag("redeproject_ionizing", "redeproject the ionizing stellar maps")
+definition.add_flag("redeproject_dust", "redeproject the dust maps")
+
+# REDEPROJECT WITH SKIRT
+
+definition.add_flag("redeproject_skirt", "redeproject all maps with SKIRT")
+definition.add_flag("redeproject_skirt_old", "redeproject the old stellar maps with SKIRT")
+definition.add_flag("redeproject_skirt_young", "redeproject the young stellar maps with SKIRT")
+definition.add_flag("redeproject_skirt_ionizing", "redeproject the ionizing stellar maps with SKIRT")
+definition.add_flag("redeproject_skirt_dust", "redeproject the dust maps with SKIRT")
+
+# -----------------------------------------------------------------
+
 default_interpolation_method = "pts"
 
 # -----------------------------------------------------------------

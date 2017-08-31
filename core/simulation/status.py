@@ -70,6 +70,9 @@ class SimulationStatus(object):
         # The progress (if applicable)
         self.progress = None
 
+        # The log lines
+        self.log_lines = []
+
         # More info
         self.extra = None
 
@@ -189,6 +192,8 @@ class SimulationStatus(object):
             # Not yet started
             if self.not_started:
 
+                #print("NOT STARTED")
+
                 # Execution handle
                 if isinstance(process_or_handle, ExecutionHandle):
 
@@ -236,8 +241,27 @@ class SimulationStatus(object):
 
             # Crashed: break loop
             elif self.crashed:
-                log.error("Simulation crashed")
-                return False
+
+                # Check whether FINISH POINT HAS BEEN REACHED
+                for i, line in enumerate(reversed(self.log_lines)):
+
+                    if finish_at is not None and finish_at in line:
+
+                        log.success("Reached finish_at point")
+                        if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                            terminal.kill(process_or_handle.pid)
+                        return True
+
+                    if finish_after is not None and finish_after in line and i != 0:
+
+                        log.success("Reached finish_after point")
+                        if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                            terminal.kill(process_or_handle.pid)
+                        return True
+
+                else: # loop finished without break or return
+                    log.error("Simulation crashed")
+                    return False
 
             # Aborted: break loop
             elif self.aborted:
@@ -246,6 +270,8 @@ class SimulationStatus(object):
 
             # New phase
             elif last_phase is None or self.phase != last_phase:
+
+                #print("NEW PHASE")
 
                 last_phase = self.phase
                 if last_phase is None:
@@ -258,6 +284,8 @@ class SimulationStatus(object):
 
             # Self absorption phase
             if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
+
+                #print("DUST SELF-ABSORPTION")
 
                 total_length = 100
 
@@ -302,6 +330,8 @@ class SimulationStatus(object):
             # Stellar emission: show progress bar
             elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
 
+                #print("STELLAR AND DUST EMISSION, SPECTRA CALCULATION")
+
                 total_length = 100
 
                 # Progress bar
@@ -319,6 +349,9 @@ class SimulationStatus(object):
 
             # Still the same phase
             else:
+
+                #print("SAME PHASE")
+
                 if self.extra is not None:
                     if last_extra is None or last_extra != self.extra:
                         log.info(self.extra)
@@ -367,6 +400,9 @@ class SimulationStatus(object):
         if self.remote is not None: present = self.remote.is_file(self.log_path)
         else: present = fs.is_file(self.log_path)
 
+        #if present: print("LOG FILE IS PRESENT")
+        #else: print("LOG FILE IS NOT (YET) PRESENT")
+
         # If not exists, not started
         if not present:
             self.status = "not started"
@@ -380,11 +416,18 @@ class SimulationStatus(object):
             self.status = "invalid: cannot read log file"
             return
 
+        # SET THE LOG LINES
+        self.log_lines = lines
+
         # Check whether finished
         last_two_lines = lines[-2:]
         if len(lines) == 1: last = lines[0]
         elif " Available memory: " in last_two_lines[1]: last = last_two_lines[0]
         else: last = last_two_lines[1]
+
+        #print("LAST LINE", last)
+
+        #print("LINES", lines)
 
         #print("FINISH AFTER", finish_after)
 
@@ -416,10 +459,14 @@ class SimulationStatus(object):
 
         # Interpret the content of the last line
         if " Finished simulation " in last:
+            #print("FOUND FINISHED SIMULATION IN LAST LOG LINE [" + last + "]")
             self.status = "finished"
             return
 
         elif " *** Error: " in last:
+            #print("FOUND ERROR IN LAST LOG LINE [" + last + "]")
+            #print("LINES:")
+            #for line in lines: print("  " + line)
             self.status = "crashed"
             return
 

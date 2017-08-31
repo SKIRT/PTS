@@ -796,23 +796,38 @@ class Deprojector(GalaxyModelingComponent):
             # Open the output frame
             #frame = Frame.from_file(frame_path)
 
+            ### FACEON
+
             gridxy_filename = simulation.prefix() + "_ds_grhoxy.fits"
             geometryxy_filename = simulation.prefix() + "_ds_trhoxy.fits"
 
-            grid_xy_path = fs.join(out_path, gridxy_filename)
+            #grid_xy_path = fs.join(out_path, gridxy_filename)
             geometry_xy_path = fs.join(out_path, geometryxy_filename)
 
             # Open the output frame
             frame = Frame.from_file(geometry_xy_path)
 
-            # Set wcs
-            frame.wcs = self.maps[name].wcs
+            # Set wcs NO DOESN'T MAKE ANY SENSE ON THE FACEON MAP!!
+            #frame.wcs = self.maps[name].wcs
 
             # Save frame
             #frame.saveto(frame_path)
 
             # Set the deprojected map
             self.deprojected[name] = frame
+
+            ### EDGEON
+
+            gridxz_filename = simulation.prefix() + "_ds_grhoxz.fits"
+            geometryxz_filename = simulation.prefix() + "_ds_trhoxz.fits"
+
+            geometry_xz_path = fs.join(out_path, geometryxz_filename)
+
+            # Open the frame
+            edgeon = Frame.from_file(geometry_xz_path)
+
+            # Set the edgeon map
+            self.edgeon[name] = edgeon
 
     # -----------------------------------------------------------------
 
