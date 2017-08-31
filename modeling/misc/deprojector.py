@@ -421,6 +421,9 @@ class Deprojector(GalaxyModelingComponent):
             # Save the map
             self.maps[name].saveto(path)
 
+            # Set the map path in the deprojection model
+            self.deprojections[name].filename = path
+
     # -----------------------------------------------------------------
 
     def write_deprojections(self):
@@ -694,14 +697,18 @@ class Deprojector(GalaxyModelingComponent):
 
             # Set filename for deprojection model
             #map_filename = "map.fits"
-            deprojection = self.deprojections[name]
+            deprojection = self.deprojections[name].copy()
             deprojection.filename = fs.name(deprojection.filename)
 
             # Get title
             title = name
 
             # Set the geometry
-            ski.set_dust_component_geometry(title, deprojection)
+            #ski.set_dust_component_geometry(title, deprojection)
+
+            dust_mass = 1e7 * u("Msun")
+            mix = "themis"
+            ski.create_new_dust_component(title, deprojection, normalization_value=dust_mass, mix=mix)
 
             dust_grid = self.dust_grids[name]
 
@@ -733,7 +740,7 @@ class Deprojector(GalaxyModelingComponent):
             filepath = fs.join(self.output_paths[name], name + ".ski")
 
             # Save the ski file
-            self.ski_files[name].saveto(filepath)
+            self.ski_files[name].saveto(filepath, fix=True)
 
             # Set the path
             self.ski_paths[name] = filepath
@@ -758,13 +765,14 @@ class Deprojector(GalaxyModelingComponent):
 
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
-            input_map_paths = [self.deprojections[name].filepath]
+            #input_map_paths = [self.deprojections[name].filepath]
+            in_path = fs.directory_of(self.deprojections[name].filepath)
 
             # Debugging
             log.debug("Launching SKIRT for the '" + name + "' map ...")
 
             # Create simulation definition
-            definition = SingleSimulationDefinition(ski_path, out_path, input_map_paths)
+            definition = SingleSimulationDefinition(ski_path, out_path, in_path)
 
             # Determine parallelization scheme (do singleprocessing)
             ncores = 2

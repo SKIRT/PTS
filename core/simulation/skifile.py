@@ -1454,7 +1454,9 @@ class SkiFile:
         else: raise NotImplementedError("Not implemented for oligochromatic simulations")
 
     ## This function creates a new dust component
-    def create_new_dust_component(self, component_id, geometry_type=None, geometry_properties=None, mix_type=None, mix_properties=None, normalization_type=None, normalization_properties=None):
+    def create_new_dust_component(self, component_id, geometry=None, geometry_type=None, geometry_properties=None,
+                                  mix=None, mix_type=None, mix_properties=None, normalization_type=None,
+                                  normalization_value=None, normalization_properties=None):
 
         # Get the dust distribution
         dust_distribution = self.get_dust_distribution()
@@ -1475,16 +1477,22 @@ class SkiFile:
 
         # Create geometry
         if geometry_type is not None:
+            if geometry is not None: raise ValueError("Cannot specify 'geometry' and 'geometry_type'")
+            if geometry_properties is None: raise ValueError("Geometry properties must be defined")
             geometry = self.create_element(geometry_type, geometry_properties)
             geometry_parent.append(geometry)
 
         # Create mix
         if mix_type is not None:
+            if mix is not None: raise ValueError("Cannot specify 'mix' and 'mix_type'")
+            if mix_properties is None: raise ValueError("Mix properties must be defined")
             mix = self.create_element(mix_type, mix_properties)
             mix_parent.append(mix)
 
         # Create normalization
         if normalization_type is not None:
+            if normalization_value is not None: raise ValueError("Cannot specify 'normalization_value' and 'normalization_type'")
+            if normalization_properties is None: raise ValueError("Normalization properties must be defined")
             normalization = self.create_element(normalization_type, normalization_properties)
             normalization_parent.append(normalization)
 
@@ -1499,6 +1507,18 @@ class SkiFile:
 
         # Add the new dust component
         dust_components_parent.append(dust_component)
+
+        # Set geometry
+        if geometry is not None: self.set_dust_component_geometry(component_id, geometry)
+
+        # Set mix
+        if mix is not None:
+            if mix == "themis": self.set_dust_component_themis_mix(component_id)
+            elif mix == "zubko": self.set_dust_component_zubko_mix(component_id)
+            else: raise ValueError("Invalid mix: '" + str(mix) + "'")
+
+        # Set normalization
+        if normalization_value is not None: self.set_dust_component_normalization(component_id, normalization_value)
 
     ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):

@@ -217,3 +217,27 @@ def is_quantity(value):
     return isinstance(value, Quantity)
 
 # -----------------------------------------------------------------
+
+def is_angle(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return hasattr(value, "unit") and value.unit.physical_type == "angle"
+
+# -----------------------------------------------------------------
+
+def is_length_quantity(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_quantity(value) and value.unit.physical_type == "length"
+
+# -----------------------------------------------------------------
