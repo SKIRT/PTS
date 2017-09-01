@@ -30,7 +30,7 @@ from .component import galex, sdss, twomass, spitzer, wise, herschel, planck, ot
 # -----------------------------------------------------------------
 
 class ImageFetcher(DataComponent):
-    
+
     """
     This class...
     """

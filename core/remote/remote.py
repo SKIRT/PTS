@@ -3291,7 +3291,9 @@ class Remote(object):
         """
 
         # Create the remote directory
-        self.execute("mkdir '" + path + "'", output=False, show_output=show_output)
+        output = self.execute("mkdir '" + path + "'", output=True, show_output=show_output)
+        for line in output:
+            if "cannot create directory" in line: raise IOError("Cannot create directory '" + path + "'")
 
     # -----------------------------------------------------------------
 
@@ -3303,7 +3305,11 @@ class Remote(object):
         """
 
         # Create the remote directories
-        self.execute("mkdir '" + "' '".join(paths) + "'", output=False)
+        output = self.execute("mkdir '" + "' '".join(paths) + "'", output=False)
+        for line in output:
+            if "cannot create directory" in line:
+                which = line.split("cannot create directory ")[1].split(":")[0]
+                raise IOError("Cannot create directory " + which)
 
     # -----------------------------------------------------------------
 

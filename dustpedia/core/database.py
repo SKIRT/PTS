@@ -1011,13 +1011,13 @@ class DustPediaDatabase(object):
 
             # Determine path
             image_name = url.split("imageName=")[1].split("&instrument")[0]
-            #image_path = fs.join(path, image_name)
+            image_path = fs.join(path, image_name)
 
             # Download this image
             #network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
             # Download (and decompress)
-            self.download_image_from_url(url, path)
+            self.download_image_from_url(url, image_path)
 
     # -----------------------------------------------------------------
 

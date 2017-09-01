@@ -13,7 +13,7 @@ from pts.core.remote.host import find_host_ids
 
 # Add required settings
 definition.add_positional_optional("remote", "string", "remote host to use for creating the GALEX and SDSS data", choices=find_host_ids(schedulers=False))
-definition.add_flag("attached", "run remote in attached mode")
+definition.add_flag("attached", "run remote in attached mode", False)
 
 # Add flags
 definition.add_flag("errors", "also download the error frames from the DustPedia archive")
