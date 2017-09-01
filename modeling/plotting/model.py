@@ -20,8 +20,8 @@ from IPython.display import display
 import matplotlib.pyplot as plt
 #from IPython.terminal.embed import embed_snippet
 from ipyvolume.transferfunction import TransferFunctionWidgetJs3
-from ipyvolume.style import dark, light, minimal
-from ipyvolume.style import create as create_style
+from ipyvolume.styles import dark, light, minimal
+from ipyvolume.styles import create as create_style
 
 import json
 import ipywidgets

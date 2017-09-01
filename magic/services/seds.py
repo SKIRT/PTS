@@ -45,9 +45,9 @@ class SEDFetcher(Configurable):
     """
     This class ...
     """
-    
+
     def __init__(self, *args, **kwargs):
-    
+
         """
         The constructor ...
         :param kwargs:
@@ -60,10 +60,6 @@ class SEDFetcher(Configurable):
 
         # Determine the NGC name of the galaxy
         self.ngc_name = None
-
-        # The Vizier querying object
-        self.vizier = Vizier(keywords=["galaxies"])
-        self.vizier.ROW_LIMIT = -1
 
         # The observed SED
         self.seds = dict()
@@ -261,8 +257,12 @@ class SEDFetcher(Configurable):
         # - "e_F60um": Uncertainty in F60um [Jy]
         # - "F100um": IRAS 100 micron flux density [Jy]
         # - "e_F100um": Uncertainty in F100um [Jy]
+        # The Vizier querying object
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/173/185/galex")
+        vizier = Vizier(columns=["asyFUV", "e_asyFUV", "asyNUV","e_asyNUV", "Umag", "e_Umag","Bmag","e_Bmag","Vmag","e_Vmag","Jmag","e_Jmag","Hmag","e_Hmag","Kmag","e_Kmag","F12um","e_F12um","F25um","e_F25um","F60um","e_F60um","F100um","e_F100um"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/173/185/galex")
         # Result is a list of tables, we only have one table with one entry
 
         # Create an SED
@@ -406,7 +406,8 @@ class SEDFetcher(Configurable):
             k_error = ErrorBar(k_lower, k_upper, at=k)
             sed.add_point(self.filters["K"], k, k_error)
 
-
+        # TODO: try to find the cause of this problem later? Columns are not present anymore in the output table
+        """
         # F12 band flux
 
         if not result[0]["F12um"].mask[0]:
@@ -438,6 +439,7 @@ class SEDFetcher(Configurable):
             f100 = result[0][0]["F100um"]
             f100_error = ErrorBar(result[0][0]["e_F100um"])
             sed.add_point(self.filters["IRAS 100"], f100, f100_error)
+        """
 
         # Add the SED to the dictionary
         self.seds["GALEX"] = sed
@@ -463,7 +465,12 @@ class SEDFetcher(Configurable):
         # - "e_H.ext": σ(H.ext) (h_msig_ext) [mag]
         # - "K.ext": J magnitude in r.ext (k_m_ext) [mag]
         # - "e_K.ext": σ(K.ext) (k_msig_ext) [mag]
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
+
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
 
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
@@ -530,7 +537,12 @@ class SEDFetcher(Configurable):
     	# J/ApJ/703/1569/table7	IRAC and MIPS asymptotic magnitudes (75 rows)
     	# J/ApJ/703/1569/table8	Non-parametrical morphological estimators (300 rows)
 
-        result = self.vizier.get_catalogs("J/ApJ/703/1569")
+
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.get_catalogs("J/ApJ/703/1569")
 
         # Result is a TableList with 8 tables (0 to 7)
         # We need:
@@ -853,7 +865,11 @@ class SEDFetcher(Configurable):
         #  - "J/MNRAS/445/881/table3": Photometry within the IR apertures of Dale et al. (2009, Cat. J/ApJ/703/517) (258 rows)
         #  - "J/MNRAS/445/881/table4": Photometry within the UV apertures of Lee et al. (2011, Cat. J/ApJS/192/6) (258 rows)
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/445/881/sample")
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/445/881/sample")
 
         # ALL IN AB MAGNITUDE SYSTEM
         # Umag
@@ -916,7 +932,11 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
 
         # F1.25: 2MASS J band (1.25 micron) flux density [Jy]
         # e_F1.25: Uncertainty in F1.25 [Jy]
@@ -992,7 +1012,11 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
+        # The Vizier querying object
+        vizier = Vizier(columns=["F(3.6)","e_F(3.6)","F(8.0)","e_F(8.0)","F(24)","e_F(24)","F(70)","e_F(70)"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
 
         # No results found
         if len(result) == 0: return
@@ -1043,7 +1067,11 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
 
         if len(result) != 0:
 
@@ -1062,7 +1090,7 @@ class SEDFetcher(Configurable):
                 # Add data point to SED
                 sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
-        result = self.vizier.get_catalogs("J/ApJS/178/280/table2")
+        result = vizier.get_catalogs("J/ApJS/178/280/table2")
         table = result[0]
 
         index = tables.find_index(table, self.ngc_name, "Name")
@@ -1152,7 +1180,11 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
+        # The Vizier querying object
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
 
         if len(result) == 0: return
 
@@ -1185,13 +1217,16 @@ class SEDFetcher(Configurable):
         sed = ObservedSED(photometry_unit="Jy")
 
         # Get parameters from S4G catalog
-        result = self.vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        vizier = Vizier(columns=["[3.6]","e_[3.6]","[4.5]","e_[4.5]"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
         table = result[0]
 
         # Magnitudes
         i1_mag = table["__3.6_"][0]
-        i2_mag = table["__4.5_"][0]
         i1_mag_error = table["e__3.6_"][0]
+        i2_mag = table["__4.5_"][0]
         i2_mag_error = table["e__4.5_"][0]
 
         i1_fluxdensity = unitconversion.ab_to_jansky(i1_mag)
@@ -1310,7 +1345,10 @@ class SEDFetcher(Configurable):
         # J/ApJS/190/233/Opt
 
         # Get result
-        result = self.vizier.get_catalogs("J/ApJS/190/233/Opt")
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.get_catalogs("J/ApJS/190/233/Opt")
         table = result[0]
 
         galaxy_index = tables.find_index(table, self.ngc_name, "Name")
@@ -1384,7 +1422,10 @@ class SEDFetcher(Configurable):
         # - logL8: Log of the 8um luminosity [1e-7 W] or [erg/s]
         # - logL24: Log of the 24um luminosity [1e-7 W] or [erg/s]
 
-        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/648/987/table2")
+        vizier = Vizier(keywords=["galaxies"])
+        vizier.ROW_LIMIT = -1
+
+        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/648/987/table2")
 
         galaxy_index = tables.find_index(result[0], self.config.galaxy_name)
 

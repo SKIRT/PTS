@@ -50,10 +50,6 @@ class PropertyFetcher(DataComponent):
         # Call the constructor of the base class
         super(PropertyFetcher, self).__init__(*args, **kwargs)
 
-        # The Vizier querying object
-        self.vizier = Vizier()
-        self.vizier.ROW_LIMIT = -1
-
         # The DustPedia database
         self.database = DustPediaDatabase()
 
@@ -202,16 +198,20 @@ class PropertyFetcher(DataComponent):
         # Inform the user
         log.info("Querying the S4G catalog ...")
 
+        # The Vizier querying object
+        vizier = Vizier(columns=['Name', 'RAJ2000', 'DEJ2000', 'amaj', 'ell', 'Dmean', "e_Dmean", "PA"])
+        vizier.ROW_LIMIT = -1
+
         # Get parameters from S4G catalog
-        result = self.vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        result = vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
         table = result[0]
 
         # Galaxy name for S4G catalog
         self.properties.name = table["Name"][0]
 
         # Galaxy center from decomposition (?)
-        ra_center = table["_RAJ2000"][0]
-        dec_center = table["_DEJ2000"][0]
+        ra_center = table["RAJ2000"][0]
+        dec_center = table["DEJ2000"][0]
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame='fk5')
         self.properties.center = center
 
@@ -231,10 +231,10 @@ class PropertyFetcher(DataComponent):
         self.properties.position_angle = Angle(table["PA"][0] + 90.0, u("deg"))
 
         # Magnitudes
-        asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
-        asymptotic_ab_magnitude_i2 = table["__4.5_"][0]
-        asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
-        asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
+        #asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
+        #asymptotic_ab_magnitude_i2 = table["__4.5_"][0]
+        #asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
+        #asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
 
         # I CAN ADD THESE ATTRIBUTES BACK TO THE GALAXYPROPERTIES CLASS IF I WANT
         #self.properties.i1_mag = asymptotic_ab_magnitude_i1
@@ -275,11 +275,25 @@ class PropertyFetcher(DataComponent):
         # Inform the user
         log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
 
-        # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
-        radial_profiles_result = self.vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
+        # The Vizier querying object
+        vizier = Vizier()
+        vizier.ROW_LIMIT = -1
 
-        distance = float(radial_profiles_result[0][0]["Dist"])
-        inclination = Angle(float(radial_profiles_result[0][0]["i"]), "deg")
+        # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
+        radial_profiles_result = vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
+
+        # Catalog doesnt contain data for a lot of galaxies
+        # If it doesnt, use DustPedia galaxy info as a backup solution
+        if len(radial_profiles_result) == 0 or len(radial_profiles_result[0]) == 0:
+
+            inclination = Angle(self.info["Inclination"][0], "deg")
+
+        # We have a table and it is not empty
+        else:
+
+            table = radial_profiles_result[0]
+            # distance = float(table[0]["Dist"])
+            inclination = Angle(float(table[0]["i"]), "deg")
 
         # Set the inclination
         self.properties.inclination = inclination
@@ -299,6 +313,10 @@ class PropertyFetcher(DataComponent):
 
         # - J/A+A/582/A86/table2: Properties of bars, ring- and lens-structures in the S4G (2387 rows)
         # - J/A+A/582/A86/table3: Properties of spiral arms in the S4G (1854 rows)
+
+        # The Vizier querying object
+        vizier = Vizier()
+        vizier.ROW_LIMIT = -1
 
         # Get table2
         result = self.vizier.query_object(self.galaxy_name, catalog=["J/A+A/582/A86/table2"])

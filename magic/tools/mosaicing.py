@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-import montage_wrapper as montage
 from astropy.table import Table
 from astropy.io.fits import Header
 
@@ -41,6 +40,8 @@ def generate_meta_file(path, meta_dir_path=None):
     :param meta_dir_path:
     :return:
     """
+
+    import montage_wrapper as montage
 
     if meta_dir_path is None: meta_dir_path = path
 
@@ -100,6 +101,8 @@ def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radi
     :param radius:
     :return:
     """
+
+    import montage_wrapper as montage
 
     # Inform the user
     log.info("Generating overlap file ...")
@@ -169,6 +172,8 @@ def get_field_table(cutout_center, cutout_width, band):
     :return:
     """
 
+    import montage_wrapper as montage
+
     # Get the coordinate range for this galaxy
     ra_deg = cutout_center.ra.to("deg").value
     dec_deg = cutout_center.dec.to("deg").value
@@ -199,6 +204,8 @@ def make_header(ra, dec, width, pix_size, returns="header"):
     :param returns:
     :return:
     """
+
+    import montage_wrapper as montage
 
     # ra and dec are taken from the ra2000 and de2000 of the attached DustPedia_LEDAWISE_Herschel.csv table
     # width is 0.5 degrees for galaxies with D25<6 arcmin, and 1 degree for galaxies with D25>=6 arcmin (as listed in DustPedia_LEDAWISE_Herschel.csv)
@@ -294,6 +301,8 @@ def reproject(input_path, output_path, metatable_path, header_path):
     This function ...
     :return:
     """
+
+    import montage_wrapper as montage
 
     proj_stats_path = fs.join(input_path, "Proj_Stats.txt")
     montage.commands.mProjExec(metatable_path, header_path, output_path, proj_stats_path, raw_dir=input_path, debug=False, exact=True, whole=False)
