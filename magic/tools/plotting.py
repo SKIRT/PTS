@@ -648,6 +648,9 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
 
     number = 5
 
+    if hasattr(mask, "data"): maskdata = mask.data
+    else: maskdata = mask
+
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,number,1)
@@ -657,7 +660,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     plt.title("Cutout")
 
     plt.subplot(1,number,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
+    plt.imshow(np.ma.masked_array(cutout, mask=maskdata), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Masked source")
@@ -688,7 +691,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     #plt.title("Background subtracted source")
 
     replaced = cutout.copy()
-    replaced[mask] = background[mask]
+    replaced[maskdata] = background[maskdata]
 
     plt.subplot(1,number,5)
     plt.imshow(replaced, origin="lower", interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
@@ -788,14 +791,17 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Cutout")
 
+    if hasattr(mask, "data"): maskdata = mask.data
+    else: maskdata = mask
+
     plt.subplot(1,3,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
+    plt.imshow(np.ma.masked_array(cutout, mask=maskdata), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Masked source")
 
     plt.subplot(1,3,3)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
+    plt.imshow(np.ma.masked_array(cutout, mask=np.logical_not(maskdata)), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
     if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)

@@ -616,8 +616,10 @@ class SourceFinder(Configurable):
             # Loop over the frames
             for name in self.frames:
 
+                pixel_region = self.special_region.to_pixel(self.frames[name].wcs)
+
                 # Create the mask
-                special_mask = Mask.from_region(self.special_region, self.frames[name].xsize, self.frames[name].ysize)
+                special_mask = Mask.from_region(pixel_region, self.frames[name].xsize, self.frames[name].ysize)
 
                 self.special_masks[name] = special_mask
 
