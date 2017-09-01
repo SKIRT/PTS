@@ -807,7 +807,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.environment.significance_maps_html_page_path
+        return self.environment.clip_maps_html_page_path
 
     # -----------------------------------------------------------------
 

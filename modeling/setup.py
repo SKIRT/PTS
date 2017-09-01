@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import sys
+
 # Import the relevant PTS classes and modules
 from ..core.tools import introspection
 
@@ -39,6 +42,23 @@ def setup(command_name, cwd):
     :return: 
     """
 
+    # Add command to history
+    mark_start(command_name, cwd)
+
+    # Add command to commands file
+    add_command(command_name, cwd)
+
+# -----------------------------------------------------------------
+
+def mark_start(command_name, cwd):
+
+    """
+    This function ...
+    :param command_name:
+    :param cwd:
+    :return:
+    """
+
     # Ignore not-pipeline
     if command_name in ignore_commands: return
 
@@ -51,6 +71,30 @@ def setup(command_name, cwd):
 
 # -----------------------------------------------------------------
 
+def add_command(command_name, cwd):
+
+    """
+    This fucntion ...
+    :param command_name:
+    :param cwd:
+    :return:
+    """
+
+    # Get the argument string
+    argument_string = "pts " + command_name + " " + " ".join(sys.argv[1:])
+
+    # Load the commmands
+    from .component.component import load_modeling_commands
+    commands = load_modeling_commands(cwd)
+
+    # Add entry
+    commands.append(argument_string)
+
+    # Save
+    commands.save()
+
+# -----------------------------------------------------------------
+
 def finish(command_name, cwd):
 
     """
@@ -58,6 +102,20 @@ def finish(command_name, cwd):
     :param command_name: 
     :param cwd:
     :return: 
+    """
+
+    # Mark end in history
+    mark_end(command_name, cwd)
+
+# -----------------------------------------------------------------
+
+def mark_end(command_name, cwd):
+
+    """
+    This function ...
+    :param command_name:
+    :param cwd:
+    :return:
     """
 
     # Ignore not-pipeline

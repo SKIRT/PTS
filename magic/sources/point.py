@@ -577,8 +577,11 @@ class PointSourceFinder(Configurable):
 
                 # Create a detection object
                 detection = Detection.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
+
+            # No deection
             else: detection = None
-            # Find a model
+
+            # Find a model, if detection was found
             if source.has_detection or detection is not None: source.fit_model(self.config.fitting, detection)
 
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
@@ -890,7 +893,7 @@ class PointSourceFinder(Configurable):
             if source.has_saturation:
 
                 # Add the saturation segment to the segmentation map
-                self.segments[source.saturation.y_slice, source.saturation.x_slice][source.saturation.mask] = source.index
+                self.segments[source.saturation.y_slice, source.saturation.x_slice][source.saturation.mask.data] = source.index
 
             # Stars without saturation
             else:
@@ -899,7 +902,7 @@ class PointSourceFinder(Configurable):
                 if not source.has_detection: continue
 
                 # Add the star segment to the segmentation map
-                self.segments[source.detection.y_slice, source.detection.x_slice][source.detection.mask] = source.index
+                self.segments[source.detection.y_slice, source.detection.x_slice][source.detection.mask.data] = source.index
 
     # -----------------------------------------------------------------
 

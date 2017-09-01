@@ -1009,3 +1009,80 @@ def geometric_mean(*numbers):
     return root(product, nnumbers)
 
 # -----------------------------------------------------------------
+
+def text2int(textnum, numwords={}):
+
+    """
+    Thisf function ...
+    :param textnum:
+    :param numwords:
+    :return:
+    """
+
+    if not numwords:
+
+      units = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+        "sixteen", "seventeen", "eighteen", "nineteen",
+      ]
+
+      tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+
+      scales = ["hundred", "thousand", "million", "billion", "trillion"]
+
+      numwords["and"] = (1, 0)
+
+      for idx, word in enumerate(units):    numwords[word] = (1, idx)
+      for idx, word in enumerate(tens):     numwords[word] = (1, idx * 10)
+      for idx, word in enumerate(scales):   numwords[word] = (10 ** (idx * 3 or 2), 0)
+
+    current = result = 0
+    for word in textnum.split():
+        if word not in numwords:
+          raise Exception("Illegal word: " + word)
+
+        scale, increment = numwords[word]
+        current = current * scale + increment
+        if scale > 100:
+            result += current
+            current = 0
+
+    return result + current
+
+# -----------------------------------------------------------------
+
+number_list = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+teen_list = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+decades_list = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+
+# -----------------------------------------------------------------
+
+def int2text(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    if number <= 9: return number_list[number].capitalize()
+
+    elif number >= 10 and number <= 19:
+
+        tens = int(number % 10)
+        return teen_list[tens].capitalize()
+
+    elif number > 19 and number <= 99:
+
+        ones = int(math.floor(number / 10))
+        twos = ones - 2
+        tens = int(number % 10)
+
+        if tens == 0: return decades_list[twos].capitalize()
+
+        else: return decades_list[twos].capitalize() + " " + number_list[tens]
+
+    else: raise ValueError("Your numbers is not supported")
+
+# -----------------------------------------------------------------

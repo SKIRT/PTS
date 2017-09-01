@@ -982,3 +982,38 @@ def contains_which(string, patterns, case=True):
     raise ValueError("None of the patterns are contained in the string")
 
 # -----------------------------------------------------------------
+
+def replace_digits_by_words(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    from .numbers import int2text
+
+    new_string = ""
+
+    for char in string:
+        if char.isdigit(): new_string += int2text(int(char))
+        else: new_string += char
+
+    return new_string
+
+# -----------------------------------------------------------------
+
+def replace_first_digit_by_word(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    from .numbers import int2text
+
+    if string[0].isdigit(): return int2text(int(string[0])) + string[1:]
+    else: return string
+
+# -----------------------------------------------------------------

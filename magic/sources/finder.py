@@ -616,9 +616,13 @@ class SourceFinder(Configurable):
             # Loop over the frames
             for name in self.frames:
 
-                # Create the mask
-                special_mask = Mask.from_region(self.special_region, self.frames[name].xsize, self.frames[name].ysize)
+                # Create pixel region for this frame
+                pixel_region = self.special_region.to_pixel(self.frames[name].wcs)
 
+                # Create the mask
+                special_mask = Mask.from_region(pixel_region, self.frames[name].xsize, self.frames[name].ysize)
+
+                # Set the mask
                 self.special_masks[name] = special_mask
 
         # Ignore mask
@@ -627,9 +631,13 @@ class SourceFinder(Configurable):
             # Loop over the frames
             for name in self.frames:
 
+                # Create pixel region for this frame
+                pixel_region = self.ignore_region.to_pixel(self.frames[name].wcs)
+
                 # Create the mask
                 ignore_mask = Mask.from_region(self.ignore_region, self.frames[name].xsize, self.frames[name].ysize)
 
+                # Set the mask
                 self.ignore_masks[name] = ignore_mask
 
     # -----------------------------------------------------------------

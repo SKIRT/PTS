@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+from abc import ABCMeta, abstractmethod
 from io import BytesIO
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,26 +59,230 @@ pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
+mpl = "matplotlib"
+bokeh = "bokeh"
+
+# -----------------------------------------------------------------
+
+plotting_libraries = [mpl, bokeh]
+
+# -----------------------------------------------------------------
+
 class Plot(object):
+
+    """
+    This function ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # The plot path
+        self.path = kwargs.pop("path", None)
+
+        # The title
+        self.title = kwargs.pop("title", None)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def saveto(self, path, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if path is defined
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+# -----------------------------------------------------------------
+
+# stylesheet and script can also be accessed with https!
+bokeh_page_template = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bokeh Scatter Plots</title>
+
+        <link rel="stylesheet" href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.6.min.css" type="text/css" />
+        <script type="text/javascript" src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.6.min.js"></script>
+
+        <!-- COPY/PASTE SCRIPT HERE -->
+
+    </head>
+    <body>
+        <!-- INSERT DIVS HERE -->
+    </body>
+</html>
+"""
+
+# -----------------------------------------------------------------
+
+class BokehPlot(Plot):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(BokehPlot, self).__init__(**kwargs)
+
+        from bokeh.plotting import figure
+
+        #
+        self.figure = figure()
+        self.figure.circle([1, 2], [3, 4])
+
+    # -----------------------------------------------------------------
+
+    def to_html(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from bokeh.resources import CDN
+        from bokeh.embed import file_html
+
+        # Generate the html
+        html = file_html(self.figure, CDN, self.title)
+
+        # Return the HTML
+        return html
+
+    # -----------------------------------------------------------------
+
+    def to_html_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from bokeh.embed import components
+
+        script, div = components(self.figure)
+        return script, div
+
+    # -----------------------------------------------------------------
+
+    def write_html(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..tools import filesystem as fs
+        html = self.to_html()
+        fs.write_text(path, html)
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import filesystem as fs
+        from ..tools import introspection
+        from ..tools import time
+        from ..tools import browser
+
+        # Determine temporary filepath
+        filename = time.unique_name("bokeh_plot") + ".html"
+        filepath = fs.join(introspection.pts_temp_dir, filename)
+
+        # Write the html
+        self.write_html(filepath)
+
+        # Open the file in a web browser
+        browser.open_path(filepath)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class MPLPlot(Plot):
         
     """
     This class ...
     """
 
-    def __init__(self, size=(10,6)):
+    def __init__(self, size=(10,6), **kwargs):
 
         """
         This function ...
         :param size:
+        :param kwargs:
         """
+
+        # Call the constructor of the base class
+        super(MPLPlot, self).__init__(**kwargs)
 
         # Setup the figure
         self.figure = plt.figure(figsize=size)
         plt.clf()
         self.ax = self.figure.gca()
-
-        # The plot path
-        self.path = None
 
         # Properties
         self.add_borders = False

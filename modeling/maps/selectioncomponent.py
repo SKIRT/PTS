@@ -13,12 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from .component import MapsComponent
 from ...core.basics.log import log
 from ...magic.core.mask import intersection
+from ...magic.core.alpha import product
 from ...core.tools import sequences
 from ...core.tools.stringify import tostr
 from ...core.tools.utils import lazyproperty
@@ -26,6 +28,9 @@ from ...core.basics.containers import hashdict
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...core.basics.configuration import prompt_string_list
+from ...magic.core.mask import Mask
+from ...magic.core.alpha import AlphaMask
+from ...core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -452,7 +457,8 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
+    def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8,
+                 rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
 
         """
         This function ...
@@ -463,14 +469,23 @@ class MapsSelectionComponent(MapsComponent):
         :param npixels:
         :param connectivity:
         :param rebin_remote_threshold:
+        :param fuzzy
+        :param fuzziness:
+        :param fuzziness_offset:
         :return:
         """
 
         # Create the clip mask
-        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold)
+        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels,
+                                  connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold,
+                                  fuzzy=fuzzy, fuzziness=fuzziness, fuzziness_offset=fuzziness_offset)
 
         # Clip
-        the_map[mask] = 0.0
+        #the_map[mask] = 0.0
+
+        # Apply the mask
+        if fuzzy: the_map.apply_alpha_mask(mask)
+        else: the_map.apply_mask(mask)
 
         # Return the mask
         return mask
@@ -478,7 +493,8 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
-                          npixels=1, connectivity=8, present=None):
+                          npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
+                          return_masks=False):
 
         """
         This function ...
@@ -491,12 +507,18 @@ class MapsSelectionComponent(MapsComponent):
         :param rebin_remote_threshold:
         :param npixels:
         :param connectivity:
+        :param fuzzy:
+        :param fuzziness:
+        :param fuzziness_offset:
+        :param return_masks:
         :return:
         """
 
         # Make the masks
         masks = self.make_clip_masks(name, origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
-                                     rebin_remote_threshold=rebin_remote_threshold, npixels=npixels, connectivity=connectivity, present=present)
+                                     rebin_remote_threshold=rebin_remote_threshold, npixels=npixels,
+                                     connectivity=connectivity, present=present, fuzzy=fuzzy, fuzziness=fuzziness,
+                                     fuzziness_offset=fuzziness_offset)
 
         # The maps
         maps = dict()
@@ -510,19 +532,22 @@ class MapsSelectionComponent(MapsComponent):
             # Get the mask
             mask = masks[levels]
 
-            # Make clipped copy
+            # Make clipped copy of the map
             clipped_map = the_map.copy()
-            clipped_map[mask] = 0.0
+            if fuzzy: clipped_map.apply_alpha_mask(mask)
+            else: clipped_map.apply_mask(mask)
 
             # Add to the dictionary
             maps[levels] = clipped_map
 
         # Return the dictionary
-        return maps
+        if return_masks: return maps, masks
+        else: return maps
 
     # -----------------------------------------------------------------
 
-    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
+    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8,
+                      rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
 
         """
         This function ...
@@ -533,6 +558,9 @@ class MapsSelectionComponent(MapsComponent):
         :param npixels:
         :param connectivity:
         :param rebin_remote_threshold:
+        :param fuzzy:
+        :param fuzziness:
+        :param fuzziness_offset:
         :return:
         """
 
@@ -541,7 +569,10 @@ class MapsSelectionComponent(MapsComponent):
         else:
 
             # Make the mask
-            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold)
+            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote,
+                                       npixels=npixels, connectivity=connectivity,
+                                       rebin_remote_threshold=rebin_remote_threshold, fuzzy=fuzzy, fuzziness=fuzziness,
+                                       fuzziness_offset=fuzziness_offset)
 
             # Cache the mask
             if wcs is None: self.clip_masks[tuple(origins)] = mask
@@ -551,7 +582,8 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
+    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8,
+                       rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
 
         """
         This function ...
@@ -563,6 +595,9 @@ class MapsSelectionComponent(MapsComponent):
         :param npixels:
         :param connectivity:
         :param rebin_remote_threshold:
+        :param fuzzy:
+        :param fuzziness:
+        :param fuzziness_offset:
         :return:
         """
 
@@ -594,55 +629,47 @@ class MapsSelectionComponent(MapsComponent):
             frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
             errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
-        # NOT REALLY NECESSARY!!
-        # Convert the frames to the same unit
-        # frames.convert_to_same_unit(unit="Jy")
-        # errors.convert_to_same_unit(unit="Jy")
-        # frames.convert_to_same_unit()
-        # errors.convert_to_same_unit()
-
-        # # Get the significance maps
-        # significances = NamedFrameList()
-        # for name in frames.names:
-        #     frame = frames[name]
-        #     errormap = errors[name]
-        #     significances.append(frame / errormap, name=name)
-        #
-        # # Create the masks
-        # masks = []
-        # combination_names = []
-        #
-        # for index in range(len(significances)):
-        #     sigma_level = sigma_levels[index]
-        #     significance = significances[index]
-        #     string = significances.names[index] + str(sigma_level)
-        #     combination_names.append(string)
-        #     mask = significance > sigma_level
-        #     masks.append(mask)
-
         masks = []
         for name in frames.names:
+
             frame = frames[name]
             errormap = errors[name]
             level = levels[frame.filter]
-            mask = frame > level * errormap
+
+            #mask = frame > level * errormap
+            #masks.append(mask)
+
+            # Create significance map
+            significance = frame / errormap
+
+            # Create the mask
+            if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level, fuzziness=fuzziness, offset=fuzziness_offset)
+            else: mask = self.create_mask_for_level(significance, level)
+
+            # Add the mask
             masks.append(mask)
 
-        # Determine name for the mask
-        # mask_name = "_".join(combination_names)
+        # Create intersection mask
+        #mask = intersection(*masks)
 
         # Create intersection mask
-        mask = intersection(*masks)
+        if fuzzy: mask = product(*masks)
+        else: mask = intersection(*masks)
 
-        # Only keep central
-        #mask = mask.central()
+        # Only keep largest patch
         mask = mask.largest(npixels=npixels, connectivity=connectivity)
 
         # Fill holes
         mask.fill_holes()
 
         # Invert
-        mask.invert()
+        #mask.invert()
+
+        # Set the WCS
+        if wcs is not None: mask.wcs = wcs
+
+        # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
+        if not fuzzy: mask.invert()
 
         # Return the mask
         return mask
@@ -650,7 +677,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
-                        npixels=1, connectivity=8, present=None, fuzzy=False):
+                        npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
 
         """
         Thisn function ...
@@ -664,6 +691,8 @@ class MapsSelectionComponent(MapsComponent):
         :param connectivity:
         :param present:
         :param fuzzy:
+        :param fuzziness:
+        :param fuzziness_offset:
         :return:
         """
 
@@ -747,27 +776,28 @@ class MapsSelectionComponent(MapsComponent):
                 errormap = errors[name]
                 level = sigma_levels[index]
 
+                # Create significance map
+                significance = frame / errormap
+
                 # Create the mask
-                if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level)
-                else:
-                    #mask = self.create_mask_for_level(significance, level)
-                    mask = frame > level * errormap
+                if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level, fuzziness=fuzziness, offset=fuzziness_offset)
+                else: mask = self.create_mask_for_level(significance, level)
 
                 # Add the mask
                 masks.append(mask)
 
             # Create intersection mask
-            mask = intersection(*masks)
+            if fuzzy:  mask = product(*masks)
+            else: mask = intersection(*masks)
 
-            # Only keep central
-            #mask = mask.central()
+            # Only keep largest patch
             mask = mask.largest(npixels=npixels, connectivity=connectivity)
 
             # Fill holes
             mask.fill_holes()
 
-            # Invert
-            mask.invert()
+            # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
+            if not fuzzy: mask.invert()
 
             # Add item to the list
             #item = (levels_dict, mask)
@@ -776,6 +806,77 @@ class MapsSelectionComponent(MapsComponent):
 
         # Return the masks
         return masks_levels
+
+    # -----------------------------------------------------------------
+
+    def create_mask_for_level(self, significance, level):
+
+        """
+        This function ...
+        :param significance:
+        :param level:
+        :return:
+        """
+
+        # Create the mask
+        mask = Mask(significance > level)
+
+        # Only keep largest patch
+        #mask = mask.largest(npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+        # Fill holes
+        #mask.fill_holes()
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def create_fuzzy_mask_for_level(self, significance, level, fuzziness, offset=1.0):
+
+        """
+        This function ...
+        :param significance:
+        :param level:
+        :param fuzziness:
+        :param offset:
+        :return:
+        """
+
+        # Determine the maximum significance
+        max_significance = np.nanmax(significance)
+
+        # Debugging
+        log.debug("Maximal significance: " + str(max_significance))
+
+        # Construct value range
+        lower_relative = 1. - fuzziness  # example: 1. - 0.1
+        upper_relative = 1. + fuzziness
+
+        # ADAPT IF THE RANGE IS TOO BROAD
+        if level * upper_relative > max_significance - offset:
+            log.warning("Changing the upper relative sigma level for the fuzzy edge from " + str(upper_relative) + " to 1")
+            upper_relative = 1.
+
+        value_range = RealRange.around(level, lower_relative, upper_relative)
+
+        # Debugging
+        log.debug("Sigma level range for fuzzy edge: " + str(value_range))
+
+        # Check maximum of the range
+        if value_range.max + offset > max_significance: raise ValueError("This should not happen")
+
+        # Create the mask
+        mask = AlphaMask.between(significance, value_range)
+
+        # Only keep largest patch
+        #mask = mask.largest(npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+        # Fill holes
+        #mask.fill_holes()
+
+        # Return the mask
+        return mask
 
     # -----------------------------------------------------------------
 
@@ -793,6 +894,6 @@ class MapsSelectionComponent(MapsComponent):
         ellipse = ellipse.to_pixel(the_map.wcs)
 
         # Soften edges
-        the_map.soften_edges(ellipse, softening_range)
+        return the_map.soften_edges(ellipse, softening_range)
 
 # -----------------------------------------------------------------

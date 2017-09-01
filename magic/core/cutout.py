@@ -24,6 +24,7 @@ from ..tools import cropping, fitting, interpolation, plotting
 from ...core.basics.log import log
 from ..basics.coordinate import PixelCoordinate
 from .mask import MaskBase
+from .alpha import AlphaMask
 
 # -----------------------------------------------------------------
 
@@ -830,6 +831,11 @@ class Cutout(np.ndarray):
 
         # Replace the pixel values in the frame
         if where is None: frame[self.y_min:self.y_max, self.x_min:self.x_max] = self
+        elif isinstance(where, AlphaMask):
+
+            fractional = where.as_real()
+            frame[self.y_min:self.y_max, self.x_min:self.x_max] = self * fractional + frame[self.y_min:self.y_max, self.x_min:self.x_max] * (1. - fractional)
+
         else: frame[self.y_min:self.y_max, self.x_min:self.x_max][where] = self[where]
 
         #from ..tools import plotting

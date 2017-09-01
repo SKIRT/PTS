@@ -25,6 +25,7 @@ from ...core.basics.range import zip_linear
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
 from ..basics.range import RealRange, QuantityRange, IntegerRange
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -496,9 +497,12 @@ def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, d
     scaleheight = deprojection.scale_height
 
     # Get the pixelscale in physical units
-    pixelscale_angular = average_pixelscale.to("deg")
-    # pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
-    pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+    if types.is_angle(average_pixelscale):
+        pixelscale_angular = average_pixelscale.to("deg")
+        # pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+    elif types.is_length_quantity(average_pixelscale): pixelscale = average_pixelscale.to("pc") # normally it should be this case (deprojections should have their pixelscale defined in physical units)
+    else: raise ValueError("Pixelscale should be an angle or a length quantity")
 
     # Determine the minimum physical scale
     min_scale = pixelscale / float(max_ndivisions_per_pixel)

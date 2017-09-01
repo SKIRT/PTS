@@ -112,6 +112,19 @@ strikethrough_template = "<span style='text-decoration:line-through;'>{text}</sp
 
 # -----------------------------------------------------------------
 
+def font_size(text, size):
+
+    """
+    This function ...
+    :param text:
+    :param size:
+    :return:
+    """
+
+    return '<font size = "' + str(size) + '">' + text + '</font>'
+
+# -----------------------------------------------------------------
+
 def strikethrough(text):
 
     """
@@ -1283,18 +1296,19 @@ def make_usable(name):
 
 # -----------------------------------------------------------------
 
-def make_if_statement(labels, values):
+def make_if_statement(labels, values, indent=""):
 
     """
     This function ...
     :param labels:
     :param values:
+    :param indent:
     :return:
     """
 
     code = ""
 
-    code += "if ("
+    code += indent + "if ("
 
     comparison_strings = []
     for label, value in zip(labels, values):
@@ -1309,18 +1323,19 @@ def make_if_statement(labels, values):
 
 # -----------------------------------------------------------------
 
-def make_else_statement(labels, values):
+def make_else_statement(labels, values, indent=""):
 
     """
     This function ...
     :param labels:
     :param values:
+    :param indent:
     :return:
     """
 
     code = ""
 
-    code += '} else if ('
+    code += indent + '} else if ('
 
     comparison_strings = []
     for label, value in zip(labels, values):
@@ -1335,7 +1350,8 @@ def make_else_statement(labels, values):
 
 # -----------------------------------------------------------------
 
-def make_multi_image_sliders(image_names, urls, regulator_names, labels, default, width=None, height=None, basic=True, img_class=None):
+def make_multi_image_sliders(image_names, urls, regulator_names, labels, default, width=None,
+                             height=None, basic=True, img_class=None, label_images=None, table_class=None):
 
     """
     This function ...
@@ -1348,6 +1364,8 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     :param height:
     :param basic:
     :param img_class:
+    :param label_images:
+    :param table_class:
     :return:
     """
 
@@ -1355,11 +1373,24 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     if types.is_sequence(labels): labels = {regulator_name: labels for regulator_name in regulator_names}
     if not types.is_dictionary(default): default = {regulator_name: default for regulator_name in regulator_names}
 
+    # Check label images (if specified)
+    if label_images is not None:
+        for regulator_name in regulator_names:
+            if regulator_name not in label_images: raise ValueError("Regulator name '" + regulator_name + "' not in label_images dictionary")
+            else:
+                for label in labels[regulator_name]:
+                    if label not in label_images[regulator_name]: raise ValueError("Label '" + str(label) + "' not in label_images subdictionary for regulator name '" + regulator_name + "'")
+
     regulator_ids = [make_usable(regulator_name) for regulator_name in regulator_names]
 
     # Transform labels and default dicts
     labels = {make_usable(regulator_name): label for regulator_name, label in labels.items()}
     default = {make_usable(regulator_name): value for regulator_name, value in default.items()}
+
+    # Transform label images
+    if label_images is not None:
+        label_images = {make_usable(regulator_name): [image_paths_for_labels[label] for label in labels[make_usable(regulator_name)]] for regulator_name, image_paths_for_labels in label_images.items()}
+        # IS NOW A DICT OF LISTS
 
     code = ""
 
@@ -1369,8 +1400,15 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     span_ids = dict()
     slider_ids = dict()
 
+    #left_cell = ""
+    left_cells = ["" for _ in range(2)]
+
+    label_image_ids = dict()
+
     # Loop over the regulators
-    for regulator_id in regulator_ids:
+    for index, regulator_id in enumerate(regulator_ids):
+
+        function_name_for_regulator = "update_for_" + regulator_id
 
         # Set slider ID
         slider_id = regulator_id + "Slider"
@@ -1385,19 +1423,41 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
         # default_index = labels.index(default)
         # default_url = urls[default_index]
 
+        which_cell = index % 2
+
+        left_cells[which_cell] += regulator_id.upper()
+        left_cells[which_cell] += newline + newline
+
         # Add slider
-        if basic: code += center(make_basic_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name, pass_value=False))
-        else: code += center(make_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name, pass_value=False))
+        if basic: left_cells[which_cell] += center(make_basic_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name_for_regulator, pass_value=False))
+        else: left_cells[which_cell] += center(make_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name_for_regulator, pass_value=False))
 
-        code += newline
+        left_cells[which_cell] += newline
 
-        code += '\n'
-        code += "<center>"
-        code += '<span align="center" id="' + span_id + '">' + str(default[regulator_id]) + "</span>"
-        code += "</center>"
-        code += "\n"
+        left_cells[which_cell] += '\n'
+        left_cells[which_cell] += "<center>"
+        left_cells[which_cell] += '<span align="center" id="' + span_id + '">' + str(default[regulator_id]) + "</span>"
+        left_cells[which_cell] += "</center>"
+        left_cells[which_cell] += "\n"
 
-        code += newline
+        if label_images:
+
+            label_image_id = "label_image_" + regulator_id
+            label_image_ids[regulator_id] = label_image_id
+
+            label_image_height = 100
+            label_image_width = None
+
+            left_cells[which_cell] += "<center>"
+            left_cells[which_cell] += '<img id="' + label_image_id + '"'
+            #if img_class is not None: left_cell += ' class="' + img_class + '"'
+            if label_image_width is not None: left_cells[which_cell] += ' width="' + str(label_image_width) + 'px"'
+            if label_image_height is not None: left_cells[which_cell] += ' height="' + str(label_image_height) + 'px"'
+            left_cells[which_cell] += '>'
+            left_cells[which_cell] += "</center>"
+            left_cells[which_cell] += "\n"
+
+        left_cells[which_cell] += newline
 
         span_ids[regulator_id] = span_id
         slider_ids[regulator_id] = slider_id
@@ -1415,17 +1475,35 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
             image_ids.append(image_id)
             categories_and_names_for_image_id[image_id] = (category, name)
 
+    right_cells = ["" for _ in range(4)]
+
     # Loop over the images
-    for image_id in image_ids:
+    for index, image_id in enumerate(image_ids):
+
+        which_cell = index % 4
+        right_cells[which_cell] += font_size(image_id.upper(), 1)
+        right_cells[which_cell] += newline
 
         # Code for image holder
-        code += "<center>"
-        code += '<img id="' + image_id + '"'
-        if img_class is not None: code += ' class="' + img_class + '"'
-        if width is not None: code += ' width="' + str(width) + 'px"'
-        if height is not None: code += ' height="' + str(height) + 'px"'
-        code += '>'
-        code += "</center>"
+        #right_cell += "<center>"
+        right_cells[which_cell] += '<img id="' + image_id + '"'
+        if img_class is not None: right_cells[which_cell] += ' class="' + img_class + '"'
+        if width is not None: right_cells[which_cell] += ' width="' + str(width) + 'px"'
+        if height is not None: right_cells[which_cell] += ' height="' + str(height) + 'px"'
+        right_cells[which_cell] += '>'
+        #code += "</center>"
+
+        #if numbers.is_even(index): right_cell += newline
+        #if index % 4 == 0 and index != 0: right_cell += newline
+        right_cells[which_cell] += newline
+
+    # All cells
+    all_cells = left_cells + right_cells
+
+    # Make and add table
+    #table = SimpleTable.one_row(left_cell, right_cell, css_class=table_class)
+    table = SimpleTable.one_row(*all_cells, css_class=table_class)
+    code += str(table)
 
     # Make script
     script = ""
@@ -1433,15 +1511,20 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     # # Set labels
     labels_variable_names = dict()
     for regulator_id in regulator_ids:
-    #
+
          labels_variable_name = "labels_" + regulator_id
-    #     urls_variable_name = "urls_" + image_id
-    #
+
+         label_images_variable_name = "label_image_paths_" + regulator_id
+
          labels_variable_names[regulator_id] = labels_variable_name
 
-         string_labels = [str(label) for label in labels]
-         script += 'var ' + labels_variable_name + ' = [' + tostr(string_labels, add_quotes=True) + '];\n'
-    #     script += 'var ' + urls_variable_name + ' = [' + tostr(urls, add_quotes=True) + '];\n'
+         string_labels = [str(label) for label in labels[regulator_id]]
+         script += 'var ' + labels_variable_name + ' = [' + tostr(string_labels, add_quotes=True, delimiter=', ') + '];\n'
+
+         if label_images is not None:
+            script += 'var ' + label_images_variable_name + ' = [' + tostr(label_images[regulator_id], add_quotes=True, delimiter=", ") + '];\n'
+
+         script += "\n"
 
     # script += 'var val = document.getElementById("' + slider_id + '").value;\n'
     # script += 'var index = val - 1;\n'
@@ -1450,9 +1533,45 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
     # script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[index];\n'
     # script += "\n"
 
-    # Initialize images
-    script += function_name + '()\n'
-    script += "\n"
+    # MOVED TO BELOW DEFINITION OF FUNCTIONS???
+    # # NEW
+    # if label_images is not None:
+    #     for regulator_id in regulator_ids:
+    #         function_name_regulator = "update_" + regulator_id
+    #         script += function_name_regulator + '();\n'
+    #         script += "\n"
+    #
+    # # Initialize images
+    # script += function_name + '();\n'
+    # script += "\n"
+
+    # Make functions for each image
+    for regulator_id in regulator_ids:
+
+        function_name_for_regulator = "update_for_" + regulator_id
+        function_name_regulator = "update_" + regulator_id
+
+        slider_id = slider_ids[regulator_id]
+
+        label_images_variable_name = "label_image_paths_" + regulator_id
+
+        if label_images is not None:
+
+            label_image_id = label_image_ids[regulator_id]
+
+            script += 'function ' + function_name_regulator + '()\n'
+            script += '{\n'
+            script += '    var val_' + regulator_id + ' = document.getElementById("' + slider_id + '").value;\n'
+            script += '    var index_' + regulator_id + ' = val_' + regulator_id + ' - 1;\n'
+            script += '    var path_' + regulator_id + ' = ' + label_images_variable_name + '[index_' + regulator_id + '];\n'
+            script += '    document.getElementById("' + label_image_id + '").src = path_' + regulator_id + ';\n'
+            script += '}\n\n'
+
+        script += 'function ' + function_name_for_regulator + '()\n'
+        script += '{\n'
+        if label_images is not None: script += '    ' + function_name_regulator + "();\n"
+        script += '    ' + function_name + "();\n"
+        script += '}\n\n'
 
     # # Make function for each regulator
     # for regulator_id in regulator_ids:
@@ -1486,7 +1605,7 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
         regulator_ids_image = [make_usable(regulator_name) for regulator_name in regulator_names_image]
         dependencies[image_id] = regulator_ids_image
 
-        regulator_ids_value_names = [regulator_id + "_value" for regulator_id in regulator_ids_image]
+        regulator_ids_value_names = [strings.replace_first_digit_by_word(regulator_id) + "_value" for regulator_id in regulator_ids_image]
 
         script += 'function ' + image_change_function_name + '(' + tostr(regulator_ids_value_names) + ')\n'
         script += '{\n'
@@ -1500,8 +1619,8 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
                 sigma_level = levels_dict[rni]
                 levels_values.append(sigma_level)
 
-            if first: script += make_if_statement(regulator_ids_value_names, levels_values)
-            else: script += make_else_statement(regulator_ids_value_names, levels_values)
+            if first: script += make_if_statement(regulator_ids_value_names, levels_values, indent="    ")
+            else: script += make_else_statement(regulator_ids_value_names, levels_values, indent="    ")
 
             first = False
 
@@ -1514,7 +1633,7 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
             script += '        document.getElementById("' + image_id + '").src = "' + path + '";\n'
 
         script += '    } else {\n'
-        script += '        window.alert("ERROR");\n'
+        script += '        window.alert("ERROR: ' + ", ".join([name + ': " + String(' + value_name + ') + "' for name, value_name in zip(regulator_ids_image, regulator_ids_value_names)]) + '");\n'
         script += '    }\n'
 
         script += '}\n'
@@ -1532,8 +1651,9 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
         slider_id = slider_ids[regulator_id]
 
         script += '    var val_' + regulator_id + ' = document.getElementById("' + slider_id + '").value;\n'
-        script += '    var index_' + regulator_id + ' = val - 1;\n'
-        script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index_' + regulator_id + '];\n'
+        script += '    var index_' + regulator_id + ' = val_' + regulator_id + ' - 1;\n'
+        script += '    var label_' + regulator_id + ' = ' + labels_variable_name + '[index_' + regulator_id + '];\n'
+        script += '    document.getElementById("' + span_id + '").innerHTML = label_' + regulator_id + ';\n'
         script += '\n'
 
     # Update all images
@@ -1543,13 +1663,25 @@ def make_multi_image_sliders(image_names, urls, regulator_names, labels, default
 
         script += '    arguments_' + image_id + ' = [];\n'
         for regulator_id in dependencies[image_id]:
-            script += '    arguments_' + image_id + '.push(val_' + regulator_id + ');\n'
+            script += '    arguments_' + image_id + '.push(label_' + regulator_id + ');\n'
 
         # UPDATE THE IMAGE
         #script += '    ' + image_change_function_name + '(arguments_' + image_id + ');\n'
         script += '    ' + image_change_function_name + '.apply(this, arguments_' + image_id + ');\n'
+        script += "\n"
 
     script += '\n}'
+
+    # NEW
+    if label_images is not None:
+        for regulator_id in regulator_ids:
+            function_name_regulator = "update_" + regulator_id
+            script += function_name_regulator + '();\n'
+            script += "\n"
+
+    # Initialize images
+    script += function_name + '();\n'
+    script += "\n"
 
     # Add javascript
     code += make_script(script)
@@ -1783,6 +1915,36 @@ class SimpleTable(object):
 
         # Set CSS class
         self.css_class = css_class
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def one_row(cls, *cells, **kwargs):
+
+        """
+        This function ...
+        :param cells:
+        :param kwargs:
+        :return:
+        """
+
+        # Make table
+        return cls([cells], **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def one_column(cls, *cells, **kwargs):
+
+        """
+        Thisf unction ...
+        :param cells:
+        :param kwargs:
+        :return:
+        """
+
+        # Make table
+        return cls([[cell] for cell in cells], **kwargs)
 
     # -----------------------------------------------------------------
 

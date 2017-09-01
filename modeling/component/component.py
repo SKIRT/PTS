@@ -25,6 +25,7 @@ from ...core.tools import filesystem as fs
 from ...core.filter.broad import BroadBandFilter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
+from ..core.commands import ModelingCommands
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
 from pts.core.tools.utils import lazyproperty
 
@@ -97,6 +98,18 @@ class ModelingComponent(Configurable):
         """
 
         return self.environment.history_file_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def commands_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.commands_file_path
 
     # -----------------------------------------------------------------
 
@@ -698,6 +711,30 @@ def load_modeling_history(modeling_path):
 
     # Return the history
     return history
+
+# -----------------------------------------------------------------
+
+def load_modeling_commands(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the commands file path
+    commands_file_path = fs.join(modeling_path, "commands.txt")
+
+    # Create new commands file
+    if not fs.is_file(commands_file_path):
+
+        commands = ModelingCommands()
+        commands.saveto(commands_file_path)
+
+    else: commands = ModelingCommands.from_file(commands_file_path)
+
+    # Return the commands
+    return commands
 
 # -----------------------------------------------------------------
 

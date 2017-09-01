@@ -2890,8 +2890,14 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
     session = None
     remote = kwargs.pop("remote", None)
     rebin_remote_threshold = kwargs.pop("rebin_remote_threshold", None)
+
+    if rebin_remote_threshold is not None and remote is None:
+        log.warning("'rebin_remote_threshold' is defined but 'remote' is not specified: rebinning locally ...")
+        rebin_remote_threshold = None
+
+    # Remote rebinning check
     if rebin_remote_threshold is not None:
-        if remote is None: raise ValueError("Cannot specify 'rebin_remote_threshold' when 'remote' is not specified")
+        #if remote is None: raise ValueError("Cannot specify 'rebin_remote_threshold' when 'remote' is not specified")
 
         # Make remote session, ONLY IF IT WILL BE NECESSARY
         if any_frame_above_threshold(frames, rebin_remote_threshold):

@@ -361,7 +361,7 @@ class PointSource(Source):
 
     # -----------------------------------------------------------------
 
-    def fit_model(self, config, detection=None, debug=False):
+    def fit_model(self, config, detection=None):
 
         """
         This function ...
@@ -379,7 +379,7 @@ class PointSource(Source):
         for level in range(len(config.model_names)):
 
             # Do the fitting
-            if detection is None: detection, model = sources.fit_model_to_source(self.detection, config, track_record, level=level, special=debug)
+            if detection is None: detection, model = sources.fit_model_to_source(self.detection, config, track_record, level=level, special=self.special)
             else: detection, model = sources.fit_model_to_source(detection, config, track_record, level=level)
 
             # If a model was found, set the attributes of the star object and exit the loop

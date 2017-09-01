@@ -19,10 +19,12 @@ import numpy as np
 # Import astronomical modules
 from astropy.io import fits
 from photutils import detect_sources
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from ..basics.vector import PixelShape
+from ..dist_ellipse import distance_ellipse
 
 # -----------------------------------------------------------------
 
@@ -48,6 +50,44 @@ class AlphaMask(object):
 
         # The path
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ellipse(cls, ellipse, shape, factor_range, wcs=None):
+
+        """
+        Thisf unction ...
+        :param ellipse:
+        :param shape:
+        :param factor_range:
+        :param wcs:
+        :return:
+        """
+
+        center = ellipse.center
+
+        # angle = - region.angle + Angle(-90., "deg")
+        angle = ellipse.angle + Angle(90., "deg")
+
+        # Determine the ratio of semimajor and semiminor
+        ratio = ellipse.semiminor / ellipse.semimajor
+        radius = distance_ellipse(shape, center, ratio, angle) / ellipse.semiminor
+
+        outside_max = radius > factor_range.max
+        inside_min = radius < factor_range.min
+
+        test = (factor_range.max - radius) / factor_range.span
+
+        alpha_channel = test
+        alpha_channel[inside_min] = 1
+        alpha_channel[outside_max] = 0
+
+        # Create alpha mask
+        alpha = cls.from_real(alpha_channel, wcs=wcs)
+
+        # Return
+        return alpha
 
     # -----------------------------------------------------------------
 
@@ -427,5 +467,28 @@ class AlphaMask(object):
 
         # Save RGB image
         image.saveto(path)
+
+# -----------------------------------------------------------------
+
+def product(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # INTERSECTION = 1 * first * second * ... (1 is neutral element for multiplication)
+    # so for one mask, intersection = 1 * mask = mask
+
+    if len(args) == 1: return AlphaMask(args[0].data)
+
+    arrays = [arg.as_real() for arg in args]
+    # arrays = []
+    # for arg in args:
+    #     if isinstance(arg, MaskBase): arrays.append(arg.data)
+    #     elif isinstance(arg, oldMask): arrays.append(arg)
+    #     else: arrays.append(arg)
+    return AlphaMask.from_real(np.product(arrays, axis=0))
 
 # -----------------------------------------------------------------

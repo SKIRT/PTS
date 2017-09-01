@@ -32,7 +32,7 @@ from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED
 from ..basics.range import RealRange
-from ..basics.plot import Plot
+from ..basics.plot import MPLPlot, BokehPlot, mpl, bokeh
 from ..tools import types
 
 # -----------------------------------------------------------------
@@ -229,7 +229,14 @@ class SEDPlotter(Configurable):
             number_of_observations = len(self.observations)
             figsize = (self.config.plot.figsize[0], self.config.plot.figsize[1] + (number_of_observations - 1) * 1.1)
         else: figsize = self.config.plot.figsize
-        self.plt = Plot(size=figsize)
+
+        # Create the plot
+        if self.config.library == mpl: self.plt = MPLPlot(size=figsize)
+        elif self.config.library == bokeh: self.plt = BokehPlot()
+        else: raise ValueError("Invalid libary: " + self.config.library)
+
+        self.plt.show()
+        exit()
 
     # -----------------------------------------------------------------
 

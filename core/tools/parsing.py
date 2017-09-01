@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import re
 import warnings
+from collections import OrderedDict
 from decimal import Decimal
 #import numpy as np
 
@@ -1030,6 +1031,21 @@ def descending_real_list(argument):
 
 # -----------------------------------------------------------------
 
+def ordered_dictionary(argument):
+
+    """
+    Thisf unction ...
+    :param argument:
+    :return:
+    """
+
+    if argument == "": return OrderedDict()
+    else:
+        d = eval("OrderedDict([(" + argument.replace(",", "), (").replace(":", ", ") + ")])")
+        return d
+
+# -----------------------------------------------------------------
+
 def dictionary(argument):
 
     """
@@ -1056,8 +1072,8 @@ def string_string_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
-        if not isinstance(value, basestring): raise ValueError("All values must be strings")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_string_type(value): raise ValueError("All values must be strings")
     return d
 
 # -----------------------------------------------------------------
@@ -1088,8 +1104,8 @@ def string_integer_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
-        if not isinstance(value, int): raise ValueError("All values must be integers")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_integer_type(value): raise ValueError("All values must be integers")
     return d
 
 # -----------------------------------------------------------------
@@ -1110,6 +1126,25 @@ def string_real_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def filter_real_dictionary(argument):
+
+    """
+    Thisf unction ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    new = dict()
+    for key, value in d.items():
+        fltr = filter(key)
+        new[fltr] = value
+
+    # Return the dictionary
+    return new
+
+# -----------------------------------------------------------------
+
 def string_filepath_dictionary(argument):
 
     """
@@ -1120,7 +1155,7 @@ def string_filepath_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
         d[key] = file_path(value) # check if parsing as filepath succeeds
     return d
 
@@ -1136,7 +1171,7 @@ def string_unit_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
         d[key] = unit(value)
     return d
 
@@ -1152,7 +1187,7 @@ def string_photometricunit_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
         d[key] = photometric_unit(value)
     return d
 
@@ -1168,8 +1203,8 @@ def string_tuple_dictionary(argument):
 
     d = dictionary(argument)
     for key, value in d.items():
-        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
-        if not isinstance(value, tuple): raise ValueError("All values must be tuples")
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_tuple(value): raise ValueError("All values must be tuples")
     return d
 
 # -----------------------------------------------------------------

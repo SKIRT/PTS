@@ -43,6 +43,7 @@ from ..basics.vector import Pixel
 from ...core.units.unit import PhotometricUnit
 from ...core.filter.filter import parse_filter
 from .mask import Mask as newMask
+from .alpha import AlphaMask
 from ..convolution.kernels import get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.units.parsing import parse_unit as u
@@ -480,6 +481,8 @@ class Frame(NDDataArray):
         :param value:
         :return:
         """
+
+        self.__array__
 
         self._data *= value
         return self
@@ -2014,8 +2017,16 @@ class Frame(NDDataArray):
             factor = to / sum
             unit = None
 
+        # Debugging
+        log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize ...")
+
         # Multiply the frame with the conversion factor
-        self.__imul__(factor)
+        try: self.__imul__(factor)
+        except TypeError:
+            print(np.nanmax(self.data))
+            from ..tools import plotting
+            plotting.plot_box(self)
+            exit()
 
         # Set the unit to None
         self.unit = unit
@@ -2266,28 +2277,14 @@ class Frame(NDDataArray):
         :return:
         """
 
-        center = region.center
-
-        angle = - region.angle + Angle(-90., "deg")
-        # angle = region.angle
-
-        # Determine the ratio of semimajor and semiminor
-        ratio = region.semiminor / region.semimajor
-        radius = distance_ellipse(self.shape, center, ratio, angle) / region.semiminor
-
-        outside_max = radius > factor_range.max
-        inside_min = radius < factor_range.min
-
-        test = (factor_range.max - radius) / factor_range.span
-
-        alpha_channel = test
-        alpha_channel[inside_min] = 1
-        alpha_channel[outside_max] = 0
-
-        #alpha_channel = self.alpha * alpha_channel
+        # Create alpha mask
+        alpha = AlphaMask.from_ellipse(region, self.shape, factor_range, wcs=self.wcs)
 
         # Apply alpha
-        self._data *= alpha_channel
+        self._data *= alpha.as_real()
+
+        # Return the alpha mask
+        return alpha
 
     # -----------------------------------------------------------------
 
