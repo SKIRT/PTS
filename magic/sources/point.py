@@ -890,7 +890,7 @@ class PointSourceFinder(Configurable):
             if source.has_saturation:
 
                 # Add the saturation segment to the segmentation map
-                self.segments[source.saturation.y_slice, source.saturation.x_slice][source.saturation.mask] = source.index
+                self.segments[source.saturation.y_slice, source.saturation.x_slice][source.saturation.mask.data] = source.index
 
             # Stars without saturation
             else:
@@ -899,7 +899,7 @@ class PointSourceFinder(Configurable):
                 if not source.has_detection: continue
 
                 # Add the star segment to the segmentation map
-                self.segments[source.detection.y_slice, source.detection.x_slice][source.detection.mask] = source.index
+                self.segments[source.detection.y_slice, source.detection.x_slice][source.detection.mask.data] = source.index
 
     # -----------------------------------------------------------------
 
