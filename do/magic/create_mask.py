@@ -18,7 +18,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.magic.core.frame import Frame
-from pts.magic.region.list import PixelRegionList
+from pts.magic.region.list import load_as_pixel_region_list
 from pts.magic.basics.mask import Mask
 
 # -----------------------------------------------------------------
@@ -41,10 +41,10 @@ frame = Frame.from_file(arguments.image)
 
 # Load the region
 region_name = os.path.splitext(os.path.basename(arguments.region))[0]
-region = PixelRegionList.from_file(arguments.region)
+region = load_as_pixel_region_list(arguments.region, frame.wcs)
 
 # Create the mask
-mask = Mask(region.get_mask(shape=frame.shape))
+mask = region.to_mask(x_size=frame.xsize, y_size=frame.ysize)
 
 # Calculate the inverse, if requested
 if arguments.invert: mask = mask.inverse()
@@ -60,6 +60,6 @@ if arguments.data:
 else: new_frame = Frame(mask.astype(int))
 
 # Write out the new frame
-new_frame.saveti(region_name + ".fits")
+new_frame.saveto(region_name + ".fits")
 
 # -----------------------------------------------------------------

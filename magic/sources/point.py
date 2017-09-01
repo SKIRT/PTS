@@ -691,8 +691,23 @@ class PointSourceFinder(Configurable):
             if source is None: continue
 
             # Get the center in pixel coordinates
-            center = source.pixel_position(self.frame.wcs)
-            
+            #center = source.pixel_position(self.frame.wcs)
+
+            # Determine the center position of the detection (center of model if present, otherwise position of the star)
+            if source.detection is not None:
+
+                # If the star has been modeled succesfully, use the center position of the model
+                # Otherwise, use the source's peak
+                if source.psf_model is not None: center = fitting.center(source.psf_model)
+                elif source.detection.has_peak: center = source.detection.peak
+                else:
+
+                    log.warning("Star source does not have peak")
+                    center = source.pixel_position(self.frame.wcs)
+
+            # Calculate the pixel coordinate of the star's position
+            else: center = source.pixel_position(self.frame.wcs)
+
             # Determine the color, based on the detection level
             if source.has_model: color = "blue"
             elif source.has_detection: color = "green"

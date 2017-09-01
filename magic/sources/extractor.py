@@ -32,6 +32,7 @@ from ...core.tools import filesystem as fs
 from ..region.list import load_as_pixel_region_list
 from ..region.point import PixelPointRegion
 from pts.core.tools.utils import lazyproperty
+from ..core.mask import Mask as newMask
 
 # -----------------------------------------------------------------
 
@@ -86,6 +87,7 @@ class SourceExtractor(Configurable):
 
         # The list of sources
         self.sources = []
+        self.labels = []
 
         # STATISTICS
         self.ngalaxy_sources = 0
@@ -418,8 +420,8 @@ class SourceExtractor(Configurable):
                         log.warning("No segmentation maps found, will be using regions to define the to be extracted patches")
                         segments_path = None
 
-                # Load the segments
-                if segments_path is not None: segments = Image.from_file(segments_path, no_filter=True)
+            # Load the segments
+            if segments_path is not None: segments = Image.from_file(segments_path, no_filter=True)
 
         # If segments is not None
         if segments is not None:
@@ -508,6 +510,7 @@ class SourceExtractor(Configurable):
 
                     # Add the source to the list
                     self.sources.append(source)
+                    self.labels.append(label)
 
             elif "principal" not in shape.label:
 
@@ -521,6 +524,7 @@ class SourceExtractor(Configurable):
 
                 # Add the source to the list
                 self.sources.append(source)
+                self.labels.append(shape.label)
 
     # -----------------------------------------------------------------
 
@@ -580,6 +584,9 @@ class SourceExtractor(Configurable):
 
             # Add it to the list
             self.sources.append(source)
+
+            #
+            self.labels.append(index)
 
     # -----------------------------------------------------------------
 
@@ -741,6 +748,7 @@ class SourceExtractor(Configurable):
 
             # Add the source to the list
             self.sources.append(source)
+            self.labels.append(label)
 
     # -----------------------------------------------------------------
 
@@ -826,7 +834,7 @@ class SourceExtractor(Configurable):
         if self.animation is not None: self.animation.principal_shape = self.principal_shape
 
         # Loop over all sources and remove them from the frame
-        for source in self.sources:
+        for label, source in zip(self.labels, self.sources):
 
             # Debugging
             log.debug("Estimating background and replacing the frame pixels of source " + str(count+1) + " of " + str(nsources) + " ...")
@@ -1029,7 +1037,8 @@ class SourceExtractor(Configurable):
         :return:
         """
 
-        if self.principal_shape is None: return None
-        return self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+        if self.galaxy_segments is not None: return newMask.where(self.galaxy_segments, 1)
+        elif self.principal_shape is not None: return self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+        else: return None
 
 # -----------------------------------------------------------------
