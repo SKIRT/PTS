@@ -577,8 +577,11 @@ class PointSourceFinder(Configurable):
 
                 # Create a detection object
                 detection = Detection.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
+
+            # No deection
             else: detection = None
-            # Find a model
+
+            # Find a model, if detection was found
             if source.has_detection or detection is not None: source.fit_model(self.config.fitting, detection)
 
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
