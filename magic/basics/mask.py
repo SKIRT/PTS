@@ -206,7 +206,28 @@ class MaskBase(object):
         Array representation of the mask (e.g., for matplotlib).
         """
 
-        return self.data
+        return np.array(self.data)
+
+    # -----------------------------------------------------------------
+
+    def __array_prepare__(self, array, context=None):
+
+        """
+        I don't know if this function should be here
+        """
+
+        return array
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dtype(self):
+
+        """
+        `numpy.dtype` of this object's data.
+        """
+
+        return self.data.dtype
 
     # -----------------------------------------------------------------
 

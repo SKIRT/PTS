@@ -23,9 +23,6 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import MinMaxInterval, ZScaleInterval
 from photutils import CircularAperture
 
-# Import the relevant PTS classes and modules
-
-
 # -----------------------------------------------------------------
 
 colours = ['Pink','LightPink','HotPink','DeepPink','PaleVioletRed','MediumVioletRed','Red','LightSalmon','Salmon',
@@ -218,11 +215,15 @@ def plot_mask(mask, title=None, path=None, format=None):
     :return:
     """
 
+    # Get raw data of mask as a numpy array
+    if hasattr(mask, "data"): maskdata = mask.data
+    else: maskdata = mask
+
     # Make the plot
     plt.figure(figsize=(7,7))
-    plt.imshow(mask, origin="lower", interpolation="nearest", cmap='Greys')
-    plt.xlim(0, mask.shape[1] - 1)
-    plt.ylim(0, mask.shape[0] - 1)
+    plt.imshow(maskdata, origin="lower", interpolation="nearest", cmap='Greys')
+    plt.xlim(0, maskdata.shape[1] - 1)
+    plt.ylim(0, maskdata.shape[0] - 1)
 
     if title is not None: plt.title(title)
     else: plt.title("Black means True")
@@ -577,6 +578,10 @@ def plot_removal(cutout, mask, background, removed, title=None, vmin=None, vmax=
     :return:
     """
 
+    # Get raw data of mask as a numpy array
+    if hasattr(mask, "data"): maskdata = mask.data
+    else: maskdata = mask
+
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
@@ -592,7 +597,7 @@ def plot_removal(cutout, mask, background, removed, title=None, vmin=None, vmax=
     plt.title("Cutout")
 
     plt.subplot(1,4,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
+    plt.imshow(np.ma.masked_array(cutout, mask=maskdata), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax, cmap="viridis")
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background mask")
@@ -648,6 +653,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
 
     number = 5
 
+    # Get raw data of mask as a numpy array
     if hasattr(mask, "data"): maskdata = mask.data
     else: maskdata = mask
 
@@ -791,6 +797,7 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Cutout")
 
+    # Get raw data of mask as a numpy array
     if hasattr(mask, "data"): maskdata = mask.data
     else: maskdata = mask
 

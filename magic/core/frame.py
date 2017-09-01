@@ -482,6 +482,8 @@ class Frame(NDDataArray):
         :return:
         """
 
+        self.__array__
+
         self._data *= value
         return self
 
