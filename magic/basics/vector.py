@@ -223,6 +223,102 @@ class Extent(Vector):
 
 # -----------------------------------------------------------------
 
+class IntegerExtent(Extent):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        The constructor ..
+        :param x:
+        :param y:
+        """
+
+        # Call the constructor of the base class
+        super(IntegerExtent, self).__init__(x, y)
+
+        # Check
+        if not types.is_integer_type(self.x): raise ValueError("x and y must be integers")
+        if not types.is_integer_type(self.y): raise ValueError("x and y must be integers")
+
+# -----------------------------------------------------------------
+
+class RealExtent(Extent):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        """
+
+        # Call the constructor of the base class
+        super(RealExtent, self).__init__(x, y)
+
+        # Check
+        if not types.is_real_type(self.x): raise ValueError("x and y must be real values")
+        if not types.is_real_type(self.y): raise ValueError("x and y must be real values")
+
+# -----------------------------------------------------------------
+
+class AngleExtent(Extent):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        The constructor ...
+        :param x:
+        :param y:
+        """
+
+        # Call the constructor of the base calss
+        super(AngleExtent, self).__init__(x, y)
+
+        # Check
+        if not types.is_angle(self.x): raise ValueError("Arguments must be angles")
+        if not types.is_angle(self.y): raise ValueError("Arguments must be angles")
+
+# -----------------------------------------------------------------
+
+class QuantityExtent(Extent):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        """
+
+        # Call the constructor of the base class
+        super(QuantityExtent, self).__init__(x, y)
+
+        # Check
+        if not types.is_quantity(self.x): raise ValueError("x and y must be quantities")
+        if not types.is_quantity(self.y): raise ValueError("x and y must be quantities")
+
+        # Check whether same physical type
+        from ...core.units.quantity import same_physical_type
+        if not same_physical_type(self.x, self.y): raise ValueError("x and y must represent the same physical type")
+
+# -----------------------------------------------------------------
+
 class Pixel(Vector):
 
     """
@@ -303,6 +399,60 @@ class PixelShape(tuple):
         """
 
         return cls(x=shape[1], y=shape[0])
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_xy(cls, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        return cls(x=x, y=y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_xy_tuple(cls, xy):
+
+        """
+        This function ...
+        :param xy:
+        :return:
+        """
+
+        return cls(x=xy[0], y=xy[1])
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_yx(cls, y, x):
+
+        """
+        This function ...
+        :param y:
+        :param x:
+        :return:
+        """
+
+        return cls(x=x, y=y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_yx_tuple(cls, yx):
+
+        """
+        This functino ...
+        :param yx:
+        :return:
+        """
+
+        return cls(x=yx[1], y=xy[0])
 
     # -----------------------------------------------------------------
 

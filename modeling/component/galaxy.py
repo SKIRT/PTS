@@ -1255,6 +1255,110 @@ class GalaxyModelingComponent(ModelingComponent):
 
         return self.environment.analysis_runs
 
+    # -----------------------------------------------------------------
+
+    def deproject_maps(self, maps, scale_height, root_path, method="pts", edgeon=False, write=True,
+                       return_deprojections=False, downsample_factor=2.):
+
+        """
+        This function ...
+        :param maps:
+        :param scale_height:
+        :param root_path:
+        :param method:
+        :param edgeon:
+        :param write:
+        :param return_deprojections:
+        :param downsample_factor:
+        :return:
+        """
+
+        from ..misc.deprojector import Deprojector
+
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Check edgeon setting
+        if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
+
+        # Set settings
+        deprojector.config.method = method
+        deprojector.config.writing.deprojections = write
+        deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = downsample_factor
+
+        # Run the deprojector
+        deprojector.run(maps=maps, scale_height=scale_height, root_path=root_path)
+
+        # Return the deprojected maps
+        if edgeon:
+            if return_deprojections: return deprojector.deprojections, deprojector.deprojected, deprojector.edgeon
+            else: return deprojector.deprojected, deprojector.edgeon
+        else:
+            if return_deprojections: return deprojector.deprojections, deprojector.deprojected
+            else: return deprojector.deprojected
+
+    # -----------------------------------------------------------------
+
+    def deproject_models(self, deprojections, root_path, method="pts", edgeon=False, downsample_factor=2.):
+
+        """
+        Thisf unction ...
+        :param deprojections:
+        :param root_path:
+        :param method:
+        :param edgeon:
+        :param downsample_factor:
+        :return:
+        """
+
+        from ..misc.deprojector import Deprojector
+
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Check edgeon setting
+        if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
+
+        # Set settings
+        deprojector.config.method = method
+        deprojector.config.writing.deprojections = False
+        deprojector.config.writing.maps = False
+        deprojector.config.downsample_factor = downsample_factor
+
+        # Run the deprojector
+        deprojector.run(deprojections=deprojections, root_path=root_path)
+
+        # Return the deprojected maps
+        if edgeon: return deprojector.deprojected, deprojector.edgeon
+        else: return deprojector.deprojected
+
+    # -----------------------------------------------------------------
+
+    def project_models(self, deprojections, root_path, write=True):
+
+        """
+        This function projects deprojection model (based on maps) to edge-on views
+        :param deprojections:
+        :param root_path:
+        :param write:
+        :return:
+        """
+
+        from ..misc.projector import Projector
+
+        # Create the projector
+        projector = Projector()
+
+        # Set settings
+        projector.config.writing.maps = False
+
+        # Run the projector
+        projector.run(deprojections=deprojections, root_path=root_path)
+
+        # Return the projected maps
+        return projector.edgeon
+
 # -----------------------------------------------------------------
 
 def load_preparation_statistics(modeling_path):

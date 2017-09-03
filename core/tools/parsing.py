@@ -21,7 +21,6 @@ from decimal import Decimal
 
 # Import the relevant PTS classes and modules
 #from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
-from ...magic.basics.vector import Vector
 from . import filesystem as fs
 from . import types
 # Imported below to accomodate clean python installs
@@ -843,6 +842,7 @@ def quantity_vector(argument):
     x = quantity(x[2:])
     y = quantity(y[2:])
 
+    from ...magic.basics.vector import Vector
     return Vector(x, y)
 
 # -----------------------------------------------------------------
@@ -1878,7 +1878,7 @@ def pixel_shape(argument):
 
     from ...magic.basics.vector import PixelShape
     shape = integer_tuple(argument)
-    return PixelShape.from_tuple(shape)
+    return PixelShape.from_xy_tuple(shape)
 
 # -----------------------------------------------------------------
 
@@ -1904,5 +1904,89 @@ def percentage(argument):
     """
 
     return real(argument) / 100.
+
+# -----------------------------------------------------------------
+
+def integer_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = integer_tuple(argument)
+    from ...magic.basics.vector import IntegerExtent
+    return IntegerExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def real_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = real_tuple(argument)
+    from ...magic.basics.vector import RealExtent
+    return RealExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def angle_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = angle_tuple(argument)
+    from ...magic.basics.vector import AngleExtent
+    return AngleExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def quantity_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = quantity_tuple(argument)
+    from ...magic.basics.vector import QuantityExtent
+    return QuantityExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def sky_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = angle_tuple(argument)
+    from ...magic.basics.stretch import SkyExtent
+    return SkyExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def physical_extent(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    x, y = length_quantity_tuple(argument)
+    from ...magic.basics.stretch import PhysicalExtent
+    return PhysicalExtent(x, y)
 
 # -----------------------------------------------------------------

@@ -1404,7 +1404,8 @@ class SkiFile:
         for id_i in self.get_dust_component_ids(): self.remove_dust_component(id_i)
 
     ## This function creates a new stellar component
-    def create_new_stellar_component(self, component_id, geometry_type=None, geometry_properties=None, sed_type=None, sed_properties=None, normalization_type=None, normalization_properties=None):
+    def create_new_stellar_component(self, component_id, geometry_type=None, geometry_properties=None, sed_type=None,
+                                     sed_properties=None, normalization_type=None, normalization_properties=None):
 
         # Panchromatic simulation
         if self.panchromatic():

@@ -1002,7 +1002,7 @@ class PointSourceFinder(Configurable):
         shape = Extent(21, 21)
 
         # Determine the full path to the cutouts directory
-        directory_path = self.full_output_path(self.config.writing.cutouts_path)
+        directory_path = self.output_path_directory(self.config.writing.cutouts_path)
 
         # Inform the user
         log.info("Writing cutout boxes to " + directory_path + " ...")
@@ -1033,7 +1033,7 @@ class PointSourceFinder(Configurable):
                 path = fs.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
 
                 # Create source
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
+                source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy
@@ -1049,7 +1049,7 @@ class PointSourceFinder(Configurable):
                 path = fs.join(directory_path, "star-detected_" + str(star.index) + ".fits")
 
                 # Create source
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
+                source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy
@@ -1065,7 +1065,7 @@ class PointSourceFinder(Configurable):
                 path = fs.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
 
                 # Create a source for the desired sigma level and outer factor
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
+                source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy

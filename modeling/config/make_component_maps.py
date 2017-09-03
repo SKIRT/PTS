@@ -169,6 +169,14 @@ definition.add_flag("redeproject_skirt_young", "redeproject the young stellar ma
 definition.add_flag("redeproject_skirt_ionizing", "redeproject the ionizing stellar maps with SKIRT")
 definition.add_flag("redeproject_skirt_dust", "redeproject the dust maps with SKIRT")
 
+# REPROJECT
+
+definition.add_flag("reproject", "reproject all maps")
+definition.add_flag("reproject_old", "reproject the old stellar maps")
+definition.add_flag("reproject_young", "reproject the young stellar maps")
+definition.add_flag("reproject_ionizing", "reproject the ionizing stellar maps")
+definition.add_flag("reproject_dust", "reproject the dust maps")
+
 # -----------------------------------------------------------------
 
 default_interpolation_method = "pts"

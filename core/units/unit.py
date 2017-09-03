@@ -1828,3 +1828,16 @@ def divide_units(unit_a, unit_b):
         else: return parse_unit(make_composite_division(unit_a, unit_b))
 
 # -----------------------------------------------------------------
+
+def same_physical_type(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    return unit_a.physical_type == unit_b.physical_type
+
+# -----------------------------------------------------------------

@@ -209,7 +209,7 @@ class ImageImporter(Configurable):
         # and interpolate the image there ... So here we seperate the nan_mask into a new mask without the little blobs, and a mask consisting
         # of only these blobs.
 
-        from ..tools import plotting
+        #from ..tools import plotting
         #plotting.plot_box(nan_mask[1200:1300, 700:790], "nan mask")
 
         #eroded_nan_mask = nan_mask.eroded()

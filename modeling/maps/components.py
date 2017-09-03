@@ -22,7 +22,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools import numbers
 from ...core.basics.range import RealRange
 from ...core.tools import sequences
-from ..misc.deprojector import Deprojector
 from ...core.remote.remote import Remote
 from ...magic.core.mask import Mask
 from ...magic.core.alpha import AlphaMask
@@ -175,6 +174,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.ionizing_deprojected = dict()
         self.dust_deprojected = dict()
 
+        # The deprojections
+        self.old_deprojections = None
+        self.young_deprojections = None
+        self.ionizing_deprojections = None
+        self.dust_deprojections = None
+
         # The deprojected maps with SKIRT
         self.old_deprojected_skirt = dict()
         self.young_deprojected_skirt = dict()
@@ -206,28 +211,34 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 3. Set rerun
         if self.rerun: self.set_rerun()
 
-        # Set redeproject
+        # 4. Set redeproject
         if self.redeproject: self.set_redeproject()
 
-        # Set redeproject SKIRT
+        # 5. Set redeproject SKIRT
         if self.redeproject_skirt: self.set_redeproject_skirt()
 
-        # 4. Remove other
+        # Set reproject
+        if self.reproject: self.set_reproject()
+
+        # 6. Remove other
         if self.remove: self.remove_other()
 
-        # 3. Load the maps
+        # 7. Load the maps
         self.load_maps()
 
-        # Load the masks
+        # 8. Load the masks
         self.load_masks()
 
-        # 4. Process the maps
+        # 9. Process the maps
         self.process_maps()
 
-        # 5. Deproject the maps
+        # 10. Deproject the maps
         self.deproject()
 
-        # Writing
+        # 11. Project the maps to the edge-on view
+        self.project()
+
+        # 12. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -324,6 +335,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.config.redeproject_skirt_young = True
             self.config.redeproject_skirt_ionizing = True
             self.config.redeproject_skirt_dust = True
+
+        # Set reproject options
+        if self.config.reproject:
+            self.config.reproject_old = True
+            self.config.reproject_young = True
+            self.config.reproject_ionizing = True
+            self.config.reproject_dust = True
 
     # -----------------------------------------------------------------
 
@@ -1496,6 +1514,190 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Remove if present
             if fs.is_file(map_path): fs.remove_file(map_path)
             if fs.is_directory(directory_path): fs.clear_directory(directory_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reproject(self):
+
+        """
+        Thsif unction ...
+        :return:
+        """
+
+        return self.reproject_old or self.reproject_young or self.reproject_ionizing or self.reproject_dust
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reproject_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.reproject_old
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reproject_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.reproject_young
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reproject_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.reproject_ionizing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reproject_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.reproject_dust
+
+    # -----------------------------------------------------------------
+
+    def set_reproject(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting things in order for reprojecting maps ...")
+
+        # Old stars
+        if self.reproject_old: self.set_reproject_old()
+
+        # Young stars
+        if self.reproject_young: self.set_reproject_young()
+
+        # Ionizing stars
+        if self.reproject_ionizing: self.set_reproject_ionizing()
+
+        # Dust
+        if self.reproject_dust: self.set_reproject_dust()
+
+    # -----------------------------------------------------------------
+
+    def set_reproject_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting things in order for reprojecting old stellar maps ...")
+
+        # Loop over the old stellar maps
+        for name in self.old_selection:
+
+            # Determine file path
+            map_path = fs.join(self.old_edgeon_path, name + ".fits")
+
+            # Determine directory path
+            directory_path = fs.join(self.old_edgeon_path, name)
+
+            # Remove if present
+            if fs.is_file(map_path): fs.remove_file(map_path)
+            if fs.is_directory(directory_path): fs.clear_directory(directory_path)
+
+    # -----------------------------------------------------------------
+
+    def set_reproject_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Settings things in order for reprojecting young stellar maps ...")
+
+        # Loop over the young stellar maps
+        for name in self.young_selection:
+
+            # Determine file path
+            map_path = fs.join(self.young_edgeon_path, name + ".fits")
+
+            # Determine directory path
+            directory_path = fs.join(self.young_edgeon_path, name)
+
+            # Remove if present
+            if fs.is_file(map_path): fs.remove_file(map_path)
+            if fs.is_directory(directory_path): fs.clear_directory(directory_path)
+
+    # -----------------------------------------------------------------
+
+    def set_reproject_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting things in order for reprojecting ionizing stellar maps ...")
+
+        # Loop over the ionizing stellar maps
+        for name in self.ionizing_selection:
+
+            # Determine file path
+            map_path = fs.join(self.ionizing_edgeon_path, name + ".fits")
+
+            # Determine directory path
+            directory_path = fs.join(self.ionizing_edgeon_path, name)
+
+            # Remove if present
+            if fs.is_file(map_path): fs.remove_file(map_path)
+            if fs.is_directory(directory_path): fs.clear_directory(directory_path)
+
+    # -----------------------------------------------------------------
+
+    def set_reproject_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting things in order for reprojecting dust maps ...")
+
+        # Loop overt he dust maps
+        for name in self.dust_selection:
+
+            # Determine file path
+            map_path = fs.join(self.dust_edgeon_path, name + ".fits")
+
+            # Determine directory path
+            directory_path = fs.join(self.dust_edgeon_path, name)
+
+            # Remove if present
+            if fs.is_file(map_path): fs.remove_file(map_path)
+            if fs.is_directory(directory_path): fs.remove_directory(directory_path)
 
     # -----------------------------------------------------------------
 
@@ -4094,40 +4296,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def deproject_maps(self, maps, scale_height, root_path, method="pts", edgeon=False, write=True):
-
-        """
-        This function ...
-        :param maps:
-        :param scale_height:
-        :param root_path:
-        :param method:
-        :param edgeon:
-        :param write:
-        :return:
-        """
-
-        # Create the deprojector
-        deprojector = Deprojector()
-
-        # Check edgeon setting
-        if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
-
-        # Set settings
-        deprojector.config.method = method
-        deprojector.config.writing.deprojections = write
-        deprojector.config.writing.maps = False
-        deprojector.config.downsample_factor = self.config.downsample_factor
-
-        # Run the deprojector
-        deprojector.run(maps=maps, scale_height=scale_height, root_path=root_path)
-
-        # Return the deprojected maps
-        if edgeon: return deprojector.deprojected, deprojector.edgeon
-        else: return deprojector.deprojected
-
-    # -----------------------------------------------------------------
-
     @property
     def has_old_deprojected(self):
 
@@ -4172,6 +4340,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_old_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.old_deprojections is None: return False
+        for name in self.old_selection:
+            if name not in self.old_deprojections: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def deproject_old(self):
 
         """
@@ -4183,12 +4366,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Deprojecting the old stellar maps ...")
 
         # Create deprojected old stellar maps
-        if not self.has_old_deprojected: self.old_deprojected = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path)
+        if not self.has_old_deprojected:
+            self.old_deprojections, self.old_deprojected = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
         # Create deprojected old stellar maps with SKIRT
-        if not self.has_old_deprojected_skirt: self.old_deprojected_skirt, self.old_edgeon_skirt = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight,
-                                                                                root_path=self.old_deprojection_skirt_path, method="skirt",
-                                                                                edgeon=True, write=False)
+        if not self.has_old_deprojected_skirt:
+            if self.has_old_deprojections:
+                self.old_deprojected_skirt = self.deproject_models(self.old_deprojections, root_path=self.old_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
+            else:
+                self.old_deprojections, self.old_deprojected_skirt = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_skirt_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
     # -----------------------------------------------------------------
 
@@ -4236,6 +4422,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.young_deprojections is None: return False
+        for name in self.young_selection:
+            if name not in self.young_deprojections: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def deproject_young(self):
 
         """
@@ -4247,12 +4448,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Deprojecting the young stellar maps ...")
 
         # Create deprojected young stellar maps
-        if not self.has_young_deprojected: self.young_deprojected = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path)
+        if not self.has_young_deprojected:
+            self.young_deprojections, self.young_deprojected = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
         # Create deprojected young stellar maps with SKIRT
-        if not self.has_young_deprojected_skirt: self.young_deprojected_skirt, self.young_edgeon_skirt = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight,
-                                                                                    root_path=self.young_deprojection_skirt_path, method="skirt",
-                                                                                    edgeon=True, write=False)
+        if not self.has_young_deprojected_skirt:
+            if self.has_young_deprojections:
+                self.young_deprojected_skirt = self.deproject_models(self.young_deprojections, root_path=self.young_deprojection_skirt_path, downsample_factor=self.config.downsample_factor)
+            else:
+                self.young_deprojections, self.young_deprojected_skirt = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
     # -----------------------------------------------------------------
 
@@ -4300,6 +4504,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_ionizing_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.ionizing_deprojections is None: return False
+        for name in self.ionizing_selection:
+            if name not in self.ionizing_deprojections: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def deproject_ionizing(self):
 
         """
@@ -4311,12 +4530,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Deprojecting the ionizing stellar maps ...")
 
         # Create deprojected ionizing stellar maps
-        if not self.has_ionizing_deprojected: self.ionizing_deprojected = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
+        if not self.has_ionizing_deprojected:
+            self.ionizing_deprojections, self.ionizing_deprojected = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
         # Create deprojected ionizing stellar maps with SKIRT
-        if not self.has_ionizing_deprojected_skirt: self.ionizing_deprojected_skirt, self.ionizing_edgeon_skirt = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight,
-                                                                                          root_path=self.ionizing_deprojection_skirt_path, method="skirt",
-                                                                                          edgeon=True, write=False)
+        if not self.has_ionizing_deprojected_skirt:
+            if self.has_ionizing_deprojections:
+                self.ionizing_deprojected_skirt = self.deproject_models(self.ionizing_deprojections, root_path=self.ionizing_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
+            else:
+                self.ionizing_deprojections, self.ionizing_deprojected_skirt = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
     # -----------------------------------------------------------------
 
@@ -4364,6 +4586,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_dust_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.dust_deprojections is None: return False
+        for name in self.dust_selection:
+            if name not in self.dust_deprojections: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def deproject_dust(self):
 
         """
@@ -4375,12 +4612,199 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Deprojecting the dust maps ...")
 
         # Create deproejcted dust maps
-        if not self.has_dust_deprojected: self.dust_deprojected = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path)
+        if not self.has_dust_deprojected:
+            self.dust_deprojections, self.dust_deprojected = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
 
         # Create deprojected dust maps with SKIRT
-        if not self.has_dust_deprojected_skirt: self.dust_deprojected_skirt, self.dust_edgeon_skirt = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight,
-                                                                                  root_path=self.dust_deprojection_skirt_path, method="skirt",
-                                                                                  edgeon=True, write=False)
+        if not self.has_dust_deprojected_skirt:
+            if self.has_dust_deprojections:
+                self.dust_deprojected_skirt = self.deproject_models(self.dust_deprojections, root_path=self.dust_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
+            else:
+                self.dust_deprojections, self.dust_deprojected_skirt = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
+
+    # -----------------------------------------------------------------
+
+    def project(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Projecting the maps ...")
+
+        # Old
+        self.project_old()
+
+        # Young
+        self.project_young()
+
+        # Ionizing
+        self.project_ionizing()
+
+        # Dust
+        self.project_dust()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_projected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all old stellar maps
+        for name in self.old_selection:
+
+            # Determine path
+            path = fs.join(self.old_edgeon_path, name + ".fits")
+
+            # Check
+            if not fs.is_file(path): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def project_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Projecting the old stellar maps ...")
+
+        # Check
+        if not self.has_old_deprojections: raise RuntimeError("Deprojections for the old stellar maps are not created. Run again with --redeproject_old or --redeproject_skirt_old")
+
+        # Create projected old stellar maps
+        if not self.has_old_projected: self.old_projected = self.project_models(self.old_deprojections, root_path=self.old_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_projected(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Loop over the young stellar maps
+        for name in self.young_selection:
+            
+            # Determine path
+            path = fs.join(self.young_edgeon_path, name + ".fits")
+            
+            # Check
+            if not fs.is_file(path): return False
+        
+        # All checks passed
+        return True
+        
+    # -----------------------------------------------------------------
+
+    def project_young(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Projecting the young stellar maps ...")
+
+        # Check
+        if not self.has_young_deprojections: raise RuntimeError("Deprojections for the young stellar maps are not created. Run again with --redeproject_young or --redeproject_skirt_young")
+
+        # Create projected young stellar maps
+        if not self.has_young_projected: self.young_projected = self.project_models(self.young_deprojections, root_path=self.young_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_projected(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Loop over the ionizing stellar maps
+        for name in self.ionizing_selection:
+            
+            # Determine the path
+            path = fs.join(self.ionizing_edgeon_path, name + ".fits")
+            
+            # Check
+            if not fs.is_file(path): return False
+            
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def project_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Projecting the ionizing stellar maps ...")
+
+        # Check
+        if not self.has_ionizing_deprojections: raise RuntimeError("Deprojections for the ionizing stellar maps are not created. Run again with --redeproject_ionizing or --redeproject_skirt_ionizing")
+
+        # Create projected ionizing stellar maps
+        if not self.has_ionizing_projected: self.ionizing_projected = self.project_models(self.ionizing_deprojections, root_path=self.ionizing_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_projected(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Loop over the dust maps
+        for name in self.dust_selection:
+            
+            # Determine the path
+            path = fs.join(self.dust_edgeon_path, name + ".fits")
+            
+            # Check
+            if not fs.is_file(path): return False
+            
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def project_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Projecting the dust maps ...")
+
+        # Check
+        if not self.has_dust_deprojections: raise RuntimeError("Deprojections for the dust maps are not created. Run again with --redeproject_dust or --redeproject_skirt_dust")
+
+        # Cretae projected dust maps
+        if not self.has_dust_projected: self.dust_projected = self.project_models(self.dust_deprojections, root_path=self.dust_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -4410,7 +4834,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.write_deprojected_skirt()
 
         # Write edgeon maps
-        self.write_edgeon_skirt()
+        self.write_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -5014,7 +5438,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def write_edgeon_skirt(self):
+    def write_edgeon(self):
 
         """
         This function ...

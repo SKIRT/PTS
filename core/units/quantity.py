@@ -256,3 +256,16 @@ class PhotometricQuantity(Quantity):
         return PhotometricQuantity(self.value * factor, unit)
 
 # -----------------------------------------------------------------
+
+def same_physical_type(qty_a, qty_b):
+
+    """
+    This function ...
+    :param qty_a:
+    :param qty_b:
+    :return:
+    """
+
+    return qty_a.unit.physical_type == qty_b.unit.physical_type
+
+# -----------------------------------------------------------------

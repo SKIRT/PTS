@@ -16,11 +16,12 @@ from __future__ import absolute_import, division, print_function
 import copy
 
 # Import the relevant PTS classes and modules
-from .vector import Extent
+from .vector import Extent, RealExtent, AngleExtent, QuantityExtent
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
-class SkyExtent(object):
+class SkyExtent(AngleExtent):
 
     """
     This class ...
@@ -34,12 +35,36 @@ class SkyExtent(object):
         :param dec:
         """
 
-        self.ra = ra
-        self.dec = dec
+        # Call the constructor of the base class
+        super(SkyExtent, self).__init__(ra, dec)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
 
 # -----------------------------------------------------------------
 
-class PhysicalExtent(object):
+class PhysicalExtent(QuantityExtent):
 
     """
     This class ...
@@ -53,8 +78,36 @@ class PhysicalExtent(object):
         :param length2:
         """
 
-        self.length1 = length1
-        self.length2 = length2
+        # Call the constructor of the base class
+        super(PhysicalExtent, self).__init__(length1, length2)
+
+        # Check
+        if not types.is_length_quantity(self.length1): raise ValueError("Arguments must be length quantities")
+        if not types.is_length_quantity(self.length2): raise ValueError("Arguments must be length quantities")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def length1(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def length2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
 
 # -----------------------------------------------------------------
 
@@ -167,7 +220,7 @@ class Stretch(object):
 
 # -----------------------------------------------------------------
 
-class PixelStretch(Extent, Stretch):
+class PixelStretch(RealExtent, Stretch):
 
     """
     This class ...

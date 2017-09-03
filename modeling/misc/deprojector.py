@@ -84,7 +84,7 @@ class Deprojector(GalaxyModelingComponent):
         self.scale_heights = dict()
 
         # The deprojection models
-        self.deprojections = dict()
+        self.deprojections = None
 
         # The deprojected maps
         self.deprojected = dict()
@@ -121,8 +121,8 @@ class Deprojector(GalaxyModelingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Create the deprojection models
-        self.create_models()
+        # 2. Create the deprojection models if necessary
+        if not self.has_models: self.create_models()
 
         # 4. Write
         self.write()
@@ -148,6 +148,41 @@ class Deprojector(GalaxyModelingComponent):
 
         # Get paths
         self.root_path = kwargs.pop("root_path", None)
+
+        # Checks
+        if "deprojections" in kwargs and "maps" in kwargs: raise ValueError("Cannot specify 'deprojections' and 'maps' simultaneously")
+        if "deprojections" in kwargs and "deprojection" in kwargs: raise ValueError("Cannot specify 'deprojections' and 'deprojection' simultaneously")
+        if "deprojections" in kwargs and "map" in kwargs: raise ValueError("Cannot specify 'deprojections' and 'map' simultaneously")
+
+        # Get the deprojection
+        if "deprojection" in kwargs:
+            if "name" not in kwargs: raise ValueError("When passing only one deprojection, a name must be specified")
+            name = kwargs.pop("name")
+            self.deprojections = dict()
+            self.deprojections[name] = kwargs.pop("deprojection")
+
+        # Get multiple deprojections
+        elif "deprojections" in kwargs:
+            self.deprojections = kwargs.pop("deprojections")
+
+        # Load maps
+        else: self.load_maps(**kwargs)
+
+        # Make directories
+        if self.root_path is not None: self.create_directories()
+
+        # Check leftover arguments
+        if len(kwargs) > 0: raise ValueError("Could not resolve all input: " + tostr(kwargs))
+
+    # -----------------------------------------------------------------
+
+    def load_maps(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
 
         # Checks
         if "map" in kwargs and "maps" in kwargs: raise ValueError("Cannot specify 'map' and 'maps' simultaneously")
@@ -219,11 +254,17 @@ class Deprojector(GalaxyModelingComponent):
         for name in self.maps:
             if name not in self.scale_heights: raise ValueError("Scale height for '" + name + "' map is not defined")
 
-        # Make directories
-        if self.root_path is not None: self.create_directories()
+    # -----------------------------------------------------------------
 
-        # Check leftover arguments
-        if len(kwargs) > 0: raise ValueError("Could not resolve all input: " + tostr(kwargs))
+    @property
+    def has_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.deprojections is not None
 
     # -----------------------------------------------------------------
 
@@ -350,6 +391,9 @@ class Deprojector(GalaxyModelingComponent):
 
         # Inform the user
         log.info("Creating the deprojection models ...")
+
+        # Initialize the dictionary
+        self.deprojections = dict()
 
         # Loop over the maps
         for name in self.map_names:

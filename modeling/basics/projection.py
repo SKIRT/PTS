@@ -30,6 +30,7 @@ from ...magic.basics.vector import Extent
 
 # -----------------------------------------------------------------
 
+# TODO: make this derived from SimplePropertyComposite
 class GalaxyProjection(object):
 
     """
@@ -52,6 +53,7 @@ class GalaxyProjection(object):
         :param field_y:
         """
 
+        # Set properties
         self.distance = distance
         self.inclination = Angle(inclination, "deg")
         self.azimuth = Angle(azimuth, "deg")
@@ -575,6 +577,7 @@ def get_relevant_wcs_properties(wcs, center, distance):
     field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
     field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
+    # Return the properties
     return pixels_x, pixels_y, center_x, center_y, field_x_physical, field_y_physical
 
 # -----------------------------------------------------------------
