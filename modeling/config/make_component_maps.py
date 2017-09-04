@@ -212,4 +212,7 @@ definition.add_flag("clear_all", "clear all previous results")
 # FOR DEPROJECTION
 definition.add_optional("downsample_factor", "positive_real", "downsample factor for rendering the deprojected maps", 2.)
 
+# FOR PROJECTION
+definition.add_optional("scale_heights", "positive_real", "scale heights", 10.)
+
 # -----------------------------------------------------------------

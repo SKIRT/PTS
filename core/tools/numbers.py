@@ -970,6 +970,18 @@ def round_up_to_int(number):
 
 # -----------------------------------------------------------------
 
+def round_to_int(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    return int(round(number))
+
+# -----------------------------------------------------------------
+
 def root(number, n):
 
     """

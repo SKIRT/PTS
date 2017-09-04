@@ -38,6 +38,7 @@ from ..core.environment import GalaxyModelingEnvironment
 from ...magic.core.remote import get_filter_name
 from ...magic.tools import headers
 from pts.core.tools.utils import lazyproperty
+from ...magic.basics.stretch import PhysicalExtent
 
 # -----------------------------------------------------------------
 
@@ -1335,13 +1336,16 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def project_models(self, deprojections, root_path, write=True):
+    def project_models_faceon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7)):
 
         """
-        This function projects deprojection model (based on maps) to edge-on views
-        :param deprojections:
+        This function projects models to face-on views
+        :param models:
         :param root_path:
+        :param npixels:
+        :param pixelscale:
         :param write:
+        :param npackages:
         :return:
         """
 
@@ -1350,14 +1354,120 @@ class GalaxyModelingComponent(ModelingComponent):
         # Create the projector
         projector = Projector()
 
+        # Get number of pixels
+        npixels = get_npixels(npixels)
+
+        # Get field of view
+        field = get_field(pixelscale, npixels, self.galaxy_distance)
+
+        # Get the center pixel
+        center = get_center(npixels)
+
         # Set settings
-        projector.config.writing.maps = False
+        projector.config.writing.projections = write
+        projector.config.faceon = True
+        projector.config.edgeon = False
+        projector.config.distance = self.galaxy_distance
+        projector.config.center = center
+        projector.config.npixels = npixels
+        projector.config.field = field
+        projector.config.npackages = npackages
 
         # Run the projector
-        projector.run(deprojections=deprojections, root_path=root_path)
+        projector.run(models=models, root_path=root_path)
+
+        # Return the projected maps
+        return projector.faceon
+
+    # -----------------------------------------------------------------
+
+    def project_models_edgeon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7)):
+
+        """
+        This function projects models to edge-on views
+        :param models:
+        :param root_path:
+        :param npixels:
+        :param pixelscale:
+        :param write:
+        :param npackages:
+        :return:
+        """
+
+        from ..misc.projector import Projector
+
+        # Create the projector
+        projector = Projector()
+
+        # Get number of pixels
+        npixels = get_npixels(npixels)
+
+        # Get field of view
+        field = get_field(pixelscale, npixels, self.galaxy_distance)
+
+        # Get the center pixel
+        center = get_center(npixels)
+
+        # Set settings
+        projector.config.writing.projections = write
+        projector.config.faceon = False
+        projector.config.edgeon = True
+        projector.config.distance = self.galaxy_distance
+        projector.config.center = center
+        projector.config.npixels = npixels
+        projector.config.field = field
+        projector.config.npackages = npackages
+
+        # Run the projector
+        projector.run(models=models, root_path=root_path)
 
         # Return the projected maps
         return projector.edgeon
+
+    # -----------------------------------------------------------------
+
+    def project_models_to_wcs(self, models, wcs, root_path, write=True, npackages=int(1e7)):
+
+        """
+        This function projects models to an arbritrary view
+        :param models:
+        :param wcs:
+        :param root_path:
+        :param write:
+        :param npackages:
+        :return:
+        """
+
+        from ..misc.projector import Projector
+
+        # Set azimuth
+        from ...core.units.parsing import parse_angle
+        azimuth = parse_angle("0 deg")
+
+        # Create the projector
+        projector = Projector()
+
+        # Set settings
+        projector.config.writing.projections = write
+        projector.config.faceon = False
+        projector.config.edgeon = False
+        projector.config.distance = self.galaxy_distance
+        projector.config.center = self.galaxy_center.to_sky(wcs)
+        #projector.config.npixels = npixels # only for creating edgeon and faceon
+        #projector.config.field = field # only for creating edgeon and faceon
+        projector.config.inclination = self.galaxy_inclination
+        projector.config.azimuth = azimuth
+        projector.config.position_angle = self.galaxy_position_angle
+        projector.config.npackages = npackages
+
+        # Name for the projection
+        name = "single"
+
+        # Run the projector
+        projector.run(models=models, name=name, wcs=wcs, root_path=root_path)
+
+        # Return the projected maps for the only projection
+        return projector.projected[name]
 
 # -----------------------------------------------------------------
 
@@ -1987,5 +2097,69 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
 
     # Return the paths
     return paths, error_paths
+
+# -----------------------------------------------------------------
+
+def get_npixels(npixels):
+
+    """
+    This function ...
+    :param npixels:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    from ...magic.basics.vector import IntegerExtent
+
+    # Set npixels
+    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
+    elif isinstance(npixels, PixelShape): pass
+    elif isinstance(npixels, IntegerExtent): npixels = PixelShape.from_xy(npixels.x, npixels.y)
+    else: raise ValueError("Don't know what to do with npixels of type " + str(type(npixels)))
+
+    return npixels
+
+# -----------------------------------------------------------------
+
+def get_field(pixelscale, npixels, distance):
+
+    """
+    This function ...
+    :param pixelscale:
+    :param npixels:
+    :param distance:
+    :return:
+    """
+
+    from ...magic.basics.pixelscale import Pixelscale
+    from astropy.units import Quantity
+
+    # Get pixelscale instance
+    if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
+    elif isinstance(pixelscale, Pixelscale): pass
+    else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
+
+    # Determine physical pixelscale
+    phys_pixelscale = pixelscale.to_physical(distance)
+
+    # Determine field of view
+    field = PhysicalExtent(phys_pixelscale.x * npixels.x, phys_pixelscale.y * npixels.y)
+
+    # Reutnr the field of view
+    return field
+
+# -----------------------------------------------------------------
+
+def get_center(npixels):
+
+    """
+    This function ...
+    :param npixels:
+    :return:
+    """
+
+    from ...magic.basics.coordinate import PixelCoordinate
+    center = PixelCoordinate(x=0.5*npixels.x, y=0.5*npixels.y)
+    return center
 
 # -----------------------------------------------------------------

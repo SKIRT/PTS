@@ -12,17 +12,18 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.launch.launcher import SKIRTLauncher
 from ...magic.core.frame import Frame
-from ...core.units.parsing import parse_unit as u
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools.utils import lazyproperty
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.parallelization import Parallelization
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinate import SkyCoordinate
 from ...core.tools.stringify import tostr
@@ -64,7 +65,7 @@ class Projector(GalaxyModelingComponent):
         self.wcs = None
 
         # Coordinate systems for creating different projections
-        self.coordinate_systems = dict()
+        self.coordinate_systems = None
 
         ##
 
@@ -96,12 +97,12 @@ class Projector(GalaxyModelingComponent):
         # The edge-on maps
         self.edgeon = dict()
 
-        # The deprojected maps
-        self.projected = dict()
+        # The projected maps
+        self.projected = defaultdict(dict)
 
         ##
 
-        # The output paths
+        # The output paths (per model)
         self.output_paths = dict()
 
         ##
@@ -152,6 +153,16 @@ class Projector(GalaxyModelingComponent):
 
         # Get paths
         self.root_path = kwargs.pop("root_path", None)
+
+        # Check names
+        if "name" in kwargs:
+            if kwargs["name"] == edgeon_name or kwargs["name"] == faceon_name: raise ValueError("Name cannot be '" + faceon_name + "' or '" + edgeon_name + "'")
+        if "coordinate_systems" in kwargs:
+            for name in kwargs["coordinate_systems"]:
+                if name == edgeon_name or name == faceon_name: raise ValueError("No name can be '" + faceon_name + "' or '" + edgeon_name + "'")
+        if "projections" in kwargs:
+            for name in kwargs["projections"]:
+                if name == edgeon_name or name == faceon_name: raise ValueError("No name can be '" + faceon_name + "' or '" + edgeon_name + "'")
 
         # Check
         if "name" in kwargs and "coordinate_systems" in kwargs:
@@ -393,6 +404,18 @@ class Projector(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_coordinate_systems(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.coordinate_systems is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_projections(self):
 
         """
@@ -421,7 +444,7 @@ class Projector(GalaxyModelingComponent):
         if self.config.edgeon: self.set_edgeon_projection()
 
         # Create other projections
-        if not self.has_projections: self.set_other_projections()
+        if not self.has_projections and self.has_coordinate_systems: self.set_other_projections()
 
     # -----------------------------------------------------------------
 
@@ -621,7 +644,7 @@ class Projector(GalaxyModelingComponent):
         log.info("Writing ...")
 
         # Write the projections
-        self.write_projections()
+        if self.config.writing.projections: self.write_projections()
 
     # -----------------------------------------------------------------
 
@@ -677,6 +700,18 @@ class Projector(GalaxyModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the face-on projection ...")
+
+        # Loop over the model names
+        for name in self.models:
+
+            # Determine the path
+            path = fs.join(self.output_paths[name], "faceon.proj")
+
+            # Save the face-on projection
+            self.faceon_projection.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_edgeon_projection(self):
@@ -685,6 +720,18 @@ class Projector(GalaxyModelingComponent):
         This funtion ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the edge-on projection ...")
+
+        # Loop over the model names
+        for name in self.models:
+
+            # Determine the path
+            path = fs.join(self.output_paths[name], "edgeon.proj")
+
+            # Save the edge-on projection
+            self.edgeon_projection.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -698,10 +745,17 @@ class Projector(GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the other projections ...")
 
-        # Loop over the projections
-        for name in self.projections:
+        # Loop over the model names
+        for name in self.models:
 
-            pass
+            # Loop over the projections
+            for projection_name in self.projections:
+
+                # Determine the path
+                path = fs.join(self.output_paths[name], projection_name + ".proj")
+
+                # Save the projection
+                self.projections[projection_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -728,23 +782,26 @@ class Projector(GalaxyModelingComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Creating the ski file template ...")
+
+        # Create
         ski =  self.smile.create_oligochromatic_template()
 
         # Remove the existing instruments
         ski.remove_all_instruments()
 
         # Remove the stellar system
-        ski.remove_stellar_system()
+        #ski.remove_stellar_system()
+
+        # Remove the dust system
+        ski.remove_dust_system()
 
         # Set the number of photon packages
-        ski.setpackages(0)
+        ski.setpackages(self.config.npackages)
 
         # Enable writing options
         #ski.enable_all_writing_options()
-
-        # Disable writing stellar density (we don't have a stellar system)
-        # BUT DON'T CALL THE FUNCTION WHEN THE SKIRT VERSION DOES NOT SUPPORT WRITING STELLAR DENSITY
-        #if self.smile.supports_writing_stellar_density: ski.set_write_stellar_density(False)
 
         # Return the ski template
         return ski
@@ -850,7 +907,7 @@ class Projector(GalaxyModelingComponent):
     def create_ski_files(self):
 
         """
-        Thisf unction ...
+        This function ...
         :return:
         """
 
@@ -873,21 +930,16 @@ class Projector(GalaxyModelingComponent):
             if self.has_edgeon: ski.add_instrument(edgeon_name, self.edgeon_instrument)
 
             # Add other
-            for name in self.instruments: ski.add_instrument(name, self.instruments[name])
+            for instrument_name in self.instruments: ski.add_instrument(instrument_name, self.instruments[name])
 
-            # Set component
-            ski.remove_stellar_components_except("Evolved stellar disk")
+            # Remove the dust system
             ski.remove_dust_system()
-            ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections[name])
+
+            # Set title
+            title = name
 
             # Add the stellar component
-            ski.create_new_stellar_component()
-
-            # Add the dust component
-            #map_filename = add_dust_component(self.ski, name, component)
-
-            # If map filename is defined, set path in dictionary
-            #if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
+            ski.create_new_stellar_component(title, geometry=self.models[name], luminosities=[1])
 
             # Enable writing options
             #ski.enable_all_writing_options()
@@ -931,13 +983,17 @@ class Projector(GalaxyModelingComponent):
         # Inform the user
         log.info("Launching ...")
 
+        projected_models = dict()
+
         # Loop over the models
         for name in self.models:
 
+            # Determine ski path and output path for the simulation
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
             #input_map_paths = [self.deprojections[name].filepath]
-            in_path = fs.directory_of(self.deprojections[name].filepath)
+            #in_path = fs.directory_of(self.deprojections[name].filepath)
+            in_path = None
 
             # Debugging
             log.debug("Launching SKIRT for the '" + name + "' map ...")
@@ -945,59 +1001,42 @@ class Projector(GalaxyModelingComponent):
             # Create simulation definition
             definition = SingleSimulationDefinition(ski_path, out_path, in_path)
 
-            # Determine parallelization scheme (do singleprocessing)
-            ncores = 2
-            nthreads_per_core = 2
-            nprocesses = 1
-            parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
-
             # Set settings
             self.launcher.config.progress_bar = True
-            self.launcher.config.finish_after = "Writing dust cell properties"  # finish after this line has been printed (when the next one comes)
-            # self.launcher.config.finish_at = ""
 
             # Run
-            self.launcher.run(definition=definition, parallelization=parallelization)
+            self.launcher.run(definition=definition, parallelization=self.config.parallelization)
             simulation = self.launcher.simulation
 
-            # FOR STELLAR:
-            # Determine path
-            #frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
+            # Get the faceon map
+            if self.has_faceon:
+                faceon_path = fs.join(out_path, simulation.prefix() + "_" + faceon_name + "_total.fits")
+                faceon = Frame.from_file(faceon_path)
+            else: faceon = None
 
-            # Open the output frame
-            #frame = Frame.from_file(frame_path)
+            # Get the edgeon map
+            if self.has_edgeon:
+                edgeon_path = fs.join(out_path, simulation.prefix() + "_" + edgeon_name + "_total.fits")
+                edgeon = Frame.from_file(edgeon_path)
+            else: edgeon = None
 
-            ### FACEON
+            # Get the other maps
+            other = dict()
+            for instrument_name in self.instruments:
+                other_path = fs.join(out_path, simulation.prefix() + "_" + instrument_name + "_total.fits")
+                other_map = Frame.from_file(other_path)
+                if self.has_coordinate_systems: other_map.wcs = self.coordinate_systems[instrument_name] # set WCS
+                other[instrument_name] = other_map
+            projected_models[name] = other
 
-            gridxy_filename = simulation.prefix() + "_ds_grhoxy.fits"
-            geometryxy_filename = simulation.prefix() + "_ds_trhoxy.fits"
-
-            #grid_xy_path = fs.join(out_path, gridxy_filename)
-            geometry_xy_path = fs.join(out_path, geometryxy_filename)
-
-            # Open the output frame
-            frame = Frame.from_file(geometry_xy_path)
-
-            # Set wcs NO DOESN'T MAKE ANY SENSE ON THE FACEON MAP!!
-            #frame.wcs = self.maps[name].wcs
-
-            # Save frame
-            #frame.saveto(frame_path)
-
-            # Set the deprojected map
-            self.projected[name] = frame
-
-            ### EDGEON
-
-            gridxz_filename = simulation.prefix() + "_ds_grhoxz.fits"
-            geometryxz_filename = simulation.prefix() + "_ds_trhoxz.fits"
-
-            geometry_xz_path = fs.join(out_path, geometryxz_filename)
-
-            # Open the frame
-            edgeon = Frame.from_file(geometry_xz_path)
-
-            # Set the edgeon map
+            # Set faceon and edgeon
+            self.faceon[name] = faceon
             self.edgeon[name] = edgeon
+
+        # Set the projected maps for each model per projection
+        # ACTUALLY, because self.projected is defaultdict, we can as well do all of this inside the loop above..
+        for projection_name in self.projections:
+            for model_name in projected_models:
+                self.projected[projection_name][model_name] = projected_models[model_name][projection_name]
 
 # -----------------------------------------------------------------

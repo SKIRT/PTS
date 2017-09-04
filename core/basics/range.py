@@ -175,6 +175,32 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @min.setter
+    def min(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._min = value
+
+    # -----------------------------------------------------------------
+
+    @max.setter
+    def max(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._max = value
+
+    # -----------------------------------------------------------------
+
     @property
     def log_min(self):
 
@@ -363,6 +389,56 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    def extend(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        self.min = self.center - factor * self.radius
+        self.max = self.center + factor * self.radius
+
+    # -----------------------------------------------------------------
+
+    def extended(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        return self.__class__(self.center - factor * self.radius, self.center + factor * self.radius)
+
+    # -----------------------------------------------------------------
+
+    def compress(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        self.min = self.center - self.radius / factor
+        self.max = self.center + self.radius / factor
+
+    # -----------------------------------------------------------------
+
+    def compressed(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        return self.__class__(self.center - self.radius / factor, self.center + self.radius / factor)
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """
@@ -511,6 +587,30 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * self.span
+
+    # -----------------------------------------------------------------
+
+    # NO: NOT POSSIBLE: __LEN__ ALWAYS RETURNS INTEGERS!
+    # def __len__(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.span
+
+    # -----------------------------------------------------------------
+
     def __contains__(self, value):
 
         """
@@ -540,11 +640,40 @@ class IntegerRange(Range):
         :param rearrange:
         """
 
-        assert isinstance(min_value, int)
-        assert isinstance(max_value, int)
+        # Check
+        if not types.is_integer_type(min_value): raise ValueError("Value must be integer")
+        if not types.is_integer_type(max_value): raise ValueError("Value must be integer")
 
         # Call the constructor of the base class
         super(IntegerRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
+
+    # -----------------------------------------------------------------
+
+    @Range.min.setter
+    def min(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not types.is_integer_type(value): raise ValueError("Value must be integer")
+        self._min = value
+
+    # -----------------------------------------------------------------
+
+    @Range.max.setter
+    def max(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not types.is_integer_type(value): raise ValueError("Value must be integer")
+        self._max = value
 
     # -----------------------------------------------------------------
 
@@ -619,11 +748,11 @@ class RealRange(Range):
         if min_value is None: min_value = float("-inf")
         if max_value is None: max_value = float("+inf")
 
-        if isinstance(min_value, int): min_value = float(min_value)
-        if isinstance(max_value, int): max_value = float(max_value)
+        if types.is_integer_type(min_value): min_value = float(min_value)
+        if types.is_integer_type(max_value): max_value = float(max_value)
 
-        assert isinstance(min_value, float)
-        assert isinstance(max_value, float)
+        if not types.is_real_type(min_value): raise ValueError("Value must be real")
+        if not types.is_real_type(max_value): raise ValueError("Value must be real")
 
         # Call the constructor of the base class
         super(RealRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
@@ -651,6 +780,42 @@ class RealRange(Range):
         """
 
         return cls(-0., 0.)
+
+    # -----------------------------------------------------------------
+
+    @Range.min.setter
+    def min(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check
+        if types.is_integer_type(value): value = float(value)
+        if not types.is_real_type(value): raise ValueError("Value must be real")
+
+        # Set
+        self._min = value
+
+    # -----------------------------------------------------------------
+
+    @Range.max.setter
+    def max(self, value):
+
+        """
+        Thisn function ...
+        :param value:
+        :return:
+        """
+
+        # Check
+        if types.is_integer_type(value): value = float(value)
+        if not types.is_real_type(value): raise ValueError("Value must be real")
+
+        # Set
+        self._max = value
 
 # -----------------------------------------------------------------
 

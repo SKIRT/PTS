@@ -20,11 +20,11 @@ from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
 
 # Import standard modules
-from .vector import Extent
+from .stretch import AngleExtent, PhysicalExtent
 
 # -----------------------------------------------------------------
 
-class Pixelscale(Extent):
+class Pixelscale(AngleExtent):
 
     """
     This class ...
@@ -113,28 +113,30 @@ class Pixelscale(Extent):
 
     # -----------------------------------------------------------------
 
-    def x_extent(self, distance):
+    def x_extent(self, distance, unit="kpc"):
 
         """
         This function ...
-        :param distance: 
+        :param distance:
+        :param unit:
         :return: 
         """
 
-        length_x = (self.abs_x * distance).to("kpc", equivalencies=dimensionless_angles())
+        length_x = (self.abs_x * distance).to(unit, equivalencies=dimensionless_angles())
         return length_x
 
     # -----------------------------------------------------------------
 
-    def y_extent(self, distance):
+    def y_extent(self, distance, unit="kpc"):
 
         """
         This function ...
-        :param distance: 
+        :param distance:
+        :param unit:
         :return: 
         """
 
-        length_y = (self.abs_y * distance).to("kpc", equivalencies=dimensionless_angles())
+        length_y = (self.abs_y * distance).to(unit, equivalencies=dimensionless_angles())
         return length_y
 
     # -----------------------------------------------------------------
@@ -161,6 +163,19 @@ class Pixelscale(Extent):
         """
 
         return self.x_extent(distance) * self.y_extent(distance)
+
+    # -----------------------------------------------------------------
+
+    def to_physical(self, distance, unit="pc"):
+
+        """
+        Thisn function ...
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        return PhysicalExtent(self.x_extent(distance, unit=unit), self.y_extent(distance, unit=unit))
 
 # -----------------------------------------------------------------
 

@@ -286,6 +286,11 @@ class AngleExtent(Extent):
         # Call the constructor of the base calss
         super(AngleExtent, self).__init__(x, y)
 
+        # Convert quantities to angles
+        from ...core.units.quantity import quantity_to_angle
+        if types.is_quantity(self.x): self.x = quantity_to_angle(self.x)
+        if types.is_quantity(self.y): self.y = quantity_to_angle(self.y)
+
         # Check
         if not types.is_angle(self.x): raise ValueError("Arguments must be angles")
         if not types.is_angle(self.y): raise ValueError("Arguments must be angles")
@@ -386,6 +391,19 @@ class PixelShape(tuple):
 
         # Call the constructor of the base class
         return super(PixelShape, cls).__new__(cls, tuple([y, x]))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def square(cls, npixels):
+
+        """
+        This function ...
+        :param npixels:
+        :return:
+        """
+
+        return cls(npixels, npixels)
 
     # -----------------------------------------------------------------
 

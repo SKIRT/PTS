@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import dimensionless_angles
+
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from .selectioncomponent import MapsSelectionComponent
@@ -27,6 +30,9 @@ from ...magic.core.mask import Mask
 from ...magic.core.alpha import AlphaMask
 from ...magic.core.detection import Detection
 from ...core.tools.stringify import tostr
+from ...core.basics.range import QuantityRange
+from ...core.units.parsing import parse_unit as u
+from ...magic.basics.vector import PixelShape
 
 # -----------------------------------------------------------------
 
@@ -4624,6 +4630,119 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def max_old_x_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.old_deprojections: x_range.adjust(self.old_deprojections[name].x_range * 2.)
+        return x_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_old_y_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.old_deprojections: y_range.adjust(self.old_deprojections[name].y_range * 2.)
+        return y_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_young_x_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.young_deprojections: x_range.adjust(self.young_deprojections[name].y_range * 2.)
+        return x_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_young_y_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.young_deprojections: y_range.adjust(self.young_deprojections[name].y_range * 2.)
+        return y_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ionizing_x_range(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.ionizing_deprojections: x_range.adjust(self.ionizing_deprojections[name].x_range * 2.)
+        return x_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ionizing_y_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.ionizing_deprojections: y_range.adjust(self.ionizing_deprojections[name].y_range * 2.)
+        return y_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dust_x_range(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.dust_deprojections: x_range.adjust(self.dust_deprojections[name].x_range * 2.)
+        return x_range
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dust_y_range(self):
+
+
+        """
+        This function ...
+        :return:
+        """
+
+        y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
+        for name in self.dust_deprojections: y_range.adjust(self.dust_deprojections[name].y_range * 2.)
+        return y_range
+
+    # -----------------------------------------------------------------
+
     def project(self):
 
         """
@@ -4670,6 +4789,65 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_projection_npixels(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        radial_extent = max(self.max_old_x_range.span, self.max_old_y_range.span)
+        z_radius = 2. * self.old_scaleheight * self.config.scale_heights
+
+        # Determine number of pixels
+        nx = int(round(radial_extent / self.old_projection_physical_pixelscale))
+        nz = int(round(z_radius / self.old_projection_physical_pixelscale))
+
+        # Return the pixel shape
+        return PixelShape.from_xy(nx, nz)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_old_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+        for name in self.old_maps:
+            if pixelscale is None or self.old_maps[name].average_pixelscale < pixelscale: pixelscale = self.old_maps[name].average_pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_projection_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.min_old_pixelscale * self.config.downsample_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_projection_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (abs(self.old_projection_pixelscale) * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
+
+    # -----------------------------------------------------------------
+
     def project_old(self):
 
         """
@@ -4684,7 +4862,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_old_deprojections: raise RuntimeError("Deprojections for the old stellar maps are not created. Run again with --redeproject_old or --redeproject_skirt_old")
 
         # Create projected old stellar maps
-        if not self.has_old_projected: self.old_projected = self.project_models(self.old_deprojections, root_path=self.old_edgeon_path)
+        if not self.has_old_projected: self.old_edgeon_skirt = self.project_models_edgeon(self.old_deprojections, self.old_projection_npixels, self.old_projection_pixelscale, root_path=self.old_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -4710,6 +4888,65 @@ class ComponentMapsMaker(MapsSelectionComponent):
         
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def young_projection_npixels(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        radial_extent = max(self.max_young_x_range.span, self.max_young_y_range.span)
+        z_radius = 2. * self.young_scaleheight * self.config.scale_heights
+
+        # Determine number of pixels
+        nx = int(round(radial_extent / self.young_projection_physical_pixelscale))
+        nz = int(round(z_radius / self.young_projection_physical_pixelscale))
+
+        # Return the pixel shape
+        return PixelShape.from_xy(nx, nz)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_young_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+        for name in self.young_maps:
+            if pixelscale is None or self.young_maps[name].average_pixelscale < pixelscale: pixelscale = self.young_maps[name].average_pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_projection_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.min_young_pixelscale * self.config.downsample_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_projection_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (abs(self.young_projection_pixelscale) * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
+
+    # -----------------------------------------------------------------
+
     def project_young(self):
 
         """
@@ -4724,7 +4961,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_young_deprojections: raise RuntimeError("Deprojections for the young stellar maps are not created. Run again with --redeproject_young or --redeproject_skirt_young")
 
         # Create projected young stellar maps
-        if not self.has_young_projected: self.young_projected = self.project_models(self.young_deprojections, root_path=self.young_edgeon_path)
+        if not self.has_young_projected: self.young_edgeon_skirt = self.project_models_edgeon(self.young_deprojections, self.young_projection_npixels, self.young_projection_pixelscale, root_path=self.young_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -4750,6 +4987,65 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_projection_npixels(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        radial_extent = max(self.max_ionizing_x_range.span, self.max_ionizing_y_range.span)
+        z_radius = 2. * self.ionizing_scaleheight * self.config.scale_heights
+
+        # Determine number of pixels
+        nx = int(round(radial_extent / self.ionizing_projection_physical_pixelscale))
+        nz = int(round(z_radius / self.ionizing_projection_physical_pixelscale))
+
+        # Return the pixel shape
+        return PixelShape.from_xy(nx, nz)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_ionizing_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+        for name in self.ionizing_maps:
+            if pixelscale is None or self.ionizing_maps[name].average_pixelscale < pixelscale: pixelscale = self.ionizing_maps[name].average_pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_projection_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.min_ionizing_pixelscale * self.config.downsample_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_projection_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (abs(self.ionizing_projection_pixelscale) * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
+
+    # -----------------------------------------------------------------
+
     def project_ionizing(self):
 
         """
@@ -4764,7 +5060,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_ionizing_deprojections: raise RuntimeError("Deprojections for the ionizing stellar maps are not created. Run again with --redeproject_ionizing or --redeproject_skirt_ionizing")
 
         # Create projected ionizing stellar maps
-        if not self.has_ionizing_projected: self.ionizing_projected = self.project_models(self.ionizing_deprojections, root_path=self.ionizing_edgeon_path)
+        if not self.has_ionizing_projected: self.ionizing_edgeon_skirt = self.project_models_edgeon(self.ionizing_deprojections, self.ionizing_projection_npixels, self.ionizing_projection_pixelscale, root_path=self.ionizing_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -4790,6 +5086,65 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def dust_projection_npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        radial_extent = max(self.max_dust_x_range.span, self.max_dust_y_range.span)
+        z_radius = 2. * self.dust_scaleheight * self.config.scale_heights
+
+        # Determine number of pixels
+        nx = int(round(radial_extent / self.dust_projection_physical_pixelscale))
+        nz = int(round(z_radius / self.dust_projection_physical_pixelscale))
+
+        # Return the pixel shape
+        return PixelShape.from_xy(nx, nz)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_dust_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+        for name in self.dust_maps:
+            if pixelscale is None or self.dust_maps[name].average_pixelscale < pixelscale: pixelscale = self.dust_maps[name].average_pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_projection_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.min_dust_pixelscale * self.config.downsample_factor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_projection_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (abs(self.dust_projection_pixelscale) * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
+
+    # -----------------------------------------------------------------
+
     def project_dust(self):
 
         """
@@ -4803,8 +5158,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Check
         if not self.has_dust_deprojections: raise RuntimeError("Deprojections for the dust maps are not created. Run again with --redeproject_dust or --redeproject_skirt_dust")
 
-        # Cretae projected dust maps
-        if not self.has_dust_projected: self.dust_projected = self.project_models(self.dust_deprojections, root_path=self.dust_edgeon_path)
+        # Create projected dust maps
+        if not self.has_dust_projected: self.dust_edgeon_skirt = self.project_models_edgeon(self.dust_deprojections, self.dust_projection_npixels, self.dust_projection_pixelscale, root_path=self.dust_edgeon_path)
 
     # -----------------------------------------------------------------
 

@@ -15,11 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
-from ...core.simulation.execute import SkirtExec
 from ...core.launch.launcher import SKIRTLauncher
 from ...core.tools import introspection
-from ...core.simulation.skifile import LabeledSkiFile
-from ..basics.instruments import FrameInstrument
 from ...magic.core.frame import Frame
 from ...core.units.parsing import parse_unit as u
 from ..component.galaxy import GalaxyModelingComponent
@@ -29,8 +26,8 @@ from ..plotting.model import xy
 from ...core.tools.utils import lazyproperty
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.parallelization import Parallelization
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
+from ...core.tools.numbers import round_to_int
 
 # -----------------------------------------------------------------
 
@@ -59,9 +56,6 @@ class Deprojector(GalaxyModelingComponent):
 
         # Call the constructor of the base class
         super(Deprojector, self).__init__(*args, **kwargs)
-
-        # The SKIRT execution environment
-        #self.skirt = SkirtExec()
 
         # Create the SKIRT launcher
         self.launcher = SKIRTLauncher()
@@ -552,16 +546,45 @@ class Deprojector(GalaxyModelingComponent):
             log.debug("Computing the deprojected surface density of the '" + name + "' map ...")
 
             # Determine the number of pixels
-            npixels = int(round(float(max(self.maps[name].xsize, self.maps[name].ysize)) / self.config.downsample_factor))
-            shape = (npixels, npixels)
+            #npixels = int(round(float(max(self.maps[name].xsize, self.maps[name].ysize)) / self.config.downsample_factor))
+            #shape = (npixels, npixels)
 
             # Debugging
-            log.debug("Using " + str(npixels) + " x " + str(npixels) + " pixels for the deprojected map")
+            #log.debug("Using " + str(npixels) + " x " + str(npixels) + " pixels for the deprojected map")
 
-            # Set the model limits
+            # Get the x and y range of the model
             x_range_scalar = self.deprojections[name].x_range.to(unit).value * 2.
             y_range_scalar = self.deprojections[name].y_range.to(unit).value * 2.
-            #z_range_scalar = self.deprojections[name].z_range.to(unit).value.as_tuple()
+
+            # Determine the number of pixels
+            x_span = x_range_scalar.span
+            y_span = y_range_scalar.span
+            x_to_y_ratio = x_span / y_span
+            ratio = x_to_y_ratio if x_to_y_ratio > 1 else 1./x_to_y_ratio
+            max_npixels = max(self.maps[name].xsize, self.maps[name].ysize)
+            largest_dimension = "x" if x_to_y_ratio > 1 else "y"
+            if largest_dimension == "x":
+                nxpixels = round_to_int(max_npixels / self.config.downsample_factor)
+                nypixels = round_to_int(max_npixels / ratio / self.config.downsample_factor)
+                exact_ratio = float(nxpixels) / float(nypixels)
+            elif largest_dimension == "y":
+                nxpixels = round_to_int(max_npixels / ratio / self.config.downsample_factor)
+                nypixels = round_to_int(max_npixels / self.config.downsample_factor)
+                exact_ratio = float(nypixels) / float(nxpixels)
+            else: raise RuntimeError("An error occurred")
+
+            # Adjust the physical ranges to the exact pixel ratios
+            if largest_dimension == "x": y_range_scalar = x_range_scalar.compressed(exact_ratio)
+            elif largest_dimension == "y": x_range_scalar = y_range_scalar.compressed(exact_ratio)
+            else: raise RuntimeError("An error occurred")
+
+            # Debugging
+            log.debug("Using " + str(nxpixels) + " x " + str(nypixels) + " pixels for the deprojected map")
+
+            # Determine the output pixel shape
+            shape = (nxpixels, nypixels)
+
+            # Set the model limits
             limits = [x_range_scalar.as_tuple(), y_range_scalar.as_tuple()]
 
             # Create coordinate data
@@ -578,34 +601,6 @@ class Deprojector(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    # @lazyproperty
-    # def stellar_ski_template(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Load ski template
-    #     ski_template = LabeledSkiFile(template_ski_path)
-    #
-    #     # Convert to oligochromatic simulation
-    #     ski_template.to_oligochromatic(1. * u("micron"))
-    #
-    #     # Remove the dust system
-    #     ski_template.remove_dust_system()
-    #
-    #     # Set number of packages per wavelength
-    #     ski_template.setpackages(0)
-    #
-    #     # Add one instrument
-    #     ski_template.remove_all_instruments()
-    #
-    #     # Return
-    #     return ski_template
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def ski_template(self):
 
@@ -614,6 +609,10 @@ class Deprojector(GalaxyModelingComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Creating the ski file template ...")
+
+        # Create
         ski =  self.smile.create_oligochromatic_template()
 
         # Remove the existing instruments
@@ -624,13 +623,6 @@ class Deprojector(GalaxyModelingComponent):
 
         # Set the number of photon packages
         ski.setpackages(0)
-
-        # Enable writing options
-        #ski.enable_all_writing_options()
-
-        # Disable writing stellar density (we don't have a stellar system)
-        # BUT DON'T CALL THE FUNCTION WHEN THE SKIRT VERSION DOES NOT SUPPORT WRITING STELLAR DENSITY
-        #if self.smile.supports_writing_stellar_density: ski.set_write_stellar_density(False)
 
         # Return the ski template
         return ski
@@ -717,26 +709,6 @@ class Deprojector(GalaxyModelingComponent):
             # Make copy
             ski = self.ski_template.copy()
 
-            # FOR STELLAR GEOMETRIES:
-            # Add faceon instrument
-            #faceon = FrameInstrument.from_deprojection_faceon(self.deprojections[name])
-            #ski.add_instrument(faceon_name, faceon)
-
-            # Add edgeon instrument
-            #edgeon = FrameInstrument.from_deprojection_edgeon(self.deprojections[name])
-            #ski.add_instrument(edgeon_name, edgeon)
-
-            # Set component
-            #ski.remove_stellar_components_except("Evolved stellar disk")
-            #ski.remove_dust_system()
-            #ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections[name])
-
-            # Add the dust component
-            #map_filename = add_dust_component(self.ski, name, component)
-
-            # If map filename is defined, set path in dictionary
-            #if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
-
             # USE DUST GEOMETRY
 
             # Set filename for deprojection model
@@ -747,13 +719,12 @@ class Deprojector(GalaxyModelingComponent):
             # Get title
             title = name
 
-            # Set the geometry
-            #ski.set_dust_component_geometry(title, deprojection)
-
-            dust_mass = 1e7 * u("Msun")
+            # Create dust component
+            dust_mass = 1e7 * u("Msun") # dummy value
             mix = "themis"
             ski.create_new_dust_component(title, deprojection, normalization_value=dust_mass, mix=mix)
 
+            # Get dust grid
             dust_grid = self.dust_grids[name]
 
             # Set the dust grid
@@ -804,12 +775,9 @@ class Deprojector(GalaxyModelingComponent):
         # Loop over the maps
         for name in self.maps:
 
-            # Write the ski file
-            #self.write_ski()
-
+            # Get ski path, output path and input path for simulation
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
-            #input_map_paths = [self.deprojections[name].filepath]
             in_path = fs.directory_of(self.deprojections[name].filepath)
 
             # Debugging
@@ -818,30 +786,15 @@ class Deprojector(GalaxyModelingComponent):
             # Create simulation definition
             definition = SingleSimulationDefinition(ski_path, out_path, in_path)
 
-            # Determine parallelization scheme (do singleprocessing)
-            ncores = 2
-            nthreads_per_core = 2
-            nprocesses = 1
-            parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
-
             # Set settings
             self.launcher.config.progress_bar = True
             self.launcher.config.finish_after = "Writing dust cell properties"  # finish after this line has been printed (when the next one comes)
-            # self.launcher.config.finish_at = ""
 
             # Run
-            self.launcher.run(definition=definition, parallelization=parallelization)
+            self.launcher.run(definition=definition, parallelization=self.config.parallelization)
             simulation = self.launcher.simulation
 
-            # FOR STELLAR:
-            # Determine path
-            #frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
-
-            # Open the output frame
-            #frame = Frame.from_file(frame_path)
-
-            ### FACEON
-
+            # Determine output filenames
             gridxy_filename = simulation.prefix() + "_ds_grhoxy.fits"
             geometryxy_filename = simulation.prefix() + "_ds_trhoxy.fits"
 
@@ -853,9 +806,6 @@ class Deprojector(GalaxyModelingComponent):
 
             # Set wcs NO DOESN'T MAKE ANY SENSE ON THE FACEON MAP!!
             #frame.wcs = self.maps[name].wcs
-
-            # Save frame
-            #frame.saveto(frame_path)
 
             # Set the deprojected map
             self.deprojected[name] = frame
@@ -872,44 +822,6 @@ class Deprojector(GalaxyModelingComponent):
 
             # Set the edgeon map
             self.edgeon[name] = edgeon
-
-    # -----------------------------------------------------------------
-
-    # def launch(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     #
-    #
-    #     # Loop over the ski files
-    #     for name in self.ski_files:
-    #
-    #         #
-    #         ski_path = self.ski_paths[name]
-    #         out_path = self.output_paths[name]
-    #
-    #         #prefix = fs.strip_extension(fs.name(ski_path))
-    #
-    #         # Perform the SKIRT simulation
-    #         simulation = self.skirt.execute(ski_path, inpath=self.maps_path, outpath=out_path, single=True)
-    #
-    #         # Determine path
-    #         frame_path = fs.join(out_path, simulation.prefix() + "_faceon_total.fits")
-    #
-    #         # Open the output frame
-    #         frame = Frame.from_file(frame_path)
-    #
-    #         # Set wcs
-    #         frame.wcs = self.reference_wcs
-    #
-    #         # Save frame
-    #         frame.saveto(frame_path)
-    #
-    #         # Set the deprojected map
-    #         self.deprojected[name] = frame
 
     # -----------------------------------------------------------------
 

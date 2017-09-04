@@ -11,17 +11,17 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # -----------------------------------------------------------------
 
 default_downsample_factor = 2.
+default_npackages = 1e7
+default_parallelization = "2:1:2" # 2 cores, 1 process, 2 threads per core
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# Downsample
-definition.add_optional("downsample_factor", "positive_real", "downsample factor of the deprojected map w.r.t the original map", default_downsample_factor)
-
 # Writing
 definition.add_section("writing", "writing options")
+definition.sections["writing"].add_flag("projections", "write the projections", True)
 
 # -----------------------------------------------------------------
 
@@ -41,5 +41,11 @@ definition.add_optional("field", "physical_extent", "field of view")
 definition.add_optional("inclination", "angle", "inclination angle")
 definition.add_optional("azimuth", "angle", "azimuth angle", "0 deg", convert_default=True)
 definition.add_optional("position_angle", "angle", "position angle")
+
+# -----------------------------------------------------------------
+
+# SKIRT options
+definition.add_optional("npackages", "positive_integer", "number of photon packages", default_npackages)
+definition.add_optional("parallelization", "parallelization", "parallelization scheme for the simulations", default_parallelization, convert_default=True)
 
 # -----------------------------------------------------------------

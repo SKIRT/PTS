@@ -746,6 +746,21 @@ def quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def angle_tuple(argument):
+
+    """
+    Tuple of angles
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(angle, argument.split(","))
+        return a, b
+    except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
+
+# -----------------------------------------------------------------
+
 def quantity_list(argument):
 
     """
@@ -787,32 +802,6 @@ def descending_quantity_list(argument):
     quantities = quantity_list(argument)
     if not sequences.is_descending(quantities): raise ValueError("List is not descending")
     return quantities
-
-# -----------------------------------------------------------------
-
-def photometric_quantity_tuple(argument):
-
-    """
-    This function ...
-    :param argument:
-    :return:
-    """
-
-    a, b = map(photometric_quantity, argument.split(","))
-    return a, b
-
-# -----------------------------------------------------------------
-
-def photometric_density_quantity_tuple(argument):
-
-    """
-    This function ...
-    :param argument:
-    :return:
-    """
-
-    a, b = map(photometric_density_quantity, argument.split(","))
-    return a, b
 
 # -----------------------------------------------------------------
 
@@ -1300,6 +1289,21 @@ def photometric_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def photometric_quantity_tuple(argument):
+
+    """
+    This fucntion ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(photometric_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a photometric_unit_a, b photometric_unit_b")
+
+# -----------------------------------------------------------------
+
 def photometric_density_quantity(argument):
 
     """
@@ -1310,6 +1314,21 @@ def photometric_density_quantity(argument):
 
     from ..units.parsing import parse_quantity
     return parse_quantity(argument, density=True)
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(photometric_density_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a photometric_density_unit_a, b photometric_density_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1328,6 +1347,21 @@ def length_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def length_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(length_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a length_unit_a, b length_unit_b")
+
+# -----------------------------------------------------------------
+
 def temperature_quantity(argument):
 
     """
@@ -1340,6 +1374,21 @@ def temperature_quantity(argument):
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "temperature": raise ValueError("Not a temperature")
     return qty
+
+# -----------------------------------------------------------------
+
+def temperature_quantity_tuple(argument):
+
+    """
+    This fucntion ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(temperature_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a temperature_unit_a, temperature_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1358,6 +1407,21 @@ def mass_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def mass_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(mass_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a mass_unit_a, mass_unit_b")
+
+# -----------------------------------------------------------------
+
 def mass_density_quantity(argument):
 
     """
@@ -1370,6 +1434,21 @@ def mass_density_quantity(argument):
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "mass density": raise ValueError("Not a mass density")
     return qty
+
+# -----------------------------------------------------------------
+
+def mass_density_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(mass_density_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a mass_density_unit_a, b mass_density_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1393,6 +1472,21 @@ def mass_surface_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def mass_surface_density_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(mass_surface_density_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a mass_surface_density_unit_a, b mass_surface_density_unit_b")
+
+# -----------------------------------------------------------------
+
 def data_quantity(argument):
 
     """
@@ -1405,6 +1499,21 @@ def data_quantity(argument):
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "data quantity": raise ValueError("Not a data quantity")
     return qty
+
+# -----------------------------------------------------------------
+
+def data_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(data_quantity, argument.split(','))
+        return a, b
+    except: raise ValueError("Tuple must be of format a data_unit_a, b data_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1988,5 +2097,33 @@ def physical_extent(argument):
     x, y = length_quantity_tuple(argument)
     from ...magic.basics.stretch import PhysicalExtent
     return PhysicalExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def parallelization(argument, default_nthreads_per_core=1):
+
+    """
+    This function ...
+    :param argument:
+    :param default_nthreads_per_core:
+    :return:
+    """
+
+    from ..simulation.parallelization import Parallelization
+
+    # Parse
+    splitted = argument.split(":")
+    if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
+    if len(splitted) > 3: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
+
+    ncores = integer(splitted[0])
+    nprocesses = integer(splitted[1])
+
+    # Get number of threads per core (hyperthreading)
+    if len(splitted) == 3: nthreads_per_core = integer(splitted[2])
+    else: nthreads_per_core = default_nthreads_per_core
+
+    # Create and return the parallelization
+    return Parallelization(ncores, nthreads_per_core, nprocesses)
 
 # -----------------------------------------------------------------

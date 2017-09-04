@@ -13,6 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 methods = ["skirt", "pts"]
 default_method = "pts"
 default_downsample_factor = 2.
+default_parallelization = "2:1:2" # 2 cores, 1 process, 2 threads per core
 
 # -----------------------------------------------------------------
 
@@ -47,5 +48,10 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 
 definition.sections["dg"].add_optional("bintree_min_level", "integer", "minimum depth level for binary trees", 9)
 definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum depth level for octrees", 3)
+
+# -----------------------------------------------------------------
+
+# Simulation options
+definition.add_optional("parallelization", "parallelization", "parallelization scheme for SKIRT", default_parallelization, convert_default=True)
 
 # -----------------------------------------------------------------

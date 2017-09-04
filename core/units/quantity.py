@@ -257,6 +257,19 @@ class PhotometricQuantity(Quantity):
 
 # -----------------------------------------------------------------
 
+def quantity_to_angle(qty, unit="deg"):
+
+    """
+    This function ...
+    :param qty:
+    :param unit:
+    :return:
+    """
+
+    return Angle(qty.to(unit).value, unit)
+
+# -----------------------------------------------------------------
+
 def same_physical_type(qty_a, qty_b):
 
     """

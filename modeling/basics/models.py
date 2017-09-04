@@ -1148,8 +1148,8 @@ class DeprojectionModel3D(Model3D):
         self.add_property("pixelscale", "quantity", "pixelscale of the FITS image")
         self.add_property("position_angle", "angle", "position angle")
         self.add_property("inclination", "angle", "inclination")
-        self.add_property("x_size", "positive_integer", "number of x pixels")
-        self.add_property("y_size", "positive_integer", "number of y pixels")
+        self.add_property("x_size", "positive_integer", "number of x pixels in the map")
+        self.add_property("y_size", "positive_integer", "number of y pixels in the map")
         self.add_property("x_center", "real", "x center in image coordinates")
         self.add_property("y_center", "real", "y center in image coordinates")
         self.add_property("scale_height", "quantity", "scale height")
@@ -1423,6 +1423,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
+        ## NO: don't return the map xsize, return the deprojected xsize? -> NO: not needed so far
         assert self.map.xsize == self.x_size
         return self.map.xsize
 
@@ -1436,6 +1437,7 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
+        ## NO: don't return the map ysize, return the deprojected ysize? -> NO: not needed so far
         assert self.map.ysize == self.y_size
         return self.map.ysize
 
