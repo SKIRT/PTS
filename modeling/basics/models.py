@@ -39,7 +39,7 @@ from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
-default_truncation = 2.0
+default_truncation = 2.5
 
 # -----------------------------------------------------------------
 
@@ -1169,6 +1169,9 @@ class DeprojectionModel3D(Model3D):
         # Set the properties
         self.set_properties(kwargs)
 
+        # The map that is loaded
+        self._map = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -1220,7 +1223,31 @@ class DeprojectionModel3D(Model3D):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_map(self):
+
+        """
+        has_map == True means that the map can be accessed via self.map
+        :return:
+        """
+
+        return self._map is not None or fs.is_file(self.filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_is_loaded(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._map is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def map(self):
 
         """
@@ -1228,18 +1255,51 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        # Load the frame
-        frame = Frame.from_file(self.filepath)
+        if self._map is not None: return self._map
+        elif fs.is_file(self.filepath):
 
-        # Verify the image properties
+            # Load the frame
+            frame = Frame.from_file(self.filepath)
+
+            # Verify the image properties
+            if self.x_size != frame.xsize: raise ValueError("Number of x pixels does not correspond with the number of x pixels of the image")
+            if self.y_size != frame.ysize: raise ValueError("Number of y pixels does not correspond with the number of y pixels of the image")
+
+            # Normalize the map
+            frame.normalize()
+
+            # Set the map
+            self._map = frame
+
+            # Return the map
+            return self._map
+
+        # Error
+        else: raise ValueError("Map cannot be loaded")
+
+    # -----------------------------------------------------------------
+
+    @map.setter
+    def map(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Make copy
+        frame = value.copy()
+
+        # Verify properties
         if self.x_size != frame.xsize: raise ValueError("Number of x pixels does not correspond with the number of x pixels of the image")
         if self.y_size != frame.ysize: raise ValueError("Number of y pixels does not correspond with the number of y pixels of the image")
 
-        # Normalize the map
+        # Normalize
         frame.normalize()
 
-        # Return
-        return frame
+        # Set the map
+        self._map = frame
 
     # -----------------------------------------------------------------
 

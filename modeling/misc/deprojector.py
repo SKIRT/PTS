@@ -607,13 +607,17 @@ class Deprojector(GalaxyModelingComponent):
                 exact_ratio = float(nypixels) / float(nxpixels)
             else: raise RuntimeError("An error occurred")
 
+            # Debugging
+            log.debug("Using " + str(nxpixels) + " x " + str(nypixels) + " pixels for the deprojected map")
+
             # Adjust the physical ranges to the exact pixel ratios
             if largest_dimension == "x": y_range_scalar = x_range_scalar.compressed(exact_ratio)
             elif largest_dimension == "y": x_range_scalar = y_range_scalar.compressed(exact_ratio)
             else: raise RuntimeError("An error occurred")
 
             # Debugging
-            log.debug("Using " + str(nxpixels) + " x " + str(nypixels) + " pixels for the deprojected map")
+            log.debug("Using an x range of " + tostr(x_range_scalar) + " " + unit)
+            log.debug("Using an y range of " + tostr(y_range_scalar) + " " + unit)
 
             # Determine the output pixel shape
             shape = (nxpixels, nypixels)

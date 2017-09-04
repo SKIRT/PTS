@@ -4368,9 +4368,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
+        # Loop over the old stellar deprojection models
         for name in self.old_deprojections:
+
+            # Set the alias
             #self.old_deprojections[name].filename = "old___" + name + ".fits"
             self.old_deprojections[name].filename = name
+
+            # Set the map
+            self.old_deprojections[name].map = self.old_maps[name]
 
     # -----------------------------------------------------------------
 
@@ -4465,9 +4471,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
+        # Loop over the young stellar deprojection models
         for name in self.young_deprojections:
+
+            # Set the alias
             #self.young_deprojections[name].filename = "young___" + name + ".fits"
             self.young_deprojections[name].filename = name
+
+            # Set the map
+            self.young_deprojections[name].map = self.young_maps[name]
 
     # -----------------------------------------------------------------
 
@@ -4562,9 +4574,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
+        # Loop over the ionizing stellar deprojection models
         for name in self.ionizing_deprojections:
+
+            # Set alias
             #self.ionizing_deprojections[name].filename = "ionizing___" + name + ".fits"
             self.ionizing_deprojections[name].filename = name
+
+            # Set map
+            self.ionizing_deprojections[name].map = self.ionizing_maps[name]
 
     # -----------------------------------------------------------------
 
@@ -4659,9 +4677,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
+        # Loop over the dust deprojection models
         for name in self.dust_deprojections:
+
+            # Set the alias
             #self.dust_deprojections[name].filename = "dust___" + name + ".fits"
             self.dust_deprojections[name].filename = name
+
+            # Set the map
+            self.dust_deprojections[name].map = self.dust_maps[name]
 
     # -----------------------------------------------------------------
 

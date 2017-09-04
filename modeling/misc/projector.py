@@ -976,21 +976,51 @@ class Projector(GalaxyModelingComponent):
 
             # Only for deprojection models
             if isinstance(self.models[name], DeprojectionModel3D):
-                map_path = self.models[name].filepath
-                if fs.is_file(map_path):
-                    inpath = fs.directory_of(map_path) # directory of input map
-                    filename = fs.name(map_path)
+
+                # Map is present
+                if self.models[name].has_map:
+
+                    # .. because file is present?
+                    map_path = self.models[name].filepath
+                    if fs.is_file(map_path):
+
+                        inpath = fs.directory_of(map_path) # directory of input map
+                        filename = fs.name(map_path)
+
+                    # .. or because map is loaded
+                    elif self.models[name].map_is_loaded:
+
+                        inpath = self.output_paths[name]
+                        map_path = fs.join(inpath, map_filename)
+                        filename = map_filename
+                        self.models[name].map.saveto(map_path) # save the map
+
+                    # We shouldn't get here
+                    else: raise RuntimeError("We shouldn't get here")
+
+                # Map is defined in map aliases
                 elif self.map_aliases is not None:
+
+                    # Search through the aliases
                     map_name = self.models[name].filename
                     if map_name in self.map_aliases:
+
                         the_map = self.map_aliases[map_name]
                         inpath = self.output_paths[name]
                         map_path = fs.join(inpath, map_filename)
                         filename = map_filename
-                        the_map.saveto(map_path)
+                        the_map.saveto(map_path) # save the map
+
+                    # Not defined in aliases
                     else: raise ValueError("Map alias '" + map_name + "' not defined in map aliases")
-                else: raise ValueError("Map does not exist: '" + map_path + "'")
+
+                # Cannot find the map
+                else: raise ValueError("Map does not exist")
+
+                # Set the model map filename
                 self.models[name].filename = filename
+
+            # Other kinds of models
             else: inpath = None
 
             # Set the input path for this model

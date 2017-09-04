@@ -198,6 +198,20 @@ class SimplePropertyComposite(object):
             self.__dict__[name] = value
             return
 
+        # Is property setter
+        if hasattr(self.__class__, name) and isinstance(getattr(self.__class__, name), property):
+
+            # IS PROPERTY
+            class_attribute = getattr(self.__class__, name)
+            assert isinstance(class_attribute, property)
+            # class_attribute.fget # this is the properties 'get' entry
+            if class_attribute.fset is None: raise ValueError("The property '" + name + "' does not have a setter")
+
+            # Set the property
+            class_attribute.fset(self, value)
+            return
+
+        # Set 'simple' property
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
         elif isinstance(value, Map):
