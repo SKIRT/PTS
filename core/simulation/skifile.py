@@ -1096,9 +1096,23 @@ class SkiFile:
     def get_stellar_system(self):
         return self.get_unique_base_element("stellarSystem")
 
+    @property
+    def has_stellar_system(self):
+        try:
+            system = self.get_stellar_system()
+            return True
+        except ValueError: return False
+
     ## This function returns the dust system
     def get_dust_system(self):
         return self.get_unique_base_element("dustSystem")
+
+    @property
+    def has_dust_system(self):
+        try:
+            system = self.get_dust_system()
+            return True
+        except ValueError: return False
 
     ## This function removes the complete dust system
     def remove_dust_system(self):

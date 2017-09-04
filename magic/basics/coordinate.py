@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.coordinates import SkyCoord
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Extent
@@ -299,7 +300,7 @@ class SkyCoordinate(SkyCoord, Coordinate):
 
 # -----------------------------------------------------------------
 
-class PhysicalCoordinate(Coordinate):
+class PhysicalCoordinate(Position, Coordinate):
 
     """
     This class ...
@@ -315,10 +316,69 @@ class PhysicalCoordinate(Coordinate):
         :return:
         """
 
-        self.axis1 = axis1
-        self.axis2 = axis2
-
-        # Call the Coordinate constructor
+        # Call the constructor of the base classes
+        Position.__init__(self, axis1, axis2)
         Coordinate.__init__(self, **kwargs)
+
+        # Check whether of right type
+        from ...core.tools import types
+        if not types.is_length_quantity(self.x): raise ValueError("Arguments must be length quantities")
+        if not types.is_length_quantity(self.y): raise ValueError("Arguments must be length quantities")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_pixel(cls, coordinate, wcs, distance, from_center=False):
+
+        """
+        This function ...
+        :param coordinate:
+        :param wcs:
+        :param distance:
+        :param from_center:
+        :return:
+        """
+
+        if from_center:
+            # PIXEL SIZE
+            pixels_x = wcs.xsize
+            pixels_y = wcs.ysize
+            center = Position(0.5 * pixels_x - coordinate.x - 0.5, 0.5 * pixels_y - coordinate.y - 0.5)
+            center_x = center.x
+            center_y = center.y
+        else:
+            center_x = coordinate.x
+            center_y = coordinate.y
+
+        # Calculate x and y coordinate in physical length unit
+        center_x = (center_x * wcs.pixelscale.x.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
+        center_y = (center_y * wcs.pixelscale.y.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Create and return the coordinate
+        return cls(center_x, center_y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
 
 # -----------------------------------------------------------------

@@ -26,13 +26,19 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.simulation.definition import SingleSimulationDefinition
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinate import SkyCoordinate
+from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
 from ...core.tools.stringify import tostr
 from ..basics.instruments import FrameInstrument
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
 faceon_name = "faceon"
 edgeon_name = "edgeon"
+
+# -----------------------------------------------------------------
+
+map_filename = "map.fits"
 
 # -----------------------------------------------------------------
 
@@ -70,7 +76,11 @@ class Projector(GalaxyModelingComponent):
         ##
 
         # The models
-        self.models = dict()
+        self.models = None
+
+        ##
+
+        self.map_aliases = None
 
         ##
 
@@ -101,6 +111,9 @@ class Projector(GalaxyModelingComponent):
         self.projected = defaultdict(dict)
 
         ##
+
+        # The input paths (per model)
+        self.input_paths = dict()
 
         # The output paths (per model)
         self.output_paths = dict()
@@ -138,6 +151,9 @@ class Projector(GalaxyModelingComponent):
         # 5. Project
         self.project()
 
+        # Clear
+        self.clear()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -153,6 +169,12 @@ class Projector(GalaxyModelingComponent):
 
         # Get paths
         self.root_path = kwargs.pop("root_path", None)
+
+        # Get the models
+        self.models = kwargs.pop("models")
+
+        # Map aliases
+        self.map_aliases = kwargs.pop("map_aliases")
 
         # Check names
         if "name" in kwargs:
@@ -200,6 +222,7 @@ class Projector(GalaxyModelingComponent):
 
         # Make directories
         if self.root_path is not None: self.create_directories()
+        else: log.warning("Root path not specified")
 
         # Check leftover arguments
         if len(kwargs) > 0: raise ValueError("Could not resolve all input: " + tostr(kwargs))
@@ -217,7 +240,13 @@ class Projector(GalaxyModelingComponent):
         log.debug("Creating the directories ...")
 
         # Loop over the maps
-        for name in self.model_names: self.output_paths[name] = fs.create_directory_in(self.root_path, name)
+        for name in self.model_names:
+
+            # Debugging
+            log.debug("Creating output path for the '" + name + "' model ...")
+
+            # Set output path
+            self.output_paths[name] = fs.create_directory_in(self.root_path, name)
 
     # -----------------------------------------------------------------
 
@@ -456,8 +485,33 @@ class Projector(GalaxyModelingComponent):
         :return:
         """
 
-        if not self.has_wcs: raise RuntimeError("Cannot calculate the sky center coordinate: no WCS")
+        if not self.has_wcs: raise RuntimeError("Cannot calculate the sky center coordinate: no coordinate system")
         return SkyCoordinate.from_pixel(self.config.center, self.wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #if not self.has_wcs: raise RuntimeError("Cannot calculate the physical center coordinate: no coordinate system")
+
+        if self.has_wcs: return PhysicalCoordinate.from_pixel(self.config.center, self.wcs, self.galaxy_distance, from_center=True)
+        else:
+
+            # Physical scales per pixel
+            x_scale = self.config.field.x / self.config.npixels.x
+            y_scale = self.config.field.y / self.config.npixels.y
+
+            # Get center in physical coordinates
+            center = PixelCoordinate(0.5 * self.config.npixels.x - self.config.center.x - 0.5, 0.5 * self.config.npixels.y - self.config.center.y - 0.5)
+            center_x = center.x * x_scale
+            center_y = center.y * y_scale
+            return PhysicalCoordinate(center_x, center_y)
 
     # -----------------------------------------------------------------
 
@@ -533,7 +587,7 @@ class Projector(GalaxyModelingComponent):
 
         # Set the faceon projection
         if self.has_wcs: self.faceon_projection = FaceOnProjection.from_wcs(self.wcs, self.center_sky, self.config.distance)
-        elif self.has_basic_projection_properties: self.faceon_projection = FaceOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.config.center.x, self.config.center.y, self.config.field.x, self.config.field.y)
+        elif self.has_basic_projection_properties: self.faceon_projection = FaceOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.center_physical.x, self.center_physical.y, self.config.field.x, self.config.field.y)
         else: raise ValueError("Cannot set the face-on projection: projection properties not set and coordinate system not specified")
 
     # -----------------------------------------------------------------
@@ -550,7 +604,7 @@ class Projector(GalaxyModelingComponent):
 
         # Set the edgeon projection
         if self.has_wcs: self.edgeon_projection = EdgeOnProjection.from_wcs(self.wcs, self.center_sky, self.config.distance)
-        elif self.has_basic_projection_properties: self.edgeon_projection = EdgeOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.config.center.x, self.config.center.y, self.config.field.x, self.config.field.y)
+        elif self.has_basic_projection_properties: self.edgeon_projection = EdgeOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.center_physical.x, self.center_physical.y, self.config.field.x, self.config.field.y)
         else: raise ValueError("Cannot set the edge-on projection: projection properties not set and coordinate system not specified")
 
     # -----------------------------------------------------------------
@@ -689,7 +743,7 @@ class Projector(GalaxyModelingComponent):
         if self.has_edgeon: self.write_edgeon_projection()
 
         # Write other projections
-        self.write_other_projections()
+        if self.has_projections: self.write_other_projections()
 
     # -----------------------------------------------------------------
 
@@ -795,7 +849,7 @@ class Projector(GalaxyModelingComponent):
         #ski.remove_stellar_system()
 
         # Remove the dust system
-        ski.remove_dust_system()
+        if ski.has_dust_system: ski.remove_dust_system()
 
         # Set the number of photon packages
         ski.setpackages(self.config.npackages)
@@ -820,6 +874,9 @@ class Projector(GalaxyModelingComponent):
 
         # Create the instruments
         self.create_instruments()
+
+        # Set the input paths per model
+        self.set_input_paths()
 
         # Create the ski files
         self.create_ski_files()
@@ -849,7 +906,7 @@ class Projector(GalaxyModelingComponent):
         if self.has_edgeon: self.create_edgeon_instrument()
 
         # Other
-        self.create_other_instruments()
+        if self.has_projections: self.create_other_instruments()
 
     # -----------------------------------------------------------------
 
@@ -904,6 +961,43 @@ class Projector(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the ski input paths ...")
+
+        # Loop over the models
+        for name in self.models:
+
+            # Only for deprojection models
+            if isinstance(self.models[name], DeprojectionModel3D):
+                map_path = self.models[name].filepath
+                if fs.is_file(map_path):
+                    inpath = fs.directory_of(map_path) # directory of input map
+                    filename = fs.name(map_path)
+                elif self.map_aliases is not None:
+                    map_name = self.models[name].filename
+                    if map_name in self.map_aliases:
+                        the_map = self.map_aliases[map_name]
+                        inpath = self.output_paths[name]
+                        map_path = fs.join(inpath, map_filename)
+                        filename = map_filename
+                        the_map.saveto(map_path)
+                    else: raise ValueError("Map alias '" + map_name + "' not defined in map aliases")
+                else: raise ValueError("Map does not exist: '" + map_path + "'")
+                self.models[name].filename = filename
+            else: inpath = None
+
+            # Set the input path for this model
+            self.input_paths[name] = inpath
+
+    # -----------------------------------------------------------------
+
     def create_ski_files(self):
 
         """
@@ -930,10 +1024,11 @@ class Projector(GalaxyModelingComponent):
             if self.has_edgeon: ski.add_instrument(edgeon_name, self.edgeon_instrument)
 
             # Add other
-            for instrument_name in self.instruments: ski.add_instrument(instrument_name, self.instruments[name])
+            if self.has_projections:
+                for instrument_name in self.instruments: ski.add_instrument(instrument_name, self.instruments[name])
 
             # Remove the dust system
-            ski.remove_dust_system()
+            if ski.has_dust_system: ski.remove_dust_system()
 
             # Set title
             title = name
@@ -983,7 +1078,7 @@ class Projector(GalaxyModelingComponent):
         # Inform the user
         log.info("Launching ...")
 
-        projected_models = dict()
+        #projected_models = dict()
 
         # Loop over the models
         for name in self.models:
@@ -991,9 +1086,7 @@ class Projector(GalaxyModelingComponent):
             # Determine ski path and output path for the simulation
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
-            #input_map_paths = [self.deprojections[name].filepath]
-            #in_path = fs.directory_of(self.deprojections[name].filepath)
-            in_path = None
+            in_path = self.input_paths[name]
 
             # Debugging
             log.debug("Launching SKIRT for the '" + name + "' map ...")
@@ -1021,13 +1114,17 @@ class Projector(GalaxyModelingComponent):
             else: edgeon = None
 
             # Get the other maps
-            other = dict()
-            for instrument_name in self.instruments:
-                other_path = fs.join(out_path, simulation.prefix() + "_" + instrument_name + "_total.fits")
-                other_map = Frame.from_file(other_path)
-                if self.has_coordinate_systems: other_map.wcs = self.coordinate_systems[instrument_name] # set WCS
-                other[instrument_name] = other_map
-            projected_models[name] = other
+            #other = dict()
+            if self.has_projections:
+                for instrument_name in self.instruments:
+                    other_path = fs.join(out_path, simulation.prefix() + "_" + instrument_name + "_total.fits")
+                    other_map = Frame.from_file(other_path)
+                    if self.has_coordinate_systems: other_map.wcs = self.coordinate_systems[instrument_name] # set WCS
+                    #other[instrument_name] = other_map
+                    # Set the map
+                    self.projected[instrument_name][name] = other_map
+
+            #projected_models[name] = other
 
             # Set faceon and edgeon
             self.faceon[name] = faceon
@@ -1035,8 +1132,28 @@ class Projector(GalaxyModelingComponent):
 
         # Set the projected maps for each model per projection
         # ACTUALLY, because self.projected is defaultdict, we can as well do all of this inside the loop above..
-        for projection_name in self.projections:
-            for model_name in projected_models:
-                self.projected[projection_name][model_name] = projected_models[model_name][projection_name]
+        # for projection_name in self.projections:
+        #     for model_name in projected_models:
+        #         self.projected[projection_name][model_name] = projected_models[model_name][projection_name]
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing ...")
+
+        # Clear maps
+        # Loop over the models
+        for name in self.models:
+
+            inpath = self.output_paths[name]
+            map_path = fs.join(inpath, map_filename)
+            if fs.is_file(map_path): fs.remove_file(map_path)
 
 # -----------------------------------------------------------------

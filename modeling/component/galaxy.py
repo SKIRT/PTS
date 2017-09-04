@@ -1336,7 +1336,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def project_models_faceon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7)):
+    def project_models_faceon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7), map_aliases=None):
 
         """
         This function projects models to face-on views
@@ -1346,6 +1346,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :param pixelscale:
         :param write:
         :param npackages:
+        :param map_aliases:
         :return:
         """
 
@@ -1374,14 +1375,14 @@ class GalaxyModelingComponent(ModelingComponent):
         projector.config.npackages = npackages
 
         # Run the projector
-        projector.run(models=models, root_path=root_path)
+        projector.run(models=models, root_path=root_path, map_aliases=map_aliases)
 
         # Return the projected maps
         return projector.faceon
 
     # -----------------------------------------------------------------
 
-    def project_models_edgeon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7)):
+    def project_models_edgeon(self, models, npixels, pixelscale, root_path, write=True, npackages=int(1e7), map_aliases=None):
 
         """
         This function projects models to edge-on views
@@ -1391,6 +1392,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :param pixelscale:
         :param write:
         :param npackages:
+        :param map_aliases:
         :return:
         """
 
@@ -1419,7 +1421,7 @@ class GalaxyModelingComponent(ModelingComponent):
         projector.config.npackages = npackages
 
         # Run the projector
-        projector.run(models=models, root_path=root_path)
+        projector.run(models=models, root_path=root_path, map_aliases=map_aliases)
 
         # Return the projected maps
         return projector.edgeon

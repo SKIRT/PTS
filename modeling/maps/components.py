@@ -4361,6 +4361,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def set_old_deprojection_aliases(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.old_deprojections:
+            #self.old_deprojections[name].filename = "old___" + name + ".fits"
+            self.old_deprojections[name].filename = name
+
+    # -----------------------------------------------------------------
+
     def deproject_old(self):
 
         """
@@ -4374,13 +4387,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected old stellar maps
         if not self.has_old_deprojected:
             self.old_deprojections, self.old_deprojected = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
+            self.set_old_deprojection_aliases()
 
         # Create deprojected old stellar maps with SKIRT
         if not self.has_old_deprojected_skirt:
             if self.has_old_deprojections:
                 self.old_deprojected_skirt = self.deproject_models(self.old_deprojections, root_path=self.old_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
             else:
-                self.old_deprojections, self.old_deprojected_skirt = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_skirt_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
+                self.old_deprojections, self.old_deprojected_skirt = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_skirt_path, return_deprojections=True, downsample_factor=self.config.downsample_factor, method="skirt")
+                self.set_old_deprojection_aliases()
 
     # -----------------------------------------------------------------
 
@@ -4443,6 +4458,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def set_young_deprojection_aliases(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.young_deprojections:
+            #self.young_deprojections[name].filename = "young___" + name + ".fits"
+            self.young_deprojections[name].filename = name
+
+    # -----------------------------------------------------------------
+
     def deproject_young(self):
 
         """
@@ -4456,13 +4484,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected young stellar maps
         if not self.has_young_deprojected:
             self.young_deprojections, self.young_deprojected = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
+            self.set_young_deprojection_aliases()
 
         # Create deprojected young stellar maps with SKIRT
         if not self.has_young_deprojected_skirt:
             if self.has_young_deprojections:
-                self.young_deprojected_skirt = self.deproject_models(self.young_deprojections, root_path=self.young_deprojection_skirt_path, downsample_factor=self.config.downsample_factor)
+                self.young_deprojected_skirt = self.deproject_models(self.young_deprojections, root_path=self.young_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
             else:
                 self.young_deprojections, self.young_deprojected_skirt = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
+                self.set_young_deprojection_aliases()
 
     # -----------------------------------------------------------------
 
@@ -4525,6 +4555,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def set_ionizing_deprojection_aliases(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.ionizing_deprojections:
+            #self.ionizing_deprojections[name].filename = "ionizing___" + name + ".fits"
+            self.ionizing_deprojections[name].filename = name
+
+    # -----------------------------------------------------------------
+
     def deproject_ionizing(self):
 
         """
@@ -4538,6 +4581,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected ionizing stellar maps
         if not self.has_ionizing_deprojected:
             self.ionizing_deprojections, self.ionizing_deprojected = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
+            self.set_ionizing_deprojection_aliases()
 
         # Create deprojected ionizing stellar maps with SKIRT
         if not self.has_ionizing_deprojected_skirt:
@@ -4545,6 +4589,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 self.ionizing_deprojected_skirt = self.deproject_models(self.ionizing_deprojections, root_path=self.ionizing_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
             else:
                 self.ionizing_deprojections, self.ionizing_deprojected_skirt = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
+                self.set_ionizing_deprojection_aliases()
 
     # -----------------------------------------------------------------
 
@@ -4607,6 +4652,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def set_dust_deprojection_aliases(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.dust_deprojections:
+            #self.dust_deprojections[name].filename = "dust___" + name + ".fits"
+            self.dust_deprojections[name].filename = name
+
+    # -----------------------------------------------------------------
+
     def deproject_dust(self):
 
         """
@@ -4620,6 +4678,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deproejcted dust maps
         if not self.has_dust_deprojected:
             self.dust_deprojections, self.dust_deprojected = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
+            self.set_dust_deprojection_aliases()
 
         # Create deprojected dust maps with SKIRT
         if not self.has_dust_deprojected_skirt:
@@ -4627,6 +4686,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 self.dust_deprojected_skirt = self.deproject_models(self.dust_deprojections, root_path=self.dust_deprojection_skirt_path, method="skirt", downsample_factor=self.config.downsample_factor)
             else:
                 self.dust_deprojections, self.dust_deprojected_skirt = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_skirt_path, method="skirt", return_deprojections=True, downsample_factor=self.config.downsample_factor)
+                self.set_dust_deprojection_aliases()
 
     # -----------------------------------------------------------------
 
@@ -4639,7 +4699,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.old_deprojections: x_range.adjust(self.old_deprojections[name].x_range * 2.)
+        for name in self.old_deprojections: x_range.adjust(self.old_deprojections[name].x_range)
         return x_range
 
     # -----------------------------------------------------------------
@@ -4653,7 +4713,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.old_deprojections: y_range.adjust(self.old_deprojections[name].y_range * 2.)
+        for name in self.old_deprojections: y_range.adjust(self.old_deprojections[name].y_range)
         return y_range
 
     # -----------------------------------------------------------------
@@ -4667,7 +4727,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.young_deprojections: x_range.adjust(self.young_deprojections[name].y_range * 2.)
+        for name in self.young_deprojections: x_range.adjust(self.young_deprojections[name].y_range)
         return x_range
 
     # -----------------------------------------------------------------
@@ -4681,7 +4741,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.young_deprojections: y_range.adjust(self.young_deprojections[name].y_range * 2.)
+        for name in self.young_deprojections: y_range.adjust(self.young_deprojections[name].y_range)
         return y_range
 
     # -----------------------------------------------------------------
@@ -4695,7 +4755,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.ionizing_deprojections: x_range.adjust(self.ionizing_deprojections[name].x_range * 2.)
+        for name in self.ionizing_deprojections: x_range.adjust(self.ionizing_deprojections[name].x_range)
         return x_range
 
     # -----------------------------------------------------------------
@@ -4709,7 +4769,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.ionizing_deprojections: y_range.adjust(self.ionizing_deprojections[name].y_range * 2.)
+        for name in self.ionizing_deprojections: y_range.adjust(self.ionizing_deprojections[name].y_range)
         return y_range
 
     # -----------------------------------------------------------------
@@ -4723,7 +4783,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         x_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.dust_deprojections: x_range.adjust(self.dust_deprojections[name].x_range * 2.)
+        for name in self.dust_deprojections: x_range.adjust(self.dust_deprojections[name].x_range)
         return x_range
 
     # -----------------------------------------------------------------
@@ -4738,7 +4798,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         y_range = QuantityRange.infinitesimal(0.0 * u("pc"))
-        for name in self.dust_deprojections: y_range.adjust(self.dust_deprojections[name].y_range * 2.)
+        for name in self.dust_deprojections: y_range.adjust(self.dust_deprojections[name].y_range)
         return y_range
 
     # -----------------------------------------------------------------
@@ -4862,7 +4922,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_old_deprojections: raise RuntimeError("Deprojections for the old stellar maps are not created. Run again with --redeproject_old or --redeproject_skirt_old")
 
         # Create projected old stellar maps
-        if not self.has_old_projected: self.old_edgeon_skirt = self.project_models_edgeon(self.old_deprojections, self.old_projection_npixels, self.old_projection_pixelscale, root_path=self.old_edgeon_path)
+        if not self.has_old_projected: self.old_edgeon_skirt = self.project_models_edgeon(self.old_deprojections, self.old_projection_npixels, self.old_projection_pixelscale, root_path=self.old_edgeon_path, map_aliases=self.old_maps)
 
     # -----------------------------------------------------------------
 
@@ -4961,7 +5021,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_young_deprojections: raise RuntimeError("Deprojections for the young stellar maps are not created. Run again with --redeproject_young or --redeproject_skirt_young")
 
         # Create projected young stellar maps
-        if not self.has_young_projected: self.young_edgeon_skirt = self.project_models_edgeon(self.young_deprojections, self.young_projection_npixels, self.young_projection_pixelscale, root_path=self.young_edgeon_path)
+        if not self.has_young_projected: self.young_edgeon_skirt = self.project_models_edgeon(self.young_deprojections, self.young_projection_npixels, self.young_projection_pixelscale, root_path=self.young_edgeon_path, map_aliases=self.young_maps)
 
     # -----------------------------------------------------------------
 
@@ -5060,7 +5120,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_ionizing_deprojections: raise RuntimeError("Deprojections for the ionizing stellar maps are not created. Run again with --redeproject_ionizing or --redeproject_skirt_ionizing")
 
         # Create projected ionizing stellar maps
-        if not self.has_ionizing_projected: self.ionizing_edgeon_skirt = self.project_models_edgeon(self.ionizing_deprojections, self.ionizing_projection_npixels, self.ionizing_projection_pixelscale, root_path=self.ionizing_edgeon_path)
+        if not self.has_ionizing_projected: self.ionizing_edgeon_skirt = self.project_models_edgeon(self.ionizing_deprojections, self.ionizing_projection_npixels, self.ionizing_projection_pixelscale, root_path=self.ionizing_edgeon_path, map_aliases=self.ionizing_maps)
 
     # -----------------------------------------------------------------
 
@@ -5159,7 +5219,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if not self.has_dust_deprojections: raise RuntimeError("Deprojections for the dust maps are not created. Run again with --redeproject_dust or --redeproject_skirt_dust")
 
         # Create projected dust maps
-        if not self.has_dust_projected: self.dust_edgeon_skirt = self.project_models_edgeon(self.dust_deprojections, self.dust_projection_npixels, self.dust_projection_pixelscale, root_path=self.dust_edgeon_path)
+        if not self.has_dust_projected: self.dust_edgeon_skirt = self.project_models_edgeon(self.dust_deprojections, self.dust_projection_npixels, self.dust_projection_pixelscale, root_path=self.dust_edgeon_path, map_aliases=self.dust_maps)
 
     # -----------------------------------------------------------------
 

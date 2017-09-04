@@ -156,27 +156,30 @@ class Deprojector(GalaxyModelingComponent):
             self.deprojections[name] = kwargs.pop("deprojection")
 
         # Get multiple deprojections
-        elif "deprojections" in kwargs:
-            self.deprojections = kwargs.pop("deprojections")
+        elif "deprojections" in kwargs: self.deprojections = kwargs.pop("deprojections")
 
         # Load maps
-        else: self.load_maps(**kwargs)
+        else: self.load_maps(kwargs)
 
         # Make directories
         if self.root_path is not None: self.create_directories()
+        else: log.warning("Root path not set")
 
         # Check leftover arguments
         if len(kwargs) > 0: raise ValueError("Could not resolve all input: " + tostr(kwargs))
 
     # -----------------------------------------------------------------
 
-    def load_maps(self, **kwargs):
+    def load_maps(self, kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
+
+        # Debugging
+        log.debug("Loading map(s) ...")
 
         # Checks
         if "map" in kwargs and "maps" in kwargs: raise ValueError("Cannot specify 'map' and 'maps' simultaneously")
@@ -287,7 +290,38 @@ class Deprojector(GalaxyModelingComponent):
         log.debug("Creating the directories ...")
 
         # Loop over the maps
-        for name in self.map_names: self.output_paths[name] = fs.create_directory_in(self.root_path, name)
+        for name in self.map_or_deprojection_names:
+
+            # Debugging
+            log.debug("Creating output directory for the '" + name + "' map (or deprojection) ...")
+
+            # Set output path
+            self.output_paths[name] = fs.create_directory_in(self.root_path, name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_or_deprojection_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_models: return self.deprojection_names
+        else: return self.map_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deprojection_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.deprojections.keys()
 
     # -----------------------------------------------------------------
 

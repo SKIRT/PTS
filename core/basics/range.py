@@ -447,14 +447,7 @@ class Range(object):
         :return:
         """
 
-        from ..tools import types
-
-        if isinstance(value, Quantity): return QuantityRange(self.min * value, self.max * value)
-        elif types.is_real_type(value): return RealRange(self.min * value, self.max * value)
-        elif types.is_integer_type(value) and isinstance(self, IntegerRange):
-            return IntegerRange(self.min * value, self.max * value)
-        elif types.is_integer_type(value): return RealRange(self.min * value, self.max * value)
-        else: raise ValueError("Value must be Quantity, real or integer value")
+        raise RuntimeError("Should be implemented in derived class")
 
     # -----------------------------------------------------------------
 
@@ -478,12 +471,7 @@ class Range(object):
         :return:
         """
 
-        from ..tools import types
-
-        if isinstance(value, Quantity): return QuantityRange(self.min / value, self.max / value)
-        elif types.is_real_type(value) or types.is_integer_type(value):
-            return RealRange(self.min / value, self.max / value)
-        else: raise ValueError("Value must be Quantity, real or integer value")
+        raise RuntimeError("Should be implemented in derived class")
 
     # -----------------------------------------------------------------
 
@@ -726,6 +714,39 @@ class IntegerRange(Range):
         if as_list: return integers
         else: return np.array(integers)
 
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min * value, self.max * value)
+        elif types.is_real_type(value): return RealRange(self.min * value, self.max * value)
+        elif types.is_integer_type(value): return self.__class__(self.min * value, self.max * value)
+        else: raise ValueError("Value must be Quantity, real or integer value")
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min / value, self.max / value)
+        elif types.is_real_type(value) or types.is_integer_type(value): return RealRange(self.min / float(value), self.max / float(value))
+        else: raise ValueError("Value must be Quantity, real or integer value")
+
 # -----------------------------------------------------------------
 
 class RealRange(Range):
@@ -816,6 +837,39 @@ class RealRange(Range):
 
         # Set
         self._max = value
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This fucntion ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min * value, self.max * value)
+        elif types.is_real_type(value): return self.__class__(self.min * value, self.max * value)
+        elif types.is_integer_type(value): return self.__class__(self.min * value, self.max * value)
+        else: raise ValueError("Value must be Quantity, real or integer value")
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min / value, self.max / value)
+        elif types.is_real_type(value) or types.is_integer_type(value): return self.__class__(self.min / float(value), self.max / float(value))
+        else: raise ValueError("Value must be Quantity, real or integer value")
 
 # -----------------------------------------------------------------
 
@@ -1086,6 +1140,39 @@ class QuantityRange(Range):
         """
 
         return repr(self.min.value) + " " + ru(self.min.unit) + " > " + repr(self.max.value) + " " + ru(self.max.unit)
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This fucntion ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min * value, self.max * value)
+        elif types.is_real_type(value): return self.__class__(self.min * value, self.max * value)
+        elif types.is_integer_type(value): return self.__class__(self.min * value, self.max * value)
+        else: raise ValueError("Value must be Quantity, real or integer value")
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..tools import types
+
+        if types.is_quantity(value): return QuantityRange(self.min / value, self.max / value)
+        elif types.is_real_type(value) or types.is_integer_type(value): return self.__class__(self.min / float(value), self.max / float(value))
+        else: raise ValueError("Value must be Quantity, real or integer value")
 
 # -----------------------------------------------------------------
 
