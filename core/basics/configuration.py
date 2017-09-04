@@ -453,7 +453,7 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False, cwd=None):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None):
 
     """
     This function ...
@@ -461,6 +461,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
     :param config:
     :param interactive:
     :param cwd:
+    :param prompt_optional:
     :return:
     """
 
@@ -479,11 +480,19 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
             if command_name is not None: definition = get_definition(class_name, configuration_module_path, cwd=cwd)
             else: definition = ConfigurationDefinition(write_config=False)
 
-            # Create the DictConfigurationSetter
-            setter = DictConfigurationSetter(config, command_name, description)
+            # Create the configuration interactively with pre-defined settings
+            if interactive:
 
-            # Set the configuration
-            config = setter.run(definition)
+                # Create configuration with InteractiveConfigurationSetter
+                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+                config = setter.run(definition, settings=config, prompt_optional=prompt_optional)
+
+            # Not interactive, use dict configuration setter
+            else:
+
+                # Create the DictConfigurationSetter
+                setter = DictConfigurationSetter(config, command_name, description)
+                config = setter.run(definition)
 
             # Set the path
             if cwd is not None: config.path = cwd
@@ -499,7 +508,9 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
 
         # Find the command
         command_name, class_name, configuration_module_path, description = find_command(cls)
+        #print(command_name, class_name, configuration_module_path, description)
 
+        # If command is found
         if command_name is not None:
 
             # Get definition
@@ -508,11 +519,16 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
             ## CREATE THE CONFIGURATION
 
             # Create configuration setter
-            if interactive: setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-            else: setter = PassiveConfigurationSetter(class_name, add_logging=False)
+            if interactive:
 
-            # Create the configuration from the definition
-            config = setter.run(definition)
+                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+                config = setter.run(definition, prompt_optional=prompt_optional)
+
+            # Not interactive
+            else:
+
+                setter = PassiveConfigurationSetter(class_name, add_logging=False)
+                config = setter.run(definition)
 
             # Set the path
             if cwd is not None: config.path = cwd
@@ -522,6 +538,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
 
             # log.warning("The object has not been configured yet")
 
+        # Command is not fond
         else:
 
             # Create an empty definition
@@ -553,19 +570,14 @@ def find_command(cls):
 
     import inspect
 
+    # Determine relative PTS path of the passed class
     class_name = cls.__name__
-
     class_path = inspect.getfile(cls).split(".py")[0]
-
     relative_class_path = class_path.rsplit("pts/")[1]
-
     relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
 
+    # Determine subproject and relative class path
     subproject, relative_class_subproject = relative_class_pts.split(".", 1)
-
-    # print(subproject, relative_class_subproject)
-
-    # exit()
 
     # Get the correct table
     table = tables[subproject]
@@ -575,10 +587,7 @@ def find_command(cls):
     configuration_name = None
     configuration_module_path = None
 
-    # print(table)
-
-    #print(relative_class_subproject)
-
+    # Loop over the entries in the table
     for i in range(len(table["Path"])):
 
         # print(table["Path"][i], relative_class_subproject)
@@ -589,6 +598,8 @@ def find_command(cls):
 
             command_name = table["Command"][i]
             description = table["Description"][i]
+
+            if command_name.startswith("*"): command_name = command_name[1:]
 
             configuration_name = table["Configuration"][i]
             if configuration_name == "--": configuration_name = command_name
@@ -1927,7 +1938,10 @@ class ConfigurationSetter(object):
             self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
             self.definition.add_flag("debug", "enable debug output", letter="d")
             self.definition.add_flag("brief", "brief output", letter="b")
-            self.definition.add_flag("report", "write a report file")
+
+            # Report?
+            if self.definition.log_path is not None: self.definition.add_fixed("report", "write a report file", True) # if log path is defined in definition, always report
+            else: self.definition.add_flag("report", "write a report file")  # otherwise, ask
 
         # Add config path
         if self.definition.write_config:
@@ -1962,12 +1976,13 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
 
     # -----------------------------------------------------------------
 
-    def run(self, definition, prompt_optional=None):
+    def run(self, definition, prompt_optional=None, settings=None):
 
         """
         This function ...
         :param definition:
         :param prompt_optional:
+        :param settings:
         :return:
         """
 
@@ -1978,18 +1993,19 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         self.set_logging_and_cwd()
 
         # Do interactive
-        self.interactive(prompt_optional)
+        self.interactive(prompt_optional, settings=settings)
 
         # Return the config
         return self.config
 
     # -----------------------------------------------------------------
 
-    def interactive(self, prompt_optional):
+    def interactive(self, prompt_optional, settings=None):
 
         """
         This function ...
         :param prompt_optional:
+        :param options:
         :return:
         """
 
@@ -2011,7 +2027,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
                     except ValueError: log.warning("Invalid input. Try again.")
 
         # Get the settings from an interactive prompt
-        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional)
+        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings)
 
 # -----------------------------------------------------------------
 
@@ -3069,15 +3085,24 @@ def add_settings_default(config, definition):
 
 # -----------------------------------------------------------------
 
-def add_settings_interactive(config, definition, prompt_optional=True):
+def add_settings_interactive(config, definition, prompt_optional=True, settings=None):
 
     """
     This function ...
+    :param config:
+    :param definition:
+    :param prompt_optional:
+    :param settings:
     :return:
     """
 
     # Fixed
     for name in definition.fixed:
+
+        # Check in settings
+        if settings is not None and name in settings:
+            config[name] = settings[name]
+            continue
 
         # Get properties
         description = definition.fixed[name].description
@@ -3094,6 +3119,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
     # Required
     for name in definition.required:
+
+        # Check in settings
+        if settings is not None and name in settings:
+            config[name] = settings[name]
+            continue
 
         # Get properties
         real_type = definition.required[name].type
@@ -3134,8 +3164,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = []
                     while True:
@@ -3159,8 +3190,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = []  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3183,8 +3215,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 if suggestions is not None:
                     log.info("Suggestions:")
                     for suggestion in suggestions:
-                        suggestion_description = suggestions[suggestion]
-                        log.info(" - " + suggestion + ": " + suggestion_description)
+                        if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                        else: suggestion_description = ""
+                        log.info(" - " + tostr(suggestion) + suggestion_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -3271,6 +3304,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Positional optional
     for name in definition.pos_optional:
 
+        # Check in settings
+        if settings is not None and name in settings:
+            config[name] = settings[name]
+            continue
+
         # Get properties
         real_type = definition.pos_optional[name].type
         description = definition.pos_optional[name].description
@@ -3323,8 +3361,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -3351,8 +3390,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3380,8 +3420,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 if suggestions is not None:
                     log.info("Suggestions:")
                     for suggestion in suggestions:
-                        suggestion_description = suggestions[suggestion]
-                        log.info(" - " + suggestion + ": " + suggestion_description)
+                        if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                        else: suggestion_description = ""
+                        log.info(" - " + tostr(suggestion) + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -3488,6 +3529,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Optional
     for name in definition.optional:
 
+        # Check settings
+        if settings is not None and name in settings:
+            config[name] = settings[name]
+            continue
+
         # Get properties
         real_type = definition.optional[name].type
         description = definition.optional[name].description
@@ -3541,8 +3587,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -3569,8 +3616,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     if suggestions is not None:
                         log.info("Suggestions:")
                         for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
+                            if isinstance(suggestion, dict): suggestion_description = ": " + suggestions[suggestion]
+                            else: suggestion_description = ""
+                            log.info(" - " + tostr(suggestion) + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3598,8 +3646,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 if suggestions is not None:
                     log.info("Suggestions:")
                     for suggestion in suggestions:
-                        suggestion_description = suggestions[suggestion]
-                        log.info(" - " + suggestion + ": " + suggestion_description)
+                        if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
+                        else: suggestion_description = ""
+                        log.info(" - " + tostr(suggestion) + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -3710,6 +3759,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Flags
     for name in definition.flags:
 
+        # Check settings
+        if settings is not None and name in settings:
+            config[name] = settings[name]
+            continue
+
         # Get properties
         description = definition.flags[name].description
         letter = definition.flags[name].letter
@@ -3757,8 +3811,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Give name and description
         log.success(name + ": " + section_description + " (section)")
 
+        # Check in settings
+        settings_section = settings[name] if settings is not None and name in settings else None
+
         # Add the settings
-        add_settings_interactive(config[name], section_definition, prompt_optional=prompt_optional)
+        add_settings_interactive(config[name], section_definition, prompt_optional=prompt_optional, settings=settings_section)
 
 # -----------------------------------------------------------------
 

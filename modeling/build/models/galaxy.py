@@ -98,17 +98,14 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Building the stellar components ...")
 
+        # Create configuration
+        config = dict()
+        config["name"] = self.model_name
+        config["output"] = self.model_stellar_path
+        config["default_sfr"] = self.config.sfr
+
         # Create the builder
-        builder = StarsBuilder(interactive=True)
-
-        # Set the model name
-        builder.config.name = self.model_name
-
-        # Set the output path
-        builder.config.output = self.model_stellar_path
-
-        # Set SFR estimation
-        builder.config.default_sfr = self.config.sfr
+        builder = StarsBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
 
         # Run
         builder.run()
@@ -133,17 +130,14 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Building the dust components ...")
 
+        # Create configuration
+        config = dict()
+        config["name"] = self.model_name
+        config["output"] = self.model_dust_path
+        config["default_dust_mass"] = self.config.dust_mass
+
         # Create the builder
-        builder = DustBuilder(interactive=True)
-
-        # Set the model name
-        builder.config.name = self.model_name
-
-        # Set the output path
-        builder.config.output = self.model_dust_path
-
-        # Set dust mass estimation
-        builder.config.default_dust_mass = self.config.dust_mass
+        builder = DustBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
 
         # Run
         builder.run(old_scaleheight=self.old_scaleheight)

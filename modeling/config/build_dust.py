@@ -7,13 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.maps.component import get_dust_map_names
 from pts.core.units.parsing import parse_quantity
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.maps.selection import ComponentMapsSelection
 
 # -----------------------------------------------------------------
 
 modeling_path = verify_modeling_cwd()
+selection = ComponentMapsSelection.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -28,11 +29,11 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_required("name", "string", "name of the model")
 
 # Dust map
-definition.add_required("dust_map", "string", "choice of dust map", choices=get_dust_map_names(modeling_path))
+definition.add_required("dust_map", "string", "choice of dust map", choices=selection.dust_map_names)
 
 # Flags
 definition.add_flag("disk", "add dust disk", True)
-definition.add_flag("additional", "add additional dust component(s)", True)
+definition.add_flag("additional", "add additional dust component(s)", False)
 
 # Output directory
 definition.add_optional("output", "directory_path", "output directory")
