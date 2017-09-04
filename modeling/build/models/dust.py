@@ -56,7 +56,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(DustBuilder, self).__init__(*args, **kwargs)
-        GeneralBuilder.__init__(self, *args, **kwargs)
+        GeneralBuilder.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The scaleheight of the old stellar population

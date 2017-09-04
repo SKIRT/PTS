@@ -196,7 +196,8 @@ class Configurable(object):
         """
 
         # Set configuration
-        self.config = self.get_config(*args, **kwargs)
+        if kwargs.pop("no_config", False): self.config = None
+        else: self.config = self.get_config(*args, **kwargs)
 
         # Set the detached calculations flag
         self.detached = False

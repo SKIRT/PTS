@@ -37,7 +37,7 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(ModelBuilder, self).__init__(*args, **kwargs)
-        ModelBuilderBase.__init__(self, *args, **kwargs)
+        ModelBuilderBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The scaleheight of the old stars

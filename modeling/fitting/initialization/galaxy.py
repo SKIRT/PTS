@@ -36,7 +36,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         """
 
         # Call the constructors of the base classes
-        FittingInitializerBase.__init__(self, *args, **kwargs)
+        FittingInitializerBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # Solar luminosity units

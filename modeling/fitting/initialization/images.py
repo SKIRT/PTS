@@ -36,7 +36,7 @@ class ImagesFittingInitializer(FittingInitializerBase, ImagesModelingComponent):
         """
 
         # Call the constructors of the base classes
-        FittingInitializerBase.__init__(self, *args, **kwargs)
+        FittingInitializerBase.__init__(self, no_config=True)
         ImagesModelingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------

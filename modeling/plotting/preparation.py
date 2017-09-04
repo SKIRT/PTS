@@ -52,7 +52,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, *args, **kwargs)
+        PlottingComponent.__init__(self, no_config=True)
         PreparationComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --

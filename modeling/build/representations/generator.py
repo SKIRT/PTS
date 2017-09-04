@@ -50,7 +50,7 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(RepresentationGenerator, self).__init__(*args, **kwargs)
-        BuildComponent.__init__(self, *args, **kwargs)
+        BuildComponent.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The model definition

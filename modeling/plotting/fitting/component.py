@@ -33,7 +33,7 @@ class FittingPlottingComponent(PlottingComponent, FittingComponent):
         """
 
         # Call the constructor of the base classes
-        PlottingComponent.__init__(self, *args, **kwargs)
+        PlottingComponent.__init__(self, no_config=True)
         FittingComponent.__init__(self, *args, **kwargs)
 
         self.plot_fitting_chisquared_path = None

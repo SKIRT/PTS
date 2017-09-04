@@ -43,7 +43,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
 
         # Call the constructor of the base class
         #super(RepresentationBuilder, self).__init__(*args, **kwargs)
-        RepresentationBuilderBase.__init__(self, *args, **kwargs)
+        RepresentationBuilderBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The deprojections

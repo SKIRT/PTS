@@ -49,7 +49,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Call the constructor of the base class
         #super(AnalysisInitializer, self).__init__(*args, **kwargs)
-        AnalysisComponent.__init__(self, *args, **kwargs)
+        AnalysisComponent.__init__(self, no_config=True)
         ModelSimulationInterface.__init__(self, *args, **kwargs)
 
         # The information about this analysis run

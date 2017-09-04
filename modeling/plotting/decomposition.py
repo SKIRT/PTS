@@ -45,7 +45,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, *args, **kwargs)
+        PlottingComponent.__init__(self, no_config=True)
         DecompositionComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --

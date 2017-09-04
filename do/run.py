@@ -200,7 +200,7 @@ def run_configurable(table_matches, args, tables):
     elif subproject == "evolve": setup_evolve(command_name, fs.cwd())
 
     # Initialize the logger
-    log = initialize_pts(config, remote=args.remote)
+    log = initialize_pts(config, remote=args.remote, command_name=command_name)
 
     # Exact command name
     exact_command_name = subproject + "/" + command_name
@@ -219,17 +219,18 @@ def run_configurable(table_matches, args, tables):
 
 # -----------------------------------------------------------------
 
-def initialize_pts(config, remote=None):
+def initialize_pts(config, remote=None, command_name=None):
 
     """
     This function ...
     :param config:
     :param remote:
+    :param command_name:
     :return:
     """
 
     # Initialize the logger
-    log = initialize_log(config, remote=remote)
+    log = initialize_log(config, remote=remote, command_name=command_name)
 
     # Initialize the file monitor
     if log.is_debug():
@@ -241,11 +242,13 @@ def initialize_pts(config, remote=None):
 
 # -----------------------------------------------------------------
 
-def initialize_log(config, remote=None):
+def initialize_log(config, remote=None, command_name=None):
 
     """
     This function ...
+    :param config:
     :parma remote:
+    :param command_name:
     :return:
     """
 
@@ -258,8 +261,12 @@ def initialize_log(config, remote=None):
     #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
     #else: logfile_path = None
 
+    # Determine name of log file
+    if command_name is not None: filename = command_name
+    else: filename = "log"
+
     # Determine the log file path
-    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name(filename) + ".txt") if config.report else None
     else: logfile_path = None
 
     # Initialize the logger

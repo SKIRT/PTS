@@ -73,7 +73,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(StarsBuilder, self).__init__(*args, **kwargs)
-        GeneralBuilder.__init__(self, *args, **kwargs)
+        GeneralBuilder.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
