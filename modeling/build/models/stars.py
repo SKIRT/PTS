@@ -18,7 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ....core.basics.configuration import ConfigurationDefinition
+from ....core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
 from ....core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string, prompt_yn, prompt_filepath
 from ....core.units.parsing import parse_unit as u
 from ...core.mappings import Mappings
@@ -216,6 +216,12 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the bulge component ...")
 
+        # Check defaults
+        if self.config.default_old_bulge_template is None: raise ValueError("Default old stellar bulge template cannot be undefined")
+        if self.config.default_bulge_age is None: raise ValueError("Default bulge age cannot be undefined")
+        if self.config.default_old_bulge_metallicity is None: raise ValueError("Default bulge metallicity cannot be undefined")
+        if self.config.bulge_fluxdensity is None: raise ValueError("Default bulge flux density cannot be undefined")
+
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=self.config.default_old_bulge_template)
@@ -223,9 +229,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_bulge_metallicity)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
 
+        # Use the default values
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
+            config = setter.run(definition)
+
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
-        config = setter.run(definition, prompt_optional=True)
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
+            config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
@@ -322,6 +337,11 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the old stellar disk component ...")
 
+        # Check defaults
+        if self.config.default_old_disk_template is None: raise ValueError("Default old stellar disk template cannot be undefined")
+        if self.config.default_old_disk_age is None: raise ValueError("Default old stellar disk age cannot be undefined")
+        if self.config.default_old_disk_metallicity is None: raise ValueError("Default old stellar disk metallicity cannot be undefined")
+
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=self.config.default_old_disk_template)
@@ -330,9 +350,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("scale_height", "quantity", "scale height", default=self.old_scaleheight)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.old_fluxdensity)
 
+        # Use default values
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition)
+
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
-        config = setter.run(definition, prompt_optional=True)
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
@@ -478,6 +507,11 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Get the FUV flux density
         fluxdensity = self.unattenuated_fuv_flux_young_stars
 
+        # Check defaults
+        if self.config.default_young_template is None: raise ValueError("The default young stellar template cannot be undefined")
+        if self.config.default_young_age is None: raise ValueError("The default young stellar age cannot be undefined")
+        if self.config.default_young_metallicity is None: raise ValueError("The default young stellar metallicity cannot be undefined")
+
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=self.config.default_young_template)
@@ -486,9 +520,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("scale_height", "quantity", "scale height", default=self.young_scaleheight)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
+        # Use default values
+        if self.config.use_default:
+
+            setter = PassiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition)
+
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
-        config = setter.run(definition, prompt_optional=True)
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
@@ -631,10 +674,15 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the ionizing stellar component ...")
 
+        # Check defaults
+        if self.config.default_ionizing_metallicity is None: raise ValueError("The default ionizing stellar metallicity cannot be undefined")
+        if self.config.default_ionizing_compactness is None: raise ValueError("The default ionizing stellar compactness cannot be undefined")
+        if self.config.default_ionizing_pressure is None: raise ValueError("The default ionizing stellar pressure cannot be undefined")
+        if self.config.default_covering_factor is None: raise ValueError("The default ionizing covering factor cannot be undefined")
+        if self.config.default_sfr is None: raise ValueError("The default sSFR cannot be undefined")
+
         # Create definition
         definition = ConfigurationDefinition()
-        #definition.add_optional("template", "string", "template SED family", default=young_template, choices=[young_template])
-        #definition.add_optional("age", "positive_real", "age in Gyr", default=young_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_ionizing_metallicity)
         definition.add_optional("compactness", "positive_real", "compactness", default=self.config.default_ionizing_compactness)
         definition.add_optional("pressure", "quantity", "pressure", default=self.config.default_ionizing_pressure)
@@ -642,9 +690,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("scale_height", "quantity", "scale height", default=self.ionizing_scaleheight)
         definition.add_optional("sfr", "positive_real", "SFR", default=self.config.default_sfr)
 
+        # Use default values
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
+            config = setter.run(definition)
+
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
-        config = setter.run(definition, prompt_optional=True)
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
+            config = setter.run(definition, prompt_optional=True)
 
         # Get the parameters
         metallicity = config.metallicity

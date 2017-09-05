@@ -118,16 +118,16 @@ class DustGridBuilder(Configurable):
         # 2. Create the ski file
         self.create_ski()
 
-        # Lauch the simulation
+        # 3. Lauch the simulation
         self.launch()
 
-        # Check
+        # 4. Check
         if self.config.quality: self.get_quality()
 
-        # 7. Writing
+        # 5. Writing
         if self.config.write: self.write()
 
-        # Plotting
+        # 6. Plotting
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -304,18 +304,12 @@ class DustGridBuilder(Configurable):
         # Create simulation definition
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
 
-        # Determine parallelization scheme (do singleprocessing-
-        ncores = 2
-        nthreads_per_core = 2
-        nprocesses = 1
-        parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
-
         # Set settings
         self.launcher.config.progress_bar = True
         self.launcher.config.finish_after = "Writing dust cell properties" # finish after this line has been printed (when the next one comes)
 
         # Run
-        self.launcher.run(definition=definition, parallelization=parallelization)
+        self.launcher.run(definition=definition, parallelization=self.config.parallelization)
 
     # -----------------------------------------------------------------
 

@@ -638,6 +638,16 @@ def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     smallest_scale = scale.to("pc").value
     max_level = max_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
+    # Check arguments
+    if x_min is None: raise ValueError("'x_min' is undefined")
+    if x_max is None: raise ValueError("'x_max' is undefined")
+    if y_min is None: raise ValueError("'y_min' is undefined")
+    if y_max is None: raise ValueError("'y_max' is undefined")
+    if z_min is None: raise ValueError("'z_min' is undefined")
+    if z_max is None: raise ValueError("'z_max' is undefined")
+    if min_level is None: raise ValueError("'min_level' is undefined")
+    if max_mass_fraction is None: raise ValueError("'max_mass_fraction' is undefined")
+
     # Create the dust grid
     grid = BinaryTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,
                               min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
@@ -671,6 +681,16 @@ def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     extent_x = x_extent.to("pc").value
     smallest_scale = scale.to("pc").value
     max_level = max_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+
+    # Check arguments
+    if x_min is None: raise ValueError("'x_min' is undefined")
+    if x_max is None: raise ValueError("'x_max' is undefined")
+    if y_min is None: raise ValueError("'y_min' is undefined")
+    if y_max is None: raise ValueError("'y_max' is undefined")
+    if z_min is None: raise ValueError("'z_min' is undefined")
+    if z_max is None: raise ValueError("'z_max' is undefined")
+    if min_level is None: raise ValueError("'min_level' is undefined")
+    if max_mass_fraction is None: raise ValueError("'max_mass_fraction' is undefined")
 
     # Create the dust grid
     grid = OctTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,

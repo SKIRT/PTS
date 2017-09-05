@@ -99,16 +99,16 @@ class ModelLauncher(ModelSimulationInterface):
         # 7. Adapt ski file
         self.adapt_ski()
 
-        # Build the dust grid (maybe not necessary since there is only one simulation perfomed?)
+        # 8. Build the dust grid (maybe not necessary since there is only one simulation perfomed?)
         self.build_dust_grid()
 
-        # Set the input
+        # 9. Set the input
         self.set_input()
 
-        # Write
+        # 10. Write
         self.write()
 
-        # Launch the simulation
+        # 11. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------

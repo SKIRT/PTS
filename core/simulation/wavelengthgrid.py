@@ -35,6 +35,7 @@ class WavelengthGrid(object):
         The constructor ...
         """
 
+        # The wavelength grid table
         self.table = None
 
         # The path
@@ -259,6 +260,17 @@ class WavelengthGrid(object):
 
         # Return the new instance
         return grid
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return str(self.table)
 
     # -----------------------------------------------------------------
 

@@ -921,6 +921,19 @@ def other_quote_character(*strings):
 
 # -----------------------------------------------------------------
 
+def add_other_quotes(string):
+
+    """
+    Thisf unction ...
+    :param string:
+    :return:
+    """
+
+    quote = other_quote_character(string)
+    return quote + string + quote
+
+# -----------------------------------------------------------------
+
 def make_single_quoted(string):
 
     """

@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string, prompt_yn, prompt_filepath
+from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string, prompt_yn, prompt_filepath, PassiveConfigurationSetter
 from ....core.basics.log import log
 from .general import GeneralBuilder
 from ..suite import model_map_filename
@@ -174,6 +174,12 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the dust component ...")
 
+        # Check defaults
+        if self.config.default_dust_mass is None: raise ValueError("Default dust mass cannot be undefined")
+        if self.config.default_hydrocarbon_pops is None: raise ValueError("Default number of hydrocarbon populations cannot be undefined")
+        if self.config.default_enstatite_pops is None: raise ValueError("Default number of enstatite populations cannot be undefined")
+        if self.config.default_forsterite_pops is None: raise ValueError("Default number of forsterite populations cannot be undefined")
+
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("scale_height", "quantity", "scale height", default=self.dust_scaleheight)
@@ -182,9 +188,18 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("enstatite_pops", "positive_integer", "number of enstatite populations", default=self.config.default_enstatite_pops)
         definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=self.config.default_forsterite_pops)
 
-        # Prompt for settings
-        setter = InteractiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
-        config = setter.run(definition, prompt_optional=True)
+        # Use default settings
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition)
+
+        # Prompt for the settings
+        else:
+
+            # Prompt for settings
+            setter = InteractiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
+            config = setter.run(definition, prompt_optional=True)
 
         # Set the title
         config.title = titles["disk"]

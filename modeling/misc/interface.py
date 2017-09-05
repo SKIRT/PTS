@@ -201,9 +201,11 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         # Load the dust disk deprojection
         deprojection = self.definition.dust_deprojection
 
+        #print(self.config.dg.grid_type)
+
         # Set minimum level
-        if self.config.dg.grid_type == "bintree": min_level = self.config.dg.bintree_max_level
-        elif self.config.dg.grid_type == "octtree": min_level = self.config.dg.octtree_max_level
+        if self.config.dg.grid_type == "bintree": min_level = self.config.dg.bintree_min_level
+        elif self.config.dg.grid_type == "octtree": min_level = self.config.dg.octtree_min_level
         else: min_level = None
 
         # Set max ndivisions per pixel

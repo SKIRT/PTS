@@ -464,6 +464,7 @@ def stringify_not_list(value, **kwargs):
     elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", str_from_stretch(value, **kwargs)
     elif introspection.lazy_isinstance(value, "Filter", "pts.core.filter.filter"): return introspection.lazy_call("stringify_filter", "pts.core.filter.filter", value, **kwargs)
     elif introspection.lazy_isinstance(value, "Pixelscale", "pts.magic.basics.pixelscale"): return "pixelscale", str(value)
+    elif introspection.lazy_isinstance(value, "Parallelization", "pts.core.simulation.parallelization"): return "parallelization", introspection.lazy_call("represent_parallelization", "pts.core.simulation.parallelization", value)
 
     # Other
     #elif introspection.isinstance(Instrument):

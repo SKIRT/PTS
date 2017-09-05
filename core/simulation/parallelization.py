@@ -21,6 +21,18 @@ from ..tools import monitoring
 
 # -----------------------------------------------------------------
 
+def represent_parallelization(parallelization):
+
+    """
+    This function ...
+    :param parallelization:
+    :return:
+    """
+
+    return str(parallelization.cores) + ":" + str(parallelization.processes) + ":" + str(parallelization.threads_per_core)
+
+# -----------------------------------------------------------------
+
 class Parallelization(object):
 
     """

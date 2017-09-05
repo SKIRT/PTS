@@ -25,6 +25,7 @@ from ..tools import filesystem as fs
 from ..basics.log import log, no_debugging
 from .definition import SingleSimulationDefinition
 from .status import SimulationStatus
+from ..tools import strings
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -189,7 +190,7 @@ class SkirtExec:
 
         # Debugging
         command_string = " ".join(command)
-        log.debug("The command to launch SKIRT is: '" + command_string + "'")
+        log.debug("The command to launch SKIRT is: " + strings.add_other_quotes(command_string))
 
         #print(command)
 
@@ -223,8 +224,6 @@ class SkirtExec:
             log_path = fs.join(out_path, prefix + "_log.txt")
             status = SimulationStatus(log_path)
 
-            #print("HERE", finish_at, finish_after)
-
             # Show the simulation progress
             with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
@@ -232,37 +231,43 @@ class SkirtExec:
             if not success:
 
                 # Show SKIRT error messages
-                log.error("SKIRT error output:")
-                log.error("------------------")
-                out, err = self._process.communicate()
-                #print("OUT", out)
-                #print("ERR", err)
+                log.error("SKIRT output:")
+                log.error("--------------------------")
+                #out, err = self._process.communicate()
 
-                if out is None:
+                # Output was streamed to file
+                if output_file is not None:
+                    for line in output_file: log.info(line)
+                    for line in error_file: log.error(line)
+                else:
+
+                    out, err = self._process.communicate()
 
                     #for line in fs.read_lines(output_file):
 
-                    if output_file is not None:
-                        for line in output_file: log.error(line)
-
-                else:
+                    #if output_file is not None:
+                    #    for line in output_file: log.error(line)
 
                     for line in out:
                         if "*** Error" in line:
                             line = line.split("*** Error: ")[1].split("\n")[0]
                             log.error(line)
 
-                if err is None:
+                    if err is None:
 
-                    if error_file is not None:
-                        for line in error_file: log.error(line)
+                        if error_file is not None:
+                            for line in error_file: log.error(line)
 
-                else:
+                    else:
 
-                    for line in err:
-                        if "*** Error" in line:
-                            line = line.split("*** Error: ")[1].split("\n")[0]
-                            log.error(line)
+                        for line in err:
+                            if "*** Error" in line:
+                                line = line.split("*** Error: ")[1].split("\n")[0]
+                                log.error(line)
+
+                log.error("--------------------------")
+
+                # Raise an error since the simulation crashed
                 raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up

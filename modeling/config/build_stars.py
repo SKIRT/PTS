@@ -92,3 +92,8 @@ definition.add_optional("default_ionizing_pressure", "quantity", "pressure", "1e
 definition.add_optional("default_covering_factor", "real", "covering factor", 0.2)
 
 # -----------------------------------------------------------------
+
+# ADVANCED: FLAG TO USE DEFAULTS
+definition.add_flag("use_defaults", "use the defaults (do not prompt for component parameters)", False)
+
+# -----------------------------------------------------------------

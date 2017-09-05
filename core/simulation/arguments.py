@@ -25,6 +25,7 @@ from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 from ..basics.log import log
 from .input import SimulationInput
 from ..tools import types
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -242,13 +243,14 @@ class SkirtArguments(object):
             #print(2)
             input_dir_path = SimulationInput(self.input_path).to_single_directory()
         elif types.is_dictionary(self.input_path):
-            #print("HERE")
-            #exit()
+            #print(3)
+            #print(self.input_path)
             input_dir_path = SimulationInput(**self.input_path).to_single_directory()
         elif self.input_path is None:
             #print(4)
             input_dir_path = None
         else: raise ValueError("Type of simulation input not recognized")
+        #print(input_dir_path)
 
         # Create the argument list
         arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
@@ -267,8 +269,8 @@ class SkirtArguments(object):
         # Options for input and output
         #if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
         #if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
-        if input_dir_path is not None: arguments += ["-i", input_dir_path]
-        if self.output_path is not None: arguments += ["-o", self.output_path]
+        if input_dir_path is not None: arguments += ["-i", strings.add_quotes_if_spaces(input_dir_path)]
+        if self.output_path is not None: arguments += ["-o", strings.add_quotes_if_spaces(self.output_path)]
 
         # Other options
         if self.emulate: arguments += ["-e"]
@@ -276,8 +278,8 @@ class SkirtArguments(object):
         # Ski file pattern
         if self.relative: arguments += ["-k"]
         if self.recursive: arguments += ["-r"]
-        if types.is_string_type(self.ski_pattern): arguments += [self.ski_pattern]
-        elif isinstance(self.ski_pattern, list): arguments += self.ski_pattern
+        if types.is_string_type(self.ski_pattern): arguments += [strings.add_quotes_if_spaces(self.ski_pattern)]
+        elif isinstance(self.ski_pattern, list): arguments += strings.add_quotes_if_spaces(self.ski_pattern)
         else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
 
         # If requested, convert the argument list into a string

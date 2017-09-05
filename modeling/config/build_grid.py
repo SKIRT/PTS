@@ -7,7 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.reporting.reporting import steps
+
+# -----------------------------------------------------------------
+
+default_parallelization = "2:1:2" # 2 cores, 1 process, 2 threads per core
 
 # -----------------------------------------------------------------
 
@@ -36,5 +39,10 @@ definition.add_flag("dust_mass_quality", "get the dust mass quality", True)
 # -----------------------------------------------------------------
 
 definition.add_optional("tree_path", "string", "filepath for the tree grid file", "tree.dat")
+
+# -----------------------------------------------------------------
+
+# ADVANCED: parallelization
+definition.add_optional("parallelization", "parallelization", "parallelization scheme", default_parallelization, convert_default=True)
 
 # -----------------------------------------------------------------

@@ -41,12 +41,17 @@ definition.add_optional("output", "directory_path", "output directory")
 # Dust mix settings
 definition.add_optional("default_hydrocarbon_pops", "positive_integer",  "default number of hydrocarbon populations", 25)
 definition.add_optional("default_enstatite_pops", "positive_integer", "default number of enstatite populations", 25)
-definition.add_optional("forsterite_pops", "positive_integer", "default number of forsterite populations", 25)
+definition.add_optional("default_forsterite_pops", "positive_integer", "default number of forsterite populations", 25)
 
 ## OTHER
 definition.add_optional("default_dust_mass", "quantity", "default value for the dust disk mass", default_dust_mass)
 
 # Scaleheight
 definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust scaleheight to the old stellar scaleheight", 0.5)
+
+# -----------------------------------------------------------------
+
+# ADVANCED: FLAG TO USE DEFAULTS
+definition.add_flag("use_defaults", "use the defaults (do not prompt for component parameters)", False)
 
 # -----------------------------------------------------------------

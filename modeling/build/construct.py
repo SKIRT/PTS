@@ -32,13 +32,14 @@ def add_stellar_component(ski, name, component, title=None):
     # Debugging
     log.debug("Adding stellar component '" + name + "' to the ski file ...")
 
-    # NEW COMPONENT OR ADJUST EXISTING
-    if ski.has_stellar_component(name): add_new_stellar_component(ski, name, component, title=title)
-    else: adjust_stellar_component(ski, name, component, title=title)
-
+    # THIS HAS TO COME FIRST!!
     # If an input map is required
     if "map_path" in component: filename = set_stellar_input_map(name, component)
     else: filename = None
+
+    # NEW COMPONENT OR ADJUST EXISTING
+    if ski.has_stellar_component(name): add_new_stellar_component(ski, name, component, title=title)
+    else: adjust_stellar_component(ski, name, component, title=title)
 
     # Return the input filename
     return filename
@@ -368,13 +369,14 @@ def add_dust_component(ski, name, component, title=None):
     # Debugging
     log.debug("Adding dust component '" + name + "' to the ski file ...")
 
-    # NEW COMPONENT OR ADJUST EXISTING
-    if not ski.has_dust_component(name): add_new_dust_component(ski, name, component, title=title)
-    else: adjust_dust_component(ski, name, component, title=title)
-
+    # THIS HAS TO COME FIRST!!
     # If an input map is required
     if "map_path" in component: filename = set_dust_input_map(name, component)
     else: filename = None
+
+    # NEW COMPONENT OR ADJUST EXISTING
+    if not ski.has_dust_component(name): add_new_dust_component(ski, name, component, title=title)
+    else: adjust_dust_component(ski, name, component, title=title)
 
     # Return the map filename
     return filename
@@ -459,6 +461,8 @@ def add_new_dust_component(ski, name, component, title=None):
             enstatite_pops = component.parameters.enstatite_pops
             forsterite_pops = component.parameters.forsterite_pops
 
+            #print(component.parameters)
+
         # Existing component (geometry defined above), Zubko dust mix
         elif "graphite_populations" in component.parameters:
 
@@ -476,6 +480,8 @@ def add_new_dust_component(ski, name, component, title=None):
 
     # Check whether the title is defined
     if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
+
+    #print(hydrocarbon_pops, enstatite_pops, forsterite_pops)
 
     # Create new component
     ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
