@@ -500,6 +500,7 @@ class Detection(object):
                 no_clip_mask = None
             else:
                 if self.mask is not None and np.sum(~self.mask) == 0:
+
                     radius = int(round(0.50 * self.cutout.xsize))
                     disk = morphology.disk(radius, dtype=bool)
                     mask = Mask.empty_like(self.cutout)
@@ -507,11 +508,11 @@ class Detection(object):
                     x_min = int(round(0.5 * (self.cutout.xsize - disk.shape[1])))
                     y_min = int(round(0.5 * (self.cutout.ysize - disk.shape[0])))
                     mask[y_min:y_min+disk.shape[0], x_min:x_min+disk.shape[1]] = disk
+                    self.mask = mask
 
-                else:
-                    mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
-            
-                no_clip_mask = mask
+                else: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+
+                no_clip_mask = self.mask
 
         else:
             # Perform sigma-clipping on the background if requested
@@ -530,8 +531,10 @@ class Detection(object):
             mask = mask + self.contamination
             if no_clip_mask is not None: no_clip_mask = no_clip_mask + self.contamination
 
+
         # Perform the interpolation
         self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=self.special)
+
 
         if self.special: self.plot(title="background estimated")
 
