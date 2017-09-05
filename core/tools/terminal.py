@@ -187,6 +187,101 @@ def execute(command, output=True, show_output=False, timeout=None, expect=None, 
 
 # -----------------------------------------------------------------
 
+def launch_fetch_lines(command, show_output=False, timeout=None, cwd=None):
+
+    """
+    This function ...
+    :param command:
+    :param show_output:
+    :param timeout:
+    :param cwd:
+    :return:
+    """
+
+    # Import here to accomodate fresh python installations
+    import pexpect
+
+    # Create the process
+    child = pexpect.spawn(command, timeout=timeout, cwd=cwd)
+
+    # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+    # Otherwise, assure that the logfile is set to 'None'
+    if show_output: child.logfile = sys.stdout
+    else: child.logfile = None
+
+    # Expect end-of-line over and over again
+    end_of_line = "\r\n"
+    end_of_file = pexpect.EOF
+    while True:
+
+        index = child.expect([end_of_line, end_of_file])
+
+        if index == 0:
+            lines = child.before.replace('\x1b[K', '').split("\r\n")
+            if len(lines) != 1: raise ValueError("Encountered multiple lines: " + str(lines))
+            yield lines[0]
+        elif index == 1:
+            child.logfile = None
+            raise StopIteration
+        else: raise RuntimeError("Something went wrong")
+
+# -----------------------------------------------------------------
+
+def fetch_lines(child):
+
+    """
+    This function ...
+    :param child:
+    :return:
+    """
+
+    import pexpect
+
+    # Expect end-of-line over and over again
+    end_of_line = "\r\n"
+    end_of_file = pexpect.EOF
+    while True:
+
+        index = child.expect([end_of_line, end_of_file])
+
+        if index == 0:
+            lines = child.before.replace('\x1b[K', '').split("\r\n")
+            if len(lines) != 1: raise ValueError("Encountered multiple lines: " + str(lines))
+            yield lines[0]
+        elif index == 1:
+            child.logfile = None
+            raise StopIteration
+        else: raise RuntimeError("Something went wrong")
+
+# -----------------------------------------------------------------
+
+def launch_return(command, show_output=False, timeout=None, cwd=None):
+
+    """
+    This function ...
+    :param command:
+    :param show_output:
+    :param timeout:
+    :param cwd:
+    :return:
+    """
+
+    # Import here to accomodate fresh python installations
+    import pexpect
+
+    # Create the process
+    child = pexpect.spawn(command, timeout=timeout, cwd=cwd)
+
+    # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+    # Otherwise, assure that the logfile is set to 'None'
+    if show_output: child.logfile = sys.stdout
+    else: child.logfile = None
+    #print(child.logfile)
+    # Return the child
+    return child
+
+# -----------------------------------------------------------------
+
 def execute_lines_no_pexpect(*args, **kwargs):
 
     """

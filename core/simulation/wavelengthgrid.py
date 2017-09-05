@@ -15,11 +15,11 @@ import copy
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
 from ...core.tools import arrays
+from ...core.tools.stringify import stringify_list_fancy
 
 # -----------------------------------------------------------------
 
@@ -270,7 +270,8 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return str(self.table)
+        #return str(self.table)
+        return "[" + stringify_list_fancy(self.wavelengths(unit="micron", add_unit=False))[1] + "] micron"
 
     # -----------------------------------------------------------------
 

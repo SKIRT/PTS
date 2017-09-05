@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from subprocess import Popen
+
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools import time
@@ -20,6 +23,7 @@ from ..basics.log import log
 from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
 from ..basics.handle import ExecutionHandle
 from ..tools import terminal
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -40,17 +44,19 @@ class SimulationStatus(object):
     This class ...
     """
 
-    def __init__(self, log_path, remote=None):
+    def __init__(self, log_path, remote=None, debug_output=False):
 
         """
         The constructor ...
         :param log_path:
         :param remote:
+        :param debug_output:
         """
 
         # Set attributes
         self.log_path = log_path
         self.remote = remote
+        self.debug_output = debug_output
 
         # The status
         self.status = None
@@ -69,6 +75,9 @@ class SimulationStatus(object):
 
         # The progress (if applicable)
         self.progress = None
+
+        # The current number of lines
+        #self.nlines =
 
         # The log lines
         self.log_lines = []
@@ -186,6 +195,9 @@ class SimulationStatus(object):
 
         # Wait for a bit ?
 
+        #print(process_or_handle, type(process_or_handle))
+        #print(process_or_handle.poll, process_or_handle.poll())
+
         # Refresh loop
         while True:
 
@@ -217,8 +229,8 @@ class SimulationStatus(object):
                         else: log.error("Log file hasn't been created yet and no screen output found")
                         return False
 
-                # Process
-                else:
+                # Subprocess process
+                elif isinstance(process_or_handle, Popen):
 
                     returncode = process_or_handle.poll()
                     if returncode is not None:
@@ -228,6 +240,21 @@ class SimulationStatus(object):
                             for line in lines: log.error(line)
                         else: log.error("Log file hasn't been created yet")
                         return False
+
+                # Pexpect spawn object?
+                elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
+
+                    from ..tools.terminal import fetch_lines
+                    if not process_or_handle.isalive():
+                        log.error("The simulation has stopped")
+                        # Read the lines
+                        for line in fetch_lines(process_or_handle): log.error(line)
+                        return False
+
+                # Not recognized
+                else:
+                    raise ValueError("Cannot interpret the process or execution handle that is passed")
+                    #log.error("Cannot interpret the process or execution handle that is passed")
 
                 log.info("Waiting for simulation to start ...")
                 time.wait(refresh_time)
@@ -377,6 +404,18 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nlines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.log_lines)
+
+    # -----------------------------------------------------------------
+
     def refresh(self, process_or_handle=None, finish_at=None, finish_after=None):
 
         """
@@ -415,6 +454,11 @@ class SimulationStatus(object):
         if len(lines) == 0:
             self.status = "invalid: cannot read log file"
             return
+
+        # There are new lines
+        if self.debug_output and len(lines) > self.nlines:
+            nnew = len(lines) - self.nlines
+            for line in lines[-nnew:]: log.debug(line)
 
         # SET THE LOG LINES
         self.log_lines = lines
@@ -479,7 +523,7 @@ class SimulationStatus(object):
                 # Execution handle
                 if isinstance(process_or_handle, ExecutionHandle):
 
-                    if process_or_handle.type != "screen": raise NotImplementedError("Execution handle must be 'screen'")
+                    if process_or_handle.type != "screen": raise NotImplementedError("Execution handle must be 'screen' (here it's '" + str(process_or_handle.type) + "')")
                     screen_name = process_or_handle.value
 
                     if not self.remote.is_active_screen(screen_name):
@@ -487,7 +531,7 @@ class SimulationStatus(object):
                         return
 
                 # Process
-                else:
+                elif isinstance(process_or_handle, Popen):
 
                     returncode = process_or_handle.poll()
                     if returncode is not None:
@@ -507,6 +551,17 @@ class SimulationStatus(object):
                         # Local host:  druif.ugent.be
                         # System call: ftruncate(2)
                         # Error:       No space left on device (errno 28)
+
+                # Pexpect spawn object?
+                elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
+                    if not process_or_handle.isalive():
+                        self.status = "aborted"
+                        return
+
+                # Not recognized
+                else:
+                    #raise ValueError("Cannot interpret the process or execution handle that is passed")
+                    log.error("Cannot interpret the process or execution handle that is passed")
 
             # Status is 'running'
             self.status = "running"

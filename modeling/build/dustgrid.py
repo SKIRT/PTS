@@ -307,6 +307,7 @@ class DustGridBuilder(Configurable):
         # Set settings
         self.launcher.config.progress_bar = True
         self.launcher.config.finish_after = "Writing dust cell properties" # finish after this line has been printed (when the next one comes)
+        self.launcher.config.continued_output = True
 
         # Run
         self.launcher.run(definition=definition, parallelization=self.config.parallelization)

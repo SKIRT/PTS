@@ -507,7 +507,8 @@ class SKIRTLauncher(Configurable):
         # Run the simulation
         self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True,
                                          progress_bar=self.config.progress_bar, parallelization=self.parallelization,
-                                         finish_after=self.config.finish_after, finish_at=self.config.finish_at)
+                                         finish_after=self.config.finish_after, finish_at=self.config.finish_at,
+                                         debug_output=True)
 
         # Set the simulation name
         self.simulation.name = self.definition.prefix

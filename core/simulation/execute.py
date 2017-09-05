@@ -63,6 +63,14 @@ class SkirtExec:
         # Set the MPI style
         self.mpi_style = mpi_style.lower()
 
+        # Temporary files to fetch standard and error output
+        self._output_file = None
+        self._error_file = None
+
+    @property
+    def has_pexpect(self):
+        return introspection.is_present_package("pexpect")
+
     ## This function invokes the <tt>SKIRT</tt> executable with the simulations and command line options corresponding to the
     #  values of the function arguments:
     #
@@ -141,8 +149,9 @@ class SkirtExec:
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
-            silent=False, progress_bar=False, finish_at=None, finish_after=None):
+            silent=False, progress_bar=False, finish_at=None, finish_after=None, debug_output=False):
 
+        # Enable progress bar to true when finish_at or finish_after is defined because we'll have to follow up the simulation status
         if finish_at is not None or finish_after is not None: progress_bar = True
 
         # The simulation names for different ski paths
@@ -192,90 +201,31 @@ class SkirtExec:
         command_string = " ".join(command)
         log.debug("The command to launch SKIRT is: " + strings.add_other_quotes(command_string))
 
-        #print(command)
+        # Using pexpect
+        if self.has_pexpect: self.launch_pexpect(command_string, wait=wait, silent=silent)
 
-        # Create a temporary file
-        output_file = tempfile.TemporaryFile()
-        error_file = tempfile.TemporaryFile()
+        # Using subprocess
+        else: self.launch_subprocess(command, wait=wait, silent=silent)
 
-        #import sys
-        #output_file = sys.stdout
-        #error_file = sys.stderr
-
-        # Launch the SKIRT command
-        if wait:
-            self._process = None
-            if silent: subprocess.call(command, stdout=output_file, stderr=error_file)
-            else: subprocess.call(command)
-        #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-
-        # CAUSES HANGING:
-        # https://thraxil.org/users/anders/posts/2008/03/13/Subprocess-Hanging-PIPE-is-your-enemy/
-        #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
-
-        # PROPER:
-        else: self._process = subprocess.Popen(command, stdout=output_file, stderr=error_file)
-
-        # Show progress bar with progress
-        if progress_bar:
-
-            out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
-            prefix = arguments.prefix
-            log_path = fs.join(out_path, prefix + "_log.txt")
-            status = SimulationStatus(log_path)
-
-            # Show the simulation progress
-            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
-
-            # Check whether not crashed
-            if not success:
-
-                # Show SKIRT error messages
-                log.error("SKIRT output:")
-                log.error("--------------------------")
-                #out, err = self._process.communicate()
-
-                # Output was streamed to file
-                if output_file is not None:
-                    for line in output_file: log.info(line)
-                    for line in error_file: log.error(line)
-                else:
-
-                    out, err = self._process.communicate()
-
-                    #for line in fs.read_lines(output_file):
-
-                    #if output_file is not None:
-                    #    for line in output_file: log.error(line)
-
-                    for line in out:
-                        if "*** Error" in line:
-                            line = line.split("*** Error: ")[1].split("\n")[0]
-                            log.error(line)
-
-                    if err is None:
-
-                        if error_file is not None:
-                            for line in error_file: log.error(line)
-
-                    else:
-
-                        for line in err:
-                            if "*** Error" in line:
-                                line = line.split("*** Error: ")[1].split("\n")[0]
-                                log.error(line)
-
-                log.error("--------------------------")
-
-                # Raise an error since the simulation crashed
-                raise RuntimeError("The simulation crashed")
+        # Show progress
+        if progress_bar: self.show_progress(arguments, finish_at=finish_at, finish_after=finish_after, debug_output=debug_output)
 
         # Return the list of simulations so that their results can be followed up
         simulations = arguments.simulations(simulation_names=simulation_names)
 
         # Check whether SKIRT has started
-        returncode = self._process.poll() if self._process is not None else None
-        if wait or returncode is not None: # when wait=True, or returncode is not None, SKIRT executable should have finished
+        if isinstance(self._process, subprocess.Popen):
+            returncode = self._process.poll()
+            has_finished = returncode is not None
+        elif introspection.lazy_isinstance(self._process, "spawn", "pexpect", return_false_if_fail=True):
+            has_finished = not self._process.isalive()
+        elif self._process is None: has_finished = True
+        else: raise RuntimeError("Unknown process handle")
+
+        # when wait=True, or returncode is not None, SKIRT executable should have finished
+        # so check whether indeed the log file(s) are present
+        # otherwise something went wrong
+        if wait or has_finished:
 
             # Check presence of log files
             if arguments.single:
@@ -286,6 +236,85 @@ class SkirtExec:
 
         # Return the list of simulations
         return simulations
+
+    ## This function launches the SKIRT command using the Pexpect library
+    def launch_pexpect(self, command_string, wait=True, silent=False):
+
+        from ..tools.terminal import execute, launch_return
+
+        if wait: execute(command_string, show_output=(not silent))
+        else: self._process = launch_return(command_string)
+
+        #from ..tools.terminal import launch_fetch_lines
+        #for line in launch_fetch_lines(command_string): print(line)
+
+    ## This function launches the SKIRT command using Python's subprocess
+    def launch_subprocess(self, command, wait=True, silent=False):
+
+        # Create a temporary file
+        self._output_file = tempfile.TemporaryFile()
+        self._error_file = tempfile.TemporaryFile()
+
+        # Launch the SKIRT command
+        if wait:
+
+            self._process = None
+            if silent: subprocess.call(command, stdout=self._output_file, stderr=self._error_file)
+            else: subprocess.call(command)
+
+        #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+
+        # CAUSES HANGING:
+        # https://thraxil.org/users/anders/posts/2008/03/13/Subprocess-Hanging-PIPE-is-your-enemy/
+        #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+
+        # PROPER:
+        else:
+            #if continued_output: raise ValueError("Cannot enable continued output for subprocess")
+            self._process = subprocess.Popen(command, stdout=self._output_file, stderr=self._error_file)
+
+    ## This function follows the progress of the simulation and
+    def show_progress(self, arguments, finish_at=None, finish_after=None, debug_output=False):
+
+        out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
+        prefix = arguments.prefix
+        log_path = fs.join(out_path, prefix + "_log.txt")
+        status = SimulationStatus(log_path, debug_output=debug_output)
+
+        # Show the simulation progress
+        with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+
+        # Check whether not crashed
+        if not success:
+
+            # Show SKIRT error messages
+            log.error("SKIRT output:")
+            log.error("--------------------------")
+            # out, err = self._process.communicate()
+
+            # Output was streamed to file
+            if self._output_file is not None:
+                for line in self._output_file: log.info(line)
+                for line in self._error_file: log.error(line)
+            else:
+
+                # Try to get standard and error output from the process
+                out, err = self._process.communicate()
+
+                for line in out:
+                    if "*** Error" in line:
+                        line = line.split("*** Error: ")[1].split("\n")[0]
+                        log.error(line)
+
+                for line in err:
+                    if "*** Error" in line:
+                        line = line.split("*** Error: ")[1].split("\n")[0]
+                        log.error(line)
+
+            log.error("--------------------------")
+
+            # Raise an error since the simulation crashed
+            raise RuntimeError("The simulation crashed")
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):

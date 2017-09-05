@@ -38,3 +38,7 @@ definition.add_optional("finish_at", "string", "finish when this is encountered"
 definition.add_optional("finish_after", "string", "finish after this is encountered")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("continued_output", "continued output of the SKIRT process into stdout", False)
+
+# -----------------------------------------------------------------
