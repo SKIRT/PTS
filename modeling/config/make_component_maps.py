@@ -12,6 +12,7 @@ from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
 from pts.modeling.maps.components import steps
 from pts.magic.core.cutout import interpolation_methods
+from pts.modeling.config.build_stars import degeyter_ratio, scalelength_scaleheight_ratios
 
 # -----------------------------------------------------------------
 
@@ -112,10 +113,7 @@ definition.add_optional("softening_start", "real", "relative radius for softenin
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
 
 # Scale heights
-degeyter_ratio = 8.26
-#mosenkov_ratio = None
-#definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=mosenkov_ratio, suggestions=[mosenkov_ratio, degeyter_ratio])
-definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=degeyter_ratio, suggestions=[degeyter_ratio])
+definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=degeyter_ratio, suggestions=scalelength_scaleheight_ratios)
 definition.add_optional("young_scaleheight_ratio", "real", "ratio of the young stellar scaleheight to the old stellar scaleheight", 0.5)
 definition.add_optional("ionizing_scaleheight_ratio", "real", "ratio of the ionizing scaleheight to the old stellar scaleheight", 0.25)
 definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust scaleheight to the old stellar scaleheight", 0.5)
@@ -184,7 +182,7 @@ default_interpolation_method = "pts"
 # -----------------------------------------------------------------
 
 # INTERPOLATION OF CORE OF THE MAPS
-definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.06])
+definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.06]) # suggestion is for M81
 definition.add_optional("interpolate_young", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse")
 definition.add_optional("interpolate_ionizing", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse")
 definition.add_optional("interpolate_dust", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse")
@@ -193,7 +191,7 @@ definition.add_optional("interpolation_method", "string", "interpolation method"
 definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)
 
 # ALSO FOR INTERPOLATION
-definition.add_optional("interpolation_angle_offset_old", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True, suggestions=["-18 deg"], convert_suggestions=True)
+definition.add_optional("interpolation_angle_offset_old", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True, suggestions=["-18 deg"], convert_suggestions=True) # suggestion is for M81
 definition.add_optional("interpolation_angle_offset_young", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 definition.add_optional("interpolation_angle_offset_ionizing", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)

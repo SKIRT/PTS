@@ -133,7 +133,7 @@ class Mappings(object):
         :return:
         """
 
-        return self.sed.luminosity_at(wavelength).to(unit)
+        return self.sed.photometry_at(wavelength).to(unit)
 
     # -----------------------------------------------------------------
 

@@ -224,8 +224,8 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
 
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("bulge")
-        config = setter.run(definition)
+        setter = InteractiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
@@ -331,8 +331,8 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.old_fluxdensity)
 
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("old stellar disk")
-        config = setter.run(definition)
+        setter = InteractiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
@@ -362,7 +362,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the map of old stars ...")
 
         # Ask whether a custom map should be used
-        custom = prompt_yn("custom", "use a custom map for the old stellar disk (instead of one of those created in the modeling pipeline)")
+        custom = prompt_yn("custom", "use a custom map for the old stellar disk (instead of one of those created in the modeling pipeline)", default=False)
 
         # Load a custom old stellar disk map
         if custom: self.load_custom_old_map()
@@ -401,7 +401,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the map of old stars from the modeling pipeline ...")
 
         # Get the map names
-        names = self.static_maps_selection.old_map_paths.keys()
+        names = self.static_maps_selection.old_map_names
 
         # Ask for the old stellar map
         name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
@@ -487,8 +487,8 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("young stellar disk")
-        config = setter.run(definition)
+        setter = InteractiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
@@ -518,7 +518,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the map of young stars ...")
 
         # Ask whether a custom map should be used
-        custom = prompt_yn("custom", "use a custom map for the young stars (instead of one of those created in the modeling pipeline)")
+        custom = prompt_yn("custom", "use a custom map for the young stars (instead of one of those created in the modeling pipeline)", default=False)
 
         # Load a custom young stellar disk map
         if custom: self.load_custom_young_map()
@@ -557,7 +557,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading a young stellar disk map from the modeling pipeline ...")
 
         # Get the map names
-        names = self.static_maps_selection.young_map_paths.keys()
+        names = self.static_maps_selection.young_map_names
 
         # Ask for the young stellar map
         name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
@@ -643,8 +643,8 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("sfr", "positive_real", "SFR", default=self.config.default_sfr)
 
         # Prompt for the values
-        setter = InteractiveConfigurationSetter("ionizing stellar disk")
-        config = setter.run(definition)
+        setter = InteractiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
+        config = setter.run(definition, prompt_optional=True)
 
         # Get the parameters
         metallicity = config.metallicity
@@ -683,7 +683,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the map of ionizing stars ...")
 
         # Ask whether a custom map should be used
-        custom = prompt_yn("custom", "use a custom map for the ionizing stellar disk (instead of one of those created in the modeling pipeline)")
+        custom = prompt_yn("custom", "use a custom map for the ionizing stellar disk (instead of one of those created in the modeling pipeline)", default=False)
 
         # Load a custom ionizing stellar disk map
         if custom: self.load_custom_ionizing_map()
@@ -722,13 +722,13 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading a ionizing stellar disk map from the modeling pipeline ...")
 
         # Get map names
-        names = self.static_maps_selection.ionizing_map_names.keys()
+        names = self.static_maps_selection.ionizing_map_names
 
         # Ask for the ionizing stellar map
         name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
 
         # Set the path
-        filepath = self.static_maps_selection.ionizing_map_names[name]
+        filepath = self.static_maps_selection.ionizing_map_paths[name]
 
         # Set the map
         self.maps["ionizing"] = Frame.from_file(filepath)
@@ -809,7 +809,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional stellar component", add_cwd=False, add_logging=False)
-        config = setter.run(definition)
+        config = setter.run(definition, prompt_optional=True)
 
         # Check the name
         if config.name in self.parameters: raise ValueError("You cannot use this name for the stellar component: already in use")

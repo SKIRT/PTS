@@ -183,8 +183,8 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=self.config.default_forsterite_pops)
 
         # Prompt for settings
-        setter = InteractiveConfigurationSetter("dust disk")
-        config = setter.run(definition)
+        setter = InteractiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
 
         # Set the title
         config.title = titles["disk"]
@@ -205,7 +205,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the dust disk map ...")
 
         # Ask whether a custom map should be used
-        custom = prompt_yn("custom", "use a custom map for the dust disk (instead of one of those created in the modelling pipeline)")
+        custom = prompt_yn("custom", "use a custom map for the dust disk (instead of one of those created in the modelling pipeline)", default=False)
 
         # Load a custom dust disk map
         if custom: self.load_custom_dust_disk_map()
@@ -244,7 +244,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading a dust disk map from the modeling pipeline ...")
 
         # Get the map names
-        names = self.static_maps_selection.dust_map_paths.keys()
+        names = self.static_maps_selection.dust_map_names
 
         # Ask for the dust map to use
         name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
@@ -331,7 +331,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional dust component", add_cwd=False, add_logging=False)
-        config = setter.run(definition)
+        config = setter.run(definition, prompt_optional=True)
 
         # Check the name
         if config.name in self.parameters: raise ValueError("You cannot use this name for the dust component: already in use")

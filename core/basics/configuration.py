@@ -189,16 +189,17 @@ def create_configuration_passive(command_name, class_name, configuration_module_
 
 # -----------------------------------------------------------------
 
-def prompt_yn(name, description):
+def prompt_yn(name, description, default=None):
 
     """
     This function ...
+    :param default:
     :return:
     """
 
     # Create definition
     definition = ConfigurationDefinition(write_config=False)
-    definition.add_flag(name, description, default=None)
+    definition.add_flag(name, description, default=default)
 
     # Create setter
     setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)

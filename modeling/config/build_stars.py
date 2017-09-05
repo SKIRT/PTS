@@ -26,6 +26,18 @@ default_ionizing_contribution = 0.5
 
 # -----------------------------------------------------------------
 
+kregel_ratio = 8.21
+degeyter_ratio = 8.26
+#mosenkov_ratio = None
+
+# -----------------------------------------------------------------
+
+scalelength_scaleheight_ratios = dict()
+scalelength_scaleheight_ratios[degeyter_ratio] = "De Geyter et al. (2014)"
+scalelength_scaleheight_ratios[kregel_ratio] = "Kregel et al. (2002)"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
@@ -65,10 +77,7 @@ definition.add_optional("default_old_disk_age", "positive_real", "default age of
 definition.add_optional("default_young_age", "positive_real", "default age of the young stellar component (in Gyr)", 0.1)
 
 # Scale heights
-degeyter_ratio = 8.26
-#mosenkov_ratio = None
-#definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=mosenkov_ratio, suggestions=[mosenkov_ratio, degeyter_ratio])
-definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=degeyter_ratio, suggestions=[degeyter_ratio])
+definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=degeyter_ratio, suggestions=scalelength_scaleheight_ratios)
 definition.add_optional("young_scaleheight_ratio", "real", "ratio of the young stellar scaleheight to the old stellar scaleheight", 0.5)
 definition.add_optional("ionizing_scaleheight_ratio", "real", "ratio of the ionizing scaleheight to the old stellar scaleheight", 0.25)
 
