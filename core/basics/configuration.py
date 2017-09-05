@@ -267,7 +267,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
 
 # -----------------------------------------------------------------
 
-def prompt_string_list(name, description, choices=None, default=None, required=True, all_default=False):
+def prompt_string_list(name, description, choices=None, default=None, required=True, all_default=False, default_alias=None):
 
     """
     This function ...
@@ -275,7 +275,9 @@ def prompt_string_list(name, description, choices=None, default=None, required=T
     :param description: 
     :param choices: 
     :param default: 
-    :param required: 
+    :param required:
+    :param all_default:
+    :param default_alias:
     :return: 
     """
 
@@ -1950,6 +1952,10 @@ class ConfigurationSetter(object):
             # Set the path to the directory where the configuration file should be saved
             if self.definition.config_path is not None: self.definition.add_fixed("config_path", "directory for the configuration file to be written to", self.definition.config_path)
             else: self.definition.add_optional("config_path", "directory_path", "directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
+
+            # Write config?
+            if self.definition.config_path is not None: self.definition.add_fixed("write_config", "write the configuration", True) # if config path is defined in the definition, always write
+            else: self.definition.add_flag("write_config", "write the configuration") # otherwise, ask
 
         # Add the path to the current working directory
         if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)

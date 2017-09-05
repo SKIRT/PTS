@@ -209,8 +209,8 @@ class SkiFile:
             return input_paths
 
         # Construct simulation input
-        elif isinstance(input_path, list): input_path = SimulationInput(*input_path)
-        elif isinstance(input_path, basestring): input_path = SimulationInput(input_path)
+        elif types.is_sequence(input_path): input_path = SimulationInput(*input_path)
+        elif types.is_string_type(input_path): input_path = SimulationInput(input_path)
         elif isinstance(input_path, SimulationInput): pass
         else: raise ValueError("Invalid value for 'input_path': " + str(input_path))
 
@@ -305,7 +305,7 @@ class SkiFile:
             if input_path is not None:
 
                 # List of file paths
-                if isinstance(input_path, list):
+                if types.is_sequence(input_path):
 
                     for path in input_path:
                         if os.path.basename(path) == filename:
@@ -314,7 +314,7 @@ class SkiFile:
                     else: raise ValueError("The list of input paths does not contain the path to the wavelengths file")
 
                 # Directory path
-                elif isinstance(input_path, basestring): wavelengths_path = os.path.join(input_path, filename)
+                elif types.is_string_type(input_path): wavelengths_path = os.path.join(input_path, filename)
 
                 # Simulation input object
                 elif isinstance(input_path, SimulationInput):
@@ -1190,6 +1190,14 @@ class SkiFile:
         # Return the list of names
         return ids
 
+    @property
+    def nstellar_components(self):
+        return len(self.get_stellar_component_ids())
+
+    ## This function checks whether a stellar component with a certain ID is present
+    def has_stellar_component(self, component_id):
+        return component_id in self.get_stellar_component_ids()
+
     ## This function returns the dust distribution
     def get_dust_distribution(self):
 
@@ -1263,11 +1271,19 @@ class SkiFile:
         # Return the list of names
         return ids
 
+    @property
+    def ndust_components(self):
+        return len(self.get_dust_component_ids())
+
+    ## This functions checks whether a dust component with a certain ID exists
+    def has_dust_component(self, component_id):
+        return component_id in self.get_dust_component_ids()
+
     ## This function returns the stellar component that is recognized by the specified id (index or name)
     def get_stellar_component(self, component_id):
 
         # The component identifier is an integer number -> index of stellar components
-        if isinstance(component_id, int):
+        if types.is_integer_type(component_id):
 
             # Get all the stellar components (without comments)
             components = self.get_stellar_components()
@@ -1276,7 +1292,7 @@ class SkiFile:
             return components[component_id]
 
         # The component identifier is a string -> get stellar component based on description
-        elif isinstance(component_id, basestring):
+        elif types.is_string_type(component_id):
 
             # Get the stellar components
             components = self.get_stellar_components(include_comments=True)
@@ -1299,7 +1315,7 @@ class SkiFile:
     def get_dust_component(self, component_id):
 
         # The component identifier is an integer number -> index of dust components
-        if isinstance(component_id, int):
+        if types.is_integer_type(component_id):
 
             # Get all the dust components (without comments)
             components = self.get_dust_components()
@@ -1308,7 +1324,7 @@ class SkiFile:
             return components[component_id]
 
         # The component identifier is a string -> get dust component based on description
-        elif isinstance(component_id, basestring):
+        elif types.is_string_type(component_id):
 
             # Get the dust components
             components = self.get_dust_components(include_comments=True)
@@ -1380,7 +1396,7 @@ class SkiFile:
     ## This function removes the stellar components except for the component(s) with the specified ID(s)
     def remove_stellar_components_except(self, component_ids):
 
-        if isinstance(component_ids, basestring): component_ids = [component_ids]
+        if types.is_string_type(component_ids): component_ids = [component_ids]
 
         # Loop over the stellar component IDs
         for id_i in self.get_stellar_component_ids():
@@ -1394,7 +1410,7 @@ class SkiFile:
     ## This function removes the dust components except for the component(s) with the specified ID(s)
     def remove_dust_components_except(self, component_ids):
 
-        if isinstance(component_ids, basestring): component_ids = [component_ids]
+        if types.is_string_type(component_ids): component_ids = [component_ids]
 
         # Loop over the dust component IDs
         for id_i in self.get_dust_component_ids():
@@ -1418,10 +1434,11 @@ class SkiFile:
         for id_i in self.get_dust_component_ids(): self.remove_dust_component(id_i)
 
     ## This function creates a new stellar component
-    def create_new_stellar_component(self, component_id, geometry=None, geometry_type=None, geometry_properties=None,
-                                     sed_type=None,
-                                     sed_properties=None, normalization_type=None, normalization_properties=None,
-                                     luminosities=None):
+    def create_new_stellar_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
+                                     sed_type=None, sed_properties=None, normalization_type=None,
+                                     normalization_properties=None, luminosities=None, sed_template=None, age=None,
+                                     filter_or_wavelength=None, luminosity=None, metallicity=None, compactness=None,
+                                     pressure=None, covering_factor=None):
 
         # Panchromatic simulation
         if self.panchromatic():
@@ -1462,15 +1479,32 @@ class SkiFile:
             stellar_component.append(sed_parent)
             stellar_component.append(normalization_parent)
 
-            # Add the component ID
-            comment = etree.Comment(component_id)
-            stellar_components_parent.append(comment)
+            # Add the component ID, if possible
+            if component_id is not None:
+                comment = etree.Comment(component_id)
+                stellar_components_parent.append(comment)
 
             # Add the new stellar component
             stellar_components_parent.append(stellar_component)
 
+            # Set component ID
+            if component_id is None: component_id = self.nstellar_components - 1
+
             # Set geometry
             if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
+
+            # Set SED
+            if sed_template is not None:
+
+                # Set MAPPINGS or other template
+                if sed_template == "Mappings": self.set_stellar_component_mappingssed(component_id, metallicity, compactness, pressure, covering_factor)
+                else: self.set_stellar_component_sed(component_id, sed_template, age, metallicity)
+
+            # Set normalization based on filter or wavelength
+            if filter_or_wavelength is not None and types.is_quantity(filter_or_wavelength): self.set_stellar_component_normalization_wavelength(component_id, filter_or_wavelength) # actually this step is not needed?
+            if luminosity is not None:
+                #if filter_or_wavelength is None: raise ValueError("If luminosity is passed, filter or wavelength should be specified") # not true: bolometric is also possible
+                self.set_stellar_component_luminosity(component_id, luminosity, filter_or_wavelength=filter_or_wavelength)
 
         # Oligochromatic simulation
         else:
@@ -1522,9 +1556,12 @@ class SkiFile:
             if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
 
     ## This function creates a new dust component
-    def create_new_dust_component(self, component_id, geometry=None, geometry_type=None, geometry_properties=None,
+    def create_new_dust_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
                                   mix=None, mix_type=None, mix_properties=None, normalization_type=None,
-                                  normalization_value=None, normalization_properties=None):
+                                  normalization_value=None, normalization_properties=None, mass=None,
+                                  hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, # for THEMIS
+                                  graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, # for Zubko
+                                  write_mean_mix=True, write_size=True):
 
         # Get the dust distribution
         dust_distribution = self.get_dust_distribution()
@@ -1569,24 +1606,33 @@ class SkiFile:
         dust_component.append(mix_parent)
         dust_component.append(normalization_parent)
 
-        # Add the component ID
-        comment = etree.Comment(component_id)
-        dust_components_parent.append(comment)
+        # Add the component ID, if possible
+        if component_id is not None:
+            comment = etree.Comment(component_id)
+            dust_components_parent.append(comment)
 
         # Add the new dust component
         dust_components_parent.append(dust_component)
+
+        # Set the component ID
+        if component_id is None: component_id = self.ndust_components - 1
 
         # Set geometry
         if geometry is not None: self.set_dust_component_geometry(component_id, geometry)
 
         # Set mix
         if mix is not None:
-            if mix == "themis": self.set_dust_component_themis_mix(component_id)
-            elif mix == "zubko": self.set_dust_component_zubko_mix(component_id)
-            else: raise ValueError("Invalid mix: '" + str(mix) + "'")
+            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops, forsterite_pops=forsterite_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
+            elif mix == "zubko": self.set_dust_component_zubko_mix(component_id, graphite_populations=graphite_populations, silicate_populations=silicate_populations, pah_populations=pah_populations, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
+            else: raise ValueError("Invalid mix: '" + str(mix) + "': must be 'themis' or 'zubko' (for now)")
 
         # Set normalization
         if normalization_value is not None: self.set_dust_component_normalization(component_id, normalization_value)
+
+        # Set dust mass
+        if mass is not None:
+            #self.set_dust_component_mass(component_id, mass) # only works for existing normalization element
+            self.set_dust_component_normalization(component_id, mass)
 
     ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):
@@ -1813,7 +1859,6 @@ class SkiFile:
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
     def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, write_mean_mix=True, write_size=True):
-        # writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"
 
         # Remove current mix, return the parent
         parent = self.remove_dust_component_mix(component_id)

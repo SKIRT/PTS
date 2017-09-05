@@ -432,7 +432,7 @@ def prompt_deprojection(deprojections):
 
     lowest_pixelscale = None
     lowest_pixelscale_name = None
-    lowest_pixelscale_title = None
+    #lowest_pixelscale_title = None
 
     # Loop over the different deprojection models
     for name, title in deprojections:
@@ -443,14 +443,14 @@ def prompt_deprojection(deprojections):
         if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
             lowest_pixelscale = pixelscale
             lowest_pixelscale_name = name
-            lowest_pixelscale_title = title
+            #lowest_pixelscale_title = title
         description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity(lowest_pixelscale) + ")"
 
         # Add the option
         options[option] = description
 
     # name, description, choices=None, default=None
-    answer = prompt_string("reference map", "input map to use as the reference for the spatial resolution (dust grid and instruments) of the model representation", choices=options, default=lowest_pixelscale_name)
+    answer = prompt_string("reference_map", "input map to use as the reference for the spatial resolution (dust grid and instruments) of the model representation", choices=options, default=lowest_pixelscale_name)
 
     # Set the reference deprojection
     answer_title = None

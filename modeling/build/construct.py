@@ -18,22 +18,149 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
-def add_stellar_component(ski, name, component):
+def add_stellar_component(ski, name, component, title=None):
 
     """
     This function ...
     :param ski: 
     :param name:
-    :param component: 
+    :param component:
+    :param title:
     :return: 
     """
 
     # Debugging
     log.debug("Adding stellar component '" + name + "' to the ski file ...")
 
+    # NEW COMPONENT OR ADJUST EXISTING
+    if ski.has_stellar_component(name): add_new_stellar_component(ski, name, component, title=title)
+    else: adjust_stellar_component(ski, name, component, title=title)
+
     # If an input map is required
     if "map_path" in component: filename = set_stellar_input_map(name, component)
     else: filename = None
+
+    # Return the input filename
+    return filename
+
+# -----------------------------------------------------------------
+
+def add_new_stellar_component(ski, name, component, title=None):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :param component:
+    :param title:
+    :return:
+    """
+
+    # From properties
+    if component.properties is not None:
+
+        # Check title
+        if title is None: log.warning("Title for the component '" + name + "' is not given")
+
+        # Add component
+        ski.add_stellar_component(component.properties, title=title)
+        return
+
+    # Initialize properties
+    geometry = None
+    geometry_type = None
+    geometry_properties = None
+    sed_type = None
+    sed_properties = None
+    normalization_type = None
+    normalization_properties = None
+    luminosities = None
+
+    sed_template = None
+    age = None
+    metallicity = None
+    compactness = None
+    pressure = None
+    covering_factor = None
+    luminosity = None
+    filter_or_wavelength = None
+
+    # Set properties of the component
+    if "model" in component: geometry = component.model
+    elif "deprojection" in component: geometry = component.deprojection
+
+    # Parameters are defined
+    if component.parameters is not None:
+
+        # Check if this is a new component (geometry not defined above): add geometry, SED and normalization all at once
+        if "geometry" in component.parameters:
+
+            # Get class names
+            geometry_type = component.parameters.geometry
+            sed_type = component.parameters.sed
+            normalization_type = component.parameters.normalization
+
+            # Get properties for each of the three classes
+            geometry_properties = component.properties["geometry"]
+            sed_properties = component.properties["sed"]
+            normalization_properties = component.properties["normalization"]
+
+        # Component with MAPPINGS template (geometry defined above)
+        elif "sfr" in component.parameters: #set_stellar_component_mappings(ski, component)
+
+            # Set template for MAPPINGS
+            sed_template = "Mappings"
+
+            # Get SED properties
+            metallicity = component.parameters.metallicity
+            compactness = component.parameters.compactness
+            pressure = component.parameters.pressure
+            covering_factor = component.parameters.covering_factor
+
+            # Get normalization
+            fltr = parse_filter(component.parameters.filter)
+            luminosity = component.parameters.luminosity
+
+            # Determine the normalization wavelength
+            filter_or_wavelength = fltr.center
+
+        # Existing component, no MAPPINGS
+        else: # set_stellar_component(ski, component)
+
+            # Get SED properties
+            sed_template = component.parameters.template
+            age = component.parameters.age
+            metallicity = component.parameters.metallicity
+
+            # Get normalization
+            fltr = parse_filter(component.parameters.filter)
+            luminosity = component.parameters.luminosity
+
+            # Determine the normalization wavelength
+            filter_or_wavelength = fltr.center
+
+    # Check whether title is defined
+    if title is None: log.warning("Title for the component '" + name + "' is not defined")
+
+    # Create new component
+    ski.create_new_stellar_component(title, geometry=geometry, geometry_type=geometry_type, geometry_properties=geometry_properties,
+                                     sed_type=sed_type, sed_properties=sed_properties, normalization_type=normalization_type,
+                                     normalization_properties=normalization_properties, luminosities=luminosities,
+                                     sed_template=sed_template, age=age, metallicity=metallicity, compactness=compactness, pressure=pressure,
+                                     covering_factor=covering_factor, luminosity=luminosity, filter_or_wavelength=filter_or_wavelength)
+
+# -----------------------------------------------------------------
+
+def adjust_stellar_component(ski, name, component, title=None):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :param component:
+    :param title:
+    :return:
+    """
 
     # Set geometry
     if "model" in component: set_stellar_component_model(ski, component)
@@ -56,11 +183,11 @@ def add_stellar_component(ski, name, component):
     # From properties
     if component.properties is not None:
 
-        # Add component
-        ski.add_stellar_component(component.properties, name)
+        # Check if title is given
+        if title is None: log.warning("Title for the component '" + name + "' is not specified")
 
-    # Return the map filename
-    return filename
+        # Add component
+        ski.add_stellar_component(component.properties, title=title)
 
 # -----------------------------------------------------------------
 
@@ -174,14 +301,17 @@ def set_stellar_component_mappings(ski, component):
     fltr = parse_filter(component.parameters.filter)
     luminosity = component.parameters.luminosity
 
+    # Determine the normalization wavelength
+    wavelength = fltr.center
+
     # Set SED
     ski.set_stellar_component_mappingssed(title, metallicity, compactness, pressure, covering_factor)  # SED
 
     # Set center wavelength of the filter as normalization wavelength (keeps label)
-    ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+    ski.set_stellar_component_normalization_wavelength(title, wavelength)
 
     # Set spectral luminosity at that wavelength (keeps label)
-    ski.set_stellar_component_luminosity(title, luminosity)
+    ski.set_stellar_component_luminosity(title, luminosity, filter_or_wavelength=wavelength)
 
     # Scale height doesn't need to be set as parameter, this is already in the deprojection model
 
@@ -208,35 +338,167 @@ def set_stellar_component(ski, component):
     fltr = parse_filter(component.parameters.filter)
     luminosity = component.parameters.luminosity
 
+    # Determine the normalization wavelength
+    wavelength = fltr.center
+
     # Set SED
     ski.set_stellar_component_sed(title, template, age, metallicity)
 
     # Set center wavelength of the filter as normalization wavelength (keeps label)
-    ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+    ski.set_stellar_component_normalization_wavelength(title, wavelength)
 
     # Set spectral luminosity at that wavelength (keeps label)
-    ski.set_stellar_component_luminosity(title, luminosity)
+    ski.set_stellar_component_luminosity(title, luminosity, filter_or_wavelength=wavelength)
 
     # Scale height doesn't need to be set as parameter, this is already in the deprojection model
 
 # -----------------------------------------------------------------
 
-def add_dust_component(ski, name, component):
+def add_dust_component(ski, name, component, title=None):
 
     """
     This function ...
     :param ski: 
     :param name:
-    :param component: 
+    :param component:
+    :param title:
     :return: 
     """
 
     # Debugging
     log.debug("Adding dust component '" + name + "' to the ski file ...")
 
+    # NEW COMPONENT OR ADJUST EXISTING
+    if not ski.has_dust_component(name): add_new_dust_component(ski, name, component, title=title)
+    else: adjust_dust_component(ski, name, component, title=title)
+
     # If an input map is required
     if "map_path" in component: filename = set_dust_input_map(name, component)
     else: filename = None
+
+    # Return the map filename
+    return filename
+
+# -----------------------------------------------------------------
+
+def add_new_dust_component(ski, name, component, title=None):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :param component:
+    :param title:
+    :return:
+    """
+
+    # From properties
+    if component.properties is not None:
+
+        # Check if title is given
+        if title is None: log.warning("Title of the component '" + name + "' is not given")
+
+        # Add component
+        ski.add_dust_component(component.properties, title=title)
+        return
+
+    # Initialize properties
+    geometry = None
+    geometry_type = None
+    geometry_properties = None
+    mix_type = None
+    mix_properties = None
+    normalization_type = None
+    normalization_properties = None
+
+    mix = None
+    mass = None
+
+    # For THEMIS mix
+    hydrocarbon_pops = None
+    enstatite_pops = None
+    forsterite_pops = None
+
+    # For Zubko mix
+    graphite_populations = None
+    silicate_populations = None
+    pah_populations = None
+
+    # Set properties of the component
+    if "model" in component: geometry = component.model
+    elif "deprojection" in component: geometry = component.deprojection
+
+    # Parameters are defined
+    if component.parameters is not None:
+
+        # Check title
+        if title is not None and component.parameters.title != title: raise ValueError("The title of the component '" + title + "' doesn't match that defined in the component parameters")
+
+        # Check if this is a new component (geometry not defined above): add geometry, mix and normalization
+        if "geometry" in component.parameters:
+
+            # Get class names
+            geometry_type = component.parameters.geometry
+            mix_type = component.parameters.sed
+            normalization_type = component.parameters.normalization
+
+            # Get properties for each of the three classes
+            geometry_properties = component.properties["geometry"]
+            mix_properties = component.properties["mix"]
+            normalization_properties = component.properties["normalization"]
+
+        # Existing component (geometry defined above), THEMIS dust mix
+        elif "hydrocarbon_pops" in component.parameters: #set_dust_component_themis_mix(ski, component)
+
+            # Set mix name
+            mix = "themis"
+
+            # Get parameters
+            mass = component.parameters.mass
+            hydrocarbon_pops = component.parameters.hydrocarbon_pops
+            enstatite_pops = component.parameters.enstatite_pops
+            forsterite_pops = component.parameters.forsterite_pops
+
+        # Existing component (geometry defined above), Zubko dust mix
+        elif "graphite_populations" in component.parameters:
+
+            # Set mix name
+            mix = "zubko"
+
+            # Get parameters
+            mass = component.parameters.mass
+            graphite_populations = component.parameters.graphite_populations
+            silicate_populations = component.parameters.silicate_populations
+            pah_populations = component.parameters.pah_populations
+
+        # Existing component, not THEMIS dust mix
+        else: raise NotImplementedError("Only THEMIS dust mixes are implemented at this moment")
+
+    # Check whether the title is defined
+    if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
+
+    # Create new component
+    ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
+                                     geometry_properties=geometry_properties,
+                                     mix_type=mix_type, mix_properties=mix_properties,
+                                     normalization_type=normalization_type,
+                                     normalization_properties=normalization_properties, mix=mix, mass=mass,
+                                     hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops,
+                                     forsterite_pops=forsterite_pops, graphite_populations=graphite_populations,
+                                     silicate_populations=silicate_populations, pah_populations=pah_populations)
+
+# -----------------------------------------------------------------
+
+def adjust_dust_component(ski, name, component, title=None):
+
+    """
+    Thisf unction ...
+    :param ski:
+    :param name:
+    :param component:
+    :param title:
+    :return:
+    """
 
     # Set geometry
     if "model" in component: set_dust_component_model(ski, component)
@@ -246,6 +508,9 @@ def add_dust_component(ski, name, component):
 
     # From parameters
     if component.parameters is not None:
+
+        # Check title
+        if title is not None and component.parameters.title != title: raise ValueError("The title of the component '" + title + "' doesn't match that defined in the component parameters")
 
         # Check if this is a new dust component, add geometry, mix and normalization all at once
         if "geometry" in component.parameters: set_dust_component_geometry_mix_and_normalization(ski, component)
@@ -269,10 +534,9 @@ def add_dust_component(ski, name, component):
         #element = ski.create_element(element_name, component.properties)
         #print(element)
 
-        ski.add_dust_component(component.properties, name)
-
-    # Return the map filename
-    return filename
+        # Check if title is given
+        if title is None: log.warning("Title for the component '" + name + "' is not given")
+        ski.add_dust_component(component.properties, title=title)
 
 # -----------------------------------------------------------------
 

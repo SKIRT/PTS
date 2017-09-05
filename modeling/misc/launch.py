@@ -175,6 +175,18 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.parameter_values) > 0
+
+    # -----------------------------------------------------------------
+
     def get_model(self):
 
         """
@@ -194,12 +206,14 @@ class ModelLauncher(ModelSimulationInterface):
         # Invalid
         else: raise ValueError("Invalid value for 'origin'")
 
-        # Show the model parameters
-        print("")
-        print("Model parameter values:")
-        print("")
-        for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
-        print("")
+        # Show the model parameters, if any are chosen
+        if self.has_parameter_values:
+            print("")
+            print("Model parameter values:")
+            print("")
+            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            print("")
+        else: log.info("Using the standard parameter values of the model")
 
     # -----------------------------------------------------------------
 

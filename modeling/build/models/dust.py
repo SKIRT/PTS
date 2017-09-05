@@ -20,7 +20,7 @@ from ..suite import model_map_filename
 from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ...component.galaxy import GalaxyModelingComponent
-from pts.core.tools.utils import lazyproperty
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

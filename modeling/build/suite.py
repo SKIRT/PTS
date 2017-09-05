@@ -697,6 +697,8 @@ class ModelSuite(object):
         :return:
         """
 
+        from .models.stars import titles as stellar_titles
+
         # Inform the user
         log.info("Adding the stellar components of model '" + model_name + "' to the ski file ...")
 
@@ -707,8 +709,11 @@ class ModelSuite(object):
             #component = load_stellar_component(self.config.path, self.model_name, name)
             component = self.load_stellar_component(model_name, name, add_map=False)
 
+            # Try to get the title
+            title = stellar_titles[name] if name in stellar_titles else None
+
             # Add the stellar component
-            map_filename = add_stellar_component(ski, name, component)
+            map_filename = add_stellar_component(ski, name, component, title=title)
 
             # If map filename is defined, set path in dictionary
             if map_filename is not None: input_map_paths[map_filename] = component.map_path
@@ -725,6 +730,8 @@ class ModelSuite(object):
         :return:
         """
 
+        from .models.dust import titles as dust_titles
+
         # Inform the user
         log.info("Adding the dust components of model '" + model_name + "' to the ski file ...")
 
@@ -735,8 +742,11 @@ class ModelSuite(object):
             #component = load_dust_component(self.config.path, self.model_name, name)
             component = self.load_dust_component(model_name, name, add_map=False)
 
+            # Try to get the title
+            title = dust_titles[name] if name in dust_titles else None
+
             # Add the dust component
-            map_filename = add_dust_component(ski, name, component)
+            map_filename = add_dust_component(ski, name, component, title=title)
 
             # If map filename is defined, set path in dictionary
             if map_filename is not None: input_map_paths[map_filename] = component.map_path

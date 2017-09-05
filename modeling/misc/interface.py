@@ -280,7 +280,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Loading the dust deprojections ...")
 
         # Loop over the dust components
-        for name in self.model_suite.get_dust_component_names(self.config.path, self.model_name):
+        for name in self.model_suite.get_dust_component_names(self.model_name):
 
             # Load the deprojection of the component, if applicable
             title, deprojection = self.model_suite.load_dust_component_deprojection(self.model_name, name)
@@ -301,16 +301,14 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         azimuth = 0.0
 
         # Use grid?
-        if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?"):
+        if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?", default=False):
 
             earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
                                                                       self.galaxy_inclination, azimuth,
                                                                       self.disk_position_angle)
 
         # Use deprojections
-        else:
-            earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
-                                                                          azimuth)
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth)
 
         # Set the projection systems
         self.projections["earth"] = earth
