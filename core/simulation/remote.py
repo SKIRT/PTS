@@ -66,6 +66,37 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_remote(cls, remote):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Create
+        skirt = cls()
+
+        # Give warning
+        log.warning("When creating a SkirtRemote instance from a regular Remote instance, the original Remote instance should not be used anymore")
+
+        # Set attributes
+        skirt.ssh = remote.ssh
+        skirt.host = remote.host
+        skirt.vpn = remote.vpn
+        skirt.connected = remote.connected
+        skirt.commands = remote.commands
+
+        # Locate SKRIT
+        success = skirt.locate_skirt()
+        if not success: raise RuntimeError("Could not locate SKIRT on the remote host")
+
+        # Return the instance
+        return skirt
+
+    # -----------------------------------------------------------------
+
     def setup(self, host_id, cluster_name=None):
 
         """
@@ -78,6 +109,21 @@ class SkirtRemote(Remote):
         # Call the setup function of the base class
         success = super(SkirtRemote, self).setup(host_id, cluster_name)
         if not success: return False
+
+        # Locate SKIRT
+        return self.locate_skirt()
+
+    # -----------------------------------------------------------------
+
+    def locate_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        success = True
 
         # Obtain some information about the SKIRT installation on the remote machine
         self.skirt_path = self.find_executable("skirt")

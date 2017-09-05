@@ -107,8 +107,8 @@ class RemoteSynchronizer(Configurable):
                 if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
                 # Create a remote SKIRT execution context
-                if introspection.skirt_is_present(): remote = SkirtRemote()
-                else: remote = Remote()
+                remote = Remote()
+                if introspection.skirt_is_present() and remote.has_skirt: remote = SkirtRemote.from_remote(remote)
 
                 # Setup the remote execution context
                 if not remote.setup(host_id):
@@ -174,6 +174,9 @@ class RemoteSynchronizer(Configurable):
 
         # Loop over the different remotes
         for remote in self.remotes:
+
+            # Check whether SKIRT is present on the remote
+            if not remote.has_skirt: continue
 
             # Inform the user
             log.debug("Retrieving the simulations of remote '" + remote.system_name + "' ...")
@@ -288,6 +291,9 @@ class RemoteSynchronizer(Configurable):
 
         # Loop over the different remotes
         for remote in self.remotes:
+
+            # Check whether SKIRT is present
+            if not remote.has_skirt: continue
 
             # Get the status of the different simulations
             status = remote.get_status()
