@@ -1460,3 +1460,45 @@ def show_best(best):
     print("")
 
 # -----------------------------------------------------------------
+
+def get_best_parameter_values_per_generation(database_path, populations_path, run_id):
+
+    """
+    This function ...
+    :param database_path:
+    :param populations_path:
+    :param run_id:
+    :return:
+    """
+
+    import pandas as pd
+    from ..analyse.database import get_best_individual_key_for_generation
+    from .stepwise import load_populations
+
+    key = []
+    for g_n in np.arange(11):
+        key.append(get_best_individual_key_for_generation(database_path, run_id, g_n, "min"))
+
+    pop = load_populations(populations_path)
+
+    vred = pop.values()
+    va_t = []
+    ke_t = []
+
+    va = pd.DataFrame(columns=[['Name', 'Binary']])
+    for ind, k in enumerate(key):
+        for i in vred:
+            ke_t.append(i[ind].keys()[0])
+            va_t.append(i[ind].values()[0])
+
+    va['Name'] = ke_t
+    va['Binary'] = va_t
+
+    #va['Values'] = None
+
+    va.index.name = 'Generation'
+
+    #
+    return va
+
+# -----------------------------------------------------------------
