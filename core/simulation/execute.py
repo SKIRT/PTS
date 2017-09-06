@@ -304,31 +304,45 @@ class SkirtExec:
             # Show SKIRT error messages
             log.error("SKIRT output:")
             log.error("--------------------------")
-            # out, err = self._process.communicate()
 
             # Output was streamed to file
             if self._output_file is not None:
                 for line in self._output_file: log.info(line)
                 for line in self._error_file: log.error(line)
-            else:
-
-                # Try to get standard and error output from the process
-                out, err = self._process.communicate()
-
-                for line in out:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
-
-                for line in err:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
+            else: self.show_errors()
 
             log.error("--------------------------")
 
             # Raise an error since the simulation crashed
             raise RuntimeError("The simulation crashed")
+
+    ## This function shows the errors that appeared with the simulation
+    def show_errors(self):
+
+        # Subprocess
+        if isinstance(self._process, subprocess.Popen):
+
+            # Try to get standard and error output from the process
+            out, err = self._process.communicate()
+
+            for line in out:
+                if "*** Error" in line:
+                    line = line.split("*** Error: ")[1].split("\n")[0]
+                    log.error(line)
+
+            for line in err:
+                if "*** Error" in line:
+                    line = line.split("*** Error: ")[1].split("\n")[0]
+                    log.error(line)
+
+        # Pexpect spawn object
+        elif introspection.lazy_isinstance(self._process, "spawn", "pexpect", return_false_if_fail=True):
+
+            print(self._process.logfile)
+            for line in self._process.logfile: print(line)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state of the process object")
 
     ## This functions runs the simulation with Pexpect
     def run_pexpect(self):

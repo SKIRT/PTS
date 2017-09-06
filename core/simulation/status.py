@@ -29,6 +29,7 @@ from ..tools import strings
 # -----------------------------------------------------------------
 
 phase_descriptions = dict()
+phase_descriptions["start"] = "the simulation"
 phase_descriptions["setup"] = "setup of the simulation"
 phase_descriptions["stellar"] = "emission of stellar photons"
 phase_descriptions["spectra"] = "calculation of dust emission spectra"
@@ -41,7 +42,7 @@ phase_descriptions["wait"] = "waiting for synchronization"
 
 skirt_debug_output_prefix = "SKIRT :: [[ "
 skirt_debug_output_suffix = " ]]"
-ndebug_output_whitespaces = 20
+ndebug_output_whitespaces = 55
 
 # -----------------------------------------------------------------
 
@@ -102,6 +103,55 @@ class SimulationStatus(object):
         """
 
         return len(self.log_lines)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_line(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_lines[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_message(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.nlines == 0: return None
+        else: return self.last_line[26:]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_line(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_lines[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_message(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.first_line[26:]
 
     # -----------------------------------------------------------------
 
@@ -508,10 +558,13 @@ class LogSimulationStatus(SimulationStatus):
             usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(skirt_debug_output_suffix) - ndebug_output_whitespaces
             if usable_ncolumns < 20: usable_ncolumns = 20
             nnew = len(lines) - self.nlines
+            previous_message = ""
             for line in lines[-nnew:]:
                 message = line[26:]
+                if strings.similarity(message, previous_message) > 0.95: continue
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+                previous_message = message
 
         # SET THE LOG LINES
         self.log_lines = lines
@@ -703,6 +756,7 @@ class SpawnSimulationStatus(SimulationStatus):
             # Show the SKIRT line if debug_output is enabled
             if self.debug_output:
                 message = line[26:]
+                if self.last_message is not None and strings.similarity(message, self.last_message) > 0.95: continue
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 

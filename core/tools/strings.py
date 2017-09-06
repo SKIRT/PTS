@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+import difflib
 from textwrap import wrap
 from string import ascii_lowercase
 import itertools
@@ -1108,5 +1109,18 @@ def add_ellipsis(string, length, position="end"):
 
         # Invalid
         else: raise ValueError("Invalid option for 'position'")
+
+# -----------------------------------------------------------------
+
+def similarity(string_a, string_b):
+
+    """
+    This function ...
+    :param string_a:
+    :param string_b:
+    :return:
+    """
+
+    return difflib.SequenceMatcher(None, string_a, string_b).ratio()
 
 # -----------------------------------------------------------------
