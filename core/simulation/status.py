@@ -573,10 +573,9 @@ class LogSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if strings.similarity(message, previous_message) > similarity_threshold:
                     self.nsimilar += 1
-                    if self.nsimilar % similar_log_frequency != 0: continue
                     if self.nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
                         similar_log_frequency *= 10
-                        continue
+                    if self.nsimilar % similar_log_frequency != 0: continue
                 self.nsimilar = 0
 
                 # Show only if not want to be ignored
@@ -782,10 +781,9 @@ class SpawnSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if self.last_message is not None and strings.similarity(message, self.last_message) > similarity_threshold:
                     nsimilar += 1
-                    if nsimilar % similar_log_frequency != 0: continue
                     if nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
                         similar_log_frequency *= 10
-                        continue
+                    if nsimilar % similar_log_frequency != 0: continue
                 nsimilar = 0
                 # Show only if not want to be ignored
                 if self.ignore_output is not None and contains_any(message, self.ignore_output): continue

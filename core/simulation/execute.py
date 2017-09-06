@@ -287,7 +287,7 @@ class SkirtExec:
         prefix = arguments.prefix
         log_path = fs.join(out_path, prefix + "_log.txt")
 
-        ignore_output = ["Adding dust population", "Grain sizes range from", "Grain composition grid", "Reading heat capacity data", "Reading grain composition"]
+        ignore_output = ["Adding dust population", "Grain sizes range from", "Grain composition grid", "Reading heat capacity data", "Reading grain composition", "closed."]
 
         # Create the simulation status object
         if self.using_pexpect: status = SpawnSimulationStatus(self._process, debug_output=debug_output, ignore_output=ignore_output)

@@ -551,7 +551,9 @@ class ModelLauncher(ModelSimulationInterface):
         analysis_options = None
         parallelization = None
 
+        nprocesses = 2
+
         # Run the simulation
-        self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization)
+        self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization, nprocesses=nprocesses)
 
 # -----------------------------------------------------------------

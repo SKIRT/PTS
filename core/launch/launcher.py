@@ -75,6 +75,9 @@ class SKIRTLauncher(Configurable):
         # The parallelization scheme
         self.parallelization = None
 
+        # The number of processes
+        self.nprocesses = None
+
         # The simulation object
         self.simulation = None
 
@@ -167,6 +170,21 @@ class SKIRTLauncher(Configurable):
         # Get the parallelization
         if "parallelization" in kwargs: self.parallelization = kwargs.pop("parallelization")
 
+        # Get the number of processes
+        if "nprocesses" in kwargs: self.nprocesses = kwargs.pop("nprocesses")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nprocesses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nprocesses is not None
+
     # -----------------------------------------------------------------
 
     def create_analysis_options(self):
@@ -249,7 +267,7 @@ class SKIRTLauncher(Configurable):
         log.info("Determining the optimal parallelization scheme ...")
 
         # Check whether MPI is available on this system
-        if introspection.has_mpi():
+        if introspection.has_mpi() and not self.has_nprocesses:
 
             # If memory requirement is not set
             if self.memory is None:
@@ -285,6 +303,9 @@ class SKIRTLauncher(Configurable):
                 # Exit with an error
                 log.error("Not enough memory available to run this simulation locally: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
                 exit()
+
+        # Has number of processes defined
+        elif self.has_nprocesses: processes = self.nprocesses
 
         # No MPI available
         else: processes = 1
