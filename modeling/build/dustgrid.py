@@ -22,7 +22,6 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.launch.launcher import SKIRTLauncher
 from .construct import add_dust_component
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.parallelization import Parallelization
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ...core.simulation.tree import DustGridTree
@@ -33,6 +32,7 @@ from ...core.basics.configuration import save_mapping
 from ...core.plot.grids import plotgrids
 from ...magic.core.list import NamedFrameList
 from ...core.tools.utils import lazyproperty
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -48,6 +48,30 @@ cell_properties_filename = simulation_prefix + "_ds_cellprops.dat"
 convergence_filename = simulation_prefix + "_ds_convergence.dat"
 quality_filename = simulation_prefix + "_ds_quality.dat"
 log_filename = simulation_prefix + "_log.txt"
+
+# -----------------------------------------------------------------
+
+# WRITE OPTIONS IN SKI:
+
+# BinTreeDustGrid /  OctTreeDustGrid:
+# writeGrid="true" writeTree="true"
+
+# OligoDustSystem:
+# writeCellProperties="true" writeCellsCrossed="true" writeConvergence="true"
+# writeDensity="true" writeDepthMap="true" writeMeanIntensity="true" writeQuality="true"
+# writeStellarDensity="false"
+
+# Dust mix:
+# writeMeanMix="true" writeMix="true" writeSize="true"
+
+# -----------------------------------------------------------------
+
+# Writing settings that have to be enabled for certain quality measures
+quality_settings = dict()
+quality_settings["projected"] = ["density"]
+quality_settings["optical_depth"] = ["cell_properties", "quality"]
+quality_settings["density"] = ["quality", "convergence"]
+quality_settings["dust_mass"] = ["convergence"]
 
 # -----------------------------------------------------------------
 
@@ -277,10 +301,39 @@ class DustGridBuilder(Configurable):
         self.ski.set_dust_grid(self.dust_grid)
 
         # Disable all writing options
-        #self.ski.disable_all_writing_options()
+        self.ski.disable_all_writing_options()
 
         # Enable writing options
-        self.ski.enable_all_writing_options()
+        #self.ski.enable_all_writing_options()
+
+        # Enable only writing options that are relevant for the desired quality measures
+
+        ## Enable writing the tree
+        if self.smile.supports_file_tree_grids: self.ski.set_write_grid_tree()
+
+        ## For projected quality
+        if self.config.quality and self.config.projected_quality:
+            for setting_name in quality_settings["projected"]:
+                set_setting_method = getattr(SkiFile, "set_write_" + setting_name)
+                set_setting_method(self.ski) # call
+
+        ## For optical depth quality
+        if self.config.quality and self.config.optical_depth_quality:
+            for setting_name in quality_settings["optical_depth"]:
+                set_setting_method = getattr(SkiFile, "set_write_" + setting_name)
+                set_setting_method(self.ski) # call
+
+        ## For density quality
+        if self.config.quality and self.config.density_quality:
+            for setting_name in quality_settings["density"]:
+                set_setting_method = getattr(SkiFile, "set_write_" + setting_name)
+                set_setting_method(self.ski) # call
+
+        ## For dust mass quality
+        if self.config.quality and self.config.dust_mass_quality:
+            for setting_name in quality_settings["dust_mass"]:
+                set_setting_method = getattr(SkiFile, "set_write_" + setting_name)
+                set_setting_method(self.ski) # call
 
         # Disable writing stellar density (we don't have a stellar system)
         # BUT DON'T CALL THE FUNCTION WHEN THE SKIRT VERSION DOES NOT SUPPORT WRITING STELLAR DENSITY
@@ -306,7 +359,10 @@ class DustGridBuilder(Configurable):
 
         # Set settings
         self.launcher.config.show_progress = True
-        self.launcher.config.finish_after = "Writing dust cell properties" # finish after this line has been printed (when the next one comes)
+        # finish after this line has been printed (when the next one comes)
+        # NO: not this message: it is possible that it is not printed as the writing settings that are enabled depend on the quality measures that are requested
+        #self.launcher.config.finish_after = "Writing dust cell properties"
+        self.launcher.config.finish_at = "There are no stellar components"
         self.launcher.config.debug_output = True
 
         # Run
@@ -501,8 +557,8 @@ class DustGridBuilder(Configurable):
         # Create
         self.optical_depth_quality = Map()
         self.optical_depth_quality.tau90= self.optical_depth_90
-        self.optical_depth_quality.mean = self.optical_depth_quality[0]
-        self.optical_depth_quality.stddev = self.optical_depth_quality[1]
+        self.optical_depth_quality.mean = self.optical_depth_mean_and_stddev[0]
+        self.optical_depth_quality.stddev = self.optical_depth_mean_and_stddev[1]
 
     # -----------------------------------------------------------------
 
@@ -518,11 +574,10 @@ class DustGridBuilder(Configurable):
 
         # Set the quality measures
         self.density_quality = Map()
-        self.density_quality.mean = self.density_quality[0]
-        self.density_quality.stddev = self.density_quality[1]
+        self.density_quality.mean = self.density_mean_and_stddev[0]
+        self.density_quality.stddev = self.density_mean_and_stddev[1]
 
         self.density_quality.surface = Map()
-
         self.density_quality.surface.x = Map()
         self.density_quality.surface.x.expected = self.surface_density_convergence[0]
         self.density_quality.surface.x.actual = self.surface_density_convergence[1]
@@ -650,7 +705,7 @@ class DustGridBuilder(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def optical_depth_quality(self):
+    def optical_depth_mean_and_stddev(self):
 
         """
         This function ...
@@ -672,7 +727,7 @@ class DustGridBuilder(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def density_quality(self):
+    def density_mean_and_stddev(self):
 
         """
         This function ...

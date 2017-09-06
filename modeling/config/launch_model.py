@@ -54,6 +54,15 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 # -----------------------------------------------------------------
 
 # Whether quality has to be calculated
-definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", True)
+definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", False)
+
+# -----------------------------------------------------------------
+
+# Flags to calculate various aspects of the dust grid quality
+# definition.add_flag("quality", "get the quality of the dust grid", True)
+# definition.add_flag("projected_quality", "get the projected quality", True)
+# definition.add_flag("optical_depth_quality", "get the optical depth quality", True)
+# definition.add_flag("density_quality", "get the density quality", True)
+# definition.add_flag("dust_mass_quality", "get the dust mass quality", True)
 
 # -----------------------------------------------------------------

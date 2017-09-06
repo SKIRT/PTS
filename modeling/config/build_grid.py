@@ -30,6 +30,7 @@ definition.add_flag("write", "do writing", True)
 
 definition.add_flag("plot", "do plotting", True)
 
+# Flags to calculate various aspects of the dust grid quality
 definition.add_flag("quality", "get the quality of the dust grid", True)
 definition.add_flag("projected_quality", "get the projected quality", True)
 definition.add_flag("optical_depth_quality", "get the optical depth quality", True)

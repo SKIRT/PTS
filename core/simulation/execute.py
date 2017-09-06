@@ -287,9 +287,11 @@ class SkirtExec:
         prefix = arguments.prefix
         log_path = fs.join(out_path, prefix + "_log.txt")
 
+        ignore_output = ["Adding dust population", "Grain sizes range from", "Grain composition grid", "Reading heat capacity data", "Reading grain composition"]
+
         # Create the simulation status object
-        if self.using_pexpect: status = SpawnSimulationStatus(self._process, debug_output=debug_output)
-        else: status = LogSimulationStatus(log_path, debug_output=debug_output)
+        if self.using_pexpect: status = SpawnSimulationStatus(self._process, debug_output=debug_output, ignore_output=ignore_output)
+        else: status = LogSimulationStatus(log_path, debug_output=debug_output, ignore_output=ignore_output)
 
         # Show the simulation progress
         if self.using_pexpect: success = status.show_progress(finish_at=finish_at, finish_after=finish_after)
@@ -309,7 +311,7 @@ class SkirtExec:
             if self._output_file is not None:
                 for line in self._output_file: log.info(line)
                 for line in self._error_file: log.error(line)
-            else: self.show_errors()
+            else: self.show_errors(status)
 
             log.error("--------------------------")
 
@@ -317,7 +319,7 @@ class SkirtExec:
             raise RuntimeError("The simulation crashed")
 
     ## This function shows the errors that appeared with the simulation
-    def show_errors(self):
+    def show_errors(self, status):
 
         # Subprocess
         if isinstance(self._process, subprocess.Popen):
@@ -338,8 +340,15 @@ class SkirtExec:
         # Pexpect spawn object
         elif introspection.lazy_isinstance(self._process, "spawn", "pexpect", return_false_if_fail=True):
 
-            print(self._process.logfile)
-            for line in self._process.logfile: print(line)
+            #print(self._process.logfile)
+            #print(self._process.stdout)
+            #for line in self._process.stdout: print(line)
+
+            # Loop over the log lines
+            for line in status.log_lines:
+                if "*** Error" in line:
+                    line = line.split("*** Error: ")[1].split("\n")[0]
+                    log.error(line)
 
         # Invalid
         else: raise RuntimeError("Invalid state of the process object")

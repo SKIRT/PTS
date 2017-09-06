@@ -46,6 +46,10 @@ ndebug_output_whitespaces = 55
 
 # -----------------------------------------------------------------
 
+similarity_threshold = 0.90
+
+# -----------------------------------------------------------------
+
 class SimulationStatus(object):
 
     """
@@ -56,7 +60,7 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, debug_output=False):
+    def __init__(self, debug_output=False, ignore_output=None):
 
         """
         This function ...
@@ -65,6 +69,7 @@ class SimulationStatus(object):
 
         # Set attributes
         self.debug_output = debug_output
+        self.ignore_output = ignore_output
 
         # The status
         self.status = None
@@ -262,21 +267,25 @@ class LogSimulationStatus(SimulationStatus):
     This class ...
     """
 
-    def __init__(self, log_path, remote=None, debug_output=False):
+    def __init__(self, log_path, remote=None, debug_output=False, ignore_output=None):
 
         """
         The constructor ...
         :param log_path:
         :param remote:
         :param debug_output:
+        :param ignore_output:
         """
 
         # Call the constructor of the base class
-        super(LogSimulationStatus, self).__init__(debug_output=debug_output)
+        super(LogSimulationStatus, self).__init__(debug_output=debug_output, ignore_output=ignore_output)
 
         # Set attributes
         self.log_path = log_path
         self.remote = remote
+
+        # Number of consecutive similar log lines that are encountered
+        self.nsimilar = 0
 
         # Refresh the status
         self.refresh()
@@ -510,13 +519,14 @@ class LogSimulationStatus(SimulationStatus):
 
     # -----------------------------------------------------------------
 
-    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None):
+    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None, similar_log_frequency=10):
 
         """
         This function ...
         :param process_or_handle:
         :param finish_at:
         :param finish_after:
+        :param similar_log_frequency:
         :return:
         """
 
@@ -561,7 +571,16 @@ class LogSimulationStatus(SimulationStatus):
             previous_message = ""
             for line in lines[-nnew:]:
                 message = line[26:]
-                if strings.similarity(message, previous_message) > 0.95: continue
+                if strings.similarity(message, previous_message) > similarity_threshold:
+                    self.nsimilar += 1
+                    if self.nsimilar % similar_log_frequency != 0: continue
+                    if self.nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
+                        similar_log_frequency *= 10
+                        continue
+                self.nsimilar = 0
+
+                # Show only if not want to be ignored
+                if self.ignore_output is not None and contains_any(message, self.ignore_output): continue
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
                 previous_message = message
@@ -683,16 +702,17 @@ class SpawnSimulationStatus(SimulationStatus):
     This function ...
     """
 
-    def __init__(self, child, debug_output=False):
+    def __init__(self, child, debug_output=False, ignore_output=None):
 
         """
         This function ...
         :param child:
         :param debug_output:
+        :param ignore_output:
         """
 
         # Call the constructor of the base class
-        super(SpawnSimulationStatus, self).__init__(debug_output=debug_output)
+        super(SpawnSimulationStatus, self).__init__(debug_output=debug_output, ignore_output=ignore_output)
 
         # Set the child
         self.child = child
@@ -702,22 +722,24 @@ class SpawnSimulationStatus(SimulationStatus):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self, finish_at=None, finish_after=None, refresh_frequency=5):
+    def show_progress(self, finish_at=None, finish_after=None, refresh_frequency=5, similar_log_frequency=10):
 
         """
         This function ...
         :param finish_at:
         :param finish_after:
         :param refresh_frequency: number lines after which to refresh
+        :param similar_log_frequency:
         :return:
         """
 
         # Track the progress and show
-        return self.track_progress(show=True, finish_at=finish_at, finish_after=finish_after, refresh_frequency=refresh_frequency)
+        return self.track_progress(show=True, finish_at=finish_at, finish_after=finish_after,
+                                   refresh_frequency=refresh_frequency, similar_log_frequency=similar_log_frequency)
 
     # -----------------------------------------------------------------
 
-    def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5):
+    def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5, similar_log_frequency=10):
 
         """
         This function ...
@@ -725,6 +747,7 @@ class SpawnSimulationStatus(SimulationStatus):
         :param finish_at:
         :param finish_after:
         :param refresh_frequency:
+        :param similar_log_frequency:
         :return:
         """
 
@@ -751,12 +774,21 @@ class SpawnSimulationStatus(SimulationStatus):
         last_extra = None
 
         # Loop over the lines
+        nsimilar = 0
         for line in terminal.fetch_lines(self.child):
 
             # Show the SKIRT line if debug_output is enabled
             if self.debug_output:
                 message = line[26:]
-                if self.last_message is not None and strings.similarity(message, self.last_message) > 0.95: continue
+                if self.last_message is not None and strings.similarity(message, self.last_message) > similarity_threshold:
+                    nsimilar += 1
+                    if nsimilar % similar_log_frequency != 0: continue
+                    if nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
+                        similar_log_frequency *= 10
+                        continue
+                nsimilar = 0
+                # Show only if not want to be ignored
+                if self.ignore_output is not None and contains_any(message, self.ignore_output): continue
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 
@@ -766,8 +798,10 @@ class SpawnSimulationStatus(SimulationStatus):
             # CHECK WHETHER WE HAVE TO BREAK
             if break_after_next_line:
                 self.status = "finished"
-                break
+                #break
                 #return
+                log.success("Simulation finished")
+                return True
 
             # NEW: CHECK WHETHER USER WANTS TO FINISH AFTER A SPECIFIC LINE
             #if "finish_after" in kwargs:
@@ -796,20 +830,24 @@ class SpawnSimulationStatus(SimulationStatus):
                     #if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
                     #    terminal.kill(process_or_handle.pid) # KILL
                     #return
-                    break
+                    #break
+                    log.success("Simulation finished")
+                    return True
 
             # CONTINUE 'JUST EXPECTING' AND FILLING LOG_LINES UNTIL WE ACTUALLY HAVE TO DO THE WORK OF CHECKING THE PHASE AND STUFF
             if self.nlines % refresh_frequency != 0: continue
 
             # Debugging
-            if self.debug_output: log.debug("Refreshing the status ...")
+            #if self.debug_output: log.debug("Refreshing the status ...")
 
             # Interpret the content of the last line
             if " Finished simulation " in line:
                 # print("FOUND FINISHED SIMULATION IN LAST LOG LINE [" + last + "]")
                 self.status = "finished"
                 #return
-                break
+                #break
+                log.success("Simulation finished")
+                return True
 
             elif " *** Error: " in line:
                 # print("FOUND ERROR IN LAST LOG LINE [" + last + "]")
@@ -817,7 +855,9 @@ class SpawnSimulationStatus(SimulationStatus):
                 # for line in lines: print("  " + line)
                 self.status = "crashed"
                 #return
-                break
+                #break
+                log.error("Simulation crashed")
+                return False
 
             # Running
             else:
@@ -825,7 +865,9 @@ class SpawnSimulationStatus(SimulationStatus):
                 # Check if the child is alive
                 if not self.child.isalive():
                     self.status = "aborted"
-                    break
+                    #break
+                    log.error("Simulation has been aborted")
+                    return False
 
                 # Running
                 self.status = "running"
@@ -838,23 +880,24 @@ class SpawnSimulationStatus(SimulationStatus):
             #print(last_cycle, self.cycle)
             #print(last_extra, self.extra)
 
-            # Finished: break loop
-            if self.finished:
-                log.success("Simulation finished")
-                return True
+            # # Finished: break loop
+            # if self.finished:
+            #     log.success("Simulation finished")
+            #     return True
 
-            # Crashed: break loop
-            elif self.crashed:
-                log.error("Simulation crashed")
-                return False
-
-            # Aborted: break loop
-            elif self.aborted:
-                log.error("Simulation has been aborted")
-                return False
+            # # Crashed: break loop
+            # elif self.crashed:
+            #     log.error("Simulation crashed")
+            #     return False
+            #
+            # # Aborted: break loop
+            # elif self.aborted:
+            #     log.error("Simulation has been aborted")
+            #     return False
 
             # New phase
-            elif last_phase is None or self.phase != last_phase:
+            #elif last_phase is None or self.phase != last_phase:
+            if last_phase is None or self.phase != last_phase:
 
                 last_phase = self.phase
                 if last_phase is None: continue
@@ -942,6 +985,9 @@ class SpawnSimulationStatus(SimulationStatus):
                     if last_extra is None or last_extra != self.extra:
                         log.info(self.extra)
                     last_extra = self.extra
+
+        # We shouldn't get here
+        raise RuntimeError("We shouldn't get here!")
 
     # -----------------------------------------------------------------
 
@@ -1205,5 +1251,20 @@ def get_phase_info(lines):
 
     # Return the info
     return phase, simulation_phase, stage, cycle, progress, extra
+
+# -----------------------------------------------------------------
+
+def contains_any(string, patterns):
+
+    """
+    Thisf unction ...
+    :param string:
+    :param patterns:
+    :return:
+    """
+
+    for pattern in patterns:
+        if pattern in string: return True
+    return False
 
 # -----------------------------------------------------------------
