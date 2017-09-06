@@ -747,6 +747,9 @@ class SpawnSimulationStatus(SimulationStatus):
             # CONTINUE 'JUST EXPECTING' AND FILLING LOG_LINES UNTIL WE ACTUALLY HAVE TO DO THE WORK OF CHECKING THE PHASE AND STUFF
             if self.nlines % refresh_frequency != 0: continue
 
+            # Debugging
+            if self.debug_output: log.debug("Refreshing the status ...")
+
             # Interpret the content of the last line
             if " Finished simulation " in line:
                 # print("FOUND FINISHED SIMULATION IN LAST LOG LINE [" + last + "]")
@@ -774,7 +777,12 @@ class SpawnSimulationStatus(SimulationStatus):
                 self.status = "running"
 
                 # Get the info
-                self.phase, self.simulation_phase, stage, cycle, progress, extra = get_phase_info(self.log_lines)
+                self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(self.log_lines)
+
+            #print(last_phase, self.phase)
+            #print(last_stage, self.stage)
+            #print(last_cycle, self.cycle)
+            #print(last_extra, self.extra)
 
             # Finished: break loop
             if self.finished:
@@ -800,86 +808,86 @@ class SpawnSimulationStatus(SimulationStatus):
                     if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
                     else: log.info("Starting " + phase_descriptions[last_phase] + " ...")
 
-                # Self absorption phase
-                if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
+            # Self absorption phase
+            if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
 
-                    # print("DUST SELF-ABSORPTION")
+                # print("DUST SELF-ABSORPTION")
 
-                    total_length = 100
+                total_length = 100
 
-                    if self.stage is None:
-                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
-                        continue
+                if self.stage is None:
+                    #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                    continue
 
-                    if last_stage is None or self.stage != last_stage:
-                        log.info("Starting stage " + str(self.stage + 1) + " ...")
-                        last_stage = self.stage
+                if last_stage is None or self.stage != last_stage:
+                    log.info("Starting stage " + str(self.stage + 1) + " ...")
+                    last_stage = self.stage
 
-                    if self.cycle is None:
-                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
-                        continue
+                if self.cycle is None:
+                    #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                    continue
 
-                    if last_cycle is None or self.cycle != last_cycle:
+                if last_cycle is None or self.cycle != last_cycle:
 
-                        log.info("Starting cycle " + str(self.cycle) + " ...")
-                        last_cycle = self.cycle
-
-                        # Progress bar
-                        if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                                 filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True)
-
-                        if self.stage != last_stage:
-                            self._bar.show(100) # make sure it always ends on 100%
-                            self._bar.__exit__()
-
-                        if self.cycle != last_cycle:
-                            self._bar.show(100) # make sure it always ends on 100%
-                            self._bar.__exit__()
-
-                        if self.progress is None:
-                            self._bar.show(100)
-                            #self._bar.__exit__() # ?
-
-                        else: self._bar.show(int(self.progress))
-                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
-
-                        #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
-                        continue
-
-                    else: continue
-                    #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
-
-                # Stellar emission: show progress bar
-                elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
-
-                    total_length = 100
+                    log.info("Starting cycle " + str(self.cycle) + " ...")
+                    last_cycle = self.cycle
 
                     # Progress bar
                     if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
-                             add_datetime=True)
-                    # Loop
-                    #while True:
+                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True)
 
-                    if self.phase != last_phase:
-                        self._bar.show(100)  # make sure it always ends on 100%
+                    if self.stage != last_stage:
+                        self._bar.show(100) # make sure it always ends on 100%
+                        self._bar.__exit__()
+
+                    if self.cycle != last_cycle:
+                        self._bar.show(100) # make sure it always ends on 100%
                         self._bar.__exit__()
 
                     if self.progress is None:
                         self._bar.show(100)
-                        self._bar.__exit__()
+                        #self._bar.__exit__() # ?
 
                     else: self._bar.show(int(self.progress))
                     #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+
+                    #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
                     continue
 
-                # Same phase
-                else:
+                else: continue
+                #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
-                    if self.extra is not None:
-                        if last_extra is None or last_extra != self.extra:
-                            log.info(self.extra)
-                        last_extra = self.extra
+            # Stellar emission: show progress bar
+            elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
+
+                total_length = 100
+
+                # Progress bar
+                if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                         filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
+                         add_datetime=True)
+                # Loop
+                #while True:
+
+                if self.phase != last_phase:
+                    self._bar.show(100)  # make sure it always ends on 100%
+                    self._bar.__exit__()
+
+                if self.progress is None:
+                    self._bar.show(100)
+                    self._bar.__exit__()
+
+                else: self._bar.show(int(self.progress))
+                #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                continue
+
+            # Same phase
+            else:
+
+                if self.extra is not None:
+                    if last_extra is None or last_extra != self.extra:
+                        log.info(self.extra)
+                    last_extra = self.extra
 
     # -----------------------------------------------------------------
 
