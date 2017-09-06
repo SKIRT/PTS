@@ -1125,7 +1125,7 @@ class Projector(GalaxyModelingComponent):
             definition = SingleSimulationDefinition(ski_path, out_path, in_path)
 
             # Set settings
-            self.launcher.config.progress_bar = True
+            self.launcher.config.show_progress = True
 
             # Run
             self.launcher.run(definition=definition, parallelization=self.config.parallelization)

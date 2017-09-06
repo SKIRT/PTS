@@ -380,7 +380,7 @@ class M81Test(M81TestBase):
         settings_launch["create_output"] = True
         settings_launch["remote"] = self.host_id
         settings_launch["attached"] = True
-        settings_launch["progress_bar"] = True
+        settings_launch["show_progress"] = True
 
         # Create the analysis options
         analysis = AnalysisOptions()

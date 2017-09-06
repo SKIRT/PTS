@@ -813,3 +813,102 @@ def kill(proc_pid):
     process.kill()
 
 # -----------------------------------------------------------------
+
+def size():
+
+    """
+    Thisf unction ...
+    :return:
+    """
+
+    import os
+    rows, columns = os.popen('stty size', 'r').read().split()
+    return int(rows), int(columns)
+
+# -----------------------------------------------------------------
+
+def nrows():
+
+    """
+    This function ...
+    :return:
+    """
+
+    rows, columns = size()
+    return rows
+
+# -----------------------------------------------------------------
+
+def ncolumns():
+
+    """
+    This function ...
+    :return:
+    """
+
+    rows, columns = size()
+    return columns
+
+# -----------------------------------------------------------------
+
+# NO, NO: this is all not possible! Python is running in the current shell so no other commands can be fired into this very shell
+# I THINK
+# def set_size(rows, columns):
+#
+#     """
+#     Thisf unction ...
+#     :param rows:
+#     :param columns:
+#     :return:
+#     """
+#
+#     if introspection.is_macos():
+#
+#         if not types.is_integer_type(rows): raise ValueError("Number of rows must be integer")
+#         if not types.is_integer_type(columns): raise ValueError("Number of columns must be integer")
+#         command = "printf '\e[8;" + str(rows) + ";" + str(columns) + "t'"
+#         print(command)
+#         execute_no_pexpect(command)
+#         import os
+#         os.popen(command, 'r').read()
+#
+#     else:
+#
+#         set_nrows(rows)
+#         set_ncolumns(columns)
+
+# -----------------------------------------------------------------
+
+# NO, NO: this is all not possible! Python is running in the current shell so no other commands can be fired into this very shell
+# I THINK
+# def set_nrows(rows):
+#
+#     """
+#     This function ...
+#     :param rows:
+#     :return:
+#     """
+#
+#     # Compose the command
+#     if not types.is_integer_type(rows): raise ValueError("Number of rows must be integer")
+#     command = "stty rows " + str(rows)
+#     execute_no_pexpect(command)
+
+# -----------------------------------------------------------------
+
+# NO, NO: this is all not possible! Python is running in the current shell so no other commands can be fired into this very shell
+# I THINK
+# def set_ncolumns(columns):
+#
+#     """
+#     Thisf unctino ...
+#     :param columns:
+#     :return:
+#     """
+#
+#     # Compose the command
+#     if not types.is_integer_type(columns): raise ValueError("Number of columns must be integer")
+#     command = "stty columns " + str(columns)
+#     execute_no_pexpect(command)
+
+# -----------------------------------------------------------------

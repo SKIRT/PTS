@@ -1030,3 +1030,83 @@ def replace_first_digit_by_word(string):
     else: return string
 
 # -----------------------------------------------------------------
+
+def add_whitespace_or_ellipsis(string, length, ellipsis_position="end", whitespace_position="end"):
+
+    """
+    This function ...
+    :param string:
+    :param length:
+    :param ellipsis_position:
+    :param whitespace_position:
+    :return:
+    """
+
+    if len(string) < length: return add_whitespace(string, length, position=whitespace_position)
+    elif len(string) == length: return string
+    else: return add_ellipsis(string, length, position=ellipsis_position)
+
+# -----------------------------------------------------------------
+
+def add_whitespace(string, length, position="end"):
+
+    """
+    This function ...
+    :param string:
+    :param length:
+    :return:
+    """
+
+    if len(string) > length: raise ValueError("String is longer than " + str(length))
+    elif len(string) == length: return string
+    else:
+
+        nspaces = length - len(string)
+
+        if position == "end": return string + " " * nspaces
+        elif position == "start": return " " * nspaces + string
+        else: raise ValueError("Invalid option for 'position'")
+
+# -----------------------------------------------------------------
+
+def add_ellipsis(string, length, position="end"):
+
+    """
+    This function ...
+    :param string:
+    :param length:
+    :param position: 'start', 'center' or 'end'
+    :return:
+    """
+
+    if len(string) < length: raise ValueError("String is shorter than " + str(length))
+    elif len(string) == length: return string
+    else:
+
+        # Ellipsis at end
+        if position == "end":
+
+            ellipsis = " ..."
+            return string[:length-4] + ellipsis
+
+        # Ellipsis at start
+        elif position == "start":
+
+            ellipsis = "... "
+            return ellipsis + string[length-len(string)+4]
+
+        # Ellipsis at center
+        elif position == "center":
+
+            ellipsis = " ... "
+            ncharacters = length - 5
+            if ncharacters % 2 == 0: nbegin = nend = int(0.5 * ncharacters)
+            else:
+                nbegin = int(0.5 * ncharacters)
+                nend = ncharacters - nbegin
+            return string[:nbegin] + ellipsis + string[-nend:]
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'position'")
+
+# -----------------------------------------------------------------

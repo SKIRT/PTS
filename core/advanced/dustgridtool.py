@@ -238,7 +238,7 @@ def get_statistics(ski, simulation_path, input_path, prefix):
     arguments.logging.verbose = True
 
     # Run SKIRT
-    simulation = skirt.run(arguments, progress_bar=True)
+    simulation = skirt.run(arguments, show_progress=True)
 
     # Get and parse the log file
     log_file = simulation.log_file

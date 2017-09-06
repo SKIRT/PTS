@@ -872,7 +872,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the model image
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
-        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
+        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, show_progress=True)
 
         # Check WCS
         if self.model_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")

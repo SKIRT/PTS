@@ -506,9 +506,9 @@ class SKIRTLauncher(Configurable):
 
         # Run the simulation
         self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True,
-                                         progress_bar=self.config.progress_bar, parallelization=self.parallelization,
+                                         show_progress=self.config.show_progress, parallelization=self.parallelization,
                                          finish_after=self.config.finish_after, finish_at=self.config.finish_at,
-                                         debug_output=True)
+                                         debug_output=self.config.debug_output)
 
         # Set the simulation name
         self.simulation.name = self.definition.prefix
@@ -617,7 +617,7 @@ class SingleImageSKIRTLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None, progress_bar=False):
+    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None, show_progress=False):
 
         """
         This function ...
@@ -627,7 +627,7 @@ class SingleImageSKIRTLauncher(object):
         :param total_flux:
         :param kernel:
         :param instrument_name:
-        :param progress_bar:
+        :param show_progress:
         :return:
         """
 
@@ -646,7 +646,7 @@ class SingleImageSKIRTLauncher(object):
         log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True, progress_bar=progress_bar)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True, show_progress=show_progress)
 
         # Get the simulation prefix
         prefix = simulation.prefix()

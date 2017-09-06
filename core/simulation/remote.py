@@ -28,7 +28,7 @@ from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
 from ..basics.handle import ExecutionHandle
-from .status import SimulationStatus
+from .status import LogSimulationStatus
 from .input import SimulationInput
 
 # -----------------------------------------------------------------
@@ -532,7 +532,7 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False, progress_bar=False):
+            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False, show_progress=False):
 
         """
         This function ...
@@ -545,7 +545,7 @@ class SkirtRemote(Remote):
         :param local_script_path:
         :param screen_output_path:
         :param attached:
-        :param progress_bar:
+        :param show_progress:
         :return:
         """
 
@@ -562,19 +562,19 @@ class SkirtRemote(Remote):
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
 
         # Progress bar: ask attached but set detached so that the start_queue function returns immediately
-        if progress_bar and not attached: raise ValueError("Cannot show progress bar when 'attached' is False")
-        if progress_bar: attached = False
+        if show_progress and not attached: raise ValueError("Cannot show progress when 'attached' is False")
+        if show_progress: attached = False
 
         # Start the queue, get execution handle(s)
         handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
 
         # Show progress bar with progress
-        if progress_bar:
+        if show_progress:
 
             #out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
             #prefix = arguments.prefix
             #log_path = fs.join(out_path, prefix + "_log.txt")
-            status = SimulationStatus(simulation.remote_log_file_path, remote=self)
+            status = LogSimulationStatus(simulation.remote_log_file_path, remote=self)
 
             # Get the execution handle for the simulation
             handle = handles
@@ -1544,7 +1544,7 @@ class SkirtRemote(Remote):
         """
 
         # Return string from simulation status
-        return str(SimulationStatus(file_path, self))
+        return str(LogSimulationStatus(file_path, self))
 
     # -----------------------------------------------------------------
 

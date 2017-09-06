@@ -305,9 +305,9 @@ class DustGridBuilder(Configurable):
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
 
         # Set settings
-        self.launcher.config.progress_bar = True
+        self.launcher.config.show_progress = True
         self.launcher.config.finish_after = "Writing dust cell properties" # finish after this line has been printed (when the next one comes)
-        self.launcher.config.continued_output = True
+        self.launcher.config.debug_output = True
 
         # Run
         self.launcher.run(definition=definition, parallelization=self.config.parallelization)

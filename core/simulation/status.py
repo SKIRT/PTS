@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.simulation.status Contains the SimulationStatus class.
+## \package pts.core.simulation.status Contains the SimulationStatus class and derived classes.
 
 # -----------------------------------------------------------------
 
@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 from subprocess import Popen
 
 # Import the relevant PTS classes and modules
@@ -20,10 +21,10 @@ from ..tools import filesystem as fs
 from ..tools import time
 from ..tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 from ..basics.log import log
-from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
+from .logfile import get_last_phase, get_nprocesses
 from ..basics.handle import ExecutionHandle
 from ..tools import terminal
-from ..tools import introspection
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -38,24 +39,30 @@ phase_descriptions["wait"] = "waiting for synchronization"
 
 # -----------------------------------------------------------------
 
+skirt_debug_output_prefix = "SKIRT :: [[ "
+skirt_debug_output_suffix = " ]]"
+ndebug_output_whitespaces = 20
+
+# -----------------------------------------------------------------
+
 class SimulationStatus(object):
 
     """
     This class ...
     """
 
-    def __init__(self, log_path, remote=None, debug_output=False):
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, debug_output=False):
 
         """
-        The constructor ...
-        :param log_path:
-        :param remote:
-        :param debug_output:
+        This function ...
+        :return:
         """
 
         # Set attributes
-        self.log_path = log_path
-        self.remote = remote
         self.debug_output = debug_output
 
         # The status
@@ -76,17 +83,39 @@ class SimulationStatus(object):
         # The progress (if applicable)
         self.progress = None
 
-        # The current number of lines
-        #self.nlines =
+        # More info
+        self.extra = None
+
+        ##
 
         # The log lines
         self.log_lines = []
 
-        # More info
-        self.extra = None
+    # -----------------------------------------------------------------
 
-        # Get the status
-        self.refresh()
+    @property
+    def nlines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.log_lines)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def show_progress(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -175,6 +204,33 @@ class SimulationStatus(object):
 
         return self.status == "not started"
 
+# -----------------------------------------------------------------
+
+class LogSimulationStatus(SimulationStatus):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, log_path, remote=None, debug_output=False):
+
+        """
+        The constructor ...
+        :param log_path:
+        :param remote:
+        :param debug_output:
+        """
+
+        # Call the constructor of the base class
+        super(LogSimulationStatus, self).__init__(debug_output=debug_output)
+
+        # Set attributes
+        self.log_path = log_path
+        self.remote = remote
+
+        # Refresh the status
+        self.refresh()
+
     # -----------------------------------------------------------------
 
     def show_progress(self, process_or_handle, refresh_time=3, finish_at=None, finish_after=None):
@@ -241,15 +297,15 @@ class SimulationStatus(object):
                         else: log.error("Log file hasn't been created yet")
                         return False
 
-                # Pexpect spawn object?
-                elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
-
-                    from ..tools.terminal import fetch_lines
-                    if not process_or_handle.isalive():
-                        log.error("The simulation has stopped")
-                        # Read the lines
-                        for line in fetch_lines(process_or_handle): log.error(line)
-                        return False
+                # # Pexpect spawn object?
+                # elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
+                #
+                #     from ..tools.terminal import fetch_lines
+                #     if not process_or_handle.isalive():
+                #         log.error("The simulation has stopped")
+                #         # Read the lines
+                #         for line in fetch_lines(process_or_handle): log.error(line)
+                #         return False
 
                 # Not recognized
                 else:
@@ -404,18 +460,6 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def nlines(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.log_lines)
-
-    # -----------------------------------------------------------------
-
     def refresh(self, process_or_handle=None, finish_at=None, finish_after=None):
 
         """
@@ -456,9 +500,18 @@ class SimulationStatus(object):
             return
 
         # There are new lines
+        #print(len(lines), self.nlines)
         if self.debug_output and len(lines) > self.nlines:
+
+            # Get current number of columns of the shell
+            total_ncolumns = terminal.ncolumns()
+            usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(skirt_debug_output_suffix) - ndebug_output_whitespaces
+            if usable_ncolumns < 20: usable_ncolumns = 20
             nnew = len(lines) - self.nlines
-            for line in lines[-nnew:]: log.debug(line)
+            for line in lines[-nnew:]:
+                message = line[26:]
+                message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
+                log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 
         # SET THE LOG LINES
         self.log_lines = lines
@@ -552,11 +605,11 @@ class SimulationStatus(object):
                         # System call: ftruncate(2)
                         # Error:       No space left on device (errno 28)
 
-                # Pexpect spawn object?
-                elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
-                    if not process_or_handle.isalive():
-                        self.status = "aborted"
-                        return
+                # # Pexpect spawn object?
+                # elif introspection.lazy_isinstance(process_or_handle, "spawn", "pexpect", return_false_if_fail=True):
+                #     if not process_or_handle.isalive():
+                #         self.status = "aborted"
+                #         return
 
                 # Not recognized
                 else:
@@ -566,161 +619,529 @@ class SimulationStatus(object):
             # Status is 'running'
             self.status = "running"
 
-            # Get the last phase in the log file
-            last_phase, start_index = get_last_phase(lines)
+            # Get the phase info
+            self.phase, self.simulation_phase, stage, cycle, progress, extra = get_phase_info(lines)
 
-            # Set the phase
-            self.phase = last_phase
+# -----------------------------------------------------------------
 
-            # Get the 'real' simulation phase
-            #start_line = lines[start_index]
-            #simulation_phase = get_simulation_phase(start_line, self.simulation_phase)
+class SpawnSimulationStatus(SimulationStatus):
 
-            # Set the simulation phase
-            #self.simulation_phase = simulation_phase
+    """
+    This function ...
+    """
 
-            # The setup phase
-            if self.phase == "setup":
+    def __init__(self, child, debug_output=False):
 
-                self.simulation_phase = "SETUP"
+        """
+        This function ...
+        :param child:
+        :param debug_output:
+        """
 
-                # Loop over the lines in reversed order
-                for line in reversed(lines):
+        # Call the constructor of the base class
+        super(SpawnSimulationStatus, self).__init__(debug_output=debug_output)
 
-                    if "Writing dust cell properties" in line:
-                        self.extra = "Writing dust cell properties ..."
-                        break
-                    elif "Setting the value of the density in the cells" in line:
-                        self.extra = "Calculating dust densities ..."
-                        break
-                    elif "Writing data to plot the dust grid" in line:
-                        self.extra = "Writing the dust grid ..."
-                        break
-                    elif "Subdividing node" in line:
-                        self.extra = "Creating the dust grid tree ..."
-                        break
-                    elif "Starting subdivision" in line:
-                        self.extra = "Creating the dust grid tree ..."
-                        break
-                    elif "Adding dust population" in line:
-                        self.extra = "Setting dust populations ..."
-                        break
-                    elif line.startswith("Reading"):
-                        self.extra = "Reading input ..."
-                        break
+        # Set the child
+        self.child = child
 
-            # Get the progress of the stellar emission
-            elif self.phase == "stellar":
+        # Progress bar where needed
+        self._bar = None
 
-                # Set simulation phase
-                self.simulation_phase = "STELLAR EMISSION"
+    # -----------------------------------------------------------------
 
-                # Loop over the lines in reversed order
-                for line in reversed(lines):
+    def show_progress(self, finish_at=None, finish_after=None, refresh_frequency=5):
 
-                    if "Launched stellar emission photon packages" in line:
-                        self.progress = float(line.split("packages: ")[1].split("%")[0])
-                        break
+        """
+        This function ...
+        :param finish_at:
+        :param finish_after:
+        :param refresh_frequency: number lines after which to refresh
+        :return:
+        """
 
-                # Set initial value for progress
-                else: self.progress = 0
+        # Track the progress and show
+        return self.track_progress(show=True, finish_at=finish_at, finish_after=finish_after, refresh_frequency=refresh_frequency)
 
-            # Get the progress of the spectra calculation phase
-            elif self.phase == "spectra":
+    # -----------------------------------------------------------------
 
-                nprocesses = get_nprocesses(lines)
-                total_entries = None
-                entries_per_process = None
+    def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5):
 
-                # Loop over the lines
-                for line in lines[start_index-4:]:
+        """
+        This function ...
+        :param show:
+        :param finish_at:
+        :param finish_after:
+        :param refresh_frequency:
+        :return:
+        """
 
-                    # Check whether dust self-absorption or dust emission phase
-                    if "Starting the dust self-absorption phase" in line: self.simulation_phase = "DUST SELF-ABSORPTION"
-                    elif "Starting the dust emission phase" in line: self.simulation_phase = "DUST EMISSION"
+        break_after_next_line = False
 
-                    # If this is the log message that marks the very start of the spectra calculation, record the associated time
-                    # If this log message states the total number of library entries that are used, record this number
-                    if "Library entries in use" in line:
+        # Clear everything
+        self.status = None
+        self.phase = None
+        self.simulation_phase = None
+        self.stage = None
+        self.cycle = None
+        self.progress = None
+        self.extra = None
 
-                        #spectra_start = log_file.contents["Time"][i]
+        # Get current number of columns of the shell
+        total_ncolumns = terminal.ncolumns()
+        usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(
+            skirt_debug_output_suffix) - ndebug_output_whitespaces
+        if usable_ncolumns < 20: usable_ncolumns = 20
 
-                        # Get the total number of library entries in use and the number of entries per process
-                        total_entries = int(line.split("use: ")[1].split(" out of")[0])
-                        entries_per_process = total_entries / nprocesses
+        last_phase = None
+        last_stage = None
+        last_cycle = None
+        last_extra = None
 
-                        # Initial value of progress
-                        self.progress = 0.
+        # Loop over the lines
+        for line in terminal.fetch_lines(self.child):
 
-                    # Get the progress
-                    elif "Calculating emission for" in line:
+            # Show the SKIRT line if debug_output is enabled
+            if self.debug_output:
+                message = line[26:]
+                message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
+                log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 
-                        entry = float(line.split()[-1][:-3])
+            # Add the line
+            self.log_lines.append(line)
 
-                        # Determine the progress
-                        # if self.staggered: fraction = entry / total_entries
-                        # else: fraction = (entry - process * entries_per_process) / entries_per_process
+            # CHECK WHETHER WE HAVE TO BREAK
+            if break_after_next_line:
+                self.status = "finished"
+                break
+                #return
 
-                        fraction = entry / total_entries
-                        progress = float(fraction) * 100.
+            # NEW: CHECK WHETHER USER WANTS TO FINISH AFTER A SPECIFIC LINE
+            #if "finish_after" in kwargs:
+            if finish_after is not None:
+                #finish_after_line = kwargs["finish_after"]
+                #is_last = finish_after_line in lines[-1]
+                #for i, line in enumerate(reversed(lines)):
 
-                        # Set the progress
-                        self.progress = progress
+                #if i != 0 and finish_after in line: # if it is not the last line (i = 0), meaning there is at least one line after it
+                if finish_after in line:
+                    break_after_next_line = True
+                    continue
 
-            # Get the progress of a dust emission cycle
-            elif self.phase == "dust":
+                    #self.status = "finished"
+                    # KILL THE PROCESS
+                    #if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                    #    terminal.kill(process_or_handle.pid) # KILL
+                    #return
 
-                # Loop over the lines in reversed order
-                for line in reversed(lines):
+            #if "finish_at" in kwargs:
+            if finish_at is not None:
+                #finish_at_line = kwargs["finish_at"]
+                if finish_at in line:
+                    self.status = "finished"
+                    # KILL THE PROCESS
+                    #if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                    #    terminal.kill(process_or_handle.pid) # KILL
+                    #return
+                    break
 
-                    if "Launched dust emission photon packages" in line:
-                        self.progress = float(line.split("packages: ")[1].split("%")[0])
-                        self.simulation_phase = "DUST EMISSION"
-                        break
+            # CONTINUE 'JUST EXPECTING' AND FILLING LOG_LINES UNTIL WE ACTUALLY HAVE TO DO THE WORK OF CHECKING THE PHASE AND STUFF
+            if self.nlines % refresh_frequency != 0: continue
 
-                    elif "Launched last-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                        self.stage = 2
-                        self.progress = float(line.split("packages: ")[1].split("%")[0])
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+            # Interpret the content of the last line
+            if " Finished simulation " in line:
+                # print("FOUND FINISHED SIMULATION IN LAST LOG LINE [" + last + "]")
+                self.status = "finished"
+                #return
+                break
 
-                    elif "Starting the last-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
-                        self.stage = 2
-                        self.progress = 0.
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+            elif " *** Error: " in line:
+                # print("FOUND ERROR IN LAST LOG LINE [" + last + "]")
+                # print("LINES:")
+                # for line in lines: print("  " + line)
+                self.status = "crashed"
+                #return
+                break
 
-                    elif "Launched second-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                        self.stage = 1
-                        self.progress = float(line.split("packages: ")[1].split("%")[0])
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+            # Running
+            else:
 
-                    elif "Starting the second-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
-                        self.stage = 1
-                        self.progress = 0.
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+                # Check if the child is alive
+                if not self.child.isalive():
+                    self.status = "aborted"
+                    break
 
-                    elif "Launched first-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                        self.stage = 0
-                        self.progress = float(line.split("packages: ")[1].split("%")[0])
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+                # Running
+                self.status = "running"
 
-                    elif "Starting the first-stage dust self-absorption cycle" in line:
-                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
-                        self.stage = 0
-                        self.progress = 0.
-                        self.simulation_phase = "DUST SELF-ABSORPTION"
-                        break
+                # Get the info
+                self.phase, self.simulation_phase, stage, cycle, progress, extra = get_phase_info(self.log_lines)
 
-                # No break encountered, set initial value for progress
-                else: self.progress = 0.
+            # Finished: break loop
+            if self.finished:
+                log.success("Simulation finished")
+                return True
+
+            # Crashed: break loop
+            elif self.crashed:
+                log.error("Simulation crashed")
+                return False
+
+            # Aborted: break loop
+            elif self.aborted:
+                log.error("Simulation has been aborted")
+                return False
+
+            # New phase
+            elif last_phase is None or self.phase != last_phase:
+
+                last_phase = self.phase
+                if last_phase is None: continue
+                else:
+                    if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
+                    else: log.info("Starting " + phase_descriptions[last_phase] + " ...")
+
+                # Self absorption phase
+                if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
+
+                    # print("DUST SELF-ABSORPTION")
+
+                    total_length = 100
+
+                    if self.stage is None:
+                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                        continue
+
+                    if last_stage is None or self.stage != last_stage:
+                        log.info("Starting stage " + str(self.stage + 1) + " ...")
+                        last_stage = self.stage
+
+                    if self.cycle is None:
+                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                        continue
+
+                    if last_cycle is None or self.cycle != last_cycle:
+
+                        log.info("Starting cycle " + str(self.cycle) + " ...")
+                        last_cycle = self.cycle
+
+                        # Progress bar
+                        if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                                 filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True)
+
+                        if self.stage != last_stage:
+                            self._bar.show(100) # make sure it always ends on 100%
+                            self._bar.__exit__()
+
+                        if self.cycle != last_cycle:
+                            self._bar.show(100) # make sure it always ends on 100%
+                            self._bar.__exit__()
+
+                        if self.progress is None:
+                            self._bar.show(100)
+                            #self._bar.__exit__() # ?
+
+                        else: self._bar.show(int(self.progress))
+                        #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+
+                        #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
+                        continue
+
+                    else: continue
+                    #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
+
+                # Stellar emission: show progress bar
+                elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
+
+                    total_length = 100
+
+                    # Progress bar
+                    if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
+                             add_datetime=True)
+                    # Loop
+                    #while True:
+
+                    if self.phase != last_phase:
+                        self._bar.show(100)  # make sure it always ends on 100%
+                        self._bar.__exit__()
+
+                    if self.progress is None:
+                        self._bar.show(100)
+                        self._bar.__exit__()
+
+                    else: self._bar.show(int(self.progress))
+                    #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                    continue
+
+                # Same phase
+                else:
+
+                    if self.extra is not None:
+                        if last_extra is None or last_extra != self.extra:
+                            log.info(self.extra)
+                        last_extra = self.extra
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        import pexpect
+        self.child.expect(pexpect.EOF)
+
+# -----------------------------------------------------------------
+
+def get_setup_info(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Initialize everything
+    simulation_phase = None
+    stage = None
+    cycle = None
+    progress = None
+    extra = None
+
+    simulation_phase = "SETUP"
+
+    # Loop over the lines in reversed order
+    for line in reversed(lines):
+
+        if "Writing dust cell properties" in line:
+            extra = "Writing dust cell properties ..."
+            break
+        elif "Setting the value of the density in the cells" in line:
+            extra = "Calculating dust densities ..."
+            break
+        elif "Writing data to plot the dust grid" in line:
+            extra = "Writing the dust grid ..."
+            break
+        elif "Subdividing node" in line:
+            extra = "Creating the dust grid tree ..."
+            break
+        elif "Starting subdivision" in line:
+            extra = "Creating the dust grid tree ..."
+            break
+        elif "Adding dust population" in line:
+            extra = "Setting dust populations ..."
+            break
+        elif line.startswith("Reading"):
+            extra = "Reading input ..."
+            break
+
+    # Return the info
+    return simulation_phase, stage, cycle, progress, extra
+
+# -----------------------------------------------------------------
+
+def get_stellar_info(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Initialize everything
+    simulation_phase = None
+    stage = None
+    cycle = None
+    progress = None
+    extra = None
+
+    # Set simulation phase
+    simulation_phase = "STELLAR EMISSION"
+
+    # Loop over the lines in reversed order
+    for line in reversed(lines):
+
+        if "Launched stellar emission photon packages" in line:
+            progress = float(line.split("packages: ")[1].split("%")[0])
+            break
+
+    # Set initial value for progress
+    else: progress = 0
+
+    # Return the info
+    return simulation_phase, stage, cycle, progress, extra
+
+# -----------------------------------------------------------------
+
+def get_spectra_info(lines, start_index):
+
+    """
+    This function ...
+    :param lines:
+    :param start_index:
+    :return:
+    """
+
+    # Initialize everything
+    simulation_phase = None
+    stage = None
+    cycle = None
+    progress = None
+    extra = None
+
+    nprocesses = get_nprocesses(lines)
+    total_entries = None
+    entries_per_process = None
+
+    # Loop over the lines
+    for line in lines[start_index - 4:]:
+
+        # Check whether dust self-absorption or dust emission phase
+        if "Starting the dust self-absorption phase" in line: simulation_phase = "DUST SELF-ABSORPTION"
+        elif "Starting the dust emission phase" in line: simulation_phase = "DUST EMISSION"
+
+        # If this is the log message that marks the very start of the spectra calculation, record the associated time
+        # If this log message states the total number of library entries that are used, record this number
+        if "Library entries in use" in line:
+
+            # spectra_start = log_file.contents["Time"][i]
+
+            # Get the total number of library entries in use and the number of entries per process
+            total_entries = int(line.split("use: ")[1].split(" out of")[0])
+            entries_per_process = total_entries / nprocesses
+
+            # Initial value of progress
+            progress = 0.
+
+        # Get the progress
+        elif "Calculating emission for" in line:
+
+            entry = float(line.split()[-1][:-3])
+
+            # Determine the progress
+            # if self.staggered: fraction = entry / total_entries
+            # else: fraction = (entry - process * entries_per_process) / entries_per_process
+
+            fraction = entry / total_entries
+            progress = float(fraction) * 100.
+
+            # Set the progress
+            progress = progress
+
+    # Return the info
+    return simulation_phase, stage, cycle, progress, extra
+
+# -----------------------------------------------------------------
+
+def get_dust_info(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Initialize everything
+    simulation_phase = None
+    stage = None
+    cycle = None
+    progress = None
+    extra = None
+
+    # Loop over the lines in reversed order
+    for line in reversed(lines):
+
+        if "Launched dust emission photon packages" in line:
+            progress = float(line.split("packages: ")[1].split("%")[0])
+            simulation_phase = "DUST EMISSION"
+            break
+
+        elif "Launched last-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+            stage = 2
+            progress = float(line.split("packages: ")[1].split("%")[0])
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+        elif "Starting the last-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split("...")[0])
+            stage = 2
+            progress = 0.
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+        elif "Launched second-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+            stage = 1
+            progress = float(line.split("packages: ")[1].split("%")[0])
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+        elif "Starting the second-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split("...")[0])
+            stage = 1
+            progress = 0.
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+        elif "Launched first-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+            stage = 0
+            progress = float(line.split("packages: ")[1].split("%")[0])
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+        elif "Starting the first-stage dust self-absorption cycle" in line:
+            cycle = int(line.split("cycle ")[1].split("...")[0])
+            stage = 0
+            progress = 0.
+            simulation_phase = "DUST SELF-ABSORPTION"
+            break
+
+    # No break encountered, set initial value for progress
+    else: progress = 0.
+
+    # Return the info
+    return simulation_phase, stage, cycle, progress, extra
+
+# -----------------------------------------------------------------
+
+def get_phase_info(lines):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    # Initialize everything
+    phase = None
+    simulation_phase = None
+    stage = None
+    cycle = None
+    progress = None
+    extra = None
+
+    # Get the last phase in the log file
+    last_phase, start_index = get_last_phase(lines)
+
+    # Set the phase
+    phase = last_phase
+
+    # The setup phase
+    if phase == "setup": simulation_phase, stage, cycle, progress, extra = get_setup_info(lines)
+
+    # Get the progress of the stellar emission
+    elif phase == "stellar": simulation_phase, stage, cycle, progress, extra = get_stellar_info(lines)
+
+    # Get the progress of the spectra calculation phase
+    elif phase == "spectra": simulation_phase, stage, cycle, progress, extra = get_spectra_info(lines)
+
+    # Get the progress of a dust emission cycle
+    elif phase == "dust": simulation_phase, stage, cycle, progress, extra = get_dust_info(lines)
+
+    # Return the info
+    return phase, simulation_phase, stage, cycle, progress, extra
 
 # -----------------------------------------------------------------

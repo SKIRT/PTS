@@ -825,7 +825,7 @@ class Deprojector(GalaxyModelingComponent):
             definition = SingleSimulationDefinition(ski_path, out_path, in_path)
 
             # Set settings
-            self.launcher.config.progress_bar = True
+            self.launcher.config.show_progress = True
             self.launcher.config.finish_after = "Writing dust cell properties"  # finish after this line has been printed (when the next one comes)
 
             # Run

@@ -24,7 +24,7 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..basics.log import log, no_debugging
 from .definition import SingleSimulationDefinition
-from .status import SimulationStatus
+from .status import LogSimulationStatus, SpawnSimulationStatus
 from ..tools import strings
 
 # -----------------------------------------------------------------
@@ -149,10 +149,14 @@ class SkirtExec:
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
-            silent=False, progress_bar=False, finish_at=None, finish_after=None, debug_output=False):
+            silent=False, show_progress=False, finish_at=None, finish_after=None, debug_output=False):
 
         # Enable progress bar to true when finish_at or finish_after is defined because we'll have to follow up the simulation status
-        if finish_at is not None or finish_after is not None: progress_bar = True
+        if finish_at is not None or finish_after is not None: show_progress = True
+
+        # Set the use_pexpect flag
+        # Don't use pexpect when not waiting because I don't know a way to let pexpect run without doing child.expect(something)
+        use_pexpect = self.has_pexpect and wait
 
         # The simulation names for different ski paths
         simulation_names = dict()
@@ -194,21 +198,22 @@ class SkirtExec:
         command = arguments.to_command(self._path, mpi_command, scheduler)
 
         # Not waiting and progress_bar don't go together!
-        if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
-        if progress_bar: wait = False
+        if show_progress and not wait: raise ValueError("Cannot show progress when 'wait' is False")
+        if show_progress: wait = False
 
         # Debugging
         command_string = " ".join(command)
         log.debug("The command to launch SKIRT is: " + strings.add_other_quotes(command_string))
 
         # Using pexpect
-        if self.has_pexpect: self.launch_pexpect(command_string, wait=wait, silent=silent)
+        if use_pexpect: self.launch_pexpect(command_string, wait=wait, silent=silent)
 
         # Using subprocess
         else: self.launch_subprocess(command, wait=wait, silent=silent)
 
         # Show progress
-        if progress_bar: self.show_progress(arguments, finish_at=finish_at, finish_after=finish_after, debug_output=debug_output)
+        if show_progress: self.show_progress(arguments, finish_at=finish_at, finish_after=finish_after, debug_output=debug_output)
+        elif self.using_pexpect: self.run_pexpect()
 
         # Return the list of simulations so that their results can be followed up
         simulations = arguments.simulations(simulation_names=simulation_names)
@@ -236,6 +241,10 @@ class SkirtExec:
 
         # Return the list of simulations
         return simulations
+
+    @property
+    def using_pexpect(self):
+        return introspection.lazy_isinstance(self._process, "spawn", "pexpect", return_false_if_fail=True)
 
     ## This function launches the SKIRT command using the Pexpect library
     def launch_pexpect(self, command_string, wait=True, silent=False):
@@ -269,9 +278,7 @@ class SkirtExec:
         #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
         # PROPER:
-        else:
-            #if continued_output: raise ValueError("Cannot enable continued output for subprocess")
-            self._process = subprocess.Popen(command, stdout=self._output_file, stderr=self._error_file)
+        else: self._process = subprocess.Popen(command, stdout=self._output_file, stderr=self._error_file)
 
     ## This function follows the progress of the simulation and
     def show_progress(self, arguments, finish_at=None, finish_after=None, debug_output=False):
@@ -279,10 +286,17 @@ class SkirtExec:
         out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
         prefix = arguments.prefix
         log_path = fs.join(out_path, prefix + "_log.txt")
-        status = SimulationStatus(log_path, debug_output=debug_output)
+
+        # Create the simulation status object
+        if self.using_pexpect: status = SpawnSimulationStatus(self._process, debug_output=debug_output)
+        else: status = LogSimulationStatus(log_path, debug_output=debug_output)
 
         # Show the simulation progress
-        with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+        if self.using_pexpect: success = status.show_progress(finish_at=finish_at, finish_after=finish_after)
+        else:
+            if debug_output: success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+            else:
+                with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
         # Check whether not crashed
         if not success:
@@ -315,6 +329,11 @@ class SkirtExec:
 
             # Raise an error since the simulation crashed
             raise RuntimeError("The simulation crashed")
+
+    ## This functions runs the simulation with Pexpect
+    def run_pexpect(self):
+        import pexpect
+        self._process.expect(pexpect.EOF)
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):

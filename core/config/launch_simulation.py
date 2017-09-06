@@ -39,6 +39,6 @@ definition.add_optional("finish_after", "string", "finish after this is encounte
 
 # -----------------------------------------------------------------
 
-definition.add_flag("continued_output", "continued output of the SKIRT process into stdout", False)
+definition.add_flag("debug_output", "output lines of SKIRT process", False)
 
 # -----------------------------------------------------------------

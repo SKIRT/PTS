@@ -23,9 +23,6 @@ definition.add_required("fski", "file_path", "name/path of the fski file")
 definition.add_optional("input", "directory_path", "input directory for the simulation(s)", letter="i")
 definition.add_optional("output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o", convert_default=True)
 
-# Flags
-#definition.add_flag("progress_bar", "use progress bars to show progress (for local run or remote run in attached mode)", True)
-
 # Add positional arguments
 definition.add_positional_optional("remote", "string", "the remote host on which to run the simulation (if none is specified, the simulation is run locally", choices=find_host_ids())
 
