@@ -573,6 +573,10 @@ class ModelLauncher(ModelSimulationInterface):
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, input_path=self.input_paths, name=self.simulation_name)
 
         # Set options
+        self.launcher.show_progress = True
+        self.launcher.config.debug_output = True
+
+        # Set options
         analysis_options = None
         if self.local:
 

@@ -289,6 +289,9 @@ class LogSimulationStatus(SimulationStatus):
         # Number of consecutive similar log lines that are encountered
         self.nsimilar = 0
 
+        # Flag
+        self.ignored_previous = False
+
         # Refresh the status
         self.refresh()
 
@@ -575,7 +578,7 @@ class LogSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if strings.similarity(message, previous_message) > similarity_threshold:
                     self.nsimilar += 1
-                    print(self.nsimilar, 10 * similar_log_frequency)
+                    #print(self.nsimilar, 10 * similar_log_frequency)
                     if self.nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
                         similar_log_frequency *= 10
                     if self.nsimilar % similar_log_frequency != 0:
@@ -586,7 +589,11 @@ class LogSimulationStatus(SimulationStatus):
                     else: print("")
                 self.nsimilar = 0
                 # Show only if not want to be ignored
-                if self.ignore_output is not None and contains_any(message, self.ignore_output): continue
+                if self.ignore_output is not None and contains_any(message, self.ignore_output):
+                    self.ignored_previous = True
+                    continue
+                if self.ignored_previous and message.startswith("  "): continue # ignore sub-messages
+                if not message.startswith("  "): self.ignored_previous = False
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
                 previous_message = message
@@ -781,6 +788,7 @@ class SpawnSimulationStatus(SimulationStatus):
 
         # Loop over the lines
         nsimilar = 0
+        ignored_previous = False
         for line in terminal.fetch_lines(self.child):
 
             # Show the SKIRT line if debug_output is enabled
@@ -799,7 +807,11 @@ class SpawnSimulationStatus(SimulationStatus):
                     else: print("")
                 nsimilar = 0
                 # Show only if not want to be ignored
-                if self.ignore_output is not None and contains_any(message, self.ignore_output): continue
+                if self.ignore_output is not None and contains_any(message, self.ignore_output):
+                    ignored_previous = True
+                    continue
+                if ignored_previous and message.startswith("  "): continue # ignore sub-messages
+                if not message.startswith("  "): ignored_previous = False
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 

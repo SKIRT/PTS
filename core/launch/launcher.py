@@ -587,7 +587,7 @@ class SKIRTLauncher(Configurable):
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=scheduling_options, attached=self.config.attached,
-                                          analysis_options=self.analysis_options, progress_bar=self.config.progress_bar)
+                                          analysis_options=self.analysis_options, show_progress=self.config.show_progress)
 
         # Set the analysis options for the simulation
         self.set_remote_simulation_options()

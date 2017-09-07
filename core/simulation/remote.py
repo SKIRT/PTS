@@ -532,7 +532,8 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False, show_progress=False):
+            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
+            show_progress=False):
 
         """
         This function ...

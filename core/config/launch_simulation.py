@@ -19,7 +19,7 @@ definition.add_flag("relative", "treats the given input and output paths as bein
 
 # Flags
 definition.add_flag("create_output", "create the output directory if it is not yet present")
-definition.add_flag("progress_bar", "use progress bars to show progress (for local simulation or remote simulation in attached mode)", True)
+definition.add_flag("show_progress", "show progress (for local simulation or remote simulation in attached mode)", True)
 
 # -----------------------------------------------------------------
 
