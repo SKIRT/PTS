@@ -285,12 +285,13 @@ class SKIRTLauncher(Configurable):
         processes = self.get_nprocesses_local()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
-        threads = int(monitoring.free_cpus() / processes)
+        free_cpus = monitoring.free_cpus()
+        threads = int(free_cpus / processes)
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
-            log.warning("The number of processes was " + str(processes) + " but the number of free CPU's is only " + str(monitoring.free_cpus()))
-            processes = max(int(monitoring.free_cpus()), 1)
+            log.warning("The number of processes was " + str(processes) + " but the number of free CPU's is only " + str(free_cpus))
+            processes = max(int(free_cpus), 1)
             log.warning("Adjusting the number of processes to " + str(processes) + " ...")
             threads = 1
 

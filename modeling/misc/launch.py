@@ -264,6 +264,9 @@ class ModelLauncher(ModelSimulationInterface):
         # Inform the user
         log.info("Adapting the ski file ...")
 
+        # Set the number of photon packages per wavelength
+        self.ski.setpackages(self.config.npackages)
+
         # Set wavelength grid for ski file
         self.ski.set_file_wavelength_grid(wavelengths_filename)
 

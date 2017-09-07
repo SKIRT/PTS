@@ -583,7 +583,9 @@ class LogSimulationStatus(SimulationStatus):
                         similar_log_frequency *= 10
                     if self.nsimilar % similar_log_frequency != 0:
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset)
-                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset + "\r")
+                        ndots = self.nsimilar
+                        nspaces = usable_ncolumns - ndots
+                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
                         sys.stdout.flush()
                         continue
                     else: print("")
@@ -801,7 +803,9 @@ class SpawnSimulationStatus(SimulationStatus):
                         similar_log_frequency *= 10
                     if nsimilar % similar_log_frequency != 0:
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset)
-                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset + "\r")
+                        ndots = nsimilar
+                        nspaces = usable_ncolumns - ndots
+                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
                         sys.stdout.flush()
                         continue
                     else: print("")
@@ -1267,7 +1271,7 @@ def get_phase_info(lines):
     elif phase == "stellar": simulation_phase, stage, cycle, progress, extra = get_stellar_info(lines)
 
     # Get the progress of the spectra calculation phase
-    elif phase == "spectra": simulation_phase, stage, cycle, progress, extra = get_spectra_info(lines)
+    elif phase == "spectra": simulation_phase, stage, cycle, progress, extra = get_spectra_info(lines, start_index)
 
     # Get the progress of a dust emission cycle
     elif phase == "dust": simulation_phase, stage, cycle, progress, extra = get_dust_info(lines)

@@ -34,9 +34,14 @@ definition.add_required("name", "string_no_spaces", "name for the simulation")
 
 # -----------------------------------------------------------------
 
+# Simulation options
+definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e5)
+
+# -----------------------------------------------------------------
+
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
-definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", 200)
+definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", 100)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
 definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)
 

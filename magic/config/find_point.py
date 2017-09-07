@@ -116,7 +116,7 @@ definition.sections["saturation"].add_optional("sigmas", "real", "sigmas for seg
 definition.sections["saturation"].add_optional("background_outer_factor", "real", "background outer factor", 1.2)
 definition.sections["saturation"].add_flag("always_subtract_background", "always subtract background", True)
 definition.sections["saturation"].add_optional("background_est_method", "string", "background estimation method", "polynomial")
-definition.sections["saturation"].add_flag("sigma_cip_background", "sigma clip background", True)
+definition.sections["saturation"].add_flag("sigma_clip_background", "sigma clip background", True)
 definition.sections["saturation"].add_optional("sigma_level", "real", "sigma level for clipping", 5.0)
 definition.sections["saturation"].add_optional("expansion_factor", "real", "expansion factor", 1.5)
 
