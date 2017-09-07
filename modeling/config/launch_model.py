@@ -36,6 +36,8 @@ definition.add_required("name", "string_no_spaces", "name for the simulation")
 
 # Simulation options
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e5)
+definition.add_flag("selfabsorption", "dust self-absorption", False)
+definition.add_flag("transient_heating", "transient (non-LTE) dust heating", False)
 
 # -----------------------------------------------------------------
 
@@ -50,11 +52,15 @@ definition.sections["wg"].add_optional("range", "quantity_range", "range of wave
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")
 definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
-definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 2.) # was 0.5
+definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 5.) # was 0.5
 definition.sections["dg"].add_optional("bintree_min_level", "integer", "minimum depth level for binary trees", 9)
 definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum depth level for octrees", 3)
 definition.sections["dg"].add_optional("max_mass_fraction", "real", "maximum mass fraction in each cell", 1e-6)
 definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 10.)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("regenerate_dust_grid", "regenerate the dust grid", True)
 
 # -----------------------------------------------------------------
 

@@ -52,6 +52,11 @@ similarity_threshold = 0.90
 
 # -----------------------------------------------------------------
 
+increase_similarity_after = 5
+increase_similarity_factor = 10
+
+# -----------------------------------------------------------------
+
 class SimulationStatus(object):
 
     """
@@ -564,9 +569,8 @@ class LogSimulationStatus(SimulationStatus):
             self.status = "invalid: cannot read log file"
             return
 
-        # There are new lines
-        #print(len(lines), self.nlines)
-        if self.debug_output and len(lines) > self.nlines:
+        # There are new lines and we are not in the middle of a progress bar
+        if self.debug_output and len(lines) > self.nlines and self.progress is None:
 
             # Get current number of columns of the shell
             total_ncolumns = terminal.ncolumns()
@@ -578,9 +582,10 @@ class LogSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if strings.similarity(message, previous_message) > similarity_threshold:
                     self.nsimilar += 1
-                    #print(self.nsimilar, 10 * similar_log_frequency)
-                    if self.nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
-                        similar_log_frequency *= 10
+                    print(self.nsimilar, increase_similarity_after * similar_log_frequency)
+                    if self.nsimilar > increase_similarity_after * similar_log_frequency: # there have been 10 messages allowed through already
+                        print(str(increase_similarity_after) + " messages have been allowed to pass through")
+                        similar_log_frequency *= increase_similarity_factor
                     if self.nsimilar % similar_log_frequency != 0:
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset)
                         ndots = self.nsimilar
@@ -790,26 +795,49 @@ class SpawnSimulationStatus(SimulationStatus):
 
         # Loop over the lines
         nsimilar = 0
+        current_nsimilar = 0
         ignored_previous = False
         for line in terminal.fetch_lines(self.child):
 
-            # Show the SKIRT line if debug_output is enabled
-            if self.debug_output:
+            # Show the SKIRT line if debug_output is enabled and we are not in the middle of a progress bar
+            if self.debug_output and self.progress is None:
+
                 message = line[26:]
+
                 if self.last_message is not None and strings.similarity(message, self.last_message) > similarity_threshold:
+
                     nsimilar += 1
-                    #print(nsimilar, 10 * similar_log_frequency)
-                    if nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
-                        similar_log_frequency *= 10
-                    if nsimilar % similar_log_frequency != 0:
+                    current_nsimilar += 1
+
+                    #print(nsimilar, increase_similarity_after * similar_log_frequency)
+                    if nsimilar > increase_similarity_after * similar_log_frequency: # there have been 10 messages allowed through already
+
+                        #print(str(increase_similarity_after) + " messages have been allowed to pass through")
+                        similar_log_frequency *= increase_similarity_factor
+
+                    if current_nsimilar % similar_log_frequency != 0:
+
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset)
-                        ndots = nsimilar
-                        nspaces = usable_ncolumns - ndots
+                        if current_nsimilar > usable_ncolumns:
+                            ndots = usable_ncolumns
+                            nspaces = 0
+                            total_length = ndots + nspaces
+                        else:
+                            ndots = current_nsimilar
+                            nspaces = usable_ncolumns - ndots
+                            total_length = ndots + nspaces
+                        #print(nsimilar, current_nsimilar, total_length)
                         sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
                         sys.stdout.flush()
+                        #print(ndots)
                         continue
+
                     else: print("")
-                nsimilar = 0
+
+                else: nsimilar = 0
+
+                current_nsimilar = 0
+
                 # Show only if not want to be ignored
                 if self.ignore_output is not None and contains_any(message, self.ignore_output):
                     ignored_previous = True
@@ -1014,7 +1042,32 @@ class SpawnSimulationStatus(SimulationStatus):
                     last_extra = self.extra
 
         # We shouldn't get here
-        raise RuntimeError("We shouldn't get here!")
+        #raise RuntimeError("We shouldn't get here!")
+
+        # Check whether finished
+        for line in reversed(self.log_lines):
+
+            message = line[26:]
+            if "Finished simulation" in message:
+                log.success("Simulation finished")
+                self.status = "finished"
+                return True
+
+            elif "Available memory" in message:
+                log.error("Simulation finished")
+                self.status = "finished"
+                return True
+
+            elif " *** Error:" in message:
+                log.error("Simulation crashed")
+                self.status = "crashed"
+                return False
+
+        # No break
+        else:
+            log.error("Simulation has been aborted")
+            self.status = "aborted"
+            return False
 
     # -----------------------------------------------------------------
 

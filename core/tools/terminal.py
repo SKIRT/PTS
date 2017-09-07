@@ -235,7 +235,10 @@ def fetch_lines(child):
     :return:
     """
 
+    import re
     import pexpect
+
+    ansi_escape = re.compile(r'\x1b[^m]*m')
 
     # Expect end-of-line over and over again
     end_of_line = "\r\n"
@@ -247,7 +250,9 @@ def fetch_lines(child):
         if index == 0:
             lines = child.before.replace('\x1b[K', '').split("\r\n")
             if len(lines) != 1: raise ValueError("Encountered multiple lines: " + str(lines))
-            yield lines[0]
+            line = lines[0]
+            ansi_escape.sub('', line).replace('\x1b[K', '').replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
+            yield line
         elif index == 1:
             child.logfile = None
             raise StopIteration

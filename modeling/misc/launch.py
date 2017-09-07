@@ -67,6 +67,30 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grid(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.dust_grid is not None
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -82,10 +106,10 @@ class ModelLauncher(ModelSimulationInterface):
         self.get_model()
 
         # 4. Create the wavelength grid
-        self.create_wavelength_grid()
+        if not self.has_wavelength_grid: self.create_wavelength_grid()
 
         # 5. Create the dust grid
-        self.create_dust_grid()
+        if not self.has_dust_grid: self.create_dust_grid()
 
         # Load the deprojections
         self.load_deprojections()
@@ -99,7 +123,7 @@ class ModelLauncher(ModelSimulationInterface):
         # 7. Adapt ski file
         self.adapt_ski()
 
-        # 8. Build the dust grid (maybe not necessary since there is only one simulation perfomed?)
+        # 8. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         self.build_dust_grid()
 
         # 9. Set the input
@@ -173,7 +197,38 @@ class ModelLauncher(ModelSimulationInterface):
         self.instruments_path = fs.create_directory_in(self.simulation_path, "instruments")
         self.input_file_path = fs.join(self.simulation_path, "info.dat")
 
+        # Load the wavelength grid?
+
+
+        # Load dust grid?
+
     # -----------------------------------------------------------------
+
+    def load_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    def load_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    @property
+    def has_dust_grid_tree_file(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_grid_tree_path)
+
+    #
 
     @property
     def from_model(self):
@@ -264,8 +319,25 @@ class ModelLauncher(ModelSimulationInterface):
         # Inform the user
         log.info("Adapting the ski file ...")
 
+        # Debugging
+        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+
         # Set the number of photon packages per wavelength
         self.ski.setpackages(self.config.npackages)
+
+        # Debugging
+        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+
+        # Set dust self-absorption
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
+
+        # Debugging
+        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+
+        # Set transient heating
+        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
 
         # Set wavelength grid for ski file
         self.ski.set_file_wavelength_grid(wavelengths_filename)
@@ -347,6 +419,9 @@ class ModelLauncher(ModelSimulationInterface):
 
         # NEW: DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
         if self.use_file_tree_dust_grid:
+
+            # Set a tree dust grid for the ski file
+            self.ski.set_filetree_dust_grid(dustgridtree_filename)
 
             # self.simulation_input.add_file(self.representation.dust_grid_tree_path)
             self.input_paths[dustgridtree_filename] = self.dust_grid_tree_path
