@@ -38,7 +38,7 @@ def add_stellar_component(ski, name, component, title=None):
     else: filename = None
 
     # NEW COMPONENT OR ADJUST EXISTING
-    if ski.has_stellar_component(name): add_new_stellar_component(ski, name, component, title=title)
+    if title is not None and not ski.has_stellar_component(title): add_new_stellar_component(ski, name, component, title=title)
     else: adjust_stellar_component(ski, name, component, title=title)
 
     # Return the input filename
@@ -375,7 +375,7 @@ def add_dust_component(ski, name, component, title=None):
     else: filename = None
 
     # NEW COMPONENT OR ADJUST EXISTING
-    if not ski.has_dust_component(name): add_new_dust_component(ski, name, component, title=title)
+    if title is not None and not ski.has_dust_component(title): add_new_dust_component(ski, name, component, title=title)
     else: adjust_dust_component(ski, name, component, title=title)
 
     # Return the map filename
@@ -480,8 +480,6 @@ def add_new_dust_component(ski, name, component, title=None):
 
     # Check whether the title is defined
     if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
-
-    #print(hydrocarbon_pops, enstatite_pops, forsterite_pops)
 
     # Create new component
     ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,

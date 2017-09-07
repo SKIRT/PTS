@@ -218,14 +218,14 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Check defaults
         if self.config.default_old_bulge_template is None: raise ValueError("Default old stellar bulge template cannot be undefined")
-        if self.config.default_bulge_age is None: raise ValueError("Default bulge age cannot be undefined")
+        if self.config.default_old_bulge_age is None: raise ValueError("Default bulge age cannot be undefined")
         if self.config.default_old_bulge_metallicity is None: raise ValueError("Default bulge metallicity cannot be undefined")
         if self.config.bulge_fluxdensity is None: raise ValueError("Default bulge flux density cannot be undefined")
 
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=self.config.default_old_bulge_template)
-        definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_bulge_age)
+        definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_old_bulge_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_bulge_metallicity)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
 

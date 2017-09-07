@@ -58,11 +58,10 @@ definition.add_flag("check_dust_grid_quality", "check the quality of the dust gr
 
 # -----------------------------------------------------------------
 
-# Flags to calculate various aspects of the dust grid quality
-# definition.add_flag("quality", "get the quality of the dust grid", True)
-# definition.add_flag("projected_quality", "get the projected quality", True)
-# definition.add_flag("optical_depth_quality", "get the optical depth quality", True)
-# definition.add_flag("density_quality", "get the density quality", True)
-# definition.add_flag("dust_mass_quality", "get the dust mass quality", True)
+# The number of parallel processes for local execution
+definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
+definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
+definition.add_flag("data_parallel_local", "use data-parallelization", False)
+definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
 
 # -----------------------------------------------------------------

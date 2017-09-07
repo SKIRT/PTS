@@ -26,12 +26,13 @@ from .analyser import SimulationAnalyser
 from ..simulation.remote import SkirtRemote
 from ..basics.log import log
 from .options import SchedulingOptions
-from ..advanced.parallelizationtool import ParallelizationTool
-from ..advanced.memoryestimator import MemoryEstimator
-from ..simulation.parallelization import Parallelization
+from ..advanced.parallelizationtool import ParallelizationTool, determine_parallelization
+from ..advanced.memoryestimator import estimate_memory
+from ..simulation.parallelization import Parallelization, get_possible_nprocesses_in_memory
 from .options import AnalysisOptions
 from ..tools import filesystem as fs
 from ..tools import parallelization
+from ..simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -77,6 +78,7 @@ class SKIRTLauncher(Configurable):
 
         # The number of processes
         self.nprocesses = None
+        self.nprocesses_per_node = None
 
         # The simulation object
         self.simulation = None
@@ -172,6 +174,7 @@ class SKIRTLauncher(Configurable):
 
         # Get the number of processes
         if "nprocesses" in kwargs: self.nprocesses = kwargs.pop("nprocesses")
+        if "nprocesses_per_node" in kwargs: self.nprocesses_per_node = kwargs.pop("nprocesses_per_node")
 
     # -----------------------------------------------------------------
 
@@ -184,6 +187,18 @@ class SKIRTLauncher(Configurable):
         """
 
         return self.nprocesses is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nprocesses_per_node(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nprocesses_per_node is not None
 
     # -----------------------------------------------------------------
 
@@ -266,62 +281,20 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Determining the optimal parallelization scheme ...")
 
-        # Check whether MPI is available on this system
-        if introspection.has_mpi() and not self.has_nprocesses:
-
-            # If memory requirement is not set
-            if self.memory is None:
-
-                # The memory estimator
-                estimator = MemoryEstimator()
-
-                # Configure the memory estimator
-                estimator.config.ski = self.definition.ski_path
-                estimator.config.input = self.config.input
-                estimator.config.show = False
-
-                # Estimate the memory
-                estimator.run()
-
-                # Get the memory requirement
-                self.memory = estimator.memory
-
-            # Get the serial and parallel parts of the simulation's memory
-            serial_memory = self.memory.serial
-            parallel_memory = self.memory.parallel
-
-            # Calculate the total memory of one process without data parallelization
-            total_memory = serial_memory + parallel_memory
-
-            # Calculate the maximum number of processes based on the memory requirements
-            free_memory = monitoring.free_memory()
-            processes = int(free_memory / total_memory)
-
-            # If there is too little free memory for the simulation, the number of processes will be smaller than one
-            if processes < 1:
-
-                # Exit with an error
-                log.error("Not enough memory available to run this simulation locally: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
-                exit()
-
-        # Has number of processes defined
-        elif self.has_nprocesses: processes = self.nprocesses
-
-        # No MPI available
-        else: processes = 1
+        # Determine the number of processes
+        processes = self.get_nprocesses_local()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
         threads = int(monitoring.free_cpus() / processes)
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
+            log.warning("The number of processes was " + str(processes) + " but the number of free CPU's is only " + str(monitoring.free_cpus()))
             processes = max(int(monitoring.free_cpus()), 1)
+            log.warning("Adjusting the number of processes to " + str(processes) + " ...")
             threads = 1
 
-        # Set the parallelization options
-        #self.config.arguments.parallel.processes = processes
-        #self.config.arguments.parallel.threads = threads
-
+        # Determine number of cores
         cores = processes * threads
         threads_per_core = 2
 
@@ -331,10 +304,45 @@ class SKIRTLauncher(Configurable):
         log.debug("The number of processes is " + str(processes))
 
         # Set the parallelization scheme
-        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)
+        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel)
 
         # Debugging
         log.debug("The parallelization scheme is " + str(self.parallelization))
+
+    # -----------------------------------------------------------------
+
+    def get_nprocesses_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether MPI is available
+        if not introspection.has_mpi():
+
+            # Check nprocesses
+            if self.has_nprocesses and self.nprocesses > 1: raise ValueError("The number of processes that is specified is not possible: MPI installation not present")
+
+            # Set number of processes to 1
+            processes = 1
+
+        # MPI present and number of processes is defined
+        elif self.has_nprocesses: processes = self.nprocesses
+
+        # MPI present and number of processes not defined
+        else:
+
+            # If memory requirement is not set
+            if self.memory is None: self.memory = estimate_memory(self.definition.ski_path,
+                                                                  input_path=self.config.input)
+
+            # Determine the number of possible nprocesses
+            processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), self.memory.serial,
+                                                          self.memory.parallel, data_parallel=self.config.data_parallel)
+
+        # Return
+        return processes
 
     # -----------------------------------------------------------------
 
@@ -374,35 +382,56 @@ class SKIRTLauncher(Configurable):
             hyperthreading = self.remote.host.use_hyperthreading
             threads_per_core = self.remote.threads_per_core
 
-        # Create the parallelization tool
-        tool = ParallelizationTool()
+        # The number of processes is defined
+        if self.has_nprocesses:
 
-        # Set configuration options
-        tool.config.ski = self.definition.ski_path
-        tool.config.input = self.definition.input_path
+            # Set data parallel flag
+            ppn = nsockets * ncores
+            nprocesses_per_node = int(self.nprocesses / nnodes)
+            nprocesses = nprocesses_per_node * nnodes
+            ncores_per_process = ppn / nprocesses_per_node
+            threads_per_core = threads_per_core if hyperthreading else 1
+            threads_per_process = threads_per_core * ncores_per_process
+            total_ncores = nnodes * nsockets * ncores
 
-        # Set host properties
-        tool.config.nnodes = nnodes
-        tool.config.nsockets = nsockets
-        tool.config.ncores = ncores
-        tool.config.memory = memory
+            # Determine data-parallel flag
+            if self.config.data_parallel_remote is None:
+                ski = SkiFile(self.definition.ski_path)
+                nwavelengths = ski.nwavelengthsfile(self.definition.input_path) if ski.wavelengthsfile() else ski.nwavelengths()
+                if nwavelengths >= 10 * nprocesses and ski.dustlib_dimension() == 3: data_parallel = True
+                else: data_parallel = False
+            else: data_parallel = self.config.data_parallel_remote
 
-        # MPI available and used
-        tool.config.mpi = mpi
-        tool.config.hyperthreading = hyperthreading
-        tool.config.threads_per_core = threads_per_core
+            # Create the parallelization object
+            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                             threads_per_process=threads_per_process,
+                                                             data_parallel=data_parallel)
 
-        # Number of dust cells
-        tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+        # The number of processes per node is defined
+        elif self.has_nprocesses_per_node:
 
-        # Don't show the parallelization
-        tool.config.show = False
+            ppn = nsockets * ncores
+            nprocesses = self.nprocesses_per_node * self.config.nnodes
+            ncores_per_process = ppn / self.nprocesses_per_node
+            threads_per_core = threads_per_core if hyperthreading else 1
+            threads_per_process = threads_per_core * ncores_per_process
+            total_ncores = nnodes * nsockets * ncores
 
-        # Run the parallelization tool (passing the memory requirement of the simulation as an argument)
-        tool.run(memory=self.memory)
+            # Determine data-parallel flag
+            if self.config.data_parallel_remote is None:
+                ski = SkiFile(self.definition.ski_path)
+                nwavelengths = ski.nwavelengthsfile(self.definition.input_path) if ski.wavelengthsfile() else ski.nwavelengths()
+                if nwavelengths >= 10 * nprocesses and ski.dustlib_dimension() == 3: data_parallel = True
+                else: data_parallel = False
+            else: data_parallel = self.config.data_parallel_remote
 
-        # Get the parallelization scheme
-        self.parallelization = tool.parallelization
+            # Create the parallelization object
+            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                             threads_per_process=threads_per_process,
+                                                             data_parallel=data_parallel)
+
+        # Determine the parallelization scheme with the parallelization tool
+        else: self.parallelization = determine_parallelization(self.definition.ski_path, self.definition.input_path, self.memory, nnodes, nsockets, ncores, memory, mpi, hyperthreading, threads_per_core)
 
         # Debugging
         log.debug("The parallelization scheme is " + str(self.parallelization))

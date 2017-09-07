@@ -1481,7 +1481,7 @@ class SkiFile:
 
             # Add the component ID, if possible
             if component_id is not None:
-                comment = etree.Comment(component_id)
+                comment = etree.Comment(" " + component_id + " ")
                 stellar_components_parent.append(comment)
 
             # Add the new stellar component
@@ -1608,7 +1608,7 @@ class SkiFile:
 
         # Add the component ID, if possible
         if component_id is not None:
-            comment = etree.Comment(component_id)
+            comment = etree.Comment(" " + component_id + " ")
             dust_components_parent.append(comment)
 
         # Add the new dust component

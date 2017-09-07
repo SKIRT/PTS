@@ -705,12 +705,17 @@ class ModelSuite(object):
         # Loop over the stellar components
         for name in self.get_stellar_component_names(model_name):
 
+            # Debugging
+            log.debug("Adding the '" + name + "' stellar component ...")
+
             # Load the component
-            #component = load_stellar_component(self.config.path, self.model_name, name)
             component = self.load_stellar_component(model_name, name, add_map=False)
 
             # Try to get the title
             title = stellar_titles[name] if name in stellar_titles else None
+
+            # Debugging
+            if title is not None: log.debug("Adding the component under the title '" + title + "' ...")
 
             # Add the stellar component
             map_filename = add_stellar_component(ski, name, component, title=title)
@@ -738,12 +743,17 @@ class ModelSuite(object):
         # Loop over the dust components
         for name in self.get_dust_component_names(model_name):
 
+            # Debugging
+            log.debug("Adding the '" + name + "' dust component ...")
+
             # Load the component
-            #component = load_dust_component(self.config.path, self.model_name, name)
             component = self.load_dust_component(model_name, name, add_map=False)
 
             # Try to get the title
             title = dust_titles[name] if name in dust_titles else None
+
+            # Debugging
+            if title is not None: log.debug("Adding the component under the title '" + title + "' ...")
 
             # Add the dust component
             map_filename = add_dust_component(ski, name, component, title=title)

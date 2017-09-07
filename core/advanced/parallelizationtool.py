@@ -59,6 +59,57 @@ def factors(n):
 
 # -----------------------------------------------------------------
 
+def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading,
+                              threads_per_core, ncells=None):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    :param memory:
+    :param nnodes:
+    :param nsockets:
+    :param ncores:
+    :param host_memory:
+    :param mpi:
+    :param hyperthreading:
+    :param threads_per_core:
+    :param ncells:
+    :return:
+    """
+
+    # Create the parallelization tool
+    tool = ParallelizationTool()
+
+    # Set configuration options
+    tool.config.ski = ski_path
+    tool.config.input = input_path
+
+    # Set host properties
+    tool.config.nnodes = nnodes
+    tool.config.nsockets = nsockets
+    tool.config.ncores = ncores
+    tool.config.memory = host_memory
+
+    # MPI available and used
+    tool.config.mpi = mpi
+    tool.config.hyperthreading = hyperthreading
+    tool.config.threads_per_core = threads_per_core
+
+    # Number of dust cells
+    tool.config.ncells = ncells  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+    # Don't show the parallelization
+    tool.config.show = False
+
+    # Run the parallelization tool (passing the memory requirement of the simulation as an argument)
+    tool.run(memory=memory)
+
+    # Get the parallelization scheme
+    return tool.parallelization
+
+# -----------------------------------------------------------------
+
 class ParallelizationTool(Configurable):
 
     """

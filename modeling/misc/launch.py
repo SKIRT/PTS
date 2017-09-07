@@ -114,6 +114,30 @@ class ModelLauncher(ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
+    def local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def simulation_name(self):
 
         """
@@ -548,10 +572,22 @@ class ModelLauncher(ModelSimulationInterface):
         # Create
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, input_path=self.input_paths, name=self.simulation_name)
 
+        # Set options
         analysis_options = None
-        parallelization = None
+        if self.local:
 
-        nprocesses = 2
+            parallelization = None
+            nprocesses = self.config.nprocesses_local
+            self.launcher.config.data_parallel_local = self.config.data_parallel_local
+
+        elif self.remote:
+
+            parallelization = None
+            nprocesses = self.config.nprocesses_remote
+            self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+
+        # Invalid
+        else: raise RuntimeError("Error")
 
         # Run the simulation
         self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization, nprocesses=nprocesses)

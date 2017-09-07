@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import sys
 from abc import ABCMeta, abstractmethod
 from subprocess import Popen
 
@@ -25,6 +26,7 @@ from .logfile import get_last_phase, get_nprocesses
 from ..basics.handle import ExecutionHandle
 from ..tools import terminal
 from ..tools import strings
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -573,11 +575,16 @@ class LogSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if strings.similarity(message, previous_message) > similarity_threshold:
                     self.nsimilar += 1
+                    print(self.nsimilar, 10 * similar_log_frequency)
                     if self.nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
                         similar_log_frequency *= 10
-                    if self.nsimilar % similar_log_frequency != 0: continue
+                    if self.nsimilar % similar_log_frequency != 0:
+                        #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset)
+                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset + "\r")
+                        sys.stdout.flush()
+                        continue
+                    else: print("")
                 self.nsimilar = 0
-
                 # Show only if not want to be ignored
                 if self.ignore_output is not None and contains_any(message, self.ignore_output): continue
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
@@ -781,9 +788,15 @@ class SpawnSimulationStatus(SimulationStatus):
                 message = line[26:]
                 if self.last_message is not None and strings.similarity(message, self.last_message) > similarity_threshold:
                     nsimilar += 1
+                    #print(nsimilar, 10 * similar_log_frequency)
                     if nsimilar > 10 * similar_log_frequency: # there have been 10 messages allowed through already
                         similar_log_frequency *= 10
-                    if nsimilar % similar_log_frequency != 0: continue
+                    if nsimilar % similar_log_frequency != 0:
+                        #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset)
+                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset + "\r")
+                        sys.stdout.flush()
+                        continue
+                    else: print("")
                 nsimilar = 0
                 # Show only if not want to be ignored
                 if self.ignore_output is not None and contains_any(message, self.ignore_output): continue

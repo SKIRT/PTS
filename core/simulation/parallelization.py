@@ -334,3 +334,32 @@ class Parallelization(object):
                + str(self.threads_per_core) + ", processes: " + str(self.processes) + ", data_parallel: " + str(self.data_parallel) + ">"
 
 # -----------------------------------------------------------------
+
+def get_possible_nprocesses_in_memory(free_memory, serial_memory, parallel_memory, data_parallel=False):
+
+    """
+    This function ...
+    :param free_memory:
+    :param serial_memory:
+    :param parallel_memory:
+    :param data_parallel:
+    :return:
+    """
+
+    # Calculate the total memory of one process without data parallelization
+    total_memory = serial_memory + parallel_memory
+
+    # Calculate the maximum number of processes based on the memory requirements
+    processes = int(free_memory / total_memory)
+
+    # If there is too little free memory for the simulation, the number of processes will be smaller than one
+    if processes < 1:
+
+        # Exit with an error
+        raise RuntimeError("Not enough memory available to run this simulation locally: free memory = " + str(
+            free_memory) + ", required memory = " + str(total_memory))
+
+    # Otherwise, return the number of processes
+    return processes
+
+# -----------------------------------------------------------------
