@@ -1145,7 +1145,7 @@ class DeprojectionModel3D(Model3D):
 
         # Define the properties
         self.add_property("filename", "string", "name of the input FITS file")
-        self.add_property("pixelscale", "quantity", "pixelscale of the FITS image")
+        self.add_property("pixelscale", "quantity", "physical pixelscale of the FITS image")
         self.add_property("position_angle", "angle", "position angle")
         self.add_property("inclination", "angle", "inclination")
         self.add_property("x_size", "positive_integer", "number of x pixels in the map")

@@ -40,13 +40,14 @@ from ..tools import archive as arch
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 8 x 8 inch
 #
 def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=None):
+
+    if prefix is None: prefix = ""
+    else: prefix = prefix + "_"
+
     for gridfile in simulation.gridxxdatpaths():
 
         plotfile = gridfile[:-4] + ".pdf"
-
         if output_path is not None:
-            if prefix is None: prefix = ""
-            else: prefix = prefix + "_"
             plotfile = os.path.join(output_path, prefix + os.path.basename(plotfile))
 
         # setup the figure with the appropriate size (in points)

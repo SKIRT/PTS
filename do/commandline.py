@@ -20,6 +20,7 @@ import time as _time
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
+from pts.core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -93,7 +94,7 @@ def start_target(command_name, target, **kwargs):
     seconds = end - start
 
     # Succesfully finished
-    print("Finished " + command_name + " in " + str(seconds) + " seconds")
+    print("Finished " + command_name + " in " + time.display_time(seconds))
 
 # -----------------------------------------------------------------
 

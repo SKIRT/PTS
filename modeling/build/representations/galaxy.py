@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
+# Import astronomical modules
+from astropy.units import dimensionless_angles
+
 # Import the relevant PTS classes and modules
 from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ....core.basics.log import log
@@ -24,6 +27,8 @@ from ....core.units.stringify import represent_quantity
 from ...component.galaxy import GalaxyModelingComponent
 from ....core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from .base import RepresentationBuilderBase
+from ....magic.basics.vector import PixelShape
+from ...component.galaxy import get_npixels, get_field, get_center
 
 # -----------------------------------------------------------------
 
@@ -409,13 +414,100 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+    faceon_projection = create_faceon_projection(reference_deprojection)
 
     # Create the edge-on projection system
-    edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+    edgeon_projection = create_edgeon_projection(reference_deprojection)
 
     # Return the projections
     return earth_projection, faceon_projection, edgeon_projection
+
+# -----------------------------------------------------------------
+
+def get_physical_pixelscale_from_map(the_map, distance, downsample_factor=1.):
+
+    """
+    This function ...
+    :param the_map:
+    :param distance:
+    :param downsample_factor:
+    :return:
+    """
+
+    pixelscale = the_map.average_pixelscale * downsample_factor
+    return (abs(pixelscale) * distance).to("pc", equivalencies=dimensionless_angles())
+
+# -----------------------------------------------------------------
+
+def create_faceon_projection(deprojection, scale_heights):
+
+    """
+    This function ...
+    :param deprojection:
+    :param scale_heights:
+    :return:
+    """
+
+    # # Get number of pixels
+    # npixels = get_npixels(npixels)
+    #
+    # # Get field of view
+    # field = get_field(pixelscale, npixels, self.galaxy_distance)
+    #
+    # # Get the center pixel
+    # center = get_center(npixels)
+
+    # Get properties
+    distance = deprojection.distance
+    physical_pixelscale = deprojection.pixelscale
+
+    # Determine extent in the radial direction
+    radial_extent = max(deprojection.max_young_x_range.span, deprojection.max_young_y_range.span)
+
+    # Determine number of pixels
+    npixels = int(round(radial_extent / physical_pixelscale))
+
+    # Create the face-on projection system
+    #faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+    faceon_projection = FaceOnProjection(distance, npixels, npixels, center_physical.x, center_physical.y, field.x, field.y)
+
+# -----------------------------------------------------------------
+
+def create_edgeon_projection(deprojection, scale_heights):
+
+    """
+    Thisf unction ...
+    :param deprojection:
+    :param scale_heights:
+    :return:
+    """
+
+    # # Get number of pixels
+    # npixels = get_npixels(npixels)
+    #
+    # # Get field of view
+    # field = get_field(pixelscale, npixels, self.galaxy_distance)
+    #
+    # # Get the center pixel
+    # center = get_center(npixels)
+
+    # Get properties
+    distance = deprojection.distance
+    physical_pixelscale = deprojection.pixelscale
+
+    # Determine extent in the radial and in the vertical direction
+    radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
+    z_extent = 2. * deprojection.scale_height * scale_heights
+
+    # Determine number of pixels
+    nx = int(round(radial_extent / physical_pixelscale))
+    nz = int(round(z_extent / physical_pixelscale))
+
+    # Return the pixel shape
+    npixels = PixelShape.from_xy(nx, nz)
+
+    # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+    edgeon_projection = EdgeOnProjection(distance, npixels.x, npixels.y, center_physical.x, center_physical.y, field.x, field.y)
 
 # -----------------------------------------------------------------
 

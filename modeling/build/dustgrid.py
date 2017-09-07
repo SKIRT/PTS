@@ -308,6 +308,9 @@ class DustGridBuilder(Configurable):
 
         # Enable only writing options that are relevant for the desired quality measures
 
+        ## Enable writing the grid (for plotting)
+        self.ski.set_write_grid()
+
         ## Enable writing the tree
         if self.smile.supports_file_tree_grids: self.ski.set_write_grid_tree()
 
@@ -364,6 +367,10 @@ class DustGridBuilder(Configurable):
         #self.launcher.config.finish_after = "Writing dust cell properties"
         self.launcher.config.finish_at = "There are no stellar components"
         self.launcher.config.debug_output = True
+
+        # Set analysis options: no plotting is done in a function later
+        #self.launcher.config.analysis.plotting.path = self.out_path
+        #self.launcher.config.analysis.plotting.grids = True
 
         # Run
         self.launcher.run(definition=definition, parallelization=self.config.parallelization)
