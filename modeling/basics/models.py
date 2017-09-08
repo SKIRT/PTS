@@ -1275,7 +1275,7 @@ class DeprojectionModel3D(Model3D):
             return self._map
 
         # Error
-        else: raise ValueError("Map cannot be loaded")
+        else: raise ValueError("Map cannot be loaded from '" + self.filepath + "'")
 
     # -----------------------------------------------------------------
 

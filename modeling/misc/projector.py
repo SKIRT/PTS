@@ -30,6 +30,7 @@ from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
 from ...core.tools.stringify import tostr
 from ..basics.instruments import FrameInstrument
 from ..basics.models import DeprojectionModel3D
+from ..component.galaxy import get_physical_center
 
 # -----------------------------------------------------------------
 
@@ -501,17 +502,7 @@ class Projector(GalaxyModelingComponent):
         #if not self.has_wcs: raise RuntimeError("Cannot calculate the physical center coordinate: no coordinate system")
 
         if self.has_wcs: return PhysicalCoordinate.from_pixel(self.config.center, self.wcs, self.galaxy_distance, from_center=True)
-        else:
-
-            # Physical scales per pixel
-            x_scale = self.config.field.x / self.config.npixels.x
-            y_scale = self.config.field.y / self.config.npixels.y
-
-            # Get center in physical coordinates
-            center = PixelCoordinate(0.5 * self.config.npixels.x - self.config.center.x - 0.5, 0.5 * self.config.npixels.y - self.config.center.y - 0.5)
-            center_x = center.x * x_scale
-            center_y = center.y * y_scale
-            return PhysicalCoordinate(center_x, center_y)
+        else: return get_physical_center(self.config.field, self.config.npixels, self.config.center)
 
     # -----------------------------------------------------------------
 

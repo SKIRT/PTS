@@ -139,7 +139,7 @@ class SimulationStatus(object):
         """
 
         if self.nlines == 0: return None
-        else: return self.last_line[26:]
+        else: return get_message(self.last_line)
 
     # -----------------------------------------------------------------
 
@@ -163,7 +163,7 @@ class SimulationStatus(object):
         :return:
         """
 
-        return self.first_line[26:]
+        return get_message(self.first_line)
 
     # -----------------------------------------------------------------
 
@@ -293,6 +293,7 @@ class LogSimulationStatus(SimulationStatus):
 
         # Number of consecutive similar log lines that are encountered
         self.nsimilar = 0
+        self.current_nsimilar = 0
 
         # Flag
         self.ignored_previous = False
@@ -578,23 +579,41 @@ class LogSimulationStatus(SimulationStatus):
             if usable_ncolumns < 20: usable_ncolumns = 20
             nnew = len(lines) - self.nlines
             previous_message = ""
+
             for line in lines[-nnew:]:
-                message = line[26:]
+
+                message = get_message(line)
+
+                # Current message is similar to the previous message
                 if strings.similarity(message, previous_message) > similarity_threshold:
+
                     self.nsimilar += 1
-                    print(self.nsimilar, increase_similarity_after * similar_log_frequency)
+                    self.current_nsimilar += 1
+                    #print(self.nsimilar, increase_similarity_after * similar_log_frequency)
+
                     if self.nsimilar > increase_similarity_after * similar_log_frequency: # there have been 10 messages allowed through already
-                        print(str(increase_similarity_after) + " messages have been allowed to pass through")
+
+                        #print(str(increase_similarity_after) + " messages have been allowed to pass through")
                         similar_log_frequency *= increase_similarity_factor
-                    if self.nsimilar % similar_log_frequency != 0:
+
+                    if self.current_nsimilar % similar_log_frequency != 0:
+
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * self.nsimilar + skirt_debug_output_suffix + fmt.reset)
-                        ndots = self.nsimilar
-                        nspaces = usable_ncolumns - ndots
+                        if self.current_nsimilar > usable_ncolumns:
+                            ndots = usable_ncolumns
+                            nspaces = 0
+                        else:
+                            ndots = self.current_nsimilar
+                            nspaces = usable_ncolumns - ndots
                         sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
                         sys.stdout.flush()
                         continue
+
                     else: print("")
-                self.nsimilar = 0
+
+                else: self.nsimilar = 0
+                self.current_nsimilar = 0
+
                 # Show only if not want to be ignored
                 if self.ignore_output is not None and contains_any(message, self.ignore_output):
                     self.ignored_previous = True
@@ -802,8 +821,10 @@ class SpawnSimulationStatus(SimulationStatus):
             # Show the SKIRT line if debug_output is enabled and we are not in the middle of a progress bar
             if self.debug_output and self.progress is None:
 
-                message = line[26:]
+                # Get the log message
+                message = get_message(line)
 
+                # The current message is similar to the previous message
                 if self.last_message is not None and strings.similarity(message, self.last_message) > similarity_threshold:
 
                     nsimilar += 1
@@ -815,17 +836,17 @@ class SpawnSimulationStatus(SimulationStatus):
                         #print(str(increase_similarity_after) + " messages have been allowed to pass through")
                         similar_log_frequency *= increase_similarity_factor
 
+                    # We currently don't want to show the log messages
                     if current_nsimilar % similar_log_frequency != 0:
 
                         #sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset)
                         if current_nsimilar > usable_ncolumns:
                             ndots = usable_ncolumns
                             nspaces = 0
-                            total_length = ndots + nspaces
                         else:
                             ndots = current_nsimilar
                             nspaces = usable_ncolumns - ndots
-                            total_length = ndots + nspaces
+                        total_length = ndots + nspaces
                         #print(nsimilar, current_nsimilar, total_length)
                         sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
                         sys.stdout.flush()
@@ -834,8 +855,10 @@ class SpawnSimulationStatus(SimulationStatus):
 
                     else: print("")
 
+                # The current message is not similar to the previous message
                 else: nsimilar = 0
 
+                # Debug output is allowed through, reset current nsimilar
                 current_nsimilar = 0
 
                 # Show only if not want to be ignored
@@ -844,6 +867,7 @@ class SpawnSimulationStatus(SimulationStatus):
                     continue
                 if ignored_previous and message.startswith("  "): continue # ignore sub-messages
                 if not message.startswith("  "): ignored_previous = False
+                #print(list(line))
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
 
@@ -1047,7 +1071,7 @@ class SpawnSimulationStatus(SimulationStatus):
         # Check whether finished
         for line in reversed(self.log_lines):
 
-            message = line[26:]
+            message = get_message(line)
             if "Finished simulation" in message:
                 log.success("Simulation finished")
                 self.status = "finished"
@@ -1346,5 +1370,94 @@ def contains_any(string, patterns):
     for pattern in patterns:
         if pattern in string: return True
     return False
+
+# -----------------------------------------------------------------
+
+def get_message_type_symbol(line):
+
+    """
+    Thisf unction ...
+    :param line:
+    :return:
+    """
+
+    if is_regular_line(line): return line[24]
+    else: return None
+
+# -----------------------------------------------------------------
+
+def get_message_type(line):
+
+    """
+    This function ...
+    :param line:
+    :return:
+    """
+
+    symbol = get_message_type_symbol(line)
+    return get_type_for_symbol(symbol)
+
+# -----------------------------------------------------------------
+
+def get_type_for_symbol(symbol):
+
+    """
+    This function ...
+    :param symbol:
+    :return:
+    """
+
+    if symbol is None: return None
+    elif symbol == " ": return "info"
+    elif symbol == "?": return "question"
+    elif symbol == "*": return "error"
+    elif symbol == "-": return "success"
+    elif symbol == "D": return "debug"
+    elif symbol == "!": return "warning"
+    else:
+        log.warning("Unknown message symbol: '" + symbol + "'")
+        return None
+
+# -----------------------------------------------------------------
+
+def get_message(line):
+
+    """
+    Thisnf unction ...
+    :param line: 
+    :return: 
+    """
+
+    if is_regular_line(line): return line[26:]
+    else: return line
+
+# -----------------------------------------------------------------
+
+def get_type_and_message(line):
+
+    """
+    This function ...
+    :param line:
+    :return:
+    """
+
+    if is_regular_line(line):
+        symbol = line[24]
+        message = line[26:]
+        return get_type_for_symbol(symbol), message
+    else: return None, line
+
+# -----------------------------------------------------------------
+
+def is_regular_line(line):
+
+    """
+    This function ...
+    :param line:
+    :return:
+    """
+
+    if line[2] == "/" and line[5] == "/" and line[13] == ":" and line[16]: return True
+    else: return False
 
 # -----------------------------------------------------------------

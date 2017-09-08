@@ -2160,8 +2160,38 @@ def get_center(npixels):
     :return:
     """
 
+    from ...magic.basics.vector import PixelShape
+    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
     from ...magic.basics.coordinate import PixelCoordinate
     center = PixelCoordinate(x=0.5*npixels.x, y=0.5*npixels.y)
     return center
+
+# -----------------------------------------------------------------
+
+def get_physical_center(field, npixels, center):
+
+    """
+    Thisf unction ...
+    :param field:
+    :param npixels:
+    :param center: pixel center
+    :return:
+    """
+
+    from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
+
+    # Physical scales per pixel
+    x_scale = field.x / npixels.x
+    y_scale = field.y / npixels.y
+
+    # Get center in physical coordinates
+    center = PixelCoordinate(0.5 * npixels.x - center.x - 0.5,
+                             0.5 * npixels.y - center.y - 0.5)
+
+    center_x = center.x * x_scale
+    center_y = center.y * y_scale
+
+    # Return the physical coordinate
+    return PhysicalCoordinate(center_x, center_y)
 
 # -----------------------------------------------------------------

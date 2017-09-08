@@ -266,7 +266,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         for name in self.model_suite.get_stellar_component_names(self.model_name):
 
             # Load the deprojection of the component, if applicable
-            title, deprojection = self.model_suite.load_stellar_component_deprojection(self.model_name, name)
+            title, deprojection = self.model_suite.load_stellar_component_deprojection(self.model_name, name, load_map=True)
             if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
@@ -285,7 +285,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         for name in self.model_suite.get_dust_component_names(self.model_name):
 
             # Load the deprojection of the component, if applicable
-            title, deprojection = self.model_suite.load_dust_component_deprojection(self.model_name, name)
+            title, deprojection = self.model_suite.load_dust_component_deprojection(self.model_name, name, load_map=True)
             if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
@@ -310,7 +310,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
                                                                       self.disk_position_angle)
 
         # Use deprojections
-        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth)
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
 
         # Set the projection systems
         self.projections["earth"] = earth

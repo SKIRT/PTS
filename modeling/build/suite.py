@@ -514,10 +514,13 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
-    def load_stellar_component_deprojection(self, model_name, component_name):
+    def load_stellar_component_deprojection(self, model_name, component_name, load_map=False):
 
         """
         This function ...
+        :param model_name:
+        :param component_name:
+        :param load_map:
         :return:
         """
 
@@ -528,7 +531,11 @@ class ModelSuite(object):
         properties = get_galaxy_properties(self.modeling_path)
 
         # Load component
-        component = self.load_stellar_component(model_name, component_name, add_map=False)
+        component = self.load_stellar_component(model_name, component_name, add_map=load_map)
+
+        # Get the map
+        if "map" in component: the_map = component.map
+        else: the_map = None
 
         ## Set deprojection
         if "deprojection" in component:
@@ -537,7 +544,9 @@ class ModelSuite(object):
             title = component.parameters.title
 
             # Return
-            return title, component.deprojection
+            deprojection = component.deprojection
+            if the_map is not None: deprojection.map = the_map
+            return title, deprojection
 
         # Check if this is a new component, add geometry, SED and normalization all at once
         if "geometry" in component.parameters:
@@ -572,6 +581,9 @@ class ModelSuite(object):
             deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination,
                                                         filepath, scale_height)
 
+            # Set the map
+            if the_map is not None: deprojection.map = the_map
+
             # Return
             return title, deprojection
 
@@ -598,13 +610,14 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
-    def load_dust_component_deprojection(self, model_name, component_name):
+    def load_dust_component_deprojection(self, model_name, component_name, load_map=False):
 
         """
         This function ...
         :param modeling_path:
         :param model_name:
         :param component_name:
+        :param load_map:
         """
 
         from ..component.galaxy import get_disk_position_angle
@@ -614,7 +627,11 @@ class ModelSuite(object):
         properties = get_galaxy_properties(self.modeling_path)
 
         # Load the component
-        component = self.load_dust_component(model_name, component_name, add_map=False)
+        component = self.load_dust_component(model_name, component_name, add_map=load_map)
+
+        # Get the map
+        if "map" in component: the_map = component.map
+        else: the_map = None
 
         # Set deprojection
         if "deprojection" in component:
@@ -623,7 +640,9 @@ class ModelSuite(object):
             title = component.parameters.title
 
             # Return
-            return title, component.deprojection
+            deprojection = component.deprojection
+            if the_map is not None: deprojection.map = the_map
+            return title, deprojection
 
         # Check if this is a new dust component, add geometry, mix and normalization all at once
         if "geometry" in component.parameters:
@@ -657,6 +676,9 @@ class ModelSuite(object):
             # Create
             deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination,
                                                         filepath, scale_height)
+
+            # Set the map
+            if the_map is not None: deprojection.map = the_map
 
             # Return
             return title, deprojection

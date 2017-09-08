@@ -28,7 +28,8 @@ from ...component.galaxy import GalaxyModelingComponent
 from ....core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from .base import RepresentationBuilderBase
 from ....magic.basics.vector import PixelShape
-from ...component.galaxy import get_npixels, get_field, get_center
+from ...component.galaxy import get_npixels, get_field, get_center, get_physical_center
+from ....magic.basics.stretch import PhysicalExtent
 
 # -----------------------------------------------------------------
 
@@ -182,7 +183,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
 
         # Use deprojections
         # galaxy_distance, azimuth
-        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth)
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
 
         # Set the projection systems
         self.projections["earth"] = earth
@@ -397,13 +398,14 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 
 # -----------------------------------------------------------------
 
-def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth):
+def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights):
 
     """
     This function ...
     :param deprojections:
     :param galaxy_distance:
     :param azimuth:
+    :param scale_heights:
     :return:
     """
 
@@ -414,10 +416,10 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = create_faceon_projection(reference_deprojection)
+    faceon_projection = create_faceon_projection(reference_deprojection, scale_heights)
 
     # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection(reference_deprojection)
+    edgeon_projection = create_edgeon_projection(reference_deprojection, scale_heights)
 
     # Return the projections
     return earth_projection, faceon_projection, edgeon_projection
@@ -448,28 +450,33 @@ def create_faceon_projection(deprojection, scale_heights):
     :return:
     """
 
-    # # Get number of pixels
-    # npixels = get_npixels(npixels)
-    #
-    # # Get field of view
-    # field = get_field(pixelscale, npixels, self.galaxy_distance)
-    #
-    # # Get the center pixel
-    # center = get_center(npixels)
-
     # Get properties
     distance = deprojection.distance
     physical_pixelscale = deprojection.pixelscale
 
     # Determine extent in the radial direction
-    radial_extent = max(deprojection.max_young_x_range.span, deprojection.max_young_y_range.span)
+    radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
 
     # Determine number of pixels
     npixels = int(round(radial_extent / physical_pixelscale))
+    npixels = PixelShape.square(npixels)
+
+    # Get the center pixel
+    center = get_center(npixels)
+
+    # Get field of view
+    #field = get_field(pixelscale, npixels, self.galaxy_distance)
+    field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
+
+    # Get physical center
+    center_physical = get_physical_center(field, npixels, center)
 
     # Create the face-on projection system
     #faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    faceon_projection = FaceOnProjection(distance, npixels, npixels, center_physical.x, center_physical.y, field.x, field.y)
+    faceon_projection = FaceOnProjection(distance, npixels.x, npixels.y, center_physical.x, center_physical.y, field.x, field.y)
+
+    # Return the projection
+    return faceon_projection
 
 # -----------------------------------------------------------------
 
@@ -481,15 +488,6 @@ def create_edgeon_projection(deprojection, scale_heights):
     :param scale_heights:
     :return:
     """
-
-    # # Get number of pixels
-    # npixels = get_npixels(npixels)
-    #
-    # # Get field of view
-    # field = get_field(pixelscale, npixels, self.galaxy_distance)
-    #
-    # # Get the center pixel
-    # center = get_center(npixels)
 
     # Get properties
     distance = deprojection.distance
@@ -506,8 +504,21 @@ def create_edgeon_projection(deprojection, scale_heights):
     # Return the pixel shape
     npixels = PixelShape.from_xy(nx, nz)
 
+    # Get the center pixel
+    center = get_center(npixels)
+
+    # Get field of view
+    #field = get_field(pixelscale, npixels, self.galaxy_distance)
+    field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
+
+    # Get physical center
+    center_physical = get_physical_center(field, npixels, center)
+
     # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
     edgeon_projection = EdgeOnProjection(distance, npixels.x, npixels.y, center_physical.x, center_physical.y, field.x, field.y)
+
+    # Return the projection
+    return edgeon_projection
 
 # -----------------------------------------------------------------
 

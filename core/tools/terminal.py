@@ -251,7 +251,7 @@ def fetch_lines(child):
             lines = child.before.replace('\x1b[K', '').split("\r\n")
             if len(lines) != 1: raise ValueError("Encountered multiple lines: " + str(lines))
             line = lines[0]
-            ansi_escape.sub('', line).replace('\x1b[K', '').replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
+            line = ansi_escape.sub('', line).replace('\x1b[K', '').replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
             yield line
         elif index == 1:
             child.logfile = None
