@@ -79,6 +79,21 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def where(cls, data, value, **kwargs):
+
+        """
+        This function ...
+        :param data:
+        :param value:
+        :param kwargs:
+        :return:
+        """
+
+        return cls(data == value, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def above(cls, data, threshold, **kwargs):
 
         """
