@@ -66,7 +66,7 @@ def represent_unit(unit, **kwargs):
         string = string.replace(key, output_replacements[key])
 
     # Remove whitespace
-    string = string.replace(" ", "")
+    #string = string.replace(" ", "")
 
     # Add details if requested
     if add_physical_type: string += " [" + unit.physical_type + "]"
