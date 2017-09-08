@@ -1078,7 +1078,7 @@ class SpawnSimulationStatus(SimulationStatus):
                 return True
 
             elif "Available memory" in message:
-                log.error("Simulation finished")
+                log.success("Simulation finished")
                 self.status = "finished"
                 return True
 
