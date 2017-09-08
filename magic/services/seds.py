@@ -36,12 +36,13 @@ from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
-catalog_names = ["DustPedia", "GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G", "SINGS Spectroscopy", "Brown", "Planck"]
+catalog_names = ["DustPedia", "GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G",
+                 "SINGS Spectroscopy", "Brown", "Planck"]
+
 
 # -----------------------------------------------------------------
 
 class SEDFetcher(Configurable):
-
     """
     This class ...
     """
@@ -60,6 +61,10 @@ class SEDFetcher(Configurable):
 
         # Determine the NGC name of the galaxy
         self.ngc_name = None
+
+        # The Vizier querying object
+        self.vizier = Vizier(columns=["**"])
+        self.vizier.ROW_LIMIT = -1
 
         # The observed SED
         self.seds = dict()
@@ -100,12 +105,16 @@ class SEDFetcher(Configurable):
         super(SEDFetcher, self).setup(**kwargs)
 
         # Create a dictionary of filters
-        keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
+        keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100",
+                "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i",
+                "SDSS z"]
         for key in keys: self.filters[key] = parse_filter(key)
 
         # Get the NGC name
-        if "ngc_name" in kwargs: self.ngc_name = kwargs.pop("ngc_name")
-        else: self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
+        if "ngc_name" in kwargs:
+            self.ngc_name = kwargs.pop("ngc_name")
+        else:
+            self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -257,12 +266,8 @@ class SEDFetcher(Configurable):
         # - "e_F60um": Uncertainty in F60um [Jy]
         # - "F100um": IRAS 100 micron flux density [Jy]
         # - "e_F100um": Uncertainty in F100um [Jy]
-        # The Vizier querying object
 
-        vizier = Vizier(columns=["asyFUV", "e_asyFUV", "asyNUV","e_asyNUV", "Umag", "e_Umag","Bmag","e_Bmag","Vmag","e_Vmag","Jmag","e_Jmag","Hmag","e_Hmag","Kmag","e_Kmag","F12um","e_F12um","F25um","e_F25um","F60um","e_F60um","F100um","e_F100um"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/173/185/galex")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/173/185/galex")
         # Result is a list of tables, we only have one table with one entry
 
         # Create an SED
@@ -273,7 +278,6 @@ class SEDFetcher(Configurable):
         # FUV --
 
         if not result[0]["asyFUV"].mask[0]:
-
             fuv_mag = result[0]["asyFUV"][0]
             fuv_mag_error = result[0][0]["e_asyFUV"]
             fuv_mag_lower = fuv_mag - fuv_mag_error
@@ -289,7 +293,6 @@ class SEDFetcher(Configurable):
         # NUV --
 
         if not result[0]["asyNUV"].mask[0]:
-
             nuv_mag = result[0][0]["asyNUV"]
             nuv_mag_error = result[0][0]["e_asyNUV"]
             nuv_mag_lower = nuv_mag - nuv_mag_error
@@ -305,7 +308,6 @@ class SEDFetcher(Configurable):
         # U band --
 
         if not result[0]["Umag"].mask[0]:
-
             # From Vega magnitude system to AB magnitudes
             u_mag = unitconversion.vega_to_ab(result[0][0]["Umag"], "U")
             u_mag_error = unitconversion.vega_to_ab(result[0][0]["e_Umag"], "U")
@@ -322,16 +324,15 @@ class SEDFetcher(Configurable):
         # B band --
 
         if not result[0]["Bmag"].mask[0]:
-
             b_mag = unitconversion.vega_to_ab(result[0][0]["Bmag"], "B")
             b_mag_error = unitconversion.vega_to_ab(result[0][0]["e_Bmag"], "B")
             b_mag_lower = b_mag - abs(b_mag_error)
             b_mag_upper = b_mag + abs(b_mag_error)
 
-            #print("bmag", b_mag)
-            #print("bmagerror", b_mag_error)
-            #print("bmaglower", b_mag_lower)
-            #print("bmagupper", b_mag_upper)
+            # print("bmag", b_mag)
+            # print("bmagerror", b_mag_error)
+            # print("bmaglower", b_mag_lower)
+            # print("bmagupper", b_mag_upper)
 
             # B band flux
             b = unitconversion.ab_to_jansky(b_mag)
@@ -343,7 +344,6 @@ class SEDFetcher(Configurable):
         # V band --
 
         if not result[0]["Vmag"].mask[0]:
-
             v_mag = unitconversion.vega_to_ab(result[0][0]["Vmag"], "V")
             v_mag_error = unitconversion.vega_to_ab(result[0][0]["e_Vmag"], "V")
             v_mag_lower = v_mag - v_mag_error
@@ -361,7 +361,6 @@ class SEDFetcher(Configurable):
         # J band --
 
         if not result[0]["Jmag"].mask[0]:
-
             j_mag = result[0][0]["Jmag"]
             j_mag_error = result[0][0]["e_Jmag"]
             j_mag_lower = j_mag - j_mag_error
@@ -377,7 +376,6 @@ class SEDFetcher(Configurable):
         # H band --
 
         if not result[0]["Hmag"].mask[0]:
-
             h_mag = result[0][0]["Hmag"]
             h_mag_error = result[0][0]["e_Hmag"]
             h_mag_lower = h_mag - h_mag_error
@@ -393,7 +391,6 @@ class SEDFetcher(Configurable):
         # K band --
 
         if not result[0]["Kmag"].mask[0]:
-
             k_mag = result[0][0]["Kmag"]
             k_mag_error = result[0][0]["e_Kmag"]
             k_mag_lower = k_mag - k_mag_error
@@ -406,12 +403,9 @@ class SEDFetcher(Configurable):
             k_error = ErrorBar(k_lower, k_upper, at=k)
             sed.add_point(self.filters["K"], k, k_error)
 
-        # TODO: try to find the cause of this problem later? Columns are not present anymore in the output table
-        """
         # F12 band flux
 
         if not result[0]["F12um"].mask[0]:
-
             f12 = result[0][0]["F12um"]
             f12_error = ErrorBar(result[0][0]["e_F12um"])
             sed.add_point(self.filters["IRAS 12"], f12, f12_error)
@@ -419,7 +413,6 @@ class SEDFetcher(Configurable):
         # F25 band flux
 
         if not result[0]["F25um"].mask[0]:
-
             f25 = result[0][0]["F25um"]
             f25_error = ErrorBar(result[0][0]["e_F25um"])
             sed.add_point(self.filters["IRAS 25"], f25, f25_error)
@@ -427,7 +420,6 @@ class SEDFetcher(Configurable):
         # F60 band flux
 
         if not result[0]["F60um"].mask[0]:
-
             f60 = result[0][0]["F60um"]
             f60_error = ErrorBar(result[0][0]["e_F60um"])
             sed.add_point(self.filters["IRAS 60"], f60, f60_error)
@@ -435,11 +427,9 @@ class SEDFetcher(Configurable):
         # F100 band flux
 
         if not result[0]["F100um"].mask[0]:
-
             f100 = result[0][0]["F100um"]
             f100_error = ErrorBar(result[0][0]["e_F100um"])
             sed.add_point(self.filters["IRAS 100"], f100, f100_error)
-        """
 
         # Add the SED to the dictionary
         self.seds["GALEX"] = sed
@@ -465,12 +455,7 @@ class SEDFetcher(Configurable):
         # - "e_H.ext": σ(H.ext) (h_msig_ext) [mag]
         # - "K.ext": J magnitude in r.ext (k_m_ext) [mag]
         # - "e_K.ext": σ(K.ext) (k_msig_ext) [mag]
-
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
 
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
@@ -529,20 +514,15 @@ class SEDFetcher(Configurable):
 
         # Radial distribution in SINGS galaxies. I.
         # J/ApJ/703/1569/table1	(c)Sample (75 rows)
-    	# J/ApJ/703/1569/table2	UV, optical and NIR surface photometry profiles (2206 rows)
-    	# J/ApJ/703/1569/table3	UV, optical (SDSS) and NIR photometry profiles (2161 rows)
-    	# J/ApJ/703/1569/table4	IRAC and MIPS surface photometry (4319 rows)
-    	# J/ApJ/703/1569/table5	UV, optical, and near-IR asymptotic magnitudes for SINGS galaxies lacking SDSS data (43 rows)
-    	# J/ApJ/703/1569/table6	UV, optical (SDSS), and near-IR asymptotic magnitudes (32 rows)
-    	# J/ApJ/703/1569/table7	IRAC and MIPS asymptotic magnitudes (75 rows)
-    	# J/ApJ/703/1569/table8	Non-parametrical morphological estimators (300 rows)
+        # J/ApJ/703/1569/table2	UV, optical and NIR surface photometry profiles (2206 rows)
+        # J/ApJ/703/1569/table3	UV, optical (SDSS) and NIR photometry profiles (2161 rows)
+        # J/ApJ/703/1569/table4	IRAC and MIPS surface photometry (4319 rows)
+        # J/ApJ/703/1569/table5	UV, optical, and near-IR asymptotic magnitudes for SINGS galaxies lacking SDSS data (43 rows)
+        # J/ApJ/703/1569/table6	UV, optical (SDSS), and near-IR asymptotic magnitudes (32 rows)
+        # J/ApJ/703/1569/table7	IRAC and MIPS asymptotic magnitudes (75 rows)
+        # J/ApJ/703/1569/table8	Non-parametrical morphological estimators (300 rows)
 
-
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.get_catalogs("J/ApJ/703/1569")
+        result = self.vizier.get_catalogs("J/ApJ/703/1569")
 
         # Result is a TableList with 8 tables (0 to 7)
         # We need:
@@ -574,9 +554,9 @@ class SEDFetcher(Configurable):
 
         # Find the row index that corresponds with the specified galaxy
 
-        #print(result[5])
+        # print(result[5])
 
-        #print(self.ngc_name)
+        # print(self.ngc_name)
 
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
@@ -584,7 +564,6 @@ class SEDFetcher(Configurable):
         galaxy_index = tables.find_index(result[5], self.ngc_name)
 
         if galaxy_index is not None:
-
             # FUV
             fuv_mag = result[5][galaxy_index]["FUV"]
             fuv_mag_error = result[5][galaxy_index]["e_FUV"]
@@ -609,10 +588,10 @@ class SEDFetcher(Configurable):
             g_mag_lower = g_mag - abs(g_mag_error)
             g_mag_upper = g_mag + abs(g_mag_error)
 
-            #print("gmag", g_mag)
-            #print("gmagerror", g_mag_error)
-            #print("gmaglower", g_mag_lower)
-            #print("gmagupper", g_mag_upper)
+            # print("gmag", g_mag)
+            # print("gmagerror", g_mag_error)
+            # print("gmaglower", g_mag_lower)
+            # print("gmagupper", g_mag_upper)
 
             # r
             r_mag = result[5][galaxy_index]["rmag"]
@@ -741,7 +720,6 @@ class SEDFetcher(Configurable):
         galaxy_index = tables.find_index(result[6], self.ngc_name)
 
         if galaxy_index is not None:
-
             # 3.6 micron
             i1_log = result[6][galaxy_index]["logF3.6"]
             i1_log_error = result[6][galaxy_index]["e_logF3.6"]
@@ -766,10 +744,10 @@ class SEDFetcher(Configurable):
             i4_log_lower = i4_log - i4_log_error
             i4_log_upper = i4_log + i4_log_error
 
-            #print("i4log", i4_log)
-            #print("i4_log_error", i4_log_error)
-            #print("i4_log_lower", i4_log_lower)
-            #print("i4_log_upper", i4_log_upper)
+            # print("i4log", i4_log)
+            # print("i4_log_error", i4_log_error)
+            # print("i4_log_lower", i4_log_lower)
+            # print("i4_log_upper", i4_log_upper)
 
             # 24 micron
             mips24_log = result[6][galaxy_index]["logF24"]
@@ -792,51 +770,51 @@ class SEDFetcher(Configurable):
             # Calculate data points and errobars in Janskys, add to the SED
 
             # 3.6 micron
-            i1 = 10.**i1_log
-            i1_lower = 10.**i1_log_lower
-            i1_upper = 10.**i1_log_upper
+            i1 = 10. ** i1_log
+            i1_lower = 10. ** i1_log_lower
+            i1_upper = 10. ** i1_log_upper
             i1_error = ErrorBar(i1_lower, i1_upper, at=i1)
             sed.add_point(self.filters["I1"], i1, i1_error)
 
             # 4.5 micron
-            i2 = 10.**i2_log
-            i2_lower = 10.**i2_log_lower
-            i2_upper = 10.**i2_log_upper
+            i2 = 10. ** i2_log
+            i2_lower = 10. ** i2_log_lower
+            i2_upper = 10. ** i2_log_upper
             i2_error = ErrorBar(i2_lower, i2_upper, at=i2)
             sed.add_point(self.filters["I2"], i2, i2_error)
 
             # 5.8 micron
-            i3 = 10.**i3_log
-            i3_lower = 10.**i3_log_lower
-            i3_upper = 10.**i3_log_upper
+            i3 = 10. ** i3_log
+            i3_lower = 10. ** i3_log_lower
+            i3_upper = 10. ** i3_log_upper
             i3_error = ErrorBar(i3_lower, i3_upper, at=i3)
             sed.add_point(self.filters["I3"], i3, i3_error)
 
             # 8.0 micron
-            i4 = 10.**i4_log
-            i4_lower = 10.**i4_log_lower
-            i4_upper = 10.**i4_log_upper
+            i4 = 10. ** i4_log
+            i4_lower = 10. ** i4_log_lower
+            i4_upper = 10. ** i4_log_upper
             i4_error = ErrorBar(i4_lower, i4_upper, at=i4)
             sed.add_point(self.filters["I4"], i4, i4_error)
 
             # 24 micron
-            mips24 = 10.**mips24_log
-            mips24_lower = 10.**mips24_log_lower
-            mips24_upper = 10.**mips24_log_upper
+            mips24 = 10. ** mips24_log
+            mips24_lower = 10. ** mips24_log_lower
+            mips24_upper = 10. ** mips24_log_upper
             mips24_error = ErrorBar(mips24_lower, mips24_upper, at=mips24)
             sed.add_point(self.filters["MIPS 24"], mips24, mips24_error)
 
             # 70 micron
-            mips70 = 10.**mips70_log
-            mips70_lower = 10.**mips70_log_lower
-            mips70_upper = 10.**mips70_log_upper
+            mips70 = 10. ** mips70_log
+            mips70_lower = 10. ** mips70_log_lower
+            mips70_upper = 10. ** mips70_log_upper
             mips70_error = ErrorBar(mips70_lower, mips70_upper, at=mips70)
             sed.add_point(self.filters["MIPS 70"], mips70, mips70_error)
 
             # 160 micron
-            mips160 = 10.**mips160_log
-            mips160_lower = 10.**mips160_log_lower
-            mips160_upper = 10.**mips160_log_upper
+            mips160 = 10. ** mips160_log
+            mips160_lower = 10. ** mips160_log_lower
+            mips160_upper = 10. ** mips160_log_upper
             mips160_error = ErrorBar(mips160_lower, mips160_upper, at=mips160)
             sed.add_point(self.filters["MIPS 160"], mips160, mips160_error)
 
@@ -865,11 +843,7 @@ class SEDFetcher(Configurable):
         #  - "J/MNRAS/445/881/table3": Photometry within the IR apertures of Dale et al. (2009, Cat. J/ApJ/703/517) (258 rows)
         #  - "J/MNRAS/445/881/table4": Photometry within the UV apertures of Lee et al. (2011, Cat. J/ApJS/192/6) (258 rows)
 
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/445/881/sample")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/445/881/sample")
 
         # ALL IN AB MAGNITUDE SYSTEM
         # Umag
@@ -887,7 +861,8 @@ class SEDFetcher(Configurable):
         # If nothing is found
         if len(result) == 0: return
 
-        relevant_bands = [("U", "U"), ("B", "B"), ("V", "V"), ("R", "R"), ("u", "SDSS u"), ("g", "SDSS g"), ("r", "SDSS r"), ("i", "SDSS i"), ("z", "SDSS z")]
+        relevant_bands = [("U", "U"), ("B", "B"), ("V", "V"), ("R", "R"), ("u", "SDSS u"), ("g", "SDSS g"),
+                          ("r", "SDSS r"), ("i", "SDSS i"), ("z", "SDSS z")]
         for band_prefix_catalog, filter_name in relevant_bands:
 
             column_name = band_prefix_catalog + "mag"
@@ -932,11 +907,7 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
 
         # F1.25: 2MASS J band (1.25 micron) flux density [Jy]
         # e_F1.25: Uncertainty in F1.25 [Jy]
@@ -964,7 +935,8 @@ class SEDFetcher(Configurable):
 
         table = result[0]
 
-        relevant_bands = [("1.25", "J"), ("1.65", "H"), ("2.17", "K"), ("3.6", "I1"), ("4.5", "I2"), ("5.8", "I3"), ("8.0", "I4"), ("24", "MIPS 24"), ("70", "MIPS 70"), ("160", "MIPS 160")]
+        relevant_bands = [("1.25", "J"), ("1.65", "H"), ("2.17", "K"), ("3.6", "I1"), ("4.5", "I2"), ("5.8", "I3"),
+                          ("8.0", "I4"), ("24", "MIPS 24"), ("70", "MIPS 70"), ("160", "MIPS 160")]
         for band_prefix_catalog, filter_name in relevant_bands:
 
             column_name = "F" + band_prefix_catalog
@@ -1012,11 +984,7 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        # The Vizier querying object
-        vizier = Vizier(columns=["F(3.6)","e_F(3.6)","F(8.0)","e_F(8.0)","F(24)","e_F(24)","F(70)","e_F(70)"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
 
         # No results found
         if len(result) == 0: return
@@ -1067,11 +1035,7 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
 
         if len(result) != 0:
 
@@ -1090,46 +1054,46 @@ class SEDFetcher(Configurable):
                 # Add data point to SED
                 sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
-        result = vizier.get_catalogs("J/ApJS/178/280/table2")
+        result = self.vizier.get_catalogs("J/ApJS/178/280/table2")
         table = result[0]
 
         index = tables.find_index(table, self.ngc_name, "Name")
-        #print(index)
-        #index = tables.find_index(table, self.config.galaxy_name, "Name")
-        #print(index)
+        # print(index)
+        # index = tables.find_index(table, self.config.galaxy_name, "Name")
+        # print(index)
 
         # F170
-        #Jy	(n) 170 micron band flux density
- 	 	#e_F170
-        #Jy	(n) Uncertainty in F170
- 	 	#F158
-        #Jy	(n) 158 micron band flux density
- 	 	#e_F158
-        #Jy	(n) Uncertainty in F158
- 	 	#F145
-        #Jy	(n) 145 micron band flux density
- 	 	#e_F145
-        #Jy	(n) Uncertainty in F145
- 	 	#F122
-        #Jy	(n) 122 micron band flux density
- 	 	#e_F122
-        #Jy	(n) Uncertainty in F122
- 	 	#F88
-        #Jy	(n) 88 micron band flux density
- 	 	#e_F88
-        #Jy	(n) Uncertainty in F88
- 	 	#F63
-        #Jy	(n) 63 micron band flux density
- 	 	#e_F63
-        #Jy	(n) Uncertainty in F63
- 	 	#F57
-        #Jy	(n) 57 micron band flux density
- 	 	#e_F57
-        #Jy	(n) Uncertainty in F57
- 	 	#F52
-        #Jy	(n) 52 micron band flux density
- 	 	#e_F52
-        #Jy	(n) Uncertainty in F52
+        # Jy	(n) 170 micron band flux density
+        # e_F170
+        # Jy	(n) Uncertainty in F170
+        # F158
+        # Jy	(n) 158 micron band flux density
+        # e_F158
+        # Jy	(n) Uncertainty in F158
+        # F145
+        # Jy	(n) 145 micron band flux density
+        # e_F145
+        # Jy	(n) Uncertainty in F145
+        # F122
+        # Jy	(n) 122 micron band flux density
+        # e_F122
+        # Jy	(n) Uncertainty in F122
+        # F88
+        # Jy	(n) 88 micron band flux density
+        # e_F88
+        # Jy	(n) Uncertainty in F88
+        # F63
+        # Jy	(n) 63 micron band flux density
+        # e_F63
+        # Jy	(n) Uncertainty in F63
+        # F57
+        # Jy	(n) 57 micron band flux density
+        # e_F57
+        # Jy	(n) Uncertainty in F57
+        # F52
+        # Jy	(n) 52 micron band flux density
+        # e_F52
+        # Jy	(n) Uncertainty in F52
 
         if index is not None: pass
 
@@ -1180,17 +1144,12 @@ class SEDFetcher(Configurable):
         # Create an SED
         sed = ObservedSED(photometry_unit="Jy")
 
-        # The Vizier querying object
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
 
         if len(result) == 0: return
 
         relevant_bands = [("12", "IRAS 12"), ("25", "IRAS 25"), ("60", "IRAS 60"), ("100", "IRAS 100")]
         for band_prefix_catalog, filter_name in relevant_bands:
-
             # Flux and error already in Jy
             fluxdensity = result[0][0]["S" + band_prefix_catalog + "um"]
             fluxdensity_error = ErrorBar(0.0)
@@ -1217,16 +1176,13 @@ class SEDFetcher(Configurable):
         sed = ObservedSED(photometry_unit="Jy")
 
         # Get parameters from S4G catalog
-        vizier = Vizier(columns=["[3.6]","e_[3.6]","[4.5]","e_[4.5]"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        result = self.vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
         table = result[0]
 
         # Magnitudes
         i1_mag = table["__3.6_"][0]
-        i1_mag_error = table["e__3.6_"][0]
         i2_mag = table["__4.5_"][0]
+        i1_mag_error = table["e__3.6_"][0]
         i2_mag_error = table["e__4.5_"][0]
 
         i1_fluxdensity = unitconversion.ab_to_jansky(i1_mag)
@@ -1345,10 +1301,7 @@ class SEDFetcher(Configurable):
         # J/ApJS/190/233/Opt
 
         # Get result
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.get_catalogs("J/ApJS/190/233/Opt")
+        result = self.vizier.get_catalogs("J/ApJS/190/233/Opt")
         table = result[0]
 
         galaxy_index = tables.find_index(table, self.ngc_name, "Name")
@@ -1374,8 +1327,8 @@ class SEDFetcher(Configurable):
         ha_frequency = ha_wavelength.to("Hz", equivalencies=spectral())
 
         # Calculate flux density
-        #print(ha_flux, type(ha_flux))
-        #print(ha_frequency, type(ha_frequency))
+        # print(ha_flux, type(ha_flux))
+        # print(ha_frequency, type(ha_frequency))
         print(ha_flux / ha_frequency)
         ha_fluxdensity = (ha_flux / ha_frequency).to("Jy")
         ha_fluxdensity_error = (ha_flux_error / ha_frequency).to("Jy")
@@ -1404,14 +1357,14 @@ class SEDFetcher(Configurable):
 
         # Table 1
 
-        #result = self.vizier.query_object(self.galaxy_name, catalog="J/ApJ/648/987/table1")
+        # result = self.vizier.query_object(self.galaxy_name, catalog="J/ApJ/648/987/table1")
 
         # Looks like this (only 3 matches)
-        #1	M81	09 55 32.2	+69 03 59.0	680.0	40.78	43.18	42.84	42.63	42.61	41.98	42.67	42.99
-        #2	Reg02	09 55 32.2	+69 03 59.0	64.0	39.67	42.63	42.28	41.98	41.76	41.25	41.83	41.78
-        #3	Reg03	09 55 32.2	+69 03 59.0	104.0	39.40	42.38	42.03	41.76	41.58	40.90	41.62	41.78
+        # 1	M81	09 55 32.2	+69 03 59.0	680.0	40.78	43.18	42.84	42.63	42.61	41.98	42.67	42.99
+        # 2	Reg02	09 55 32.2	+69 03 59.0	64.0	39.67	42.63	42.28	41.98	41.76	41.25	41.83	41.78
+        # 3	Reg03	09 55 32.2	+69 03 59.0	104.0	39.40	42.38	42.03	41.76	41.58	40.90	41.62	41.78
 
-        #galaxy_index = tables.find_index(result, self.galaxy_name)
+        # galaxy_index = tables.find_index(result, self.galaxy_name)
 
         # Table 2
 
@@ -1422,10 +1375,7 @@ class SEDFetcher(Configurable):
         # - logL8: Log of the 8um luminosity [1e-7 W] or [erg/s]
         # - logL24: Log of the 24um luminosity [1e-7 W] or [erg/s]
 
-        vizier = Vizier(keywords=["galaxies"])
-        vizier.ROW_LIMIT = -1
-
-        result = vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/648/987/table2")
+        result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/648/987/table2")
 
         galaxy_index = tables.find_index(result[0], self.config.galaxy_name)
 
@@ -1434,12 +1384,11 @@ class SEDFetcher(Configurable):
 
         relevant_bands = [("FUV", "FUV"), ("NUV", "NUV"), ("Ha", "Ha"), ("8", "I4"), ("24", "MIPS 24")]
         for band_prefix_catalog, filter_name in relevant_bands:
-
             # Flux and error already in Jy
             log = result[0][galaxy_index]["logL" + band_prefix_catalog]
-            flux = 10.**log # In erg/s
+            flux = 10. ** log  # In erg/s
 
-            frequency = 0.0 # TODO: calculate this!
+            frequency = 0.0  # TODO: calculate this!
 
             # Also: calculate the amount of flux per unit area ! : divide also by 4 pi d_galaxy**2 !
 
@@ -1470,12 +1419,11 @@ class SEDFetcher(Configurable):
             print("")
 
             for filter_name in self.seds[label].filter_names():
-
                 print(" * " + filter_name)
 
             print("")
 
-        #print("")
+            # print("")
 
     # -----------------------------------------------------------------
 
@@ -1506,7 +1454,6 @@ class SEDFetcher(Configurable):
 
         # Loop over the different SEDs
         for label in self.seds:
-
             # Debugging info
             log.debug("Writing " + label + " SED ...")
 
