@@ -49,6 +49,12 @@ default_search_method = "Neighbor"
 
 # -----------------------------------------------------------------
 
+cartesian = "cartesian"
+bintree = "bintree"
+octtree = "octtree"
+
+# -----------------------------------------------------------------
+
 class DustGrid(SimplePropertyComposite):
 
     """

@@ -8,6 +8,8 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.core.remote.host import find_host_ids
+from pts.core.simulation.grids import cartesian, bintree, octtree
 
 # -----------------------------------------------------------------
 
@@ -21,8 +23,8 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # -----------------------------------------------------------------
 
 origins = ["model", "fitting_run"]
-dust_grid_types = ["cartesian", "bintree", "octtree"]
-default_dust_grid_type = "bintree"
+dust_grid_types = [cartesian, bintree, octtree]
+default_dust_grid_type = bintree
 
 # -----------------------------------------------------------------
 
@@ -31,6 +33,12 @@ definition.add_required("origin", "string", "origin of the analysis model", choi
 # -----------------------------------------------------------------
 
 definition.add_required("name", "string_no_spaces", "name for the simulation")
+
+# -----------------------------------------------------------------
+
+# Remote execution
+definition.add_positional_optional("remote", "string", "remote host ID for running the simulation", choices=find_host_ids())
+definition.add_flag("attached", "launch remote executions in attached mode", True)
 
 # -----------------------------------------------------------------
 
@@ -60,6 +68,8 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 
 # -----------------------------------------------------------------
 
+# Regenerate
+definition.add_flag("regenerate_wavelength_grid", "regenerate the wavelength grid", True)
 definition.add_flag("regenerate_dust_grid", "regenerate the dust grid", True)
 
 # -----------------------------------------------------------------

@@ -325,8 +325,19 @@ class SkiFile:
                     # Otherwise, set the path
                     wavelengths_path = input_path[filename]
 
+                # Dictionary
+                elif types.is_dictionary(input_path):
+
+                    #input_path = SimulationInput(**input_path)
+
+                    # Check whether present in simulation input
+                    if filename not in input_path: raise ValueError("The file '" + filename + "' with the input wavelengths could not be found within the simulation input specification")
+
+                    # Otherwise, set the path
+                    wavelengths_path = input_path[filename]
+
                 # Invalid
-                else: raise ValueError("Invalid value for 'input_path'")
+                else: raise ValueError("Invalid value for 'input_path': '" + str(input_path) + "'")
 
             # Input path is not specified
             else: wavelengths_path = filename

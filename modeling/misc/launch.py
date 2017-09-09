@@ -24,11 +24,20 @@ from ...core.tools.serialization import write_dict
 from ..basics.instruments import FrameInstrument, SimpleInstrument
 from ...core.launch.launcher import SKIRTLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
+from ...core.tools import numbers
+from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...core.simulation.grids import load_grid, bintree, octtree, cartesian
+from ...core.simulation.grids import CartesianDustGrid, OctTreeDustGrid, BinaryTreeDustGrid
 
 # -----------------------------------------------------------------
 
 wavelengths_filename = "wavelengths.txt"
 dustgridtree_filename = "tree.dat"
+
+# -----------------------------------------------------------------
+
+nwavelengths_rel_tolerance = 0.15  # 15 % more or fewer points
+nwavelengths_abs_tolerance = 15    # 15 points
 
 # -----------------------------------------------------------------
 
@@ -124,7 +133,7 @@ class ModelLauncher(ModelSimulationInterface):
         self.adapt_ski()
 
         # 8. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
-        self.build_dust_grid()
+        if not self.has_dust_grid_tree: self.build_dust_grid()
 
         # 9. Set the input
         self.set_input()
@@ -198,9 +207,45 @@ class ModelLauncher(ModelSimulationInterface):
         self.input_file_path = fs.join(self.simulation_path, "info.dat")
 
         # Load the wavelength grid?
-
+        if self.config.regenerate_wavelength_grid: self.remove_wavelength_grid()
+        else: self.load_wavelength_grid()
 
         # Load dust grid?
+        if self.config.regenerate_dust_grid: self.remove_dust_grid()
+        else: self.load_dust_grid()
+
+    # -----------------------------------------------------------------
+
+    def remove_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Removing the wavelength grid ...")
+
+        # Remove the wavelength grid file
+        if fs.is_file(self.wavelength_grid_path): fs.remove_file(self.wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Removing the dust grid ...")
+
+        # Remove the dust grid file
+        if fs.is_file(self.dust_grid_path): fs.remove_file(self.dust_grid_path)
+
+        # Remove the build directory
+        if fs.is_directory(self.dust_grid_build_path): fs.remove_directory(self.dust_grid_build_path)
 
     # -----------------------------------------------------------------
 
@@ -211,6 +256,93 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
+        # Debugging
+        log.debug("Loading the wavelength grid ...")
+
+        # Load the wavelength grid
+        self.wavelength_grid = WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
+
+        # Check the number of wavelengths
+        if not numbers.is_close(self.wavelength_grid.nwavelengths, self.config.wg.npoints, rtol=nwavelengths_rel_tolerance, atol=nwavelengths_abs_tolerance):
+            raise RuntimeError("Wavelength grid has to be regenerated: the number of wavelength points in the existing grid differs too much from the configured value")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_bintree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return isinstance(self.dust_grid, BinaryTreeDustGrid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_octtree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return isinstance(self.dust_grid, OctTreeDustGrid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_bintree or self.is_octtree
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_min_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_tree: raise ValueError("Not a tree dust grid")
+        return self.dust_grid.min_level
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_max_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_tree: raise ValueError("Not a tree dust grid")
+        return self.dust_grid.max_level
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_max_mass_fraction(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_tree: raise ValueError("Not a tree dust grid")
+        return self.dust_grid.max_mass_fraction
+
+    # -----------------------------------------------------------------
+
     def load_dust_grid(self):
 
         """
@@ -218,17 +350,26 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-    @property
-    def has_dust_grid_tree_file(self):
+        # Debugging
+        log.debug("Loading the dust grid ...")
 
-        """
-        Thisf unction ...
-        :return:
-        """
+        # Load
+        self.dust_grid = load_grid(self.dust_grid_path)
 
-        return fs.is_file(self.dust_grid_tree_path)
+        # Check properties
+        if self.config.dg.grid_type == bintree and not self.is_bintree:
+            raise RuntimeError("Dust grid has to be regenerated: the existing dust grid is not of type '" + bintree + "'")
+        if self.config.dg.grid_type == octtree and not self.is_octtree:
+            raise RuntimeError("Dust grid has to be regenerated: the existing dust grid is not of type '" + octtree + "'")
+        #if self.config.dg.scale !=
+        if self.is_bintree and self.config.dg.bintree_min_level != self.dust_grid.min_level:
+            raise RuntimeError("Dust grid has to be regenerated: the existing dust grid doesn't have a minimum level of " + str(self.config.dg.bintree_min_level))
+        if self.is_octtree and self.config.dg.octtree_min_level != self.dust_grid.min_level:
+            raise RuntimeError("Dust grid has to be regenerated: the existing dust grid doesn't have a minimum level of " + str(self.config.dg.octtree_min_level))
+        if self.is_tree and self.config.dg.max_mass_fraction != self.dust_grid.max_mass_fraction:
+            raise RuntimeError("Dust grid has to be regenerated: the existing dust grid doesn't have a maximum mass fraction of " + str(self.config.dg.max_mass_fraction))
 
-    #
+    # -----------------------------------------------------------------
 
     @property
     def from_model(self):
@@ -650,8 +791,12 @@ class ModelLauncher(ModelSimulationInterface):
         # Create
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, input_path=self.input_paths, name=self.simulation_name)
 
+        # Set remote
+        self.launcher.config.remote = self.config.remote
+        self.launcher.config.attached = self.config.attached
+
         # Set options
-        self.launcher.show_progress = True
+        self.launcher.config.show_progress = True
         self.launcher.config.debug_output = True
 
         # Set options

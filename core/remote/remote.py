@@ -3693,10 +3693,12 @@ class Remote(object):
             destination_string = "'" + destination + "'" # destination is a file
         elif not fs.is_directory(destination): # destination should be existing directory
             raise ValueError("Destination directory '" + destination + "' does not exist")
-        else: destination_string = "'" + destination + "/'" # existing directory
+        else:
+            if new_name is not None: destination_string = "'" + destination + "/" # existing directory
+            else: destination_string = "'" + destination + "/'" # existing directory
 
         copy_command += destination_string
-        if new_name is not None: copy_command += new_name
+        if new_name is not None: copy_command += new_name + "'"
 
         # Debugging
         self.debug("Copy command: " + copy_command)
@@ -3987,11 +3989,13 @@ class Remote(object):
             destination_string = "'" + destination.replace(" ", "\ ") + "'" # destination is a file
         elif not self.is_directory(destination): # destination should be existing directory
             raise ValueError("Destination directory '" + destination + "' does not exist on remote host '" + self.host_id + "'")
-        else: destination_string = "'" + destination.replace(" ", "\ ") + "/'" # existing directory
+        else:
+            if new_name is not None: destination_string = "'" + destination.replace(" ", "\ ") + "/" # existing directory
+            else: destination_string = "'" + destination.replace(" ", "\ ") + "/'" # existing directory
 
         # Construct command
         copy_command += self.host.user + "@" + self.host.name + ":" + destination_string
-        if new_name is not None: copy_command += new_name
+        if new_name is not None: copy_command += new_name + "'"
 
         # Debugging
         self.debug("Copy command: " + copy_command)

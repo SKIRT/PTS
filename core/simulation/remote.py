@@ -30,6 +30,7 @@ from ..simulation.arguments import SkirtArguments
 from ..basics.handle import ExecutionHandle
 from .status import LogSimulationStatus
 from .input import SimulationInput
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -708,6 +709,30 @@ class SkirtRemote(Remote):
 
                 # Upload the local input files to the new remote directory
                 for name, path in definition.input_path:
+
+                    # Debugging
+                    log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                    # Upload the file, giving it the desired name
+                    self.upload(path, remote_input_path, new_name=name)
+
+            # The specified remote directory (for re-usage of already uploaded input) does not exist
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+
+        # We have a dictionary
+        elif types.is_dictionary(definition.input_path):
+
+            # If a remote input path is not specified
+            if remote_input_path is None:
+
+                # Determine the full path to the remote input directory on the remote system
+                remote_input_path = fs.join(remote_simulation_path, "in")
+
+                # Create the remote directory
+                self.create_directory(remote_input_path)
+
+                # Upload the local input files to the new remote directory
+                for name, path in definition.input_path.items():
 
                     # Debugging
                     log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
