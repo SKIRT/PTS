@@ -221,7 +221,7 @@ class SkirtSimulation(object):
 
     @property
     def output(self):
-        return SimulationOutput.from_directory(self.outpath, prefix=self.prefix())
+        return SimulationOutput.from_directory(self.outpath(), prefix=self.prefix())
 
     # -----------------------------------------------------------------
 
@@ -826,7 +826,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return SimulationOutput.from_remote_directory(self.outpath, self.remote, prefix=self.prefix())
+        return SimulationOutput.from_remote_directory(self.remote_output_path, self.remote, prefix=self.prefix())
 
     # -----------------------------------------------------------------
 

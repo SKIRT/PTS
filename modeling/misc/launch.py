@@ -210,8 +210,8 @@ class ModelLauncher(ModelSimulationInterface):
         self.input_file_path = fs.join(self.simulation_path, "info.dat")
 
         # Plotting and misc directories
-        self.simulation_plot_path = fs.create_directory(self.simulation_path, "plot")
-        self.simulation_misc_path = fs.create_directory(self.simulation_path, "misc")
+        self.simulation_plot_path = fs.create_directory_in(self.simulation_path, "plot")
+        self.simulation_misc_path = fs.create_directory_in(self.simulation_path, "misc")
 
         # Load the wavelength grid?
         if self.config.regenerate_wavelength_grid: self.remove_wavelength_grid()

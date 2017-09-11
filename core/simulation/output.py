@@ -208,6 +208,19 @@ class SimulationOutput(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_cwd(cls, prefix=None):
+
+        """
+        This function ...
+        :param prefix:
+        :return:
+        """
+
+        return cls.from_directory(fs.cwd(), prefix=prefix)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_directory(cls, path, prefix=None):
 
         """
@@ -1057,7 +1070,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.isrf] + fmt.reset + " (" + str(self.nisrf) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.isrf].title() + fmt.reset + " (" + str(self.nisrf) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1069,7 +1082,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.absorption] + fmt.reset + " (" + str(self.nabsorption) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.absorption].title() + fmt.reset + " (" + str(self.nabsorption) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1081,7 +1094,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.temperature] + fmt.reset + " (" + str(self.ntemperature) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.temperature].title() + fmt.reset + " (" + str(self.ntemperature) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1093,7 +1106,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.seds] + fmt.reset + " (" + str(self.nseds) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.seds].title() + fmt.reset + " (" + str(self.nseds) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1105,7 +1118,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.total_images] + fmt.reset + " (" + str(self.ntotal_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.total_images].title() + fmt.reset + " (" + str(self.ntotal_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1117,7 +1130,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.direct_images] + fmt.reset + " (" + str(self.ndirect_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.direct_images].title() + fmt.reset + " (" + str(self.ndirect_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1129,7 +1142,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.transparent_images] + fmt.reset + " (" + str(self.ntransparent_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.transparent_images].title() + fmt.reset + " (" + str(self.ntransparent_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1141,7 +1154,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.scattered_images] + fmt.reset + " (" + str(self.nscattered_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.scattered_images].title() + fmt.reset + " (" + str(self.nscattered_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1153,7 +1166,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_images] + fmt.reset + " (" + str(self.ndust_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_images].title() + fmt.reset + " (" + str(self.ndust_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1165,7 +1178,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_scattered_images] + fmt.reset + " (" + str(self.ndust_scattered_images) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_scattered_images].title() + fmt.reset + " (" + str(self.ndust_scattered_images) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1177,7 +1190,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_temperature] + fmt.reset + " (" + str(self.ncell_temperature) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_temperature].title() + fmt.reset + " (" + str(self.ncell_temperature) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1189,7 +1202,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.logfiles] + fmt.reset + " (" + str(self.nlogfiles) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.logfiles].title() + fmt.reset + " (" + str(self.nlogfiles) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1201,7 +1214,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.wavelengths] + fmt.reset + " (" + str(self.nwavelengths) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.wavelengths].title() + fmt.reset + " (" + str(self.nwavelengths) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1213,7 +1226,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.grid] + fmt.reset + " (" + str(self.ngrid) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.grid].title() + fmt.reset + " (" + str(self.ngrid) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1225,7 +1238,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.gdensity] + fmt.reset + " (" + str(self.ngdensity ) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.gdensity].title() + fmt.reset + " (" + str(self.ngdensity ) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1237,7 +1250,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.tdensity] + fmt.reset + " (" + str(self.ntdensity) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tdensity].title() + fmt.reset + " (" + str(self.ntdensity) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1249,7 +1262,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.tree] + fmt.reset + " (" + str(self.ntree) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tree].title() + fmt.reset + " (" + str(self.ntree) + "):"
             lines.append(title)
             lines.append("")
 
@@ -1261,7 +1274,7 @@ class SimulationOutput(object):
             lines.append("")
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.convergence] + fmt.reset + " (" + str(self.nconvergence) + "):"
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.convergence].title() + fmt.reset + " (" + str(self.nconvergence) + "):"
             lines.append(title)
             lines.append("")
 
