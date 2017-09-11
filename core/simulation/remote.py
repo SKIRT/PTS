@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.simulation.remote Contains the SkirtRemote class, used for launching, checking and retrieving
+## \package pts.core.simulation.remote Contains the SKIRTRemote class, used for launching, checking and retrieving
 #  remote SKIRT simulations.
 
 # -----------------------------------------------------------------
@@ -31,24 +31,168 @@ from ..basics.handle import ExecutionHandle
 from .status import LogSimulationStatus
 from .input import SimulationInput
 from ..tools import types
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
-class SkirtRemote(Remote):
+# The various retrieve types
+retrieve_types = Map()
+retrieve_types.isrf = "isrf"
+retrieve_types.absorption = "abs"
+retrieve_types.temperature = "temp"
+retrieve_types.seds = "sed"
+retrieve_types.images = "image"
+retrieve_types.total_images = "image-total"
+retrieve_types.direct_images = "image-direct"
+retrieve_types.transparent_images = "image-transparent"
+retrieve_types.scattered_images = "image-scattered"
+retrieve_types.dust_images = "image-dust"
+retrieve_types.dust_scattered_images = "image-dustscattered"
+retrieve_types.cell_temperature = "celltemp"
+retrieve_types.logfiles = "log"
+retrieve_types.wavelengths = "wavelengths"
+retrieve_types.grid = "grid"
+retrieve_types.gdensity = "grho"
+retrieve_types.tdensity = "trho"
+retrieve_types.tree = "tree"
+retrieve_types.convergence = "convergence"
+
+# -----------------------------------------------------------------
+
+# Description of the retrieve types
+retrieve_type_choices = dict()
+retrieve_type_choices[retrieve_types.isrf] = "interstellar radiation field strength"
+retrieve_type_choices[retrieve_types.absorption] = "absorption luminosities"
+retrieve_type_choices[retrieve_types.temperature] = "temperature"
+retrieve_type_choices[retrieve_types.seds] = "all SEDs"
+retrieve_type_choices[retrieve_types.images] = "all datacubes"
+retrieve_type_choices[retrieve_types.total_images] = "datacubes of total emission"
+retrieve_type_choices[retrieve_types.direct_images] = "datacubes of direct emission"
+retrieve_type_choices[retrieve_types.transparent_images] = "datacubes of transparent emission"
+retrieve_type_choices[retrieve_types.scattered_images] = "datacubes of scattered emission"
+retrieve_type_choices[retrieve_types.dust_images] = "datacubes of dust emission"
+retrieve_type_choices[retrieve_types.dust_scattered_images] = "datacubes of scattered dust emission"
+retrieve_type_choices[retrieve_types.temperature] = "temperature per dust cell"
+retrieve_type_choices[retrieve_types.logfiles] = "log files"
+retrieve_type_choices[retrieve_types.wavelengths] = "wavelength files"
+retrieve_type_choices[retrieve_types.grid] = "grid files"
+retrieve_type_choices[retrieve_types.gdensity] = "grid dust density"
+retrieve_type_choices[retrieve_types.tdensity] = "theoretical dust density"
+retrieve_type_choices[retrieve_types.tree] = "dust grid tree data file"
+retrieve_type_choices[retrieve_types.convergence] = "convergence file"
+
+# -----------------------------------------------------------------
+
+def needs_retrieval(filename, types):
+
+    """
+    This function ...
+    :param filename:
+    :param types: retrieve types
+    :return:
+    """
+
+    # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
+
+    ## ISRF
+    if filename.endswith("_ds_isrf.dat"):
+        if retrieve_types.isrf in types: return True
+
+    ## Absorption
+    elif filename.endswith("_ds_abs.dat"):
+        if retrieve_types.absorption in types: return True
+
+    ## Temperature
+    elif "_ds_temp" in filename and filename.endswith(".fits"):
+        if retrieve_types.temperature in types: return True
+
+    ## SED
+    elif filename.endswith("_sed.dat"):
+        if retrieve_types.seds in types: return True
+
+    ## Total datacubes
+    elif filename.endswith("_total.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.total_images in types: return True
+
+    ## Direct datacubes
+    elif filename.endswith("_direct.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.direct_images in types: return True
+
+    ## Transparent datacubes
+    elif filename.endswith("_transparent.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.transparent_images in types: return True
+
+    ## Scattered datacubes
+    elif filename.endswith("_scattered.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.scattered_images in types: return True
+
+    ## Dust datacubes
+    elif filename.endswith("_dust.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.dust_images in types: return True
+
+    ## Dust scattered datacubes
+    elif filename.endswith("_dustscattered.fits"):
+        if retrieve_types.images in types: return True
+        elif retrieve_types.dust_scattered_images in types: return True
+
+    ## Cell temperature data
+    elif filename.endswith("_ds_celltemps.dat"):
+        if retrieve_types.cell_temperature in types: return True
+
+    ## Log files
+    elif "_log" in filename and filename.endswith(".txt"):
+        if retrieve_types.logfiles in types: return True
+
+    ## Wavelength files
+    elif filename.endswith("_wavelengths.dat"):
+        if retrieve_types.wavelengths in types: return True
+
+    ## Grid structure data
+    elif "_ds_grid" in filename and filename.endswith(".dat"):
+        if retrieve_types.grid in types: return True
+
+    ## Grid dust density
+    elif "_ds_grho" in filename and filename.endswith(".fits"):
+        if retrieve_types.gdensity in types: return True
+
+    ## Theoretical dust density
+    elif "_ds_trho" in filename and filename.endswith(".fits"):
+        if retrieve_types.tdensity in types: return True
+
+    ## Dust grid onvergence
+    elif filename.endswith("_ds_convergence.dat"):
+        if retrieve_types.convergence in types: return True
+
+    ## Dust grid tree data
+    elif "_ds_tree" in filename and filename.endswith(".dat"):
+        if retrieve_types.tree in types: return True
+
+    # No match
+    return False
+
+# -----------------------------------------------------------------
+
+class SKIRTRemote(Remote):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, host_id=None):
 
         """
         The constructor ...
+        :param host_id:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SkirtRemote, self).__init__()
+        super(SKIRTRemote, self).__init__()
 
         # -- Attributes --
 
@@ -65,6 +209,10 @@ class SkirtRemote(Remote):
         # Initialize a dictionary for the scheduling options
         self.scheduling_options = dict()
 
+        # If host ID is given, setup
+        if host_id is not None:
+            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -80,7 +228,7 @@ class SkirtRemote(Remote):
         skirt = cls()
 
         # Give warning
-        log.warning("When creating a SkirtRemote instance from a regular Remote instance, the original Remote instance should not be used anymore")
+        log.warning("When creating a SKIRTRemote instance from a regular Remote instance, the original Remote instance should not be used anymore")
 
         # Set attributes
         skirt.ssh = remote.ssh
@@ -108,7 +256,7 @@ class SkirtRemote(Remote):
         """
 
         # Call the setup function of the base class
-        success = super(SkirtRemote, self).setup(host_id, cluster_name)
+        success = super(SKIRTRemote, self).setup(host_id, cluster_name)
         if not success: return False
 
         # Locate SKIRT
@@ -1129,49 +1277,8 @@ class SkirtRemote(Remote):
                         # Determine the full path to the output file
                         filepath = fs.join(simulation.remote_output_path, filename)
 
-                        # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
-                        if filename.endswith("_ds_isrf.dat"):
-                            if "isrf" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_abs.dat"):
-                            if "abs" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_temp" in filename and filename.endswith(".fits"):
-                            if "temp" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_sed.dat"):
-                            if "sed" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_total.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-total" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_direct.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-direct" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_transparent.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-transparent" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_scattered.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-scattered" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_dust.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-dust" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_dustscattered.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-dustscattered" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_celltemps.dat"):
-                            if "celltemp" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_log" in filename and filename.endswith(".txt"):
-                            if "log" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_wavelengths.dat"):
-                            if "wavelengths" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_grid" in filename and filename.endswith(".dat"):
-                            if "grid" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_grho" in filename and filename.endswith(".fits"):
-                            if "grho" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_trho" in filename and filename.endswith(".fits"):
-                            if "trho" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_convergence.dat"):
-                            if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_tree" in filename and filename.endswith(".dat"):
-                            if "tree" in simulation.retrieve_types: copy_paths.append(filepath)
+                        # Check whether the file has to be retrieved
+                        if needs_retrieval(filename, simulation.retrieve_types): copy_paths.append(filepath)
 
                     # Debugging
                     log.debug("Retrieving files: " + str(copy_paths))

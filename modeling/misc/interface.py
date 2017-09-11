@@ -27,6 +27,12 @@ from ...core.basics.configuration import prompt_yn
 
 # -----------------------------------------------------------------
 
+earth_name = "earth"
+faceon_name = "faceon"
+edgeon_name = "edgeon"
+
+# -----------------------------------------------------------------
+
 class ModelSimulationInterface(GalaxyModelingComponent):
 
     """
@@ -290,10 +296,12 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_projections(self):
+    def create_projections(self, make_edgeon=True, make_faceon=True):
 
         """
         This function ...
+        :param make_edgeon:
+        :param make_faceon:
         :return:
         """
 
@@ -313,9 +321,9 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
 
         # Set the projection systems
-        self.projections["earth"] = earth
-        self.projections["faceon"] = faceon
-        self.projections["edgeon"] = edgeon
+        self.projections[earth_name] = earth
+        if make_faceon: self.projections[faceon_name] = faceon
+        if make_edgeon: self.projections[edgeon_name] = edgeon
 
     # -----------------------------------------------------------------
 
@@ -327,7 +335,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["earth"]
+        return self.projections[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -339,7 +347,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["faceon"]
+        if not self.has_faceon_projection: return None
+        return self.projections[faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -351,7 +360,32 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["edgeon"]
+        if not self.has_edgeon_projection: return None
+        return self.projections[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return faceon_name in self.projections
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_projection(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return edgeon_name in self.projections
 
     # -----------------------------------------------------------------
 
@@ -378,13 +412,13 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Creating the instruments ...")
 
         # Create an earth instrument
-        self.instruments["earth"] = self.instrument_class.from_projection(self.earth_projection)
+        self.instruments[earth_name] = self.instrument_class.from_projection(self.earth_projection)
 
         # Create a faceon instrument
-        self.instruments["faceon"] = self.instrument_class.from_projection(self.faceon_projection)
+        if self.has_faceon_projection: self.instruments[faceon_name] = self.instrument_class.from_projection(self.faceon_projection)
 
         # Create an edgeon instrument
-        self.instruments["edgeon"] = self.instrument_class.from_projection(self.edgeon_projection)
+        if self.has_edgeon_projection: self.instruments[edgeon_name] = self.instrument_class.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
@@ -396,7 +430,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["earth"]
+        return self.instruments[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -408,7 +442,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["faceon"]
+        if not self.has_faceon_instrument: return None
+        return self.instruments[faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -420,6 +455,31 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["edgeon"]
+        if not self.has_edgeon_instrument: return None
+        return self.instruments[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_instrument(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return faceon_name in self.instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return edgeon_name in self.instruments
 
 # -----------------------------------------------------------------

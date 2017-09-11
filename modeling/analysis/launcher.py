@@ -22,7 +22,7 @@ from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.simulation.parallelization import Parallelization
-from ...core.simulation.remote import SkirtRemote
+from ...core.simulation.remote import SKIRTRemote
 from ...magic.convolution.aniano import AnianoKernels
 from ...core.advanced.dustgridtool import DustGridTool
 from ...core.tools.utils import lazyproperty
@@ -52,7 +52,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_run = None
 
         # The remote SKIRT environment
-        self.remote = SkirtRemote()
+        self.remote = SKIRTRemote()
 
         # The path to the instruments directory
         self.run_instruments_path = None

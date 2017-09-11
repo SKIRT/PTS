@@ -195,12 +195,13 @@ class AnalysisOptions(Options):
 
     # -----------------------------------------------------------------
 
-    def check(self, logging_options=None, output_path=None):
+    def check(self, logging_options=None, output_path=None, retrieve_types=None):
 
         """
         This function ...
         :param logging_options:
         :param output_path:
+        :param retrieve_types:
         :return:
         """
 
@@ -208,6 +209,32 @@ class AnalysisOptions(Options):
         log.info("Checking the analysis options ...")
 
         # MISC
+        self.check_misc(output_path=output_path, retrieve_types=retrieve_types)
+
+        # PLOTTING
+        self.check_plotting(output_path=output_path, retrieve_types=retrieve_types)
+
+        # EXTRACTION
+        self.check_extraction(output_path=output_path, retrieve_types=retrieve_types)
+
+        # Check logging options
+        self.check_logging(logging_options)
+
+    # -----------------------------------------------------------------
+
+    def check_misc(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking miscellaneous settings ...")
+
+        from ..simulation.remote import retrieve_types as rt
 
         # If any misc setting has been enabled, check whether the misc path has been set
         if self.any_misc and self.misc.path is None:
@@ -216,7 +243,40 @@ class AnalysisOptions(Options):
                 log.warning("Misc output will be written to " + output_path)
                 self.misc.path = output_path
 
-        # PLOTTING
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            if self.misc.rgb and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+                log.warning("Creating RGB images is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(rt.total_images)
+
+            if self.misc.wave and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+                log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(rt.total_images)
+
+            if self.misc.fluxes and rt.seds not in retrieve_types:
+                log.warning("Calculating observed fluxes is enabled so SED retrieval will also be enabled")
+                retrieve_types.append(rt.seds)
+
+            if self.misc.images and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+                log.warning("Creating observed images is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(rt.images)
+
+    # -----------------------------------------------------------------
+
+    def check_plotting(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking plotting settings ...")
+
+        from ..simulation.remote import retrieve_types as rt
 
         # If any plotting setting has been enabled, check whether the plotting path has been set
         if self.any_plotting and self.plotting.path is None:
@@ -240,7 +300,34 @@ class AnalysisOptions(Options):
             log.warning("Timeline plotting is enabled so timeline extraction will also be enabled")
             self.extraction.timeline = True
 
-        # EXTRACTION
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            # If SED plotting has been enabled, enable SED retrieval
+            if self.plotting.seds and rt.seds not in retrieve_types:
+                log.warning("SED plotting is enabled so SED file retrieval will also be enabled")
+                retrieve_types.append(rt.seds)
+
+            # If grid plotting has been enabled:
+            if self.plotting.grids and rt.grid not in retrieve_types:
+                log.warning("Grid plotting is enabled so grid data retrieval will also be enabled")
+                retrieve_types.append(rt.grid)
+
+    # -----------------------------------------------------------------
+
+    def check_extraction(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking extraction settings ...")
+
+        from ..simulation.remote import retrieve_types as rt
 
         # If any extraction setting has been enabled, check whether the extraction path has been set
         if self.any_extraction and self.extraction.path is None:
@@ -248,6 +335,37 @@ class AnalysisOptions(Options):
             else:
                 log.warning("Extraction data will be placed in " + output_path)
                 self.extraction.path = output_path
+
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            # If progress plotting has been enabled, enable log file retrieval
+            if self.extraction.progress and rt.logfiles not in retrieve_types:
+                log.warning("Progress extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(rt.logfiles)
+
+            # If memory extraction has been enabled, enable log file retrieval
+            if self.extraction.memory and rt.logfiles not in retrieve_types:
+                log.warning("Memory extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(rt.logfiles)
+
+            # If timeline extraction has been enabled, enable log file retrieval
+            if self.extraction.timeline and rt.logfiles not in retrieve_types:
+                log.warning("Timeline extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(rt.logfiles)
+
+    # -----------------------------------------------------------------
+
+    def check_logging(self, logging_options):
+
+        """
+        This function ...
+        :param logging_options:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking logging options ...")
 
         # Check the logging options, and adapt if necessary
         if logging_options is not None:

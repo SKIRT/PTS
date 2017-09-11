@@ -8,6 +8,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
 from pts.core.launch.options import LoggingOptions, AnalysisOptions
+from pts.core.simulation.remote import retrieve_type_choices
 
 # -----------------------------------------------------------------
 
@@ -24,25 +25,6 @@ definition.add_flag("emulate", "emulate the simulation while limiting computatio
 
 # Other
 definition.add_flag("keep", "keep remote input and output")
-retrieve_type_choices = dict()
-retrieve_type_choices["isrf"] = "interstellar radiation field strength"
-retrieve_type_choices["abs"] = "absorption luminosities"
-retrieve_type_choices["temp"] = "temperature"
-retrieve_type_choices["sed"] = "SEDs"
-retrieve_type_choices["image"] = "all datacubes"
-retrieve_type_choices["image-total"] = "datacubes of total emission"
-retrieve_type_choices["image-direct"] = "datacubes of direct emission"
-retrieve_type_choices["image-transparent"] = "datacubes of transparent emission"
-retrieve_type_choices["image-scattered"] = "datacubes of scattered emission"
-retrieve_type_choices["image-dust"] = "datacubes of dust emission"
-retrieve_type_choices["image-dustscattered"] = "datacubes of scattered dust emission"
-retrieve_type_choices["celltemp"] = "temperature per dust cell"
-retrieve_type_choices["log"] = "log files"
-retrieve_type_choices["wavelengths"] = "wavelength files"
-retrieve_type_choices["grid"] = "grid files"
-retrieve_type_choices["grho"] = "grid dust density"
-retrieve_type_choices["trho"] = "theoretical dust density"
-retrieve_type_choices["convergence"] = "convergence file"
 definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=retrieve_type_choices)
 
 # Special things

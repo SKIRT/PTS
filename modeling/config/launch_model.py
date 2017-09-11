@@ -14,6 +14,11 @@ from pts.core.simulation.grids import cartesian, bintree, octtree
 # -----------------------------------------------------------------
 
 modeling_path = verify_modeling_cwd()
+make_seds = "seds"
+make_images = "images"
+make_choices = [make_seds, make_images]
+default_make = make_choices
+default_make_contributions = True
 
 # -----------------------------------------------------------------
 
@@ -39,6 +44,17 @@ definition.add_required("name", "string_no_spaces", "name for the simulation")
 # Remote execution
 definition.add_positional_optional("remote", "string", "remote host ID for running the simulation", choices=find_host_ids())
 definition.add_flag("attached", "launch remote executions in attached mode", True)
+
+# -----------------------------------------------------------------
+
+# Type of output
+definition.add_optional("make", "string_list", "let these forms of output be made", default_make, choices=make_choices)
+definition.add_flag("contributions", "make output for the contributions to the flux of the various sources (transparent, dust ...)", default_make_contributions)
+definition.add_flag("faceon", "include face-on maps and SEDs", True)
+definition.add_flag("edgeon", "include edge-on maps and SEDs", True)
+
+# To create the output
+definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
 
 # -----------------------------------------------------------------
 

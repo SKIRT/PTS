@@ -19,7 +19,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import SKIRTRemote
 from ..remote.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
@@ -61,7 +61,7 @@ class BatchLauncher(Configurable):
         # The local SKIRT execution context
         self.skirt = SkirtExec()
 
-        # Initialize a list to contain different SkirtRemote instances for the different remote hosts
+        # Initialize a list to contain different SKIRTRemote instances for the different remote hosts
         self.remotes = []
 
         # For some remote hosts, if they use a scheduling system, defines the name of the cluster to be used
@@ -805,7 +805,7 @@ class BatchLauncher(Configurable):
         for host_id in host_ids:
 
             # Create a remote SKIRT execution context
-            remote = SkirtRemote()
+            remote = SKIRTRemote()
 
             # Check whether a cluster name is defined
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
@@ -1393,7 +1393,7 @@ class BatchLauncher(Configurable):
                 # Success
                 log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
 
-                # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
+                # Set the parallelization scheme of the simulation (important since SKIRTRemote does not know whether
                 # hyperthreading would be enabled if the user provided the parallelization_item when adding the
                 # simulation to the queue
                 simulation.parallelization = parallelization_item

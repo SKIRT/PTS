@@ -23,7 +23,7 @@ from ..tools import monitoring, introspection
 from ..simulation.definition import SingleSimulationDefinition
 from .options import LoggingOptions
 from .analyser import SimulationAnalyser
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import SKIRTRemote
 from ..basics.log import log
 from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool, determine_parallelization
@@ -149,7 +149,7 @@ class SKIRTLauncher(Configurable):
 
         # Setup the remote execution context
         if self.config.remote is not None:
-            self.remote = SkirtRemote()
+            self.remote = SKIRTRemote()
             self.remote.setup(self.config.remote, self.config.cluster)
 
         # Create output directory
@@ -217,7 +217,8 @@ class SKIRTLauncher(Configurable):
         self.analysis_options.set_options(self.config.analysis)
 
         # Check the options
-        self.analysis_options.check(self.logging_options, self.config.output)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
+                                    retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 
@@ -236,7 +237,8 @@ class SKIRTLauncher(Configurable):
         self.analysis_options = options
 
         # Check the options
-        self.analysis_options.check(self.logging_options, self.config.output)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
+                                    retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 

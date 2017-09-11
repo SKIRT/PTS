@@ -15,19 +15,22 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
-from .interface import ModelSimulationInterface
+from .interface import ModelSimulationInterface, earth_name, faceon_name, edgeon_name
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.utils import lazyproperty
 from ...core.tools.serialization import write_dict
-from ..basics.instruments import FrameInstrument, SimpleInstrument
+from ..basics.instruments import FrameInstrument, SimpleInstrument, FullInstrument, SEDInstrument
 from ...core.launch.launcher import SKIRTLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools import numbers
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.simulation.grids import load_grid, bintree, octtree, cartesian
 from ...core.simulation.grids import CartesianDustGrid, OctTreeDustGrid, BinaryTreeDustGrid
+from ..config.launch_model import make_images, make_seds
+from ...core.simulation.remote import retrieve_types as rt
+from ...core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -124,7 +127,7 @@ class ModelLauncher(ModelSimulationInterface):
         self.load_deprojections()
 
         # Create the projections
-        self.create_projections()
+        self.create_projections(make_edgeon=self.config.edgeon, make_faceon=self.config.faceon)
 
         # 6. Create the instruments
         self.create_instruments()
@@ -141,7 +144,7 @@ class ModelLauncher(ModelSimulationInterface):
         # 10. Write
         self.write()
 
-        # 11. Launch the simulation
+        # 11. Launch (and analyse) the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -154,7 +157,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return True
+        return self.config.remote is None
 
     # -----------------------------------------------------------------
 
@@ -166,7 +169,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return False
+        return self.config.remote is not None
 
     # -----------------------------------------------------------------
 
@@ -205,6 +208,10 @@ class ModelLauncher(ModelSimulationInterface):
         self.projections_path = fs.create_directory_in(self.simulation_path, "projections")
         self.instruments_path = fs.create_directory_in(self.simulation_path, "instruments")
         self.input_file_path = fs.join(self.simulation_path, "info.dat")
+
+        # Plotting and misc directories
+        self.simulation_plot_path = fs.create_directory(self.simulation_path, "plot")
+        self.simulation_misc_path = fs.create_directory(self.simulation_path, "misc")
 
         # Load the wavelength grid?
         if self.config.regenerate_wavelength_grid: self.remove_wavelength_grid()
@@ -438,6 +445,42 @@ class ModelLauncher(ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
+    def make_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return make_images in self.config.make
+
+    # -----------------------------------------------------------------
+
+    @property
+    def make_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return make_seds in self.config.make
+
+    # -----------------------------------------------------------------
+
+    @property
+    def make_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.contributions
+
+    # -----------------------------------------------------------------
+
+    @property
     def instrument_class(self):
 
         """
@@ -445,8 +488,16 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        #return FrameInstrument
-        return SimpleInstrument
+        if self.make_images and self.make_seds:
+            if self.make_contributions: return FullInstrument
+            else: return SimpleInstrument
+        elif self.make_images:
+            if self.make_contributions: return FullInstrument
+            else: return FrameInstrument
+        elif self.make_seds:
+            if self.make_contributions: return FullInstrument
+            else: return SEDInstrument
+        else: raise ValueError("Either SEDs or images should be made")
 
     # -----------------------------------------------------------------
 
@@ -672,7 +723,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.projections_path, "earth.proj")
+        return fs.join(self.projections_path, earth_name + ".proj")
 
     # -----------------------------------------------------------------
 
@@ -684,7 +735,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.projections_path, "faceon.proj")
+        return fs.join(self.projections_path, faceon_name + ".proj")
 
     # -----------------------------------------------------------------
 
@@ -696,7 +747,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.projections_path, "edgeon.proj")
+        return fs.join(self.projections_path, edgeon_name + ".proj")
 
     # -----------------------------------------------------------------
 
@@ -711,13 +762,13 @@ class ModelLauncher(ModelSimulationInterface):
         log.info("Writing the projection systems ...")
 
         # Write the earth projection system
-        self.projections["earth"].saveto(self.earth_projection_path)
+        self.projections[earth_name].saveto(self.earth_projection_path)
 
         # Write the faceon projection system
-        self.projections["faceon"].saveto(self.faceon_projection_path)
+        if self.has_faceon_projection: self.projections[faceon_name].saveto(self.faceon_projection_path)
 
         # Write the edgeon projection system
-        self.projections["edgeon"].saveto(self.edgeon_projection_path)
+        if self.has_edgeon_projection: self.projections[edgeon_name].saveto(self.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -729,7 +780,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.instruments_path, "earth.instr")
+        return fs.join(self.instruments_path, earth_name + ".instr")
 
     # -----------------------------------------------------------------
 
@@ -741,7 +792,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.instruments_path, "faceon.instr")
+        return fs.join(self.instruments_path, faceon_name + ".instr")
 
     # -----------------------------------------------------------------
 
@@ -753,7 +804,7 @@ class ModelLauncher(ModelSimulationInterface):
         :return:
         """
 
-        return fs.join(self.instruments_path, "edgeon.instr")
+        return fs.join(self.instruments_path, edgeon_name + ".instr")
 
     # -----------------------------------------------------------------
 
@@ -768,13 +819,13 @@ class ModelLauncher(ModelSimulationInterface):
         log.info("Writing the instruments ...")
 
         # Write the SED instrument
-        self.instruments["earth"].saveto(self.earth_instrument_path)
+        self.instruments[earth_name].saveto(self.earth_instrument_path)
 
         # Write the frame instrument
-        self.instruments["faceon"].saveto(self.faceon_instrument_path)
+        if self.has_faceon_instrument: self.instruments[faceon_name].saveto(self.faceon_instrument_path)
 
         # Write the simple instrument
-        self.instruments["edgeon"].saveto(self.edgeon_instrument_path)
+        if self.has_edgeon_instrument: self.instruments[edgeon_name].saveto(self.edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -799,22 +850,44 @@ class ModelLauncher(ModelSimulationInterface):
         self.launcher.config.show_progress = True
         self.launcher.config.debug_output = True
 
-        # Set options
-        analysis_options = None
-        if self.local:
+        # Set retrieval options
+        retrieve_types = []
+        if self.make_images:
+            retrieve_types.append(rt.total_images)
+            if self.make_contributions:
+                retrieve_types.append(rt.direct_images)
+                retrieve_types.append(rt.transparent_images)
+                retrieve_types.append(rt.scattered_images)
+                retrieve_types.append(rt.dust_images)
+                retrieve_types.append(rt.dust_scattered_images)
+        if self.make_seds: retrieve_types.append(rt.seds)
+        self.launcher.config.retrieve_types = retrieve_types
 
+        # Set options for parallelization
+        if self.local:
             parallelization = None
             nprocesses = self.config.nprocesses_local
             self.launcher.config.data_parallel_local = self.config.data_parallel_local
-
         elif self.remote:
-
             parallelization = None
             nprocesses = self.config.nprocesses_remote
             self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
-
-        # Invalid
         else: raise RuntimeError("Error")
+
+        # Set analysis options
+        analysis_options = AnalysisOptions()
+        analysis_options.misc.spectral_convolution = self.config.spectral_convolution
+        if self.make_seds: analysis_options.misc.fluxes = True
+        if self.make_images: analysis_options.misc.images = True
+        analysis_options.misc.observation_filters = self.observed_filter_names
+        instruments = [earth_name]
+        if self.config.faceon: instruments.append(faceon_name)
+        if self.config.edgeon: instruments.append(edgeon_name)
+        analysis_options.misc.observation_instruments = instruments
+
+        # Set analysis directories
+        analysis_options.plotting.path = self.simulation_plot_path
+        analysis_options.misc.path = self.simulation_misc_path
 
         # Run the simulation
         self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization, nprocesses=nprocesses)
