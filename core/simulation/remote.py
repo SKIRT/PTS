@@ -31,55 +31,7 @@ from ..basics.handle import ExecutionHandle
 from .status import LogSimulationStatus
 from .input import SimulationInput
 from ..tools import types
-from ...core.basics.map import Map
-
-# -----------------------------------------------------------------
-
-# The various retrieve types
-retrieve_types = Map()
-retrieve_types.isrf = "isrf"
-retrieve_types.absorption = "abs"
-retrieve_types.temperature = "temp"
-retrieve_types.seds = "sed"
-retrieve_types.images = "image"
-retrieve_types.total_images = "image-total"
-retrieve_types.direct_images = "image-direct"
-retrieve_types.transparent_images = "image-transparent"
-retrieve_types.scattered_images = "image-scattered"
-retrieve_types.dust_images = "image-dust"
-retrieve_types.dust_scattered_images = "image-dustscattered"
-retrieve_types.cell_temperature = "celltemp"
-retrieve_types.logfiles = "log"
-retrieve_types.wavelengths = "wavelengths"
-retrieve_types.grid = "grid"
-retrieve_types.gdensity = "grho"
-retrieve_types.tdensity = "trho"
-retrieve_types.tree = "tree"
-retrieve_types.convergence = "convergence"
-
-# -----------------------------------------------------------------
-
-# Description of the retrieve types
-retrieve_type_choices = dict()
-retrieve_type_choices[retrieve_types.isrf] = "interstellar radiation field strength"
-retrieve_type_choices[retrieve_types.absorption] = "absorption luminosities"
-retrieve_type_choices[retrieve_types.temperature] = "temperature"
-retrieve_type_choices[retrieve_types.seds] = "all SEDs"
-retrieve_type_choices[retrieve_types.images] = "all datacubes"
-retrieve_type_choices[retrieve_types.total_images] = "datacubes of total emission"
-retrieve_type_choices[retrieve_types.direct_images] = "datacubes of direct emission"
-retrieve_type_choices[retrieve_types.transparent_images] = "datacubes of transparent emission"
-retrieve_type_choices[retrieve_types.scattered_images] = "datacubes of scattered emission"
-retrieve_type_choices[retrieve_types.dust_images] = "datacubes of dust emission"
-retrieve_type_choices[retrieve_types.dust_scattered_images] = "datacubes of scattered dust emission"
-retrieve_type_choices[retrieve_types.temperature] = "temperature per dust cell"
-retrieve_type_choices[retrieve_types.logfiles] = "log files"
-retrieve_type_choices[retrieve_types.wavelengths] = "wavelength files"
-retrieve_type_choices[retrieve_types.grid] = "grid files"
-retrieve_type_choices[retrieve_types.gdensity] = "grid dust density"
-retrieve_type_choices[retrieve_types.tdensity] = "theoretical dust density"
-retrieve_type_choices[retrieve_types.tree] = "dust grid tree data file"
-retrieve_type_choices[retrieve_types.convergence] = "convergence file"
+from .output import get_output_type, get_parent_type
 
 # -----------------------------------------------------------------
 
@@ -92,87 +44,19 @@ def needs_retrieval(filename, types):
     :return:
     """
 
-    # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
+    # Get the output type
+    output_type = get_output_type(filename)
 
-    ## ISRF
-    if filename.endswith("_ds_isrf.dat"):
-        if retrieve_types.isrf in types: return True
+    # Check whether in specified retrieval types
+    if output_type in types: return True
 
-    ## Absorption
-    elif filename.endswith("_ds_abs.dat"):
-        if retrieve_types.absorption in types: return True
+    # Get parent types
+    parent_type = get_parent_type(output_type)
 
-    ## Temperature
-    elif "_ds_temp" in filename and filename.endswith(".fits"):
-        if retrieve_types.temperature in types: return True
+    # Check if (different from type itself) parent type is in the specified retrieval types
+    if parent_type != output_type and parent_type in types: return True
 
-    ## SED
-    elif filename.endswith("_sed.dat"):
-        if retrieve_types.seds in types: return True
-
-    ## Total datacubes
-    elif filename.endswith("_total.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.total_images in types: return True
-
-    ## Direct datacubes
-    elif filename.endswith("_direct.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.direct_images in types: return True
-
-    ## Transparent datacubes
-    elif filename.endswith("_transparent.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.transparent_images in types: return True
-
-    ## Scattered datacubes
-    elif filename.endswith("_scattered.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.scattered_images in types: return True
-
-    ## Dust datacubes
-    elif filename.endswith("_dust.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.dust_images in types: return True
-
-    ## Dust scattered datacubes
-    elif filename.endswith("_dustscattered.fits"):
-        if retrieve_types.images in types: return True
-        elif retrieve_types.dust_scattered_images in types: return True
-
-    ## Cell temperature data
-    elif filename.endswith("_ds_celltemps.dat"):
-        if retrieve_types.cell_temperature in types: return True
-
-    ## Log files
-    elif "_log" in filename and filename.endswith(".txt"):
-        if retrieve_types.logfiles in types: return True
-
-    ## Wavelength files
-    elif filename.endswith("_wavelengths.dat"):
-        if retrieve_types.wavelengths in types: return True
-
-    ## Grid structure data
-    elif "_ds_grid" in filename and filename.endswith(".dat"):
-        if retrieve_types.grid in types: return True
-
-    ## Grid dust density
-    elif "_ds_grho" in filename and filename.endswith(".fits"):
-        if retrieve_types.gdensity in types: return True
-
-    ## Theoretical dust density
-    elif "_ds_trho" in filename and filename.endswith(".fits"):
-        if retrieve_types.tdensity in types: return True
-
-    ## Dust grid onvergence
-    elif filename.endswith("_ds_convergence.dat"):
-        if retrieve_types.convergence in types: return True
-
-    ## Dust grid tree data
-    elif "_ds_tree" in filename and filename.endswith(".dat"):
-        if retrieve_types.tree in types: return True
-
-    # No match
+    # Otherwise, return False
     return False
 
 # -----------------------------------------------------------------

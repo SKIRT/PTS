@@ -131,6 +131,9 @@ class SKIRTLauncher(Configurable):
         if self.config.remote: self.retrieve()
         else: self.simulations.append(self.simulation) # add the locally run simulation to the list of simulations to be analysed
 
+        # Show the output of the retrieved simulations
+        if self.config.show: self.show()
+
         # 5. Analyse the output of the retrieved simulations
         self.analyse()
 
@@ -612,6 +615,27 @@ class SKIRTLauncher(Configurable):
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the output of finished simulations ...")
+
+        # Loop over the simulations
+        for simulation in self.simulations:
+
+            # Print the simulation name
+            print(simulation.prefix)
+
+            # Print the output
+            print(str(simulation.output))
 
     # -----------------------------------------------------------------
 

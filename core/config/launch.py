@@ -8,7 +8,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
 from pts.core.launch.options import LoggingOptions, AnalysisOptions
-from pts.core.simulation.remote import retrieve_type_choices
+from pts.core.simulation.output import output_type_choices
 
 # -----------------------------------------------------------------
 
@@ -25,7 +25,7 @@ definition.add_flag("emulate", "emulate the simulation while limiting computatio
 
 # Other
 definition.add_flag("keep", "keep remote input and output")
-definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=retrieve_type_choices)
+definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=output_type_choices)
 
 # Special things
 definition.add_flag("dry", "dry run (don't actually launch the simulations)", False)
@@ -36,5 +36,8 @@ definition.import_section_from_composite_class("logging", "logging options", Log
 
 # Analysis options
 definition.import_section_from_composite_class("analysis", "simulation analysis options", AnalysisOptions)
+
+# NEW: show the output of finished simulations
+definition.add_flag("show", "show the output of finished simulations", False)
 
 # -----------------------------------------------------------------

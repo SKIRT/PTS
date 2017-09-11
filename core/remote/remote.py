@@ -37,7 +37,7 @@ from .python import AttachedPythonSession, DetachedPythonSession
 from ..units.parsing import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings, types
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

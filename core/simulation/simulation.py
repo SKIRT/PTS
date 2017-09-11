@@ -29,6 +29,7 @@ from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
 from .status import LogSimulationStatus
 from .input import SimulationInput
+from .output import SimulationOutput
 from ..tools import types
 from ..tools.stringify import tostr
 
@@ -215,6 +216,12 @@ class SkirtSimulation(object):
         path = self.outfilepath("log.txt")
         if not fs.is_file(path): raise IOError("The log file is not present at '" + path + "'")
         return LogFile(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def output(self):
+        return SimulationOutput.from_directory(self.outpath, prefix=self.prefix())
 
     # -----------------------------------------------------------------
 
@@ -677,22 +684,27 @@ class SkirtSimulation(object):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path):
+    def saveto(self, path, update_path=True):
 
         """
         This function ...
         :param path:
+        :param update_path:
         :return:
         """
 
         # Set the new path
-        self.path = path
+        if update_path: self.path = path
 
         # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
+        parameters = self._parameters
         self._parameters = None
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")
+
+        # Set the parameters
+        self._parameters = parameters
 
 # -----------------------------------------------------------------
 
@@ -743,6 +755,78 @@ class RemoteSimulation(SkirtSimulation):
 
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
+
+        # Remote
+        self._remote = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..remote.host import load_host
+        if self._remote is not None: return self._remote.host_id
+        elif self.host_id is not None: return load_host(self.host_id)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..remote.remote import Remote
+        if self._remote is None: self._remote = Remote(host_id=self.host_id)
+        return self._remote
+
+    # -----------------------------------------------------------------
+
+    @remote.setter
+    def remote(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..remote.remote import Remote
+        from ..remote.host import Host
+
+        # Check type
+        if types.is_string_type(value): value = Remote(host_id=value)
+        elif isinstance(value, Host): value = Remote(host_id=value)
+        elif isinstance(value, Remote): pass
+        else: raise ValueError("Invalid value '" + str(value) + "'")
+
+        # Check host ID
+        if self.host_id is not None:
+            if value.host_id != self.host_id: raise ValueError("This is the wrong remote instance: host ID should be '" + self.host_id + "'")
+        else: self.host_id = value.host_id
+
+        # Set the remote
+        self._remote = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def output(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return SimulationOutput.from_remote_directory(self.outpath, self.remote, prefix=self.prefix())
 
     # -----------------------------------------------------------------
 
@@ -813,6 +897,27 @@ class RemoteSimulation(SkirtSimulation):
         # If both the input and output directories have to be removed, the remote simulation directory
         # can be removed too
         if (self.remove_remote_simulation_directory or full) and remote.is_directory(self.remote_simulation_path): remote.remove_directory(self.remote_simulation_path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        # Set the remote to None
+        remote = self._remote
+        self._remote = None
+
+        # Call the saveto function of the base class
+        super(RemoteSimulation, self).saveto(path, update_path=update_path)
+
+        # Set the remote back
+        self._remote = remote
 
     # -----------------------------------------------------------------
 
