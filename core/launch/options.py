@@ -234,7 +234,7 @@ class AnalysisOptions(Options):
         # Debugging
         log.debug("Checking miscellaneous settings ...")
 
-        from ..simulation.remote import retrieve_types as rt
+        from ..simulation.output import output_types as ot
 
         # If any misc setting has been enabled, check whether the misc path has been set
         if self.any_misc and self.misc.path is None:
@@ -246,21 +246,21 @@ class AnalysisOptions(Options):
         # Adjust retrieve types
         if retrieve_types is not None:
 
-            if self.misc.rgb and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+            if self.misc.rgb and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
                 log.warning("Creating RGB images is enabled so total datacube retrieval will also be enabled")
-                retrieve_types.append(rt.total_images)
+                retrieve_types.append(ot.total_images)
 
-            if self.misc.wave and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+            if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
                 log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
-                retrieve_types.append(rt.total_images)
+                retrieve_types.append(ot.total_images)
 
-            if self.misc.fluxes and rt.seds not in retrieve_types:
+            if self.misc.fluxes and ot.seds not in retrieve_types:
                 log.warning("Calculating observed fluxes is enabled so SED retrieval will also be enabled")
-                retrieve_types.append(rt.seds)
+                retrieve_types.append(ot.seds)
 
-            if self.misc.images and not (rt.images in retrieve_types or rt.total_images in retrieve_types):
+            if self.misc.images and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
                 log.warning("Creating observed images is enabled so total datacube retrieval will also be enabled")
-                retrieve_types.append(rt.images)
+                retrieve_types.append(ot.images)
 
     # -----------------------------------------------------------------
 
@@ -276,7 +276,7 @@ class AnalysisOptions(Options):
         # Debugging
         log.debug("Checking plotting settings ...")
 
-        from ..simulation.remote import retrieve_types as rt
+        from ..simulation.output import output_types as ot
 
         # If any plotting setting has been enabled, check whether the plotting path has been set
         if self.any_plotting and self.plotting.path is None:
@@ -304,14 +304,14 @@ class AnalysisOptions(Options):
         if retrieve_types is not None:
 
             # If SED plotting has been enabled, enable SED retrieval
-            if self.plotting.seds and rt.seds not in retrieve_types:
+            if self.plotting.seds and ot.seds not in retrieve_types:
                 log.warning("SED plotting is enabled so SED file retrieval will also be enabled")
-                retrieve_types.append(rt.seds)
+                retrieve_types.append(ot.seds)
 
             # If grid plotting has been enabled:
-            if self.plotting.grids and rt.grid not in retrieve_types:
+            if self.plotting.grids and ot.grid not in retrieve_types:
                 log.warning("Grid plotting is enabled so grid data retrieval will also be enabled")
-                retrieve_types.append(rt.grid)
+                retrieve_types.append(ot.grid)
 
     # -----------------------------------------------------------------
 
@@ -327,7 +327,7 @@ class AnalysisOptions(Options):
         # Debugging
         log.debug("Checking extraction settings ...")
 
-        from ..simulation.remote import retrieve_types as rt
+        from ..simulation.output import output_types as ot
 
         # If any extraction setting has been enabled, check whether the extraction path has been set
         if self.any_extraction and self.extraction.path is None:
@@ -340,19 +340,19 @@ class AnalysisOptions(Options):
         if retrieve_types is not None:
 
             # If progress plotting has been enabled, enable log file retrieval
-            if self.extraction.progress and rt.logfiles not in retrieve_types:
+            if self.extraction.progress and ot.logfiles not in retrieve_types:
                 log.warning("Progress extraction is enabled so log file retrieval will also be enabled")
-                retrieve_types.append(rt.logfiles)
+                retrieve_types.append(ot.logfiles)
 
             # If memory extraction has been enabled, enable log file retrieval
-            if self.extraction.memory and rt.logfiles not in retrieve_types:
+            if self.extraction.memory and ot.logfiles not in retrieve_types:
                 log.warning("Memory extraction is enabled so log file retrieval will also be enabled")
-                retrieve_types.append(rt.logfiles)
+                retrieve_types.append(ot.logfiles)
 
             # If timeline extraction has been enabled, enable log file retrieval
-            if self.extraction.timeline and rt.logfiles not in retrieve_types:
+            if self.extraction.timeline and ot.logfiles not in retrieve_types:
                 log.warning("Timeline extraction is enabled so log file retrieval will also be enabled")
-                retrieve_types.append(rt.logfiles)
+                retrieve_types.append(ot.logfiles)
 
     # -----------------------------------------------------------------
 

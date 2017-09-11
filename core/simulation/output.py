@@ -1039,4 +1039,251 @@ class SimulationOutput(object):
         if not self.has_other: return []
         else: return self.paths[other_name]
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import formatting as fmt
+
+        lines = []
+
+        # ISRF
+        if self.has_isrf:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.isrf] + fmt.reset + " (" + str(self.nisrf) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.isrf: lines.append(" - " + path)
+
+        # Absorption
+        if self.has_absorption:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.absorption] + fmt.reset + " (" + str(self.nabsorption) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.absorption: lines.append(" - " + path)
+
+        # Temperature
+        if self.has_temperature:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.temperature] + fmt.reset + " (" + str(self.ntemperature) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.temperature: lines.append(" - " + path)
+
+        # SEDs
+        if self.has_seds:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.seds] + fmt.reset + " (" + str(self.nseds) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.seds: lines.append(" - " + path)
+
+        # Total images
+        if self.has_total_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.total_images] + fmt.reset + " (" + str(self.ntotal_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.total_images: lines.append(" - " + path)
+
+        # Direct images
+        if self.has_direct_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.direct_images] + fmt.reset + " (" + str(self.ndirect_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.direct_images: lines.append(" - " + path)
+
+        # Transparent images
+        if self.has_transparent_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.transparent_images] + fmt.reset + " (" + str(self.ntransparent_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.transparent_images: lines.append(" - " + path)
+
+        # Scattered images
+        if self.has_scattered_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.scattered_images] + fmt.reset + " (" + str(self.nscattered_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.scattered_images: lines.append(" - " + path)
+
+        # Dust images
+        if self.has_dust_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_images] + fmt.reset + " (" + str(self.ndust_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.dust_images: lines.append(" - " + path)
+
+        # Dust scattered images
+        if self.has_dust_scattered_images:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_scattered_images] + fmt.reset + " (" + str(self.ndust_scattered_images) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.dust_scattered_images: lines.append(" - " + path)
+
+        # Cell temperature
+        if self.has_cell_temperature:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_temperature] + fmt.reset + " (" + str(self.ncell_temperature) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.cell_temperature: lines.append(" - " + path)
+
+        # Logfiles
+        if self.has_logfiles:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.logfiles] + fmt.reset + " (" + str(self.nlogfiles) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.logfiles: lines.append(" - " + path)
+
+        # Wavelengths
+        if self.has_wavelengths:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.wavelengths] + fmt.reset + " (" + str(self.nwavelengths) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.wavelengths: lines.append(" - " + path)
+
+        # Grid
+        if self.has_grid:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.grid] + fmt.reset + " (" + str(self.ngrid) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add path
+            for path in self.grid: lines.append(" - " + path)
+
+        # Density
+        if self.has_gdensity:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.gdensity] + fmt.reset + " (" + str(self.ngdensity ) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add path
+            for path in self.gdensity: lines.append(" - " + path)
+
+        # Density
+        if self.has_tdensity:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tdensity] + fmt.reset + " (" + str(self.ntdensity) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add path
+            for path in self.tdensity: lines.append(" - " + path)
+
+        # Tree
+        if self.has_tree:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tree] + fmt.reset + " (" + str(self.ntree) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.tree: lines.append(" - " + path)
+
+        # Convergence
+        if self.has_convergence:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.convergence] + fmt.reset + " (" + str(self.nconvergence) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.convergence: lines.append(" - " + path)
+
+        # Other
+        if self.has_other:
+            lines.append("")
+
+            # Add title
+            title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(self.nother) + "):"
+            lines.append(title)
+            lines.append("")
+
+            # Add paths
+            for path in self.other: lines.append(" - " + path)
+
+        # Add new line
+        lines.append("")
+
+        # Return
+        return "\n".join(lines)
+
 # -----------------------------------------------------------------

@@ -2202,7 +2202,7 @@ def get_class(module_path, class_name):
             traceback.print_exc()
             #log.error("Something went wrong importing the PTS module")
             #exit()
-            raise ImportError("Something went wrong importing the PTS module")
+            raise ImportError("Something went wrong importing the PTS module [" + module_path + "]")
 
         # Not existing
         else: raise ValueError("The module '" + module_path + "' does not exist")

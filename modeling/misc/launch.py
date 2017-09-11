@@ -29,7 +29,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.simulation.grids import load_grid, bintree, octtree, cartesian
 from ...core.simulation.grids import CartesianDustGrid, OctTreeDustGrid, BinaryTreeDustGrid
 from ..config.launch_model import make_images, make_seds
-from ...core.simulation.remote import retrieve_types as rt
+from ...core.simulation.output import output_types as ot
 from ...core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
@@ -853,14 +853,14 @@ class ModelLauncher(ModelSimulationInterface):
         # Set retrieval options
         retrieve_types = []
         if self.make_images:
-            retrieve_types.append(rt.total_images)
+            retrieve_types.append(ot.total_images)
             if self.make_contributions:
-                retrieve_types.append(rt.direct_images)
-                retrieve_types.append(rt.transparent_images)
-                retrieve_types.append(rt.scattered_images)
-                retrieve_types.append(rt.dust_images)
-                retrieve_types.append(rt.dust_scattered_images)
-        if self.make_seds: retrieve_types.append(rt.seds)
+                retrieve_types.append(ot.direct_images)
+                retrieve_types.append(ot.transparent_images)
+                retrieve_types.append(ot.scattered_images)
+                retrieve_types.append(ot.dust_images)
+                retrieve_types.append(ot.dust_scattered_images)
+        if self.make_seds: retrieve_types.append(ot.seds)
         self.launcher.config.retrieve_types = retrieve_types
 
         # Set options for parallelization
@@ -888,6 +888,9 @@ class ModelLauncher(ModelSimulationInterface):
         # Set analysis directories
         analysis_options.plotting.path = self.simulation_plot_path
         analysis_options.misc.path = self.simulation_misc_path
+
+        # Other settings
+        if log.is_debug(): self.launcher.config.show = True
 
         # Run the simulation
         self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization, nprocesses=nprocesses)
