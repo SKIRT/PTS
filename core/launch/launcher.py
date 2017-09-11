@@ -33,6 +33,7 @@ from .options import AnalysisOptions
 from ..tools import filesystem as fs
 from ..tools import parallelization
 from ..simulation.skifile import SkiFile
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -632,7 +633,7 @@ class SKIRTLauncher(Configurable):
         for simulation in self.simulations:
 
             # Print the simulation name
-            print(simulation.prefix)
+            print(fmt.blue + simulation.prefix() + fmt.reset + ":")
 
             # Print the output
             print(str(simulation.output))

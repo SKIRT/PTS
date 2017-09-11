@@ -36,6 +36,7 @@ from ..simulation.execute import SkirtExec
 from ..simulation.input import SimulationInput
 from ..simulation.skifile import SkiFile
 from ..simulation.arguments import SkirtArguments
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -700,6 +701,9 @@ class BatchLauncher(Configurable):
 
         # 4. Retrieve the simulations that are finished
         self.try_retrieving()
+
+        # Show the simulations that are finished
+        if self.config.show: self.show()
 
         # 5. Analyse the output of the retrieved simulations
         self.try_analysing()
@@ -1569,6 +1573,27 @@ class BatchLauncher(Configurable):
             # Get a list of the simulations that have been succesfully retrieved and add the corresponding
             # simulation objects to the list
             self.simulations += remote.retrieve()
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the output of retrieved simulations ...")
+
+        # Loop over the simulations
+        for simulation in self.simulations:
+
+            # Print the simulation name
+            print(fmt.blue + simulation.prefix() + fmt.reset + ":")
+
+            # Print the output
+            print(str(simulation.output))
 
     # -----------------------------------------------------------------
 
