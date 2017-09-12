@@ -1532,6 +1532,26 @@ def _get_upgrade_definitions():
                             '''.format(elementName,oldName,newName)))
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # ***** SKIRT 8 upgrades *****
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # start the list of definitions for upgrades after the transition to SKIRT 8
+    definitions += [
+
+    # git e94a2f8: upgrade Themis dust model to 2017 version using DustEM input files
+    ('''//ThemisDustMix/@numEnstatiteSizes|//ThemisDustMix/@numForsteriteSizes''',
+    '''
+    <xsl:template match="//ThemisDustMix/@numEnstatiteSizes|//ThemisDustMix/@numForsteriteSizes">
+        <xsl:attribute name="numSilicateSizes">
+            <xsl:value-of select="."/>
+        </xsl:attribute>
+    </xsl:template>
+    '''),
+
+    # terminate the list of SKIRT 8 definitions
+    ]
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     return definitions
 
