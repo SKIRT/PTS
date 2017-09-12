@@ -139,6 +139,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("images_wcs", "file_path", "the path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images", None)
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
+        self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
         self.misc.add_property("rebin_wcs", "string_string_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
         self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
         self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")

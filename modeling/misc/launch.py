@@ -878,7 +878,7 @@ class ModelLauncher(ModelSimulationInterface):
             parallelization = None
             nprocesses = self.config.nprocesses_remote
             self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
-        else: raise RuntimeError("Error")
+        else: raise RuntimeError("Something went wrong")
 
         # Set analysis options
         analysis_options = AnalysisOptions()
@@ -890,12 +890,11 @@ class ModelLauncher(ModelSimulationInterface):
         if self.config.faceon: instruments.append(faceon_name)
         if self.config.edgeon: instruments.append(edgeon_name)
         analysis_options.misc.observation_instruments = instruments
+        analysis_options.misc.group_images = True
 
         # Set analysis directories
         analysis_options.plotting.path = self.simulation_plot_path
         analysis_options.misc.path = self.simulation_misc_path
-
-        print(analysis_options)
 
         # Other settings
         if log.is_debug(): self.launcher.config.show = True

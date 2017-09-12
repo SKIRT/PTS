@@ -117,34 +117,31 @@ class ObservedImageMaker(Configurable):
         # 2. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 3. Create the filters
-        self.create_filters()
-
-        # 4. Load the datacubes
+        # 3. Load the datacubes
         self.load_datacubes()
 
-        # 5. Set the WCS of the datacubes
+        # 4. Set the WCS of the datacubes
         if self.wcs is not None: self.set_wcs()
 
-        # 6. Make the observed images
+        # 5. Make the observed images
         self.make_images()
 
-        # 7. Do convolutions
+        # 6. Do convolutions
         if self.kernel_paths is not None: self.convolve()
 
-        # Rebin
+        # 7. Rebin
         if self.rebin_wcs is not None: self.rebin()
 
-        # Add sky
+        # 8. Add sky
         self.add_sky()
 
-        # Add stars
+        # 9. Add stars
         self.add_stars()
 
-        # 8. Do unit conversions
+        # 10. Do unit conversions
         if self.unit is not None: self.convert_units()
 
-        # 9. Write the results
+        # 11. Write the results
         if self.output_path is not None: self.write()
 
     # -----------------------------------------------------------------
@@ -191,7 +188,7 @@ class ObservedImageMaker(Configurable):
         self.instrument_names = instrument_names
 
         # Set the output path
-        self.config.ouput = output_path
+        self.config.output = output_path
 
         # If WCS is given
         if wcs is not None: self.wcs = wcs
@@ -540,12 +537,52 @@ class ObservedImageMaker(Configurable):
         # Inform the user
         log.info("Writing the images ...")
 
+        # Write (grouped or not)
+        if self.config.group: self.write_images_grouped()
+        else: self.write_images()
+
+    # -----------------------------------------------------------------
+
+    def write_images_grouped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the different instruments (datacubes)
+        for datacube_name in self.images:
+
+            # Make directory for this datacube
+            datacube_path = self.output_path_directory(datacube_name)
+
+            # Loop over the images
+            for filter_name in self.images[datacube_name]:
+
+                # Determine path to the output FITS file
+                path = fs.join(datacube_path, filter_name + ".fits")
+
+                # Save the image
+                self.images[datacube_name][filter_name].saveto(path)
+
+                # Set the path
+                self.paths[datacube_name][filter_name] = path
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the different images (self.images is a nested dictionary of dictionaries)
         for datacube_name in self.images:
             for filter_name in self.images[datacube_name]:
 
                 # Determine the path to the output FITS file
-                path = fs.join(self.output_path, datacube_name + "__" + filter_name + ".fits")
+                path = self.output_path_file(datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
                 self.images[datacube_name][filter_name].saveto(path)

@@ -530,6 +530,9 @@ class BasicAnalyser(Configurable):
         # Set spectral convolution flag
         self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
 
+        # Set group flag
+        self.image_maker.config.group = self.misc_options.group_images
+
         # Run
         self.image_maker.run(simulation=self.simulation, output_path=self.misc_options.path,
                              filter_names=self.misc_options.observation_filters,

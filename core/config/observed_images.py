@@ -18,5 +18,6 @@ definition.add_optional("output", "string", "output directory")
 
 # Add flags
 definition.add_flag("spectral_convolution", "convolve over the wavelengths to get the most accurate images", True)
+definition.add_flag("group", "group the images per instrument", False)
 
 # -----------------------------------------------------------------
