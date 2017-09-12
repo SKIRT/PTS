@@ -869,9 +869,9 @@ def nitems_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                  extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None, contains_operator="OR", recursion_level=None, unpack=False, convert=None):
+def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, not_extension=None, contains=None,
+                  not_contains=None, extensions=False, returns="path", exact_name=None, exact_not_name=None,
+                  startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False, convert=None):
 
     """
     This function ...
@@ -948,9 +948,17 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         if extension is not None:
             if types.is_string_type(extension):
                 if item_extension != extension: continue
-            elif types.is_sequence(extension):
+            elif types.is_string_sequence(extension):
                 if item_extension not in extension: continue
             else: raise ValueError("Unknown type for 'extension': " + str(extension))
+
+        # Ignore files with extensions that are in not_extension
+        if not_extension is not None:
+            if types.is_string_type(not_extension):
+                if item_extension == not_extension: continue
+            elif types.is_string_sequence(not_extension):
+                if item_extension in not_extension: continue
+            else: raise ValueError("Unknown type for 'not_extension': " + str(not_extension))
 
         # Ignore filenames that do not contain a certain string, if specified
         if contains is not None:

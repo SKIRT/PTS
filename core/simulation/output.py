@@ -18,6 +18,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..basics.map import Map
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -42,6 +43,11 @@ output_types.gdensity = "grho"
 output_types.tdensity = "trho"
 output_types.tree = "tree"
 output_types.convergence = "convergence"
+output_types.dust_mass = "mass"
+output_types.dust_mix_properties = "mean"
+output_types.dust_optical_properties = "optical"
+output_types.dust_grain_sizes = "size"
+output_types.parameters = "parameters"
 
 # -----------------------------------------------------------------
 
@@ -66,6 +72,11 @@ output_type_choices[output_types.gdensity] = "grid dust density"
 output_type_choices[output_types.tdensity] = "theoretical dust density"
 output_type_choices[output_types.tree] = "dust grid tree data file"
 output_type_choices[output_types.convergence] = "convergence file"
+output_type_choices[output_types.dust_mass] = "dust population masses"
+output_type_choices[output_types.dust_mix_properties] = "combined dust mix properties"
+output_type_choices[output_types.dust_optical_properties] = "optical dust population properties"
+output_type_choices[output_types.dust_grain_sizes] = "dust grain size information"
+output_type_choices[output_types.parameters] = "parameter files"
 
 # -----------------------------------------------------------------
 
@@ -130,6 +141,21 @@ def get_output_type(filename):
 
     ## Dust grid tree data
     elif "_ds_tree" in filename and filename.endswith(".dat"): return output_types.tree
+
+    ## Dust mass
+    elif "ds_mix_" in filename and "_mass" in filename: return output_types.dust_mass
+
+    ## Dust mix properties
+    elif "ds_mix_" in filename and "_mean" in filename: return output_types.dust_mix_properties
+
+    ## Dust optical properties
+    elif "ds_mix_" in filename and "_opti" in filename: return output_types.dust_optical_properties
+
+    ## Dust grain sizes
+    elif "ds_mix_" in filename and "_size" in filename: return output_types.dust_grain_sizes
+
+    ## Parameter files
+    elif filename.endswith("_parameters.xml") or filename.endswith("_parameters.tex"): return output_types.parameters
 
     # No match
     return None
@@ -230,7 +256,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return cls.from_paths(fs.files_in_path(path, startswith=prefix))
+        return cls.from_paths(fs.files_in_path(path, startswith=prefix, not_extension="ski"))
 
     # -----------------------------------------------------------------
 
@@ -245,7 +271,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return cls.from_paths(remote.files_in_path(path, startswith=prefix))
+        return cls.from_paths(remote.files_in_path(path, startswith=prefix, not_extension="ski"))
 
     # -----------------------------------------------------------------
 
@@ -274,6 +300,11 @@ class SimulationOutput(object):
         for path in self.tdensity: yield path
         for path in self.tree: yield path
         for path in self.convergence: yield path
+        for path in self.dust_mass: yield path
+        for path in self.dust_mix_properties: yield path
+        for path in self.dust_optical_properties: yield path
+        for path in self.dust_grain_sizes: yield path
+        for path in self.parameters: yield path
         for path in self.other: yield path
 
     # -----------------------------------------------------------------
@@ -304,12 +335,18 @@ class SimulationOutput(object):
         if self.has_tdensity: total += self.ntdensity
         if self.has_tree: total += self.ntree
         if self.has_convergence: total += self.nconvergence
+        if self.has_dust_mass: total += self.ndust_mass
+        if self.has_dust_mix_properties: total += self.ndust_mix_properties
+        if self.has_dust_optical_properties: total += self.ndust_optical_properties
+        if self.has_dust_grain_sizes: total += self.ndust_grain_sizes
+        if self.has_parameters: total += self.nparameters
         if self.has_other: total += self.nother
         return total
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nisrf(self):
 
         """
@@ -321,7 +358,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_isrf(self):
 
         """
@@ -333,7 +371,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def isrf(self):
 
         """
@@ -346,7 +385,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nabsorption(self):
 
         """
@@ -358,7 +398,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_absorption(self):
 
         """
@@ -370,7 +411,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def absorption(self):
 
         """
@@ -383,7 +425,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ntemperature(self):
 
         """
@@ -395,7 +438,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_temperature(self):
 
         """
@@ -407,7 +451,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def temperature(self):
 
         """
@@ -420,7 +465,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nseds(self):
 
         """
@@ -432,7 +478,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_seds(self):
 
         """
@@ -444,7 +491,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def seds(self):
 
         """
@@ -457,7 +505,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nimages(self):
 
         """
@@ -476,7 +525,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_images(self):
 
         """
@@ -488,7 +538,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def images(self):
 
         """
@@ -507,7 +558,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ntotal_images(self):
 
         """
@@ -519,7 +571,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_total_images(self):
 
         """
@@ -531,7 +584,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def total_images(self):
 
         """
@@ -544,7 +598,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ndirect_images(self):
 
         """
@@ -556,7 +611,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_direct_images(self):
 
         """
@@ -568,7 +624,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def direct_images(self):
 
         """
@@ -581,7 +638,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ntransparent_images(self):
 
         """
@@ -593,7 +651,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_transparent_images(self):
 
         """
@@ -605,7 +664,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def transparent_images(self):
 
         """
@@ -618,7 +678,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nscattered_images(self):
 
         """
@@ -630,7 +691,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_scattered_images(self):
 
         """
@@ -642,7 +704,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def scattered_images(self):
 
         """
@@ -655,7 +718,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ndust_images(self):
 
         """
@@ -667,7 +731,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_dust_images(self):
 
         """
@@ -679,7 +744,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def dust_images(self):
 
         """
@@ -692,7 +758,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ndust_scattered_images(self):
 
         """
@@ -704,7 +771,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_dust_scattered_images(self):
 
         """
@@ -716,7 +784,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def dust_scattered_images(self):
 
         """
@@ -729,7 +798,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ncell_temperature(self):
 
         """
@@ -741,7 +811,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_cell_temperature(self):
 
         """
@@ -753,7 +824,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def cell_temperature(self):
 
         """
@@ -766,7 +838,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nlogfiles(self):
 
         """
@@ -778,7 +851,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_logfiles(self):
 
         """
@@ -788,9 +862,10 @@ class SimulationOutput(object):
 
         return output_types.logfiles in self.paths and self.nlogfiles > 0
 
-    #
+    # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def logfiles(self):
 
         """
@@ -803,7 +878,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nwavelengths(self):
 
         """
@@ -815,7 +891,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_wavelengths(self):
 
         """
@@ -827,7 +904,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def wavelengths(self):
 
         """
@@ -840,7 +918,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ngrid(self):
 
         """
@@ -852,7 +931,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_grid(self):
 
         """
@@ -864,7 +944,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def grid(self):
 
         """
@@ -877,7 +958,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ngdensity(self):
 
         """
@@ -889,7 +971,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_gdensity(self):
 
         """
@@ -901,7 +984,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def gdensity(self):
 
         """
@@ -914,7 +998,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ntdensity(self):
 
         """
@@ -926,7 +1011,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_tdensity(self):
 
         """
@@ -938,7 +1024,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def tdensity(self):
 
         """
@@ -951,7 +1038,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def ntree(self):
 
         """
@@ -961,7 +1049,10 @@ class SimulationOutput(object):
 
         return len(self.paths[output_types.tree])
 
-    @property
+    # -----------------------------------------------------------------
+
+    #@property
+    @lazyproperty
     def has_tree(self):
 
         """
@@ -971,7 +1062,10 @@ class SimulationOutput(object):
 
         return output_types.tree in self.paths and self.ntree > 0
 
-    @property
+    # -----------------------------------------------------------------
+
+    #@property
+    @lazyproperty
     def tree(self):
 
         """
@@ -984,7 +1078,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def nconvergence(self):
 
         """
@@ -994,7 +1089,10 @@ class SimulationOutput(object):
 
         return len(self.paths[output_types.convergence])
 
-    @property
+    # -----------------------------------------------------------------
+
+    #@property
+    @lazyproperty
     def has_convergence(self):
 
         """
@@ -1004,7 +1102,10 @@ class SimulationOutput(object):
 
         return output_types.convergence in self.paths and self.nconvergence > 0
 
-    @property
+    # -----------------------------------------------------------------
+
+    #@property
+    @lazyproperty
     def convergence(self):
 
         """
@@ -1017,7 +1118,193 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def ndust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.dust_mass])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.dust_mass in self.paths and self.ndust_mass > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_dust_mass: return []
+        else: return self.paths[output_types.dust_mass]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_mix_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.dust_mix_properties])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_mix_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.dust_mix_properties in self.paths and self.ndust_mix_properties > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mix_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_dust_mix_properties: return []
+        else: return self.paths[output_types.dust_mix_properties]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_optical_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.dust_optical_properties])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_optical_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.dust_optical_properties in self.paths and self.ndust_optical_properties > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_optical_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_dust_optical_properties: return []
+        else: return self.paths[output_types.dust_optical_properties]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_grain_sizes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.dust_grain_sizes])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_grain_sizes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.dust_grain_sizes in self.paths and self.ndust_grain_sizes > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grain_sizes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_dust_grain_sizes: return []
+        else: return self.paths[output_types.dust_grain_sizes]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nparameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.parameters])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.parameters in self.paths and self.nparameters > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_parameters: return []
+        else: return self.paths[output_types.parameters]
+
+    # -----------------------------------------------------------------
+
+    #@property
+    @lazyproperty
     def nother(self):
 
         """
@@ -1029,7 +1316,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def has_other(self):
 
         """
@@ -1041,7 +1329,8 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
+    @lazyproperty
     def other(self):
 
         """
@@ -1054,10 +1343,121 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = None
+        for filepath in self.isrf:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.absorption:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.temperature:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.seds:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.total_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.direct_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.transparent_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.scattered_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_scattered_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.cell_temperature:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.logfiles:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.wavelengths:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.grid:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.gdensity:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.tdensity:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.tree:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.convergence:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_mass:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_mix_properties:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_optical_properties:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.dust_grain_sizes:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.parameters:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.other:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+
+        # Return the directory path
+        return path
+
+    # -----------------------------------------------------------------
+
+    def relative_path(self, path):
+
+        """
+        Thisf unction ...
+        :param path:
+        :return:
+        """
+
+        return fs.relative_to(path, self.directory)
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """
         This function ...
+        :return:
+        """
+
+        return self.to_string()
+
+    # -----------------------------------------------------------------
+
+    def to_string(self, line_prefix=""):
+
+        """
+        This function ...
+        :param line_prefix:
         :return:
         """
 
@@ -1067,236 +1467,308 @@ class SimulationOutput(object):
 
         # ISRF
         if self.has_isrf:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.isrf].title() + fmt.reset + " (" + str(self.nisrf) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.isrf].capitalize() + fmt.reset + " (" + str(self.nisrf) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.isrf: lines.append(" - " + path)
+            for path in self.isrf: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Absorption
         if self.has_absorption:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.absorption].title() + fmt.reset + " (" + str(self.nabsorption) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.absorption].capitalize() + fmt.reset + " (" + str(self.nabsorption) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.absorption: lines.append(" - " + path)
+            for path in self.absorption: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Temperature
         if self.has_temperature:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.temperature].title() + fmt.reset + " (" + str(self.ntemperature) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.temperature].capitalize() + fmt.reset + " (" + str(self.ntemperature) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.temperature: lines.append(" - " + path)
+            for path in self.temperature: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # SEDs
         if self.has_seds:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.seds].title() + fmt.reset + " (" + str(self.nseds) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.seds].capitalize() + fmt.reset + " (" + str(self.nseds) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.seds: lines.append(" - " + path)
+            for path in self.seds: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Total images
         if self.has_total_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.total_images].title() + fmt.reset + " (" + str(self.ntotal_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.total_images].capitalize() + fmt.reset + " (" + str(self.ntotal_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.total_images: lines.append(" - " + path)
+            for path in self.total_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Direct images
         if self.has_direct_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.direct_images].title() + fmt.reset + " (" + str(self.ndirect_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.direct_images].capitalize() + fmt.reset + " (" + str(self.ndirect_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.direct_images: lines.append(" - " + path)
+            for path in self.direct_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Transparent images
         if self.has_transparent_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.transparent_images].title() + fmt.reset + " (" + str(self.ntransparent_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.transparent_images].capitalize() + fmt.reset + " (" + str(self.ntransparent_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.transparent_images: lines.append(" - " + path)
+            for path in self.transparent_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Scattered images
         if self.has_scattered_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.scattered_images].title() + fmt.reset + " (" + str(self.nscattered_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.scattered_images].capitalize() + fmt.reset + " (" + str(self.nscattered_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.scattered_images: lines.append(" - " + path)
+            for path in self.scattered_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Dust images
         if self.has_dust_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_images].title() + fmt.reset + " (" + str(self.ndust_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_images].capitalize() + fmt.reset + " (" + str(self.ndust_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.dust_images: lines.append(" - " + path)
+            for path in self.dust_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Dust scattered images
         if self.has_dust_scattered_images:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_scattered_images].title() + fmt.reset + " (" + str(self.ndust_scattered_images) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_scattered_images].capitalize() + fmt.reset + " (" + str(self.ndust_scattered_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.dust_scattered_images: lines.append(" - " + path)
+            for path in self.dust_scattered_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Cell temperature
         if self.has_cell_temperature:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_temperature].title() + fmt.reset + " (" + str(self.ncell_temperature) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_temperature].capitalize() + fmt.reset + " (" + str(self.ncell_temperature) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.cell_temperature: lines.append(" - " + path)
+            for path in self.cell_temperature: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Logfiles
         if self.has_logfiles:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.logfiles].title() + fmt.reset + " (" + str(self.nlogfiles) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.logfiles].capitalize() + fmt.reset + " (" + str(self.nlogfiles) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.logfiles: lines.append(" - " + path)
+            for path in self.logfiles: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Wavelengths
         if self.has_wavelengths:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.wavelengths].title() + fmt.reset + " (" + str(self.nwavelengths) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.wavelengths].capitalize() + fmt.reset + " (" + str(self.nwavelengths) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.wavelengths: lines.append(" - " + path)
+            for path in self.wavelengths: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Grid
         if self.has_grid:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.grid].title() + fmt.reset + " (" + str(self.ngrid) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.grid].capitalize() + fmt.reset + " (" + str(self.ngrid) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add path
-            for path in self.grid: lines.append(" - " + path)
+            for path in self.grid: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Density
         if self.has_gdensity:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.gdensity].title() + fmt.reset + " (" + str(self.ngdensity ) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.gdensity].capitalize() + fmt.reset + " (" + str(self.ngdensity ) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add path
-            for path in self.gdensity: lines.append(" - " + path)
+            for path in self.gdensity: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Density
         if self.has_tdensity:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.tdensity].title() + fmt.reset + " (" + str(self.ntdensity) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tdensity].capitalize() + fmt.reset + " (" + str(self.ntdensity) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add path
-            for path in self.tdensity: lines.append(" - " + path)
+            for path in self.tdensity: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Tree
         if self.has_tree:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.tree].title() + fmt.reset + " (" + str(self.ntree) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.tree].capitalize() + fmt.reset + " (" + str(self.ntree) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.tree: lines.append(" - " + path)
+            for path in self.tree: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Convergence
         if self.has_convergence:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_types.convergence].title() + fmt.reset + " (" + str(self.nconvergence) + "):"
-            lines.append(title)
-            lines.append("")
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.convergence].capitalize() + fmt.reset + " (" + str(self.nconvergence) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.convergence: lines.append(" - " + path)
+            for path in self.convergence: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Dust mass
+        if self.has_dust_mass:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_mass].capitalize() + fmt.reset + " (" + str(self.ndust_mass) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add paths
+            for path in self.dust_mass: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Dust mix properties
+        if self.has_dust_mix_properties:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_mix_properties].capitalize() + fmt.reset + " (" + str(self.ndust_mix_properties) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add paths
+            for path in self.dust_mix_properties: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Dust optical properties
+        if self.has_dust_optical_properties:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_optical_properties].capitalize() + fmt.reset + " (" + str(self.ndust_optical_properties) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add paths
+            for path in self.dust_optical_properties: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Dust grain sizes
+        if self.has_dust_grain_sizes:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.dust_grain_sizes].capitalize() + fmt.reset + " (" + str(self.ndust_grain_sizes) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add paths
+            for path in self.dust_grain_sizes: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Parameters
+        if self.has_parameters:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.parameters].capitalize() + fmt.reset + " (" + str(self.nparameters) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add paths
+            for path in self.parameters: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other:
-            lines.append("")
+            lines.append(line_prefix)
 
             # Add title
             title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(self.nother) + "):"
-            lines.append(title)
-            lines.append("")
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
 
             # Add paths
-            for path in self.other: lines.append(" - " + path)
+            for path in self.other: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Add new line
-        lines.append("")
+        lines.append(line_prefix)
 
         # Return
         return "\n".join(lines)
+
+    # -----------------------------------------------------------------
+
+    def show(self, line_prefix=""):
+
+        """
+        This function ...
+        :param line_prefix:
+        :return:
+        """
+
+        print(self.to_string(line_prefix=line_prefix))
 
 # -----------------------------------------------------------------

@@ -348,6 +348,11 @@ class SkiFile:
         # No file wavelength grid in this ski file
         else: return None
 
+    ## This function returns whether the wavelengths file could be found
+    def find_wavelengthsfile(self, input_path):
+        path = self.wavelengthsfile(input_path)
+        return fs.is_file(path)
+
     ## This function returns the number of wavelength points as defined in the wavelengths file
     def nwavelengthsfile(self, input_path):
         path = self.wavelengthsfile(input_path)
@@ -441,6 +446,14 @@ class SkiFile:
     ## This function returns True if a tree dust grid is used and False otherwise
     def treegrid(self):
         return "Tree" in self.gridtype()
+
+    ## This function returns True if a file tree dust grid is used and False otherwise
+    def filetreegrid(self):
+        return self.gridtype() == "FileTreeDustGrid"
+
+    ## This function returns True when a tree dust grid is used that is not a file tree dust grid
+    def treegrid_notfile(self):
+        return self.treegrid() and not self.filetreegrid()
 
     ## This function returns the minimum level of the tree
     def tree_min_level(self):

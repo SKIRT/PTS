@@ -2793,7 +2793,9 @@ class Remote(object):
         self.debug("Clearing directory '" + path + "' ...")
 
         # Remove all files
-        for file_path in self.files_in_path(path): self.remove_file(file_path)
+        for file_path in self.files_in_path(path):
+            print(file_path)
+            self.remove_file(file_path)
 
         # Remove all d irectories
         for directory_path in self.directories_in_path(path): self.remove_directory(directory_path)
@@ -3024,8 +3026,9 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                      exact_name=None, exact_not_name=None, startswith=None, endswith=None, returns="path", extensions=False):
+    def files_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, not_extension=None,
+                      contains=None, not_contains=None, exact_name=None, exact_not_name=None, startswith=None,
+                      endswith=None, returns="path", extensions=False):
 
         """
         This function ...
@@ -3033,6 +3036,7 @@ class Remote(object):
         :param recursive:
         :param ignore_hidden:
         :param extension:
+        :param not_extension:
         :param contains:
         :param not_contains:
         :param exact_name:
@@ -3058,6 +3062,7 @@ class Remote(object):
             paths = [filepath for filepath in paths if self.is_file(filepath)]
         else:
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
+            if len(output) == 1 and output[0] == "*": return []
             paths = [fs.join(path, name) for name in output]
 
         if returns == "dict":
@@ -3089,9 +3094,17 @@ class Remote(object):
             if extension is not None:
                 if types.is_string_type(extension):
                     if item_extension != extension: continue
-                elif types.is_sequence(extension):
+                elif types.is_string_sequence(extension):
                     if item_extension not in extension: continue
                 else: raise ValueError("Unknown type for 'extension': " + str(extension))
+
+            # Ignore files with extensions that are in 'not_extension'
+            if not_extension is not None:
+                if types.is_string_type(not_extension):
+                    if item_extension == not_extension: continue
+                elif types.is_string_sequence(not_extension):
+                    if item_extension in not_extension: continue
+                else: raise ValueError("Unknown type for 'not_extension': " + str(not_extension))
 
             # Ignore filenames that do not contain a certain string, if specified
             if contains is not None and contains not in item_name: continue
@@ -5850,6 +5863,18 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_pts_root_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_directory(self.pts_root_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pts_package_path(self):
 
         """
@@ -5894,8 +5919,21 @@ class Remote(object):
         """
 
         path = fs.join(self.pts_root_path, "temp")
-        if not self.is_directory(path): self.create_directory(path)
+        if not self.is_directory(path) and self.has_pts_root_path: self.create_directory(path)
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pts_temp_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "temp")
+        return self.is_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -5908,8 +5946,21 @@ class Remote(object):
         """
 
         path = fs.join(self.pts_root_path, "test")
-        if not self.is_directory(path): self.create_directory(path)
+        if not self.is_directory(path) and self.has_pts_root_path: self.create_directory(path)
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pts_tests_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "test")
+        return self.is_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -5920,7 +5971,7 @@ class Remote(object):
         :return: 
         """
 
-        self.clear_pts_temp()
+        if self.has_pts_temp_path: self.clear_pts_temp()
         self.close_all_screen_sessions()
         self.close_all_tmux_sessions()
 

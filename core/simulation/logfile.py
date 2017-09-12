@@ -90,6 +90,7 @@ class LogFile(object):
                 host = message.split("on ")[1].split(" for")[0]
 
                 if len(host.split(".")) == 3: return host.split(".")[1]
+                elif len(host.split(".")) == 2: return host.split(".")[0]
                 else: return host
 
         return None

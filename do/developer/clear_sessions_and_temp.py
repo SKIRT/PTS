@@ -34,13 +34,11 @@ for host_id in config.remotes:
 
     # Setup the remote
     remote = Remote()
-    if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")
+    if not remote.setup(host_id):
+        log.warning("Could not connect to remote host '" + host_id + "'")
+        continue
 
-    # Clear temporary directory
-    remote.clear_pts_temp()
-
-    # Clear sessions
-    remote.close_all_screen_sessions()
-    remote.close_all_tmux_sessions()
+    # Clear temporary directory and clear sessions
+    remote.clear_temp_and_sessions()
 
 # -----------------------------------------------------------------

@@ -34,6 +34,7 @@ from ..simulation.simulation import createsimulations
 from ..tools import parsing
 from ..tools import types
 from ..tools import numbers
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -75,9 +76,6 @@ class ObservedFluxCalculator(Configurable):
         # The errors for the different filters
         self.errors = None
 
-        # The filters for which the fluxes should be calculated
-        self.filters = None
-
         # The output observed SEDs
         self.mock_seds = dict()
 
@@ -99,9 +97,6 @@ class ObservedFluxCalculator(Configurable):
 
         # 1. Call the setup function
         self.setup(**kwargs)
-
-        # 2. Create the filters
-        self.create_filters()
 
         # 3. Calculate the observed fluxes
         self.calculate()
@@ -160,30 +155,15 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_filters(self):
+    @lazyproperty
+    def filters(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Constructing the filter objects ...")
-
-        # Initialize the list
-        self.filters = []
-
-        # Loop over the different filter names
-        for filter_name in self.filter_names:
-
-            # Debugging
-            log.debug("Constructing the " + filter_name + " filter ...")
-
-            # Create the filter
-            fltr = parse_filter(filter_name)
-
-            # Add the filter to the list
-            self.filters.append(fltr)
+        return [parse_filter(filter_name) for filter_name in self.filter_names]
 
     # -----------------------------------------------------------------
 

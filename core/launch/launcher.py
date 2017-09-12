@@ -133,10 +133,10 @@ class SKIRTLauncher(Configurable):
         else: self.simulations.append(self.simulation) # add the locally run simulation to the list of simulations to be analysed
 
         # Show the output of the retrieved simulations
-        if self.config.show: self.show()
+        if self.has_simulations and self.config.show: self.show()
 
         # 5. Analyse the output of the retrieved simulations
-        self.analyse()
+        if self.has_simulations: self.analyse()
 
     # -----------------------------------------------------------------
 
@@ -239,6 +239,8 @@ class SKIRTLauncher(Configurable):
 
         # Set
         self.analysis_options = options
+
+        print(self.analysis_options)
 
         # Check the options
         self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
@@ -619,6 +621,30 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -630,13 +656,14 @@ class SKIRTLauncher(Configurable):
         log.info("Showing the output of finished simulations ...")
 
         # Loop over the simulations
+        print("")
         for simulation in self.simulations:
 
             # Print the simulation name
             print(fmt.blue + simulation.prefix() + fmt.reset + ":")
 
-            # Print the output
-            print(str(simulation.output))
+            # Show the output
+            simulation.output.show(line_prefix="  ")
 
     # -----------------------------------------------------------------
 

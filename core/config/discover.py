@@ -20,4 +20,7 @@ definition.add_positional_optional("directories", "directorypath_list", "input d
 definition.add_flag("recursive", "look for simulations in directories recursively", True)
 definition.add_flag("list", "list the found simulations", True)
 
+# NEW
+definition.add_flag("output", "list the simulation output", False)
+
 # -----------------------------------------------------------------

@@ -524,7 +524,7 @@ class SimulationDiscoverer(Configurable):
             print(" ncells:", parameters.ncells)
             print(" npopulations:", parameters.npopulations)
             print(" selfabsorption:", parameters.selfabsorption)
-            print(" transient heating:", parameters.transientheating)
+            print(" transient heating:", parameters.transient_heating)
             print("")
 
             counter = 1
@@ -532,6 +532,9 @@ class SimulationDiscoverer(Configurable):
 
                 rel_output_path = simulation.output_path.split(self.config.path)[1]
                 rel_input_path = simulation.input_path.split(self.config.path)[1] if simulation.input_path is not None else None
+
+                if rel_input_path == "": rel_input_path = "this directory"
+                if rel_output_path == "": rel_output_path = "this directory"
 
                 print(" * " + fmt.bold + "(" + str(counter) + ") '" + simulation.prefix() + "' in " + fs.name(rel_output_path) + fmt.reset + ":")
                 print("")
@@ -542,6 +545,10 @@ class SimulationDiscoverer(Configurable):
                 print("    data-parallel: " + str(simulation.log_file.data_parallel))
                 print("    host: " + simulation.log_file.host)
                 print("")
+
+                if self.config.output:
+                    print("    output:")
+                    simulation.output.show(line_prefix="      ")
 
                 counter += 1
 
@@ -569,6 +576,8 @@ class SimulationDiscoverer(Configurable):
 
                 rel_output_path = simulation.output_path.split(self.config.path)[1]
 
+                if rel_output_path == "": rel_output_path = "this directory"
+
                 print(" * " + fmt.bold + "(" + str(counter) + ") '" + simulation.prefix() + "' in " + fs.name(rel_output_path) + fmt.reset + ":")
                 print("")
                 print("    output: " + rel_output_path)
@@ -578,6 +587,10 @@ class SimulationDiscoverer(Configurable):
                 print("    data-parallel: " + str(simulation.log_file.data_parallel))
                 print("    host: " + simulation.log_file.host)
                 print("")
+
+                if self.config.output:
+                    print("    output:")
+                    simulation.output.show(line_prefix="      ")
 
                 counter += 1
 
@@ -830,23 +843,29 @@ def comparison_parameters_from_ski(ski_path, input_path=None):
     ski = SkiFile(ski_path)
 
     # Get the number of wavelengths
-    nwavelengths = ski.nwavelengthsfile(input_path) if ski.wavelengthsfile() else ski.nwavelengths()
+    if ski.wavelengthsfile():
+        if ski.find_wavelengthsfile(input_path): nwavelengths = ski.nwavelengthsfile(input_path)
+        else: nwavelengths = None
+    else: nwavelengths = ski.nwavelengths()
 
     # Get the dust grid type
-    grid_type = ski.gridtype()
+    #grid_type = ski.gridtype()
 
     # If the grid is a tree grid, get additional properties
     if ski.treegrid():
 
         ncells = None
 
-        min_level = ski.tree_min_level()
-        max_level = ski.tree_max_level()
-        search_method = ski.tree_search_method()
-        sample_count = ski.tree_sample_count()
-        max_optical_depth = ski.tree_max_optical_depth()
-        max_mass_fraction = ski.tree_max_mass_fraction()
-        max_dens_disp = ski.tree_max_dens_disp()
+        if ski.filetreegrid(): pass
+        else:
+
+            min_level = ski.tree_min_level()
+            max_level = ski.tree_max_level()
+            search_method = ski.tree_search_method()
+            sample_count = ski.tree_sample_count()
+            max_optical_depth = ski.tree_max_optical_depth()
+            max_mass_fraction = ski.tree_max_mass_fraction()
+            max_dens_disp = ski.tree_max_dens_disp()
 
     # Else, set all properties to None
     else:

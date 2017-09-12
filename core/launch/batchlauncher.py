@@ -703,10 +703,10 @@ class BatchLauncher(Configurable):
         self.try_retrieving()
 
         # Show the simulations that are finished
-        if self.config.show: self.show()
+        if self.has_simulations and self.config.show: self.show()
 
         # 5. Analyse the output of the retrieved simulations
-        self.try_analysing()
+        if self.has_simulations: self.try_analysing()
 
         # Write
         self.write()
@@ -1576,6 +1576,30 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.nsimulations > 0
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -1587,13 +1611,14 @@ class BatchLauncher(Configurable):
         log.info("Showing the output of retrieved simulations ...")
 
         # Loop over the simulations
+        print("")
         for simulation in self.simulations:
 
             # Print the simulation name
             print(fmt.blue + simulation.prefix() + fmt.reset + ":")
 
-            # Print the output
-            print(str(simulation.output))
+            # Show the output
+            simulation.output.show(line_prefix="  ")
 
     # -----------------------------------------------------------------
 

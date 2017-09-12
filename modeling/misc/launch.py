@@ -512,6 +512,12 @@ class ModelLauncher(ModelSimulationInterface):
         log.info("Adapting the ski file ...")
 
         # Debugging
+        log.debug("Disabling all writing settings ...")
+
+        # Disable all writing settings
+        self.ski.disable_all_writing_options()
+
+        # Debugging
         log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
@@ -888,6 +894,8 @@ class ModelLauncher(ModelSimulationInterface):
         # Set analysis directories
         analysis_options.plotting.path = self.simulation_plot_path
         analysis_options.misc.path = self.simulation_misc_path
+
+        print(analysis_options)
 
         # Other settings
         if log.is_debug(): self.launcher.config.show = True

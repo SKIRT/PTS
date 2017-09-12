@@ -30,6 +30,7 @@ from ..simulation.wavelengthgrid import WavelengthGrid
 from ..units.parsing import parse_unit as u
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -75,9 +76,6 @@ class ObservedImageMaker(Configurable):
 
         # The instrument names
         self.instrument_names = None
-
-        # The filters for which the images should be created
-        self.filters = dict()
 
         # The dictionary containing the different SKIRT output datacubes
         self.datacubes = dict()
@@ -259,27 +257,15 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_filters(self):
+    @lazyproperty
+    def filters(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Constructing the filter objects ...")
-
-        # Loop over the different filter names
-        for filter_name in self.filter_names:
-
-            # Debugging
-            log.debug("Constructing the " + filter_name + " filter ...")
-
-            # Create the filter
-            fltr = parse_filter(filter_name)
-
-            # Add the filter to the list
-            self.filters[filter_name] = fltr
+        return {filter_name: parse_filter(filter_name) for filter_name in self.filter_names}
 
     # -----------------------------------------------------------------
 
