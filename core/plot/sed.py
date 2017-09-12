@@ -32,7 +32,7 @@ from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED
 from ..basics.range import RealRange
-from ..basics.plot import MPLPlot, BokehPlot, mpl, bokeh
+from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools import types
 
 # -----------------------------------------------------------------
@@ -104,16 +104,16 @@ class SEDPlotter(Configurable):
         # The output path
         self.out_path = None
 
-        # Store the figure axes as references
-        self._main_axis = None
-        self._residual_axes = []
-
         # Properties
         self.format = None
         self.transparent = False
 
-        # The plot
-        self.plt = None
+        # The figure
+        self.figure = None
+
+        # The main plot and the residual plots
+        self.main_plot = None
+        self.residual_plots = []
 
     # -----------------------------------------------------------------
 
@@ -255,8 +255,8 @@ class SEDPlotter(Configurable):
         else: figsize = self.config.plot.figsize
 
         # Create the plot
-        if self.config.library == mpl: self.plt = MPLPlot(size=figsize)
-        elif self.config.library == bokeh: self.plt = BokehPlot()
+        if self.config.library == mpl: self.figure = MPLFigure(size=figsize)
+        elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
     # -----------------------------------------------------------------
@@ -308,8 +308,8 @@ class SEDPlotter(Configurable):
         self.max_wavelength = None
         self.min_flux = None
         self.max_flux = None
-        self._main_axis = None
-        self._residual_axes = []
+        self.main_plot = None
+        self.residual_plots = []
 
     # -----------------------------------------------------------------
 
@@ -351,8 +351,11 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Plotting one observed SED ...")
+
         # Setup the figure
-        self._main_axis = self.plt.figure.gca()
+        self.main_plot = self.figure.figure.gca()
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
@@ -385,6 +388,9 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Plotting multiple observed SEDs ...")
+
         # http://matplotlib.org/examples/color/colormaps_reference.html
         #gradient = np.linspace(0, 1, 256)
         #gradient = np.vstack((gradient, gradient))
@@ -397,11 +403,9 @@ class SEDPlotter(Configurable):
         # http://stackoverflow.com/questions/17458580/embedding-small-plots-inside-subplots-in-matplotlib
         #ax_number = add_subplot_axes(ax,rect)
 
-        # Setup the figure
-        gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        self._main_axis = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=self._main_axis)
-        self._residual_axes.append(ax2)
+        # CREATE MAIN PLOT AND ONE RESIDUAL PLOT
+        self.main_plot, residual_plot = self.figure.create_column(2, share_axis=True, height_ratios=[4,1])
+        self.residual_plots.append(residual_plot)
 
         # Count the number of observed SEDs
         number_of_observations = len(self.observations)
@@ -469,7 +473,7 @@ class SEDPlotter(Configurable):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                patch = self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, colors[k], return_patch=True)
+                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, colors[k], return_patch=True)
 
                 if patch is not None:
                     legend_patches.append(patch)
@@ -502,7 +506,7 @@ class SEDPlotter(Configurable):
                 if value is not None and error is not None:
 
                     error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                    ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2)
 
             # The next observation is not the first anymore
             first = False
@@ -518,7 +522,7 @@ class SEDPlotter(Configurable):
 
         # Extra legend: the different observations
         # fancybox=True makes the legend corners rounded
-        observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
+        observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
         # Finish the plot
         self.finish_plot(for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
@@ -547,7 +551,7 @@ class SEDPlotter(Configurable):
         """
 
         # Setup the figure
-        self._main_axis = self.plt.ax
+        self.main_plot = self.figure.ax
 
         # Add model SEDs
 
@@ -566,7 +570,7 @@ class SEDPlotter(Configurable):
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
 
                 # Plot the model SED as a grey line (no errors)
-                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey")
+                self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey")
 
             elif plot_residuals:
 
@@ -576,7 +580,7 @@ class SEDPlotter(Configurable):
                 errors = sed.errors(unit=self.config.unit, add_unit=False) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter_residuals], model_label, errors=errors)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter_residuals], model_label, errors=errors)
 
                 counter_residuals += 1
 
@@ -588,7 +592,7 @@ class SEDPlotter(Configurable):
                 errors = sed.errors(unit=self.config.unit, add_unit=False) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residals], model_label, errors=errors, linecolor=line_colors_models_no_residuals[counter_no_residals], adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residals], model_label, errors=errors, linecolor=line_colors_models_no_residuals[counter_no_residals], adjust_extrema=False)
 
                 counter_no_residals += 1
 
@@ -607,9 +611,9 @@ class SEDPlotter(Configurable):
 
         # Setup the figure
         gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        self._main_axis = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=self._main_axis)
-        self._residual_axes.append(ax2)
+        self.main_plot = plt.subplot(gs[0])
+        ax2 = plt.subplot(gs[1], sharex=self.main_plot)
+        self.residual_plots.append(ax2)
 
         # Get the first (only) observation
         observation = self.observations[self.observations.keys()[0]]
@@ -654,7 +658,7 @@ class SEDPlotter(Configurable):
             marker = markers[unique_labels.index(labels[k])]
 
             # Plot on the main axis with the specified marker and color
-            self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+            self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
             # Plot point at y=0.0 with errorbar on axis 2
             value = 0.0
@@ -719,14 +723,14 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 log_model = np.log10(sed.photometry(unit=self.config.unit, add_unit=False))
-                self._main_axis.plot(sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), log_model, "-", color="lightgrey")
+                self.main_plot.plot(sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), log_model, "-", color="lightgrey")
 
             elif plot_residuals:
 
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 log_model = np.log10(fluxes)
-                self._main_axis.plot(wavelengths, log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
+                self.main_plot.plot(wavelengths, log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
 
                 # Get lowest and highest flux and wavelength for this curve
                 lowest = np.min(fluxes)
@@ -765,8 +769,8 @@ class SEDPlotter(Configurable):
                     log_bottom = np.log10(bottom)
                     log_top = np.log10(top)
 
-                    self._main_axis.fill_between(sed.wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-                    self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
+                    self.main_plot.fill_between(sed.wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
+                    self.main_plot.plot([], [], color='cyan', linewidth=10, label='spread')
 
                 counter += 1
 
@@ -775,7 +779,7 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                 log_model = np.log10(fluxes)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                self._main_axis.plot(wavelengths, log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+                self.main_plot.plot(wavelengths, log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
 
                 ## SAME AS ABOVE::
                 # Get lowest and highest flux and wavelength for this curve
@@ -815,10 +819,10 @@ class SEDPlotter(Configurable):
                     log_bottom = np.log10(bottom)
                     log_top = np.log10(top)
 
-                    self._main_axis.fill_between(sed.wavelengths, log_bottom, log_top,
+                    self.main_plot.fill_between(sed.wavelengths, log_bottom, log_top,
                                                  where=log_top <= log_bottom, facecolor='cyan', edgecolor='cyan',
                                                  interpolate=True, alpha=0.5)
-                    self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
+                    self.main_plot.plot([], [], color='cyan', linewidth=10, label='spread')
 
                 counter_no_residuals += 1
 
@@ -842,11 +846,11 @@ class SEDPlotter(Configurable):
 
         # Setup the figure
         gs = gridspec.GridSpec(1 + number_of_observations, 1, height_ratios=height_ratios)
-        self._main_axis = plt.subplot(gs[0])
+        self.main_plot = plt.subplot(gs[0])
         for i in range(number_of_observations):
-            ax = plt.subplot(gs[1+i], sharex=self._main_axis)
-            self._residual_axes.append(ax)
-        residual_axes = iter(self._residual_axes)
+            ax = plt.subplot(gs[1+i], sharex=self.main_plot)
+            self.residual_plots.append(ax)
+        residual_axes = iter(self.residual_plots)
 
         # Make iterable from color map names
         color_maps = iter(distinguishable_colormaps+other_colormaps)
@@ -907,7 +911,7 @@ class SEDPlotter(Configurable):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+                self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
                 # Plot measurement points on residual plot
                 value = 0.0
@@ -951,18 +955,18 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label, adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label, adjust_extrema=False)
                 counter += 1
 
             else:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False)
                 counter_no_residuals += 1
 
         # Finish the plot
@@ -1027,7 +1031,7 @@ class SEDPlotter(Configurable):
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
             else: axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
-            patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+            patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
         # A data point of this instrument has already been plotted
         else:
@@ -1089,7 +1093,7 @@ class SEDPlotter(Configurable):
             # Plot on the main axis with the specified marker and color
             #print("fluxes", fluxes)
             #print("errors", errors)
-            self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+            self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
     # -----------------------------------------------------------------
 
@@ -1190,7 +1194,7 @@ class SEDPlotter(Configurable):
         self.max_wavelength *= factor_x
 
         # Format residual axes
-        for res_axis in self._residual_axes:
+        for res_axis in self.residual_plots:
 
             # Set linestyle and limit for axis2
             res_axis.axhline(y=0., color='black', ls='-.')
@@ -1201,44 +1205,53 @@ class SEDPlotter(Configurable):
             res_axis.set_ylabel(r"Res. $[\%]$", fontsize='large')
 
         # Set x label of the last residual plot
-        if len(self._residual_axes) > 0: self._residual_axes[len(self._residual_axes)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-        else: self._main_axis.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
+        if len(self.residual_plots) > 0: self.residual_plots[len(self.residual_plots)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
+        else: self.main_plot.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
 
         # Set log x scale
-        self._main_axis.set_xscale('log')
+        self.main_plot.set_xscale('log')
 
         # Format the axis ticks and create a grid
         ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10, fancy=True)
-        self._main_axis.set_xlim(ticks[0], ticks[-1])
-        self._main_axis.set_xticks(ticks)
-        self._main_axis.set_xticklabels(ticks)
+        self.main_plot.set_xlim(ticks[0], ticks[-1])
 
-        self._main_axis.xaxis.set_major_formatter(FormatStrFormatter('%g'))
-        self._main_axis.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+        # Set x ticks
+        #self.main_plot.set_xticks(ticks)
+        #self.main_plot.set_xticklabels(ticks)
+
+        self.main_plot.set_xticks(ticks, fontsize=self.config.plot.ticks_fontsize)
+        self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
+
+        #self.main_plot.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+        #self.main_plot.yaxis.set_major_formatter(FormatStrFormatter('%g'))
 
         #self._figure.subplots_adjust(hspace=0)
         #plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)
 
         # Set ticks fontsize
-        plt.setp(self._main_axis.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
-        plt.setp(self._main_axis.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        #plt.setp(self.main_plot.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        #plt.setp(self.main_plot.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Add axis labels and a legend
-        self._main_axis.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
+        self.main_plot.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
 
         # Set grid
-        self.plt.set_grid(self.config.plot, which="both")
+        self.figure.set_grid(self.config.plot, which="both")
 
         # Set borders
-        self.plt.set_borders(self.config.plot)
+        self.figure.set_borders(self.config.plot)
 
         # Set flux axis limits
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
-        self._main_axis.set_ylim((plot_min, plot_max))
+        self.main_plot.set_ylim((plot_min, plot_max))
 
         # Set wavelength axis limits
         #plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
         #self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
+
+        # Add the plots to the figure
+        if self.config.library == bokeh:
+            self.figure.add_column(self.main_plot, *self.residual_plots)
 
         legends = []
 
@@ -1247,29 +1260,29 @@ class SEDPlotter(Configurable):
 
             # Set legend
             # fancybox=True makes the legend corners rounded
-            legend = self._main_axis.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
+            legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
             legends.append(legend)
 
             # Extra legend
             if extra_legend is not None:
 
-                self._main_axis.add_artist(extra_legend)
+                self.main_plot.add_artist(extra_legend)
                 legends.append(extra_legend)
 
         # No extra legend, no patches for the legend
         else:
 
-            legend = self._main_axis.legend(numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
+            legend = self.main_plot.legend(numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
             legends.append(legend)
 
         # Set legends
         for legend in legends: set_legend(legend, self.config.plot)
 
         # Add title if requested
-        if self.title is not None: self.plt.figure.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Save or show the plot
-        if self.out_path is None: self.plt.show()
+        if self.out_path is None: self.figure.show()
         else:
 
             if types.is_string_type(self.out_path):
@@ -1280,14 +1293,21 @@ class SEDPlotter(Configurable):
             else: path = self.out_path
 
             # Save
-            self.plt.saveto(path)
+            self.figure.saveto(path)
 
         # Close
-        self.plt.close()
+        self.figure.close()
 
 # -----------------------------------------------------------------
 
 def set_legend(legend, config):
+
+    """
+    This function ...
+    :param legend:
+    :param config:
+    :return:
+    """
 
     # if nlegends > 1: percentage = 25.
     # else: percentage = 10.

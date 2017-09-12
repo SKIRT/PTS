@@ -71,6 +71,40 @@ plotting_libraries = [mpl, bokeh]
 class Plot(object):
 
     """
+    This fucntion ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, **kwargs):
+
+        """
+        Thisf unction ...
+        :param kwargs:
+        """
+
+        # Set the plot
+        self._plot = kwargs.pop("plot", None)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initialized(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._plot is not None
+
+# -----------------------------------------------------------------
+
+class Figure(object):
+
+    """
     This function ...
     """
 
@@ -158,7 +192,7 @@ bokeh_page_template = """<!DOCTYPE html>
 class BokehPlot(Plot):
 
     """
-    This class ...
+    This function ...
     """
 
     def __init__(self, **kwargs):
@@ -171,11 +205,483 @@ class BokehPlot(Plot):
         # Call the constructor of the base class
         super(BokehPlot, self).__init__(**kwargs)
 
+        # Initialize the plot
+        if not self.initialized: self.initialize(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def initialize(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
         from bokeh.plotting import figure
 
-        #
-        self.figure = figure()
-        self.figure.circle([1, 2], [3, 4])
+        # The Bokeh plot
+        #self._plot = figure(plot_width=250, plot_height=250, title=None)
+
+        if "share_x" in kwargs and "share_y" in kwargs: self._plot = figure(x_range=kwargs.pop("share_x")._plot.x_range, y_range=kwargs.pop("share_y")._plot.y_range)
+        elif "share_x" in kwargs: self._plot = figure(x_range=kwargs.pop("share_x")._plot.x_range)
+        elif "share_y" in kwargs: self._plot = figure(y_range=kwargs.pop("share_y")._plot.y_range)
+        else: self._plot = figure()
+
+    # -----------------------------------------------------------------
+
+    def plot(self, x, y, color="red", point_kwargs=None, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param color:
+        :param point_kwargs:
+        :param kwargs:
+        :return:
+        """
+
+        if point_kwargs is None: point_kwargs = {}
+
+        # Plot data points
+        self._plot.circle(x, y, color=color, **point_kwargs)
+
+    # -----------------------------------------------------------------
+
+    def errorbar(self, x, y, xerr=None, yerr=None, color='red', point_kwargs=None, error_kwargs=None, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param xerr:
+        :param yerr:
+        :param color:
+        :param point_kwargs:
+        :param error_kwargs:
+        :param kwargs:
+        :return:
+        """
+
+        if point_kwargs is None: point_kwargs = {}
+        if error_kwargs is None: error_kwargs = {}
+
+        # Plot data points
+        self._plot.circle(x, y, color=color, **point_kwargs)
+
+        from ..tools import types
+
+        if types.is_real_type(x): x = [x]
+        if types.is_real_type(y): y = [y]
+        if types.is_real_type(xerr): xerr = [xerr]
+        if types.is_real_type(yerr): yerr = [yerr]
+
+        # X error bars
+        if xerr is not None:
+
+            x_err_x = []
+            x_err_y = []
+
+            for px, py, err in zip(x, y, xerr):
+                x_err_x.append((px - err, px + err))
+                x_err_y.append((py, py))
+
+            self._plot.multi_line(x_err_x, x_err_y, color=color, **error_kwargs)
+
+        # Y error bars
+        if yerr is not None:
+
+            y_err_x = []
+            y_err_y = []
+
+            for px, py, err in zip(x, y, yerr):
+                y_err_x.append((px, px))
+                y_err_y.append((py - err, py + err))
+
+            self._plot.multi_line(y_err_x, y_err_y, color=color, **error_kwargs)
+
+    # -----------------------------------------------------------------
+
+    def legend(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    def add_artist(self, *args, **kwargs):
+
+        """
+        Thisn function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def axhline(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def axvline(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_xlim(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_ylim(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_xticks(self, ticks, fontsize=None):
+
+        """
+        This function ...
+        :param ticks:
+        :param fontsize:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_yticks(self, ticks=None, fontsize=None):
+
+        """
+        This function ...
+        :param ticks:
+        :param fontsize:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_xscale(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_yscale(self, *args, **kwargs):
+
+        """
+        Thisf unction ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_xlabel(self, *args, **kwargs):
+
+        """
+        Thisf ucntion ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_ylabel(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class BokehFigure(Figure):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(BokehFigure, self).__init__(**kwargs)
+
+        # Rows and columns
+        self.rows = []
+        self.columns = []
+
+    # -----------------------------------------------------------------
+
+    def create_column(self, size, share_axis=False, height_ratios=None):
+
+        """
+        This function ...
+        :param size:
+        :param share_axis:
+        :param height_ratios:
+        :return:
+        """
+
+        plots = []
+
+        if share_axis:
+
+            first_plot = BokehPlot()
+            plots.append(first_plot)
+            for i in range(1, size):
+                next_plot = BokehPlot(share_x=first_plot)
+                plots.append(next_plot)
+
+        else:
+
+            for i in range(size):
+                plot = BokehPlot()
+                plots.append(plot)
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def create_row(self, size, share_axis=False, width_ratios=None):
+
+        """
+        This function ...
+        :param size:
+        :param share_axis:
+        :param width_ratios:
+        :return:
+        """
+
+        plots = []
+
+        if share_axis:
+
+            first_plot = BokehPlot()
+            plots.append(first_plot)
+            for i in range(1, size):
+                next_plot = BokehPlot(share_y=first_plot)
+                plots.append(next_plot)
+
+        else:
+
+            for i in range(size):
+                plot = BokehPlot()
+                plots.append(plot)
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.rows)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_rows(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.nrows > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def row_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.rows[0])
+
+    # -----------------------------------------------------------------
+
+    def add_row(self, *figures):
+
+        """
+        Tihs function ...
+        :return:
+        """
+
+        # Check
+        if self.has_columns: raise ValueError("Cannot add rows in column appending mode")
+
+        # Check size
+        if self.has_rows and len(figures) != self.row_size: raise ValueError("Invalid number of values: must be " + str(self.row_size))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolumns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.columns)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_columns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncolumns > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def column_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.columns[0])
+
+    # -----------------------------------------------------------------
+
+    def add_column(self, *figures):
+
+        """
+        This function ...
+        :param figures:
+        :return:
+        """
+
+        # Check
+        if self.has_rows: raise ValueError("Cannot add rows in row appending mode")
+
+        # Check size
+        if self.has_columns and len(figures) != self.column_size: raise ValueError("Invalid number of values: must be " + str(self.column_size))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def columns_to_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        rows = []
+        for row_index in range(self.column_size):
+
+            # Take the row_index'th value of each column
+            row = []
+            for column_index in range(self.ncolumns):
+                row.append(self.columns[column_index][row_index])
+
+            # Add the row
+            rows.append(row)
+
+        # Return the rows
+        return rows
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from bokeh.layouts import gridplot
+
+        if self.has_rows: return gridplot(self.rows)
+        elif self.has_columns: return gridplot(self.columns_to_rows)
+        else: raise ValueError("No rows or columns")
 
     # -----------------------------------------------------------------
 
@@ -190,7 +696,7 @@ class BokehPlot(Plot):
         from bokeh.embed import file_html
 
         # Generate the html
-        html = file_html(self.figure, CDN, self.title)
+        html = file_html(self.grid, CDN, self.title)
 
         # Return the HTML
         return html
@@ -206,7 +712,7 @@ class BokehPlot(Plot):
 
         from bokeh.embed import components
 
-        script, div = components(self.figure)
+        script, div = components(self.grid)
         return script, div
 
     # -----------------------------------------------------------------
@@ -263,6 +769,223 @@ class BokehPlot(Plot):
 # -----------------------------------------------------------------
 
 class MPLPlot(Plot):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MPLPlot, self).__init__(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def plot(self, x, y, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.plot(x, y, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def errorbar(self, x, y, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param kwargs:
+        :return:
+        """
+
+        # Plot
+        self._plot.errorbar(x, y, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def legend(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.legend(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def add_artist(self, *args, **kwargs):
+
+        """
+        Thisn function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.add_artist(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def axhline(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Set linestyle and limit for axis2
+        self._plot.axhline(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def axvline(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.axvline(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_xlim(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.set_xlim(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_ylim(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.set_ylim(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_xticks(self, ticks, fontsize=None):
+
+        """
+        This function ...
+        :param ticks:
+        :param fontsize:
+        :return:
+        """
+
+        if ticks is not None:
+            self._plot.set_xticks(ticks)
+            self._plot.set_xticklabels(ticks)
+
+        # Format
+        self._plot.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+        plt.setp(self._plot.get_xticklabels(), rotation='horizontal', fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
+    def set_yticks(self, ticks=None, fontsize=None):
+
+        """
+        This function ...
+        :param ticks:
+        :param fontsize:
+        :return:
+        """
+
+        if ticks is not None:
+            self._plot.set_yticks(ticks)
+            self._plot.set_yticklabels(ticks)
+
+        # Format
+        self._plot.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+        plt.setp(self._plot.get_yticklabels(), rotation='horizontal', fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
+    def set_xscale(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Set axis label
+        self._plot.set_xscale(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_yscale(self, *args, **kwargs):
+
+        """
+        Thisf unction ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.set_yscale(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_xlabel(self, *args, **kwargs):
+
+        """
+        Thisf ucntion ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.set_xlabel(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_ylabel(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self._plot.set_ylabel(*args, **kwargs)
+
+# -----------------------------------------------------------------
+
+class MPLFigure(Figure):
         
     """
     This class ...
@@ -277,7 +1000,7 @@ class MPLPlot(Plot):
         """
 
         # Call the constructor of the base class
-        super(MPLPlot, self).__init__(**kwargs)
+        super(MPLFigure, self).__init__(**kwargs)
 
         # Setup the figure
         self.figure = plt.figure(figsize=size)
@@ -288,6 +1011,39 @@ class MPLPlot(Plot):
         self.add_borders = False
         self.transparent = False
         self.format = None
+
+    # -----------------------------------------------------------------
+
+    def create_column(self, size, share_axis=False, height_ratios=None):
+
+        """
+        This function ...
+        :param size:
+        :param share_axis:
+        :param height_ratios:
+        :return:
+        """
+
+        # Make the grid
+        gs = gridspec.GridSpec(size, 1, height_ratios=height_ratios)
+
+        # Create the (sub)plots
+        plots = []
+        if share_axis:
+
+            first_plot = plt.subplot(gs[0])
+            plots.append(MPLPlot(plot=first_plot))
+            for index in range(1, size):
+                next_plot = plt.subplot(gs[index], sharex=first_plot)
+                plots.append(MPLPlot(plot=next_plot))
+        else:
+
+            for index in range(size):
+                plot = plt.subplot(gs[index])
+                plots.append(MPLPlot(plot=plot))
+
+        # Return the plots
+        return plots
 
     # -----------------------------------------------------------------
 
