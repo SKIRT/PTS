@@ -101,7 +101,20 @@ table_matches = introspection.find_matches_tables(script_name, tables)
 if len(matches) + len(table_matches) == 0: no_match(script_name, scripts, tables)
 
 # If there is a unique match in an existing script, return it
-elif len(matches) == 1 and len(table_matches) == 0: run_script(matches, args)
+elif len(matches) == 1 and len(table_matches) == 0: #run_script(matches, args) # TEMPORARILY DOESN'T WORK BECAUSE NOT ALL DO SCRIPTS ARE FUTURE PROOF
+
+    if args.remote is not None: raise ValueError("This do command cannot be executed remotely")
+
+    match = matches[0]
+
+    # Execute the matching script, after adjusting the command line arguments so that it appears that the script was executed directly
+    target = fs.join(introspection.pts_do_dir, match[0], match[1])
+    sys.argv[0] = target
+    del sys.argv[1]
+    print("Executing: " + match[0] + "/" + match[1] + " " + " ".join(sys.argv[1:]))
+
+    # Execute the script
+    exec open(target)
 
 # If there is an unique match in a table
 elif len(table_matches) == 1 and len(matches) == 0: run_configurable(table_matches, args, tables)

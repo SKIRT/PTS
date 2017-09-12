@@ -121,7 +121,7 @@ def run_script(matches, args):
     del sys.argv[1]
     print("Executing: " + match[0] + "/" + match[1] + " " + " ".join(sys.argv[1:]))
 
-    command_name = match[1]
+    #command_name = match[1]
 
     # Set target
     #def start(): exec open(target)
