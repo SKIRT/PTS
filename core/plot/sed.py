@@ -1276,10 +1276,12 @@ class SEDPlotter(Configurable):
             legends.append(legend)
 
         # Set legends
-        for legend in legends: set_legend(legend, self.config.plot)
+        for legend in legends:
+            if legend is None: continue # Bokeh
+            set_legend(legend, self.config.plot)
 
         # Add title if requested
-        if self.title is not None: self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Save or show the plot
         if self.out_path is None: self.figure.show()

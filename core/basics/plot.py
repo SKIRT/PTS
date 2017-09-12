@@ -578,10 +578,11 @@ class BokehFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def add_row(self, *figures):
+    def add_row(self, *plots):
 
         """
         Tihs function ...
+        :param plots:
         :return:
         """
 
@@ -589,7 +590,11 @@ class BokehFigure(Figure):
         if self.has_columns: raise ValueError("Cannot add rows in column appending mode")
 
         # Check size
-        if self.has_rows and len(figures) != self.row_size: raise ValueError("Invalid number of values: must be " + str(self.row_size))
+        if self.has_rows and len(plots) != self.row_size: raise ValueError("Invalid number of values: must be " + str(self.row_size))
+
+        # Add row
+        bokeh_plots = [plot._plot for plot in plots]
+        self.rows.append(bokeh_plots)
 
     # -----------------------------------------------------------------
 
@@ -629,11 +634,11 @@ class BokehFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def add_column(self, *figures):
+    def add_column(self, *plots):
 
         """
         This function ...
-        :param figures:
+        :param plots:
         :return:
         """
 
@@ -641,7 +646,11 @@ class BokehFigure(Figure):
         if self.has_rows: raise ValueError("Cannot add rows in row appending mode")
 
         # Check size
-        if self.has_columns and len(figures) != self.column_size: raise ValueError("Invalid number of values: must be " + str(self.column_size))
+        if self.has_columns and len(plots) != self.column_size: raise ValueError("Invalid number of values: must be " + str(self.column_size))
+
+        # Add
+        bokeh_plots = [plot._plot for plot in plots]
+        self.columns.append(bokeh_plots)
 
     # -----------------------------------------------------------------
 
@@ -682,6 +691,43 @@ class BokehFigure(Figure):
         if self.has_rows: return gridplot(self.rows)
         elif self.has_columns: return gridplot(self.columns_to_rows)
         else: raise ValueError("No rows or columns")
+
+    # -----------------------------------------------------------------
+
+    def set_grid(self, config, which="major"):
+
+        """
+        Thisf unction ...
+        :param config:
+        :param which:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_borders(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_title(self, title):
+
+        """
+        This function ...
+        :param title:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -761,6 +807,17 @@ class BokehFigure(Figure):
         This function ...
         :param path:
         :param update_path:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def close(self):
+
+        """
+        This function ...
         :return:
         """
 
@@ -1203,6 +1260,19 @@ class MPLFigure(Figure):
             # Set transparent background
             for item in [self.figure, self.ax]:
                 item.patch.set_visible(False)
+
+    # -----------------------------------------------------------------
+
+    def set_title(self, title, width=60):
+
+        """
+        This function ...
+        :param title:
+        :param width:
+        :return:
+        """
+
+        self.figure.suptitle("\n".join(wrap(title, width)))
 
     # -----------------------------------------------------------------
 
