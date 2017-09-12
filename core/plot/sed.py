@@ -142,6 +142,18 @@ class SEDPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def has_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmodels > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def nobservations(self):
 
         """
@@ -150,6 +162,18 @@ class SEDPlotter(Configurable):
         """
 
         return len(self.observations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nobservations > 0
 
     # -----------------------------------------------------------------
 
@@ -235,9 +259,6 @@ class SEDPlotter(Configurable):
         elif self.config.library == bokeh: self.plt = BokehPlot()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
-        self.plt.show()
-        exit()
-
     # -----------------------------------------------------------------
 
     def load_seds(self):
@@ -259,10 +280,8 @@ class SEDPlotter(Configurable):
             # Load the SED
             sed = ObservedSED.from_file(path)
 
-            label = name
-
             # Add the definition to the queue
-            self.add_sed(sed, label)
+            self.add_sed(sed, label=name)
 
     # -----------------------------------------------------------------
 
@@ -304,7 +323,10 @@ class SEDPlotter(Configurable):
         # Inform the user
         log.info("Making the SED plot ...")
 
-        if self.nmodels == 0: self.plot_no_models()
+        # No models
+        if not self.has_models: self.plot_no_models()
+
+        # With models
         else: self.plot_with_models()
 
     # -----------------------------------------------------------------

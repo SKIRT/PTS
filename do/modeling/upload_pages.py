@@ -43,7 +43,7 @@ environment = GalaxyModelingEnvironment(modeling_path)
 
 # Determine the filename and the url
 filename = environment.galaxy_name + ".html"
-url = "http://users.ugent.be/~sjversto/" + filename
+url = "https://users.ugent.be/~sjversto/" + filename
 
 # -----------------------------------------------------------------
 

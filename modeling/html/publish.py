@@ -29,7 +29,7 @@ modeling_name = "modeling"
 
 # -----------------------------------------------------------------
 
-base_url = "http://users.ugent.be/~sjversto"
+base_url = "https://users.ugent.be/~sjversto"
 
 # -----------------------------------------------------------------
 

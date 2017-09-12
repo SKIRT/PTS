@@ -26,13 +26,13 @@ from ...core.tools import browser
 # -----------------------------------------------------------------
 
 # Stylesheets
-stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
-slider_stylesheet_url = "http://users.ugent.be/~sjversto/slider.css"
+stylesheet_url = "https://users.ugent.be/~sjversto/stylesheet.css"
+slider_stylesheet_url = "https://users.ugent.be/~sjversto/slider.css"
 
 # Scripts
-sortable_url = "http://users.ugent.be/~sjversto/sorttable.js"
-preview_url = "http://users.ugent.be/~sjversto/preview.js"
-slider_url = "http://users.ugent.be/~sjversto/slider.js"
+sortable_url = "https://users.ugent.be/~sjversto/sorttable.js"
+preview_url = "https://users.ugent.be/~sjversto/preview.js"
+slider_url = "https://users.ugent.be/~sjversto/slider.js"
 
 # -----------------------------------------------------------------
 
@@ -48,6 +48,22 @@ page_style = "ugentstyle"
 
 top_title_size = 24
 title_size = 20
+
+# -----------------------------------------------------------------
+
+data_page_filename = "data.html"
+photometry_page_filename = "photometry.html"
+components_page_filename = "components.html"
+preparation_page_filename = "preparation.html"
+model_page_filename = "model.html"
+maps_page_filename = "maps.html"
+fitting_page_filename = "fitting.html"
+datacubes_page_filename = "datacubes.html"
+fluxes_page_filename = "fluxes.html"
+images_page_filename = "images.html"
+heating_page_filename = "heating.html"
+colours_page_filename = "colours.html"
+attenuation_page_filename = "attenuation.html"
 
 # -----------------------------------------------------------------
 
@@ -182,7 +198,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "data.html")
+        return fs.join(self.environment.html_path, data_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -211,6 +227,42 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def photometry_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, photometry_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_photometry_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.photometry_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.photometry_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def components_page_path(self):
 
         """
@@ -218,7 +270,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "components.html")
+        return fs.join(self.environment.html_path, components_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -254,7 +306,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "preparation.html")
+        return fs.join(self.environment.html_path, preparation_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -290,7 +342,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "model.html")
+        return fs.join(self.environment.html_path, model_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -326,7 +378,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "maps.html")
+        return fs.join(self.environment.html_path, maps_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -362,7 +414,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "fitting.html")
+        return fs.join(self.environment.html_path, fitting_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -391,6 +443,114 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def datacubes_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, datacubes_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_datacubes_page(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.datacubes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def datacubes_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.datacubes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, fluxes_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_page_name(self):
+
+        """
+        This fnc
+        :return:
+        """
+
+        return fs.name(self.fluxes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, images_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.images_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_page_path(self):
 
         """
@@ -398,7 +558,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "heating.html")
+        return fs.join(self.environment.html_path, heating_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -434,7 +594,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "colours.html")
+        return fs.join(self.environment.html_path, colours_page_filename)
 
     # -----------------------------------------------------------------
 
@@ -470,7 +630,7 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.join(self.environment.html_path, "attenuation.html")
+        return fs.join(self.environment.html_path, attenuation_page_filename)
 
     # -----------------------------------------------------------------
 

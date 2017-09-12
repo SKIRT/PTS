@@ -64,7 +64,7 @@ config = parse_arguments("view", definition)
 
 # -----------------------------------------------------------------
 
-stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
+stylesheet_url = "https://users.ugent.be/~sjversto/stylesheet.css"
 background_color = "white"
 page_style = "ugentstyle"
 
