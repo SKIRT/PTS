@@ -30,7 +30,7 @@ from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
 from ...core.tools.stringify import tostr
 from ..basics.instruments import FrameInstrument
 from ..basics.models import DeprojectionModel3D
-from ..component.galaxy import get_physical_center
+from ..basics.projection import get_physical_center
 
 # -----------------------------------------------------------------
 

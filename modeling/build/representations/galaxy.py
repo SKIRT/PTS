@@ -28,7 +28,7 @@ from ...component.galaxy import GalaxyModelingComponent
 from ....core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from .base import RepresentationBuilderBase
 from ....magic.basics.vector import PixelShape
-from ...component.galaxy import get_npixels, get_field, get_center, get_physical_center
+from ...basics.projection import get_center, get_physical_center
 from ....magic.basics.stretch import PhysicalExtent
 
 # -----------------------------------------------------------------
@@ -413,7 +413,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     reference_deprojection = prompt_deprojection(deprojections)
 
     # Create the 'earth' projection system
-    earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, galaxy_distance, azimuth)
+    earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
     faceon_projection = create_faceon_projection(reference_deprojection, scale_heights)
@@ -438,6 +438,20 @@ def get_physical_pixelscale_from_map(the_map, distance, downsample_factor=1.):
 
     pixelscale = the_map.average_pixelscale * downsample_factor
     return (abs(pixelscale) * distance).to("pc", equivalencies=dimensionless_angles())
+
+# -----------------------------------------------------------------
+
+def create_projection(deprojection, distance, azimuth):
+
+    """
+    This function ...
+    :param deprojection:
+    :param distance:
+    :param azimuth
+    :return:
+    """
+
+    return GalaxyProjection.from_deprojection(deprojection, distance, azimuth)
 
 # -----------------------------------------------------------------
 

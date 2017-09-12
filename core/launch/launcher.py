@@ -240,8 +240,6 @@ class SKIRTLauncher(Configurable):
         # Set
         self.analysis_options = options
 
-        print(self.analysis_options)
-
         # Check the options
         self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
                                     retrieve_types=self.config.retrieve_types)

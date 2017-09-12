@@ -37,8 +37,8 @@ from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
 from ...magic.core.remote import get_filter_name
 from ...magic.tools import headers
-from pts.core.tools.utils import lazyproperty
-from ...magic.basics.stretch import PhysicalExtent
+from ...core.tools.utils import lazyproperty
+from ..basics.projection import get_npixels, get_field, get_center
 
 # -----------------------------------------------------------------
 
@@ -2099,99 +2099,5 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
 
     # Return the paths
     return paths, error_paths
-
-# -----------------------------------------------------------------
-
-def get_npixels(npixels):
-
-    """
-    This function ...
-    :param npixels:
-    :return:
-    """
-
-    from ...magic.basics.vector import PixelShape
-    from ...magic.basics.vector import IntegerExtent
-
-    # Set npixels
-    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
-    elif isinstance(npixels, PixelShape): pass
-    elif isinstance(npixels, IntegerExtent): npixels = PixelShape.from_xy(npixels.x, npixels.y)
-    else: raise ValueError("Don't know what to do with npixels of type " + str(type(npixels)))
-
-    return npixels
-
-# -----------------------------------------------------------------
-
-def get_field(pixelscale, npixels, distance):
-
-    """
-    This function ...
-    :param pixelscale:
-    :param npixels:
-    :param distance:
-    :return:
-    """
-
-    from ...magic.basics.pixelscale import Pixelscale
-    from astropy.units import Quantity
-
-    # Get pixelscale instance
-    if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
-    elif isinstance(pixelscale, Pixelscale): pass
-    else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
-
-    # Determine physical pixelscale
-    phys_pixelscale = pixelscale.to_physical(distance)
-
-    # Determine field of view
-    field = PhysicalExtent(phys_pixelscale.x * npixels.x, phys_pixelscale.y * npixels.y)
-
-    # Reutnr the field of view
-    return field
-
-# -----------------------------------------------------------------
-
-def get_center(npixels):
-
-    """
-    This function ...
-    :param npixels:
-    :return:
-    """
-
-    from ...magic.basics.vector import PixelShape
-    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
-    from ...magic.basics.coordinate import PixelCoordinate
-    center = PixelCoordinate(x=0.5*npixels.x, y=0.5*npixels.y)
-    return center
-
-# -----------------------------------------------------------------
-
-def get_physical_center(field, npixels, center):
-
-    """
-    Thisf unction ...
-    :param field:
-    :param npixels:
-    :param center: pixel center
-    :return:
-    """
-
-    from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
-
-    # Physical scales per pixel
-    x_scale = field.x / npixels.x
-    y_scale = field.y / npixels.y
-
-    # Get center in physical coordinates
-    center = PixelCoordinate(0.5 * npixels.x - center.x - 0.5,
-                             0.5 * npixels.y - center.y - 0.5)
-
-    center_x = center.x * x_scale
-    center_y = center.y * y_scale
-
-    # Return the physical coordinate
-    return PhysicalCoordinate(center_x, center_y)
 
 # -----------------------------------------------------------------
