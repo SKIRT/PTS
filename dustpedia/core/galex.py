@@ -1966,7 +1966,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
         errors_weighted *= pixelsr
 
         # Create mask where the weights are nans
-        mask = weights.nans()
+        mask = weights.nans
 
         # Set zero
         frame_weighted[mask] = 0.0
