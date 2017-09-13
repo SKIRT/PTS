@@ -450,10 +450,11 @@ class SEDPlotter(Configurable):
             errors = observation.errors(unit=self.config.unit, add_unit=False)
 
             # Create color range
-            if number_of_observations <= 3:
-                colormap = plt.get_cmap(next(color_maps))
-                colors = colormap(np.linspace(0, 1, len(wavelengths)))
-            else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
+            # if number_of_observations <= 3:
+            #     colormap = plt.get_cmap(next(color_maps))
+            #     colors = colormap(np.linspace(0, 1, len(wavelengths)))
+            # else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
+            colors = [color_hex[next(different_colors)]] * len(wavelengths)
 
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -473,6 +474,7 @@ class SEDPlotter(Configurable):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
+                # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch = False
                 patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, colors[k], return_patch=True)
 
                 if patch is not None:
@@ -662,6 +664,7 @@ class SEDPlotter(Configurable):
             marker = markers[unique_labels.index(labels[k])]
 
             # Plot on the main axis with the specified marker and color
+            # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
             # Plot point at y=0.0 with errorbar on axis 2
@@ -894,11 +897,12 @@ class SEDPlotter(Configurable):
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
 
             # Create color range
-            if number_of_observations <= 3:
-                # Determine color map class
-                colormap = plt.get_cmap(next(color_maps))
-                color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
-            else: color_range = iter([color_hex[next(colors)]] * len(wavelengths))
+            # if number_of_observations <= 3:
+            #     # Determine color map class
+            #     colormap = plt.get_cmap(next(color_maps))
+            #     color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
+            # else: color_range = iter([color_hex[next(colors)]] * len(wavelengths))
+            color_range = iter([color_hex[next(colors)]] * len(wavelengths))
 
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
@@ -915,6 +919,7 @@ class SEDPlotter(Configurable):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
+                # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
                 self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
                 # Plot measurement points on residual plot
@@ -1097,6 +1102,7 @@ class SEDPlotter(Configurable):
             # Plot on the main axis with the specified marker and color
             #print("fluxes", fluxes)
             #print("errors", errors)
+            # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
     # -----------------------------------------------------------------

@@ -24,6 +24,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from .representation import Representation
 from ...core.basics.log import log
 from .construct import add_stellar_component, add_dust_component
+from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
@@ -172,6 +173,18 @@ class ModelSuite(object):
         """
 
         return len(self.model_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmodels > 0
 
     # -----------------------------------------------------------------
 
@@ -371,6 +384,18 @@ class ModelSuite(object):
         """
 
         return len(self.representation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_representations(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return self.nrepresentations > 0
 
     # -----------------------------------------------------------------
 
@@ -782,6 +807,10 @@ class ModelSuite(object):
 
             # If map filename is defined, set path in dictionary
             if map_filename is not None: input_map_paths[map_filename] = component.map_path
+
+# -----------------------------------------------------------------
+
+StaticModelSuite = create_lazified_class(ModelSuite, "StaticModelSuite")
 
 # -----------------------------------------------------------------
 

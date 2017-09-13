@@ -340,24 +340,28 @@ class BokehPlot(Plot):
 
             x_err_x = []
             x_err_y = []
+            x_err_color = []
 
             for px, py, err in zip(x, y, xerr):
                 x_err_x.append((px - err, px + err))
                 x_err_y.append((py, py))
+                x_err_color.append((color, color))
 
-            self._plot.multi_line(x_err_x, x_err_y, color=color, **error_kwargs)
+            self._plot.multi_line(xs=x_err_x, ys=x_err_y, color=x_err_color, **error_kwargs)
 
         # Y error bars
         if yerr is not None:
 
             y_err_x = []
             y_err_y = []
+            y_err_color = []
 
             for px, py, err in zip(x, y, yerr):
                 y_err_x.append((px, px))
                 y_err_y.append((py - err, py + err))
+                y_err_color.append((color, color))
 
-            self._plot.multi_line(y_err_x, y_err_y, color=color, **error_kwargs)
+            self._plot.multi_line(xs=y_err_x, ys=y_err_y, color=y_err_color, **error_kwargs)
 
     # -----------------------------------------------------------------
 

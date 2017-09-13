@@ -586,6 +586,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def static_model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_model_suite
+
+    # -----------------------------------------------------------------
+
+    @property
     def fitting_context(self):
 
         """

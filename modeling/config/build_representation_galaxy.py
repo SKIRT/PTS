@@ -7,14 +7,13 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.build.suite import ModelSuite
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.core.environment import load_modeling_environment_cwd
 
 # -----------------------------------------------------------------
 
 # Determine the modeling path
-modeling_path = verify_modeling_cwd()
-suite = ModelSuite.from_modeling_path(modeling_path)
+environment = load_modeling_environment_cwd()
+suite = environment.static_model_suite
 
 # -----------------------------------------------------------------
 
@@ -27,15 +26,13 @@ default_dust_grid_type = "bintree"
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Name of the representation
-representation_names = suite.representation_names
-if len(representation_names) == 0: definition.add_optional("name", "string", "name for the representation", default="highres")
-else: definition.add_required("name", "string", "name for the representation")
+if suite.has_representations: definition.add_required("name", "string", "name for the representation", forbidden=suite.representation_names)
+else: definition.add_optional("name", "string", "name for the representation", default="highres")
 
 # Name of the model for which to create the representation
-model_names = suite.model_names
-if len(model_names) == 0: raise RuntimeError("No models found: first run build_model to create a new model")
-elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
-else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
+if suite.no_models: raise RuntimeError("No models found: first run build_model to create a new model")
+elif suite.has_single_model: definition.add_fixed("model_name", "name of the model", suite.single_model_name)
+else: definition.add_required("model_name", "string", "name of the model", choices=suite.model_names)
 
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")

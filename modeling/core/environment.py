@@ -92,6 +92,21 @@ def load_modeling_environment(path):
 
 # -----------------------------------------------------------------
 
+def load_modeling_environment_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Get the modeling path (cwd)
+    modeling_path = verify_modeling_cwd()
+
+    # Load the modeling environment
+    return load_modeling_environment(modeling_path)
+
+# -----------------------------------------------------------------
+
 def is_modeling_path(path):
 
     """
@@ -451,6 +466,19 @@ class ModelingEnvironment(object):
 
         from ..build.suite import ModelSuite
         return ModelSuite.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def static_model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..build.suite import StaticModelSuite
+        return StaticModelSuite.from_modeling_path(self.path)
 
     # -----------------------------------------------------------------
 

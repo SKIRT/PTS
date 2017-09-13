@@ -35,17 +35,24 @@ class ModelDefinition(object):
     This class...
     """
 
-    def __init__(self, name, path):
+    def __init__(self, name, path, stellar_paths, dust_paths):
 
         """
         This function ..
         :param name:
         :param path:
+        :param stellar_paths: stellar component paths (dictionary)
+        :param dust_paths: dust component paths (dictionary)
+        :param references:
         """
 
         # Set model name and directory path
         self.name = name
         self.path = path
+
+        # Set the component paths
+        self.stellar_paths = stellar_paths
+        self.dust_paths = dust_paths
 
         # Subdirectories
         self.stellar_path = fs.create_directory_in(self.path, "stellar")
@@ -57,7 +64,7 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
-    def stellar_component_names(self):
+    def own_stellar_component_names(self):
 
         """
         This function ...
@@ -69,7 +76,7 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
-    def dust_component_names(self):
+    def own_dust_component_names(self):
 
         """
         This function ...
@@ -77,6 +84,54 @@ class ModelDefinition(object):
         """
 
         return fs.directories_in_path(self.dust_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.stellar_paths[name]
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_paths[name]
 
     # -----------------------------------------------------------------
 
@@ -90,7 +145,8 @@ class ModelDefinition(object):
         """
 
         # Determine component_path
-        component_path = fs.join(self.stellar_path, name)
+        #component_path = fs.join(self.stellar_path, name)
+        component_path = self.get_stellar_component_path(name)
 
         from .suite import load_component
         return load_component(component_path, add_map=add_map)
@@ -107,7 +163,8 @@ class ModelDefinition(object):
         """
 
         # Determine component path
-        component_path = fs.join(self.dust_path, name)
+        #component_path = fs.join(self.dust_path, name)
+        component_path = self.get_dust_component_path(name)
 
         from .suite import load_component
         return load_component(component_path, add_map=add_map)
@@ -115,7 +172,7 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
-    def stellar_map_paths(self):
+    def own_stellar_map_paths(self):
 
         """
         This function ...
@@ -127,7 +184,7 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
-    def dust_map_paths(self):
+    def own_dust_map_paths(self):
 
         """
         This function ...
@@ -139,6 +196,50 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def stellar_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = []
+        for name in self.stellar_paths:
+            component_path = self.stellar_paths[name]
+            paths.extend(fs.files_in_path(component_path, recursive=True, exact_name="map", extension="fits"))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_paths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        paths = []
+        for name in self.dust_paths:
+            component_path = self.dust_paths[name]
+            paths.extend(fs.files_in_path(component_path, recursive=True, exact_name="map", extension="fits"))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def paths_in_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.input_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def input_paths(self):
 
         """
@@ -146,7 +247,7 @@ class ModelDefinition(object):
         :return:
         """
 
-        return fs.files_in_path(self.input_path) + self.stellar_map_paths + self.dust_map_paths
+        return self.paths_in_input + self.stellar_map_paths + self.dust_map_paths
 
     # -----------------------------------------------------------------
 

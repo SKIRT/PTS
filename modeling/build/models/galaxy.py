@@ -18,6 +18,7 @@ from .stars import StarsBuilder
 from ....core.basics.log import log
 from ...component.galaxy import GalaxyModelingComponent
 from .base import ModelBuilderBase
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -43,6 +44,13 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # The scaleheight of the old stars
         self.old_scaleheight = None
 
+        # Model component paths
+        self.bulge_path = None
+        self.old_path = None
+        self.young_path = None
+        self.ionizing_path = None
+        self.dust_path = None
+
         # Map paths
         self.old_stars_map_path = None
         self.young_stars_map_path = None
@@ -61,6 +69,12 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # Adjust stellar components from previous model
+        if self.from_previous: self.adjust_stars()
+
+        # Adjust dust components from previous model
+        if self.from_previous: self.adjust_dust()
 
         # 2. Build stars
         self.build_stars()
@@ -88,6 +102,118 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def from_previous(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.from_previous is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_previous: return None
+        else: return self.suite.get_model_definition(self.config.from_previous)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.previous.name
+
+    # -----------------------------------------------------------------
+
+    def adjust_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting stellar components from previous model [" + self.previous_name + "] ...")
+
+        # Loop over the stellar components
+
+
+    # -----------------------------------------------------------------
+
+    def adjust_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting dust components from previous model [" + self.previous_name + "] ...")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_path is not None
+
+    # -----------------------------------------------------------------
+
     def build_stars(self):
 
         """
@@ -104,6 +230,13 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["output"] = self.model_stellar_path
         config["default_sfr"] = self.config.sfr
 
+        # Set options to build different components
+        config["bulge"] = not self.has_bulge
+        config["old"] = not self.has_old
+        config["young"] = not self.has_young
+        config["ionizing"] = not self.has_ionizing
+        config["additional"] = self.config.additional
+
         # Create the builder
         builder = StarsBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
 
@@ -117,6 +250,18 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         self.old_stars_map_path = builder.old_stars_map_path
         self.young_stars_map_path = builder.young_stars_map_path
         self.ionizing_stars_map_path = builder.ionizing_stars_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_path is not None
 
     # -----------------------------------------------------------------
 
@@ -135,6 +280,10 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["name"] = self.model_name
         config["output"] = self.model_dust_path
         config["default_dust_mass"] = self.config.dust_mass
+
+        # Set options to build different components
+        config["disk"] = not self.has_dust
+        config["additional"] = self.config.additional
 
         # Create the builder
         builder = DustBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
