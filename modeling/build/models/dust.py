@@ -29,14 +29,18 @@ basic_dust_map_names = [basic_dust_map_name]
 
 # -----------------------------------------------------------------
 
+disk_component_name = "disk"
+
+# -----------------------------------------------------------------
+
 # Define titles for the fixed components
 titles = dict()
-titles["disk"] = "Dust disk"
+titles[disk_component_name] = "Dust disk"
 
 # -----------------------------------------------------------------
 
 component_name_for_map_name = dict()
-component_name_for_map_name["dust_disk"] = "disk"
+component_name_for_map_name["dust_disk"] = disk_component_name
 
 # -----------------------------------------------------------------
 
@@ -202,10 +206,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
             config = setter.run(definition, prompt_optional=True)
 
         # Set the title
-        config.title = titles["disk"]
+        config.title = titles[disk_component_name]
 
         # Set the parameters
-        self.parameters["disk"] = config
+        self.parameters[disk_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -244,7 +248,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         path = prompt_filepath("filepath", "dust disk map path")
 
         # Load the map
-        self.maps["disk"] = Frame.from_file(path)
+        self.maps[disk_component_name] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -268,7 +272,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         filepath = self.static_maps_selection.dust_map_paths[name]
 
         # Set the map
-        self.maps["disk"] = Frame.from_file(filepath)
+        self.maps[disk_component_name] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -283,10 +287,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["disk"], model_map_filename, self.parameters["disk"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[disk_component_name], model_map_filename, self.parameters[disk_component_name].scale_height)
 
         # Set the deprojection model
-        self.deprojections["disk"] = deprojection
+        self.deprojections[disk_component_name] = deprojection
 
     # -----------------------------------------------------------------
 

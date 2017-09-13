@@ -36,24 +36,30 @@ from ....core.tools.utils import lazyproperty
 basic_old_map_name = "old_disk"
 basic_young_map_name = "young"
 basic_ionizing_map_name = "ionizing"
-
 basic_stellar_map_names = [basic_old_map_name, basic_young_map_name, basic_ionizing_map_name]
+
+# -----------------------------------------------------------------
+
+bulge_component_name = "bulge"
+old_component_name = "old"
+young_component_name = "young"
+ionizing_component_name = "ionizing"
 
 # -----------------------------------------------------------------
 
 # Define titles for the different fixed components
 titles = dict()
-titles["bulge"] = "Evolved stellar bulge"
-titles["old"] = "Evolved stellar disk"
-titles["young"] = "Young stars"
-titles["ionizing"] = "Ionizing stars"
+titles[bulge_component_name] = "Evolved stellar bulge"
+titles[old_component_name] = "Evolved stellar disk"
+titles[young_component_name] = "Young stars"
+titles[ionizing_component_name] = "Ionizing stars"
 
 # -----------------------------------------------------------------
 
 component_name_for_map_name = dict()
-component_name_for_map_name["old_disk"] = "old"
-component_name_for_map_name["young"] = "young"
-component_name_for_map_name["ionizing"] = "ionizing"
+component_name_for_map_name["old_disk"] = old_component_name
+component_name_for_map_name["young"] = young_component_name
+component_name_for_map_name["ionizing"] = ionizing_component_name
 
 # -----------------------------------------------------------------
 
@@ -232,14 +238,14 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Use the default values
         if self.config.use_defaults:
 
-            setter = PassiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
+            setter = PassiveConfigurationSetter(bulge_component_name, add_logging=False, add_cwd=False)
             config = setter.run(definition)
 
         # Prompt for the values
         else:
 
             # Prompt for the values
-            setter = InteractiveConfigurationSetter("bulge", add_logging=False, add_cwd=False)
+            setter = InteractiveConfigurationSetter(bulge_component_name, add_logging=False, add_cwd=False)
             config = setter.run(definition, prompt_optional=True)
 
         # Convert the flux density into a spectral luminosity
@@ -252,10 +258,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         config.luminosity = luminosity
 
         # Set the title
-        config.title = titles["bulge"]
+        config.title = titles[bulge_component_name]
 
         # Set the bulge parameters
-        self.parameters["bulge"] = config
+        self.parameters[bulge_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -270,7 +276,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Loading the bulge model ...")
 
         # Load the bulge model
-        self.models["bulge"] = self.bulge_model
+        self.models[bulge_component_name] = self.bulge_model
 
     # -----------------------------------------------------------------
 
@@ -373,10 +379,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         config.luminosity = luminosity
 
         # Set title
-        config.title = titles["old"]
+        config.title = titles[old_component_name]
 
         # Set the parameters
-        self.parameters["old"] = config
+        self.parameters[old_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -415,7 +421,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         path = prompt_filepath("filepath", "custom old stellar disk map path")
 
         # Load the map
-        self.maps["old"] = Frame.from_file(path)
+        self.maps[old_component_name] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -439,7 +445,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         filepath = self.static_maps_selection.old_map_paths[name]
 
         # Set the map
-        self.maps["old"] = Frame.from_file(filepath)
+        self.maps[old_component_name] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -454,10 +460,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the old stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["old"], model_map_filename, self.parameters["old"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[old_component_name], model_map_filename, self.parameters[old_component_name].scale_height)
 
         # Set the deprojection model
-        self.deprojections["old"] = deprojection
+        self.deprojections[old_component_name] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -543,10 +549,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         config.luminosity = luminosity
 
         # Set the title
-        config.title = titles["young"]
+        config.title = titles[young_component_name]
 
         # Set the parameters
-        self.parameters["young"] = config
+        self.parameters[young_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -585,7 +591,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         path = prompt_filepath("filepath", "custom young stellar disk map path")
 
         # Load the map
-        self.maps["young"] = Frame.from_file(path)
+        self.maps[young_component_name] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -609,7 +615,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         filepath = self.static_maps_selection.young_map_paths[name]
 
         # Set the map
-        self.maps["young"] = Frame.from_file(filepath)
+        self.maps[young_component_name] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -624,10 +630,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the young stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["young"], model_map_filename, self.parameters["young"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[young_component_name], model_map_filename, self.parameters[young_component_name].scale_height)
 
         # Set the deprojection model
-        self.deprojections["young"] = deprojection
+        self.deprojections[young_component_name] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -722,10 +728,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         config.luminosity = luminosity
 
         # Set title
-        config.title = titles["ionizing"]
+        config.title = titles[ionizing_component_name]
 
         # Set the parameters
-        self.parameters["ionizing"] = config
+        self.parameters[ionizing_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -764,7 +770,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         path = prompt_filepath("filepath", "custom ionizing stellar disk map path")
 
         # Load the map
-        self.maps["ionizing"] = Frame.from_file(path)
+        self.maps[ionizing_component_name] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -788,7 +794,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         filepath = self.static_maps_selection.ionizing_map_paths[name]
 
         # Set the map
-        self.maps["ionizing"] = Frame.from_file(filepath)
+        self.maps[ionizing_component_name] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -803,10 +809,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the ionizing stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["ionizing"], model_map_filename, self.parameters["ionizing"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[ionizing_component_name], model_map_filename, self.parameters[ionizing_component_name].scale_height)
 
         # Set the deprojection model
-        self.deprojections["ionizing"] = deprojection
+        self.deprojections[ionizing_component_name] = deprojection
 
     # -----------------------------------------------------------------
 

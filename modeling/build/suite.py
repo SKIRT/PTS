@@ -28,9 +28,13 @@ from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
+model_map_basename = "map"
+
+# -----------------------------------------------------------------
+
 parameters_filename = "parameters.cfg"
 deprojection_filename = "deprojection.mod"
-model_map_filename = "map.fits"
+model_map_filename = model_map_basename + ".fits"
 model_filename = "model.mod"
 properties_filename = "properties.dat"
 
@@ -133,9 +137,21 @@ class ModelSuite(object):
 
         from .definition import ModelDefinition
 
+        # Determine model path
         path = self.get_model_path(model_name)
         if not fs.is_directory(path): raise ValueError("Model does not exist")
-        return ModelDefinition(model_name, path)
+
+        # Load the table
+        table = self.models_table
+
+        # Determine the stellar component paths
+        stellar_paths = table.stellar_component_paths_for_model(model_name)
+
+        # Determine the dust component paths
+        dust_paths = table.dust_component_paths_for_model(model_name)
+
+        # Create the model definition and return
+        return ModelDefinition(model_name, path, stellar_paths=stellar_paths, dust_paths=dust_paths)
 
     # -----------------------------------------------------------------
 

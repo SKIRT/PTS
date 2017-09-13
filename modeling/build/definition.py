@@ -25,7 +25,7 @@ from .models.dust import basic_dust_map_name
 from .models.general import parameters_filename, deprojection_filename
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -331,7 +331,14 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return self.models_table.old_stars_path_for_model(self.name)
+        from .models.stars import old_component_name
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_stellar_component_path(old_component_name)
+
+        # Find the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
 
     # -----------------------------------------------------------------
 
@@ -367,7 +374,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return self.models_table.young_stars_path_for_model(self.name)
+        #return self.models_table.young_stars_path_for_model(self.name)
 
     # -----------------------------------------------------------------
 
@@ -403,7 +410,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return self.models_table.ionizing_stars_path_for_model(self.name)
+        #return self.models_table.ionizing_stars_path_for_model(self.name)
 
     # -----------------------------------------------------------------
 
@@ -439,7 +446,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return self.models_table.dust_path_for_model(self.name)
+        #return self.models_table.dust_path_for_model(self.name)
 
     # -----------------------------------------------------------------
 
