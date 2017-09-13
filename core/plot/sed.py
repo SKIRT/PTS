@@ -500,8 +500,12 @@ class SEDPlotter(Configurable):
 
                     else:
 
-                        value = (fluxes[k] - reference_flux) / reference_flux * 100.
-                        error = errors[k] / reference_flux * 100.0
+                        if errors[k] is not None:
+
+                            value = (fluxes[k] - reference_flux) / reference_flux * 100.
+                            error = errors[k] / reference_flux * 100.0
+
+                        else: value = error = None
 
                 if value is not None and error is not None:
 
@@ -1026,12 +1030,13 @@ class SEDPlotter(Configurable):
                 error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
                 used_labels.append(label)
 
-                axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else: axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+            else:
 
-            patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+                #axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+                patch = axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
         # A data point of this instrument has already been plotted
         else:
@@ -1039,11 +1044,10 @@ class SEDPlotter(Configurable):
             if error is not None:
 
                 error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
-                axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else:
-                axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+            else: patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
         # Return the patch if requested
         if return_patch: return patch

@@ -37,12 +37,19 @@ from ...magic.basics.stretch import SkyStretch
 from ...core.tools import tables
 from ..basics.properties import GalaxyProperties
 from ...core.tools.serialization import load_dict
+from .steps import galaxy_modeling, sed_modeling, images_modeling
 
 # -----------------------------------------------------------------
 
-config_filename = "modeling.cfg"
-history_filename = "history.dat"
-commands_filename = "commands.txt"
+config_basename = "modeling"
+history_basename = "history"
+commands_basename = "commands"
+
+# -----------------------------------------------------------------
+
+config_filename = config_basename + ".cfg"
+history_filename = history_basename + ".dat"
+commands_filename = commands_basename + ".txt"
 
 # -----------------------------------------------------------------
 
@@ -57,6 +64,31 @@ show_name = "show"
 build_name = "build"
 in_name = "in"
 html_name = "html"
+
+# -----------------------------------------------------------------
+
+def load_modeling_environment(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Determine the path to the modeling configuration
+    config_path = fs.join(path, config_filename)
+
+    # Check
+    if not fs.is_file(config_path): raise ValueError("The path is not a modeling directory: config file missing")
+
+    # Load the modeling configuration
+    config = Configuration.from_file(config_path)
+
+    # Check the type, and create the appropriate environment
+    if config.modeling_type == galaxy_modeling: return GalaxyModelingEnvironment(path)
+    elif config.modeling_type == sed_modeling: return SEDModelingEnvironment(path)
+    elif config.modeling_type == images_modeling: return ImagesModelingEnvironment(path)
+    else: raise ValueError("Invalid modeling configuration file: modeling type not found")
 
 # -----------------------------------------------------------------
 
@@ -100,6 +132,141 @@ def verify_modeling_cwd():
     """
 
     return verify_modeling_path(fs.cwd())
+
+# -----------------------------------------------------------------
+
+def find_modeling_path_up(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Check input
+    if not fs.is_directory(path): raise ValueError("Specified path is not a directory")
+
+    # Find a modeling configuration file in the directory
+    filepath = fs.find_file_in_path(path, exact_name=config_basename, extension="cfg", return_none=True)
+
+    # Not succesful: find in the directory upwards of the specified directory
+    if filepath is None:
+
+        # Stop at home
+        if path == fs.home(): raise ValueError("Could not find a modeling configuration file and home directory is reached")
+        else: return find_modeling_path_up(fs.directory_of(path))
+
+    # Return the directory path
+    else: return path
+
+# -----------------------------------------------------------------
+
+def find_modeling_path_up_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return find_modeling_path_up(fs.cwd())
+
+# -----------------------------------------------------------------
+
+def find_modeling_environment_up(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return load_modeling_environment(find_modeling_path_up(path))
+
+# -----------------------------------------------------------------
+
+def find_modeling_environment_up_cwd():
+
+    """
+    This funciton ...
+    :return:
+    """
+
+    return load_modeling_environment(find_modeling_path_up_cwd())
+
+# -----------------------------------------------------------------
+
+def find_modeling_path_down(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Check input
+    if not fs.is_directory(path): raise ValueError("Specified path is not a directory")
+
+    # Find a modeling configuration file in the directory
+    filepath = fs.find_file_in_path(path, exact_name=config_basename, extension="cfg", return_none=True)
+
+    # Not succesful
+    if filepath is None:
+
+        # Remember subdirectories with a modeling configuration file
+        dirs_with_modeling = []
+
+        # Loop over the subdirectories
+        for dirpath in fs.directories_in_path(path):
+            if fs.find_file_in_path(dirpath, exact_name=config_basename, extension="cfg", return_none=True): dirs_with_modeling.append(dirpath)
+
+        # Check which subdirectory(ies)
+        if len(dirs_with_modeling) == 0:
+            #for dirpath in fs.directories_in_path(path):
+            #    return find_modeling_path_down(dirpath)
+            raise NotImplementedError("Not implemented in the right way")
+
+        # Check
+        if len(dirs_with_modeling) == 1: return dirs_with_modeling[0]
+
+        # Multiple
+        else: raise ValueError("There are multiple directories at the same level with a modeling configuration file")
+
+    # Return the directory path
+    else: return path
+
+# -----------------------------------------------------------------
+
+def find_modeling_path_down_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return find_modeling_path_down(fs.cwd())
+
+# -----------------------------------------------------------------
+
+def find_modeling_environment_down(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return load_modeling_environment(find_modeling_path_down(path))
+
+# -----------------------------------------------------------------
+
+def find_modeling_environment_down_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return load_modeling_environment(find_modeling_path_down_cwd())
 
 # -----------------------------------------------------------------
 
@@ -377,6 +544,11 @@ dust_maps_filename = "dust.html"
 
 # -----------------------------------------------------------------
 
+seds_dirname = "SEDs"
+images_dirname = "images"
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingEnvironment(ModelingEnvironment):
 
     """
@@ -427,10 +599,14 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.galaxy_info_path = fs.join(self.data_path, info_name)
 
         # Set the ...
-        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+        self.data_seds_path = fs.create_directory_in(self.data_path, seds_dirname)
 
         # Set the ...
-        self.data_images_path = fs.create_directory_in(self.data_path, "images")
+        self.data_images_path = fs.create_directory_in(self.data_path, images_dirname)
+
+        # PHOTOMETRY
+
+        self.observed_sed_path = fs.join(self.phot_path, fluxes_name)
 
         # DIFFERENT MAPS SUBDIRECTORIES:
 
@@ -484,6 +660,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # Set the path to the preparation statistics file
         self.preparation_statistics_path = fs.join(self.prep_path, statistics_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.observed_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_dustpedia_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.observed_sed_dustpedia_path)
 
     # -----------------------------------------------------------------
 

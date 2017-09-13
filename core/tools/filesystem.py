@@ -1070,30 +1070,23 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
 # -----------------------------------------------------------------
 
-def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                      exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+def find_file_in_path(path, **kwargs):
 
     """
     This function ...
     :param path: 
-    :param recursive:
-    :param ignore_hidden:
-    :param extension:
-    :param contains:
-    :param not_contains:
-    :param exact_name:
-    :param exact_not_name:
-    :param startswith:
-    :param endswith:
+    :param kwargs:
     :return: 
     """
 
+    return_none = kwargs.pop("return_none", False)
+
     # Get paths
-    paths = files_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, extension=extension, contains=contains,
-                          not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
-                          startswith=startswith, endswith=endswith)
+    paths = files_in_path(path, **kwargs)
     if len(paths) == 1: return paths[0]
-    elif len(paths) == 0: raise ValueError("Not found")
+    elif len(paths) == 0:
+        if return_none: return None
+        else: raise ValueError("Not found")
     else: raise ValueError("Multiple files found")
 
 # -----------------------------------------------------------------
@@ -1577,6 +1570,49 @@ def read_last_lines(path, nlines):
     """
 
     for line in list(read_lines(path))[-nlines:]: yield line
+
+# -----------------------------------------------------------------
+
+def get_last_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    return list(read_last_lines(path, nlines))
+
+# -----------------------------------------------------------------
+
+def read_first_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    count = 0
+    for line in read_lines(path):
+        yield line
+        count += 1
+        if count == nlines: return
+
+# -----------------------------------------------------------------
+
+def get_first_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    return list(read_first_lines(path, nlines))
 
 # -----------------------------------------------------------------
 

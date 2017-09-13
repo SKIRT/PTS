@@ -880,8 +880,14 @@ class ModelLauncher(ModelSimulationInterface):
             self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
         else: raise RuntimeError("Something went wrong")
 
-        # Set analysis options
+        # Create analysis options object
         analysis_options = AnalysisOptions()
+
+        # Set plotting analysis options
+        analysis_options.plotting.seds = True  # plot SEDs
+        analysis_options.plotting.reference_seds = [self.observed_sed_path]
+
+        # Set misc analysis options
         analysis_options.misc.spectral_convolution = self.config.spectral_convolution
         if self.make_seds: analysis_options.misc.fluxes = True
         if self.make_images: analysis_options.misc.images = True
@@ -900,6 +906,7 @@ class ModelLauncher(ModelSimulationInterface):
         if log.is_debug(): self.launcher.config.show = True
 
         # Run the simulation
-        self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization, nprocesses=nprocesses)
+        self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization,
+                          nprocesses=nprocesses)
 
 # -----------------------------------------------------------------

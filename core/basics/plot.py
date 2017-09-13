@@ -189,6 +189,23 @@ bokeh_page_template = """<!DOCTYPE html>
 
 # -----------------------------------------------------------------
 
+# BOKEH MARKERS:
+# Asterisk
+# Circle
+# CircleCross
+# CircleX
+# Cross
+# Diamond
+# DiamondCross
+# InvertedTriangle
+# Square
+# SquareCross
+# SquareX
+# Triangle
+# X
+
+# -----------------------------------------------------------------
+
 class BokehPlot(Plot):
 
     """
@@ -219,13 +236,55 @@ class BokehPlot(Plot):
 
         from bokeh.plotting import figure
 
-        # The Bokeh plot
-        #self._plot = figure(plot_width=250, plot_height=250, title=None)
+        options = dict()
+        if "share_x" in kwargs: options["x_range"] = kwargs.pop("share_x")._plot.x_range
+        if "share_y" in kwargs: options["y_range"] = kwargs.pop("share_y")._plot.y_range
+        if "x_axis_location" in kwargs: options["x_axis_location"] = kwargs.pop("x_axis_location")
+        if "y_axis_location" in kwargs: options["y_axis_location"] = kwargs.pop("y_axis_location")
+        if "width" in kwargs: options["plot_width"] = kwargs.pop("width")
+        if "height" in kwargs: options["plot_height"] = kwargs.pop("height")
 
-        if "share_x" in kwargs and "share_y" in kwargs: self._plot = figure(x_range=kwargs.pop("share_x")._plot.x_range, y_range=kwargs.pop("share_y")._plot.y_range)
-        elif "share_x" in kwargs: self._plot = figure(x_range=kwargs.pop("share_x")._plot.x_range)
-        elif "share_y" in kwargs: self._plot = figure(y_range=kwargs.pop("share_y")._plot.y_range)
-        else: self._plot = figure()
+        if "x_range" in kwargs: options["x_range"] = kwargs.pop("x_range")
+        if "y_range" in kwargs: options["y_range"] = kwargs.pop("y_range")
+
+        # Number of minor ticks between adjacent x-axis major ticks
+        # Number of minor ticks between adjacent y-axis major ticks
+        if "x_minor_ticks" in kwargs: options["x_minor_ticks"] = kwargs.pop("x_minor_ticks")
+        if "y_minor_ticks" in kwargs: options["y_minor_ticks"] = kwargs.pop("y_minor_ticks")
+
+        if "x_axis_label" in kwargs: options["x_axis_label"] = kwargs.pop("x_axis_label")
+        if "y_axis_label" in kwargs: options["y_axis_label"] = kwargs.pop("y_axis_label")
+
+        # "linear", "log", "datetime"
+        if "x_axis_type" in kwargs: options["x_axis_type"] = kwargs.pop("x_axis_type")
+        if "y_axis_type" in kwargs: options["y_axis_type"] = kwargs.pop("y_axis_type")
+
+        default_tools = ["pan", "wheel_zoom", "box_zoom", "save", "reset", "help"]
+        options["tools"] = kwargs.pop("tools", default_tools)
+        #if "tools" in kwargs:
+
+        # Specify a drag tool to be active when the plot is displayed.
+        # box_select, box_zoom, lasso_select, 'pan', 'xpan', 'ypan',
+        if "box_zoom" in options["tools"]: options["active_drag"] = "box_zoom"
+
+        # Specify an inspection tool or sequence of inspection tools to be active when the plot is displayed.
+        # 'crosshair', 'hover',
+        if "hover" in options["tools"]: options["active_inspect"] = "hover"
+
+        # Specify a scroll/pinch tool to be active when the plot is displayed.
+        # 'wheel_zoom', 'xwheel_zoom', 'ywheel_zoom', 'xwheel_pan', 'ywheel_pan'
+        if "wheel_zoom" in options["tools"]: options["active_scroll"] = "wheel_zoom"
+
+        # Specify a tap/click tool to be active when the plot is displayed.
+        # 'poly_select', 'tap',
+        if "tap" in options["tools"]: options["active_tap"] = "tap"
+
+        # above, below, left, right
+        if "toolbar_location" in kwargs: options["toolbar_location"] = kwargs.pop("toolbar_location")
+        if "toolbar_sticky" in kwargs: options["toolbar_sticky"] = kwargs.pop("toolbar_sticky") # default = True
+
+        # Create the plot figure
+        self._plot = figure(**options)
 
     # -----------------------------------------------------------------
 
@@ -415,7 +474,10 @@ class BokehPlot(Plot):
         :return:
         """
 
-        pass
+        from bokeh.plotting.helpers import _get_scale
+
+        scale = args[0]
+        self._plot.x_scale = _get_scale(self._plot.x_range, scale)
 
     # -----------------------------------------------------------------
 
@@ -428,7 +490,10 @@ class BokehPlot(Plot):
         :return:
         """
 
-        pass
+        from bokeh.plotting.helpers import _get_scale
+
+        scale = args[0]
+        self._plot.y_scale = _get_scale(self._plot.y_range, scale)
 
     # -----------------------------------------------------------------
 
@@ -441,7 +506,8 @@ class BokehPlot(Plot):
         :return:
         """
 
-        pass
+        label = args[0]
+        self._plot.xaxis.axis_label = label
 
     # -----------------------------------------------------------------
 
@@ -454,7 +520,143 @@ class BokehPlot(Plot):
         :return:
         """
 
-        pass
+        label = args[0]
+        self._plot.yaxis.axis_label = label
+
+    # -----------------------------------------------------------------
+
+    def hide_axes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._plot.axis.visible = False
+
+    # -----------------------------------------------------------------
+
+    def hide_xaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._plot.xaxis.visible = False
+
+    # -----------------------------------------------------------------
+
+    def hide_yaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._plot.yaxis.visible = False
+
+    # -----------------------------------------------------------------
+
+    def hide_grid(self):
+
+        """
+        This function ...
+        """
+
+        self.hide_xgrid()
+        self.hide_ygrid()
+
+    # -----------------------------------------------------------------
+
+    def hide_xgrid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._plot.xgrid.grid_line_color = None
+
+    # -----------------------------------------------------------------
+
+    def hide_ygrid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._plot.ygrid.grid_line_color = None
+
+    # -----------------------------------------------------------------
+
+    def set_xgrid(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Examples:
+        self._plot.xgrid.grid_line_alpha = 0.5
+        self._plot.xgrid.grid_line_dash = [6, 4]
+        self._plot.xgrid.minor_grid_line_color = 'navy'
+        self._plot.xgrid.bounds = (2, 4)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._plot.xaxis
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._plot.yaxis
+
+    # -----------------------------------------------------------------
+
+    def set_xaxis_location(self, location):
+
+        """
+        Thisn function ...
+        :param location:
+        :return:
+        """
+
+        if location == "below": self._plot.below.append(self.xaxis)
+        elif location == "above": self._plot.above.append(self.xaxis)
+        else: raise ValueError("")
+
+    # -----------------------------------------------------------------
+
+    def set_yaxis_location(self, location):
+
+        """
+        This function ...
+        :param location:
+        :return:
+        """
+
+        if location == "left": self._plot.left.append(self.yaxis)
+        elif location == "right": self._plot.right.append(self.yaxis)
+        else: raise ValueError("")
 
 # -----------------------------------------------------------------
 
@@ -497,7 +699,10 @@ class BokehFigure(Figure):
             first_plot = BokehPlot()
             plots.append(first_plot)
             for i in range(1, size):
-                next_plot = BokehPlot(share_x=first_plot)
+                if i == size - 1: next_plot = BokehPlot(share_x=first_plot, x_axis_location="below")
+                else: next_plot = BokehPlot(share_x=first_plot)
+                #next_plot.hide_xaxis()
+                #next_plot.set_xaxis_location("below")
                 plots.append(next_plot)
 
         else:
@@ -529,6 +734,8 @@ class BokehFigure(Figure):
             plots.append(first_plot)
             for i in range(1, size):
                 next_plot = BokehPlot(share_y=first_plot)
+                #next_plot.hide_yaxis()
+                next_plot.set_yaxis_location("right")
                 plots.append(next_plot)
 
         else:
@@ -810,7 +1017,53 @@ class BokehFigure(Figure):
         :return:
         """
 
-        pass
+        if path.endswith("html"): self.saveto_html()
+        elif path.endswith("png"): self.saveto_png()
+        elif path.endswith("svg"): self.saveto_svg()
+
+    # -----------------------------------------------------------------
+
+    def saveto_html(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        self.write_html(path)
+
+    # -----------------------------------------------------------------
+
+    def saveto_png(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # FOR transparent background:
+        # Plot.background_fill_color and Plot.border_fill_color properties to None.
+
+        from bokeh.io import export_png
+        export_png(self.grid, filename=path)
+
+    # -----------------------------------------------------------------
+
+    def saveto_svg(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from bokeh.io import export_svgs
+
+        # FOR EACH PLOT SEPERATELY!
+        #plot.output_backend = "svg"
+        #export_svgs(plot, filename="plot.svg")
 
     # -----------------------------------------------------------------
 
@@ -1403,5 +1656,73 @@ def get_plot_wavelength_limits(min_wavelength, max_wavelength):
     plot_max_wavelength = 10.**plot_max_log_wavelength
 
     return plot_min_wavelength, plot_max_wavelength
+
+# -----------------------------------------------------------------
+
+# JS_CODE = """
+# import {Label, LabelView} from "models/annotations/label"
+#
+# export class LatexLabelView extends LabelView
+#   render: () ->
+#
+#     #--- Start of copied section from ``Label.render`` implementation
+#
+#     ctx = @plot_view.canvas_view.ctx
+#
+#     # Here because AngleSpec does units tranform and label doesn't support specs
+#     switch @model.angle_units
+#       when "rad" then angle = -1 * @model.angle
+#       when "deg" then angle = -1 * @model.angle * Math.PI/180.0
+#
+#     if @model.x_units == "data"
+#       vx = @xscale.compute(@model.x)
+#     else
+#       vx = @model.x
+#     sx = @canvas.vx_to_sx(vx)
+#
+#     if @model.y_units == "data"
+#       vy = @yscale.compute(@model.y)
+#     else
+#       vy = @model.y
+#     sy = @canvas.vy_to_sy(vy)
+#
+#     if @model.panel?
+#       panel_offset = @_get_panel_offset()
+#       sx += panel_offset.x
+#       sy += panel_offset.y
+#
+#     #--- End of copied section from ``Label.render`` implementation
+#
+#     # Must render as superpositioned div (not on canvas) so that KaTex
+#     # css can properly style the text
+#     @_css_text(ctx, "", sx + @model.x_offset, sy - @model.y_offset, angle)
+#
+#     # ``katex`` is loaded into the global window at runtime
+#     # katex.renderToString returns a html ``span`` element
+#     katex.render(@model.text, @el, {displayMode: true})
+#
+# export class LatexLabel extends Label
+#   type: 'LatexLabel'
+#   default_view: LatexLabelView
+# """
+#
+# from bokeh.models import Label
+#
+# class LatexLabel(Label):
+#
+#     """
+#     A subclass of the Bokeh built-in `Label` that supports rendering
+#     LaTex using the KaTex typesetting library.
+#
+#     Only the render method of LabelView is overloaded to perform the
+#     text -> latex (via katex) conversion. Note: ``render_mode="canvas``
+#     isn't supported and certain DOM manipulation happens in the Label
+#     superclass implementation that requires explicitly setting
+#     `render_mode='css'`).
+#     """
+#
+#     __javascript__ = ["https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"]
+#     __css__ = ["https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css"]
+#     __implementation__ = JS_CODE
 
 # -----------------------------------------------------------------
