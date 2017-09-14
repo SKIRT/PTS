@@ -202,7 +202,7 @@ def prompt_yn(name, description, default=None):
     definition.add_flag(name, description, default=default)
 
     # Create setter
-    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     while True:
@@ -227,13 +227,36 @@ def prompt_proceed(description=None):
     definition.add_flag("proceed", description, default=None)
 
     # Create setter
-    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     while True:
         config = setter.run(definition, prompt_optional=True)
         if config.proceed is None: log.warning("Answer with yes (y) or no (n)")
         else: return config.proceed
+
+# -----------------------------------------------------------------
+
+def prompt_automatic(name, description, default, choices=None, default_alias=None):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param default:
+    :param choices:
+    :param default_alias:
+    :return:
+    """
+
+    # None is not allowed
+    if default is None: raise ValueError("Default value cannot be None")
+
+    # Determine parsing type
+    ptype, string = stringify.stringify(default)
+
+    # Prompt
+    return prompt_variable(name, ptype, description, choices=choices, default=default, default_alias=default_alias)
 
 # -----------------------------------------------------------------
 
@@ -259,7 +282,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     else: definition.add_optional(name, parsing_type, description, choices=choices)
 
     # Create setter
-    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     config = setter.run(definition, prompt_optional=True)
@@ -434,21 +457,21 @@ def create_configuration_flexible(name, definition, settings=None, default=False
     if settings is not None:
 
         # Create the configuration
-        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False)
+        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False, add_config_path=False)
         config = setter.run(definition)
 
     # Settings are not given, default flag is added
     elif default:
 
         # Create the configuration
-        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False, add_config_path=False)
         config = setter.run(definition)
 
     # No test configuration is given and default flag is not added
     else:
 
         # Create the configuration
-        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False, add_config_path=False)
         config = setter.run(definition, prompt_optional=True)
 
     # Return the configuration
@@ -1885,7 +1908,7 @@ class ConfigurationSetter(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -1893,6 +1916,7 @@ class ConfigurationSetter(object):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Set the name and description
@@ -1905,6 +1929,7 @@ class ConfigurationSetter(object):
         # Set options
         self.add_logging = add_logging
         self.add_cwd = add_cwd
+        self.add_config_path = add_config_path
 
         # The configuration
         self.config = Configuration()
@@ -1947,7 +1972,7 @@ class ConfigurationSetter(object):
             else: self.definition.add_flag("report", "write a report file")  # otherwise, ask
 
         # Add config path
-        if self.definition.write_config:
+        if self.add_config_path and self.definition.write_config:
 
             # Set the path to the directory where the configuration file should be saved
             if self.definition.config_path is not None: self.definition.add_fixed("config_path", "directory for the configuration file to be written to", self.definition.config_path)
@@ -1968,7 +1993,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -1976,10 +2001,11 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
     # -----------------------------------------------------------------
 
@@ -2044,7 +2070,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2052,10 +2078,11 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Create the command-line parser
         self.parser = argparse.ArgumentParser(prog=name, description=description)
@@ -2135,7 +2162,7 @@ class FileConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2143,10 +2170,11 @@ class FileConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(FileConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Set the path to the specified configuration file
         self.path = path
@@ -2211,7 +2239,7 @@ class DictConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -2220,10 +2248,11 @@ class DictConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(DictConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Set the user-provided dictionary
         self.dictionary = dictionary
@@ -2271,7 +2300,7 @@ class PassiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -2279,10 +2308,11 @@ class PassiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(PassiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(PassiveConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
     # -----------------------------------------------------------------
 
@@ -2326,7 +2356,7 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2334,10 +2364,11 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # ...
 
@@ -3959,6 +3990,7 @@ def check_default(default, user_type):
     """
 
     default_type, default_string = stringify.stringify(default)
+    #print(default_type, default_string)
     if default_type != user_type and not are_related_types(default_type, user_type):
 
         # List-like property
@@ -4031,7 +4063,7 @@ def try_to_convert_to_type(default, user_type):
     elif types.is_string_type(default): return try_to_convert_from_string(default, user_type)
     else:
         #raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
-        try: return try_to_convert_from_string(str(default), user_type)
+        try: return try_to_convert_from_string(tostr(default), user_type)
         except ValueError: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------
