@@ -408,22 +408,32 @@ def has_file(directory, filename):
 
 # -----------------------------------------------------------------
 
-def is_empty(directory, ignore_hidden=True, besides=None):
+def is_empty(directory, ignore_hidden=True, besides=None, recursive=False):
 
     """
     This function ...
     :param directory:
     :param ignore_hidden:
     :param besides:
+    :param recursive:
     :return:
     """
 
-    items = os.listdir(directory)
-    if ignore_hidden: items = [item for item in items if not item.startswith(".")]
+    # Recursive: look for only files within the directory hierarchy
+    if recursive:
 
-    if besides is not None:
-        return len(items) == 0 or (len(items) == 1 and items[0] == besides)
-    else: return len(items) == 0
+        filepaths = files_in_path(directory, ignore_hidden=ignore_hidden, exact_not_name=besides, recursive=True)
+        return len(filepaths) == 0
+
+    # Not recursive: count directories and files within the specified directory
+    else:
+
+        items = os.listdir(directory)
+        if ignore_hidden: items = [item for item in items if not item.startswith(".")]
+
+        if besides is not None:
+            return len(items) == 0 or (len(items) == 1 and items[0] == besides)
+        else: return len(items) == 0
 
 # -----------------------------------------------------------------
 

@@ -23,6 +23,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.serialization import write_dict
 from ..suite import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
 from ....magic.core.frame import Frame
+from ....core.basics.configuration import save_mapping
 
 # -----------------------------------------------------------------
 
@@ -358,13 +359,13 @@ def write_component_alt(directory, name, parameters, model, deprojection, map, p
     if model is not None: write_model(model, component_path)
 
     # Save deprojection
-    if deprojection is not None: write_deprojection(model, component_path)
+    if deprojection is not None: write_deprojection(deprojection, component_path)
 
     # Save map
-    if map is not None: write_map(model, component_path)
+    if map is not None: write_map(map, component_path)
 
     # Save properties
-    if properties is not None: write_properties(model, component_path)
+    if properties is not None: write_properties(properties, component_path)
 
     # Return the component path
     return component_path
@@ -387,7 +388,8 @@ def write_parameters(parameters, path):
     parameters_path = fs.join(path, parameters_filename)
 
     # Save the parameters
-    parameters.saveto(parameters_path)
+    #parameters.saveto(parameters_path)
+    save_mapping(parameters_path, parameters)
 
     # Return the path
     return parameters_path
