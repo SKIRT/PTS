@@ -374,7 +374,14 @@ class ModelDefinition(object):
         :return: 
         """
 
-        #return self.models_table.young_stars_path_for_model(self.name)
+        from .models.stars import young_component_name
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_stellar_component_path(young_component_name)
+
+        # Find the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
 
     # -----------------------------------------------------------------
 
@@ -410,7 +417,14 @@ class ModelDefinition(object):
         :return: 
         """
 
-        #return self.models_table.ionizing_stars_path_for_model(self.name)
+        from .models.stars import ionizing_component_name
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_stellar_component_path(ionizing_component_name)
+
+        # Return the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
 
     # -----------------------------------------------------------------
 
@@ -446,7 +460,14 @@ class ModelDefinition(object):
         :return: 
         """
 
-        #return self.models_table.dust_path_for_model(self.name)
+        from .models.dust import disk_component_name
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_dust_component_path(disk_component_name)
+
+        # Return the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
 
     # -----------------------------------------------------------------
 
@@ -774,7 +795,9 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return fs.directory_of(self.old_stars_map_path)
+        from .models.stars import old_component_name
+        #return fs.directory_of(self.old_stars_map_path)
+        return self.stellar_paths[old_component_name]
 
     # -----------------------------------------------------------------
 
@@ -786,7 +809,9 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return fs.directory_of(self.young_stars_map_path)
+        from .models.stars import young_component_name
+        #return fs.directory_of(self.young_stars_map_path)
+        return self.stellar_paths[young_component_name]
 
     # -----------------------------------------------------------------
 
@@ -798,7 +823,9 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return fs.directory_of(self.ionizing_stars_map_path)
+        from .models.stars import ionizing_component_name
+        #return fs.directory_of(self.ionizing_stars_map_path)
+        return self.stellar_paths[ionizing_component_name]
 
     # -----------------------------------------------------------------
 
@@ -810,7 +837,9 @@ class ModelDefinition(object):
         :return: 
         """
 
-        return fs.directory_of(self.dust_map_path)
+        from .models.dust import disk_component_name
+        #return fs.directory_of(self.dust_map_path)
+        return self.dust_paths[disk_component_name]
 
     # -----------------------------------------------------------------
 
@@ -1099,6 +1128,36 @@ class ModelDefinition(object):
         """
 
         return DeprojectionModel3D.from_file(self.dust_deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_component(self, name, add_map=False):
+
+        """
+        Thisf unction ..
+        :param name:
+        :param add_map: 
+        :return: 
+        """
+
+        from .suite import load_component
+        path = self.get_stellar_component_path(name)
+        return load_component(path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component(self, name, add_map=False):
+
+        """
+        This function ...
+        :param name:
+        :param add_map:
+        :return:
+        """
+
+        from .suite import load_component
+        path = self.get_dust_component_path(name)
+        return load_component(path, add_map=add_map)
 
     # -----------------------------------------------------------------
 

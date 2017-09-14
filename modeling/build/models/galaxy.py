@@ -19,6 +19,10 @@ from ....core.basics.log import log
 from ...component.galaxy import GalaxyModelingComponent
 from .base import ModelBuilderBase
 from ....core.tools.utils import lazyproperty
+from ....core.basics.configuration import prompt_yn, prompt_automatic, prompt_variable
+from .stars import old_component_name, young_component_name, ionizing_component_name
+from .dust import disk_component_name
+from .general import write_component
 
 # -----------------------------------------------------------------
 
@@ -50,12 +54,16 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         self.young_path = None
         self.ionizing_path = None
         self.dust_path = None
+        self.extra_stellar_paths = []
+        self.extra_dust_paths = []
 
         # Map paths
         self.old_stars_map_path = None
         self.young_stars_map_path = None
         self.ionizing_stars_map_path = None
         self.dust_map_path = None
+        self.extra_stellar_map_paths = []
+        self.extra_dust_map_paths = []
 
     # -----------------------------------------------------------------
 
@@ -75,6 +83,8 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Adjust dust components from previous model
         if self.from_previous: self.adjust_dust()
+
+        exit()
 
         # 2. Build stars
         self.build_stars()
@@ -150,7 +160,68 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         log.info("Adjusting stellar components from previous model [" + self.previous_name + "] ...")
 
         # Loop over the stellar components
+        for name in self.previous.stellar_component_names:
 
+            # Include?
+            if not prompt_yn("include_" + name, "include the '" + name + "' stellar component of the '" + self.previous_name + "' model", default=True): continue
+
+            # Adjust?
+            adjust = prompt_yn("adjust_" + name, "adjust the properties of the '" + name + "' stellar component of the '" + self.previous_name + "' model definition")
+
+            # Adjust the component
+            if adjust: self.adjust_stellar_component(name)
+
+            # Don't adjust the component
+            else: self.set_previous_stellar_component(name)
+
+    # -----------------------------------------------------------------
+
+    def adjust_stellar_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the '" + name + "' stellar component ...")
+
+        # Load the component
+        component = self.previous.load_stellar_component(name, add_map=False)
+
+        # Adjust
+        adjusted = adjust_component(component)
+
+        print(adjusted)
+
+        # Set reference to the previous model for this dust component
+        if not adjusted: self.set_previous_stellar_component(name)
+        else:
+
+            write_component(component)
+
+    # -----------------------------------------------------------------
+
+    def set_previous_stellar_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting reference to the previous model for the '" + name + "' stellar component ...")
+
+        # Get the component path
+        path = self.previous.get_stellar_component_path(name)
+
+        # Set the appropriate attribute
+        if name == old_component_name: self.old_path = path
+        elif name == young_component_name: self.young_path = path
+        elif name == ionizing_component_name: self.ionizing_path = path
+        else: self.extra_stellar_paths.append(path)
 
     # -----------------------------------------------------------------
 
@@ -163,6 +234,65 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Inform the user
         log.info("Adjusting dust components from previous model [" + self.previous_name + "] ...")
+
+        # Loop over the dust components
+        for name in self.previous.dust_component_names:
+
+            # Include?
+            if not prompt_yn("include_" + name, "include the '" + name + "' dust component of the '" + self.previous_name + "' model", default=True): continue
+
+            # Adjust?
+            adjust = prompt_yn("adjust_" + name, "adjust the '" + name + "' dust component of the '" + self.previous_name + "' model definition")
+
+            # Adjust the component
+            if adjust: self.adjust_dust_component(name)
+
+            # Don't adjust
+            else: self.set_previous_dust_component(name)
+
+    # -----------------------------------------------------------------
+
+    def adjust_dust_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the '" + name + "' dust component ...")
+
+        # Load the component
+        component = self.previous.load_dust_component(name, add_map=False)
+
+        # Adjust
+        adjusted = adjust_component(component)
+
+        print(adjusted)
+
+        # Set reference to the previous model for this dust component
+        if not adjusted: self.set_previous_dust_component(name)
+        else:
+
+            write_component(component)
+
+    # -----------------------------------------------------------------
+
+    def set_previous_dust_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the component path
+        path = self.previous.get_dust_component_path(name)
+
+        # Set the appropriate attribute
+        if name == disk_component_name: self.dust_path = path
+        else: self.extra_dust_paths.append(path)
 
     # -----------------------------------------------------------------
 
@@ -327,5 +457,234 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Save the table
         table.saveto(self.models_table_path)
+
+# -----------------------------------------------------------------
+
+def adjust_component(component):
+
+    """
+    Thisj function ...
+    :param component:
+    :return:
+    """
+
+    adjusted = False
+
+    # Parameters
+    if "parameters" in component:
+
+        # Adjust?
+        adjust = prompt_yn("adjust_parameters", "adjust the parameters", default=False)
+        if adjust: adjusted_parameters = adjust_parameters(component.parameters)
+        else: adjusted_parameters = False
+
+        # Update adjusted flag
+        if adjusted_parameters: adjusted = True
+
+    # Deprojection
+    if "deprojection" in component:
+
+        # Adjust?
+        adjust = prompt_yn("adjust_deprojection", "adjust the deprojection", default=False)
+        if adjust: adjusted_deprojection = adjust_deprojection(component.deprojection)
+        else: adjusted_deprojection = False
+
+        # Update adjusted flag
+        if adjusted_deprojection: adjusted = True
+
+    # Model
+    if "model" in component:
+
+        # Adjust?
+        adjust = prompt_yn("adjust_model", "adjust the model", default=False)
+        if adjust: adjusted_model = adjust_model(component.model)
+        else: adjusted_model = False
+
+        # Update adjusted flag
+        if adjusted_model: adjusted = True
+
+    # Properties
+    if "properties" in component:
+
+        # Adjust?
+        adjust = prompt_yn("adjust_properties", "adjust the properties", default=False)
+        if adjust: adjusted_properties = adjust_properties(component.properties)
+        else: adjusted_properties = False
+
+        # Update adjusted flag
+        if adjusted_properties: adjusted = True
+
+    # Return adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_parameters(parameters):
+
+    """
+    This function ...
+    :param parameters:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the parameters
+    for name in parameters:
+
+        default = parameters[name]
+        value = prompt_automatic(name, "adjusted '" + name + "' value", default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_deprojection(deprojection):
+
+    """
+    This function ...
+    :param deprojection:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the properties
+    for name in deprojection:
+
+        default = deprojection[name]
+        ptype = deprojection.get_ptype(name)
+        value = prompt_variable(name, ptype, "adjusted '" + name + "' value", default=default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_model(model):
+
+    """
+    This function ...
+    :param model:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the properties
+    for name in model:
+
+        default = model[name]
+        ptype = model.get_ptype(name)
+        value = prompt_variable(name, ptype, "adjusted '" + name + "' value", default=default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_properties(properties):
+
+    """
+    This function ...
+    :param properties:
+    :return:
+    """
+
+    adjusted = False
+
+    adjust_geometry = prompt_yn("adjust_geometry", "adjust geometry")
+    if adjust_geometry: adjusted_geometry = adjust_geometry_properties(properties["geometry"])
+    else: adjusted_geometry = False
+
+    # Set flag
+    if adjusted_geometry: adjusted = True
+
+    adjust_sed = prompt_yn("adjust_sed", "adjust SED properties")
+    if adjust_sed: adjusted_sed = adjust_sed_properties(properties["sed"])
+    else: adjusted_sed = False
+
+    # Set flag
+    if adjusted_sed: adjusted = True
+
+    adjust_normalization = prompt_yn("adjust_normalization", "adjust normalization properties")
+    if adjust_normalization: adjusted_normalization = adjust_normalization_properties(properties["normalization"])
+    else: adjusted_normalization = False
+
+    # Set flag
+    if adjusted_normalization: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_geometry_properties(properties):
+
+    """
+    This function ...
+    :param properties:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the properties
+    for name in properties:
+
+        default = properties[name]
+        value = prompt_automatic(name, "adjusted '" + name + "' value", default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_sed_properties(properties):
+
+    """
+    This function ...
+    :param properties:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the properties
+    for name in properties:
+
+        default = properties[name]
+        value = prompt_automatic(name, "adjusted '" + name + "' value", default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
+
+# -----------------------------------------------------------------
+
+def adjust_normalization_properties(properties):
+
+    """
+    This function ...
+    :param properties:
+    :return:
+    """
+
+    adjusted = False
+
+    # Loop over the properties
+    for name in properties:
+
+        default = properties[name]
+        value = prompt_automatic(name, "adjusted '" + name + "' value", default)
+        if value != default: adjusted = True
+
+    # Return the adjusted flag
+    return adjusted
 
 # -----------------------------------------------------------------

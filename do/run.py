@@ -168,6 +168,9 @@ def run_configurable(table_matches, args, tables):
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
     del sys.argv[1] # but this is important
 
+    # Get a list of the leftover arguments
+    leftover_arguments = sys.argv[1:]
+
     # Welcome message
     if subproject == "modeling": welcome_modeling()
     elif subproject == "magic": welcome_magic()
@@ -179,6 +182,9 @@ def run_configurable(table_matches, args, tables):
 
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table
+
+    # Check whether arguments are passed and the configuration method is interactive
+    if configuration_method == "interactive" and len(leftover_arguments) > 0: raise ValueError("Arguments on the command-line are not supported by default for this command. Run with pts --arguments to change this behaviour.")
 
     # Create the configuration
     config = create_configuration(definition, command_name, description, configuration_method)

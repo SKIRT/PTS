@@ -249,10 +249,26 @@ class ModelsTable(SmartTable):
         :return:
         """
 
+        # Initialize dictionary for the paths
         paths = OrderedDict()
 
-        dust_path = self.dust_path_for_model(name)
+        # Get all component paths
+        disk_path = self.dust_path_for_model(name)
         additional_paths = self.additional_dust_paths_for_model(name)
+
+        # Determine standard component names
+        disk_name = fs.name(disk_path)
+
+        # Set standard paths
+        paths[disk_name] = disk_path
+
+        # Set additional paths
+        for path in additional_paths:
+            name = fs.name(path)
+            paths[name] = path
+
+        # Return the paths
+        return paths
 
     # -----------------------------------------------------------------
 

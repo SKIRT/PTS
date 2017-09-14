@@ -280,3 +280,37 @@ class GeneralBuilder(BuildComponent):
             self.properties_paths[name] = path
 
 # -----------------------------------------------------------------
+
+def write_parameters_alt(parameters, model, deprojection, map, properties):
+
+    """
+    This function ...
+    :param parameters:
+    :param model:
+    :param deprojection:
+    :param map:
+    :param properties:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
+def write_component(component):
+
+    """
+    This function ...
+    :param component:
+    :return:
+    """
+
+    # Get
+    parameters = component.parameters if "parameters" in component else None
+    model = component.model if "model" in component else None
+    deprojection = component.deprojection if "deprojection" in component else None
+    map_path = component.map_path if "map_path" in component else None
+    properties = component.properties if "properties" in component else None
+
+    # Write
+    write_parameters_alt(parameters, model, deprojection, map, properties)
+
+# -----------------------------------------------------------------

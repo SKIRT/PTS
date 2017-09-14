@@ -329,6 +329,53 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.property_names: yield name
+
+    # -----------------------------------------------------------------
+
+    def get_value(self, name):
+
+        """
+        This funtion ...
+        :param name:
+        :return:
+        """
+
+        return getattr(self, name)
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_value(name)
+
+    # -----------------------------------------------------------------
+
+    def get_ptype(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._ptypes[name]
+
+    # -----------------------------------------------------------------
+
     @property
     def property_names(self):
 
