@@ -44,6 +44,7 @@ bulge_component_name = "bulge"
 old_component_name = "old"
 young_component_name = "young"
 ionizing_component_name = "ionizing"
+basic_stellar_component_names = [bulge_component_name, old_component_name, young_component_name, ionizing_component_name]
 
 # -----------------------------------------------------------------
 
@@ -969,6 +970,72 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Change the filename in the geometry parameters
         parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = bulge_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = old_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = young_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = ionizing_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def additional_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.component_names:
+            if name in basic_stellar_component_names: continue
+            else: yield name
 
     # -----------------------------------------------------------------
 

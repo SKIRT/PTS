@@ -323,6 +323,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def get_stellar_component_map_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_stellar_component_path(component_name)
+
+        # Find the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+
+    # -----------------------------------------------------------------
+
     @property
     def old_stars_map_path(self):
 
@@ -332,13 +350,7 @@ class ModelDefinition(object):
         """
 
         from .models.stars import old_component_name
-        from .suite import model_map_basename
-
-        # Get component path
-        path = self.get_stellar_component_path(old_component_name)
-
-        # Find the map path
-        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+        return self.get_stellar_component_map_path(old_component_name)
 
     # -----------------------------------------------------------------
 
@@ -375,13 +387,7 @@ class ModelDefinition(object):
         """
 
         from .models.stars import young_component_name
-        from .suite import model_map_basename
-
-        # Get component path
-        path = self.get_stellar_component_path(young_component_name)
-
-        # Find the map path
-        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+        return self.get_stellar_component_map_path(young_component_name)
 
     # -----------------------------------------------------------------
 
@@ -418,13 +424,7 @@ class ModelDefinition(object):
         """
 
         from .models.stars import ionizing_component_name
-        from .suite import model_map_basename
-
-        # Get component path
-        path = self.get_stellar_component_path(ionizing_component_name)
-
-        # Return the map path
-        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+        return self.get_stellar_component_map_path(ionizing_component_name)
 
     # -----------------------------------------------------------------
 
@@ -452,6 +452,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def get_dust_component_map_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        from .suite import model_map_basename
+
+        # Get component path
+        path = self.get_dust_component_path(component_name)
+
+        # Return the map path
+        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+
+    # -----------------------------------------------------------------
+
     @property
     def dust_map_path(self):
 
@@ -461,13 +479,7 @@ class ModelDefinition(object):
         """
 
         from .models.dust import disk_component_name
-        from .suite import model_map_basename
-
-        # Get component path
-        path = self.get_dust_component_path(disk_component_name)
-
-        # Return the map path
-        return fs.find_file_in_path(path, exact_name=model_map_basename, extension="fits", return_none=True)
+        return self.get_dust_component_map_path(disk_component_name)
 
     # -----------------------------------------------------------------
 
@@ -1200,7 +1212,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def load_dust_component(self, add_map=False):
+    def load_dust_disk_component(self, add_map=False):
 
         """
         This function ...
@@ -1210,5 +1222,35 @@ class ModelDefinition(object):
 
         from .suite import load_component
         return load_component(self.dust_component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def additional_stellar_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .models.stars import basic_stellar_component_names
+        for name in self.stellar_component_names:
+            if name in basic_stellar_component_names: continue
+            else: yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def additional_dust_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .models.dust import basic_dust_component_names
+        for name in self.dust_component_names:
+            if name in basic_dust_component_names: continue
+            else: yield name
 
 # -----------------------------------------------------------------

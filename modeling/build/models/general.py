@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ..component import BuildComponent
@@ -22,6 +22,7 @@ from ....core.prep.smile import SKIRTSmileSchema
 from ....core.tools import filesystem as fs
 from ....core.tools.serialization import write_dict
 from ..suite import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -104,6 +105,86 @@ class GeneralBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def with_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all components
+        for name in self.component_names:
+
+            # Check
+            if name not in self.models: continue
+            else: yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def with_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all components
+        for name in self.component_names:
+
+            # Check
+            if name not in self.deprojections: continue
+            else: yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def with_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all components
+        for name in self.component_names:
+
+            # Check
+            if name not in self.maps: continue
+            else: yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def with_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all components
+        for name in self.component_names:
+
+            # Check
+            if name not in self.properties: continue
+            else: yield name
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -167,14 +248,7 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing the component parameters ...")
 
         # Loop over the components
-        for name in self.parameters:
-
-            # Save parameters
-            path = fs.join(self.paths[name], parameters_filename)
-            self.parameters[name].saveto(path)
-
-            # Set path
-            self.parameter_paths[name] = path
+        for name in self.parameters: self.parameter_paths[name] = write_parameters(self.parameters[name], self.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -190,17 +264,7 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing the deprojections ...")
 
         # Loop over the components
-        for name in self.parameters:
-
-            # Save deprojection
-            if name not in self.deprojections: continue
-
-            # Save
-            path = fs.join(self.paths[name], deprojection_filename)
-            self.deprojections[name].saveto(path)
-
-            # Set path
-            self.deprojection_paths[name] = path
+        for name in self.with_deprojection: self.deprojection_paths[name] = write_deprojection(self.deprojections[name], self.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -215,17 +279,7 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing the maps ...")
 
         # Loop over the components
-        for name in self.parameters:
-
-            # Save map
-            if name not in self.maps: continue
-
-            # Save the map
-            path = fs.join(self.paths[name], model_map_filename)
-            self.maps[name].saveto(path)
-
-            # Set path
-            self.map_paths[name] = path
+        for name in self.with_map: self.map_paths[name] = write_map(self.maps[name], self.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -241,17 +295,7 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing the models ...")
 
         # Loop over the names
-        for name in self.parameters:
-
-            # Save model
-            if name not in self.models: continue
-
-            # Save the model
-            path = fs.join(self.paths[name], model_filename)
-            self.models[name].saveto(path)
-
-            # Set path
-            self.model_paths[name] = path
+        for name in self.with_model: self.model_paths[name] = write_model(self.models[name], self.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -267,24 +311,28 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing the component properties ...")
 
         # Loop over the parameters
-        for name in self.parameters:
+        for name in self.with_properties: self.properties_paths[name] = write_properties(self.properties[name], self.paths[name])
 
-            # Save properties
-            if name not in self.properties: continue
+    # -----------------------------------------------------------------
 
-            # Write the properties
-            path = fs.join(self.paths[name], properties_filename)
-            write_dict(self.properties[name], path)
+    @abstractproperty
+    def additional_names(self):
 
-            # Set path
-            self.properties_paths[name] = path
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 
-def write_parameters_alt(parameters, model, deprojection, map, properties):
+def write_component_alt(directory, name, parameters, model, deprojection, map, properties):
 
     """
     This function ...
+    :param directory:
+    :param name:
     :param parameters:
     :param model:
     :param deprojection:
@@ -293,13 +341,158 @@ def write_parameters_alt(parameters, model, deprojection, map, properties):
     :return:
     """
 
+    # Debugging
+    log.debug("Writing the '" + name + "' component to the '" + directory + "' directory ...")
+
+    # Determine the path for the component directory
+    component_path = fs.join(directory, name)
+
+    # Check
+    if fs.is_directory(component_path): raise IOError("Already a directory with the name '" + name + "'")
+    else: fs.create_directory(component_path)
+
+    # Save parameters
+    if parameters is not None: write_parameters(parameters, component_path)
+
+    # Save model
+    if model is not None: write_model(model, component_path)
+
+    # Save deprojection
+    if deprojection is not None: write_deprojection(model, component_path)
+
+    # Save map
+    if map is not None: write_map(model, component_path)
+
+    # Save properties
+    if properties is not None: write_properties(model, component_path)
+
+    # Return the component path
+    return component_path
+
 # -----------------------------------------------------------------
 
-def write_component(component):
+def write_parameters(parameters, path):
+
+    """
+    Thisf unction ...
+    :param parameters:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Writing the component parameters ...")
+
+    # Determine the path
+    parameters_path = fs.join(path, parameters_filename)
+
+    # Save the parameters
+    parameters.saveto(parameters_path)
+
+    # Return the path
+    return parameters_path
+
+# -----------------------------------------------------------------
+
+def write_model(model, path):
 
     """
     This function ...
-    :param component:
+    :param model:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Writing the component model ...")
+
+    # Determine the path
+    model_path = fs.join(path, model_filename)
+
+    # Save the model
+    model.saveto(model_path)
+
+    # Return the path
+    return model_path
+
+# -----------------------------------------------------------------
+
+def write_deprojection(deprojection, path):
+
+    """
+    This function ...
+    :param deprojection:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Writing the component deprojection ...")
+
+    # Determine the path
+    deprojection_path = fs.join(path, deprojection_filename)
+
+    # Save the deprojection
+    deprojection.saveto(deprojection_path)
+
+    # Return the path
+    return deprojection_path
+
+# -----------------------------------------------------------------
+
+def write_map(map, path):
+
+    """
+    This function ...
+    :param map:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Writing the component map ...")
+
+    # Determine the path
+    map_path = fs.join(path, model_map_filename)
+
+    # Save the map
+    map.saveto(map_path)
+
+    # Return the path
+    return map_path
+
+# -----------------------------------------------------------------
+
+def write_properties(properties, path):
+
+    """
+    Thsi function ...
+    :param properties:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Writing the component properties ...")
+
+    # Determine the path
+    properties_path = fs.join(path, properties_filename)
+
+    # Write
+    write_dict(properties, properties_path)
+
+    # Return the path
+    return properties_path
+
+# -----------------------------------------------------------------
+
+def write_component(directory, name, component):
+
+    """
+    This function ...
+    :param directory: directory for the component to be placed (either dust or stellar directory of a certain model)
+    :param name: name of the component
+    :param component: the component mapping
     :return:
     """
 
@@ -308,9 +501,13 @@ def write_component(component):
     model = component.model if "model" in component else None
     deprojection = component.deprojection if "deprojection" in component else None
     map_path = component.map_path if "map_path" in component else None
+    map = component.map if "map" in component else None
     properties = component.properties if "properties" in component else None
 
-    # Write
-    write_parameters_alt(parameters, model, deprojection, map, properties)
+    # Load the map
+    if map_path is not None and map is None: map = Frame.from_file(map_path)
+
+    # Write, return the component path
+    return write_component_alt(directory, name, parameters, model, deprojection, map, properties)
 
 # -----------------------------------------------------------------

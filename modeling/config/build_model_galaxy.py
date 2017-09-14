@@ -43,3 +43,8 @@ if suite.has_models: definition.add_optional("from_previous", "string", "create 
 else: definition.add_fixed("from_previous", "create from previous model", None)
 
 # -----------------------------------------------------------------
+
+# Show after adjusting/building
+definition.add_flag("show", "show the components after the model is built", True)
+
+# -----------------------------------------------------------------

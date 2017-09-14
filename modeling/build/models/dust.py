@@ -30,6 +30,7 @@ basic_dust_map_names = [basic_dust_map_name]
 # -----------------------------------------------------------------
 
 disk_component_name = "disk"
+basic_dust_component_names = [disk_component_name]
 
 # -----------------------------------------------------------------
 
@@ -448,6 +449,33 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Change the filename in the geometry parameters
         parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = disk_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def additional_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.component_names:
+            if name in basic_dust_component_names: continue
+            else: yield name
 
     # -----------------------------------------------------------------
 
