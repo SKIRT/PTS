@@ -21,6 +21,7 @@ from ..config.parameters import types as parameter_types
 from ...core.basics.configuration import prompt_string, prompt_string_list, prompt_variable
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools import introspection
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -28,19 +29,24 @@ template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "label
 
 # -----------------------------------------------------------------
 
-def select_from_model_suite(model_suite):
+def select_from_model_suite(model_suite, adapt=True, name=None):
 
     """
     This function ...
     :param model_suite:
+    :param adapt:
+    :param name:
     :return:
     """
 
     # Ask for the model name
-    model_name = prompt_string("model", "name of the model", choices=model_suite.model_names, required=True)
+    if name is None: model_name = prompt_string("model", "name of the model", choices=model_suite.model_names, required=True)
+    elif name in model_suite.model_names: model_name = name
+    else: raise ValueError("Model name '" + name + "' does not exist")
 
     # Load the labeled ski template file
     ski = LabeledSkiFile(template_ski_path)
+    labels_before = ski.labels
 
     # Load the model
     definition = model_suite.get_model_definition(model_name)
@@ -48,12 +54,45 @@ def select_from_model_suite(model_suite):
     # Add the components to the ski file and to the input map paths dictionary
     input_paths = dict()
     model_suite.add_model_components(model_name, ski, input_paths)
+    labels_after = ski.labels
+
+    # Check
+    if not sequences.same_contents(labels_before, labels_after):
+        labels_string = ", ".join(sequences.difference(labels_before, labels_after))
+        log.warning("The parameter labels '" + labels_string + "' have been lost in the ski file after setting the components")
 
     # Get the parameter values
-    parameter_values = prompt_parameters(ski)
+    if adapt: parameter_values = prompt_parameters(ski) # only adapted parameters
+    else: parameter_values = get_default_parameters(ski) # all parameters
 
     # Return
     return model_name, ski, definition, input_paths, parameter_values
+
+# -----------------------------------------------------------------
+
+def get_default_parameters(ski):
+
+    """
+    This function ...
+    :param ski:
+    :return:
+    """
+
+    # Get all parameter labels
+    parameter_labels = parameter_descriptions.keys()
+
+    # Get the default parameter values
+    default_values = dict()
+    for label in parameter_labels:
+
+        # Get the value from the ski file
+        value = ski.get_labeled_value(label)
+
+        # Set the default value
+        default_values[label] = value
+
+    # Return the default values
+    return default_values
 
 # -----------------------------------------------------------------
 

@@ -104,7 +104,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Prompting for the model from the model suite ...")
 
         # Select the model
-        model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite)
+        model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite, adapt=self.config.adapt, name=self.config.model_name)
 
         # Set attributes
         self.ski = ski

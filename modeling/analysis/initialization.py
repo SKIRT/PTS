@@ -24,7 +24,7 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
 from ..basics.instruments import FullInstrument
-from ..misc.interface import ModelSimulationInterface
+from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
 
 # -----------------------------------------------------------------
 
@@ -147,17 +147,44 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         ModelSimulationInterface.setup(self, **kwargs)
 
         # Generate a name for this analysis run
-        self.analysis_run_name = time.unique_name()
+        analysis_run_name = time.unique_name()
 
         # Create a directory for this analysis run
-        self.analysis_run_path = fs.join(self.analysis_path, self.analysis_run_name)
+        analysis_run_path = fs.join(self.analysis_path, analysis_run_name)
+        if not fs.is_directory(analysis_run_path): fs.create_directory(analysis_run_path)
+        elif fs.is_empty(analysis_run_path, recursive=True): fs.clear_directory(analysis_run_path)
+        else: raise ValueError("There already exists a directory for this analysis run")
 
         # Create the info object
         self.analysis_run_info = AnalysisRunInfo()
 
         # Set the analysis run name and path
-        self.analysis_run_info.name = self.analysis_run_name
-        self.analysis_run_info.path = self.analysis_run_path
+        self.analysis_run_info.name = analysis_run_name
+        self.analysis_run_info.path = analysis_run_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.analysis_run_info.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run_info.path
 
     # -----------------------------------------------------------------
 
@@ -181,11 +208,20 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         else: raise ValueError("Invalid value for 'origin'")
 
         # Show the model parameters
-        print("")
-        print("Model parameter values:")
-        print("")
-        for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
-        print("")
+        if self.from_fitting_run or self.config.adapt:
+            print("")
+            print("Adapted model parameter values:")
+            print("")
+            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            print("")
+
+        # Show all model parameters
+        else:
+            print("")
+            print("All model parameter values:")
+            print("")
+            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -458,13 +494,13 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Writing the projection systems ...")
 
         # Write the earth projection system
-        self.projections["earth"].saveto(self.analysis_run.earth_projection_path)
+        self.projections[earth_name].saveto(self.analysis_run.earth_projection_path)
 
         # Write the faceon projection system
-        self.projections["faceon"].saveto(self.analysis_run.faceon_projection_path)
+        self.projections[faceon_name].saveto(self.analysis_run.faceon_projection_path)
 
         # Write the edgeon projection system
-        self.projections["edgeon"].saveto(self.analysis_run.edgeon_projection_path)
+        self.projections[edgeon_name].saveto(self.analysis_run.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -479,12 +515,12 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Writing the instruments ...")
 
         # Write the SED instrument
-        self.instruments["earth"].saveto(self.analysis_run.earth_instrument_path)
+        self.instruments[earth_name].saveto(self.analysis_run.earth_instrument_path)
 
         # Write the frame instrument
-        self.instruments["faceon"].saveto(self.analysis_run.faceon_instrument_path)
+        self.instruments[faceon_name].saveto(self.analysis_run.faceon_instrument_path)
 
         # Write the simple instrument
-        self.instruments["edgeon"].saveto(self.analysis_run.edgeon_instrument_path)
+        self.instruments[edgeon_name].saveto(self.analysis_run.edgeon_instrument_path)
 
 # -----------------------------------------------------------------

@@ -88,7 +88,10 @@ class SkiFile:
 
     ## This function converts the tree into a string
     def __str__(self):
-        return etree.tostring(self.tree, encoding="UTF-8", xml_declaration=True, pretty_print=False, with_tail=False)
+        string = etree.tostring(self.tree, encoding="UTF-8", xml_declaration=True, pretty_print=False, with_tail=False)
+        lines = string.split(">")
+        newstring = ">\n".join(lines)
+        return newstring
 
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this

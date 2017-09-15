@@ -241,6 +241,32 @@ class ModelsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def stellar_component_names_for_model(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        return [fs.name(path) for path in self.stellar_component_paths_for_model(name)]
+
+    # -----------------------------------------------------------------
+
+    def stellar_component_path_for_name(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        #index = self.stellar_component_names_for_model(model_name).index(component_name)
+        return self.stellar_component_paths_for_model(model_name)[component_name]
+
+    # -----------------------------------------------------------------
+
     def dust_component_paths_for_model(self, name):
 
         """
@@ -269,6 +295,32 @@ class ModelsTable(SmartTable):
 
         # Return the paths
         return paths
+
+    # -----------------------------------------------------------------
+
+    def dust_component_names_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return [fs.name(path) for path in self.dust_component_paths_for_model(name)]
+
+    # -----------------------------------------------------------------
+
+    def dust_component_path_for_name(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        #index = self.dust_component_names_for_model(model_name).index(component_name)
+        return self.dust_component_paths_for_model(model_name)[component_name]
 
     # -----------------------------------------------------------------
 
@@ -334,7 +386,10 @@ class ModelsTable(SmartTable):
 
         index = self.index_for_model(name)
         if self["Additional stars paths"].mask[index]: return []
-        else: return self["Additional stars paths"][index].split(",")
+        else:
+            string = self["Additional stars paths"][index]
+            if string == "": return []
+            else: return string.split(",")
 
     # -----------------------------------------------------------------
 
@@ -374,7 +429,10 @@ class ModelsTable(SmartTable):
 
         index = self.index_for_model(name)
         if self["Additional dust paths"].mask[index]: return []
-        else: return self["Additional dust paths"][index].split(",")
+        else:
+            string = self["Additional dust paths"][index]
+            if string == "": return []
+            else: return string.split(",")
 
     # -----------------------------------------------------------------
 

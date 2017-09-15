@@ -947,6 +947,22 @@ def intersection(*sequences):
 
 # -----------------------------------------------------------------
 
+def difference(sequence_a, sequence_b):
+
+    """
+    This function returns the elements that are in sequence a but not in sequence b
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    items = []
+    for item in sequence_a:
+        if item not in sequence_b: items.append(item)
+    return items
+
+# -----------------------------------------------------------------
+
 def prepend(sequence, item):
 
     """

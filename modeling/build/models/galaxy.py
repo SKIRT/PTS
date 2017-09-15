@@ -586,6 +586,54 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nextra_stellar(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return len(self.extra_stellar_paths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nextra_stellar > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nextra_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return len(self.extra_dust_paths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nextra_dust > 0
+
+    # -----------------------------------------------------------------
+
     def write_table(self):
 
         """
@@ -596,12 +644,16 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the models table ...")
 
+        # Set extra paths
+        extra_stellar_paths = self.extra_stellar_paths if self.has_extra_stellar else None
+        extra_dust_paths = self.extra_dust_paths if self.has_extra_dust else None
+
         # Add the model
         table = self.models_table
         # name, description, bulge_path, old_stars_path, young_stars_path, ionizing_stars_path, dust_path,
         # additional_stellar_paths=None, additional_dust_paths=None
         table.add_model(self.model_name, self.config.description, self.bulge_path, self.old_path, self.young_path,
-                        self.ionizing_path, self.dust_path, self.extra_stellar_paths, self.extra_dust_paths)
+                        self.ionizing_path, self.dust_path, extra_stellar_paths, extra_dust_paths)
 
         # Save the table
         table.saveto(self.models_table_path)
