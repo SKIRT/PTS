@@ -86,25 +86,25 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # 5. Create the dust grid
         self.create_dust_grid()
 
-        # Load the deprojections
+        # 6. Load the deprojections
         self.load_deprojections()
 
-        # Create the projections
+        # 7. Create the projections
         self.create_projections()
 
-        # 6. Create the instruments
+        # 8. Create the instruments
         self.create_instruments()
 
-        # 7. Adapt ski file
+        # 9. Adapt ski file
         self.adapt_ski()
 
-        # Build the dust grid
+        # 10. Build the dust grid
         self.build_dust_grid()
 
-        # Set the input
+        # 11. Set the input
         self.set_input()
 
-        # 8. Write
+        # 12. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -143,8 +143,8 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Call the setup function of the base class
         #super(AnalysisInitializer, self).setup(**kwargs)
-        AnalysisComponent.setup(**kwargs)
-        ModelSimulationInterface.setup(**kwargs)
+        AnalysisComponent.setup(self, **kwargs)
+        ModelSimulationInterface.setup(self, **kwargs)
 
         # Generate a name for this analysis run
         self.analysis_run_name = time.unique_name()

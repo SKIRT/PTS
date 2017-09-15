@@ -334,7 +334,7 @@ class ModelsTable(SmartTable):
 
         index = self.index_for_model(name)
         if self["Additional stars paths"].mask[index]: return []
-        else: return self["Additional stars paths"].split(",")
+        else: return self["Additional stars paths"][index].split(",")
 
     # -----------------------------------------------------------------
 
@@ -374,7 +374,7 @@ class ModelsTable(SmartTable):
 
         index = self.index_for_model(name)
         if self["Additional dust paths"].mask[index]: return []
-        else: return self["Additional dust paths"].split(",")
+        else: return self["Additional dust paths"][index].split(",")
 
     # -----------------------------------------------------------------
 
