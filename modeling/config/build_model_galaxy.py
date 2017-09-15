@@ -44,6 +44,9 @@ else: definition.add_fixed("from_previous", "create from previous model", None)
 
 # -----------------------------------------------------------------
 
+# Force overwrite
+definition.add_flag("overwrite", "overwrite possibly existing model with this name", False)
+
 # Show after adjusting/building
 definition.add_flag("show", "show the components after the model is built", True)
 

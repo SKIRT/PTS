@@ -828,7 +828,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building additional stellar components ...")
 
         # Proceed?
-        while prompt_proceed():
+        while prompt_proceed("build additional stellar components?"):
 
             # Set parameters
             name = self.set_additional_parameters()

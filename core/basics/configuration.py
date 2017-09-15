@@ -479,7 +479,7 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None):
 
     """
     This function ...
@@ -488,6 +488,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
     :param interactive:
     :param cwd:
     :param prompt_optional:
+    :param use_default:
     :return:
     """
 
@@ -511,7 +512,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
 
                 # Create configuration with InteractiveConfigurationSetter
                 setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, settings=config, prompt_optional=prompt_optional)
+                config = setter.run(definition, settings=config, prompt_optional=prompt_optional, use_default=use_default)
 
             # Not interactive, use dict configuration setter
             else:
@@ -548,7 +549,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
             if interactive:
 
                 setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, prompt_optional=prompt_optional)
+                config = setter.run(definition, prompt_optional=prompt_optional, use_default=use_default)
 
             # Not interactive
             else:
@@ -566,6 +567,9 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
 
         # Command is not fond
         else:
+
+            # Cannot pass use_default
+            if use_default is not None: raise ValueError("Cannot specifiy 'use_default': command is not recognized so configuration definition cannot be found")
 
             # Create an empty definition
             definition = ConfigurationDefinition(write_config=False)
@@ -2009,13 +2013,14 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
 
     # -----------------------------------------------------------------
 
-    def run(self, definition, prompt_optional=None, settings=None):
+    def run(self, definition, prompt_optional=None, settings=None, use_default=None):
 
         """
         This function ...
         :param definition:
         :param prompt_optional:
         :param settings:
+        :param use_default:
         :return:
         """
 
@@ -2026,19 +2031,20 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         self.set_logging_and_cwd()
 
         # Do interactive
-        self.interactive(prompt_optional, settings=settings)
+        self.interactive(prompt_optional, settings=settings, use_default=use_default)
 
         # Return the config
         return self.config
 
     # -----------------------------------------------------------------
 
-    def interactive(self, prompt_optional, settings=None):
+    def interactive(self, prompt_optional, settings=None, use_default=None):
 
         """
         This function ...
         :param prompt_optional:
         :param options:
+        :param use_default:
         :return:
         """
 
@@ -2060,7 +2066,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
                     except ValueError: log.warning("Invalid input. Try again.")
 
         # Get the settings from an interactive prompt
-        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings)
+        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings, use_default=use_default)
 
 # -----------------------------------------------------------------
 
@@ -3123,7 +3129,7 @@ def add_settings_default(config, definition):
 
 # -----------------------------------------------------------------
 
-def add_settings_interactive(config, definition, prompt_optional=True, settings=None):
+def add_settings_interactive(config, definition, prompt_optional=True, settings=None, use_default=None):
 
     """
     This function ...
@@ -3131,11 +3137,15 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
     :param definition:
     :param prompt_optional:
     :param settings:
+    :param use_default:
     :return:
     """
 
     # Fixed
     for name in definition.fixed:
+
+        # Check
+        if use_default is not None and name in use_default: raise ValueError("Cannot use the default value for a fixed setting")
 
         # Check in settings
         if settings is not None and name in settings:
@@ -3162,6 +3172,9 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         if settings is not None and name in settings:
             config[name] = settings[name]
             continue
+
+        # Check
+        if use_default is not None and name in use_default: raise ValueError("Cannot use the default value for a required setting")
 
         # Get properties
         real_type = definition.required[name].type
@@ -3358,6 +3371,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         max_value = definition.pos_optional[name].max_value
         forbidden = definition.pos_optional[name].forbidden
         default_alias = definition.pos_optional[name].default_alias
+
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -3585,6 +3603,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         forbidden = definition.optional[name].forbidden
         default_alias = definition.optional[name].default_alias
 
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
+
         # Get list of choices and a dict of their descriptions
         if choices is not None:
             choices_list = choices.keys() if isinstance(choices, dict) else choices
@@ -3613,8 +3636,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 # Dynamic list
                 if dynamic_list:
 
-                    log.info(
-                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
 
                     real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
 
@@ -3806,6 +3828,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         description = definition.flags[name].description
         letter = definition.flags[name].letter
         default = definition.flags[name].default  # True or False
+
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
 
         if not prompt_optional:
             value = default

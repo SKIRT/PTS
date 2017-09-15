@@ -76,6 +76,7 @@ class ModelBuilderBase(BuildComponent):
         # Check whether there is not yet a directory for this model
         if fs.is_directory(self.model_path):
             if fs.is_empty(self.model_path, recursive=True): fs.clear_directory(self.model_path)
+            elif self.config.overwrite: fs.clear_directory(self.model_path)
             else: raise IOError("A directory for a model called '" + self.model_name + "' already exists")
         else: fs.create_directory(self.model_path)
 

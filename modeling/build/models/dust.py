@@ -306,7 +306,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building additional dust components ...")
 
         # Proceed?
-        while prompt_proceed():
+        while prompt_proceed("build additional dust components?"):
 
             # Set parameters
             name = self.set_additional_parameters()

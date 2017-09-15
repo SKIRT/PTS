@@ -29,6 +29,18 @@ from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
+bulge_default_parameters = ["default_old_bulge_template", "default_old_bulge_metallicity", "default_old_bulge_age"]
+old_default_parameters = ["default_old_disk_template", "default_old_disk_metallicity", "default_old_disk_age"]
+young_default_parameters = ["default_young_template", "default_young_metallicity", "default_young_age", "young_scaleheight_ratio"]
+ionizing_default_parameters = ["default_ionizing_metallicity", "ionizing_scaleheight_ratio", "default_sfr", "default_ionizing_compactness", "default_ionizing_pressure", "default_covering_factor", "fuv_ionizing_contribution"]
+dust_default_parameters = ["default_hydrocarbon_pops", "default_enstatite_pops", "default_forsterite_pops", "default_dust_mass", "dust_scaleheight_ratio"]
+
+# -----------------------------------------------------------------
+
+general_stellar_default_parameters = ["scalelength_to_scaleheight", "use_defaults"]
+
+# -----------------------------------------------------------------
+
 class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
     
     """
@@ -391,6 +403,18 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_all_basic_stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_bulge and self.has_old and self.has_young and self.has_ionizing
+
+    # -----------------------------------------------------------------
+
     def build_stars(self):
 
         """
@@ -414,8 +438,26 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["ionizing"] = not self.has_ionizing
         config["additional"] = self.config.additional
 
+        # Set default options for components thare are already present so they won't be prompted for anymore
+        use_default = None
+        if self.has_bulge:
+            if use_default is None: use_default = bulge_default_parameters
+            else: use_default.extend(bulge_default_parameters)
+        if self.has_old:
+            if use_default is None: use_default = old_default_parameters
+            else: use_default.extend(old_default_parameters)
+        if self.has_young:
+            if use_default is None: use_default = young_default_parameters
+            else: use_default.extend(young_default_parameters)
+        if self.has_ionizing:
+            if use_default is None: use_default = ionizing_default_parameters
+            else: use_default.extend(ionizing_default_parameters)
+        if self.has_all_basic_stellar:
+            if use_default is None: use_default = general_stellar_default_parameters
+            else: use_default.extend(general_stellar_default_parameters)
+
         # Create the builder
-        builder = StarsBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
+        builder = StarsBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True, use_default=use_default)
 
         # Run
         builder.run()
@@ -467,6 +509,18 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_all_basic_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_dust
+
+    # -----------------------------------------------------------------
+
     def build_dust(self):
 
         """
@@ -487,8 +541,14 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["disk"] = not self.has_dust
         config["additional"] = self.config.additional
 
+        # Set default options for components thare are already present so they won't be prompted for anymore
+        use_default = None
+        if self.has_dust:
+            if use_default is None: use_default = dust_default_parameters
+            else: use_default.extend(dust_default_parameters)
+
         # Create the builder
-        builder = DustBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True)
+        builder = DustBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True, use_default=use_default)
 
         # Run
         builder.run(old_scaleheight=self.old_scaleheight)
