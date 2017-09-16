@@ -286,10 +286,14 @@ def decompose_repo_url(url, return_type=False):
 
     # Already https link
     if url.startswith("https://"):
-        if return_type: return decompose_https(url), "https"
+        if return_type:
+            host, user_or_organization, repo_name, username, password = decompose_https(url)
+            return host, user_or_organization, repo_name, username, password, "https"
         else: return decompose_https(url)
     else:
-        if return_type: return decompose_ssh(url), "ssh"
+        if return_type:
+            host, user_or_organization, repo_name, username, password = decompose_ssh(url)
+            return host, user_or_organization, repo_name, username, password, "ssh"
         else: return decompose_ssh(url)
 
 # -----------------------------------------------------------------
