@@ -127,25 +127,49 @@ class AnalysisOptions(Options):
         self.plotting.add_property("reference_seds", "filepath_list", "path to a reference SED file against which the simulated SKIRT SEDs should be plotted", None)
 
         # Misc
+        ## General
         self.add_section("misc", "settings for creating data of various types from the simulation output")
         self.misc.add_property("path", "string", "misc output directory", None)
+
+        ## RGB images
         self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
+
+        ## Wave movies
         self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
-        self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
-        self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
+
+        ## Observed fluxes and images
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
         self.misc.add_property("observation_instruments", "string_list", "the names of the instruments for which to recreate the observations", None)
-        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
-        #self.misc.add_property("images_wcs", "file_path", "the path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images", None)
+
+        ## Observed fluxes
+        self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
+        self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
+
+        ## Observed images
+        self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
+        self.misc.add_property("wcs_instrument", "string", "instrument for which to take the images_wcs as the WCS (if not a dictionary)")
         self.misc.add_property("images_wcs", "filepath_or_string_filepath_dictionary", "path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images (single path or path for each datacube as a dictionary)", None)
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
+
+        ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
         self.misc.add_property("images_psfs_auto", "boolean", "automatically determine the appropriate PSF kernel for each image", False)
-        self.misc.add_property("images_remote_threshold", "data_quantity", "data size threshold for remote rebinning and convolution") # 0.5 GB is a good size
-        self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
-        self.misc.add_property("rebin_wcs", "string_string_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
+
+        # Remote thresholds
+        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
+        self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "5 GB", convert_default=True) # 0.5 GB is a good size
+        self.misc.add_property("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
+        self.misc.add_property("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
+
+        ## REBINNING
+        self.misc.add_property("rebin_instrument", "string", "instrument for which the rebin_wcs or rebin_dataset should be used")
+        self.misc.add_property("rebin_wcs", "filepath_or_string_filepath_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
+        self.misc.add_property("rebin_dataset", "file_path", "path to the dataset of which the coordinate systems are to be used as rebinning references")
+
+        # OTHER FLAGS
         self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
-        self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
+        self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
+
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)

@@ -58,7 +58,7 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def add_property(self, name, ptype, description, default_value=None, choices=None):
+    def add_property(self, name, ptype, description, default_value=None, choices=None, convert_default=False):
 
         """
         This function ...
@@ -67,6 +67,7 @@ class SimplePropertyComposite(object):
         :param description:
         :param default_value:
         :param choices:
+        :param convert_default:
         :return:
         """
 
@@ -84,6 +85,11 @@ class SimplePropertyComposite(object):
 
         # Set the choices
         self._choices[name] = choices
+
+        # Convert default
+        if default_value is not None and convert_default:
+            parsing_function = getattr(parsing, ptype)
+            default_value = parsing_function(default_value)
 
         # Set the attribute with the default value
         setattr(self, name, default_value)

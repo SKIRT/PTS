@@ -398,6 +398,9 @@ class AnianoKernels(Kernels):
         :return:
         """
 
+        # Convert to filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
         # Determine the aniano name for the PSF
         psf_name = aniano_names[str(fltr)]
 
@@ -418,6 +421,7 @@ class AnianoKernels(Kernels):
             psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm, to_filter=fltr)
             psf.saveto(psf_file_path)
 
+        # Return
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path
 

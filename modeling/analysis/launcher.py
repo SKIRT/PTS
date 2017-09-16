@@ -739,8 +739,12 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_filters = self.observed_filter_names  # the filters for which to create the observations
         self.analysis_options.misc.observation_instruments = [earth_name]
 
+        # Group the images per instrument (only when more instruments are being converted into images)
+        #self.analysis_options.misc.group_images = True
+
         # Set WCS path for the images
         self.analysis_options.misc.images_wcs = self.reference_wcs_path
+        self.analysis_options.misc.wcs_instrument = earth_name
 
         # Unit for the images
         self.analysis_options.misc.images_unit = self.config.images_unit
@@ -756,6 +760,7 @@ class AnalysisLauncher(AnalysisComponent):
         # REBINNING
         #self.analysis_options.misc.rebin_wcs = # dictionary of FITS files per filter?
         self.analysis_options.misc.rebin_dataset = self.dataset_path # much more convenient to specify
+        self.analysis_options.misc.rebin_instrument = earth_name
 
         # Make images remotely
         self.analysis_options.misc.make_images_remote = self.config.images_remote
