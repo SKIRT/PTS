@@ -532,7 +532,7 @@ class SKIRTUpdater(Updater):
         # Get the url of the 'origin'
         repo_name = "origin"
         try: url = git.get_url_repository(self.remote, self.remote.skirt_repo_path, repo_name=repo_name)
-        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.skirt_repo_path, remote=self.remote)
+        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.skirt_repo_path, remote=self.remote, repo_name=repo_name)
 
         # Get latest hash
         latest_git_hash = git.get_hash_remote_repository(url)
@@ -955,7 +955,7 @@ class PTSUpdater(Updater):
         # Get the url of the 'origin'
         repo_name = "origin"
         try: url = git.get_url_repository(self.remote, self.remote.pts_package_path, repo_name=repo_name)
-        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.pts_package_path, remote=self.remote)
+        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.pts_package_path, remote=self.remote, repo_name=repo_name)
 
         # Get latest hash
         latest_git_hash = git.get_hash_remote_repository(url)
@@ -1535,13 +1535,14 @@ def first_three_items_in_iterator(iterator):
 
 # -----------------------------------------------------------------
 
-def fix_repo_url(url, repo_path, remote=None):
+def fix_repo_url(url, repo_path, remote=None, repo_name="origin"):
 
     """
     Thisf unction ...
     :param url:
     :param repo_path:
     :param remote:
+    :param repo_name:
     :return:
     """
 
@@ -1549,7 +1550,7 @@ def fix_repo_url(url, repo_path, remote=None):
     log.warning("Authentication for repository url '" + url + "' failed")
 
     # Decompose the (faulty) URL
-    host, user_or_organization, repo_name, username, password, url_type = git.decompose_repo_url(url, return_type=True)
+    host, user_or_organization, remote_repo_name, username, password, url_type = git.decompose_repo_url(url, return_type=True)
 
     # If username or password are not in the URL, exit with an error (there is nothing we can do)
     if username is None and password is None: raise RuntimeError("Authentication problem could not be solved")
@@ -1561,7 +1562,7 @@ def fix_repo_url(url, repo_path, remote=None):
     if username == correct_username and password == correct_password: raise RuntimeError("Authentication problem could not be solved by replacing username or password")
 
     # Compose the new (correct) URL
-    new_url = git.compose_repo_url(url_type, host, user_or_organization, repo_name, username=correct_username, password=correct_password)
+    new_url = git.compose_repo_url(url_type, host, user_or_organization, remote_repo_name, username=correct_username, password=correct_password)
 
     # Warning
     log.warning("Replacing the url of the '" + repo_name + "' remote repository to '" + new_url + "' ...")

@@ -711,7 +711,7 @@ class AnalysisLauncher(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.reference_wcs_path
+        return self.analysis_run.reference_map_path
 
     # -----------------------------------------------------------------
 

@@ -448,14 +448,18 @@ def replace_remote_url(url, repo_path, repo_name="origin", remote=None, show_out
     """
 
     # Determine the command
-    command = "git remote set-url " + repo_name + " '" + repo_name + "'"
+    command = "git remote set-url " + repo_name + " '" + url + "'"
 
     # Remote
     if remote is not None:
         output = remote.execute(command, cwd=repo_path, show_output=show_output)
+        for line in output:
+            if "fatal:" in line: raise RuntimeError("Error: " + line)
 
     # Local
     else:
         output = terminal.execute_no_pexpect(command, cwd=repo_path, show_output=show_output)
+        for line in output:
+            if "fatal:" in line: raise RuntimeError("Error: " + line)
 
 # -----------------------------------------------------------------
