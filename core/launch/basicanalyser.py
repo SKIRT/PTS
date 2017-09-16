@@ -533,14 +533,22 @@ class BasicAnalyser(Configurable):
         # Set group flag
         self.image_maker.config.group = self.misc_options.group_images
 
+        # Set input
+        input_dict = dict()
+        input_dict["simulation"] = self.simulation
+        input_dict["output_path"] = self.misc_options.path
+        input_dict["filter_names"] = self.misc_options.observation_filters
+        input_dict["instrument_names"] = self.misc_options.observation_instruments
+        input_dict["wcs_paths"] = self.misc_options.images_wcs
+        input_dict["kernel_paths"] = self.misc_options.images_kernels
+        input_dict["auto_psfs"] = self.misc_options.images_psfs_auto
+        input_dict["unit"] = self.misc_options.images_unit
+        input_dict["host_id"] = self.misc_options.make_images_remote
+        input_dict["rebin_wcs_paths"] = self.misc_options.rebin_wcs
+        input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
+
         # Run
-        self.image_maker.run(simulation=self.simulation, output_path=self.misc_options.path,
-                             filter_names=self.misc_options.observation_filters,
-                             instrument_names=self.misc_options.observation_instruments,
-                             wcs_path=self.misc_options.images_wcs,
-                             kernel_paths=self.misc_options.images_kernels,
-                             unit=self.misc_options.images_unit,
-                             host_id=self.misc_options.make_images_remote, rebin_wcs_paths=self.misc_options.rebin_wcs)
+        self.image_maker.run(**input_dict)
 
 # -----------------------------------------------------------------
 

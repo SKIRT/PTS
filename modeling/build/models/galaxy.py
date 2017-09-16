@@ -1304,7 +1304,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
         for key in component.parameters:
             value = component.parameters[key]
-            print(line_prefix + " - " + key + ": " + tostr(value))
+            print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
 
         print("")
 
@@ -1316,7 +1316,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
         for key in component.deprojection:
             value = component.deprojection[key]
-            print(line_prefix + " - " + key + ": " + tostr(value))
+            print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
 
         print("")
 
@@ -1328,7 +1328,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
         for key in component.model:
             value = component.model[key]
-            print(line_prefix + " - " + key + ": " + tostr(value))
+            print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
 
         print("")
 
@@ -1341,7 +1341,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
         for key in component.properties["geometry"]:
             value = component.properties["geometry"][key]
-            print(line_prefix + " - " + key + ": " + tostr(value))
+            print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
         print("")
 
         # SED
@@ -1352,7 +1352,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
             for key in component.properties["sed"]:
                 value = component.properties["sed"][key]
-                print(line_prefix + " - " + key + ": " + tostr(value))
+                print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
             print("")
 
         # Mix
@@ -1363,7 +1363,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
             for key in component.properties["mix"]:
                 value = component.properties["mix"][key]
-                print(line_prefix + " - " + key + ": " + tostr(value))
+                print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
             print("")
 
         # Neither SED nor mix
@@ -1375,7 +1375,7 @@ def show_component(path, map_path=None, line_prefix=""):
 
         for key in component.properties["normalization"]:
             value = component.properties["normalization"][key]
-            print(line_prefix + " - " + key + ": " + tostr(value))
+            print(line_prefix + " - " + fmt.bold + key + fmt.reset + ": " + tostr(value))
         print("")
 
 # -----------------------------------------------------------------

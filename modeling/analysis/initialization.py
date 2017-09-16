@@ -25,6 +25,8 @@ from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
 from ..basics.instruments import FullInstrument
 from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
+from .run import info_filename
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -153,6 +155,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         analysis_run_path = fs.join(self.analysis_path, analysis_run_name)
         if not fs.is_directory(analysis_run_path): fs.create_directory(analysis_run_path)
         elif fs.is_empty(analysis_run_path, recursive=True): fs.clear_directory(analysis_run_path)
+        elif self.config.overwrite: fs.clear_directory(analysis_run_path)
         else: raise ValueError("There already exists a directory for this analysis run")
 
         # Create the info object
@@ -161,6 +164,9 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Set the analysis run name and path
         self.analysis_run_info.name = analysis_run_name
         self.analysis_run_info.path = analysis_run_path
+
+        # Set run info path
+        self.run_info_path = fs.join(self.analysis_run_path, info_filename)
 
     # -----------------------------------------------------------------
 
@@ -199,10 +205,30 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Getting the analysis model ...")
 
         # Load from model
-        if self.from_model: self.prompt_model()
+        if self.from_model:
+
+            # Get the model
+            model_name = self.prompt_model()
+
+            # Update the analysis info
+            self.analysis_run_info.model_name = model_name
+            self.analysis_run_info.parameter_values = self.parameter_values
 
         # Prompt for a fitting run
-        elif self.from_fitting_run: self.prompt_fitting()
+        elif self.from_fitting_run:
+
+            # Get the model
+            run_id, generation_name, simulation_name, chi_squared = self.prompt_fitting()
+
+            # Update the analysis info
+            self.analysis_run_info.fitting_run = run_id
+            self.analysis_run_info.generation_name = generation_name
+            self.analysis_run_info.simulation_name = simulation_name
+            self.analysis_run_info.chi_squared = chi_squared
+            self.analysis_run_info.parameter_values = self.parameter_values
+
+            # Set the name of the corresponding model of the model suite
+            self.analysis_run_info.model_name = self.definition.name
 
         # Invalid
         else: raise ValueError("Invalid value for 'origin'")
@@ -212,7 +238,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
             print("")
             print("Adapted model parameter values:")
             print("")
-            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
             print("")
 
         # Show all model parameters
@@ -220,7 +246,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
             print("")
             print("All model parameter values:")
             print("")
-            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
             print("")
 
     # -----------------------------------------------------------------
@@ -253,6 +279,24 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Create the generation object
         self.analysis_run = AnalysisRun(self.galaxy_name, self.analysis_run_info)
+
+    # -----------------------------------------------------------------
+
+    def create_projections(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projections ...")
+
+        # Create projections
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True)
+
+        # Set the deprojection name in the analysis info
+        self.analysis_run_info.reference_deprojection = deprojection_name
 
     # -----------------------------------------------------------------
 

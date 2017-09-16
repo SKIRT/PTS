@@ -544,6 +544,18 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def load_component_map(self, path):
+
+        """
+        Thisf unction ...
+        :param path:
+        :return:
+        """
+
+        return load_component_map(path)
+
+    # -----------------------------------------------------------------
+
     def get_stellar_component_path(self, model_name, component_name):
 
         """
@@ -692,6 +704,40 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def get_stellar_component_map_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Return the map path
+        return get_component_map_path(path)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_component_map(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Load the map
+        return self.load_component_map(path)
+
+    # -----------------------------------------------------------------
+
     def load_dust_component(self, model_name, component_name, add_map=False):
 
         """
@@ -802,6 +848,40 @@ class ModelSuite(object):
 
         # No deprojection for this component
         return component.parameters.title, None
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_map_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Return the map path
+        return get_component_map_path(path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component_map(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Load the map
+        return self.load_component_map(path)
 
     # -----------------------------------------------------------------
 
@@ -1072,5 +1152,40 @@ def load_component(path, add_map=False):
 
     # Return the component
     return component
+
+# -----------------------------------------------------------------
+
+def get_component_map_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Determine map path
+    map_path = fs.join(path, model_map_filename)
+
+    # Check
+    if fs.is_file(map_path): raise IOError("The component map '" + map_path + "' does not exist")
+
+    # Return the map path
+    return map_path
+
+# -----------------------------------------------------------------
+
+def load_component_map(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Get the path
+    map_path = get_component_map_path(path)
+
+    # Load the map and return
+    return Frame.from_file(map_path)
 
 # -----------------------------------------------------------------

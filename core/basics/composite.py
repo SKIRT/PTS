@@ -214,7 +214,7 @@ class SimplePropertyComposite(object):
         # Set 'simple' property
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
-        elif isinstance(value, Map):
+        elif isinstance(value, dict):  # elif isinstance(value, Map):
             assert name in self._descriptions
             #print(value)
             #print(getattr(self, name))
@@ -606,26 +606,24 @@ class SimplePropertyComposite(object):
         # Inform the user
         log.debug("Loading " + cls.__name__ + " from " + path + " ...")
 
+        # Initialize dictionary to contain the properties
         properties = dict()
 
+        # Open the file
         with open(path, 'r') as f:
 
+            # Read first line
             for line in f:
+                first = line
+                break
 
-                if "Type:" in line: continue
+            #composite_type = first.split("Type: ")[1]
+            #assert composite_type == cls.__name__
 
-                line = line[:-1]
-                if not line: continue
+            # Load
+            load_properties(properties, f)
 
-                name, rest = line.split(": ")
-                value, dtype = rest.split(" [")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                if dtype == "None" or value.strip() == "None": properties[name] = None
-                else: properties[name] = getattr(parsing, dtype)(value)
-
-            # TODO: sections!!
+        #print(properties)
 
         # Create the class instance
         composite = cls(**properties)
@@ -670,14 +668,8 @@ class SimplePropertyComposite(object):
             # Print the type
             print("Type:", self.__class__.__name__, file=fh)
 
-            # Loop over the properties
-            for name in self.property_names:
-
-                dtype, value = stringify(getattr(self, name))
-                actual_dtype = self._ptypes[name]
-                print(name + ":", value + " [" + actual_dtype + "]", file=fh)
-
-            # TODO: sections!!
+            # Write
+            write_properties(self, fh)
 
         # Update the path
         self._path = path
@@ -716,3 +708,98 @@ class SimplePropertyComposite(object):
         return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
+
+def write_properties(properties, fh, indent=""):
+
+    """
+    This function ...
+    :param properties:
+    :param fh:
+    :param indent:
+    :return:
+    """
+
+    # Property composite
+    if isinstance(properties, SimplePropertyComposite):
+
+        # Loop over the properties
+        for name in properties.property_names:
+
+            dtype, value = stringify(getattr(properties, name))
+            actual_dtype = properties._ptypes[name]
+            print(indent + name + ":", value + " [" + actual_dtype + "]", file=fh)
+
+        # Loop over the sections
+        for name in properties.section_names:
+
+            print(indent + name + ":", file=fh)
+            write_properties(getattr(properties, name), fh, indent=indent+"  ")
+
+    # Dict-like
+    elif isinstance(properties, dict):
+
+        # Loop over the keys
+        for key in properties:
+
+            value = properties[key]
+            if isinstance(value, dict):
+
+                print(indent + key + ":", file=fh)
+                write_properties(properties[key], fh, indent=indent+"  ")
+
+            else:
+
+                dtype, string = stringify(value)
+                print(indent + key + ":", string + " [" + dtype + "]", file=fh)
+
+    # Invalid
+    else: raise ValueError("Cannot write the properties of type '" + str(type(properties)))
+
+# -----------------------------------------------------------------
+
+def load_properties(properties, fh, indent=""):
+
+    """
+    Thisf unction ...
+    :param properties:
+    :param fh:
+    :param indent:
+    :return:
+    """
+
+    # Loop over the lines
+    for line in fh:
+
+        #if "Type:" in line: continue
+
+        line = line[:-1]
+        if not line: continue
+
+        name, rest = line.split(":")
+        rest = rest.strip()
+
+        # End of section?
+        if not name.startswith(indent): return
+
+        # Not end of section: remove the indent
+        name = name.lstrip(indent)
+
+        if rest == "":
+
+            #expect_section = name
+
+            # Load properties
+            properties[name] = dict()
+            load_properties(properties[name], fh, indent=indent+"  ")
+
+        else:
+
+            value, dtype = rest.split(" [")
+            dtype = dtype.split("]")[0]
+
+            # Set the property value
+            if dtype == "None" or value.strip() == "None": properties[name] = None
+            else: properties[name] = getattr(parsing, dtype)(value)
+
+# -----------------------------------------------------------------
+

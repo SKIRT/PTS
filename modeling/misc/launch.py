@@ -26,8 +26,8 @@ from ...core.launch.launcher import SKIRTLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools import numbers
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.simulation.grids import load_grid, bintree, octtree, cartesian
-from ...core.simulation.grids import CartesianDustGrid, OctTreeDustGrid, BinaryTreeDustGrid
+from ...core.simulation.grids import load_grid, bintree, octtree
+from ...core.simulation.grids import OctTreeDustGrid, BinaryTreeDustGrid
 from ..config.launch_model import make_images, make_seds
 from ...core.simulation.output import output_types as ot
 from ...core.launch.options import AnalysisOptions
@@ -117,34 +117,34 @@ class ModelLauncher(ModelSimulationInterface):
         # 2. Get the model
         self.get_model()
 
-        # 4. Create the wavelength grid
+        # 3. Create the wavelength grid
         if not self.has_wavelength_grid: self.create_wavelength_grid()
 
-        # 5. Create the dust grid
+        # 4. Create the dust grid
         if not self.has_dust_grid: self.create_dust_grid()
 
-        # Load the deprojections
+        # 5. Load the deprojections
         self.load_deprojections()
 
-        # Create the projections
-        self.create_projections(make_edgeon=self.config.edgeon, make_faceon=self.config.faceon)
+        # 6. Create the projections
+        self.create_projections()
 
-        # 6. Create the instruments
+        # 7. Create the instruments
         self.create_instruments()
 
-        # 7. Adapt ski file
+        # 8. Adapt ski file
         self.adapt_ski()
 
-        # 8. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
+        # 9. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         if not self.has_dust_grid_tree: self.build_dust_grid()
 
-        # 9. Set the input
+        # 10. Set the input
         self.set_input()
 
-        # 10. Write
+        # 11. Write
         self.write()
 
-        # 11. Launch (and analyse) the simulation
+        # 12. Launch (and analyse) the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -220,6 +220,10 @@ class ModelLauncher(ModelSimulationInterface):
         # Load dust grid?
         if self.config.regenerate_dust_grid: self.remove_dust_grid()
         else: self.load_dust_grid()
+
+        # Set remote
+        self.launcher.config.remote = self.config.remote
+        self.launcher.config.attached = self.config.attached
 
     # -----------------------------------------------------------------
 
@@ -444,6 +448,21 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    def create_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projections ...")
+
+        # Create
+        self.create_projection_systems(make_edgeon=self.config.edgeon, make_faceon=self.config.faceon)
+
+    # -----------------------------------------------------------------
+
     @property
     def make_images(self):
 
@@ -539,6 +558,18 @@ class ModelLauncher(ModelSimulationInterface):
 
         # Set wavelength grid for ski file
         self.ski.set_file_wavelength_grid(wavelengths_filename)
+
+        # Set the instruments
+        self.set_instruments()
+
+    # -----------------------------------------------------------------
+
+    def set_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Remove the existing instruments
         self.ski.remove_all_instruments()
@@ -835,6 +866,36 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    def create_analysis_options(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Create analysis options object
+        analysis_options = AnalysisOptions()
+
+        # Set plotting analysis options
+        analysis_options.plotting.seds = True  # plot SEDs
+        analysis_options.plotting.reference_seds = [self.observed_sed_path]
+
+        # Set misc analysis options
+        analysis_options.misc.spectral_convolution = self.config.spectral_convolution
+        if self.make_seds: analysis_options.misc.fluxes = True
+        if self.make_images: analysis_options.misc.images = True
+        analysis_options.misc.observation_filters = self.observed_filter_names
+        instruments = [earth_name]
+        if self.config.faceon: instruments.append(faceon_name)
+        if self.config.edgeon: instruments.append(edgeon_name)
+        analysis_options.misc.observation_instruments = instruments
+        analysis_options.misc.group_images = True
+
+        # Return the analysis options
+        return analysis_options
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -847,10 +908,6 @@ class ModelLauncher(ModelSimulationInterface):
 
         # Create
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, input_path=self.input_paths, name=self.simulation_name)
-
-        # Set remote
-        self.launcher.config.remote = self.config.remote
-        self.launcher.config.attached = self.config.attached
 
         # Set options
         self.launcher.config.show_progress = True
@@ -880,23 +937,8 @@ class ModelLauncher(ModelSimulationInterface):
             self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
         else: raise RuntimeError("Something went wrong")
 
-        # Create analysis options object
-        analysis_options = AnalysisOptions()
-
-        # Set plotting analysis options
-        analysis_options.plotting.seds = True  # plot SEDs
-        analysis_options.plotting.reference_seds = [self.observed_sed_path]
-
-        # Set misc analysis options
-        analysis_options.misc.spectral_convolution = self.config.spectral_convolution
-        if self.make_seds: analysis_options.misc.fluxes = True
-        if self.make_images: analysis_options.misc.images = True
-        analysis_options.misc.observation_filters = self.observed_filter_names
-        instruments = [earth_name]
-        if self.config.faceon: instruments.append(faceon_name)
-        if self.config.edgeon: instruments.append(edgeon_name)
-        analysis_options.misc.observation_instruments = instruments
-        analysis_options.misc.group_images = True
+        # Create analysis options
+        analysis_options = self.create_analysis_options()
 
         # Set analysis directories
         analysis_options.plotting.path = self.simulation_plot_path

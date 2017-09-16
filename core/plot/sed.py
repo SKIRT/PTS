@@ -259,6 +259,11 @@ class SEDPlotter(Configurable):
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
+        # Set the 'show' flag
+        if self.config.show is None:
+            if self.out_path is not None: self.config.show = False
+            else: self.config.show = True
+
     # -----------------------------------------------------------------
 
     def load_seds(self):
@@ -1294,21 +1299,44 @@ class SEDPlotter(Configurable):
         if self.title is not None: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Save or show the plot
-        if self.out_path is None: self.figure.show()
-        else:
+        #if self.out_path is None: self.figure.show()
+        if self.config.show: self.figure.show()
 
-            if types.is_string_type(self.out_path):
-
-                if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds")
-                else: path = self.out_path
-
-            else: path = self.out_path
-
-            # Save
-            self.figure.saveto(path)
+        # Save the figure
+        if self.out_path is not None: self.save_figure()
 
         # Close
+        #self.figure.close()s
+
+    # -----------------------------------------------------------------
+
+    def __del__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         self.figure.close()
+
+    # -----------------------------------------------------------------
+
+    def save_figure(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if types.is_string_type(self.out_path):
+
+            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds")
+            else: path = self.out_path
+
+        else: path = self.out_path
+
+        # Save
+        self.figure.saveto(path)
 
 # -----------------------------------------------------------------
 

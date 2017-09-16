@@ -34,6 +34,7 @@ from ..tools import filesystem as fs
 from ..tools import parallelization
 from ..simulation.skifile import SkiFile
 from ..tools import formatting as fmt
+from ..remote.host import load_host
 
 # -----------------------------------------------------------------
 
@@ -74,12 +75,19 @@ class SKIRTLauncher(Configurable):
         # The analysis options
         self.analysis_options = None
 
+        # Scheduling options
+        self.scheduling_options = None
+
         # The parallelization scheme
         self.parallelization = None
 
         # The number of processes
         self.nprocesses = None
         self.nprocesses_per_node = None
+
+        # ADVANCED
+        self.local_script_path = None
+        self.screen_output_path = None
 
         # The simulation object
         self.simulation = None
@@ -104,6 +112,74 @@ class SKIRTLauncher(Configurable):
         #return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
         #return False
         return self.parallelization is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.remote
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host(self):
+
+        """
+        This function returns the Host object
+        :return:
+        """
+
+        # If the setup has not been called yet, load the host
+        if self.remote is None:
+            if self.host_id is None: return None # local
+            else: return load_host(self.host_id) # remote
+
+        # If the setup has already been called
+        else: return self.remote.host
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Local execution
+        if self.host_id is None: return None
+
+        # Remote, but setup has not been called yet
+        elif self.remote is None: # setup has not been called
+
+            # Check cluster_name configuration setting
+            if self.config.cluster_name is not None: return self.config.cluster_name
+
+            # Get default cluster for host
+            else: return self.host.clusters.default
+
+        # Remote, and setup has been called (remote has been setup)
+        else: return self.remote.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_scheduler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.host is None: return False
+        else: return self.host.scheduler
 
     # -----------------------------------------------------------------
 
@@ -154,18 +230,28 @@ class SKIRTLauncher(Configurable):
         # Setup the remote execution context
         if self.config.remote is not None:
             self.remote = SKIRTRemote()
-            self.remote.setup(self.config.remote, self.config.cluster)
+            self.remote.setup(self.config.remote, self.config.cluster_name)
 
         # Create output directory
         if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
 
         # Create the logging options
-        self.logging_options = LoggingOptions()
-        self.logging_options.set_options(self.config.logging)
+        if "logging_options" in kwargs and kwargs["logging_options"] is not None: self.logging_options = kwargs.pop("logging_options")
+        else:
+            self.logging_options = LoggingOptions()
+            self.logging_options.set_options(self.config.logging)
 
         # Create the analysis options
         if "analysis_options" in kwargs and kwargs["analysis_options"] is not None: self.set_analysis_options(kwargs.pop("analysis_options"))
         else: self.create_analysis_options()
+
+        # Get scheduling options
+        if self.uses_scheduler:
+            if "scheduling_options" in kwargs and kwargs["scheduling_options"] is not None: self.scheduling_options = kwargs.pop("scheduling_options")
+            # Add the walltime to the scheduling options
+            if self.config.walltime is not None:
+                if self.scheduling_options is None: self.scheduling_options = SchedulingOptions()
+                self.scheduling_options.walltime = self.config.walltime
 
         # Get the memory information passed to this instance
         self.memory = kwargs.pop("memory", None)
@@ -179,6 +265,10 @@ class SKIRTLauncher(Configurable):
         # Get the number of processes
         if "nprocesses" in kwargs: self.nprocesses = kwargs.pop("nprocesses")
         if "nprocesses_per_node" in kwargs: self.nprocesses_per_node = kwargs.pop("nprocesses_per_node")
+
+        # ADVANCED
+        if "local_script_path" in kwargs: self.local_script_path = kwargs.pop("local_script_path")
+        if "screen_output_path" in kwargs: self.screen_output_path = kwargs.pop("screen_output_path")
 
     # -----------------------------------------------------------------
 
@@ -585,16 +675,18 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulation remotely ...")
 
-        # Add the walltime to the scheduling options
-        if self.config.walltime is not None:
-            scheduling_options = SchedulingOptions()
-            scheduling_options.walltime = self.config.walltime
-        else: scheduling_options = None
+        # Resolve the remote screen output file path
+        screen_output_path = self.screen_output_path.replace("$HOME", self.remote.home_directory).replace("$SKIRT", self.remote.skirt_root_path)
+
+        # Create the necessary directories for the screen output file
+        screen_output_dirpath = fs.directory_of(screen_output_path)
+        if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
 
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
-                                          scheduling_options=scheduling_options, attached=self.config.attached,
-                                          analysis_options=self.analysis_options, show_progress=self.config.show_progress)
+                                          scheduling_options=self.scheduling_options, attached=self.config.attached,
+                                          analysis_options=self.analysis_options, show_progress=self.config.show_progress,
+                                          local_script_path=self.local_script_path, screen_output_path=self.screen_output_path)
 
         # Set the analysis options for the simulation
         self.set_remote_simulation_options()

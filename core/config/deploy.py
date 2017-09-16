@@ -16,7 +16,8 @@ from pts.core.tools import introspection
 definition = ConfigurationDefinition()
 
 # Add optional
-if len(find_host_ids()) > 0: definition.add_positional_optional("host_ids", "string_list", "remote host ids", choices=find_host_ids(), default=find_host_ids())
+host_ids = find_host_ids()
+if len(host_ids) > 0: definition.add_positional_optional("host_ids", "string_list", "remote host ids", choices=host_ids, default=host_ids)
 else: definition.add_fixed("host_ids", "remote host_ids", [])
 
 # Add optional
@@ -30,12 +31,15 @@ definition.add_flag("pts", "deploy PTS", True)
 definition.add_flag("check", "check versions after deployment", True)
 definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
+# Also update the dependencies
 definition.add_flag("update_dependencies", "update the dependencies if possible", False)
 
 # Add optional
 definition.add_optional("pts_on", "string_list", "hosts on which PTS should be installed (None means all)", choices=find_host_ids())
 
+# -----------------------------------------------------------------
+
 # Dangerous stuff!
-definition.add_flag("clean", "do a completely clean install (remove existing installations)")
+definition.add_flag("clean", "do a completely clean install (remove existing installations) (use with care!)", False)
 
 # -----------------------------------------------------------------

@@ -522,18 +522,7 @@ class ModelerBase(Configurable):
         self.history = load_modeling_history(self.modeling_path)
 
         # Clear remotes
-        if self.config.clear_remotes:
-            for host_id in self.moderator.all_host_ids:
-
-                # Inform the user
-                log.info("Clearing remote '" + host_id + "' ...")
-
-                # Setup the remote
-                remote = Remote()
-                if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")
-
-                # Clear temporary data and close sessions
-                remote.clear_temp_and_sessions()
+        if self.config.clear_remotes: self.moderator.clear_all_hosts()
 
         # Deploy SKIRT and PTS
         if self.config.deploy: self.deploy()

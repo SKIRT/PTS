@@ -388,8 +388,7 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
     # Create projections
     # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
     earth_projection = GalaxyProjection(galaxy_distance, galaxy_inclination, azimuth,
-                                        disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent,
-                                        extent)
+                                        disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent, extent)
     faceon_projection = FaceOnProjection.from_projection(earth_projection)
     edgeon_projection = EdgeOnProjection.from_projection(earth_projection)
 
@@ -398,7 +397,8 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 
 # -----------------------------------------------------------------
 
-def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights):
+def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights,
+                                          return_deprojection_name=False):
 
     """
     This function ...
@@ -406,11 +406,12 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :param galaxy_distance:
     :param azimuth:
     :param scale_heights:
+    :param return_deprojection_name:
     :return:
     """
 
     # Get the desired deprojection to base the instruments on
-    reference_deprojection = prompt_deprojection(deprojections)
+    reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
 
     # Create the 'earth' projection system
     earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)
@@ -422,7 +423,8 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     edgeon_projection = create_edgeon_projection(reference_deprojection, scale_heights)
 
     # Return the projections
-    return earth_projection, faceon_projection, edgeon_projection
+    if return_deprojection_name: return earth_projection, faceon_projection, edgeon_projection, deprojection_name
+    else: return earth_projection, faceon_projection, edgeon_projection
 
 # -----------------------------------------------------------------
 
@@ -536,11 +538,12 @@ def create_edgeon_projection(deprojection, scale_heights):
 
 # -----------------------------------------------------------------
 
-def prompt_deprojection(deprojections):
+def prompt_deprojection(deprojections, return_name=False):
 
     """
     This function ...
     :param deprojections:
+    :param return_name:
     :return:
     """
 
@@ -577,6 +580,8 @@ def prompt_deprojection(deprojections):
             break
 
     # Return the deprojection
-    return deprojections[(answer, answer_title)]
+    deprojection = deprojections[(answer, answer_title)]
+    if return_name: return deprojection, answer
+    else: return deprojection
 
 # -----------------------------------------------------------------

@@ -12,7 +12,7 @@ from pts.core.remote.host import find_host_ids
 # -----------------------------------------------------------------
 
 # Add required arguments
-definition.add_required("ski", "file_path", "the name/path of the ski file")
+definition.add_required("ski", "file_path", "name/path of the ski file")
 
 # Simulation settings
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
@@ -24,11 +24,11 @@ definition.add_flag("show_progress", "show progress (for local simulation or rem
 # -----------------------------------------------------------------
 
 # Add positional arguments
-definition.add_positional_optional("remote", "string", "the remote host on which to run the simulation (if none is specified, the simulation is run locally", choices=find_host_ids())
+definition.add_positional_optional("remote", "string", "remote host on which to run the simulation (if none is specified, the simulation is run locally", choices=find_host_ids())
+definition.add_optional("cluster_name", "string", "name of the cluster", letter="c")
 
 # Remote and parallelization
-definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
-definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
+definition.add_optional("parallel", "integer_tuple", "parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
 definition.add_flag("data_parallel_local", "enable data parallelization for local execution", False)
 definition.add_flag("data_parallel_remote", "set data parallelization for remote execution (None means automatic)", None)

@@ -103,6 +103,30 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def convolution(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.kernel_paths is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rebinning(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.rebin_wcs is not None
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -127,10 +151,10 @@ class ObservedImageMaker(Configurable):
         self.make_images()
 
         # 6. Do convolutions
-        if self.kernel_paths is not None: self.convolve()
+        if self.convolution: self.convolve()
 
         # 7. Rebin
-        if self.rebin_wcs is not None: self.rebin()
+        if self.rebinning: self.rebin()
 
         # 8. Add sky
         self.add_sky()
@@ -161,12 +185,25 @@ class ObservedImageMaker(Configurable):
         if "simulation" in kwargs: simulation = kwargs.pop("simulation")
         elif "simulation_output_path" in kwargs: simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
         else: raise ValueError("Simulation or simulation output path must be specified")
+
+        # Get output directory
         output_path = kwargs.pop("output_path", None)
+
+        # Get filter names for which to create observed images
         filter_names = kwargs.pop("filter_names", None)
+
+        # Get names of the instruments (datacubes) of which to create observed images
         instrument_names = kwargs.pop("instrument_names", None)
-        wcs_path = kwargs.pop("wcs_path", None)
-        wcs = kwargs.pop("wcs", None)
+
+        # Get coordinate system paths
+        wcs_paths = kwargs.pop("wcs_paths", None)
+        coordinate_systems = kwargs.pop("wcs", None)
+
+        # For convolution
         kernel_paths = kwargs.pop("kernel_paths", None)
+        auto_psfs = kwargs.pop("auto_psfs", False)
+        remote_threshold = kwargs.pop("remote_threshold", None)
+
         unit = kwargs.pop("unit", None)
         host_id = kwargs.pop("host_id", None)
         rebin_wcs_paths = kwargs.pop("rebin_wcs_paths", None)
@@ -236,6 +273,28 @@ class ObservedImageMaker(Configurable):
 
         # Set the host id
         self.host_id = host_id
+
+    # -----------------------------------------------------------------
+
+    def set_psf_kernels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining the PSF kernel automatically for each image filter ...")
+
+        from pts.magic.convolution.aniano import AnianoKernels
+        aniano = AnianoKernels()
+
+        # # Set the paths to convolution kernel the for each image (except for the SPIRE images)
+        # kernel_paths = dict()
+        # pacs_red_psf_path = aniano.get_psf_path(self.pacs_red_filter)
+        # for filter_name in self.observed_filter_names:
+        #     if "SPIRE" in filter_name: continue
+        #     kernel_paths[filter_name] = pacs_red_psf_path
 
     # -----------------------------------------------------------------
 

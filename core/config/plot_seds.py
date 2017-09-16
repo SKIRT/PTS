@@ -29,3 +29,7 @@ definition.add_optional("unit", "photometric_unit", "photometric unit", "Jy", co
 definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("show", "show the plot (default is automatic)", None)
+
+# -----------------------------------------------------------------

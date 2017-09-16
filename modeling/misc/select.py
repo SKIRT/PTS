@@ -88,6 +88,11 @@ def get_default_parameters(ski):
         # Get the value from the ski file
         value = ski.get_labeled_value(label)
 
+        # Cannot find the labeled value
+        if value is None:
+            log.warning("Could not find the parameter with label '" + label + "' in the ski file")
+            continue
+
         # Set the default value
         default_values[label] = value
 

@@ -1150,6 +1150,19 @@ def string_filepath_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def filepath_or_string_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_filepath_dictionary(argument)
+    except ValueError: return file_path(argument)
+
+# -----------------------------------------------------------------
+
 def string_unit_dictionary(argument):
 
     """

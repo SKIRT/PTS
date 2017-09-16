@@ -112,6 +112,9 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         self.parameter_values = parameter_values
         self.input_paths = input_paths
 
+        # Return the model name
+        return model_name
+
     # -----------------------------------------------------------------
 
     def prompt_fitting(self):
@@ -135,6 +138,9 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         self.definition = definition
         self.parameter_values = parameter_values
         self.input_paths = input_paths
+
+        # Return the fitting run ID, generation name, simulation name, and chi_squared
+        return run_id, generation_name, simulation_name, chi_squared
 
     # -----------------------------------------------------------------
 
@@ -296,7 +302,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_projections(self, make_edgeon=True, make_faceon=True):
+    def create_projection_systems(self, make_edgeon=True, make_faceon=True):
 
         """
         This function ...
@@ -306,7 +312,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Creating the projection systems ...")
+        #log.info("Creating the projection systems ...")
 
         azimuth = 0.0
 
@@ -316,14 +322,20 @@ class ModelSimulationInterface(GalaxyModelingComponent):
             earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
                                                                       self.galaxy_inclination, azimuth,
                                                                       self.disk_position_angle)
+            deprojection_name = "grid"
 
         # Use deprojections
-        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
+        else: earth, faceon, edgeon, deprojection_name = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
+                                                                                               azimuth, self.config.dg.scale_heights,
+                                                                                               return_deprojection_name=True)
 
         # Set the projection systems
         self.projections[earth_name] = earth
         if make_faceon: self.projections[faceon_name] = faceon
         if make_edgeon: self.projections[edgeon_name] = edgeon
+
+        # Return the deprojection name, or 'grid' if grid resolution was used to create the instruments
+        return deprojection_name
 
     # -----------------------------------------------------------------
 

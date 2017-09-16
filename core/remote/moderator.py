@@ -337,4 +337,30 @@ class PlatformModerator(object):
 
         return host_ids
 
+    # -----------------------------------------------------------------
+
+    def clear_all_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .remote import Remote
+
+        # Loop over the hosts
+        for host_id in self.all_host_ids:
+
+            # Inform the user
+            log.info("Clearing remote '" + host_id + "' ...")
+
+            # Setup the remote
+            remote = Remote()
+            if not remote.setup(host_id):
+                log.warning("Could not connect to remote host '" + host_id + "'")
+                continue
+
+            # Clear temporary data and close sessions
+            remote.clear_temp_and_sessions()
+
 # -----------------------------------------------------------------

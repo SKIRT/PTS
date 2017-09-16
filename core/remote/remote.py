@@ -3294,31 +3294,44 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def create_directory(self, path, show_output=False):
+    def create_directory(self, path, show_output=False, recursive=False):
 
         """
         This function ...
         :param path:
         :param show_output:
+        :param recursive:
         :return:
         """
 
         # Create the remote directory
-        output = self.execute("mkdir '" + path + "'", output=True, show_output=show_output)
+        if recursive: command = "mkdir -p '" + path + "'"
+        else: command = "mkdir '" + path + "'"
+
+        # Execute
+        output = self.execute(command, output=True, show_output=show_output)
         for line in output:
             if "cannot create directory" in line: raise IOError("Cannot create directory '" + path + "'")
 
     # -----------------------------------------------------------------
 
-    def create_directories(self, *paths):
+    def create_directories(self, *paths, **kwargs):
 
         """
         This function ...
+        :param paths:
+        :param kwargs:
         :return:
         """
 
+        recursive = kwargs.pop("recursive", False)
+
         # Create the remote directories
-        output = self.execute("mkdir '" + "' '".join(paths) + "'", output=False)
+        if recursive: command = "mkdir -p '" + "' '".join(paths) + "'"
+        else: command = "mkdir '" + "' '".join(paths) + "'"
+
+        # Execute
+        output = self.execute(command, output=False)
         for line in output:
             if "cannot create directory" in line:
                 which = line.split("cannot create directory ")[1].split(":")[0]

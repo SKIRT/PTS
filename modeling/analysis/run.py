@@ -26,6 +26,7 @@ from ...core.simulation.grids import FileTreeDustGrid, load_grid
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection, EdgeOnProjection, FaceOnProjection
 from ..basics.instruments import FullInstrument
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -51,8 +52,11 @@ class AnalysisRunInfo(SimplePropertyComposite):
         self.add_string_property("generation_name", "generation name")
         self.add_string_property("simulation_name", "simulation name")
         self.add_string_property("model_name", "name of the model")
-        self.add_property("parameter_values", "integer_real_and_quantity_list", "parameter values")
-        self.add_property("chi_squared", "real", "chi squared value")
+        self.add_real_property("chi_squared", "chi squared value of the fitted model")
+        self.add_string_property("reference_deprojection", "name of the deprojection model that is used for the creating the instruments")
+
+        # Parameter values dictionary
+        self.add_section("parameter_values", "parameter values", dynamic=True)
 
         # Set properties
         self.set_properties(kwargs)
@@ -156,7 +160,7 @@ class AnalysisRun(object):
         """
 
         # Determine the info path
-        info_path = fs.join(path, "info.dat")
+        info_path = fs.join(path, info_filename)
         if not fs.is_file(info_path): raise IOError("Could not find the info file")
         else: return cls.from_info(info_path)
 
@@ -916,6 +920,19 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..build.suite import ModelSuite
+        return ModelSuite.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def generation_name(self):
 
         """
@@ -984,10 +1001,140 @@ class AnalysisRun(object):
         # Set attributes
         model.simulation_name = self.simulation_name
         model.chi_squared = self.chi_squared
-        model.parameter_values = self.parameter_values # set the parameter values
+        #model.parameter_values = self.parameter_values # set the parameter values
+
+        raise NotImplementedError("This function has to be modified: the parameter_values list depends on the fitting run (the order of the free parameter labels), but the analysis run only has a dictionary of the parameter values")
 
         # Return the model
-        return model
+        #return model
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_grid_resolution(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.info.reference_deprojection == "grid"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_deprojection_component_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.uses_grid_resolution: return None
+        return self.info.reference_deprojection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_stellar_reference_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.uses_grid_resolution: raise ValueError("This function shouldn't be called")
+        return self.reference_deprojection_component_name in self.model_suite.get_stellar_component_names(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_dust_reference_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.uses_grid_resolution: raise ValueError("This function shouldn't be called")
+        return self.reference_deprojection_component_name in self.model_suite.get_dust_component_names(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_deprojection_component(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_deprojection_component_name is None: return None
+        else:
+            if self.is_stellar_reference_deprojection: return self.model_suite.load_stellar_component(self.model_name, self.reference_deprojection_component_name, add_map=False)
+            elif self.is_dust_reference_deprojection: return self.model_suite.load_dust_component(self.model_name, self.reference_deprojection_component_name, add_map=False)
+            else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_component_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_deprojection(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.reference_deprojection_component_name is None: return None
+        else:
+            if self.is_stellar_reference_deprojection: return self.model_suite.load_stellar_component_deprojection(self.model_name, self.reference_deprojection_component_name, add_map=False)
+            elif self.is_dust_reference_deprojection: return self.model_suite.load_dust_component_deprojection(self.model_name, self.reference_deprojection_component_name, add_map=False)
+            else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_component_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_deprojection_component_name is None: return None
+        else:
+            if self.is_stellar_reference_deprojection: return self.model_suite.load_stellar_component_map(self.model_name, self.reference_deprojection_component_name)
+            elif self.is_dust_reference_deprojection: return self.model_suite.load_dust_component_map(self.model_name, self.reference_deprojection_component_name)
+            else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_component_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_deprojection_component_name is None: return None
+        else:
+            if self.is_stellar_reference_deprojection: return self.model_suite.get_stellar_component_map_path(self.model_name, self.reference_deprojection_component_name)
+            elif self.is_dust_reference_deprojection: return self.model_suite.get_dust_component_map_path(self.model_name, self.reference_deprojection_component_name)
+            else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_component_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_map_path is None: return None
+        else: return CoordinateSystem.from_file(self.reference_map_path)
 
 # -----------------------------------------------------------------
 
