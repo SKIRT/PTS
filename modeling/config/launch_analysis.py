@@ -32,7 +32,7 @@ default_other_host_id = other_host_ids[0]
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Remote execution
-definition.add_optional("remote", "string", "remote host on which to launch the simulation", suggestions=host_ids_suggestions, choices=host_ids)
+definition.add_optional("remote", "string", "remote host on which to launch the simulation", choices=host_ids)
 definition.add_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
 definition.add_optional("images_remote", "string", "remote host on which to make the observed images", default_other_host_id, choices=other_host_ids)
 definition.add_flag("attached", "launch remote executions in attached mode", True)
@@ -43,9 +43,9 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
 
 # Parallelization options
-definition.add_optional("nnodes", "integer", "number of nodes to use for the simulations (for scheduler)", 4)
-definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 10)
-definition.add_flag("data_parallel", "data parallelization mode", False)
+#definition.add_optional("nnodes", "integer", "number of nodes to use for the simulations (for scheduler)", 4)
+#definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 10)
+#definition.add_flag("data_parallel", "data parallelization mode", False)
 
 # -----------------------------------------------------------------
 
@@ -60,7 +60,7 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 
 # Remote rebinning/convolution
 definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
-definition.add_optional("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "0.5 GB", convert_default=True)
+definition.add_optional("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
 
 # For creating observed images
 definition.add_optional("images_unit", "photometric_unit", "unit for the mock observed images", "Jy", convert_default=True)
@@ -83,5 +83,6 @@ definition.add_flag("deploy", "deploy SKIRT and PTS where necessary", False)
 definition.add_flag("check_versions", "check versions of SKIRT and PTS where necessary", True)
 definition.add_flag("update_dependencies", "update PTS dependencies", False)
 definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
+definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
 # -----------------------------------------------------------------

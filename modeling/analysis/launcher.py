@@ -198,6 +198,9 @@ class AnalysisLauncher(AnalysisComponent):
         # Do clean install
         deployer.config.clean = self.config.deploy_clean
 
+        # Pubkey pass
+        deployer.config.pubkey_password = self.config.pubkey_password
+
         # Run the deployer
         deployer.run()
 
@@ -751,6 +754,8 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Make images on remote host
         self.analysis_options.misc.make_images_remote = self.images_host_id
+        self.analysis_options.misc.rebin_remote_threshold = self.config.rebin_remote_threshold
+        self.analysis_options.misc.convolve_remote_threshold = self.config.convolve_remote_threshold
 
         # CONVOLUTION
         # Convolution kernels

@@ -42,4 +42,6 @@ definition.add_optional("pts_on", "string_list", "hosts on which PTS should be i
 # Dangerous stuff!
 definition.add_flag("clean", "do a completely clean install (remove existing installations) (use with care!)", False)
 
+definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
+
 # -----------------------------------------------------------------

@@ -175,11 +175,11 @@ class AnalysisRun(object):
         :return:
         """
 
-        # Create the instance
-        run = cls()
+        # Load the analysis run info
+        info = AnalysisRunInfo.from_file(info_path)
 
-        # Set the analysis run info
-        run.info = AnalysisRunInfo.from_file(info_path)
+        # Create the instance
+        run = cls(info=info)
 
         # Set galaxy name
         modeling_path = fs.directory_of(fs.directory_of(run.info.path))

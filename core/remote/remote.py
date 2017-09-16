@@ -5784,7 +5784,11 @@ class Remote(object):
         #raise RuntimeError("Remote '" + name + "' not found!")
 
         from ..tools import git
-        return git.get_url_repository(self, self.pts_package_path, name)
+        from ..prep.update import fix_repo_url
+        try: return git.get_url_repository(self, self.pts_package_path, name)
+        except git.AuthenticationError as e:
+            url = fix_repo_url(e.url, self.pts_package_path, remote=self)
+            return url
 
     # -----------------------------------------------------------------
 
@@ -5833,7 +5837,11 @@ class Remote(object):
         """
 
         from ..tools import git
-        return git.get_url_repository(self, self.skirt_repo_path, name)
+        from ..prep.update import fix_repo_url
+        try: return git.get_url_repository(self, self.skirt_repo_path, name)
+        except git.AuthenticationError as e:
+            url = fix_repo_url(e.url, self.skirt_repo_path, remote=self)
+            return url
 
     # -----------------------------------------------------------------
 

@@ -529,20 +529,41 @@ def pts_git_remotes():
 
 # -----------------------------------------------------------------
 
-def pts_git_remote_url(name):
+def pts_git_remote_url(name, pubkey_password=None):
 
     """
     This function ...
     :param name:
+    :param pubkey_password:
     :return:
     """
 
     args = ["git", "remote", "show", name]
-    output = subprocess.check_output(args, cwd=pts_package_dir)
 
-    for line in output.split("\n"):
-        if "Fetch URL" in line: return line.split(": ")[1]
+    if pubkey_password is None:
 
+        output = subprocess.check_output(args, cwd=pts_package_dir)
+
+        for line in output.split("\n"):
+            if "Fetch URL" in line: return line.split(": ")[1]
+
+    else:
+
+        import pexpect
+        command = " ".join(args)
+        timeout = None
+        child = pexpect.spawn(command, cwd=pts_package_dir, timeout=timeout)
+        index = child.expect([pexpect.EOF, "Enter passphrase for key"], timeout=timeout)
+        if index == 0: pass
+        else:
+            child.sendline(pubkey_password)
+            child.expect([pexpect.EOF])
+
+        output = child.before.split("\r\n")[1:-1]
+        for line in output:
+            if "Fetch URL" in line: return line.split(": ")[1]
+
+    # We shouldn't get here
     raise RuntimeError("Remote '" + name + "' not found!")
 
 # -----------------------------------------------------------------
@@ -606,22 +627,45 @@ def skirt_git_remotes():
 
 # -----------------------------------------------------------------
 
-def skirt_git_remote_url(name):
+def skirt_git_remote_url(name, pubkey_password=None):
 
     """
     This function ...
     :param name:
+    :param pubkey_password:
     :return:
     """
 
     if skirt_repo_dir is None: raise RuntimeError("SKIRT is not installed (or not found) locally!")
 
     args = ["git", "remote", "show", name]
-    output = subprocess.check_output(args, cwd=skirt_repo_dir)
 
-    for line in output.split("\n"):
-        if "Fetch URL" in line: return line.split(": ")[1]
+    # No public key password is expected
+    if pubkey_password is None:
 
+        output = subprocess.check_output(args, cwd=skirt_repo_dir)
+
+        for line in output.split("\n"):
+            if "Fetch URL" in line: return line.split(": ")[1]
+
+    # Pubkey password prompt can be expected
+    else:
+
+        import pexpect
+        command = " ".join(args)
+        timeout = None
+        child = pexpect.spawn(command, timeout=timeout, cwd=skirt_repo_dir)
+        index = child.expect([pexpect.EOF, "Enter passphrase for key"], timeout=timeout)
+        if index == 0: pass
+        else:
+            child.sendline(pubkey_password)
+            child.expect([pexpect.EOF])
+
+        output = child.before.split("\r\n")[1:-1]
+        for line in output:
+            if "Fetch URL" in line: return line.split(": ")[1]
+
+    # We shouldn't get here
     raise RuntimeError("Remote '" + name + "' not found!")
 
 # -----------------------------------------------------------------

@@ -169,7 +169,7 @@ class Deployer(RemotesConfigurable):
             if installed:
 
                 # Check origins
-                local_origin_url = introspection.skirt_git_remote_url(self.config.skirt_repo_name)
+                local_origin_url = introspection.skirt_git_remote_url(self.config.skirt_repo_name, pubkey_password=self.config.pubkey_password)
                 remote_origin_url = remote.skirt_git_remote_url("origin")
 
                 # Decompose
@@ -298,7 +298,7 @@ class Deployer(RemotesConfigurable):
             if installed:
 
                 # Check origins
-                local_origin_url = introspection.pts_git_remote_url(self.config.pts_repo_name)
+                local_origin_url = introspection.pts_git_remote_url(self.config.pts_repo_name, pubkey_password=self.config.pubkey_password)
                 remote_origin_url = remote.pts_git_remote_url("origin")
 
                 # Decompose

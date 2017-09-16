@@ -845,7 +845,9 @@ def string_list(argument):
     """
 
     if argument == "": return []
-    else: return argument.split(",")
+    else:
+        parts = argument.split(",")
+        return [part.strip() for part in parts]
 
 # -----------------------------------------------------------------
 
