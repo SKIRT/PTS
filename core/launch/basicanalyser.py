@@ -30,6 +30,7 @@ from ..basics.log import log
 from ..tools import filesystem as fs
 from ..plot.sed import SEDPlotter
 from ..data.sed import SED, ObservedSED
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -535,17 +536,43 @@ class BasicAnalyser(Configurable):
 
         # Set input
         input_dict = dict()
+
+        # General things
         input_dict["simulation"] = self.simulation
         input_dict["output_path"] = self.misc_options.path
+
+        # Filters and instruments
         input_dict["filter_names"] = self.misc_options.observation_filters
         input_dict["instrument_names"] = self.misc_options.observation_instruments
-        input_dict["wcs_paths"] = self.misc_options.images_wcs
-        input_dict["kernel_paths"] = self.misc_options.images_kernels
-        input_dict["auto_psfs"] = self.misc_options.images_psfs_auto
+
+        # Coordinate system of the datacubes
+        #input_dict["wcs"] =
+        if types.is_dictionary(self.misc_options.images_wcs): input_dict["wcs_paths"] = self.misc_options.images_wcs
+        elif types.is_string_type(self.misc_options.images_wcs): input_dict["wcs_path"] = self.misc_options.images_wcs
+        else: raise ValueError("Invalid value for 'images_wcs' misc option: " + str(self.misc_options.images_wcs))
+        input_dict["wcs_instrument"] = self.misc_options.wcs_instrument
+
+        # Unit conversion
         input_dict["unit"] = self.misc_options.images_unit
+
+        # Convolution
+        input_dict["auto_psfs"] = self.misc_options.images_psfs_auto
+        input_dict["kernel_paths"] = self.misc_options.images_kernels
+        #input_dict["psf_paths"] =
+
+        # Rebinning
+        if types.is_dictionary(self.misc_options.rebin_wcs): input_dict["rebin_wcs_paths"] = self.misc_options.rebin_wcs
+        elif types.is_string_type(self.misc_options.rebin_wcs): input_dict["rebin_wcs_path"] = self.misc_options.rebin_wcs
+        else: raise ValueError("Invalid value for 'rebin_wcs' misc option: " + str(self.misc_options.rebin_wcs))
+        #input_dict["rebin_wcs"] =
+        input_dict["rebin_dataset"] = self.misc_options.rebin_dataset # path
+        input_dict["rebin_instrument"] = self.misc_options.rebin_instrument
+
+        # Remote
         input_dict["host_id"] = self.misc_options.make_images_remote
-        input_dict["rebin_wcs_paths"] = self.misc_options.rebin_wcs
         input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
+        input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
+        input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold
 
         # Run
         self.image_maker.run(**input_dict)
