@@ -89,4 +89,7 @@ definition.add_optional("pubkey_password", "string", "pubkey password for access
 definition.add_optional("remote_input", "string_string_dictionary", "dictionary of input file paths, the filenames (keys) have to be those defined in the input.dat file of the analysis run")
 definition.add_optional("remote_input_path", "string", "remote directory where the uploaded input files can be found")
 
+# When the number of dust cells from the tree is known, so that tree doesn't need to be loaded
+definition.add_optional("ncells", "positive_integer", "number of dust cells")
+
 # -----------------------------------------------------------------

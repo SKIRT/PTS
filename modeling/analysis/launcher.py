@@ -712,7 +712,8 @@ class AnalysisLauncher(AnalysisComponent):
         :return:
         """
 
-        return self.dust_grid_tree.nleaves
+        if self.config.ncells is not None: return self.config.ncells
+        else: return self.dust_grid_tree.nleaves # requires loading the entire tree file!
 
     # -----------------------------------------------------------------
 
