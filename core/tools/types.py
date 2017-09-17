@@ -241,3 +241,50 @@ def is_length_quantity(value):
     return is_quantity(value) and value.unit.physical_type == "length"
 
 # -----------------------------------------------------------------
+
+def is_array_like(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not is_boolean_type(value) and not is_integer_type(value) and not is_real_type(value) and not is_string_type(value)
+
+# -----------------------------------------------------------------
+
+def is_astropy_column(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column"
+
+# -----------------------------------------------------------------
+
+def can_get_item(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    #print(value, type(value))
+
+    try:
+        length = len(value)
+    except TypeError: return False
+
+    if len(value) == 0: return True
+    else:
+        try:
+            item = value[0]
+            return True
+        except IndexError: return False
+
+# -----------------------------------------------------------------

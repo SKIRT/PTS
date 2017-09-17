@@ -1196,6 +1196,8 @@ class SKIRTRemote(Remote):
             # Finished simulations
             elif simulation_status == "finished":
 
+                from ...magic.core.fits import is_valid
+
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
@@ -1212,33 +1214,79 @@ class SKIRTRemote(Remote):
                     # Check whether the output directory exists; if not, create it
                     if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
 
-                    # Download the simulation output
-                    self.download(simulation.remote_output_path, simulation.output_path)
+                    # Check whether the local output directory is not empty
+                    if not fs.is_empty(simulation.output_path):
 
-                # If retrieve file types are defined, download these files seperately to the local fs
+                        # Same number of files?
+                        #if fs.nfiles_in_path(simulation.output_path) == self.nfiles_in_path(simulation.remote_output_path):
+
+                        # Check the exact filenames
+                        copy_paths = []
+                        for remote_filepath, filename in self.files_in_path(simulation.remote_output_path, returns=["path", "name"], extensions=True):
+
+                            # Determine local filepath
+                            local_filepath = fs.join(simulation.output_path, filename)
+
+                            if fs.is_file(local_filepath):
+
+                                # For a FITS file, check whether it's valid
+                                if local_filepath.endswith(".fits") and not is_valid(local_filepath):
+                                    log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                                    fs.remove_file(local_filepath)
+                                    copy_paths.append(remote_filepath)
+
+                            else: copy_paths.append(remote_filepath)
+
+                        # If the files have all been download already
+                        if len(copy_paths) == 0: log.success("All output files have already been retrieved succesfully")
+                        else:
+
+                            # Debugging
+                            log.debug("Retrieving files: " + ", ".join(copy_paths))
+
+                            # Download
+                            self.download(copy_paths, simulation.output_path)
+
+                    # Download the simulation output
+                    else: self.download(simulation.remote_output_path, simulation.output_path)
+
+                # If retrieve file types are defined, download these files seperately to the local filesystem
                 else:
 
-                    # Create a list for the paths of the files that have to be copied to the local fs
+                    # Create a list for the paths of the files that have to be copied to the local filesystem
                     copy_paths = []
 
                     # Loop over the files that are present in the remoute output directory
-                    for filename in self.files_in_path(simulation.remote_output_path):
+                    for filename in self.files_in_path(simulation.remote_output_path, extensions=True):
 
                         # Determine the full path to the output file
                         filepath = fs.join(simulation.remote_output_path, filename)
 
                         # Check whether the file has to be retrieved
-                        if needs_retrieval(filename, simulation.retrieve_types): copy_paths.append(filepath)
+                        if needs_retrieval(filename, simulation.retrieve_types):
 
-                    # Debugging
-                    log.debug("Retrieving files: " + str(copy_paths))
-                    log.debug("Local output directory: " + simulation.output_path)
+                            local_filepath = fs.join(simulation.output_path, filename)
 
-                    # Check whether the output directory exists; if not, create it
-                    if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
+                            if not fs.is_file(local_filepath): copy_paths.append(filepath)
+                            elif local_filepath.endswith(".fits") and not is_valid(local_filepath):
+                                log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                                fs.remove_file(local_filepath)
+                                copy_paths.append(filepath)
+                            else: log.warning("The output file '" + filename + "' has already been retrieved: skipping ...")
 
-                    # Download the list of files to the local output directory
-                    self.download(copy_paths, simulation.output_path)
+                    # All already retrieved
+                    if len(copy_paths) == 0: log.success("All necessary output files have already been retrieved succesfully")
+                    else:
+
+                        # Debugging
+                        log.debug("Retrieving files: " + ", ".join(copy_paths))
+                        log.debug("Local output directory: " + simulation.output_path)
+
+                        # Check whether the output directory exists; if not, create it
+                        if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
+
+                        # Download the list of files to the local output directory
+                        self.download(copy_paths, simulation.output_path)
 
                 # If retrieval was succesful, add this information to the simulation file
                 simulation.retrieved = True

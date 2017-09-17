@@ -3153,6 +3153,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def nfiles_in_path(self, *args, **kwargs):
+
+        """
+        Thisf unction ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return len(self.files_in_path(*args, **kwargs))
+
+    # -----------------------------------------------------------------
+
     def find_file_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                             exact_name=None, exact_not_name=None, startswith=None, endswith=None):
 
@@ -3741,14 +3754,14 @@ class Remote(object):
 
             # Escape possible space characters
             #origin = [path.replace(" ", "\\\ ") for path in origin]
-            origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
+            origin_strings = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
 
             # Add a quotation mark character because the seperate file paths are going to be separated by spaces
             # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
             copy_command += '"'
 
             # Add the file paths to the command string
-            copy_command += " ".join(origin)
+            copy_command += " ".join(origin_strings)
 
             # Add another quotation mark to identify the end of the filepath list
             copy_command += '" '
@@ -3829,7 +3842,7 @@ class Remote(object):
             for path in origin:
                 name = fs.name(path)
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + name + "' is missing from destination (" + local_path + ")")
 
         elif origin_type == "file":
 
@@ -3837,22 +3850,22 @@ class Remote(object):
 
                 name = fs.name(origin) if new_name is None else new_name
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + name + "' is missing from destination (" + local_path + ")")
 
             # It must be a file then
-            elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is missing")
+            elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file '" + destination + "' is missing")
 
         elif origin_type == "directory":
 
             for remote_path in self.files_in_path(origin):
                 filename = fs.name(remote_path)
                 local_path = fs.join(destination, filename)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + filename + " is missing (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + filename + "' is missing (" + local_path + ")")
 
             for remote_path in self.directories_in_path(origin):
                 dirname = fs.name(remote_path)
                 local_path = fs.join(destination, dirname)
-                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory " + dirname + " is missing (" + local_path + ")")
+                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory '" + dirname + "' is missing (" + local_path + ")")
 
         else: raise ValueError("Invalid origin type")
 

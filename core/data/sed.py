@@ -128,7 +128,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -136,7 +136,7 @@ class SED(WavelengthCurve):
         :return:
         """
 
-        return self.value_for_wavelength(wavelength)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness)
 
     # -----------------------------------------------------------------
 

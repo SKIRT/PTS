@@ -92,6 +92,18 @@ class SchedulingOptions(Options):
 
 # -----------------------------------------------------------------
 
+progress_name = "progress"
+timeline_name = "timeline"
+memory_name = "memory"
+seds_name = "seds"
+grids_name = "grids"
+rgb_name = "rgb"
+wave_name = "wave"
+fluxes_name = "fluxes"
+images_name = "images"
+
+# -----------------------------------------------------------------
+
 class AnalysisOptions(Options):
 
     """

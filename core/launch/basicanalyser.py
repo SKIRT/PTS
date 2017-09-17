@@ -31,6 +31,7 @@ from ..tools import filesystem as fs
 from ..plot.sed import SEDPlotter
 from ..data.sed import SED, ObservedSED
 from ..tools import types
+from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, wave_name, fluxes_name, images_name
 
 # -----------------------------------------------------------------
 
@@ -166,6 +167,66 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def plotted_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return seds_name in self.simulation.analysed_plotting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotted_grids(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return grids_name in self.simulation.analysed_plotting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotted_progress(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return progress_name in self.simulation.analysed_plotting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotted_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return timeline_name in self.simulation.analysed_plotting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotted_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return memory_name in self.simulation.analysed_plotting
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -181,19 +242,67 @@ class BasicAnalyser(Configurable):
         if log.is_debug(): print(str(self.plotting_options))
 
         # If requested, plot the SED's
-        if self.plotting_options.seds: self.plot_seds()
+        if self.plotting_options.seds and not self.plotted_seds: self.plot_seds()
 
         # If requested, make plots of the dust grid
-        if self.plotting_options.grids: self.plot_grids()
+        if self.plotting_options.grids and not self.plotted_grids: self.plot_grids()
 
         # If requested, plot the simulation progress as a function of time
-        if self.plotting_options.progress: self.plot_progress()
+        if self.plotting_options.progress and not self.plotted_progress: self.plot_progress()
 
         # If requested, plot a timeline of the different simulation phases
-        if self.plotting_options.timeline: self.plot_timeline()
+        if self.plotting_options.timeline and not self.plotted_timeline: self.plot_timeline()
 
         # If requested, plot the memory usage as a function of time
-        if self.plotting_options.memory: self.plot_memory()
+        if self.plotting_options.memory and not self.plotted_memory: self.plot_memory()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_rgb(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return rgb_name in self.simulation.analysed_misc
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wave(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return wave_name in self.simulation.analysed_misc
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fluxes_name in self.simulation.analysed_misc
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return images_name in self.simulation.analysed_misc
 
     # -----------------------------------------------------------------
 
@@ -212,16 +321,16 @@ class BasicAnalyser(Configurable):
         if log.is_debug(): print(str(self.misc_options))
 
         # If requested, make RGB images of the output FITS files
-        if self.misc_options.rgb: self.make_rgb()
+        if self.misc_options.rgb and not self.has_rgb: self.make_rgb()
 
         # If requested, make wave movies from the ouput FITS files
-        if self.misc_options.wave: self.make_wave()
+        if self.misc_options.wave and not self.has_wave: self.make_wave()
 
         # If requested, calculate observed fluxes from the output SEDs
-        if self.misc_options.fluxes: self.calculate_observed_fluxes()
+        if self.misc_options.fluxes and not self.has_fluxes: self.calculate_observed_fluxes()
 
         # If requested, create observed imgaes from the output FITS files
-        if self.misc_options.images: self.make_observed_images()
+        if self.misc_options.images and not self.has_images: self.make_observed_images()
 
     # -----------------------------------------------------------------
 
@@ -244,6 +353,10 @@ class BasicAnalyser(Configurable):
         # Run the progress extractor
         self.progress = extractor.run(self.simulation, path)
 
+        # Done
+        self.simulation.analysed_extraction.append(progress_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def extract_timeline(self):
@@ -265,6 +378,10 @@ class BasicAnalyser(Configurable):
         # Run the timeline extractor
         self.timeline = extractor.run(self.simulation, path)
 
+        # Done
+        self.simulation.analysed_extraction.append(timeline_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def extract_memory(self):
@@ -285,6 +402,10 @@ class BasicAnalyser(Configurable):
 
         # Run the memory extractor
         self.memory = extractor.run(self.simulation, path)
+
+        # Done
+        self.simulation.analysed_extraction.append(memory_name)
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -387,6 +508,10 @@ class BasicAnalyser(Configurable):
         # Use the simple plotseds function
         else: plotseds(self.simulation, output_path=self.plotting_options.path, format=self.plotting_options.format)
 
+        # Done
+        self.simulation.analysed_plotting.append(seds_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def plot_grids(self):
@@ -401,6 +526,10 @@ class BasicAnalyser(Configurable):
 
         # Plot the dust grid for the simulation
         plotgrids(self.simulation, output_path=self.plotting_options.path, silent=(not log.is_debug()))
+
+        # Done
+        self.simulation.analysed_plotting.append(grids_name)
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -419,6 +548,10 @@ class BasicAnalyser(Configurable):
 
         # Run the progress plotter
         plotter.run(self.progress, self.plotting_options.path)
+
+        # Done
+        self.simulation.analysed_plotting.append(progress_name)
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -441,6 +574,10 @@ class BasicAnalyser(Configurable):
         # Run the timeline plotter
         plotter.run(timeline=self.timeline)
 
+        # Done
+        self.simulation.analysed_plotting.append(timeline_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def plot_memory(self):
@@ -459,6 +596,10 @@ class BasicAnalyser(Configurable):
         # Run the memory plotter
         plotter.run(self.memory, self.plotting_options.path)
 
+        # Done
+        self.simulation.analysed_plotting.append(memory_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def make_rgb(self):
@@ -474,6 +615,10 @@ class BasicAnalyser(Configurable):
         # Make RGB images from the output images
         makergbimages(self.simulation, output_path=self.misc_options.path)
 
+        # Done
+        self.simulation.analysed_misc.append(rgb_name)
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def make_wave(self):
@@ -488,6 +633,10 @@ class BasicAnalyser(Configurable):
 
         # Make wave movies from the output images
         #makewavemovie(self.simulation, output_path=self.misc_options.path)
+
+        # Done
+        self.simulation.analysed_misc.append(wave_name)
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -512,6 +661,10 @@ class BasicAnalyser(Configurable):
                                  filter_names=self.misc_options.observation_filters,
                                  instrument_names=self.misc_options.observation_instruments,
                                  errors=self.misc_options.flux_errors)
+
+        # Done
+        self.simulation.analysed_misc.append(fluxes_name)
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -576,6 +729,10 @@ class BasicAnalyser(Configurable):
 
         # Run
         self.image_maker.run(**input_dict)
+
+        # Done
+        self.simulation.analysed_misc.append(images_name)
+        self.simulation.save()
 
 # -----------------------------------------------------------------
 

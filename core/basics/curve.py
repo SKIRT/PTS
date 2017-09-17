@@ -290,7 +290,7 @@ class WavelengthCurve(Curve):
         # Convert unit if necessary
         if unit is not None:
             unit = u(unit, density=density, brightness=brightness)
-            value = value.to(unit)
+            value = value.to(unit, wavelength=wavelength)
 
         # Remove unit if requested
         if not add_unit: value = value.value
@@ -317,6 +317,30 @@ class WavelengthCurve(Curve):
 
         # Return the mask
         return mask
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        return self["Wavelength"][0] * self.column_unit("Wavelength")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self["Wavelength"][-1] * self.column_unit("Wavelength")
 
     # -----------------------------------------------------------------
 

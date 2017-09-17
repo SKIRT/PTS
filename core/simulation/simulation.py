@@ -168,6 +168,15 @@ class SkirtSimulation(object):
         # Flag indicating whether this simulation has been analysed or not
         self.analysed = False
 
+        # Performed extraction steps
+        self.analysed_extraction = []
+
+        # Performed plotting steps
+        self.analysed_plotting = []
+
+        # Performed misc steps
+        self.analysed_misc = []
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):

@@ -1106,6 +1106,7 @@ class MPLPlot(Plot):
         This function ...
         :param x:
         :param y:
+        :param *args:
         :param kwargs:
         :return:
         """
@@ -1361,6 +1362,18 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_one_plot(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        plot = MPLPlot(plot=self.ax)
+        return plot
+
+    # -----------------------------------------------------------------
+
     def set_x_log_scale(self):
 
         """
@@ -1528,6 +1541,8 @@ class MPLFigure(Figure):
         :param width:
         :return:
         """
+
+        title = title.replace("_", "\_")
 
         self.figure.suptitle("\n".join(wrap(title, width)))
 

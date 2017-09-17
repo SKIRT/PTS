@@ -360,7 +360,7 @@ class SEDPlotter(Configurable):
         log.debug("Plotting one observed SED ...")
 
         # Setup the figure
-        self.main_plot = self.figure.figure.gca()
+        self.main_plot = self.figure.create_one_plot()
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
@@ -621,10 +621,23 @@ class SEDPlotter(Configurable):
         """
 
         # Setup the figure
-        gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        self.main_plot = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=self.main_plot)
-        self.residual_plots.append(ax2)
+        #gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
+        #self.main_plot = plt.subplot(gs[0])
+        #ax2 = plt.subplot(gs[1], sharex=self.main_plot)
+        #self.residual_plots.append(ax2)
+
+        if self.config.residual_reference == "observations": nplots = 2
+        elif self.config.residual_reference == "models": nplots = 1 + len(self.models)
+        else: raise ValueError("")
+
+        height_ratios = [4] + [1] * (nplots-1)
+
+        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
+        #self.main_plot, residual_plot = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        #self.residual_plots.append(residual_plot)
+        self.main_plot = plots[0]
+        self.residual_plots = plots[1:]
 
         # Get the first (only) observation
         observation = self.observations[self.observations.keys()[0]]
@@ -672,12 +685,57 @@ class SEDPlotter(Configurable):
             # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
-            # Plot point at y=0.0 with errorbar on axis 2
-            value = 0.0
-            if errors[k] is not None:
-                error = errors[k] / fluxes[k] * 100.
-                error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            # Observations as reference: plot at 0.0
+            if self.config.residual_reference == "observations":
+
+                residual_plot = self.residual_plots[0]
+
+                # Plot point at y=0.0 with errorbar on axis 2
+                value = 0.0
+                if errors[k] is not None:
+                    error = errors[k] / fluxes[k] * 100.
+                    error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
+                    residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+            elif self.config.residual_reference == "models":
+
+                from astropy.units import Unit
+
+                residual_plot_index = 0
+
+                # Loop over the models
+                for model_label, sed, plot_residuals, ghost in self.models:
+
+                    if not plot_residuals:
+                        residual_plot_index += 1
+                        continue
+
+                    #model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                    #sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+
+                    actual_wavelength = wavelengths[k] * Unit(self.config.wavelength_unit)
+
+                    # Wavelength out of bounds of model SED
+                    if actual_wavelength < sed.min_wavelength or actual_wavelength > sed.max_wavelength:
+                        residual_plot_index += 1
+                        continue
+
+                    model_value = sed.photometry_at(actual_wavelength, self.config.unit, add_unit=False)
+                    rel_residual = (fluxes[k] - model_value) / model_value * 100.  # NORMALIZE TO MODEL VALUE
+
+                    #print("MODEL VALUE:", model_value)
+                    #print("FLUX:", fluxes[k])
+                    #print("REL RESIDUAL:", rel_residual)
+
+                    residual_plot = self.residual_plots[residual_plot_index]
+                    #value = 0.0
+                    if errors[k] is not None:
+                        error = errors[k] / model_value * 100. # NORMALIZE TO MODEL VALUE
+                        error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
+                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+                    # Next residual plot
+                    residual_plot_index += 1
 
         line_styles_models = line_styles
         line_colors_models = ['black'] * len(self.models)
@@ -704,9 +762,9 @@ class SEDPlotter(Configurable):
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                 residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
-                ax2.plot(wavelengths_residuals, residuals, "-", color="lightgrey")
+                residual_plot.plot(wavelengths_residuals, residuals, linestyle="-", color="lightgrey")
 
-            else:
+            elif self.config.residual_reference == "observations":
 
                 #log_model = np.log10(sed.fluxes(unit=self.config.unit, add_unit=False))
                 model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
@@ -720,9 +778,18 @@ class SEDPlotter(Configurable):
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                 residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
-                ax2.plot(wavelengths_residuals, residuals, line_styles_models[counter], color=line_colors_models[counter], label='model')
+                residual_plot.plot(wavelengths_residuals, residuals, linestyle=line_styles_models[counter], color=line_colors_models[counter], label='model')
 
                 counter += 1
+
+            # elif self.config.residual_reference == "models":
+            #
+            #     model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+            #     sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+            #     f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
+            #
+            #     #min_sed_wavelength = min(sed_wavelengths)
+            #     #max_sed_wavelength = max(sed_wavelengths)
 
         counter = 0
         counter_no_residuals = 0
@@ -742,7 +809,7 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 log_model = np.log10(fluxes)
-                self.main_plot.plot(wavelengths, log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
+                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models[counter], color=line_colors_models[counter], label=model_label)
 
                 # Get lowest and highest flux and wavelength for this curve
                 lowest = np.min(fluxes)
@@ -791,7 +858,7 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                 log_model = np.log10(fluxes)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                self.main_plot.plot(wavelengths, log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
 
                 ## SAME AS ABOVE::
                 # Get lowest and highest flux and wavelength for this curve
@@ -1233,6 +1300,8 @@ class SEDPlotter(Configurable):
         # Set x ticks
         #self.main_plot.set_xticks(ticks)
         #self.main_plot.set_xticklabels(ticks)
+
+        #print(type(self.main_plot))
 
         self.main_plot.set_xticks(ticks, fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)

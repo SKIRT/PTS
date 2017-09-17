@@ -31,6 +31,21 @@ from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
+def is_valid(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    try:
+        header = get_header(filepath)
+        return True
+    except: return False
+
+# -----------------------------------------------------------------
+
 def get_plane_names(path, ptype=None):
 
     """

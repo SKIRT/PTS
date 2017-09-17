@@ -421,7 +421,8 @@ def dump(object, path, method="pickle", protocol=None):
     # Serialize using pickle
     if method == "pickle":
 
-        pickle.dump(object, open(path, 'wb'), protocol=protocol)
+        with open(path, 'wb') as out_file:
+            pickle.dump(object, out_file, protocol=protocol)
 
     # Serialize to the json format
     elif method == "json":

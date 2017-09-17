@@ -881,7 +881,8 @@ def nitems_in_path(*args, **kwargs):
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, not_extension=None, contains=None,
                   not_contains=None, extensions=False, returns="path", exact_name=None, exact_not_name=None,
-                  startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False, convert=None):
+                  startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False,
+                  convert=None):
 
     """
     This function ...
