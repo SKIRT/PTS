@@ -571,7 +571,7 @@ class SKIRTRemote(Remote):
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
             analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
-            show_progress=False, remote_input_path=None, has_remote_input=False):
+            show_progress=False, remote_input_path=None, has_remote_input=False, debug_output=False):
 
         """
         This function ...
@@ -587,6 +587,7 @@ class SKIRTRemote(Remote):
         :param show_progress:
         :param remote_input_path:
         :param has_remote_input:
+        :param debug_output:
         :return:
         """
 
@@ -615,7 +616,7 @@ class SKIRTRemote(Remote):
             #out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
             #prefix = arguments.prefix
             #log_path = fs.join(out_path, prefix + "_log.txt")
-            status = LogSimulationStatus(simulation.remote_log_file_path, remote=self)
+            status = LogSimulationStatus(simulation.remote_log_file_path, remote=self, debug_output=debug_output)
 
             # Get the execution handle for the simulation
             handle = handles

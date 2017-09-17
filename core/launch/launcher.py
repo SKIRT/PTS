@@ -803,7 +803,8 @@ class SKIRTLauncher(Configurable):
                                           scheduling_options=self.scheduling_options, attached=self.config.attached,
                                           analysis_options=self.analysis_options, show_progress=self.config.show_progress,
                                           local_script_path=self.local_script_path, screen_output_path=screen_output_path,
-                                          remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files)
+                                          remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files,
+                                          debug_output=self.config.debug_output)
 
         # Set the analysis options for the simulation
         self.set_remote_simulation_options()
