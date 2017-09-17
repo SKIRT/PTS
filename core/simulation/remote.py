@@ -571,7 +571,7 @@ class SKIRTRemote(Remote):
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
             analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
-            show_progress=False, has_remote_input=False):
+            show_progress=False, remote_input_path=None, has_remote_input=False):
 
         """
         This function ...
@@ -585,6 +585,7 @@ class SKIRTRemote(Remote):
         :param screen_output_path:
         :param attached:
         :param show_progress:
+        :param remote_input_path:
         :param has_remote_input:
         :return:
         """
@@ -596,7 +597,7 @@ class SKIRTRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options, has_remote_input=has_remote_input)
+        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options, remote_input_path=remote_input_path, has_remote_input=has_remote_input)
 
         # Check whether attached mode is not requested for a scheduling remote
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")

@@ -2736,6 +2736,9 @@ class Remote(object):
         # Use the 'mv' command to rename the file
         self.execute("mv " + old_path + " " + new_path)
 
+        # Return the new filepath
+        return new_path
+
     # -----------------------------------------------------------------
 
     def rename_directory(self, parent, old_name, new_name):

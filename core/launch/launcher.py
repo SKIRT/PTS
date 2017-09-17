@@ -69,7 +69,8 @@ class SKIRTLauncher(Configurable):
 
         # The simulation definition
         self.definition = None
-        self.has_remote_input = False
+        self.remote_input_path = None
+        self.has_remote_input_files = False
 
         # The logging options
         self.logging_options = None
@@ -287,8 +288,13 @@ class SKIRTLauncher(Configurable):
         if "definition" in kwargs: self.definition = kwargs.pop("definition")
 
         # Has remote input?
-        if "has_remote_input" in kwargs: self.has_remote_input = kwargs.pop("has_remote_input")
-        if self.has_remote_input and self.remote is None: raise ValueError("Cannot have remote input when launching simulation locally")
+        if "has_remote_input_files" in kwargs: self.has_remote_input_files = kwargs.pop("has_remote_input_files")
+        if self.has_remote_input_files and self.remote is None: raise ValueError("Cannot have remote input files when launching simulation locally")
+
+        # Has remote input path?
+        if "remote_input_path" in kwargs: self.remote_input_path = kwargs.pop("remote_input_path")
+        if self.remote_input_path is not None and self.remote is None: raise ValueError("Cannot have remote input path when launching simulation locally")
+        if self.remote_input_path is not None and self.has_remote_input_files: raise ValueError("Cannot have remote input path and have seperate remote input files simultaneously")
 
         # Get the parallelization
         if "parallelization" in kwargs: self.parallelization = kwargs.pop("parallelization")
@@ -504,7 +510,8 @@ class SKIRTLauncher(Configurable):
         # Remote
         elif self.uses_remote:
 
-            if self.has_remote_input:
+            # Some input files may be remote
+            if self.has_remote_input_files:
 
                 from ..simulation.input import find_input_filepath
                 filename = self.ski.wavelengthsfilename()
@@ -516,6 +523,20 @@ class SKIRTLauncher(Configurable):
                     return nwavelengths
                 else: raise ValueError("We shouldn't get here")
 
+            # Remote input directory is specified
+            elif self.remote_input_path is not None:
+
+                filename = self.ski.wavelengthsfilename()
+                filepath = fs.join(self.remote_input_path, filename)
+
+                # Check
+                if not self.remote.is_file(filepath): raise IOError("The remote input file '" + filename + "' does not exist in '" + self.remote_input_path + "'")
+
+                # Get the number of wavelengths and return
+                nwavelengths = int(self.remote.read_first_line(filepath))
+                return nwavelengths
+
+            # Nothing is remote
             else: return self.ski.nwavelengthsfile(self.definition.input_path)
 
         # No remote
@@ -769,19 +790,20 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulation remotely ...")
 
-        # Resolve the remote screen output file path
+        # Resolve the remote screen output directory path
         screen_output_path = self.screen_output_path.replace("$HOME", self.remote.home_directory).replace("$SKIRT", self.remote.skirt_root_path)
 
         # Create the necessary directories for the screen output file
-        screen_output_dirpath = fs.directory_of(screen_output_path)
-        if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
+        #screen_output_dirpath = fs.directory_of(screen_output_path)
+        #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
+        if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
 
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=self.scheduling_options, attached=self.config.attached,
                                           analysis_options=self.analysis_options, show_progress=self.config.show_progress,
                                           local_script_path=self.local_script_path, screen_output_path=screen_output_path,
-                                          has_remote_input=self.has_remote_input)
+                                          remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files)
 
         # Set the analysis options for the simulation
         self.set_remote_simulation_options()

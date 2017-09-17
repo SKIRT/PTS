@@ -68,6 +68,11 @@ class AnalysisLauncher(AnalysisComponent):
         # The analysis options
         self.analysis_options = None
 
+        # Input file paths
+        self.input_paths = None
+        self.has_remote_input_files = False
+        self.remote_input_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -86,6 +91,9 @@ class AnalysisLauncher(AnalysisComponent):
 
         # 7. Adjust the ski file
         self.adjust_ski()
+
+        # Set the input paths
+        self.set_input_paths()
 
         # 9. Estimate the runtime for the simulation
         if self.uses_scheduler: self.estimate_runtime()
@@ -405,35 +413,29 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_remote_input(self):
+    def set_input_paths(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.uses_remote and (self.config.remote_input is not None or self.config.remote_input_path is not None)
+        # Inform the user
+        log.info("Setting the simulation input paths ...")
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Remote is not used
+        # No remote
         if not self.uses_remote:
 
             # Check config
             if self.config.remote_input is not None or self.config.remote_input_path is not None:
                 raise ValueError("Cannot specifiy remote input path(s) if simulation is not launched remotely")
 
-            # Return the local paths
-            return self.analysis_run.input_paths
+            # Set input paths
+            self.input_paths = self.analysis_run.input_paths
+
+            # Set things
+            self.has_remote_input_files = False
+            self.remote_input_path = None
 
         # Remote execution
         else:
@@ -447,20 +449,31 @@ class AnalysisLauncher(AnalysisComponent):
             # Remote files defined in a dictionary
             elif self.config.remote_input is not None:
 
+                has_remote_files = False
+
                 # Replace filepaths by remote filepaths if they have been uploaded to the remote already
                 for filename in self.config.remote_input:
 
                     # Check whether valid filename
                     if filename not in paths: raise ValueError("The filename '" + filename + "' is not one of the input filenames")
 
+                    # Set flag
+                    has_remote_files = True
+
                     # Replace by remote path
                     paths[filename] = self.config.remote_input[filename]
 
-                # Return the paths
-                return paths
+                # Set the input paths
+                self.input_paths = paths
+
+                # Set things
+                self.has_remote_input_files = has_remote_files
+                self.remote_input_path = None
 
             # Remote input directory is specified
             elif self.config.remote_input_path is not None:
+
+                are_all_remote = True
 
                 # Search for each file in the directory
                 for filename in paths:
@@ -475,10 +488,28 @@ class AnalysisLauncher(AnalysisComponent):
                         paths[filename] = filepath
 
                     # Doesn't exist
-                    else: log.warning("Remote version of the '" + filename + "' input file is not found: using local file ...")
+                    else:
+                        are_all_remote = False
+                        log.warning("Remote version of the '" + filename + "' input file is not found: using local file ...")
 
-                # Return the paths
-                return paths
+                # All files are in the remote directory
+                if are_all_remote:
+
+                    # Set the original paths
+                    self.input_paths = self.analysis_run.input_paths
+
+                    # Set things
+                    self.has_remote_input_files = False
+                    self.remote_input_path = self.config.remote_input_path
+
+                else:
+
+                    # Set paths
+                    self.input_paths = paths
+
+                    # Set things
+                    self.has_remote_input_files = True
+                    self.remote_input_path = None
 
             # We shouldn't get here
             else: raise RuntimeError("We shouldn't get here")
@@ -928,7 +959,8 @@ class AnalysisLauncher(AnalysisComponent):
         # Debugging: save the screen output in a text file (for remote execution)
         if self.uses_remote:
             # Determine path, relative to the remote SKIRT directory
-            screen_output_path = fs.join("$SKIRT", "run-debug", self.analysis_run_name + ".txt")
+            #screen_output_path = fs.join("$SKIRT", "run-debug", self.analysis_run_name + ".txt") # specifying file path is (currently) not possible
+            screen_output_path = fs.join("$SKIRT", "run-debug", self.analysis_run_name)
             # Debugging message
             log.debug("Remote simulation output will be written to '" + screen_output_path + "'")
         else: screen_output_path = None
@@ -959,6 +991,9 @@ class AnalysisLauncher(AnalysisComponent):
         # Other settings
         if log.is_debug(): self.launcher.config.show = True
 
+        # Show the number of dust cells
+        log.debug("The number of dust cells is " + str(self.ndust_cells) + "")
+
         # Debugging
         log.debug("Starting the SKIRT launcher ...")
 
@@ -967,6 +1002,6 @@ class AnalysisLauncher(AnalysisComponent):
                           scheduling_options=self.scheduling_options, parallelization=parallelization,
                           nprocesses=nprocesses, local_script_path=local_script_path,
                           screen_output_path=screen_output_path, ncells=self.ndust_cells, remote=self.remote,  # pass remote because possibly already used here (don't connect again in the SKIRTLauncher)
-                          has_remote_input=self.has_remote_input)
+                          remote_input_path=self.remote_input_path, has_remote_input_files=self.has_remote_input_files)
 
 # -----------------------------------------------------------------
