@@ -125,9 +125,11 @@ class SKIRTRemote(Remote):
         remote.ssh = None
         remote.connected = False
 
-        # Locate SKRIT
-        success = skirt.locate_skirt()
-        if not success: raise RuntimeError("Could not locate SKIRT on the remote host")
+        # Locate SKIRT, if we are already connected
+        if skirt.connected:
+            success = skirt.locate_skirt()
+            if not success: raise RuntimeError("Could not locate SKIRT on the remote host")
+        else: log.warning("Not yet connected to the remote host; use setup() to initiate the connection")
 
         # Return the instance
         return skirt
