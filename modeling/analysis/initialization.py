@@ -149,7 +149,8 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         ModelSimulationInterface.setup(self, **kwargs)
 
         # Generate a name for this analysis run
-        analysis_run_name = time.unique_name()
+        if self.config.name is not None: analysis_run_name = self.config.name
+        else: analysis_run_name = time.unique_name()
 
         # Create a directory for this analysis run
         analysis_run_path = fs.join(self.analysis_path, analysis_run_name)

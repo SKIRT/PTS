@@ -1186,8 +1186,10 @@ def get_stellar_info(lines):
     for line in reversed(lines):
 
         if "Launched stellar emission photon packages" in line:
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                break
+            except: pass # SOMETHING WEIRD WITH THE LINE
 
     # Set initial value for progress
     else: progress = 0
@@ -1276,16 +1278,21 @@ def get_dust_info(lines):
     for line in reversed(lines):
 
         if "Launched dust emission photon packages" in line:
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST EMISSION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST EMISSION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Launched last-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 2
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the last-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])
@@ -1297,9 +1304,11 @@ def get_dust_info(lines):
         elif "Launched second-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 1
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the second-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])
@@ -1311,9 +1320,11 @@ def get_dust_info(lines):
         elif "Launched first-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 0
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the first-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])

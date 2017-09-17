@@ -7,11 +7,12 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.core.environment import load_modeling_environment_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = verify_modeling_cwd()
+environment = load_modeling_environment_cwd()
+run_names = environment.analysis_runs.names
 
 # -----------------------------------------------------------------
 
@@ -27,6 +28,11 @@ default_dust_grid_type = "bintree"
 # -----------------------------------------------------------------
 
 definition.add_required("origin", "string", "origin of the analysis model", choices=origins)
+
+# -----------------------------------------------------------------
+
+# Give the analysis run a custom name
+definition.add_optional("name", "string", "name for the analysis run", forbidden=run_names)
 
 # -----------------------------------------------------------------
 
