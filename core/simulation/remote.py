@@ -35,6 +35,23 @@ from .output import get_output_type, get_parent_type
 
 # -----------------------------------------------------------------
 
+def get_simulation_for_host(host_id, simulation_id):
+
+    """
+    This function ...
+    :param host_id:
+    :param simulation_id:
+    :return:
+    """
+
+    # Determine the simulation path
+    simulation_path = fs.join(introspection.skirt_run_dir, host_id, str(simulation_id) + ".sim")
+
+    # load the simulation and return
+    return RemoteSimulation.from_file(simulation_path)
+
+# -----------------------------------------------------------------
+
 def needs_retrieval(filename, types):
 
     """

@@ -19,6 +19,7 @@ from pts.core.tools import filesystem as fs
 from pts.core.remote.remote import Remote
 from pts.core.tools import introspection
 from pts.core.simulation.simulation import RemoteSimulation
+from pts.core.simulation.remote import get_simulation_for_host
 
 # -----------------------------------------------------------------
 
@@ -41,8 +42,7 @@ remote = Remote()
 remote.setup(config.remote)
 
 # Open the simulation
-simulation_path = fs.join(introspection.skirt_run_dir, config.remote, str(config.id) + ".sim")
-simulation = RemoteSimulation.from_file(simulation_path)
+simulation = get_simulation_for_host(config.remote, config.id)
 
 # The name of the ski file (the simulation prefix)
 ski_name = simulation.prefix()
