@@ -443,6 +443,8 @@ def load(path):
     :return:
     """
 
-    return pickle.load(open(path, 'r'))
+    with open(path, 'r') as in_file:
+        obj = pickle.load(in_file)
+    return obj
 
 # -----------------------------------------------------------------
