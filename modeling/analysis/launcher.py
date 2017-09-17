@@ -444,7 +444,14 @@ class AnalysisLauncher(AnalysisComponent):
             paths = self.analysis_run.input_paths
 
             # No remote files
-            if self.config.remote_input is None and self.config.remote_input_path is None: return paths
+            if self.config.remote_input is None and self.config.remote_input_path is None:
+
+                # Set the local input paths
+                self.input_paths = paths
+
+                # Set things
+                self.has_remote_input_files = False
+                self.remote_input_path = None
 
             # Remote files defined in a dictionary
             elif self.config.remote_input is not None:
