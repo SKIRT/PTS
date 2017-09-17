@@ -27,6 +27,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection, EdgeOnProjection, FaceOnProjection
 from ..basics.instruments import FullInstrument
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -697,6 +698,10 @@ class AnalysisRun(object):
         :return:
         """
 
+        # Give debug message
+        log.debug("Loading the dust grid tree, this may take a while (depending on the number of nodes) ...")
+
+        # Return the tree
         return DustGridTree.from_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------

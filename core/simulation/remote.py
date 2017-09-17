@@ -112,7 +112,7 @@ class SKIRTRemote(Remote):
         skirt = cls()
 
         # Give warning
-        log.warning("When creating a SKIRTRemote instance from a regular Remote instance, the original Remote instance should not be used anymore")
+        log.warning("When creating a SKIRTRemote instance from a regular Remote instance, the original Remote instance can not be used anymore")
 
         # Set attributes
         skirt.ssh = remote.ssh
@@ -120,6 +120,10 @@ class SKIRTRemote(Remote):
         skirt.vpn = remote.vpn
         skirt.connected = remote.connected
         skirt.commands = remote.commands
+
+        # Reset attributes of original remote
+        remote.ssh = None
+        remote.connected = False
 
         # Locate SKRIT
         success = skirt.locate_skirt()

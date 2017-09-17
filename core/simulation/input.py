@@ -72,6 +72,29 @@ class SimulationInput(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def unchecked(cls, **kwargs):
+
+        """
+        This function ....
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Create the simulation input object
+        input = cls()
+
+        # Add files from kwargs
+        for name in kwargs:
+            path = kwargs[name]
+            input.add_file(path, name)
+
+        # Return the input object
+        return input
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """

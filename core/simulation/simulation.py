@@ -118,7 +118,7 @@ class SkirtSimulation(object):
             if types.is_sequence(inpath): self._inpath = inpath
             elif types.is_string_type(inpath): self._inpath = os.path.realpath(os.path.expanduser(inpath))
             elif isinstance(inpath, SimulationInput): self._inpath = inpath
-            elif types.is_dictionary(inpath): self._inpath = SimulationInput(**inpath)
+            elif types.is_dictionary(inpath): self._inpath = SimulationInput.unchecked(**inpath)
             else: raise ValueError("Invalid value for 'inpath': " + tostr(inpath) + " (" + str(type(inpath)) + ")")
         else: self._inpath = None
         self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))

@@ -959,6 +959,9 @@ class AnalysisLauncher(AnalysisComponent):
         # Other settings
         if log.is_debug(): self.launcher.config.show = True
 
+        # Debugging
+        log.debug("Starting the SKIRT launcher ...")
+
         # Run the simulation
         self.launcher.run(definition=definition, logging_options=logging, analysis_options=self.analysis_options,
                           scheduling_options=self.scheduling_options, parallelization=parallelization,
