@@ -36,6 +36,7 @@ definition.add_optional("remote", "string", "remote host on which to launch the 
 definition.add_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
 definition.add_optional("images_remote", "string", "remote host on which to make the observed images", default_other_host_id, choices=other_host_ids)
 definition.add_flag("attached", "launch remote executions in attached mode", True)
+definition.add_flag("debug_output", "show all simulation output when in debugging mode", False)
 
 # ANALYSIS RUN
 if runs.empty: raise RuntimeError("No analysis runs are present (yet)")
@@ -72,6 +73,10 @@ definition.add_optional("nprocesses_local", "positive_integer", "number of paral
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
 definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
+
+# Specify parallelization
+definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
+definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution")
 
 # -----------------------------------------------------------------
 

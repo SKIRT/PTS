@@ -2128,17 +2128,21 @@ def parallelization(argument, default_nthreads_per_core=1):
 
     # Parse
     splitted = argument.split(":")
-    if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
-    if len(splitted) > 3: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
+    if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
+    if len(splitted) > 4: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
 
     ncores = integer(splitted[0])
     nprocesses = integer(splitted[1])
 
     # Get number of threads per core (hyperthreading)
-    if len(splitted) == 3: nthreads_per_core = integer(splitted[2])
+    if len(splitted) > 2: nthreads_per_core = integer(splitted[2])
     else: nthreads_per_core = default_nthreads_per_core
 
+    # Get data_parallel flag
+    if len(splitted) > 3: data_parallel = boolean(splitted[3])
+    else: data_parallel = False
+
     # Create and return the parallelization
-    return Parallelization(ncores, nthreads_per_core, nprocesses)
+    return Parallelization(ncores, nthreads_per_core, nprocesses, data_parallel=data_parallel)
 
 # -----------------------------------------------------------------

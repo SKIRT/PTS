@@ -33,6 +33,9 @@ definition.add_optional("walltime", "duration", "an estimate for the walltime of
 definition.add_flag("data_parallel_local", "enable data parallelization for local execution", False)
 definition.add_flag("data_parallel_remote", "set data parallelization for remote execution (None means automatic)", None)
 
+# Check parallelization? (ADVANCED)
+definition.add_flag("check_parallelization", "check the specified parallelization scheme", True)
+
 # -----------------------------------------------------------------
 
 definition.add_optional("finish_at", "string", "finish when this is encountered")

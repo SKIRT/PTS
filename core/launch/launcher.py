@@ -217,7 +217,7 @@ class SKIRTLauncher(Configurable):
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
-        else: self.check_parallelization()
+        elif self.config.check_parallelization: self.check_parallelization()
 
         # 3. Launch the simulation
         self.launch()
@@ -595,6 +595,13 @@ class SKIRTLauncher(Configurable):
         # The number of processes is defined
         if self.has_nprocesses:
 
+            # Determine cores per node and total number of cores
+            cores_per_node = nsockets * ncores
+            total_ncores = nnodes * cores_per_node
+
+            # Check number of processes
+            if self.nprocesses > cores_per_node: raise ValueError("The number of processes cannot be larger than the number of cores per node (" + str(cores_per_node) + ")")
+
             # Determine other parameters
             ppn = nsockets * ncores
             nprocesses_per_node = int(self.nprocesses / nnodes)
@@ -602,7 +609,6 @@ class SKIRTLauncher(Configurable):
             ncores_per_process = ppn / nprocesses_per_node
             threads_per_core = threads_per_core if hyperthreading else 1
             threads_per_process = threads_per_core * ncores_per_process
-            total_ncores = nnodes * nsockets * ncores
 
             # Determine data-parallel flag
             if self.config.data_parallel_remote is None:
@@ -689,7 +695,7 @@ class SKIRTLauncher(Configurable):
 
             # Determine the number of processes per node (this same calculation is also done in JobScript)
             # self.remote.cores = cores per node
-            processes_per_node = self.remote.cores_per_node // self.config.arguments.parallel.threads
+            processes_per_node = self.remote.cores_per_node // self.parallelization.threads
 
             # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
             requested_nodes = math.ceil(self.config.arguments.parallel.processes / processes_per_node)
@@ -703,7 +709,7 @@ class SKIRTLauncher(Configurable):
         else:
 
             # Determine the total number of requested threads
-            requested_threads = self.config.arguments.parallel.processes * self.config.arguments.parallel.threads
+            requested_threads = self.parallelization.processes * self.parallelization.threads
 
             # Determine the total number of hardware threads that can be used on the remote host
             hardware_threads = self.remote.cores_per_node

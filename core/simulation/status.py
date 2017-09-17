@@ -467,13 +467,19 @@ class LogSimulationStatus(SimulationStatus):
                         while True:
 
                             if self.stage != last_stage:
+                                #print("END OF STAGE?")
                                 bar.show(100) # make sure it always ends on 100%
                                 break
                             if self.cycle != last_cycle:
+                                #print("END OF CYCLE?")
                                 bar.show(100) # make sure it always ends on 100%
                                 break
-                            if self.progress is None: bar.show(100)
-                            else: bar.show(int(self.progress))
+                            if self.progress is None:
+                                #print("PROGRESS IS NONE!")
+                                bar.show(100)
+                            else:
+                                #print("PROGRESS: " + str(int(self.progress)))
+                                bar.show(int(self.progress))
                             self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
                     self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
@@ -493,11 +499,15 @@ class LogSimulationStatus(SimulationStatus):
                     # Loop
                     while True:
                         if self.phase != last_phase:
+                            #print("END OF PHASE?")
                             bar.show(100) # make sure it always ends on 100%
                             break
                         if self.progress is None:
+                            #print("PROGRESS IS NONE!")
                             bar.show(100)
-                        else: bar.show(int(self.progress))
+                        else:
+                            #print("PROGRESS: " + str(int(self.progress)))
+                            bar.show(int(self.progress))
                         self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
             # Still the same phase
@@ -731,7 +741,7 @@ class LogSimulationStatus(SimulationStatus):
             self.status = "running"
 
             # Get the phase info
-            self.phase, self.simulation_phase, stage, cycle, progress, extra = get_phase_info(lines)
+            self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(lines)
 
 # -----------------------------------------------------------------
 
@@ -1328,7 +1338,7 @@ def get_phase_info(lines):
     """
 
     # Initialize everything
-    phase = None
+    #phase = None
     simulation_phase = None
     stage = None
     cycle = None

@@ -949,7 +949,7 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Set options
         self.launcher.config.show_progress = True
-        self.launcher.config.debug_output = True
+        self.launcher.config.debug_output = self.config.debug_output
 
         # Create the simulation definition
         definition = SingleSimulationDefinition(self.ski_file_path, self.run_output_path, self.input_paths)
@@ -980,14 +980,26 @@ class AnalysisLauncher(AnalysisComponent):
         # Set options for parallelization and number of processes
         # Remote execution
         if self.uses_remote:
-            parallelization = None
-            nprocesses = self.config.nprocesses_remote
-            self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+            # Parallelization is defined
+            if self.config.parallelization_remote is not None:
+                parallelization = self.config.parallelization_remote
+                nprocesses = None
+                self.launcher.config.check_parallelization = False
+            else:
+                parallelization = None
+                nprocesses = self.config.nprocesses_remote
+                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
         # Local execution
         else:
-            parallelization = None
-            nprocesses = self.config.nprocesses_local
-            self.launcher.config.data_parallel_local = self.config.data_parallel_local
+            # Parallelization is defined
+            if self.config.parallelization_local is not None:
+                parallelization = self.config.parallelization_local
+                nprocesses = None
+                self.launcher.config.check_parallelization = False
+            else:
+                parallelization = None
+                nprocesses = self.config.nprocesses_local
+                self.launcher.config.data_parallel_local = self.config.data_parallel_local
 
         # Other settings
         if log.is_debug(): self.launcher.config.show = True
