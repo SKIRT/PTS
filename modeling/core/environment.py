@@ -676,6 +676,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         self.html_index_path = fs.join(self.html_path, index_filename)
         self.html_status_path = fs.join(self.html_path, status_name)
+
+        # Images directory
         self.html_images_path = fs.create_directory_in(self.html_path, "images")
 
         # NEW

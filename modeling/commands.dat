@@ -113,18 +113,19 @@ generate_maps_selection_page | -- | maps.html.selection.MapsSelectionPageGenerat
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages
+generate_index_page | -- | html.index.IndexPageGenerator | arguments | Generate the index page for the galaxy
 generate_status_page | -- | html.status.StatusPageGenerator | arguments | Generate the status page
-generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page
 generate_data_page | -- | html.data.DataPageGenerator | arguments | Generate the data page
-generate_photometry_page | -- | html.photometry.PhotometryPageGenerator | arguments | Generate the photometry page
-generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page
 generate_preparation_page | -- | html.preparation.PreparationPageGenerator | arguments | Generate the preparation page
 generate_components_page | -- | html.components.ComponentsPageGenerator | arguments | Generate the components page
+generate_photometry_page | -- | html.photometry.PhotometryPageGenerator | arguments | Generate the photometry page
+generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page
+generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page
 generate_fitting_page | -- | html.fitting.FittingPageGenerator | arguments | Generate the fitting page
 generate_datacubes_page | -- | html.datacubes.DatacubesPageGenerator | arguments | Generate the datacubes page
 generate_fluxes_page | -- | html.fluxes.FluxesPageGenerator | arguments | Generate the fluxes page
 generate_images_page | -- | html.images.ImagesPageGenerator | arguments | Generate the images page (with residuals)
-generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_attenuation_page | -- | html.attenuation.AttenuationPageGenerator | arguments | Generate the attenuation page
+generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Generate the heating page
 publish | -- | html.publish.Publisher | arguments | Publish the pages

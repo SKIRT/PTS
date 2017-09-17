@@ -116,16 +116,16 @@ class Publisher(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Generate the pages
+        # 2. Generate the pages
         if self.config.regenerate: self.generate()
 
-        # Upload
+        # 3. Upload
         self.upload()
 
-        # Show the page
+        # 4. Show the page
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -196,6 +196,9 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading the pages ...")
 
+        # Index page
+        if self.has_index_page: self.upload_index_page()
+
         # Status page
         if self.has_status_page: self.upload_status_page()
 
@@ -204,6 +207,9 @@ class Publisher(HTMLPageComponent):
 
         # Components page
         if self.has_components_page: self.upload_components_page()
+
+        # Photometry page
+        if self.has_photometry_page: self.upload_photometry_page()
 
         # Maps page
         if self.has_maps_page: self.upload_maps_page()
@@ -214,6 +220,15 @@ class Publisher(HTMLPageComponent):
         # Fitting page
         if self.has_fitting_page: self.upload_fitting_page()
 
+        # Datacubes page
+        if self.has_datacubes_page: self.upload_datacubes_page()
+
+        # Fluxes page
+        if self.has_fluxes_page: self.upload_fluxes_page()
+
+        # Images
+        if self.has_images_page: self.upload_images_page()
+
         # Colours page
         if self.has_colours_page: self.upload_colours_page()
 
@@ -222,6 +237,25 @@ class Publisher(HTMLPageComponent):
 
         # Heating page
         if self.has_heating_page: self.upload_heating_page()
+
+    # -----------------------------------------------------------------
+
+    def upload_index_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the index page ...")
+
+        # Update
+        updated = fs.update_file_in(self.index_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Succesfully uploaded the page")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 
@@ -282,6 +316,25 @@ class Publisher(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
+    def upload_photometry_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the photometry page ...")
+
+        # Update
+        updated = fs.update_file_in(self.photometry_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Succesfully uploaded the page")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
     def upload_maps_page(self):
 
         """
@@ -335,6 +388,63 @@ class Publisher(HTMLPageComponent):
 
         # Report
         if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_datacubes_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the datacubes page ...")
+
+        # Update
+        updated = fs.update_file_in(self.datacubes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_fluxes_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the fluxes page ...")
+
+        # Update
+        updated = fs.update_file_in(self.fluxes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Succesfully uploaded the page")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_images_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the images page ...")
+
+        # Update
+        updated = fs.update_file_in(self.images_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Succesfully uploaded the page")
         else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------

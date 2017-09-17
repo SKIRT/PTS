@@ -167,6 +167,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_index_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.index_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_status_page(self):
 
         """

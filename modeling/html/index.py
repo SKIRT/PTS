@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.html.status Contains the StatusPageGenerator class.
+## \package pts.modeling.html.index Contains the IndexPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ page_width = 600
 
 # -----------------------------------------------------------------
 
-class StatusPageGenerator(HTMLPageComponent):
+class IndexPageGenerator(HTMLPageComponent):
 
     """
     This function ...
@@ -41,11 +41,10 @@ class StatusPageGenerator(HTMLPageComponent):
         """
 
         # Call the constructor of the base class
-        super(StatusPageGenerator, self).__init__(*args, **kwargs)
+        super(IndexPageGenerator, self).__init__(*args, **kwargs)
 
         # Tables
-        self.status_table = None
-        self.history_table = None
+        self.info_table = None
 
     # -----------------------------------------------------------------
 
@@ -86,7 +85,7 @@ class StatusPageGenerator(HTMLPageComponent):
         """
 
         # Call the setup function of the base class
-        super(StatusPageGenerator, self).setup(**kwargs)
+        super(IndexPageGenerator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -100,15 +99,12 @@ class StatusPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables ...")
 
-        # Make status table
-        self.make_status_table()
-
-        # Make the history table
-        self.make_history_table()
+        # Make info table
+        self.make_info_table()
 
     # -----------------------------------------------------------------
 
-    def make_status_table(self):
+    def make_info_table(self):
 
         """
         This function ...
@@ -116,28 +112,20 @@ class StatusPageGenerator(HTMLPageComponent):
         """
 
         # Inform the user
-        log.info("Making the status table ...")
+        log.info("Making the info table ...")
 
-        # Set the background colours of the cells
-        bgcolors = [(None, color) for color in self.status.colors]
-
-        # Create the table
-        self.status_table = html.SimpleTable(self.status, header=["Step", "Status"], bgcolors=bgcolors, css_class=hover_table_class)
-
-    # -----------------------------------------------------------------
-
-    def make_history_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the history table ...")
+        # Create list of tuples
+        tuples = self.galaxy_info.items()
+        tuples.append(("Distance", self.galaxy_properties.distance))
+        tuples.append(("Redshift", self.galaxy_properties.redshift))
+        tuples.append(("Center coordinate", self.galaxy_properties.center))
+        tuples.append(("Major axis length", self.galaxy_properties.major))
+        tuples.append(("Ellipticity", self.galaxy_properties.ellipticity))
+        tuples.append(("Position angle", self.galaxy_properties.position_angle))
+        tuples.append(("Inclination", self.galaxy_properties.inclination))
 
         # Create the table
-        self.history_table = html.SimpleTable.from_table(self.history, css_class=hover_table_class)
+        self.info_table = html.SimpleTable(tuples, header=["Property", "Value"], css_class=hover_table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -201,18 +189,20 @@ class StatusPageGenerator(HTMLPageComponent):
         #body = self.heading
 
         # Create titles
-        title_status = html.underline_template.format(text="Modeling status")
-        title_history = html.underline_template.format(text="Modeling history")
+        title_info = html.underline_template.format(text="Galaxy info")
 
+        #body += html.newline + html.line
+        self.page += html.newline + "Pages:" + html.newline
+        items = []
+        if self.history.finished("fetch_images"): items.append(html.hyperlink(self.data_page_name, "data"))
+        if self.history.finished("prepare_data"): items.append(html.hyperlink(self.preparation_page_name, "preparation"))
+        if self.history.finished("decompose"): items.append(html.hyperlink(self.components_page_name, "components"))
+        if self.history.finished("build_model"): items.append(html.hyperlink(self.maps_page_name, "maps"))
+        if self.history.finished("configure_fit"): items.append(html.hyperlink(self.model_page_name, "model"))
+        self.page += html.unordered_list(items, css_class="b")
         self.page += html.line + html.newline
-        self.page += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
-        self.page += html.line + html.newline
-        self.page += title_history + html.newline + html.newline + str(self.history_table) + html.newline + html.newline
 
-        #body += self.footing
-
-        # Create the status page
-        #self.make_page(body)
+        self.page += title_info + html.newline + html.newline + str(self.info_table) + html.newline
 
     # -----------------------------------------------------------------
 
@@ -239,6 +229,6 @@ class StatusPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return self.status_page_path
+        return self.index_page_path
 
 # -----------------------------------------------------------------

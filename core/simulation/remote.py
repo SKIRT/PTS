@@ -1529,11 +1529,21 @@ class SKIRTRemote(Remote):
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
-                # Get the status
-                simulation_status = self._get_simulation_status_not_scheduler(simulation)
+                # Check whether the handle is defined
+                if simulation.handle is None:
 
-                # Add the simulation properties to the list
-                entries.append((path, simulation_status))
+                    # Warning to get attention
+                    log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + self.host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
+                    entries.append((path, "running"))
+
+                # Handle is defined
+                else:
+
+                    # Get the status
+                    simulation_status = self._get_simulation_status_not_scheduler(simulation)
+
+                    # Add the simulation properties to the list
+                    entries.append((path, simulation_status))
 
         # If the remote has a scheduling system for launching jobs
         else:
