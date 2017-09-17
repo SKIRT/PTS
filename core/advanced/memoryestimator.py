@@ -31,12 +31,13 @@ bytes_per_gigabyte = 1073741824.
 
 # -----------------------------------------------------------------
 
-def estimate_memory(ski_path, input_path=None):
+def estimate_memory(ski_path, input_path=None, ncells=None):
 
     """
     This function ...
     :param ski_path:
     :param input_path:
+    :param ncells:
     :return:
     """
 
@@ -47,6 +48,7 @@ def estimate_memory(ski_path, input_path=None):
     estimator.config.ski = ski_path
     estimator.config.input = input_path
     estimator.config.show = False
+    estimator.config.ncells = ncells
 
     # Estimate the memory
     estimator.run()

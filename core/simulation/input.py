@@ -255,3 +255,52 @@ class SimulationInput(object):
             return dir_path
 
 # -----------------------------------------------------------------
+
+def find_input_filepath(filename, input_path):
+
+    """
+    This function ...
+    :param filename:
+    :param input_path:
+    :return:
+    """
+
+    # List of file paths
+    if types.is_sequence(input_path):
+
+        for path in input_path:
+            if fs.name(path) == filename:
+                filepath = path
+                break
+        else: raise ValueError("The list of input paths does not contain the path to the file")
+
+    # Directory path
+    elif types.is_string_type(input_path): filepath = fs.join(input_path, filename)
+
+    # Simulation input object
+    elif isinstance(input_path, SimulationInput):
+
+        # Check whether present in simulation input
+        if filename not in input_path: raise ValueError("The file '" + filename + "' could not be found within the simulation input specification")
+
+        # Otherwise, set the path
+        filepath = input_path[filename]
+
+    # Dictionary
+    elif types.is_dictionary(input_path):
+
+        # input_path = SimulationInput(**input_path)
+
+        # Check whether present in simulation input
+        if filename not in input_path: raise ValueError("The file '" + filename + "' could not be found within the simulation input specification")
+
+        # Otherwise, set the path
+        filepath = input_path[filename]
+
+    # Invalid
+    else: raise ValueError("Invalid value for 'input_path': '" + str(input_path) + "'")
+
+    # Return the filepath
+    return filepath
+
+# -----------------------------------------------------------------

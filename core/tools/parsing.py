@@ -1161,7 +1161,7 @@ def filepath_or_string_filepath_dictionary(argument):
     """
 
     try: return string_filepath_dictionary(argument)
-    except ValueError: return file_path(argument)
+    except (ValueError, SyntaxError) as e: return file_path(argument)
 
 # -----------------------------------------------------------------
 

@@ -3571,6 +3571,37 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def read_first_lines(self, path, nlines):
+
+        """
+        This function ...
+        :param path:
+        :param nlines:
+        :return:
+        """
+
+        command = "head -n " + str(nlines) + " " + path
+
+        # Execute
+        output = self.execute(command)
+
+        # Return the lines
+        return output
+
+    # -----------------------------------------------------------------
+
+    def read_first_line(self, path):
+
+        """
+        Thisf unction ...
+        :param path:
+        :return:
+        """
+
+        return self.read_first_lines(path, 1)[0]
+
+    # -----------------------------------------------------------------
+
     def read_last_lines(self, path, nlines):
 
         """
@@ -3585,6 +3616,18 @@ class Remote(object):
 
         # Return the lines
         return output
+
+    # -----------------------------------------------------------------
+
+    def read_last_line(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.read_last_lines(path, 1)[0]
 
     # -----------------------------------------------------------------
 

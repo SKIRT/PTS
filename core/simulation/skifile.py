@@ -295,7 +295,13 @@ class SkiFile:
         else:
             return int(entry.get("points"))
 
-    ## This function returns the name of the wavelengths file that is used for the simulation, if any
+    ## This function returns the name of the wavelengths file, if any
+    def wavelengthsfilename(self):
+        # If this ski file contains a file wavelength grid
+        entry = self.tree.xpath("//FileWavelengthGrid")
+        if entry: return self.get_value(entry[0], "filename")
+
+    ## This function returns the path of the wavelengths file that is used for the simulation, if any
     def wavelengthsfile(self, input_path=None):
 
         # If this ski file contains a file wavelength grid
@@ -306,6 +312,8 @@ class SkiFile:
 
             # Simulation input is specified
             if input_path is not None:
+
+                # TODO: use find_input_filepath (from simulationinput module) here
 
                 # List of file paths
                 if types.is_sequence(input_path):

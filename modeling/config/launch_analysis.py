@@ -85,4 +85,8 @@ definition.add_flag("update_dependencies", "update PTS dependencies", False)
 definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
+# If previous launch failed, but input was already uploaded
+definition.add_optional("remote_input", "string_string_dictionary", "dictionary of input file paths, the filenames (keys) have to be those defined in the input.dat file of the analysis run")
+definition.add_optional("remote_input_path", "string", "remote directory where the uploaded input files can be found")
+
 # -----------------------------------------------------------------

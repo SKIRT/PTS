@@ -1167,7 +1167,7 @@ def get_component_map_path(path):
     map_path = fs.join(path, model_map_filename)
 
     # Check
-    if fs.is_file(map_path): raise IOError("The component map '" + map_path + "' does not exist")
+    if not fs.is_file(map_path): raise IOError("The component map '" + map_path + "' does not exist")
 
     # Return the map path
     return map_path

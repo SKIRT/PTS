@@ -19,9 +19,10 @@ import random
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.configurable import Configurable
-from .memoryestimator import MemoryEstimator
+from .memoryestimator import MemoryEstimator, estimate_memory
 from ..simulation.skifile import SkiFile
 from ..simulation.parallelization import Parallelization
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ def factors(n):
 # -----------------------------------------------------------------
 
 def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading,
-                              threads_per_core, ncells=None):
+                              threads_per_core, ncells=None, nwavelengths=None):
 
     """
     This function ...
@@ -75,6 +76,7 @@ def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, nc
     :param hyperthreading:
     :param threads_per_core:
     :param ncells:
+    :param nwavelengths:
     :return:
     """
 
@@ -98,6 +100,9 @@ def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, nc
 
     # Number of dust cells
     tool.config.ncells = ncells  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+    # Number of wavelengths
+    tool.config.nwavelengths = nwavelengths
 
     # Don't show the parallelization
     tool.config.show = False
@@ -131,9 +136,6 @@ class ParallelizationTool(Configurable):
 
         # The dimension of the dust lib
         self.dustlib_dimension = None
-
-        # The memory estimator
-        self.estimator = MemoryEstimator()
 
         # The parallelization object
         self.parallelization = None
@@ -195,6 +197,19 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.nwavelengths is not None: return self.config.nwavelengths
+        else: return self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+
+    # -----------------------------------------------------------------
+
     def set_parallelization(self):
 
         """
@@ -223,26 +238,8 @@ class ParallelizationTool(Configurable):
         # If MPI can be used
         else:
 
-            # If memory as not been set
-            if self.memory is None:
-
-                # Configure the memory estimator
-                self.estimator.config.ski = self.ski
-                self.estimator.config.input = self.config.input
-                self.estimator.config.ncells = self.config.ncells
-
-                # Don't show the memory
-                self.estimator.config.show = False
-
-                # Estimate the memory
-                self.estimator.run()
-
-                # Get the serial and parallel parts of the simulation's memory
-                #serial_memory = self.estimator.serial_memory
-                #parallel_memory = self.estimator.parallel_memory
-
-                # Set the memory requirement
-                self.memory = self.estimator.memory
+            # If memory as not been set, estimate it
+            if self.memory is None: self.memory = estimate_memory(self.ski, input_path=self.config.input, ncells=self.config.ncells)
 
             # Get serial and parallel parts of the memory requirement
             serial_memory = self.memory.serial
@@ -283,8 +280,8 @@ class ParallelizationTool(Configurable):
                         total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
 
                         # Nlambda >= 10 x Np
-                        nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                        if nwavelengths >= 10 * nprocesses:
+                        #nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+                        if self.nwavelengths >= 10 * nprocesses:
 
                             # Determine number of threads per core
                             threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
@@ -319,8 +316,8 @@ class ParallelizationTool(Configurable):
                 total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
 
                 # Nlambda >= 10 * Np?
-                nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                if nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3:
+                #nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+                if self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3:
 
                     # data parallelization
                     # Create the parallelization object

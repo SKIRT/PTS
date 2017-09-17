@@ -293,6 +293,22 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_remote: return None
+        else:
+            remote = Remote()
+            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
+            else: return remote
+
+    # -----------------------------------------------------------------
+
     @property
     def uses_remote(self):
 
@@ -389,6 +405,18 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_remote_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.uses_remote and (self.config.remote_input is not None or self.config.remote_input_path is not None)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def input_paths(self):
 
@@ -397,7 +425,63 @@ class AnalysisLauncher(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.input_paths
+        # Remote is not used
+        if not self.uses_remote:
+
+            # Check config
+            if self.config.remote_input is not None or self.config.remote_input_path is not None:
+                raise ValueError("Cannot specifiy remote input path(s) if simulation is not launched remotely")
+
+            # Return the local paths
+            return self.analysis_run.input_paths
+
+        # Remote execution
+        else:
+
+            # Get local paths
+            paths = self.analysis_run.input_paths
+
+            # No remote files
+            if self.config.remote_input is None and self.config.remote_input_path is None: return paths
+
+            # Remote files defined in a dictionary
+            elif self.config.remote_input is not None:
+
+                # Replace filepaths by remote filepaths if they have been uploaded to the remote already
+                for filename in self.config.remote_input:
+
+                    # Check whether valid filename
+                    if filename not in paths: raise ValueError("The filename '" + filename + "' is not one of the input filenames")
+
+                    # Replace by remote path
+                    paths[filename] = self.config.remote_input[filename]
+
+                # Return the paths
+                return paths
+
+            # Remote input directory is specified
+            elif self.config.remote_input_path is not None:
+
+                # Search for each file in the directory
+                for filename in paths:
+
+                    # Determine filepath
+                    filepath = fs.join(self.config.remote_input_path, filename)
+
+                    # Check existence on remote
+                    if self.remote.is_file(filepath):
+
+                        # Add the remote path
+                        paths[filename] = filepath
+
+                    # Doesn't exist
+                    else: log.warning("Remote version of the '" + filename + "' input file is not found: using local file ...")
+
+                # Return the paths
+                return paths
+
+            # We shouldn't get here
+            else: raise RuntimeError("We shouldn't get here")
 
     # -----------------------------------------------------------------
 
@@ -686,7 +770,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.plotting.progress = True
         self.analysis_options.plotting.timeline = True
         self.analysis_options.plotting.seds = True
-        self.analysis_options.plotting.grids = True
+        self.analysis_options.plotting.grids = False # are already plotted for each initialized analysis run
         self.analysis_options.plotting.reference_seds = [self.observed_sed_path]
 
     # -----------------------------------------------------------------
@@ -878,6 +962,8 @@ class AnalysisLauncher(AnalysisComponent):
         # Run the simulation
         self.launcher.run(definition=definition, logging_options=logging, analysis_options=self.analysis_options,
                           scheduling_options=self.scheduling_options, parallelization=parallelization,
-                          nprocesses=nprocesses, local_script_path=local_script_path, screen_output_path=screen_output_path)
+                          nprocesses=nprocesses, local_script_path=local_script_path,
+                          screen_output_path=screen_output_path, ncells=self.ndust_cells, remote=self.remote,  # pass remote because possibly already used here (don't connect again in the SKIRTLauncher)
+                          has_remote_input=self.has_remote_input)
 
 # -----------------------------------------------------------------

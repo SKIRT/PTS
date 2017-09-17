@@ -197,7 +197,7 @@ class SKIRTRemote(Remote):
     # -----------------------------------------------------------------
 
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-                     remote_input_path=None, analysis_options=None, emulate=False):
+                     remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False):
 
         """
         This function ...
@@ -209,6 +209,7 @@ class SKIRTRemote(Remote):
         :param remote_input_path:
         :param analysis_options:
         :param emulate:
+        :param has_remote_input:
         :return:
         """
 
@@ -230,7 +231,7 @@ class SKIRTRemote(Remote):
         if name is None: name = remote_simulation_name
 
         # Make preparations for this simulation, create the SkirtArguments object
-        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate)
+        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate, has_remote_input=has_remote_input)
 
         # Add the SkirtArguments object to the queue
         self.queue.append((arguments, name))
@@ -566,7 +567,7 @@ class SKIRTRemote(Remote):
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
             analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
-            show_progress=False):
+            show_progress=False, has_remote_input=False):
 
         """
         This function ...
@@ -580,6 +581,7 @@ class SKIRTRemote(Remote):
         :param screen_output_path:
         :param attached:
         :param show_progress:
+        :param has_remote_input:
         :return:
         """
 
@@ -590,7 +592,7 @@ class SKIRTRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
+        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options, has_remote_input=has_remote_input)
 
         # Check whether attached mode is not requested for a scheduling remote
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
@@ -651,7 +653,8 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None, emulate=False):
+    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None,
+                emulate=False, has_remote_input=False):
 
         """
         This function ...
@@ -661,6 +664,7 @@ class SKIRTRemote(Remote):
         :param remote_simulation_path:
         :param remote_input_path:
         :param emulate:
+        :param has_remote_input:
         :return:
         """
 
@@ -694,6 +698,9 @@ class SKIRTRemote(Remote):
         # The simulation input is defined in terms of a single local directory
         elif isinstance(definition.input_path, basestring):
 
+            # Check has_remote_input flag
+            if has_remote_input: raise ValueError("Cannot enable 'has_remote_input' flag when input is a directory, only when input is defined in terms of a list or dictionary of filepaths (or SimulationInput object)")
+
             # A remote input path is not specified, this means that we have yet to copy the input
             if remote_input_path is None:
 
@@ -704,7 +711,9 @@ class SKIRTRemote(Remote):
                 self.upload(definition.input_path, remote_input_path, show_output=True)
 
             # The specified remote input directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If the simulation input is defined as a list of seperate file paths
         elif isinstance(definition.input_path, list):
@@ -721,14 +730,30 @@ class SKIRTRemote(Remote):
                 # Create the remote directory
                 self.create_directory(remote_input_path)
 
+                # Check which files are actually local and which are already remote
+                if has_remote_input:
+                    nfiles = len(local_input_file_paths)
+                    remote_input_file_paths = [filepath for filepath in local_input_file_paths if self.is_file(filepath)]
+                    local_input_file_paths = [filepath for filepath in local_input_file_paths if fs.is_file(filepath)]
+                    if len(remote_input_file_paths) + len(local_input_file_paths) != nfiles: raise ValueError("Some input files were not found")
+                else: remote_input_file_paths = None
+
                 # Upload the local input files to the new remote directory
                 self.upload(local_input_file_paths, remote_input_path)
 
+                # Copy the already remote files to the new remote directory
+                if remote_input_file_paths is not None: self.copy_files(remote_input_file_paths, remote_input_path)
+
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If we have a SimulationInput instance
         elif isinstance(definition.input_path, SimulationInput):
+
+            # Check
+            if has_remote_input: raise ValueError("Currently, has_remote_input is not possible with SimulationInput objects (due to internal checking in the latter class)")
 
             # If a remote input path is not specified
             if remote_input_path is None:
@@ -749,7 +774,9 @@ class SKIRTRemote(Remote):
                     self.upload(path, remote_input_path, new_name=name)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # We have a dictionary
         elif types.is_dictionary(definition.input_path):
@@ -766,14 +793,43 @@ class SKIRTRemote(Remote):
                 # Upload the local input files to the new remote directory
                 for name, path in definition.input_path.items():
 
-                    # Debugging
-                    log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+                    # Check
+                    if has_remote_input:
 
-                    # Upload the file, giving it the desired name
-                    self.upload(path, remote_input_path, new_name=name)
+                        # Is local
+                        if fs.is_file(path):
+
+                            # Debugging
+                            log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                            # Upload
+                            self.upload(path, remote_input_path, new_name=name)
+
+                        # Is remote
+                        elif self.is_file(path):
+
+                            # Debugging
+                            log.debug("Copying the '" + path + "' file from '" + fs.directory_of(path) + "' to '" + remote_input_path + "' under the name '" + name + "'")
+
+                            # Copy
+                            self.copy_file(path, remote_input_path, new_name=name)
+
+                        # Not found
+                        else: raise ValueError("The input file '" + name + "' is not found remotely or locally")
+
+                    # No checking
+                    else:
+
+                        # Debugging
+                        log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                        # Upload the file, giving it the desired name
+                        self.upload(path, remote_input_path, new_name=name)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # Invalid format for arguments.input_path
         else: raise ValueError("Invalid value for 'input_path': must be None, local directory path, list of file paths or SimulationInput object")
