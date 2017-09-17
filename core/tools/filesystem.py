@@ -1400,6 +1400,10 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     # Copy files
     copy_files(files_in_path(from_directory, **kwargs), to_directory)
 
+    if "extension" in kwargs: del kwargs["extension"]
+    if "not_extension" in kwargs: del kwargs["not_extension"]
+    if "extensions" in kwargs: del kwargs["extensions"]
+
     # Copy directories
     copy_directories(directories_in_path(from_directory, **kwargs), to_directory)
 
