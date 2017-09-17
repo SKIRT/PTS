@@ -31,6 +31,28 @@ from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
+class DamagedFITSFileError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, path=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param path:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(DamagedFITSFileError, self).__init__(message)
+
+        # The FITS file path
+        self.path = path
+
+# -----------------------------------------------------------------
+
 def is_valid(filepath):
 
     """
@@ -41,7 +63,12 @@ def is_valid(filepath):
 
     try:
         header = get_header(filepath)
-        return True
+
+        try:
+            data = get_data(filepath)
+            return True
+        except TypeError: return False
+
     except: return False
 
 # -----------------------------------------------------------------
@@ -183,6 +210,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
     # Get the primary HDU
     hdu = hdulist[hdulist_index]
+
+    # Check whether the data can be read
+    try: first_plane = hdu.data[0]
+    except TypeError: raise DamagedFITSFileError("The FITS file is damaged", path=path)
 
     # Get the image header
     original_header = hdu.header

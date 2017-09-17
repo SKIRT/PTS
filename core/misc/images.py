@@ -23,6 +23,7 @@ from ...magic.core.kernel import ConvolutionKernel
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
+from ...magic.core import fits
 from ..simulation.wavelengthgrid import WavelengthGrid
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
@@ -267,7 +268,7 @@ class ObservedImageMaker(Configurable):
         """
 
         # Filter names
-        if "filter_names" in kwargs:
+        if kwargs.get("filter_names", None) is not None:
 
             # Check
             if "filters" in kwargs: raise ValueError("Cannot specify 'filters' and 'filter_names' simultaneously")
@@ -276,7 +277,7 @@ class ObservedImageMaker(Configurable):
             self.filter_names = kwargs.pop("filter_names")
 
         # Filters
-        elif "filters" in kwargs: self.filter_names = [str(fltr) for fltr in kwargs.pop("filters")]
+        elif kwargs.get("filters", None) is not None: self.filter_names = [str(fltr) for fltr in kwargs.pop("filters")]
 
     # -----------------------------------------------------------------
 
@@ -292,7 +293,7 @@ class ObservedImageMaker(Configurable):
         log.debug("Getting the instrument names ...")
 
         # Instrument names
-        if "instrument_names" in kwargs:
+        if kwargs.get("instrument_names", None) is not None:
 
             # Check
             if "instruments" in kwargs: raise ValueError("Cannot specify 'instruments' and 'instrument_names' simultaneously")
@@ -301,7 +302,7 @@ class ObservedImageMaker(Configurable):
             self.instrument_names = kwargs.pop("instrument_names")
 
         # Instruments
-        elif "instruments" in kwargs: self.instruments = kwargs.pop("instruments")
+        elif kwargs.get("instruments", None) is not None: self.instruments = kwargs.pop("instruments")
 
     # -----------------------------------------------------------------
 
@@ -317,7 +318,7 @@ class ObservedImageMaker(Configurable):
         log.debug("Getting the coordinate systems ...")
 
         # WCS
-        if "wcs" in kwargs:
+        if kwargs.get("wcs", None) is not None:
 
             # Check that wcs_instrument is defined
             wcs_instrument = kwargs.pop("wcs_instrument")
@@ -326,16 +327,20 @@ class ObservedImageMaker(Configurable):
             wcs = kwargs.pop("wcs")
 
             # Set the coordinate system
+            self.coordinate_systems = dict()
             self.coordinate_systems[wcs_instrument] = wcs
 
         # WCS paths
-        elif "wcs_paths" in kwargs:
+        elif kwargs.get("wcs_paths", None) is not None:
 
             # Get the paths
             wcs_paths = kwargs.pop("wcs_paths")
 
             # Defined for each instrument
             if types.is_dictionary(wcs_paths):
+
+                # Initialize
+                self.coordinate_systems = dict()
 
                 # Loop over the instruments
                 for instrument_name in wcs_paths:
@@ -350,7 +355,7 @@ class ObservedImageMaker(Configurable):
             else: raise ValueError("Invalid option for 'wcs_path'")
 
         # Single WCS path is defined
-        elif "wcs_path" in kwargs:
+        elif kwargs.get("wcs_path", None) is not None:
 
             # Check that wcs_instrument is defined
             wcs_instrument = kwargs.pop("wcs_instrument")
@@ -360,6 +365,7 @@ class ObservedImageMaker(Configurable):
             wcs = CoordinateSystem.from_file(wcs_path)
 
             # Set the coordinate system
+            self.coordinate_systems = dict()
             self.coordinate_systems[wcs_instrument] = wcs
 
     # -----------------------------------------------------------------
@@ -393,18 +399,18 @@ class ObservedImageMaker(Configurable):
 
         # Checks
         auto_psfs = kwargs.pop("auto_psfs", False)
-        if "kernel_paths" in kwargs and "psf_paths" in kwargs: raise ValueError("Cannot specify 'kernel_paths' and 'psf_paths' simultaneously")
-        if "psf_paths" in kwargs and auto_psfs: raise ValueError("Cannot specify 'psf_paths' when 'auto_psfs' is enabled")
-        if auto_psfs and "kernel_paths" in kwargs: raise ValueError("Cannot specify 'kernel_paths' when 'auto_psfs' is enabled")
+        if kwargs.get("kernel_paths", None) is not None and kwargs.get("psf_paths", None) is not None: raise ValueError("Cannot specify 'kernel_paths' and 'psf_paths' simultaneously")
+        if kwargs.get("psf_paths", None) is not None and auto_psfs: raise ValueError("Cannot specify 'psf_paths' when 'auto_psfs' is enabled")
+        if auto_psfs and kwargs.get("kernel_paths", None) is not None: raise ValueError("Cannot specify 'kernel_paths' when 'auto_psfs' is enabled")
 
         # Kernel paths
-        if "kernel_paths" in kwargs: self.kernel_paths = kwargs.pop("kernel_paths")
+        if kwargs.get("kernel_paths", None) is not None: self.kernel_paths = kwargs.pop("kernel_paths")
 
         # PSF paths
-        elif "psf_paths" in kwargs: self.kernel_paths = kwargs.pop("psf_paths")
+        elif kwargs.pop("psf_paths", None) is not None: self.kernel_paths = kwargs.pop("psf_paths")
 
         # Automatic PSF determination
-        elif "auto_psfs" in kwargs: self.set_psf_kernels()
+        elif kwargs.pop("auto_psfs", None) is not None: self.set_psf_kernels()
 
     # -----------------------------------------------------------------
 
@@ -448,7 +454,7 @@ class ObservedImageMaker(Configurable):
         log.debug("Getting rebin coordinate systems ...")
 
         # Rebin WCS paths
-        if "rebin_wcs_paths" in kwargs:
+        if kwargs.get("rebin_wcs_paths", None) is not None:
 
             # Initialize dictionary
             self.rebin_coordinate_systems = dict()
@@ -488,7 +494,7 @@ class ObservedImageMaker(Configurable):
                     self.rebin_coordinate_systems[rebin_instrument][filter_name] = wcs
 
         # Rebin WCS
-        elif "rebin_wcs" in kwargs:
+        elif kwargs.get("rebin_wcs", None) is not None:
 
             # Check that rebin_instrument is specified
             rebin_instrument = kwargs.pop("rebin_instrument")
@@ -503,7 +509,7 @@ class ObservedImageMaker(Configurable):
                 self.rebin_coordinate_systems[rebin_instrument][filter_name] = rebin_wcs
 
         # Rebin wcs path
-        elif "rebin_wcs_path" in kwargs:
+        elif kwargs.get("rebin_wcs_path", None) is not None:
 
             # Check that rebin_instrument is specified
             rebin_instrument = kwargs.pop("rebin_instrument")
@@ -521,7 +527,7 @@ class ObservedImageMaker(Configurable):
                 self.rebin_coordinate_systems[rebin_instrument][filter_name] = rebin_wcs
 
         # Rebin dataset
-        elif "rebin_dataset" in kwargs:
+        elif kwargs.get("rebin_dataset", None) is not None:
 
             from ...magic.core.dataset import DataSet
 
@@ -540,7 +546,10 @@ class ObservedImageMaker(Configurable):
             for filter_name in self.filter_names:
 
                 # Get the coordinate system
-                wcs = dataset.get_coordinate_system_for_filter(filter_name)
+                wcs = dataset.get_coordinate_system_for_filter(filter_name, return_none=True)
+                if wcs is None:
+                    log.warning("The coordinate system for the '" + filter_name + "' filter is not found in the dataset: skipping ...")
+                    continue
 
                 # Set the coordinate system
                 self.rebin_coordinate_systems[rebin_instrument][filter_name] = wcs
@@ -628,13 +637,27 @@ class ObservedImageMaker(Configurable):
             if self.host_id is not None:
 
                 # Remote threshold not specified or file is smaller than threshold
-                if self.remote_threshold is None or fs.file_size(path) < self.remote_threshold: datacube = DataCube.from_file(path, self.wavelength_grid)
+                if self.remote_threshold is None or fs.file_size(path) < self.remote_threshold:
+                    try: datacube = DataCube.from_file(path, self.wavelength_grid)
+                    except fits.DamagedFITSFileError as e:
+                        log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+                        continue
 
                 # Remote threshold
-                else: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
+                else:
+
+                    try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
+                    except fits.DamagedFITSFileError as e:
+                        log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+                        continue
 
             # No host specified: local datacube
-            else: datacube = DataCube.from_file(path, self.wavelength_grid)
+            else:
+
+                try: datacube = DataCube.from_file(path, self.wavelength_grid)
+                except fits.DamagedFITSFileError as e:
+                    log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+                    continue
 
             # Convert the datacube from neutral flux density to wavelength flux density
             datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")

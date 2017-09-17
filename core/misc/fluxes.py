@@ -315,11 +315,12 @@ def get_wavelength_and_fluxdensity_arrays_old(model_sed):
 
 # -----------------------------------------------------------------
 
-def calculate_spectral_indices(model_sed):
+def calculate_spectral_indices(model_sed, return_frequencies=False):
 
     """
     This function ...
-    :param model_sed: 
+    :param model_sed:
+    :param return_frequencies:
     :return: 
     """
 
@@ -343,7 +344,8 @@ def calculate_spectral_indices(model_sed):
     spectral_indices = interp1d(new_frequencies, gradients)
 
     # Return the spectral indices
-    return spectral_indices
+    if return_frequencies: return spectral_indices, 10.**np.array(new_frequencies)
+    else: return spectral_indices
 
 # -----------------------------------------------------------------
 
@@ -373,7 +375,8 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral
         # Calculate the spectral index for the simulated SED at this filter
         # Use the central wavelength (frequency)
         central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
-        spectral_index_filter = spectral_indices(central_frequency)
+        central_log_frequency = np.log10(central_frequency)
+        spectral_index_filter = spectral_indices(central_log_frequency)
 
         # Get the Kbeam factor
         kbeam = spire.get_kbeam_spectral(fltr, spectral_index_filter)
@@ -440,13 +443,22 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
     wavelengths, fluxdensities = get_wavelength_and_fluxdensity_arrays(model_sed)
 
     # Calculate the spectral indices for wavelengths in the dust regime
-    spectral_indices = calculate_spectral_indices(model_sed)
+    spectral_indices, frequencies = calculate_spectral_indices(model_sed, return_frequencies=True)
 
     # Create an observed SED for the mock fluxes
     mock_sed = ObservedSED(photometry_unit="Jy")
 
     # Loop over the different filters
     for fltr in filters:
+
+        # Check whether the filter is covered by the SED
+        if not model_sed.covers(fltr.wavelength):
+            log.warning("The wavelength of the '" + str(fltr) + "' is not covered by the modeled SED: skipping this filter ...")
+            continue
+
+        #print(frequencies)
+        #central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
+        #print(central_frequency)
 
         # Broad band filter, with spectral convolution
         if isinstance(fltr, BroadBandFilter) and spectral_convolution:

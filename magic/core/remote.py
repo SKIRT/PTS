@@ -1769,6 +1769,10 @@ class RemoteDataCube(RemoteImage):
         # Get file name
         filename = fs.name(path)
 
+        ## CHECK WHETHER THE FILE IS VALID BEFORE UPLOADING!!
+        from . import fits
+        if not fits.is_valid(path): raise fits.DamagedFITSFileError("Local FITS file is damaged", path=path)
+
         ### UPLOAD DATACUBE
 
         # Upload the datacube file

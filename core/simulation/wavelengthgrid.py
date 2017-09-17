@@ -286,6 +286,19 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    def covers(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        scalar = wavelength.to("micron").value
+        return self.min_wavelength < scalar < self.max_wavelength
+
+    # -----------------------------------------------------------------
+
     @property
     def min_wavelength(self):
 

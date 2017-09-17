@@ -161,12 +161,21 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         if self.config.wg.add_emission_lines: emission_lines = EmissionLines()
         else: emission_lines = None
 
+        # Get the min and max wavelength
+        min_wavelength = self.config.wg.range.min
+        max_wavelength = self.config.wg.range.max
+
+        # Check the range
+        for fltr in self.observed_filters:
+            if fltr.wavelength < min_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+            if fltr.wavelength > max_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
         # Create the grid
         # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
         grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
             create_one_subgrid_wavelength_grid(self.config.wg.npoints, emission_lines, fixed,
-                                               min_wavelength=self.config.wg.range.min,
-                                               max_wavelength=self.config.wg.range.max)
+                                               min_wavelength=min_wavelength,
+                                               max_wavelength=max_wavelength)
 
         # Set the grid
         self.wavelength_grid = grid

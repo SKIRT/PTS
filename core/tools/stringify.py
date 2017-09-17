@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import warnings
 
 # Import the relevant PTS classes and modules
 from . import types
@@ -424,7 +425,9 @@ def stringify_tuple(value, **kwargs):
         if ptype is None:
             ptype = parsetype
         elif ptype != parsetype:
-            raise ValueError("Nonuniform tuple")
+            #raise ValueError("Nonuniform tuple")
+            warnings.warn("Nonuniform tuple")
+            ptype = "mixed"
 
         strings.append(val)
 

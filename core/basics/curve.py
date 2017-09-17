@@ -344,6 +344,18 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
+    def covers(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return self.min_wavelength < wavelength < self.max_wavelength
+
+    # -----------------------------------------------------------------
+
     def wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
 
         """

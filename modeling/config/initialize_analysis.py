@@ -45,7 +45,7 @@ definition.sections["dg"].add_optional("scale", "real", "number of image pixels 
 definition.sections["dg"].add_optional("bintree_min_level", "integer", "minimum depth level for binary trees", 9)
 definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum depth level for octrees", 3)
 definition.sections["dg"].add_optional("max_mass_fraction", "real", "maximum mass fraction in each cell", 0.5e-6)
-definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 10.)
+definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 15.)
 
 # -----------------------------------------------------------------
 

@@ -776,11 +776,12 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_name_for_filter(self, fltr):
+    def get_name_for_filter(self, fltr, return_none=True):
 
         """
         This function ...
         :param fltr:
+        :param return_none:
         :return:
         """
 
@@ -801,7 +802,8 @@ class DataSet(object):
             if str(frame_filter) == filter_string: return name
 
         # No frame found for this filter
-        return None
+        if return_none: return None
+        else: raise ValueError("No image for the '" + filter_string + "' in the dataset")
 
     # -----------------------------------------------------------------
 
@@ -1024,15 +1026,16 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_coordinate_system_for_filter(self, fltr):
+    def get_coordinate_system_for_filter(self, fltr, return_none=False):
 
         """
         This function ...
-        :param filter: 
+        :param filter:
+        :param return_none:
         :return: 
         """
 
-        return self.get_wcs_for_filter(fltr)
+        return self.get_wcs_for_filter(fltr, return_none=return_none)
 
     # -----------------------------------------------------------------
 
@@ -1048,15 +1051,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_wcs_for_filter(self, fltr):
+    def get_wcs_for_filter(self, fltr, return_none=False):
 
         """
         This function ...
         :param fltr:
+        :param return_none:
         :return:
         """
 
-        return self.get_wcs(self.get_name_for_filter(fltr))
+        name = self.get_name_for_filter(fltr, return_none=return_none)
+        if name is None: return None
+        return self.get_wcs(name)
 
     # -----------------------------------------------------------------
 

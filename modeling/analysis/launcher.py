@@ -838,6 +838,36 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_filters_in_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+        for fltr in self.observed_filters:
+            if not self.wavelength_grid.covers(fltr.wavelength):
+                log.warning("The '" + str(fltr) + "' filter is not covered by the wavelength range: not making observations for this filter")
+                continue
+            filters.append(fltr)
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_in_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters_in_range]
+
+    # -----------------------------------------------------------------
+
     def set_misc_options(self):
 
         """
@@ -862,7 +892,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.misc.images = True
 
         # For these filters and for the earth instrument
-        self.analysis_options.misc.observation_filters = self.observed_filter_names  # the filters for which to create the observations
+        self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range  # the filters for which to create the observations
         self.analysis_options.misc.observation_instruments = [earth_name]
 
         # Group the images per instrument (only when more instruments are being converted into images)
