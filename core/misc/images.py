@@ -613,6 +613,22 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_datacube_paths(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        paths = []
+        for path in self.fits_paths:
+            if not is_total_datacube(path): continue
+            paths.append(path)
+        return paths
+
+    # -----------------------------------------------------------------
+
     def load_datacubes(self):
 
         """
@@ -623,8 +639,8 @@ class ObservedImageMaker(Configurable):
         # Inform the user
         log.info("Loading the SKIRT output datacubes ...")
 
-        # Loop over the different simulated images
-        for path in self.fits_paths:
+        # Loop over the different simulated TOTAL datacubes
+        for path in self.total_datacube_paths:
 
             # Get the name of the instrument
             instr_name = instrument_name(path, self.simulation_prefix)
@@ -632,11 +648,8 @@ class ObservedImageMaker(Configurable):
             # If a list of instruments is defined an this instrument is not in this list, skip it
             if self.instrument_names is not None and instr_name not in self.instrument_names: continue
 
-            # Get the name of the datacube (as given by SKIRT)
-            datacube_name = fs.strip_extension(fs.name(path))
-
             # Debugging
-            log.debug("Loading datacube from '" + datacube_name + ".fits' ...")
+            log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
 
             ## LOAD AND CONVERT UNITS TO SPECTRAL (WAVELENGTH-DENSITY)
 
@@ -670,7 +683,7 @@ class ObservedImageMaker(Configurable):
             datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
 
             # Add the datacube to the dictionary
-            self.datacubes[datacube_name] = datacube
+            self.datacubes[instr_name] = datacube
 
     # -----------------------------------------------------------------
 
@@ -685,16 +698,16 @@ class ObservedImageMaker(Configurable):
         log.info("Setting the WCS of the simulated images ...")
 
         # Loop over the different datacubes and set the WCS
-        for datacube_name in self.datacubes:
+        for instr_name in self.datacubes:
 
-            # Check whether coordinate system is defined for this datacube
-            if datacube_name not in self.coordinate_systems: continue
+            # Check whether coordinate system is defined for this instrument
+            if instr_name not in self.coordinate_systems: continue
 
             # Debugging
-            log.debug("Setting the coordinate system of the " + datacube_name + "' datacube ...")
+            log.debug("Setting the coordinate system of the " + instr_name + "' datacube ...")
 
             # Set the coordinate system for this datacube
-            self.datacubes[datacube_name].wcs = self.coordinate_systems[datacube_name]
+            self.datacubes[instr_name].wcs = self.coordinate_systems[instr_name]
 
     # -----------------------------------------------------------------
 
@@ -709,10 +722,10 @@ class ObservedImageMaker(Configurable):
         log.info("Making the observed images (this may take a while) ...")
 
         # Loop over the datacubes
-        for datacube_name in self.datacubes:
+        for instr_name in self.datacubes:
 
             # Debugging
-            log.debug("Making the observed images for " + datacube_name + ".fits ...")
+            log.debug("Making the observed images for the " + instr_name + " instrument ...")
 
             # Create a list of the filter names
             filter_names = self.filters.keys()
@@ -726,18 +739,18 @@ class ObservedImageMaker(Configurable):
             # Determine the number of processes
             if not self.config.spectral_convolution: nprocesses = 1
             else:
-                if isinstance(self.datacubes[datacube_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
-                elif isinstance(self.datacubes[datacube_name], DataCube): nprocesses = self.config.nprocesses_local
-                else: raise ValueError("Invalid datacube object for '" + datacube_name + "' instrument")
+                if isinstance(self.datacubes[instr_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
+                elif isinstance(self.datacubes[instr_name], DataCube): nprocesses = self.config.nprocesses_local
+                else: raise ValueError("Invalid datacube object for '" + instr_name + "' instrument")
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[datacube_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses)
+            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
 
             # Add the observed image dictionary for this datacube to the total dictionary (with the datacube name as a key)
-            self.images[datacube_name] = images
+            self.images[instr_name] = images
 
     # -----------------------------------------------------------------
 
@@ -757,8 +770,8 @@ class ObservedImageMaker(Configurable):
         session = None
 
         # Loop over the images
-        for datacube_name in self.images:
-            for filter_name in self.images[datacube_name]:
+        for instr_name in self.images:
+            for filter_name in self.images[instr_name]:
 
                 # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
                 if filter_name not in self.kernel_paths or self.kernel_paths[filter_name] is None:
@@ -768,7 +781,7 @@ class ObservedImageMaker(Configurable):
                     continue
 
                 # Check whether the pixelscale is defined
-                if self.images[datacube_name][filter_name].pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + datacube_name + "' datacube is not defined, convolution not possible")
+                if self.images[instr_name][filter_name].pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
 
                 # Debugging
                 log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
@@ -777,10 +790,10 @@ class ObservedImageMaker(Configurable):
                 kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
 
                 # Debugging
-                log.debug("Convolving the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
+                log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
                 # Get the frame
-                frame = self.images[datacube_name][filter_name]
+                frame = self.images[instr_name][filter_name]
 
                 # Convert into remote frame if necessary
                 if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
@@ -792,10 +805,10 @@ class ObservedImageMaker(Configurable):
                         session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
                     # Convert into remote
-                    self.images[datacube_name][filter_name] = RemoteFrame.from_local(frame, session)
+                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, session)
 
                 # Convolve the frame
-                self.images[datacube_name][filter_name].convolve(kernel)
+                self.images[instr_name][filter_name].convolve(kernel)
 
         # End the session
         if session is not None: del session
@@ -818,33 +831,33 @@ class ObservedImageMaker(Configurable):
         session = None
 
         # Loop over the datacubes
-        for datacube_name in self.images:
+        for instr_name in self.images:
 
             # Check if the name of the datacube appears in the rebin_wcs dictionary
-            if datacube_name not in self.rebin_coordinate_systems:
+            if instr_name not in self.rebin_coordinate_systems:
 
                 # Debugging
-                log.debug("The instrument '" + datacube_name + "' is not in the rebin coordinate systems: no rebinning")
+                log.debug("The instrument '" + instr_name + "' is not in the rebin coordinate systems: no rebinning")
                 continue
 
             # Debugging
-            log.debug("Rebinning images from the '" + datacube_name + "' instrument ...")
+            log.debug("Rebinning images from the '" + instr_name + "' instrument ...")
 
             # Loop over the filters
-            for filter_name in self.images[datacube_name]:
+            for filter_name in self.images[instr_name]:
 
                 # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
-                if filter_name not in self.rebin_coordinate_systems[datacube_name]:
+                if filter_name not in self.rebin_coordinate_systems[instr_name]:
 
                     # Debugging
                     log.debug("The filter '" + filter_name + "' is not in the rebin coordinate systems for this instrument: no rebinning")
                     continue
 
                 # Debugging
-                log.debug("Rebinning the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
+                log.debug("Rebinning the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
                 # Get the original unit
-                original_unit = self.images[datacube_name][filter_name].unit
+                original_unit = self.images[instr_name][filter_name].unit
                 converted = False
 
                 # Check if this is a surface brightness or intensity
@@ -858,12 +871,12 @@ class ObservedImageMaker(Configurable):
                     log.debug("Converting the unit from '" + str(original_unit) + "' to '" + str(new_unit) + "' in order to be able to perform rebinning ...")
 
                     # Convert
-                    self.images[datacube_name][filter_name].convert_to(new_unit)
+                    self.images[instr_name][filter_name].convert_to(new_unit)
                     converted = True
 
                 # Get frame and target WCS
-                frame = self.images[datacube_name][filter_name]
-                wcs = self.rebin_coordinate_systems[datacube_name][filter_name]
+                frame = self.images[instr_name][filter_name]
+                wcs = self.rebin_coordinate_systems[instr_name][filter_name]
 
                 # Convert to remote frame if necessary
                 if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
@@ -875,13 +888,13 @@ class ObservedImageMaker(Configurable):
                         session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
                     # Convert
-                    self.images[datacube_name][filter_name] = RemoteFrame.from_local(frame, session)
+                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, session)
 
                 # Rebin
-                self.images[datacube_name][filter_name].rebin(wcs)
+                self.images[instr_name][filter_name].rebin(wcs)
 
                 # Convert the unit back
-                if converted: self.images[datacube_name][filter_name].convert_to(original_unit)
+                if converted: self.images[instr_name][filter_name].convert_to(original_unit)
 
         # End the session
         if session is not None: del session
@@ -923,14 +936,14 @@ class ObservedImageMaker(Configurable):
         log.info("Converting the units of the images to " + str(self.unit) + " ...")
 
         # Loop over the images
-        for datacube_name in self.images:
-            for filter_name in self.images[datacube_name]:
+        for instr_name in self.images:
+            for filter_name in self.images[instr_name]:
 
                 # Debugging
-                log.debug("Converting the unit of the " + filter_name + " image of the '" + datacube_name + "' instrument ...")
+                log.debug("Converting the unit of the " + filter_name + " image of the '" + instr_name + "' instrument ...")
 
                 # Convert
-                factor = self.images[datacube_name][filter_name].convert_to(self.unit)
+                factor = self.images[instr_name][filter_name].convert_to(self.unit)
 
                 # Debugging
                 log.debug("The conversion factor is '" + str(factor) + "'")
@@ -961,22 +974,22 @@ class ObservedImageMaker(Configurable):
         """
 
         # Loop over the different instruments (datacubes)
-        for datacube_name in self.images:
+        for instr_name in self.images:
 
             # Make directory for this datacube
-            datacube_path = self.output_path_directory(datacube_name)
+            datacube_path = self.output_path_directory(instr_name)
 
             # Loop over the images
-            for filter_name in self.images[datacube_name]:
+            for filter_name in self.images[instr_name]:
 
                 # Determine path to the output FITS file
                 path = fs.join(datacube_path, filter_name + ".fits")
 
                 # Save the image
-                self.images[datacube_name][filter_name].saveto(path)
+                self.images[instr_name][filter_name].saveto(path)
 
                 # Set the path
-                self.paths[datacube_name][filter_name] = path
+                self.paths[instr_name][filter_name] = path
 
     # -----------------------------------------------------------------
 
@@ -988,17 +1001,31 @@ class ObservedImageMaker(Configurable):
         """
 
         # Loop over the different images (self.images is a nested dictionary of dictionaries)
-        for datacube_name in self.images:
-            for filter_name in self.images[datacube_name]:
+        for instr_name in self.images:
+            for filter_name in self.images[instr_name]:
 
                 # Determine the path to the output FITS file
-                path = self.output_path_file(datacube_name + "__" + filter_name + ".fits")
+                path = self.output_path_file(instr_name + "__" + filter_name + ".fits")
 
                 # Save the image
-                self.images[datacube_name][filter_name].saveto(path)
+                self.images[instr_name][filter_name].saveto(path)
 
                 # Set the path
-                self.paths[datacube_name][filter_name] = path
+                self.paths[instr_name][filter_name] = path
+
+# -----------------------------------------------------------------
+
+def is_total_datacube(datacube_path):
+
+    """
+    This function ...
+    :param datacube_path:
+    :return:
+    """
+
+    name = fs.strip_extension(fs.name(datacube_path))
+    if not name.endswith("_total"): return True
+    else: return False
 
 # -----------------------------------------------------------------
 
