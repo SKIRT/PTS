@@ -169,7 +169,7 @@ class AnalysisOptions(Options):
 
         # Remote thresholds
         self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
-        self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "5 GB", convert_default=True) # 0.5 GB is a good size
+        self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "2 GB", convert_default=True)
         self.misc.add_property("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
         self.misc.add_property("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
 
@@ -181,9 +181,10 @@ class AnalysisOptions(Options):
         ## OTHER
         self.misc.add_property("images_nprocesses_local", "positive_integer", "number of parallel processes to use when creating the observed images (local execution)", 2)
         self.misc.add_property("images_nprocesses_remote", "positive_integer", "number of parallel processes to use when creating the observed images (remote execution)", 8)
-        self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
+        #self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
         self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
-
+        self.misc.add_property("images_spectral_convolution", "boolean", "use spectral convolution to create observed images", True)
+        self.misc.add_property("fluxes_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes", True)
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)

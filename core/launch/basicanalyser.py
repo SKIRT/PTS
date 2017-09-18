@@ -654,7 +654,7 @@ class BasicAnalyser(Configurable):
         self.flux_calculator = ObservedFluxCalculator()
 
         # Set spectral convolution flag
-        self.flux_calculator.config.spectral_convolution = self.misc_options.spectral_convolution
+        self.flux_calculator.config.spectral_convolution = self.misc_options.fluxes_spectral_convolution
 
         # Run
         self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
@@ -681,8 +681,9 @@ class BasicAnalyser(Configurable):
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
 
-        # Set spectral convolution flag
-        self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
+        # Set spectral convolution flags
+        #self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
+        self.image_maker.config.spectral_convolution = self.misc_options.images_spectral_convolution
 
         # Set group flag
         self.image_maker.config.group = self.misc_options.group_images

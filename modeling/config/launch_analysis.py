@@ -66,6 +66,10 @@ definition.add_optional("convolve_remote_threshold", "data_quantity", "data size
 # For creating observed images
 definition.add_optional("images_unit", "photometric_unit", "unit for the mock observed images", "Jy", convert_default=True)
 
+# Spectral convolution
+definition.add_flag("spectral_convolution_fluxes", "enable spectral convolution for creating observed fluxes", True)
+definition.add_flag("spectral_convolution_images", "enable spectral convolution for creating observed images", True)
+
 # -----------------------------------------------------------------
 
 # The number of parallel processes for local execution
