@@ -38,6 +38,13 @@ from ..extract.memory import MemoryUsageTable
 
 # -----------------------------------------------------------------
 
+extraction = "extraction"
+plotting = "plotting"
+misc = "misc"
+steps = [extraction, plotting, misc]
+
+# -----------------------------------------------------------------
+
 progress_filename = "progress.dat"
 timeline_filename = "timeline.dat"
 memory_filename = "memory.dat"
