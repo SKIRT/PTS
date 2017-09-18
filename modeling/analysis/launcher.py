@@ -622,6 +622,12 @@ class AnalysisLauncher(AnalysisComponent):
         # Set dust grid tree file
         self.ski.set_filetree_dust_grid(dustgridtree_filename, write_grid=False)
 
+        # Debugging
+        log.debug("Enabling specific writing settings ...")
+
+        # Write temperature data
+        if self.config.temperatures: self.ski.set_write_temperature()
+
     # -----------------------------------------------------------------
 
     # def set_parallelization(self):
@@ -1021,6 +1027,13 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Set retrieve types (only relevant for remote execution)
         self.launcher.config.retrieve_types = [ot.logfiles, ot.seds, ot.total_images]
+
+        # Add more retrieve types
+        if self.config.retrieve_contributions:
+            self.launcher.config.retrieve_types.extend([ot.direct_images, ot.transparent_images, ot.scattered_images, ot.dust_images, ot.dust_scattered_images])
+
+        # Add temperature file retrieval
+        if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
 
         # Set options for parallelization and number of processes
         # Remote execution

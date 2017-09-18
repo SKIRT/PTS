@@ -72,6 +72,14 @@ definition.add_flag("spectral_convolution_images", "enable spectral convolution 
 
 # -----------------------------------------------------------------
 
+# Get temperature data
+definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
+
+# Retrieval
+definition.add_flag("retrieve_contributions", "retrieve datacubes for the different contributions to the flux", True)
+
+# -----------------------------------------------------------------
+
 # The number of parallel processes for local execution
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
