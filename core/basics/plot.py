@@ -753,6 +753,18 @@ class BokehFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_one_plot(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        plot = BokehPlot()
+        return plot
+
+    # -----------------------------------------------------------------
+
     @property
     def nrows(self):
 
@@ -960,16 +972,17 @@ class BokehFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def to_html_components(self):
+    def to_html_components(self, wrap_script=True):
 
         """
         This function ...
+        :param wrap_script:
         :return:
         """
 
         from bokeh.embed import components
 
-        script, div = components(self.grid)
+        script, div = components(self.grid, wrap_script=wrap_script)
         return script, div
 
     # -----------------------------------------------------------------
@@ -1021,9 +1034,9 @@ class BokehFigure(Figure):
         :return:
         """
 
-        if path.endswith("html"): self.saveto_html()
-        elif path.endswith("png"): self.saveto_png()
-        elif path.endswith("svg"): self.saveto_svg()
+        if path.endswith("html"): self.saveto_html(path)
+        elif path.endswith("png"): self.saveto_png(path)
+        elif path.endswith("svg"): self.saveto_svg(path)
 
     # -----------------------------------------------------------------
 

@@ -2161,7 +2161,8 @@ class HTMLPage(object):
     """
 
     def __init__(self, title, css=None, css_path=None, style=None, encoding="utf-8", language="en", head=None,
-                 footing=None, body_settings=None, javascript=None, javascript_path=None, javascript_path_body=None):
+                 footing=None, body_settings=None, javascript=None, javascript_path=None, javascript_path_body=None,
+                 javascript_header=None):
 
         """
         HTML page constructor.
@@ -2190,6 +2191,7 @@ class HTMLPage(object):
         self.footing = footing
         self.body_settings = body_settings
         self.javascript = javascript
+        self.javascript_header = javascript_header
         self.javascript_path = javascript_path
         self.javascript_path_body = javascript_path_body
 
@@ -2249,6 +2251,10 @@ class HTMLPage(object):
 
         # Set title
         lines.append('    <title>{title}</title>'.format(title=self.title))
+
+        # Add javascript in header
+        if self.javascript_header is not None:
+            lines.append(make_script(self.javascript_header))
 
         # Set other head information
         if self.head is not None: lines.append(self.head)

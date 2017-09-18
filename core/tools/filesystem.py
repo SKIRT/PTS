@@ -616,7 +616,7 @@ def create_temporary_directory(prefix=None):
 
 # -----------------------------------------------------------------
 
-def clear_directory(path):
+def clear_directory(path, recursive=False):
 
     """
     This function ...
@@ -624,8 +624,15 @@ def clear_directory(path):
     :return:
     """
 
-    for file_path in files_in_path(path): remove_file(file_path)
-    for directory_path in directories_in_path(path): remove_directory(directory_path)
+    if recursive:
+
+        for file_path in files_in_path(path): remove_file(file_path)
+        for directory_path in directories_in_path(path): clear_directory(directory_path, recursive=True)
+
+    else:
+
+        for file_path in files_in_path(path): remove_file(file_path)
+        for directory_path in directories_in_path(path): remove_directory(directory_path)
 
 # -----------------------------------------------------------------
 
@@ -684,6 +691,7 @@ def remove_file(path):
     :return:
     """
 
+    if not is_file(path): raise ValueError("Not a file: '" + path + "'")
     os.remove(path)
 
 # -----------------------------------------------------------------

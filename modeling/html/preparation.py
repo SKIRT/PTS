@@ -14,10 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import HTMLPageComponent, table_class
 from ...core.tools import html
 from ..preparation.preparer import load_statistics, has_statistics
 from ...core.basics.table import SmartTable
+from .component import HTMLPageComponent, sortable_table_class
+from ..html.component import stylesheet_url, page_style, sortable_url, preview_url
+from ...magic.view.html import javascripts, css_scripts
+from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+
+# -----------------------------------------------------------------
+
+page_width = 600
 
 # -----------------------------------------------------------------
 
@@ -37,10 +44,6 @@ class PreparationPageGenerator(HTMLPageComponent):
 
         # Call the constructor of the base class
         super(PreparationPageGenerator, self).__init__(*args, **kwargs)
-
-        # Tables
-        #self.statistics_tables = dict()
-        #self.statistics_table = None
 
         # The statistics for each image
         self.statistics = dict()
@@ -67,7 +70,7 @@ class PreparationPageGenerator(HTMLPageComponent):
         # 3. Make tables
         self.make_tables()
 
-        # 4. Generaet the html
+        # 4. Generate the html
         self.generate()
 
         # Write
@@ -181,7 +184,7 @@ class PreparationPageGenerator(HTMLPageComponent):
             colours.append([colour] + [None] * (table.ncolumns - 1))
 
         # Generate HTML table
-        self.statistics_table = html.SimpleTable(table.as_tuples(), table.column_names, css_class=table_class, tostr_kwargs=self.tostr_kwargs, bgcolors=colours)
+        self.statistics_table = html.SimpleTable(table.as_tuples(), table.column_names, css_class=sortable_table_class, tostr_kwargs=self.tostr_kwargs, bgcolors=colours)
 
     # -----------------------------------------------------------------
 
@@ -267,19 +270,33 @@ class PreparationPageGenerator(HTMLPageComponent):
         """
 
         # Inform the user
-        log.info("Generating the status page ...")
+        log.info("Generating the page ...")
 
-        # Heading
-        body = self.heading
+        # Create list of css scripts
+        css_paths = css_scripts[:]
+        css_paths.append(stylesheet_url)
 
-        # Add table
-        body += str(self.statistics_table)
+        # Create CSS for the page width
+        css = make_page_width(page_width)
 
-        # Footing
-        body += self.footing
+        # Make javascripts urls
+        javascript_paths = javascripts[:]
+        javascript_paths.append(sortable_url)
+        javascript_paths.append(preview_url)
 
-        # Create the status page
-        self.make_page(body)
+        # Create the page
+        self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths,
+                             javascript_path=javascript_paths, footing=updated_footing())
+
+        self.page += html.center(html.make_theme_button(images=False))
+        self.page += html.newline + html.newline
+
+        # Title
+        self.page += "STATISTICS:"
+        self.page += html.newline + html.newline
+
+        # Add the table
+        self.page += self.statistics_table
 
     # -----------------------------------------------------------------
 

@@ -25,7 +25,8 @@ from ...core.tools import browser
 
 # -----------------------------------------------------------------
 
-modeling_name = "modeling"
+modeling_name = "modelling"
+images_name = "images"
 
 # -----------------------------------------------------------------
 
@@ -97,6 +98,48 @@ class Publisher(HTMLPageComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def remote_galaxy_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.remote_galaxy_path, images_name)
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_truncation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.remote_galaxy_path, "truncation")
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.remote_galaxy_path, "maps")
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def galaxy_index_url(self):
 
         """
@@ -120,7 +163,7 @@ class Publisher(HTMLPageComponent):
         self.setup(**kwargs)
 
         # 2. Generate the pages
-        if self.config.regenerate: self.generate()
+        if self.config.regenerate or self.config.generate: self.generate()
 
         # 3. Upload
         self.upload()
@@ -164,7 +207,9 @@ class Publisher(HTMLPageComponent):
         generator.config.path = self.config.path
 
         # Set settings
+        generator.config.regenerate = self.config.regenerate
         generator.config.replot = self.config.replot
+        generator.config.details = self.config.details
 
         # Run the generator
         generator.run()
@@ -181,14 +226,29 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading ...")
 
-        # Upload the pages
+        # Upload pages
+        self.upload_pages()
+
+        # Upload images
+        self.upload_images()
+
+    # -----------------------------------------------------------------
+
+    def upload_pages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Upload the pages
         self.upload_main_pages()
 
-        # Upload truncation pages
-        self.upload_truncation_pages()
+        # 2. Upload truncation pages
+        if self.config.details: self.upload_truncation_pages()
 
-        # Upload maps pages
-        self.upload_maps_pages()
+        # 3. Upload maps pages
+        if self.config.details: self.upload_maps_pages()
 
     # -----------------------------------------------------------------
 
@@ -207,6 +267,9 @@ class Publisher(HTMLPageComponent):
 
         # Status page
         if self.has_status_page: self.upload_status_page()
+
+        # Data page
+        if self.has_data_page: self.upload_data_page()
 
         # Preparation page
         if self.has_preparation_page: self.upload_preparation_page()
@@ -277,6 +340,25 @@ class Publisher(HTMLPageComponent):
 
         # Update
         updated = fs.update_file_in(self.status_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Succesfully uploaded the page")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_data_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the data page ...")
+
+        # Update
+        updated = fs.update_file_in(self.data_page_path, self.remote_galaxy_path, create=True, report=log.is_debug())
 
         # Report
         if updated: log.success("Succesfully uploaded the page")
@@ -523,10 +605,10 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the truncation page ...")
 
         # Truncation ellispe
-        self.upload_truncation_ellipse_page()
+        if self.has_truncation_ellipse_page: self.upload_truncation_ellipse_page()
 
         # Significance levels
-        self.upload_significance_levels_page()
+        if self.has_truncation_significance_page: self.upload_significance_levels_page()
 
     # -----------------------------------------------------------------
 
@@ -540,6 +622,13 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading truncation ellipse page ...")
 
+        # Update
+        updated = fs.update_file_in(self.truncation_ellipse_page_path, self.remote_truncation_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
     # -----------------------------------------------------------------
 
     def upload_significance_levels_page(self):
@@ -551,6 +640,13 @@ class Publisher(HTMLPageComponent):
 
         # Inform the user
         log.info("Uploading significance levels page ...")
+
+        # Update
+        updated = fs.update_file_in(self.truncation_significance_page_path, self.remote_truncation_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 
@@ -565,28 +661,28 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the maps pages ...")
 
         # All maps page
-        self.upload_all_maps_page()
+        if self.has_all_maps_page: self.upload_all_maps_page()
 
         # Maps summary page
-        self.upload_maps_summary_page()
+        if self.has_maps_summary_page: self.upload_maps_summary_page()
 
         # Old stellar maps
-        self.upload_old_maps_page()
+        if self.has_old_maps_page: self.upload_old_maps_page()
 
         # Young stellar maps
-        self.upload_young_maps_page()
+        if self.has_young_maps_page: self.upload_young_maps_page()
 
         # Ionizing stellar maps
-        self.upload_ionizing_maps_page()
+        if self.has_ionizing_maps_page: self.upload_ionizing_maps_page()
 
         # Dust maps
-        self.upload_dust_maps_page()
+        if self.has_dust_maps_page: self.upload_dust_maps_page()
 
         # Clip maps
-        self.upload_clip_maps_page()
+        if self.has_clip_maps_page: self.upload_clip_maps_page()
 
         # Maps selection
-        self.upload_maps_selection_page()
+        #self.upload_maps_selection_page()
 
     # -----------------------------------------------------------------
 
@@ -600,6 +696,13 @@ class Publisher(HTMLPageComponent):
         # Infomr the user
         log.info("Uploading all maps page ...")
 
+        # Update
+        updated = fs.update_file_in(self.all_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
     # -----------------------------------------------------------------
 
     def upload_maps_summary_page(self):
@@ -611,6 +714,13 @@ class Publisher(HTMLPageComponent):
 
         # Inform the user
         log.info("Uploading maps summary page ...")
+
+        # Update
+        updated = fs.update_file_in(self.maps_summary_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 
@@ -624,6 +734,13 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading old maps page ...")
 
+        # Update
+        updated = fs.update_file_in(self.old_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
     # -----------------------------------------------------------------
 
     def upload_young_maps_page(self):
@@ -635,6 +752,13 @@ class Publisher(HTMLPageComponent):
 
         # Inform the user
         log.info("Uploading young maps page ...")
+
+        # Update
+        updated = fs.update_file_in(self.young_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 
@@ -648,6 +772,13 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading ionizing maps page ...")
 
+        # Update
+        updated = fs.update_file_in(self.ionizing_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
     # -----------------------------------------------------------------
 
     def upload_dust_maps_page(self):
@@ -659,6 +790,13 @@ class Publisher(HTMLPageComponent):
 
         # Inform the user
         log.info("Uploading dust maps page ...")
+
+        # Update
+        updated = fs.update_file_in(self.dust_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 
@@ -672,6 +810,13 @@ class Publisher(HTMLPageComponent):
         # Inform the user
         log.info("Uploading clip maps page ...")
 
+        # Update
+        updated = fs.update_file_in(self.clip_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+
+        # Report
+        if updated: log.success("Successfully uploaded the page")
+        else: log.info("Already up-to-date")
+
     # -----------------------------------------------------------------
 
     def upload_maps_selection_page(self):
@@ -683,6 +828,39 @@ class Publisher(HTMLPageComponent):
 
         # Inform the user
         log.info("Uploading maps selection page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_images(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the images ...")
+
+        # Main pages images
+        self.upload_main_images()
+
+    # -----------------------------------------------------------------
+
+    def upload_main_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the images of the main pages ...")
+
+        # Synchronize
+        updated = fs.update_directory(self.images_path, self.remote_galaxy_images_path, create=True, report=log.is_debug())
+
+        if updated: log.success("Succesfully uploaded the images")
+        else: log.info("Already up-to-date")
 
     # -----------------------------------------------------------------
 

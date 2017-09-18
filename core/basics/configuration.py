@@ -1870,7 +1870,7 @@ class ConfigurationDefinition(object):
 
             # List-type default value
             if types.is_sequence(default):
-                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ")) + ")"
+                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ") + ")")
 
             # Regular default value
             elif default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")

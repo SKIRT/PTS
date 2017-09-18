@@ -255,8 +255,8 @@ class ModelLauncher(ModelSimulationInterface):
         # Remove the dust grid file
         if fs.is_file(self.dust_grid_path): fs.remove_file(self.dust_grid_path)
 
-        # Remove the build directory
-        if fs.is_directory(self.dust_grid_build_path): fs.remove_directory(self.dust_grid_build_path)
+        # Clear the build directory
+        if fs.is_directory(self.dust_grid_build_path): fs.clear_directory(self.dust_grid_build_path, recursive=True)
 
     # -----------------------------------------------------------------
 

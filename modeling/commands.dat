@@ -58,7 +58,6 @@ generate_genetic | -- | fitting.modelgenerators.genetic.GeneticModelGenerator | 
 generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments | Generate models on a grid in parameter space
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
-launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
 
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run
@@ -100,6 +99,7 @@ fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
 launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
+launch_contributions | -- | misc.contributions.ModelContributionsLauncher | arguments | Launch simulations for the different contributions of a model
 generate_truncation_ellipse_page | -- | truncation.html.ellipse.TruncationEllipsePageGenerator | arguments | Generate the truncation ellipse page
 generate_significance_levels_page | -- | truncation.html.significance.SignificanceLevelsPageGenerator | arguments | Generate the significance levels page
 generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page

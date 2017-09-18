@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import gc
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -974,13 +975,13 @@ class ObservedImageMaker(Configurable):
         """
 
         # Loop over the different instruments (datacubes)
-        for instr_name in self.images:
+        for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
 
             # Make directory for this datacube
             datacube_path = self.output_path_directory(instr_name)
 
             # Loop over the images
-            for filter_name in self.images[instr_name]:
+            for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
 
                 # Determine path to the output FITS file
                 path = fs.join(datacube_path, filter_name + ".fits")
@@ -988,8 +989,14 @@ class ObservedImageMaker(Configurable):
                 # Save the image
                 self.images[instr_name][filter_name].saveto(path)
 
+                # Remove from memory?
+                del self.images[instr_name][filter_name]
+
                 # Set the path
                 self.paths[instr_name][filter_name] = path
+
+            # Cleanup?
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -1001,8 +1008,10 @@ class ObservedImageMaker(Configurable):
         """
 
         # Loop over the different images (self.images is a nested dictionary of dictionaries)
-        for instr_name in self.images:
-            for filter_name in self.images[instr_name]:
+        for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
+
+            # Loop over the filters
+            for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
 
                 # Determine the path to the output FITS file
                 path = self.output_path_file(instr_name + "__" + filter_name + ".fits")
@@ -1010,8 +1019,14 @@ class ObservedImageMaker(Configurable):
                 # Save the image
                 self.images[instr_name][filter_name].saveto(path)
 
+                # Remove from memory?
+                del self.images[instr_name][filter_name]
+
                 # Set the path
                 self.paths[instr_name][filter_name] = path
+
+            # Cleanup?
+            gc.collect()
 
 # -----------------------------------------------------------------
 

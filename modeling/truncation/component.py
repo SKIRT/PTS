@@ -53,6 +53,7 @@ class TruncationComponent(GalaxyModelingComponent):
 
         # Ellipse page
         self.ellipse_page_path = None
+        self.significance_page_path = None
 
     # -----------------------------------------------------------------
 

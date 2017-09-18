@@ -19,6 +19,7 @@ from ...core.tools import html
 from ..html.component import stylesheet_url, page_style, sortable_url, preview_url
 from ...magic.view.html import javascripts, css_scripts
 from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+from ..core.progression import create_modeling_progression
 
 # -----------------------------------------------------------------
 
@@ -43,6 +44,9 @@ class IndexPageGenerator(HTMLPageComponent):
         # Call the constructor of the base class
         super(IndexPageGenerator, self).__init__(*args, **kwargs)
 
+        # The modeling progression
+        self.progression = None
+
         # Tables
         self.info_table = None
 
@@ -56,22 +60,22 @@ class IndexPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Make tables
+        # 2. Make tables
         self.make_tables()
 
-        # Make plots
+        # 3. Make plots
         self.make_plots()
 
-        # Generate the html
+        # 4. Generate the html
         self.generate()
 
-        # Write
+        # 5. Write
         self.write()
 
-        # Show the page
+        # 6. Show the page
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -86,6 +90,10 @@ class IndexPageGenerator(HTMLPageComponent):
 
         # Call the setup function of the base class
         super(IndexPageGenerator, self).setup(**kwargs)
+
+        # Get the modeling progression
+        if "progression" in kwargs: self.progression = kwargs.pop("progression")
+        else: self.progression = create_modeling_progression(self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -188,20 +196,87 @@ class IndexPageGenerator(HTMLPageComponent):
 
         #body = self.heading
 
-        # Create titles
-        title_info = html.underline_template.format(text="Galaxy info")
-
         #body += html.newline + html.line
         self.page += html.newline + "Pages:" + html.newline
+
         items = []
-        if self.history.finished("fetch_images"): items.append(html.hyperlink(self.data_page_name, "data"))
-        if self.history.finished("prepare_data"): items.append(html.hyperlink(self.preparation_page_name, "preparation"))
-        if self.history.finished("decompose"): items.append(html.hyperlink(self.components_page_name, "components"))
-        if self.history.finished("build_model"): items.append(html.hyperlink(self.maps_page_name, "maps"))
-        if self.history.finished("configure_fit"): items.append(html.hyperlink(self.model_page_name, "model"))
+
+        # Status page
+        items.append(html.hyperlink(self.status_page_name, "status"))
+
+        # Data page
+        if self.has_images: items.append(html.hyperlink(self.data_page_name, "data"))
+
+        # Preparation page
+        if self.has_prepared: items.append(html.hyperlink(self.preparation_page_name, "preparation"))
+
+        # Components page
+        if self.has_components: items.append(html.hyperlink(self.components_page_name, "components"))
+
+        # Photometry page
+        if self.has_photometry: items.append(html.hyperlink(self.photometry_page_name, "photometry"))
+
+        # Maps page
+        #if self.has_model: items.append(html.hyperlink(self.maps_page_name, "maps"))
+        if self.progression.model_name is not None: items.append(html.hyperlink(self.maps_page_name, "maps"))
+
+        # Model page
+        #if self.has_fitting_run: items.append(html.hyperlink(self.model_page_name, "model"))
+        if self.progression.model_name is not None: items.append(html.hyperlink(self.model_page_name, "model"))
+
+        # Fitting page
+        if self.has_generation: items.append(html.hyperlink(self.fitting_page_name, "fitting"))
+
+        # Datacubes page
+        if self.has_datacubes: items.append(html.hyperlink(self.datacubes_page_name, "datacubes"))
+
+        # Fluxes page
+        if self.has_fluxes: items.append(html.hyperlink(self.fluxes_page_name, "fluxes"))
+
+        # Images page
+        if self.has_model_images: items.append(html.hyperlink(self.images_page_name, "images"))
+
+        # Attenuation page
+        if self.has_attenuation: items.append(html.hyperlink(self.attenuation_page_name, "attenuation"))
+
+        # Colours page
+        if self.has_colours: items.append(html.hyperlink(self.colours_page_name, "colours"))
+
+        # Heating page
+        if self.has_heating: items.append(html.hyperlink(self.heating_page_name, "heating"))
+
+        # Add the list
         self.page += html.unordered_list(items, css_class="b")
         self.page += html.line + html.newline
 
+        # Add links to detailed pages
+        if self.config.details:
+
+            items = []
+
+            self.page += html.newline + "Detailed pages:" + html.newline
+
+            # TRUNCATION
+
+            if self.has_truncation_ellipse_page: items.append(html.hyperlink(self.truncation_ellipse_page_path, "truncation ellipse"))
+            if self.has_truncation_significance_page: items.append(html.hyperlink(self.truncation_significance_page_path, "significance levels"))
+
+            # MAPS
+
+            if self.has_all_maps_page: items.append(html.hyperlink(self.all_maps_page_path, "all generated maps"))
+            if self.has_maps_summary_page: items.append(html.hyperlink(self.maps_summary_page_path, "maps summary"))
+            if self.has_old_maps_page: items.append(html.hyperlink(self.old_maps_page_path, "old stellar maps"))
+            if self.has_young_maps_page: items.append(html.hyperlink(self.young_maps_page_path, "young stellar maps"))
+            if self.has_ionizing_maps_page: items.append(html.hyperlink(self.ionizing_maps_page_path, "ionizing stellar maps"))
+            if self.has_dust_maps_page: items.append(html.hyperlink(self.dust_maps_page_path, "dust maps"))
+            if self.has_clip_maps_page: items.append(html.hyperlink(self.clip_maps_page_path, "map clipping"))
+
+            # Add the list
+            self.page += html.unordered_list(items, css_class="b")
+            self.page += html.line + html.newline
+
+        # Add the galaxy info table
+        title_info = html.underline_template.format(text="Galaxy info")
         self.page += title_info + html.newline + html.newline + str(self.info_table) + html.newline
 
     # -----------------------------------------------------------------

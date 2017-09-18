@@ -68,7 +68,8 @@ class SimulationInput(object):
         if isinstance(argument, cls): return argument
         elif types.is_sequence(argument): return cls(*argument)
         elif types.is_string_type(argument): return cls(argument)
-        else: raise ValueError("Invalid input specification: should be list, string or SimulationInput object")
+        elif types.is_dictionary(argument): return cls(**argument)
+        else: raise ValueError("Invalid input specification: should be list, dictionary, string or SimulationInput object")
 
     # -----------------------------------------------------------------
 

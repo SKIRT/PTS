@@ -6,21 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.generate_page import definition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
-
-# -----------------------------------------------------------------
-
-# Add flags
-definition.add_flag("regenerate", "regenerate pages", True)
-definition.add_flag("show", "show", False)
-definition.add_flag("replot", "make plots again", True)
-
-# Add detail pages
-definition.add_flag("details", "add detailed pages", True)
+definition.add_flag("details", "add links to the detail pages", False)
 
 # -----------------------------------------------------------------
