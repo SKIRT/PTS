@@ -211,16 +211,19 @@ class ProgressExtractor(object):
                     # If this is one of the log messages that log stellar emission progress
                     elif "Launched stellar emission photon packages" in message:
 
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
+
+                        # Get the progress and add it to the list
+                        try: progress = float(message.split("packages: ")[1].split("%")[0])
+                        except: continue  # INVALID LINE
+
                         # Add the process rank and phase entries
                         process_list.append(process)
                         phase_list.append(phase)
 
-                        # Add the seconds entry
-                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
+                        # Add the seconds and progress
                         seconds_list.append(seconds)
-
-                        # Get the progress and add it to the list
-                        progress = float(message.split("packages: ")[1].split("%")[0])
                         progress_list.append(progress)
 
                 # The log file entries corresponding to the stellar emission phase
@@ -290,16 +293,19 @@ class ProgressExtractor(object):
                     # If this is one of the log messages that log dust emission progress
                     elif "Launched dust emission photon packages" in message:
 
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+
+                        # Get the progress and add it to the list
+                        try: progress = float(message.split("packages: ")[1].split("%")[0])
+                        except: continue # INVALID LINE
+
                         # Add the process rank and phase entries
                         process_list.append(process)
                         phase_list.append(phase)
 
-                        # Add the seconds entry
-                        seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+                        # Add the seconds and progress
                         seconds_list.append(seconds)
-
-                        # Get the progress and add it to the list
-                        progress = float(message.split("packages: ")[1].split("%")[0])
                         progress_list.append(progress)
 
                 # Record the end of the spectra calculation (the first log message of the emission phase of the self-absorption cycle)
