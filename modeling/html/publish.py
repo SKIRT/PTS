@@ -30,7 +30,7 @@ images_name = "images"
 
 # -----------------------------------------------------------------
 
-base_url = "https://users.ugent.be/~sjversto"
+base_url = "http://users.ugent.be/~sjversto"
 
 # -----------------------------------------------------------------
 

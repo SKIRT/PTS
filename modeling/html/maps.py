@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from .component import HTMLPageComponent, stylesheet_url, table_class
-from ...core.tools import html
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -36,6 +36,12 @@ class MapsPageGenerator(HTMLPageComponent):
         # Call the constructor of the base class
         super(MapsPageGenerator, self).__init__(*args, **kwargs)
 
+        # The plots
+        self.old_plot = None
+        self.young_plot = None
+        self.ionizing_plot = None
+        self.dust_plot = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -46,22 +52,22 @@ class MapsPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Make tables
+        # 2. Make tables
         self.make_tables()
 
-        # Make plots
+        # 3. Make plots
         self.make_plots()
 
-        # Generaet the html
+        # 4. Generaet the html
         self.generate()
 
-        # Write
+        # 5. Write
         self.write()
 
-        # Show the page
+        # 6. Show the page
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -78,6 +84,38 @@ class MapsPageGenerator(HTMLPageComponent):
         super(MapsPageGenerator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_model_suite.get_model(self.config.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     def make_tables(self):
 
@@ -101,6 +139,8 @@ class MapsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making plots ...")
 
+        self.make_old_plot()
+n
     # -----------------------------------------------------------------
 
     def generate(self):
@@ -125,10 +165,8 @@ class MapsPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        body = self.heading
-
-        # Make page
-        self.make_page(body)
+        # Inform the user
+        log.info("Generating the page ...")
 
     # -----------------------------------------------------------------
 

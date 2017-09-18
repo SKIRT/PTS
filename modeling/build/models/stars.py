@@ -83,6 +83,11 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         GeneralBuilder.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
+        # Name of the maps from the maps selection
+        self.old_map_name = None
+        self.young_map_name = None
+        self.ionizing_map_name = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -442,6 +447,9 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Ask for the old stellar map
         name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
 
+        # Set the name of the old stellar map
+        self.old_map_name = name
+
         # Get the filepath
         filepath = self.static_maps_selection.old_map_paths[name]
 
@@ -611,6 +619,9 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Ask for the young stellar map
         name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
+
+        # Set the young map name
+        self.young_map_name = name
 
         # Get the path
         filepath = self.static_maps_selection.young_map_paths[name]
@@ -790,6 +801,9 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Ask for the ionizing stellar map
         name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
+
+        # Set the name of the ionizing stellar map
+        self.ionizing_map_name = name
 
         # Set the path
         filepath = self.static_maps_selection.ionizing_map_paths[name]

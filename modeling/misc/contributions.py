@@ -111,6 +111,7 @@ class ModelContributionsLauncher(ModelSimulationInterface):
 
         self.contributions_simulation_paths = dict()
         self.contributions_output_paths = dict()
+        self.contributions_
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
         self.scheduling_options = dict()
@@ -259,8 +260,8 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         self.input_file_path = fs.join(self.run_path, "info.dat")
 
         # Plotting and misc directories
-        self.simulation_plot_path = fs.create_directory_in(self.run_path, "plot")
-        self.simulation_misc_path = fs.create_directory_in(self.run_path, "misc")
+        #self.simulation_plot_path = fs.create_directory_in(self.run_path, "plot")
+        #self.simulation_misc_path = fs.create_directory_in(self.run_path, "misc")
 
         # Load the wavelength grid?
         if self.config.regenerate_wavelength_grid: self.remove_wavelength_grid()
@@ -474,6 +475,7 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         # Attached
         #self.launcher.config.remote = self.config.remote
         self.launcher.config.attached = self.config.attached
+        self.launcher.config.show_progress = True
 
         # Logging options
         self.launcher.config.logging.verbose = True          # verbose logging
@@ -482,6 +484,8 @@ class ModelContributionsLauncher(ModelSimulationInterface):
 
         ## General
         #self.launcher.config.analysis.relative = True
+
+        self.launcher.config.relative_analysis_paths = True
 
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"     # name for the extraction directory

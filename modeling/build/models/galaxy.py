@@ -80,6 +80,12 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         self.extra_stellar_map_paths = []
         self.extra_dust_map_paths = []
 
+        # Names of maps from maps selection
+        self.old_map_name = None
+        self.young_map_name = None
+        self.ionizing_map_name = None
+        self.dust_map_name = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -153,6 +159,58 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def previous_old_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_previous: return None
+        else: return self.suite.get_old_map_name_for_model(self.previous_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_young_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_previous: return None
+        else: return self.suite.get_young_map_name_for_model(self.previous_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_ionizing_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_previous: return None
+        else: return self.suite.get_ionizing_map_name_for_model(self.previous_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_dust_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_previous: return None
+        else: return self.suite.get_dust_map_name_for_model(self.previous_name)
+
+    # -----------------------------------------------------------------
+
     @property
     def previous_name(self):
 
@@ -209,6 +267,8 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # Adjust
         adjusted, map_path = adjust_component(component, return_map_path=True)
 
+        # TODO: what is the (new) map name from the maps selection??
+
         # Set reference to the previous model for this dust component
         if not adjusted: self.set_previous_stellar_component(name)
         else:
@@ -255,12 +315,15 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         elif is_old_name(name):
             self.old_path = path
             self.old_stars_map_path = map_path
+            self.old_map_name = self.previous_old_map_name
         elif is_young_name(name):
             self.young_path = path
             self.young_stars_map_path = map_path
+            self.young_map_name = self.previous_young_map_name
         elif is_ionizing_name(name):
             self.ionizing_path = path
             self.ionizing_stars_map_path = map_path
+            self.ionizing_map_name = self.previous_ionizing_map_name
         else:
             self.extra_stellar_paths.append(path)
             self.extra_stellar_map_paths.append(map_path)
@@ -311,6 +374,8 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # Adjust
         adjusted, map_path = adjust_component(component, return_map_path=True)
 
+        # TODO: what is the (new) map name from the maps selection??
+
         # Set reference to the previous model for this dust component
         if not adjusted: self.set_previous_dust_component(name)
         else:
@@ -349,6 +414,7 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         if is_dust_disk_name(name):
             self.dust_path = path
             self.dust_map_path = map_path
+            self.dust_map_name = self.previous_dust_map_name
         else:
             self.extra_dust_paths.append(path)
             self.extra_dust_map_paths.append(map_path)
@@ -471,18 +537,33 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Set old stellar component paths
         if not self.has_old:
+
+            # Set paths
             self.old_path = builder.old_stars_path
             self.old_stars_map_path = builder.old_stars_map_path
 
+            # Set name of map from selection
+            self.old_map_name = builder.old_map_name
+
         # Set young stellar component paths
         if not self.has_young:
+
+            # Set paths
             self.young_path = builder.young_stars_path
             self.young_stars_map_path = builder.young_stars_map_path
 
+            # Set name of map from selection
+            self.young_map_name = builder.young_map_name
+
         # Set ionizing stellar component paths
         if not self.has_ionizing:
+
+            # Set paths
             self.ionizing_path = builder.ionizing_stars_path
             self.ionizing_stars_map_path = builder.ionizing_stars_map_path
+
+            # Set name of map from selection
+            self.ionizing_map_name = builder.ionizing_map_name
 
         # Set additional stellar component paths
         for name in builder.additional_names:
@@ -555,8 +636,13 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Set dust disk paths
         if not self.has_dust:
+
+            # Set paths
             self.dust_path = builder.dust_path
             self.dust_map_path = builder.dust_map_path
+
+            # Set name of map from maps selection
+            self.dust_map_name = builder.dust_map_name
 
         # Set additional dust component paths
         for name in builder.additional_names:
@@ -582,7 +668,10 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         log.info("Writing ...")
 
         # Write models table
-        self.write_table()
+        self.write_models_table()
+
+        # Write maps table
+        self.write_maps_table()
 
     # -----------------------------------------------------------------
 
@@ -634,7 +723,7 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_table(self):
+    def write_models_table(self):
 
         """
         This function ...
@@ -657,6 +746,25 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Save the table
         table.saveto(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    def write_maps_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps table ...")
+
+        # Add the map paths
+        table = self.maps_table
+        table.add_maps(self.old_map_name, self.young_map_name, self.ionizing_map_name, self.dust_map_name)
+
+        # Save the table
+        table.saveto(self.maps_table_path)
 
     # -----------------------------------------------------------------
 

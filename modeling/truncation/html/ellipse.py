@@ -39,7 +39,7 @@ key_color = "#4180d3"
 
 # -----------------------------------------------------------------
 
-base_url = "https://users.ugent.be/~sjversto"
+base_url = "http://users.ugent.be/~sjversto"
 stylesheet_filename = "stylesheet.css"
 stylesheet_url = fs.join(base_url, stylesheet_filename)
 

@@ -140,28 +140,28 @@ class DataPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Get the image paths
+        # 2. Get the image paths
         self.get_image_paths()
 
-        # Make plots
+        # 3. Make plots
         self.make_plots()
 
-        # Make previews
+        # 4. Make previews
         if self.config.thumbnails: self.make_thumbnails()
 
-        # Make previews
+        # 5. Make previews
         if self.config.previews: self.make_previews()
 
-        # Make tables
+        # 6. Make tables
         self.make_tables()
 
-        # Generaet the html
+        # 7. Generaet the html
         self.generate()
 
-        # Write
+        # 8. Write
         self.write()
 
         # Show the page
@@ -395,7 +395,7 @@ class DataPageGenerator(HTMLPageComponent):
             path = self.paths[name]
 
             # Determine the path
-            output_path = fs.join(self.images_path, name + ".png")
+            output_path = fs.join(self.images_data_path, name + ".png")
 
             # Set the path
             self.image_paths[name] = output_path
@@ -427,7 +427,7 @@ class DataPageGenerator(HTMLPageComponent):
             path = self.additional_paths[name]
 
             # Determine the path
-            output_path = fs.join(self.images_path, name + ".png")
+            output_path = fs.join(self.images_data_path, name + ".png")
 
             # Set the path
             self.additional_image_paths[name] = output_path

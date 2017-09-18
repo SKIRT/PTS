@@ -103,6 +103,128 @@ class RepresentationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class ModelMapsTable(SmartTable):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ModelMapsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "name for the model")
+        self.add_column_info("Old stars map", str, None, "name of the selected old stellar map")
+        self.add_column_info("Young stars map", str, None, "name of the selected young stellar map")
+        self.add_column_info("Ionizing stars map", str, None, "name of the selected ionizing stellar map")
+        self.add_column_info("Dust map", str, None, "name of the selected dust map")
+
+    # -----------------------------------------------------------------
+
+    def add_maps(self, name, old_map_name, young_map_name, ionizing_map_name, dust_map_name):
+
+        """
+        This function ...
+        :param name:
+        :param old_map_name:
+        :param young_map_name:
+        :param ionizing_map_name:
+        :param dust_map_name:
+        :return:
+        """
+
+        # Set the values
+        values = [name, old_map_name, young_map_name, ionizing_map_name, dust_map_name]
+
+        # Add a row to the table
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return arrays.array_as_list(self["Name"])
+
+    # -----------------------------------------------------------------
+
+    def index_for_model(self, name):
+
+        """
+        This funtion ...
+        :param name:
+        :return:
+        """
+
+        return tables.find_index(self, name)
+
+    # -----------------------------------------------------------------
+
+    def old_stars_map_name_for_model(self, model_name):
+
+        """
+        THis function ...
+        :param model_name:
+        :return:
+        """
+
+        index = self.index_for_model(model_name)
+        return self["Old stars map"][index]
+
+    # -----------------------------------------------------------------
+
+    def young_stars_map_name_for_model(self, model_name):
+
+        """
+        Thins function ...
+        :param model_name:
+        :return:
+        """
+
+        index = self.index_for_model(model_name)
+        return self["Young stars map"][index]
+
+    # -----------------------------------------------------------------
+
+    def ionizing_stars_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        index = self.index_for_model(model_name)
+        return self["Ionizing stars map"][index]
+
+    # -----------------------------------------------------------------
+
+    def dust_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        index = self.index_for_model(model_name)
+        return self["Dust map"][index]
+
+# -----------------------------------------------------------------
+
 class ModelsTable(SmartTable):
     
     """

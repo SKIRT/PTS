@@ -67,6 +67,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # The scaleheight of the old stellar population
         self.old_scaleheight = None
 
+        # The name of the dust map from the maps selection
+        self.dust_map_name = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -268,6 +271,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Ask for the dust map to use
         name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
+
+        # Set the name of the dust map from the selection
+        self.dust_map_name = name
 
         # Set the path
         filepath = self.static_maps_selection.dust_map_paths[name]

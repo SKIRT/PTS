@@ -29,13 +29,13 @@ from ..core.environment import all_maps_filename, maps_summary_filename, old_map
 # -----------------------------------------------------------------
 
 # Stylesheets
-stylesheet_url = "https://users.ugent.be/~sjversto/stylesheet.css"
-slider_stylesheet_url = "https://users.ugent.be/~sjversto/slider.css"
+stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
+slider_stylesheet_url = "http://users.ugent.be/~sjversto/slider.css"
 
 # Scripts
-sortable_url = "https://users.ugent.be/~sjversto/sorttable.js"
-preview_url = "https://users.ugent.be/~sjversto/preview.js"
-slider_url = "https://users.ugent.be/~sjversto/slider.js"
+sortable_url = "http://users.ugent.be/~sjversto/sorttable.js"
+preview_url = "http://users.ugent.be/~sjversto/preview.js"
+slider_url = "http://users.ugent.be/~sjversto/slider.js"
 
 # -----------------------------------------------------------------
 
@@ -1051,6 +1051,30 @@ class HTMLPageComponent(HTMLComponent):
         """
 
         return self.environment.html_images_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_data_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_path, "data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_path, "maps")
 
     # -----------------------------------------------------------------
 

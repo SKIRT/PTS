@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from .tables import ModelsTable, RepresentationsTable
+from .tables import ModelsTable, RepresentationsTable, ModelMapsTable
 from ...core.basics.map import Map
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
@@ -46,6 +46,7 @@ representations_name = "representations"
 # -----------------------------------------------------------------
 
 models_table_filename = "models.dat"
+maps_table_filename = "maps.dat"
 representations_table_filename = "representations.dat"
 
 # -----------------------------------------------------------------
@@ -76,6 +77,14 @@ class ModelSuite(object):
         if not fs.is_file(self.models_table_path):
             table = ModelsTable()
             table.saveto(self.models_table_path)
+
+        # Determine the path to the maps table
+        self.maps_table_path = fs.join(self.models_path, maps_table_filename)
+
+        # Initialize the maps table if necessary
+        if not fs.is_file(self.maps_table_path):
+            table = ModelMapsTable()
+            table.saveto(self.maps_table_path)
 
         # Determine the path to the representations directory
         self.representations_path = fs.create_directory_in(self.build_path, representations_name)
@@ -165,6 +174,66 @@ class ModelSuite(object):
 
         # Open the table
         return ModelsTable.from_file(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ModelMapsTable.from_file(self.maps_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.old_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_name_for_model(self, model_name):
+
+        """
+        Thisn function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.young_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.ionizing_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.dust_map_name_for_model(model_name)
 
     # -----------------------------------------------------------------
 
