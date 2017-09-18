@@ -21,11 +21,20 @@ from pts.core.launch.analyser import SimulationAnalyser
 
 # -----------------------------------------------------------------
 
+batch = "batch"
+scaling = "scaling"
+
+# -----------------------------------------------------------------
+
+all_steps = steps + [batch, scaling]
+
+# -----------------------------------------------------------------
+
 # Create the configuration definition
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host to mount", choices=all_host_ids())
 definition.add_required("id", "positive_integer", "simulation ID")
-definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=steps, default=steps)
+definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
 
 # Read the command line arguments
 config = parse_arguments("reanalyse", definition, description="Re-analyse a certain simulation")
@@ -51,6 +60,14 @@ if plotting in config.steps: simulation.analysed_plotting = []
 
 # Reset misc
 if misc in config.steps: simulation.analysed_misc = []
+
+# -----------------------------------------------------------------
+
+# Reset batch
+if batch in config.steps: simulation.analysed_batch = False
+
+# Reset scaling
+if scaling in config.steps: simulation.analysed_scaling = False
 
 # -----------------------------------------------------------------
 

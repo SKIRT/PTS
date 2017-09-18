@@ -1024,7 +1024,7 @@ def is_total_datacube(datacube_path):
     """
 
     name = fs.strip_extension(fs.name(datacube_path))
-    if not name.endswith("_total"): return True
+    if name.endswith("_total"): return True
     else: return False
 
 # -----------------------------------------------------------------

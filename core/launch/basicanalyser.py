@@ -587,6 +587,7 @@ class BasicAnalyser(Configurable):
                 # Check the type of the Instrument / SED
                 if ncols == 2: continue # SEDInstrument
 
+                # Loop over the different contributions
                 for contribution in ["total", "direct", "scattered", "dust", "dustscattered", "transparent"]:
 
                     # Load the SED contribution

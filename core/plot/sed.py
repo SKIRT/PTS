@@ -612,6 +612,23 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nmodels_for_residuals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        count = 0
+
+        # Loop over the models
+        for model_label, sed, plot_residuals, ghost in self.models:
+            if plot_residuals: count += 1
+        return count
+
+    # -----------------------------------------------------------------
+
     def plot_one_observation_with_models(self):
 
         """
@@ -627,7 +644,7 @@ class SEDPlotter(Configurable):
         #self.residual_plots.append(ax2)
 
         if self.config.residual_reference == "observations": nplots = 2
-        elif self.config.residual_reference == "models": nplots = 1 + len(self.models)
+        elif self.config.residual_reference == "models": nplots = 1 + self.nmodels_for_residuals
         else: raise ValueError("")
 
         height_ratios = [4] + [1] * (nplots-1)
@@ -685,7 +702,7 @@ class SEDPlotter(Configurable):
             # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
-            # Observations as reference: plot at 0.0
+            # Observations as reference: plot at 0.0 (all in one panel)
             if self.config.residual_reference == "observations":
 
                 residual_plot = self.residual_plots[0]
@@ -697,6 +714,7 @@ class SEDPlotter(Configurable):
                     error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
                     residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
+            # Models as reference: plot points at the relative difference with the models (one panel for each model)
             elif self.config.residual_reference == "models":
 
                 from astropy.units import Unit
@@ -706,9 +724,8 @@ class SEDPlotter(Configurable):
                 # Loop over the models
                 for model_label, sed, plot_residuals, ghost in self.models:
 
-                    if not plot_residuals:
-                        residual_plot_index += 1
-                        continue
+                    # Don't plot residuals for this model
+                    if not plot_residuals: continue
 
                     #model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                     #sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)

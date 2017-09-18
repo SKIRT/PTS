@@ -177,6 +177,15 @@ class SkirtSimulation(object):
         # Performed misc steps
         self.analysed_misc = []
 
+        # Performed batch analysis
+        self.analysed_batch = False
+
+        # Performed scaling analysis
+        self.analysed_scaling = False
+
+        # Performed extra analysis
+        self.analysed_extra = [] # class names
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):
