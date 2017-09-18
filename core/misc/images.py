@@ -717,9 +717,11 @@ class ObservedImageMaker(Configurable):
             images = dict()
 
             # Determine the number of processes
-            if isinstance(self.datacubes[datacube_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
-            elif isinstance(self.datacubes[datacube_name], DataCube): nprocesses = self.config.nprocesses_local
-            else: raise ValueError("Invalid datacube object for '" + datacube_name + "' instrument")
+            if not self.config.spectral_convolution: nprocesses = 1
+            else:
+                if isinstance(self.datacubes[datacube_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
+                elif isinstance(self.datacubes[datacube_name], DataCube): nprocesses = self.config.nprocesses_local
+                else: raise ValueError("Invalid datacube object for '" + datacube_name + "' instrument")
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             frames = self.datacubes[datacube_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses)

@@ -927,6 +927,10 @@ class AnalysisLauncher(AnalysisComponent):
         # Make images remotely
         self.analysis_options.misc.make_images_remote = self.config.images_remote
 
+        # Nprocesses
+        self.analysis_options.misc.images_nprocesses_local = 2
+        self.analysis_options.misc.images_nprocesses_remote = 8
+
     # -----------------------------------------------------------------
 
     def set_other_options(self):
