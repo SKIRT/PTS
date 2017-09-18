@@ -223,7 +223,8 @@ class AnalysisRun(object):
         :return:
         """
 
-        return self.fitting_run is not None
+        #return self.fitting_run is not None
+        return self.fitting_run_name is not None
 
     # -----------------------------------------------------------------
 
@@ -235,7 +236,8 @@ class AnalysisRun(object):
         :return:
         """
 
-        return self.fitting_run is None
+        #return self.fitting_run is None
+        return self.fitting_run_name is None
 
     # -----------------------------------------------------------------
 

@@ -19,6 +19,8 @@ from ..analysis.run import AnalysisRuns, AnalysisRun
 from ..build.suite import ModelSuite
 from ...core.basics.configuration import prompt_string
 from pts.core.tools.utils import lazyproperty
+from ...core.tools import filesystem as fs
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -76,11 +78,17 @@ def create_modeling_progression(modeling_path):
     # Check whether the model name has to be choosen
     if representation_name is None:
 
-        # No models
-        if suite.no_models: model_name = None
+        # Check whether analysis run is defined
+        if analysis_run_name is not None: model_name = analysis_run.model_name
 
-        # Choose from models
-        else: model_name = prompt_string("model", "name of the model", choices=suite.model_names, required=True)
+        # No analysis run, ask for which model
+        else:
+
+            # No models
+            if suite.no_models: model_name = None
+
+            # Choose from models
+            else: model_name = prompt_string("model", "name of the model", choices=suite.model_names, required=True)
 
     # Get the model name for the chosen representation
     else: model_name = suite.get_model_name_for_representation(representation_name)
@@ -118,6 +126,50 @@ class GalaxyModelingProgression(object):
         self.representation_name = representation_name
         self.fitting_run_name = fitting_run_name
         self.analysis_run_name = analysis_run_name
+
+        # The path
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Read the lines of the file
+        modeling_path, model_name, representation_name, fitting_run_name, analysis_run_name = fs.get_lines(path)
+
+        # Convert to None
+        if model_name == "--": model_name = None
+        if representation_name == "--": representation_name = None
+        if fitting_run_name == "--": fitting_run_name = None
+        if analysis_run_name == "--": analysis_run_name = None
+
+        # Create the progression
+        progression = GalaxyModelingProgression(modeling_path, model_name, representation_name, fitting_run_name, analysis_run_name)
+
+        # Set the path
+        progression.path = path
+
+        # Return the progression
+        return progression
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def object_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.modeling_path)
 
     # -----------------------------------------------------------------
 
@@ -245,6 +297,69 @@ class GalaxyModelingProgression(object):
         :return:
         """
 
+        if self.analysis_run_name is None: return None
+        return self.analysis_context.get_run(self.analysis_run)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lines = []
+
+        first_line = fmt.underlined + "Modeling progression for '" + self.object_name + "'" + fmt.reset
+        lines.append(first_line)
+        lines.append("")
+
+        if self.model_name is not None: lines.append(" - " + fmt.bold + "model name: " + fmt.reset + self.model_name)
+        if self.representation_name is not None: lines.append(" - " + fmt.bold + "model representation: " + fmt.reset + self.representation_name)
+        if self.fitting_run_name is not None: lines.append(" - " + fmt.bold + "fitting run name: " + fmt.reset + self.fitting_run_name)
+        if self.analysis_run_name is not None: lines.append(" - " + fmt.bold + "analysis run name: " + fmt.reset + self.analysis_run_name)
+
+        # Make string and return
+        return "\n".join(lines)
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether path is defined
+        if self.path is None: raise ValueError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, update_path=True):
+
+        """
+        Thisf unction ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        # Set lines
+        model_name = self.model_name if self.model_name is not None else "--"
+        representation_name = self.representation_name if self.representation_name is not None else "--"
+        fitting_run_name = self.fitting_run_name if self.fitting_run_name is not None else "--"
+        analysis_run_name = self.analysis_run_name if self.analysis_run_name is not None else "--"
+        lines = [self.modeling_path, model_name, representation_name, fitting_run_name, analysis_run_name]
+
+        # Write to file
+        fs.write_lines(path, lines)
+
+        # Update the path
+        if update_path: self.path = path
 
 # -----------------------------------------------------------------

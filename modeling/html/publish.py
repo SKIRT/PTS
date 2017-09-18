@@ -182,11 +182,17 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading ...")
 
         # Upload the pages
-        self.upload_pages()
+        self.upload_main_pages()
+
+        # Upload truncation pages
+        self.upload_truncation_pages()
+
+        # Upload maps pages
+        self.upload_maps_pages()
 
     # -----------------------------------------------------------------
 
-    def upload_pages(self):
+    def upload_main_pages(self):
 
         """
         This function ...
@@ -503,6 +509,180 @@ class Publisher(HTMLPageComponent):
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_truncation_pages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the truncation page ...")
+
+        # Truncation ellispe
+        self.upload_truncation_ellipse_page()
+
+        # Significance levels
+        self.upload_significance_levels_page()
+
+    # -----------------------------------------------------------------
+
+    def upload_truncation_ellipse_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading truncation ellipse page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_significance_levels_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading significance levels page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_maps_pages(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the maps pages ...")
+
+        # All maps page
+        self.upload_all_maps_page()
+
+        # Maps summary page
+        self.upload_maps_summary_page()
+
+        # Old stellar maps
+        self.upload_old_maps_page()
+
+        # Young stellar maps
+        self.upload_young_maps_page()
+
+        # Ionizing stellar maps
+        self.upload_ionizing_maps_page()
+
+        # Dust maps
+        self.upload_dust_maps_page()
+
+        # Clip maps
+        self.upload_clip_maps_page()
+
+        # Maps selection
+        self.upload_maps_selection_page()
+
+    # -----------------------------------------------------------------
+
+    def upload_all_maps_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Infomr the user
+        log.info("Uploading all maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_maps_summary_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading maps summary page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_old_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading old maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_young_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading young maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_ionizing_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading ionizing maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_dust_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading dust maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_clip_maps_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading clip maps page ...")
+
+    # -----------------------------------------------------------------
+
+    def upload_maps_selection_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading maps selection page ...")
 
     # -----------------------------------------------------------------
 

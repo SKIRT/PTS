@@ -32,6 +32,15 @@ from ..plot.sed import SEDPlotter
 from ..data.sed import SED, ObservedSED
 from ..tools import types
 from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, wave_name, fluxes_name, images_name
+from ..extract.progress import ProgressTable
+from ..extract.timeline import TimeLineTable
+from ..extract.memory import MemoryUsageTable
+
+# -----------------------------------------------------------------
+
+progress_filename = "progress.dat"
+timeline_filename = "timeline.dat"
+memory_filename = "memory.dat"
 
 # -----------------------------------------------------------------
 
@@ -142,6 +151,42 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def extracted_progress(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return progress_name in self.simulation.analysed_extraction
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extracted_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return timeline_name in self.simulation.analysed_extraction
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extracted_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return memory_name in self.simulation.analysed_extraction
+
+    # -----------------------------------------------------------------
+
     def extract(self):
 
         """
@@ -157,13 +202,70 @@ class BasicAnalyser(Configurable):
         if log.is_debug(): print(str(self.extraction_options))
 
         # Extract the progress information
-        if self.extraction_options.progress: self.extract_progress()
+        if self.extraction_options.progress and not self.extracted_progress: self.extract_progress()
+        elif self.extraction_options.progress: self.load_progress()
 
         # Extract the timeline information
-        if self.extraction_options.timeline: self.extract_timeline()
+        if self.extraction_options.timeline and not self.extracted_timeline: self.extract_timeline()
+        elif self.extraction_options.timeline: self.load_timeline()
 
         # Extract the memory information
-        if self.extraction_options.memory: self.extract_memory()
+        if self.extraction_options.memory and not self.extracted_memory: self.extract_memory()
+        elif self.extraction_options.memory: self.load_memory()
+
+    # -----------------------------------------------------------------
+
+    def load_progress(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the progress table ...")
+
+        # Determine the path to the progress file
+        path = fs.join(self.extraction_options.path, progress_filename)
+
+        # Load the table
+        self.progress = ProgressTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the timeline table ...")
+
+        # Determine the path to the timeline file
+        path = fs.join(self.extraction_options.path, timeline_filename)
+
+        # Load the table
+        self.timeline = TimeLineTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the memory table ...")
+
+        # Determine the path to the memory file
+        path = fs.join(self.extraction_options.path, memory_filename)
+
+        # Load the table
+        self.memory = MemoryUsageTable.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -348,7 +450,7 @@ class BasicAnalyser(Configurable):
         extractor = ProgressExtractor()
 
         # Determine the path to the progress file
-        path = fs.join(self.extraction_options.path, "progress.dat")
+        path = fs.join(self.extraction_options.path, progress_filename)
 
         # Run the progress extractor
         self.progress = extractor.run(self.simulation, path)
@@ -373,7 +475,7 @@ class BasicAnalyser(Configurable):
         extractor = TimeLineExtractor()
 
         # Determine the path to the timeline file
-        path = fs.join(self.extraction_options.path, "timeline.dat")
+        path = fs.join(self.extraction_options.path, timeline_filename)
 
         # Run the timeline extractor
         self.timeline = extractor.run(self.simulation, path)
@@ -398,7 +500,7 @@ class BasicAnalyser(Configurable):
         extractor = MemoryExtractor()
 
         # Determine the path to the memory file
-        path = fs.join(self.extraction_options.path, "memory.dat")
+        path = fs.join(self.extraction_options.path, memory_filename)
 
         # Run the memory extractor
         self.memory = extractor.run(self.simulation, path)

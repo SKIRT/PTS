@@ -841,8 +841,30 @@ class DataSet(object):
         :return: 
         """
 
-        names = []
-        for fltr in filters: names.append(self.get_name_for_filter(fltr))
+        #names = []
+        #for fltr in filters: names.append(self.get_name_for_filter(fltr))
+        #return names
+
+        # FASTER IMPLEMENTATION (NOT USING THE SLOW GET_NAME_FOR_FILTER)
+        # ONLY OPENENING EACH IMAGE HEADER ONCE!
+
+        # Initialize
+        names = [None] * len(filters)
+
+        # Loop over the names
+        for name in self.paths:
+
+            # Get the filter
+            frame_filter = self.get_filter(name)
+
+            # Determine the index for this filter
+            index = sequences.find_index(filters, frame_filter)
+            if index is None: continue
+
+            # Set the element
+            names[index] = name
+
+        # Return the names
         return names
 
     # -----------------------------------------------------------------

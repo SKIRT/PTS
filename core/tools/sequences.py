@@ -670,6 +670,20 @@ def any_empty(*sequences):
 
 # -----------------------------------------------------------------
 
+def find_index(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    index = next((i for i, t in enumerate(sequence) if element == t), None)
+    return index
+
+# -----------------------------------------------------------------
+
 def find_indices(sequence, element):
 
     """

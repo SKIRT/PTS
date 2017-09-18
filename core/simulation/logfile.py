@@ -790,7 +790,8 @@ class LogFile(object):
             if "photon packages for each of" in self.contents["Message"][i]:
 
                 # Return the number of wavelengths
-                wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                #wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" ")[0]) # There was a corrupted log line once, and this helped
                 return wavelengths
 
         # If the number of wavelengths is not found, return None

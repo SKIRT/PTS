@@ -543,13 +543,20 @@ class ObservedImageMaker(Configurable):
             self.rebin_coordinate_systems[rebin_instrument] = dict()
 
             # Loop over the filter names
-            for filter_name in self.filter_names:
+            image_names_for_filters = dataset.get_names_for_filters(self.filter_names)
+            for filter_name, image_name in zip(self.filter_names, image_names_for_filters):
+
+                # Check whether there is such an image
+                if image_name is None:
+                    log.warning("There is no image in the dataset for the '" + filter_name + "' filter: skipping ...")
+                    continue
 
                 # Get the coordinate system
-                wcs = dataset.get_coordinate_system_for_filter(filter_name, return_none=True)
-                if wcs is None:
-                    log.warning("The coordinate system for the '" + filter_name + "' filter is not found in the dataset: skipping ...")
-                    continue
+                #wcs = dataset.get_coordinate_system_for_filter(filter_name, return_none=True)
+                wcs = dataset.get_coordinate_system(image_name) # FASTER!
+                # if wcs is None:
+                #     log.warning("The coordinate system for the '" + filter_name + "' filter is not found in the dataset: skipping ...")
+                #     continue
 
                 # Set the coordinate system
                 self.rebin_coordinate_systems[rebin_instrument][filter_name] = wcs
@@ -754,10 +761,17 @@ class ObservedImageMaker(Configurable):
             for filter_name in self.images[datacube_name]:
 
                 # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
-                if filter_name not in self.kernel_paths or self.kernel_paths[filter_name] is None: continue
+                if filter_name not in self.kernel_paths or self.kernel_paths[filter_name] is None:
+
+                    # Debugging
+                    log.debug("The filter '" + filter_name + "' is not in the kernel paths: no convolution")
+                    continue
 
                 # Check whether the pixelscale is defined
                 if self.images[datacube_name][filter_name].pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + datacube_name + "' datacube is not defined, convolution not possible")
+
+                # Debugging
+                log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
 
                 # Load the kernel
                 kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
@@ -807,13 +821,24 @@ class ObservedImageMaker(Configurable):
         for datacube_name in self.images:
 
             # Check if the name of the datacube appears in the rebin_wcs dictionary
-            if datacube_name not in self.rebin_coordinate_systems: continue
+            if datacube_name not in self.rebin_coordinate_systems:
+
+                # Debugging
+                log.debug("The instrument '" + datacube_name + "' is not in the rebin coordinate systems: no rebinning")
+                continue
+
+            # Debugging
+            log.debug("Rebinning images from the '" + datacube_name + "' instrument ...")
 
             # Loop over the filters
             for filter_name in self.images[datacube_name]:
 
                 # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
-                if filter_name not in self.rebin_coordinate_systems[datacube_name]: continue
+                if filter_name not in self.rebin_coordinate_systems[datacube_name]:
+
+                    # Debugging
+                    log.debug("The filter '" + filter_name + "' is not in the rebin coordinate systems for this instrument: no rebinning")
+                    continue
 
                 # Debugging
                 log.debug("Rebinning the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
