@@ -804,19 +804,21 @@ class SKIRTLauncher(Configurable):
         #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
         if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
 
+        # Set options to remove remote files
+        if self.remote_input_path is not None or self.has_remote_input_files: remove_remote_input = False
+        else: remove_remote_input = not self.config.keep
+        remove_remote_output = not self.config.keep
+        remove_remote_simulation_directory = not self.config.keep
+
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=self.scheduling_options, attached=self.config.attached,
                                           analysis_options=self.analysis_options, show_progress=self.config.show_progress,
                                           local_script_path=self.local_script_path, screen_output_path=screen_output_path,
                                           remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files,
-                                          debug_output=self.config.debug_output)
-
-        # Set the analysis options for the simulation
-        self.set_remote_simulation_options()
-
-        # Save the simulation object
-        self.simulation.save()
+                                          debug_output=self.config.debug_output, retrieve_types=self.config.retrieve_types,
+                                          remove_remote_input=remove_remote_input, remove_remote_output=remove_remote_output,
+                                          remove_remote_simulation_directory=remove_remote_simulation_directory)
 
     # -----------------------------------------------------------------
 
@@ -899,23 +901,6 @@ class SKIRTLauncher(Configurable):
 
             # Clear the analyser
             self.analyser.clear()
-
-    # -----------------------------------------------------------------
-
-    def set_remote_simulation_options(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Remove remote files
-        self.simulation.remove_remote_input = not self.config.keep
-        self.simulation.remove_remote_output = not self.config.keep
-        self.simulation.remove_remote_simulation_directory = not self.config.keep
-
-        # Retrieval
-        self.simulation.retrieve_types = self.config.retrieve_types
 
 # -----------------------------------------------------------------
 

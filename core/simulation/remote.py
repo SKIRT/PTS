@@ -590,7 +590,8 @@ class SKIRTRemote(Remote):
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
             analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
-            show_progress=False, remote_input_path=None, has_remote_input=False, debug_output=False):
+            show_progress=False, remote_input_path=None, has_remote_input=False, debug_output=False,
+            retrieve_types=None, remove_remote_input=True, remove_remote_output=True, remove_remote_simulation_directory=True):
 
         """
         This function ...
@@ -607,6 +608,10 @@ class SKIRTRemote(Remote):
         :param remote_input_path:
         :param has_remote_input:
         :param debug_output:
+        :param retrieve_types:
+        :param remove_remote_input:
+        :param remove_remote_output:
+        :param remove_remote_simulation_directory:
         :return:
         """
 
@@ -628,6 +633,14 @@ class SKIRTRemote(Remote):
 
         # Start the queue, get execution handle(s)
         handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
+
+        # Set remote simulation properties
+        simulation.retrieve_types = retrieve_types
+
+        # Set remove remote files settings
+        simulation.remove_remote_input = remove_remote_input
+        simulation.remove_remote_output = remove_remote_output
+        simulation.remove_remote_simulation_directory = remove_remote_simulation_directory
 
         # Set the execution handle for the simulation
         simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]

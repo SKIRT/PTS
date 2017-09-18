@@ -1258,7 +1258,9 @@ class BatchLauncher(Configurable):
                 log.info("Launching simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Run the simulation
-                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), show_progress=self.config.show_progress)
+                simulation = self.skirt.run(definition, logging_options=logging_options,
+                                            parallelization=parallelization_item, silent=(not log.is_debug()),
+                                            show_progress=self.config.show_progress)
 
                 # Overwrite the simulation object when the definition had been altered by this class
                 if original_definition is not None:
