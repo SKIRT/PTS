@@ -178,7 +178,9 @@ class AnalysisOptions(Options):
         self.misc.add_property("rebin_wcs", "filepath_or_string_filepath_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
         self.misc.add_property("rebin_dataset", "file_path", "path to the dataset of which the coordinate systems are to be used as rebinning references")
 
-        # OTHER FLAGS
+        ## OTHER
+        self.misc.add_property("images_nprocesses_local", "positive_integer", "number of parallel processes to use when creating the observed images (local execution)", 2)
+        self.misc.add_property("images_nprocesses_remote", "positive_integer", "number of parallel processes to use when creating the observed images (remote execution)", 8)
         self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
         self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
 

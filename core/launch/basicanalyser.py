@@ -687,6 +687,10 @@ class BasicAnalyser(Configurable):
         # Set group flag
         self.image_maker.config.group = self.misc_options.group_images
 
+        # Set number of processes
+        self.image_maker.config.nprocesses_local = self.misc_options.images_nprocesses_local
+        self.image_maker.config.nprocesses_remote = self.misc_options.images_nprocesses_remote
+
         # Set input
         input_dict = dict()
 

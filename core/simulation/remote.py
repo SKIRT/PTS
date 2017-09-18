@@ -629,6 +629,10 @@ class SKIRTRemote(Remote):
         # Start the queue, get execution handle(s)
         handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
 
+        # Set the execution handle for the simulation
+        simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
+        simulation.save()
+
         # Show progress bar with progress
         if show_progress:
 
@@ -647,10 +651,6 @@ class SKIRTRemote(Remote):
 
             # Check whether not crashed
             if not success: raise RuntimeError("The simulation crashed")
-
-        # Set the execution handle for the simulation
-        simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
-        simulation.save()
 
         # Return the simulation object
         return simulation
