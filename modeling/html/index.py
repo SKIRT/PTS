@@ -202,7 +202,7 @@ class IndexPageGenerator(HTMLPageComponent):
         items = []
 
         # Status page
-        items.append(html.hyperlink(self.status_page_name, "status"))
+        items.append(html.hyperlink(self.status_page_name, "status") + ": status of the modeling")
 
         # Data page
         if self.has_images: items.append(html.hyperlink(self.data_page_name, "data") + ": summary of the observational dataset")

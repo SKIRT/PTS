@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import imageio
+
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from .component import HTMLPageComponent, table_class, hover_table_class
@@ -24,6 +27,7 @@ from ...core.tools import filesystem as fs
 from ...core.data.sed import SED, ObservedSED
 from ...core.launch.basicanalyser import instrument_name, number_of_columns
 from ...core.tools import parsing
+from pts.core.basics.rgbimage import invert_colors
 
 # -----------------------------------------------------------------
 
@@ -58,6 +62,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         self.instruments_plot = None
         self.contributions_plots = dict() # per instrument
         self.stellar_contributions_plot = None
+        self.stellar_contributions_noionizing_plot = None
 
     # -----------------------------------------------------------------
 
@@ -215,7 +220,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return 450
+        return 600
 
     # -----------------------------------------------------------------
 
@@ -301,6 +306,10 @@ class SEDsPageGenerator(HTMLPageComponent):
         self.min_flux = plotter.min_flux
         self.max_flux = plotter.max_flux
 
+        # Determine path for the dark version
+        dark_path = fs.join(self.images_seds_path, "instruments_dark.png")
+        create_inverted(path, dark_path)
+
         # Create image
         self.instruments_plot = html.image(path, width=self.image_width)
 
@@ -355,6 +364,10 @@ class SEDsPageGenerator(HTMLPageComponent):
 
             # Clear the SED plotter
             plotter.clear()
+
+            # Determine path for the dark version
+            dark_path = fs.join(self.images_seds_path, "contributions_" + instr_name + "_dark.png")
+            create_inverted(path, dark_path)
 
             # Create plot
             plot = html.image(path, width=self.image_width)
@@ -421,8 +434,38 @@ class SEDsPageGenerator(HTMLPageComponent):
         # Plot
         plotter.run(output=path)
 
+        # Determine path for the dark version
+        dark_path = fs.join(self.images_seds_path, "stellar_contributions_dark.png")
+        create_inverted(path, dark_path)
+
         # Create image
         self.stellar_contributions_plot = html.image(path, width=self.image_width)
+
+        ## NOW WITHOUT IONIZING
+
+        # Clear
+        plotter.clear()
+
+        # Add the different stellar contribution SEDs BUT NOT IONIZING
+        plotter.add_sed(total_sed, "total", residuals=True)
+        plotter.add_sed(old_sed, "old", residuals=False)
+        plotter.add_sed(young_sed, "young", residuals=False)
+
+        # Add the reference SED
+        plotter.add_sed(self.observed_sed, self.reference_sed_name)
+
+        # Determine the path to the plot file
+        path = fs.join(self.images_seds_path, "stellar_contributions_noionizing.png")
+
+        # Plot
+        plotter.run(output=path)
+
+        # Determine path for the dark version
+        dark_path = fs.join(self.images_seds_path, "stellar_contributions_noionizing_dark.png")
+        create_inverted(path, dark_path)
+
+        # Create image
+        self.stellar_contributions_noionizing_plot = html.image(path, width=self.image_width)
 
     # -----------------------------------------------------------------
 
@@ -469,7 +512,7 @@ class SEDsPageGenerator(HTMLPageComponent):
                              javascript_path=javascript_paths, footing=updated_footing())
 
         # Theme button
-        self.page += html.center(html.make_theme_button(images=False))
+        self.page += html.center(html.make_theme_button(images=True))
         self.page += html.newline + html.newline
 
         self.page += "INSTRUMENTS:"
@@ -497,6 +540,9 @@ class SEDsPageGenerator(HTMLPageComponent):
         self.page += html.newline + html.newline
 
         self.page += "STELLAR CONTRIBUTIONS:"
+        self.page += html.newline + html.newline
+
+        self.page += self.stellar_contributions_noionizing_plot
         self.page += html.newline + html.newline
 
         self.page += self.stellar_contributions_plot
@@ -528,5 +574,25 @@ class SEDsPageGenerator(HTMLPageComponent):
         """
 
         return self.seds_page_path
+
+# -----------------------------------------------------------------
+
+def create_inverted(original_path, new_path):
+
+    """
+    This function ...
+    :param original_path:
+    :param new_path:
+    :return:
+    """
+
+    # Open the original image
+    image = imageio.imread(original_path)
+
+    # Invert the colours
+    invert_colors(image)
+
+    # Write the inverted image
+    imageio.imwrite(new_path, image)
 
 # -----------------------------------------------------------------

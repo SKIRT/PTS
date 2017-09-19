@@ -147,6 +147,20 @@ class Publisher(HTMLPageComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def remote_truncation_images_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        path = fs.join(self.remote_truncation_path, "images")
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def remote_maps_path(self):
 
         """
@@ -155,6 +169,20 @@ class Publisher(HTMLPageComponent):
         """
 
         path = fs.join(self.remote_galaxy_path, maps_name)
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_maps_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.remote_maps_path, "images")
         if not fs.is_directory(path): fs.create_directory(path)
         return path
 
@@ -231,6 +259,7 @@ class Publisher(HTMLPageComponent):
         generator.config.regenerate = self.config.regenerate
         generator.config.replot = self.config.replot
         generator.config.details = self.config.details
+        generator.config.regenerate_index = self.config.regenerate_index
 
         # Run the generator
         generator.run()
@@ -705,11 +734,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading truncation ellipse page ...")
 
         # Update
-        updated = fs.update_file_in(self.truncation_ellipse_page_path, self.remote_truncation_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.truncation_ellipse_page_path, self.remote_truncation_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_truncation_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -724,11 +755,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading significance levels page ...")
 
         # Update
-        updated = fs.update_file_in(self.truncation_significance_page_path, self.remote_truncation_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.truncation_significance_page_path, self.remote_truncation_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_truncation_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -779,11 +812,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading all maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.all_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.all_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -798,11 +833,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading maps summary page ...")
 
         # Update
-        updated = fs.update_file_in(self.maps_summary_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.maps_summary_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -817,11 +854,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading old maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.old_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.old_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -836,11 +875,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading young maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.young_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.young_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -855,11 +896,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading ionizing maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.ionizing_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.ionizing_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -874,11 +917,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading dust maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.dust_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.dust_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -893,11 +938,13 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading clip maps page ...")
 
         # Update
-        updated = fs.update_file_in(self.clip_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug())
+        updated, filepath = fs.update_file_in(self.clip_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
         else: log.info("Already up-to-date")
+
+        fix_maps_images(filepath, self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -926,6 +973,12 @@ class Publisher(HTMLPageComponent):
         # Main pages images
         self.upload_main_images()
 
+        # Truncation
+        self.upload_truncation_images()
+
+        # Maps
+        self.upload_maps_images()
+
     # -----------------------------------------------------------------
 
     def upload_main_images(self):
@@ -940,6 +993,48 @@ class Publisher(HTMLPageComponent):
 
         # Synchronize
         updated = fs.update_directory(self.images_path, self.remote_galaxy_images_path, create=True, report=log.is_debug())
+
+        if updated: log.success("Succesfully uploaded the images")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_truncation_images(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the images of the truncation pages ...")
+
+        # Determine ...
+        truncation_html_plots_path = fs.join(self.truncation_html_path, "plots")
+
+        # Synchronize
+        updated = fs.update_directory(truncation_html_plots_path, self.remote_truncation_images_path, create=True, report=log.is_debug())
+
+        if updated: log.success("Succesfully uploaded the images")
+        else: log.info("Already up-to-date")
+
+    # -----------------------------------------------------------------
+
+    def upload_maps_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uploading the images of the maps pages ...")
+
+        # Determine ...
+        maps_html_plots_path = fs.join(self.maps_html_path, "plots")
+
+        # Synchronize
+        updated = fs.update_directory(maps_html_plots_path, self.remote_maps_images_path, create=True, report=log.is_debug())
 
         if updated: log.success("Succesfully uploaded the images")
         else: log.info("Already up-to-date")
@@ -1064,3 +1159,75 @@ def fix_index_links(filepath, modeling_path):
 
 # -----------------------------------------------------------------
 
+def fix_truncation_images(filepath, modeling_path):
+
+    """
+    This function ...
+    :param filepath:
+    :param modeling_path:
+    :return:
+    """
+
+    fixed = False
+    new_lines = []
+
+    #image_filepaths = []
+
+    truncation_path = fs.join(modeling_path, "truncated")
+    truncation_html_path = fs.join(truncation_path, "html")
+    truncation_html_plot_path = fs.join(truncation_html_path, "plots")
+
+    for line in fs.read_lines(filepath):
+
+        if truncation_html_plot_path in line:
+            line = line.replace(truncation_html_plot_path, "images")
+            fixed = True
+
+        new_lines.append(line)
+
+    # Fixed: replace lines
+    if not fixed: return
+
+    fs.remove_file(filepath)
+    fs.write_lines(filepath, new_lines)
+
+    # Return the truncation images path
+    #return truncation_html_plot_path
+
+# -----------------------------------------------------------------
+
+def fix_maps_images(filepath, modeling_path):
+
+    """
+    Thisf unction ...
+    :param filepath:
+    :param modeling_path:
+    :return:
+    """
+
+    fixed = False
+    new_lines = []
+
+    #image_filepaths = []
+
+    maps_path = fs.join(modeling_path, "maps")
+    maps_html_path = fs.join(maps_path, "html")
+    maps_html_plot_path = fs.join(maps_html_path, "plots")
+
+    for line in fs.read_lines(filepath):
+
+        if maps_html_plot_path in line:
+            line = line.replace(maps_html_plot_path, "images")
+            fixed = True
+
+        new_lines.append(line)
+
+    if not fixed: return
+
+    fs.remove_file(filepath)
+    fs.write_lines(filepath, new_lines)
+
+    # Return the filepaths
+    #return image_filepaths
+
+# -----------------------------------------------------------------

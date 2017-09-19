@@ -27,6 +27,8 @@ definition.add_flag("regenerate", "regenerate all pages", False)
 definition.add_flag("replot", "make plots again", False)
 definition.add_flag("show", "show after publishing", False)
 
+definition.add_flag("regenerate_index", "regenerate the index page", False)
+
 # Add detail pages
 definition.add_flag("details", "add detailed pages", True)
 

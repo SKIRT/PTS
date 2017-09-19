@@ -67,6 +67,7 @@ class AllPagesGenerator(HTMLComponent):
         if not self.has_properties: return False
         elif not self.has_index_page: return True
         elif self.config.regenerate: return True
+        elif self.config.regenerate_index: return True
         else: return False
 
     # -----------------------------------------------------------------

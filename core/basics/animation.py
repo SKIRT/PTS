@@ -13,6 +13,9 @@
 import copy
 import imageio
 
+# Import the relevant PTS classes and modules
+from .apng import APNG
+
 # -----------------------------------------------------------------
 
 class Animation(object):
@@ -105,8 +108,11 @@ class Animation(object):
         :return:
         """
 
-        # Create and write the GIF file
-        imageio.mimwrite(path, self.frames, fps=self.fps)
+        # APNG: special
+        if path.endswith(".apng"): write_apng(path, self.frames)
+
+        # Use ImageIO
+        else: imageio.mimwrite(path, self.frames, fps=self.fps)
 
         # Update the path
         self.path = path
@@ -148,5 +154,19 @@ def inverted_colors(animation):
     animation_copy = copy.deepcopy(animation)
     invert_colors(animation_copy)
     return animation_copy
+
+# -----------------------------------------------------------------
+
+def write_apng(path, frames):
+
+    """
+    This funtion ...
+    :param path:
+    :param frames:
+    :return:
+    """
+
+    raise NotImplementedError("Not supported yet")
+    #im = APNG()
 
 # -----------------------------------------------------------------
