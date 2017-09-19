@@ -232,6 +232,18 @@ class SEDsPageGenerator(HTMLPageComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def iras_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("IRAS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ignore_filters(self):
 
         """
@@ -239,7 +251,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return self.planck_filters
+        return self.planck_filters + self.iras_filters
 
     # -----------------------------------------------------------------
 
