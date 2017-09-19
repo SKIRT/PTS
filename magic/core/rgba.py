@@ -77,7 +77,8 @@ class RGBAImage(RGBImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
+    def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red",
+                   normalize_in=None, return_minmax=False):
 
         """
         This function ...
@@ -88,12 +89,16 @@ class RGBAImage(RGBImage):
         :param peak_alpha:
         :param colours:
         :param normalize_in:
+        :param return_minmax:
         :return:
         """
 
-        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha,
-                                                      peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in)
-        return cls(red, green, blue, alpha)
+        red, green, blue, alpha, vmin, vmax = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha,
+                                                      peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in,
+                                                      return_minmax=True)
+
+        if return_minmax: return cls(red, green, blue, alpha), vmin, vmax
+        else: return cls(red, green, blue, alpha)
 
     # -----------------------------------------------------------------
 
@@ -257,7 +262,8 @@ class RGBAImage(RGBImage):
 
 # -----------------------------------------------------------------
 
-def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
+def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red",
+                        normalize_in=None, return_minmax=False):
 
     """
     This function ...
@@ -268,6 +274,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     :param peak_alpha:
     :param colours:
     :param normalize_in:
+    :param return_minmax:
     :return:
     """
 
@@ -314,6 +321,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
         vmax = 0.5 * (normalize_max + vmin)
 
     elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
+    elif isinstance(interval, list): vmin, vmax = interval
     else:
 
         from ...core.tools import parsing
@@ -429,7 +437,8 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
             #print("ALPHA", alpha)
 
     # Return the components
-    return red, green, blue, alpha
+    if return_minmax: return red, green, blue, alpha, vmin, vmax
+    else: return red, green, blue, alpha
 
 # -----------------------------------------------------------------
 

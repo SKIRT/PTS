@@ -2257,7 +2257,7 @@ def equal_number_of_items(directory_a, directory_b, recursive=True, create=False
 
 # -----------------------------------------------------------------
 
-def update_file_in(source, directory, create=False, report=False):
+def update_file_in(source, directory, create=False, report=False, return_target=False):
 
     """
     This function ...
@@ -2265,12 +2265,16 @@ def update_file_in(source, directory, create=False, report=False):
     :param directory:
     :param create:
     :param report:
+    :param return_target
     :return:
     """
 
     filename = name(source)
     target = join(directory, filename)
-    return update_file(source, target, create=create, report=report)
+    updated = update_file(source, target, create=create, report=report)
+
+    if return_target: return updated, target
+    else: return updated
 
 # -----------------------------------------------------------------
 

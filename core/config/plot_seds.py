@@ -38,6 +38,11 @@ definition.add_optional("library", "string", "plotting library", mpl, plotting_l
 
 # -----------------------------------------------------------------
 
+# Ignore these filters
+definition.add_optional("ignore_filters", "filter_list", "ignore these filters from the observed SEDs")
+
+# -----------------------------------------------------------------
+
 definition.add_flag("show", "show the plot (default is automatic)", None)
 
 # -----------------------------------------------------------------

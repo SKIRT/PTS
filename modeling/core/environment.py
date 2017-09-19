@@ -680,6 +680,9 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # Images directory
         self.html_images_path = fs.create_directory_in(self.html_path, "images")
 
+        # Scripts directory
+        self.html_scripts_path = fs.create_directory_in(self.html_path, "scripts")
+
         # NEW
 
         # Set the path to the initial dataset file

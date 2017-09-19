@@ -34,6 +34,7 @@ from ..data.sed import ObservedSED, SED
 from ..basics.range import RealRange
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools import types
+from ..filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -470,6 +471,13 @@ class SEDPlotter(Configurable):
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
 
+                # Check filter
+                instrument = instruments[k]
+                band = bands[k]
+                if self.config.ignore_filters is not None:
+                    fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                    if fltr in self.config.ignore_filters: continue
+
                 # Check validity of flux value
                 if fluxes[k] <= 0.0:
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
@@ -686,6 +694,13 @@ class SEDPlotter(Configurable):
 
         # Loop over the wavelengths
         for k in range(len(wavelengths)):
+
+            # Check filter
+            instrument = instruments[k]
+            band = bands[k]
+            if self.config.ignore_filters is not None:
+                fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                if fltr in self.config.ignore_filters: continue
 
             # Check validity of flux value
             if fluxes[k] <= 0.0:
@@ -996,6 +1011,13 @@ class SEDPlotter(Configurable):
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
 
+                # Check filter
+                instrument = instruments[k]
+                band = bands[k]
+                if self.config.ignore_filters is not None:
+                    fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                    if fltr in self.config.ignore_filters: continue
+
                 # Check validity of flux value
                 if fluxes[k] <= 0.0:
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
@@ -1177,6 +1199,13 @@ class SEDPlotter(Configurable):
         # Loop over the wavelengths
         for k in range(len(wavelengths)):
 
+            # Check filter
+            instrument = instruments[k]
+            band = bands[k]
+            if self.config.ignore_filters is not None:
+                fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                if fltr in self.config.ignore_filters: continue
+
             # Check validity of flux value
             if fluxes[k] <= 0.0:
                 log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
@@ -1277,6 +1306,11 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        had_min_flux = self.min_flux is not None
+        had_max_flux = self.max_flux is not None
+        had_min_wavelength = self.min_wavelength is not None
+        had_max_wavelength = self.max_wavelength is not None
+
         # Axis limits are now definite
         if self.min_flux is None: self.min_flux = self._min_flux
         if self.max_flux is None: self.max_flux = self._max_flux
@@ -1287,10 +1321,10 @@ class SEDPlotter(Configurable):
         factor_x = 10 ** (0.1 * np.log10(self.max_wavelength / self.min_wavelength))
         factor_y = 10 ** (0.1 * np.log10(self.max_flux / self.min_flux))
 
-        self.min_flux /= factor_y
-        self.max_flux *= factor_y
-        self.min_wavelength /= factor_x
-        self.max_wavelength *= factor_x
+        if not had_min_flux: self.min_flux /= factor_y
+        if not had_max_flux: self.max_flux *= factor_y
+        if not had_min_wavelength: self.min_wavelength /= factor_x
+        if not had_max_wavelength: self.max_wavelength *= factor_x
 
         # Format residual axes
         for res_axis in self.residual_plots:

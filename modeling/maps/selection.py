@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ..core.environment import GalaxyModelingEnvironment
 from ..core.history import ModelingHistory
@@ -143,6 +142,162 @@ class ComponentMapsSelection(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.dust_component_path, deprojected_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.young_component_path, deprojected_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_deprojected_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.ionizing_component_path, deprojected_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.dust_component_path, deprojected_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_skirt_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.old_component_path, deprojected_skirt_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_skirt_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.young_component_path, deprojected_skirt_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_skirt_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.ionizing_component_path, deprojected_skirt_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_skirt_deprojected_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.dust_component_path, deprojected_skirt_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.old_component_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.young_component_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.ionizing_component_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        return fs.join(self.dust_component_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_map_names(self):
 
         """
@@ -231,6 +386,229 @@ class ComponentMapsSelection(object):
         """
 
         return fs.files_in_path(self.dust_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.old_component_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Old stellar map '" + map_name + "' does not exist in selection")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_old_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.old_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected old stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_old_skirt_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.old_skirt_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected with SKIRT old stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_old_edgeon_map_path(self, map_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.old_edgeon_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Edgeon old stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.young_component_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Young stellar map '" + map_name + "' does not exist in selection")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_young_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.young_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected young stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_young_skirt_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.young_skirt_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected with SKIRT young stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_young_edgeon_map_path(self, map_name):
+
+        """
+        THis function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.young_edgeon_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Edgeon young stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.ionizing_component_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Ionizing stellar map '" + map_name + "' does not exist in selection")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.ionizing_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected ionizing stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_skirt_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.ionizing_skirt_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected with SKIRT ionizing stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_edgeon_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.ionizing_edgeon_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Edgeon ionizing stellar map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.dust_component_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Dust map '" + map_name + "' does not exist in selection")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.dust_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected dust map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_dust_skirt_deprojected_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.dust_skirt_deprojected_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Deprojected with SKIRT dust map '" + map_name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_dust_edgeon_map_path(self, map_name):
+
+        """
+        This function ...
+        :param map_name:
+        :return:
+        """
+
+        path = fs.join(self.dust_edgeon_path, map_name + ".fits")
+        if not fs.is_file(path): raise ValueError("Edgeon dust map '" + map_name + "' does not exist")
+        return path
 
     # -----------------------------------------------------------------
 

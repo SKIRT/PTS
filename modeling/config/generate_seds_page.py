@@ -7,8 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.modeling.config.generate_page import definition
-from pts.modeling.build.suite import ModelSuite
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.magic.core.rgba import alpha_methods
 
 # -----------------------------------------------------------------
@@ -24,16 +23,12 @@ default_interval = "pts"
 
 # -----------------------------------------------------------------
 
-# Set the modeling path
-modeling_path = verify_modeling_cwd()
-suite = ModelSuite.from_modeling_path(modeling_path)
+environment = load_modeling_environment_cwd()
+analysis_runs = environment.analysis_runs
 
 # -----------------------------------------------------------------
 
-# Fitting run setting
-if suite.no_models: raise RuntimeError("No models are present (yet)")
-elif suite.has_single_model: definition.add_fixed("model_name", "name of the model", suite.single_model_name)
-else: definition.add_required("model_name", "string", "name of the model", choices=suite.model_names)
+definition.add_required("analysis_run", "string", "analysis run to clone", choices=analysis_runs.names)
 
 # -----------------------------------------------------------------
 

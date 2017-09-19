@@ -122,6 +122,7 @@ generate_photometry_page | -- | html.photometry.PhotometryPageGenerator | argume
 generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page
 generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page
 generate_fitting_page | -- | html.fitting.FittingPageGenerator | arguments | Generate the fitting page
+generate_seds_page | -- | html.seds.SEDsPageGenerator | arguments | Generate the SEDs page
 generate_datacubes_page | -- | html.datacubes.DatacubesPageGenerator | arguments | Generate the datacubes page
 generate_fluxes_page | -- | html.fluxes.FluxesPageGenerator | arguments | Generate the fluxes page
 generate_images_page | -- | html.images.ImagesPageGenerator | arguments | Generate the images page (with residuals)

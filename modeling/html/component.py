@@ -61,6 +61,7 @@ preparation_page_filename = "preparation.html"
 model_page_filename = "model.html"
 maps_page_filename = "maps.html"
 fitting_page_filename = "fitting.html"
+seds_page_filename = "seds.html"
 datacubes_page_filename = "datacubes.html"
 fluxes_page_filename = "fluxes.html"
 images_page_filename = "images.html"
@@ -183,6 +184,19 @@ class HTMLComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "launch_analysis" in self.history
+        #return self.history.finished("launch_analysis")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_datacubes(self):
 
         """
@@ -190,7 +204,8 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("launch_analysis")
+        return "launch_analysis" in self.history
+        #return self.history.finished("launch_analysis")
 
     # -----------------------------------------------------------------
 
@@ -541,7 +556,44 @@ class HTMLComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def seds_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, seds_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.seds_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, seds_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
     def datacubes_page_path(self):
+
         """
         This function ...
         :return:
@@ -1043,6 +1095,42 @@ class HTMLPageComponent(HTMLComponent):
     # -----------------------------------------------------------------
 
     @property
+    def scripts_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.environment.html_scripts_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scripts_model_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.scripts_path, "model")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scripts_components_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.scripts_path, "components")
+
+    # -----------------------------------------------------------------
+
+    @property
     def images_path(self):
 
         """
@@ -1075,6 +1163,30 @@ class HTMLPageComponent(HTMLComponent):
         """
 
         return fs.create_directory_in(self.images_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_seds_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_path, "seds")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_datacubes_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_path, "datacubes")
 
     # -----------------------------------------------------------------
 
@@ -1236,6 +1348,9 @@ class HTMLPageComponent(HTMLComponent):
         #fs.write_text(self.page_path, self.page)
         self.page.saveto(self.page_path)
 
+        # Fix
+        fix_local_paths(self.page_path, self.html_path)
+
     # -----------------------------------------------------------------
 
     def show(self):
@@ -1250,5 +1365,51 @@ class HTMLPageComponent(HTMLComponent):
 
         # Open
         browser.open_path(self.page_path)
+
+# -----------------------------------------------------------------
+
+def fix_local_paths(filepath, html_path):
+
+    """
+    This function ...
+    :param filepath:
+    :param html_path:
+    :return:
+    """
+
+    filename = fs.name(filepath)
+
+    # Debugging
+    log.debug("Fixing local paths in the '" + filename + "' file ...")
+
+    fixed = False
+    newlines = []
+
+    html_path = html_path + "/"
+
+    # Loop over the lines in the file
+    for line in fs.read_lines(filepath):
+
+        if html_path in line:
+
+            #print(line)
+            line = line.replace(html_path, "")
+            fixed = True
+            #print("NEWLINE", line)
+
+        # Add the line
+        newlines.append(line)
+
+    # Write, only if fixed
+    if not fixed: return
+
+    # Debugging
+    log.debug("Overwriting the '" + filename + "' file with the new image paths ...")
+
+    # Remove original file
+    fs.remove_file(filepath)
+
+    # Write the new lines
+    fs.write_lines(filepath, newlines)
 
 # -----------------------------------------------------------------

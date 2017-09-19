@@ -205,45 +205,48 @@ class IndexPageGenerator(HTMLPageComponent):
         items.append(html.hyperlink(self.status_page_name, "status"))
 
         # Data page
-        if self.has_images: items.append(html.hyperlink(self.data_page_name, "data"))
+        if self.has_images: items.append(html.hyperlink(self.data_page_name, "data") + ": summary of the observational dataset")
 
         # Preparation page
-        if self.has_prepared: items.append(html.hyperlink(self.preparation_page_name, "preparation"))
+        if self.has_prepared: items.append(html.hyperlink(self.preparation_page_name, "preparation") + ": image preparation statistics")
 
         # Components page
-        if self.has_components: items.append(html.hyperlink(self.components_page_name, "components"))
+        if self.has_components: items.append(html.hyperlink(self.components_page_name, "components") + ": decomposition details")
 
         # Photometry page
-        if self.has_photometry: items.append(html.hyperlink(self.photometry_page_name, "photometry"))
+        if self.has_photometry: items.append(html.hyperlink(self.photometry_page_name, "photometry") + ": observed SED")
 
         # Maps page
         #if self.has_model: items.append(html.hyperlink(self.maps_page_name, "maps"))
-        if self.progression.model_name is not None: items.append(html.hyperlink(self.maps_page_name, "maps"))
+        if self.progression.model_name is not None: items.append(html.hyperlink(self.maps_page_name, "maps") + ": distributions used as input geometries for the model")
 
         # Model page
         #if self.has_fitting_run: items.append(html.hyperlink(self.model_page_name, "model"))
-        if self.progression.model_name is not None: items.append(html.hyperlink(self.model_page_name, "model"))
+        if self.progression.model_name is not None: items.append(html.hyperlink(self.model_page_name, "model") + ": components and properties of the model")
 
         # Fitting page
-        if self.has_generation: items.append(html.hyperlink(self.fitting_page_name, "fitting"))
+        if self.has_generation: items.append(html.hyperlink(self.fitting_page_name, "fitting") + ": fitting details")
+
+        # SEDs page
+        if self.has_seds: items.append(html.hyperlink(self.seds_page_name, "SEDs") + ": output SEDs and their different contributions")
 
         # Datacubes page
-        if self.has_datacubes: items.append(html.hyperlink(self.datacubes_page_name, "datacubes"))
+        if self.has_datacubes: items.append(html.hyperlink(self.datacubes_page_name, "datacubes") + ": output datacubes")
 
         # Fluxes page
-        if self.has_fluxes: items.append(html.hyperlink(self.fluxes_page_name, "fluxes"))
+        if self.has_fluxes: items.append(html.hyperlink(self.fluxes_page_name, "fluxes") + ": calculated observed fluxes from simulation")
 
         # Images page
-        if self.has_model_images: items.append(html.hyperlink(self.images_page_name, "images"))
+        if self.has_model_images: items.append(html.hyperlink(self.images_page_name, "images") + ": observed images from simulation")
 
         # Attenuation page
-        if self.has_attenuation: items.append(html.hyperlink(self.attenuation_page_name, "attenuation"))
+        if self.has_attenuation: items.append(html.hyperlink(self.attenuation_page_name, "attenuation") + ": dust attenuation analysis output")
 
         # Colours page
-        if self.has_colours: items.append(html.hyperlink(self.colours_page_name, "colours"))
+        if self.has_colours: items.append(html.hyperlink(self.colours_page_name, "colours") + ": colours calculated based on simulated images")
 
         # Heating page
-        if self.has_heating: items.append(html.hyperlink(self.heating_page_name, "heating"))
+        if self.has_heating: items.append(html.hyperlink(self.heating_page_name, "heating") + ": dust heating analysis output")
 
         # Add the list
         self.page += html.unordered_list(items, css_class="b")
@@ -258,18 +261,18 @@ class IndexPageGenerator(HTMLPageComponent):
 
             # TRUNCATION
 
-            if self.has_truncation_ellipse_page: items.append(html.hyperlink(self.truncation_ellipse_page_path, "truncation ellipse"))
-            if self.has_truncation_significance_page: items.append(html.hyperlink(self.truncation_significance_page_path, "significance levels"))
+            if self.has_truncation_ellipse_page: items.append(html.hyperlink(self.truncation_ellipse_page_path, "truncation ellipse") + ": to determine the boundary at which all image data is truncated")
+            if self.has_truncation_significance_page: items.append(html.hyperlink(self.truncation_significance_page_path, "significance levels") + ": to determine the minimal signal-to-noise for each image to compare with simulation")
 
             # MAPS
 
-            if self.has_all_maps_page: items.append(html.hyperlink(self.all_maps_page_path, "all generated maps"))
-            if self.has_maps_summary_page: items.append(html.hyperlink(self.maps_summary_page_path, "maps summary"))
-            if self.has_old_maps_page: items.append(html.hyperlink(self.old_maps_page_path, "old stellar maps"))
-            if self.has_young_maps_page: items.append(html.hyperlink(self.young_maps_page_path, "young stellar maps"))
-            if self.has_ionizing_maps_page: items.append(html.hyperlink(self.ionizing_maps_page_path, "ionizing stellar maps"))
-            if self.has_dust_maps_page: items.append(html.hyperlink(self.dust_maps_page_path, "dust maps"))
-            if self.has_clip_maps_page: items.append(html.hyperlink(self.clip_maps_page_path, "map clipping"))
+            if self.has_all_maps_page: items.append(html.hyperlink(self.all_maps_page_path, "all generated maps") + ": collection of all possible maps that have been generated for visual inspection")
+            if self.has_maps_summary_page: items.append(html.hyperlink(self.maps_summary_page_path, "maps summary") + ": summary of map properties")
+            if self.has_old_maps_page: items.append(html.hyperlink(self.old_maps_page_path, "old stellar maps") + ": summary of the old stellar maps")
+            if self.has_young_maps_page: items.append(html.hyperlink(self.young_maps_page_path, "young stellar maps") + ": summary of the young stellar maps")
+            if self.has_ionizing_maps_page: items.append(html.hyperlink(self.ionizing_maps_page_path, "ionizing stellar maps") + ": summary of the ionizing stellar maps")
+            if self.has_dust_maps_page: items.append(html.hyperlink(self.dust_maps_page_path, "dust maps") + ": summary of the dust maps")
+            if self.has_clip_maps_page: items.append(html.hyperlink(self.clip_maps_page_path, "map clipping") + ": to determine the minimal signal-to-noise levels at which to clip each input image to obtain the final map pixels")
 
             # Add the list
             self.page += html.unordered_list(items, css_class="b")

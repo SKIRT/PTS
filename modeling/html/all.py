@@ -22,6 +22,7 @@ from pts.modeling.html.photometry import PhotometryPageGenerator
 from pts.modeling.html.maps import MapsPageGenerator
 from pts.modeling.html.model import ModelPageGenerator
 from pts.modeling.html.fitting import FittingPageGenerator
+from pts.modeling.html.seds import SEDsPageGenerator
 from pts.modeling.html.datacubes import DatacubesPageGenerator
 from pts.modeling.html.fluxes import FluxesPageGenerator
 from pts.modeling.html.images import ImagePageGenerator
@@ -192,6 +193,21 @@ class AllPagesGenerator(HTMLComponent):
     # -----------------------------------------------------------------
 
     @property
+    def needs_seds(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if not self.has_seds: return False
+        elif not self.has_seds_page: return True
+        elif self.config.regenerate: return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def needs_datacubes(self):
 
         """
@@ -318,6 +334,9 @@ class AllPagesGenerator(HTMLComponent):
 
         # 10. Generate the fitting page
         if self.needs_fitting: self.generate_fitting()
+
+        # 11. Generate the SEDs page
+        if self.needs_seds: self.generate_seds()
 
         # 11. Generate the datacubes page
         if self.needs_datacubes: self.generate_datacubes()
@@ -553,6 +572,26 @@ class AllPagesGenerator(HTMLComponent):
 
     # -----------------------------------------------------------------
 
+    def generate_seds(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the SEDs page ...")
+
+        # Generate the SEDs page
+        # 'generate_seds_page'
+        generator = SEDsPageGenerator()
+        generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
+        generator.config.analysis_run = self.progression.analysis_run_name
+        generator.run()
+
+    # -----------------------------------------------------------------
+
     def generate_datacubes(self):
 
         """
@@ -568,6 +607,7 @@ class AllPagesGenerator(HTMLComponent):
         generator = DatacubesPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.analysis_run = self.progression.analysis_run_name
         generator.run()
 
     # -----------------------------------------------------------------

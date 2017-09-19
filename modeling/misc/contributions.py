@@ -111,7 +111,6 @@ class ModelContributionsLauncher(ModelSimulationInterface):
 
         self.contributions_simulation_paths = dict()
         self.contributions_output_paths = dict()
-        self.contributions_
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
         self.scheduling_options = dict()
@@ -258,10 +257,6 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         self.projections_path = fs.create_directory_in(self.run_path, "projections")
         self.instruments_path = fs.create_directory_in(self.run_path, "instruments")
         self.input_file_path = fs.join(self.run_path, "info.dat")
-
-        # Plotting and misc directories
-        #self.simulation_plot_path = fs.create_directory_in(self.run_path, "plot")
-        #self.simulation_misc_path = fs.create_directory_in(self.run_path, "misc")
 
         # Load the wavelength grid?
         if self.config.regenerate_wavelength_grid: self.remove_wavelength_grid()
