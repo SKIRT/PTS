@@ -19,11 +19,13 @@ from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .run import AnalysisRuns
 from .run import AnalysisRunInfo, AnalysisRun
+from .tables import CachedRunsTable
 
 # -----------------------------------------------------------------
 
 timing_filename = "timing.dat"
 memory_filename = "memory.dat"
+cached_filename = "cached.dat"
 
 # -----------------------------------------------------------------
 
@@ -66,6 +68,18 @@ class AnalysisContext(object):
             # Create the table and save it
             memory_table = MemoryTable()
             memory_table.saveto(self.memory_table_path)
+
+        # Cached table --
+
+        # Set the path to the cached runs table
+        self.cached_table_path = fs.join(self.analysis_path, cached_filename)
+
+        # Initialize the cached table if necessary
+        if not fs.is_file(self.cached_table_path):
+
+            # Create the table and save it
+            cached_table = CachedRunsTable()
+            cached_table.saveto(self.cached_table_path)
 
         # Load the analysis runs object
         self.runs = AnalysisRuns(self.modeling_path)
@@ -131,6 +145,18 @@ class AnalysisContext(object):
         """
 
         return MemoryTable.from_file(self.memory_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cached_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CachedRunsTable.from_file(self.cached_table_path)
 
     # -----------------------------------------------------------------
 

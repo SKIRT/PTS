@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.cache Contains the AnalysisRunsCacher class.
+## \package pts.modeling.analysis.cache Contains the AnalysisRunCacher class.
 
 # -----------------------------------------------------------------
 
@@ -15,10 +15,14 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.basics.log import log
+from ...core.remote.remote import Remote
+from ...core.tools.utils import lazyproperty
+from ...core.tools import filesystem as fs
+from ...core.basics.configuration import prompt_proceed
 
 # -----------------------------------------------------------------
 
-class AnalysisRunsCacher(AnalysisComponent):
+class AnalysisRunCacher(AnalysisComponent):
 
     """
     This class ...
@@ -33,9 +37,12 @@ class AnalysisRunsCacher(AnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(AnalysisComponent, self).__init__(*args, **kwargs)
+        super(AnalysisRunCacher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
+
+        # The remote host
+        self.remote = None
 
     # -----------------------------------------------------------------
 
@@ -50,7 +57,10 @@ class AnalysisRunsCacher(AnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 6. Write
+        # 2. Cache
+        self.cache()
+
+        # 3. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -64,7 +74,97 @@ class AnalysisRunsCacher(AnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(AnalysisRunsCacher, self).setup()
+        super(AnalysisRunCacher, self).setup()
+
+        # Connect to the remote host
+        self.remote = Remote()
+        if not self.remote.setup(self.config.remote):
+            raise RuntimeError("Could not connect to the remote host")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.run
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_runs.get_path(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_directory_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.galaxy_name + "_analysis"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.remote.home_directory, self.cache_directory_name)
+        if not self.remote.is_directory(path): self.remote.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_directory_path_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.cache_directory_path, self.run_name)
+        if not self.remote.is_directory(path): self.remote.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def cache(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Caching ...")
+
+        # Upload
+        self.remote.upload_directory_to(self.run_path, self.cache_directory_path)
+
+        # Prompt for proceed
+        if not prompt_proceed("was the upload succesfull?"): exit()
+
+        # Remove the local directory
+        fs.remove_directory(self.run_path)
 
     # -----------------------------------------------------------------
 
@@ -77,5 +177,23 @@ class AnalysisRunsCacher(AnalysisComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the cached runs table
+        self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the cached runs table ...")
+
+        # Add entry to the cached table
+        self.cached_table.add_entry(self.config.run, self.config.remote)
 
 # -----------------------------------------------------------------
