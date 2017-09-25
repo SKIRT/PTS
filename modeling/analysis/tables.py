@@ -52,6 +52,34 @@ class CachedRunsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cache_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(set(self["Host id"]))
+
+    # -----------------------------------------------------------------
+
+    def run_names_for_host_id(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        names = []
+        for index in range(len(self)):
+            host_id_index = self["Host id"][index]
+            if host_id_index == host_id: names.append(self["Run name"][index])
+        return names
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, run_name, host_id):
 
         """

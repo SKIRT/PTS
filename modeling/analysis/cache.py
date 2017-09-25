@@ -196,4 +196,7 @@ class AnalysisRunCacher(AnalysisComponent):
         # Add entry to the cached table
         self.cached_table.add_entry(self.config.run, self.config.remote)
 
+        # Save the table
+        self.cached_table.save()
+
 # -----------------------------------------------------------------

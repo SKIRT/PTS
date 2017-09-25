@@ -173,6 +173,30 @@ class AnalysisContext(object):
     # -----------------------------------------------------------------
 
     @property
+    def cache_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cached_table.cache_host_ids
+
+    # -----------------------------------------------------------------
+
+    def get_run_names_for_host_id(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.cached_table.run_names_for_host_id(host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
     def analysis_run_names(self):
 
         """
