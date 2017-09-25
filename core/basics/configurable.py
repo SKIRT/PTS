@@ -345,16 +345,18 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def output_path_directory(self, name):
+    def output_path_directory(self, name, create=True):
 
         """
         This function ...
         :param name:
+        :param create:
         :return:
         """
 
         # Create and return path
-        return fs.create_directory_in(self.output_path, name)
+        if create: return fs.create_directory_in(self.output_path, name)
+        else: return fs.join(self.output_path, name)
 
 # -----------------------------------------------------------------
 

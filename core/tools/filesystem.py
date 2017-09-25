@@ -636,6 +636,21 @@ def clear_directory(path, recursive=False):
 
 # -----------------------------------------------------------------
 
+def remove_directory_if_present(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_directory(path):
+        remove_directory(path)
+        return True
+    else: return False
+
+# -----------------------------------------------------------------
+
 def remove_directory(path):
 
     """
@@ -680,6 +695,21 @@ def remove_directories_but_keep(paths, keep_path):
 
         # Remove the
         remove_directory(path)
+
+# -----------------------------------------------------------------
+
+def remove_file_if_present(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_file(path):
+        remove_file(path)
+        return True
+    else: return False
 
 # -----------------------------------------------------------------
 

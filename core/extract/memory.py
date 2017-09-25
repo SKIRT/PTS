@@ -169,6 +169,30 @@ class MemoryUsageTable(Table):
 
 # -----------------------------------------------------------------
 
+def extract_memory_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    from pts.core.simulation.simulation import createsimulations
+
+    # Create a SkirtSimulation object based on a log file present in the current working directory
+    simulation = createsimulations(single=True)
+
+    # Create a new MemoryExtractor instance
+    extractor = MemoryExtractor()
+
+    # Run the extractor and get the memory table
+    extractor.run(simulation)
+    table = extractor.table
+
+    # Return the table
+    return table
+
+# -----------------------------------------------------------------
+
 class MemoryExtractor(object):
 
     """

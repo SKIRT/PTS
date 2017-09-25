@@ -104,6 +104,30 @@ class ProgressTable(Table):
 
 # -----------------------------------------------------------------
 
+def extract_progress_cwd():
+
+    """
+    Thisf unction ...
+    :return:
+    """
+
+    from pts.core.simulation.simulation import createsimulations
+
+    # Create a SkirtSimulation object based on a log file present in the current working directory
+    simulation = createsimulations(single=True)
+
+    # Create a new ProgressExtractor instance
+    extractor = ProgressExtractor()
+
+    # Run the extractor and get the table
+    extractor.run(simulation)
+    table = extractor.table
+
+    # Return the progress table
+    return table
+
+# -----------------------------------------------------------------
+
 class ProgressExtractor(object):
 
     """

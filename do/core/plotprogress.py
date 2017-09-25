@@ -31,8 +31,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation.simulation import createsimulations
-from pts.core.extract.progress import ProgressExtractor, ProgressTable
+from pts.core.extract.progress import extract_progress_cwd, ProgressTable
 from pts.core.plot.progress import ProgressPlotter
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
@@ -55,17 +54,7 @@ progress_table_path = fs.join(fs.cwd(), "progress.dat")
 if fs.is_file(progress_table_path): table = ProgressTable.from_file(progress_table_path)
 
 # If extracted progress information is not present, first perform the extraction
-else:
-
-    # Create a SkirtSimulation object based on a log file present in the current working directory
-    simulation = createsimulations(single=True)
-
-    # Create a new ProgressExtractor instance
-    extractor = ProgressExtractor()
-
-    # Run the extractor and get the table
-    extractor.run(simulation)
-    table = extractor.table
+else: table = extract_progress_cwd()
 
 # -----------------------------------------------------------------
 

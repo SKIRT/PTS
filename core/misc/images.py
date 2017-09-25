@@ -614,6 +614,54 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def filter_names_with_image_for_instrument(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        return [filter_name for filter_name in self.filter_names if self.has_image(instr_name, filter_name)]
+
+    # -----------------------------------------------------------------
+
+    def filters_with_image_for_instrument(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        return {filter_name: parse_filter(filter_name) for filter_name in self.filter_names_with_image_for_instrument(instr_name)}
+
+    # -----------------------------------------------------------------
+
+    def filter_names_without_image_for_instrument(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        return [filter_name for filter_name in self.filter_names if not self.has_image(instr_name, filter_name)]
+
+    # -----------------------------------------------------------------
+
+    def filters_without_image_for_instrument(self, instr_name):
+
+        """
+        Thisf unction ...
+        :param instr_name:
+        :return:
+        """
+
+        return {filter_name: parse_filter(filter_name) for filter_name in self.filter_names_without_image_for_instrument(instr_name)}
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_datacube_paths(self):
 
@@ -648,6 +696,13 @@ class ObservedImageMaker(Configurable):
 
             # If a list of instruments is defined an this instrument is not in this list, skip it
             if self.instrument_names is not None and instr_name not in self.instrument_names: continue
+
+            # Check if already present
+            if self.has_all_images(instr_name):
+                if self.config.regenerate: self.remove_all_images(instr_name)
+                else:
+                    log.success("All images for the '" + instr_name + "' have already been created: skipping ...")
+                    continue
 
             # Debugging
             log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
@@ -729,10 +784,15 @@ class ObservedImageMaker(Configurable):
             log.debug("Making the observed images for the " + instr_name + " instrument ...")
 
             # Create a list of the filter names
-            filter_names = self.filters.keys()
+            #filter_names = self.filters.keys()
 
             # Create the corresponding list of filters
-            filters = self.filters.values()
+            #filters = self.filters.values()
+
+            # Get the filters that don't have an image yet saved on disk
+            filters_dict = self.filters_without_image_for_instrument(instr_name)
+            filter_names = filters_dict.keys()
+            filters = filters_dict.values()
 
             # Initialize a dictionary, indexed by the filter names, to contain the images
             images = dict()
@@ -936,8 +996,10 @@ class ObservedImageMaker(Configurable):
         # Inform the user
         log.info("Converting the units of the images to " + str(self.unit) + " ...")
 
-        # Loop over the images
+        # Loop over the instruments
         for instr_name in self.images:
+
+            # Loop over the images for this instrument
             for filter_name in self.images[instr_name]:
 
                 # Debugging
@@ -967,6 +1029,96 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_all_images(self, instr_name):
+
+        """
+        Thisf unction ...
+        :param instr_name:
+        :return:
+        """
+
+        # Loop over all filter names
+        for filter_name in self.filter_names:
+            if not self.has_image(instr_name, filter_name): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def has_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        path = self.get_image_path(instr_name, filter_name)
+        return fs.is_file(path) and fits.is_valid(path)
+
+    # -----------------------------------------------------------------
+
+    def remove_all_images(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        # Loop over the filters
+        for filter_name in self.filter_names:
+
+            # Get path
+            path = self.get_image_path(instr_name, filter_name)
+
+            # Remove if existing
+            fs.remove_file_if_present(path)
+
+    # -----------------------------------------------------------------
+
+    def remove_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_image_path(instr_name, filter_name)
+
+        # Remove if existing
+        fs.remove_file_if_present(path)
+
+    # -----------------------------------------------------------------
+
+    def get_image_path(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        # Group per instrument
+        if self.config.group:
+
+            # Determine path for instrument directory (and create)
+            instrument_path = self.output_path_directory(instr_name, create=True)
+
+            # Return the filepath
+            return fs.join(instrument_path, filter_name + ".fits")
+
+        # Don't group
+        else: return self.output_path_file(instr_name + "__" + filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
     def write_images_grouped(self):
 
         """
@@ -977,14 +1129,11 @@ class ObservedImageMaker(Configurable):
         # Loop over the different instruments (datacubes)
         for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
 
-            # Make directory for this datacube
-            datacube_path = self.output_path_directory(instr_name)
-
-            # Loop over the images
+            # Loop over the images for this instrument
             for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
 
                 # Determine path to the output FITS file
-                path = fs.join(datacube_path, filter_name + ".fits")
+                path = self.get_image_path(instr_name, filter_name)
 
                 # Save the image
                 self.images[instr_name][filter_name].saveto(path)
@@ -1010,11 +1159,11 @@ class ObservedImageMaker(Configurable):
         # Loop over the different images (self.images is a nested dictionary of dictionaries)
         for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
 
-            # Loop over the filters
+            # Loop over the images for this instrument
             for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
 
                 # Determine the path to the output FITS file
-                path = self.output_path_file(instr_name + "__" + filter_name + ".fits")
+                path = self.get_image_path(instr_name, filter_name)
 
                 # Save the image
                 self.images[instr_name][filter_name].saveto(path)

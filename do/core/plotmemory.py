@@ -14,8 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation.simulation import createsimulations
-from pts.core.extract.memory import MemoryExtractor, MemoryUsageTable
+from pts.core.extract.memory import extract_memory_cwd, MemoryUsageTable
 from pts.core.plot.memory import MemoryPlotter
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
@@ -38,17 +37,7 @@ memory_table_path = fs.join(fs.cwd(), "memory.dat")
 if fs.is_file(memory_table_path): table = MemoryUsageTable.from_file(memory_table_path)
 
 # If extracted memory information is not present, first perform the extraction
-else:
-
-    # Create a SkirtSimulation object based on a log file present in the current working directory
-    simulation = createsimulations(single=True)
-
-    # Create a new MemoryExtractor instance
-    extractor = MemoryExtractor()
-
-    # Run the extractor and get the memory table
-    extractor.run(simulation)
-    table = extractor.table
+else: table = extract_memory_cwd()
 
 # -----------------------------------------------------------------
 

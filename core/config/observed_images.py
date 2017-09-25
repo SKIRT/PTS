@@ -25,3 +25,8 @@ definition.add_optional("nprocesses_local", "positive_integer", "number of paral
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes to use for remote calculation", 8)
 
 # -----------------------------------------------------------------
+
+# ADVANCED: regenerate?
+definition.add_flag("regenerate", "regenerate images that are already present", False)
+
+# -----------------------------------------------------------------
