@@ -21,6 +21,7 @@ from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.log import log
 from pts.core.tools import types
+from pts.core.tools.stringify import stringify
 
 # -----------------------------------------------------------------
 
@@ -573,6 +574,125 @@ class RemotePythonSession(object):
         # If we are in a python session
         self.import_package("expanduser", from_name="os.path")
         return self.get_string("expanduser('~')")
+
+    # -----------------------------------------------------------------
+
+    def load_dictionary(self, dictionary_name, dictionary, local_temp_path, remote_temp_path=None):
+
+        """
+        This function ...
+        :param dictionary_name:
+        :param dictionary:
+        :param local_temp_path:
+        :param remote_temp_path:
+        :return:
+        """
+
+        # Set temp paths
+        temp_path = local_temp_path
+
+        # Check if remote temp path is defined
+        if remote_temp_path is None: remote_temp_path = self.session_temp_directory
+
+        # Import the parsing module remotely
+        self.import_package("parsing", from_name="pts.core.tools", show_output=log.is_debug())
+
+        # Paths to input files that have to be uploaded
+        local_input_filepaths = []
+
+        # Depending paths
+        depending_filepaths = []
+
+        # Strings
+        input_strings = dict()
+
+        # Loop over the names of the input objects
+        for name in dictionary:
+
+            # Get the value
+            value = dictionary[name]
+
+            # Check whether extension is defined
+            if hasattr(value, "default_extension"):
+
+                # Determine filepath
+                path = fs.join(temp_path, name + "." + value.default_extension)
+
+                # Save
+                dictionary[name].saveto(path)
+
+                # Add the filepath
+                local_input_filepaths.append(path)
+
+                # Check whether this object has depending paths
+                if hasattr(value, "get_depending_paths"):
+
+                    # Set the depending filepaths for this input object
+                    depending_filepaths[name] = value.get_depending_paths()
+
+            # Extension is not defined
+            else:
+
+                # Try to convert the object to a string
+                ptype, string = stringify(value)
+
+                # Add to dictinoary
+                input_strings[name] = (ptype, string)
+
+        #### UPLOAD THE INPUT :
+
+        # Upload the input files
+        self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
+
+        ### LOAD THE INPUT DICT REMOTELY
+
+        # Initialize the remote input dictionary
+        self.send_line(dictionary_name + " = dict()", show_output=log.is_debug())
+
+        # Add the stuff
+        for name in dictionary:
+
+            # Get the value
+            value = dictionary[name]
+
+            # Check whether extension is defined
+            if hasattr(value, "default_extension"):
+
+                # Determine the remote filepath
+                remote_filepath = fs.join(remote_temp_path, name + "." + value.default_extension)
+
+                # Import the class of the filetype remotely
+                classpath = str(type(value)).split("'")[1].split("'")[0]
+                modulepath, classname = classpath.rsplit(".", 1)
+                self.send_line("input_module = importlib.import_module('" + modulepath + "')", show_output=log.is_debug())  # get the module of the class
+                self.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug())  # get the class
+
+                # Open the input file
+                self.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
+
+                # Check whether depending paths have to be adjusted
+                if name in depending_filepaths:
+
+                    # Loop over each label
+                    for label in depending_filepaths[name]:
+
+                        # Get the filepath
+                        depending_filepath = depending_filepaths[name][label]
+
+                        # Set the depending path
+                        self.send_line("input_dict['" + name + "'].set_depending_path('" + label + "', '" + depending_filepath + "')")
+
+            # Extension is not defined
+            else:
+
+                # Get the parsing type and the string
+                ptype, string = input_strings[name]
+
+                # Get the parsing function remotely
+                self.send_line("parsing_function = getattr(parsing, '" + ptype + "')")
+
+                # Parse the input object
+                self.send_line("input_dict['" + name + "'] = parsing_function('" + string + "')")
 
 # -----------------------------------------------------------------
 
