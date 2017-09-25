@@ -14,6 +14,7 @@
 
 # Import standard modules
 import os
+import copy
 import os.path
 import types as systypes
 import numpy as np
@@ -80,6 +81,46 @@ def createsimulations(source="", single=False):
 #  SkirtSimulation class
 # -----------------------------------------------------------------
 
+# Dictionary of default attribute values
+# Add new attributes here, will be set in constructor,
+# AND also in from_file when missing (when simulation file is outdated w.r.t. the additions in this class)
+default_attributes = dict()
+
+# The simulation file path
+default_attributes["path"] = None
+
+# The parallelization properties
+default_attributes["parallelization"] = None
+
+# The options for analysing the simulation output
+default_attributes["analysis"] = AnalysisOptions()
+
+# The paths to the extra simulation analysers
+default_attributes["analyser_paths"] = []
+
+# Flag indicating whether this simulation has been analysed or not
+default_attributes["analysed"] = False
+
+# Performed extraction steps
+default_attributes["analysed_extraction"] = []
+
+# Performed plotting steps
+default_attributes["analysed_plotting"] = []
+
+# Performed misc steps
+default_attributes["analysed_misc"] = []
+
+# Performed batch analysis
+default_attributes["analysed_batch"] = False
+
+# Performed scaling analysis
+default_attributes["analysed_scaling"] = False
+
+# Performed extra analysis
+default_attributes["analysed_extra"] = [] # class names
+
+# -----------------------------------------------------------------
+
 ## An instance of the SkirtSimulation class represents all input and output files related to a single performed
 # SKIRT simulation. To create an instance of the class, one specifies the name of the ski file (used as prefix
 # for all output filenames) plus an input path and an output path. The current implementation only supports
@@ -144,8 +185,10 @@ class SkirtSimulation(object):
             self.base_path = None # if ski path is not specified, base path is unknown
             self.ski_path = self.outfilepath("parameters.xml")
 
-        # provide placeholders for caching frequently-used objects
+        # Set parameters, if passed
         self._parameters = parameters
+
+        # Provide placeholders for caching frequently-used objects
         self._units = None
         self._processes = None
         self._threads = None
@@ -153,38 +196,14 @@ class SkirtSimulation(object):
         # A name given to the simulation
         self._name = name
 
-        # The simulation file path
-        self.path = None
+        # Set default values for other attributes
+        for attr_name in default_attributes:
 
-        # The parallelization properties
-        self.parallelization = None
+            # Create a copy
+            value = copy.copy(default_attributes[attr_name])
 
-        # The options for analysing the simulation output
-        self.analysis = AnalysisOptions()
-
-        # The paths to the extra simulation analysers
-        self.analyser_paths = []
-
-        # Flag indicating whether this simulation has been analysed or not
-        self.analysed = False
-
-        # Performed extraction steps
-        self.analysed_extraction = []
-
-        # Performed plotting steps
-        self.analysed_plotting = []
-
-        # Performed misc steps
-        self.analysed_misc = []
-
-        # Performed batch analysis
-        self.analysed_batch = False
-
-        # Performed scaling analysis
-        self.analysed_scaling = False
-
-        # Performed extra analysis
-        self.analysed_extra = [] # class names
+            # Set the attribute
+            setattr(self, attr_name, value)
 
     ## This function returns whether the simulation requires input
     @property
@@ -663,6 +682,18 @@ class SkirtSimulation(object):
 
         # Set the path of the simulation file
         simulation.path = path
+
+        # Loop over the attribute names, check if defined
+        for attr_name in default_attributes:
+
+            # This attribute is present: OK
+            if hasattr(simulation, attr_name): continue
+
+            # Get the default value
+            value = copy.copy(default_attributes[attr_name])
+
+            # Set the attribute
+            setattr(simulation, attr_name, value)
 
         # Return the simulation object
         return simulation
