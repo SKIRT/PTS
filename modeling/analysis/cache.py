@@ -50,7 +50,7 @@ class AnalysisRunCacher(AnalysisComponent):
 
         """
         This function ...
-        :param simulation:
+        :param kwargs:
         :return:
         """
 
@@ -65,16 +65,16 @@ class AnalysisRunCacher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(AnalysisRunCacher, self).setup()
+        super(AnalysisRunCacher, self).setup(**kwargs)
 
         # Connect to the remote host
         self.remote = Remote()

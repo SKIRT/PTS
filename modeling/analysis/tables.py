@@ -40,6 +40,18 @@ class CachedRunsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Run name"])
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, run_name, host_id):
 
         """

@@ -161,6 +161,18 @@ class AnalysisContext(object):
     # -----------------------------------------------------------------
 
     @property
+    def cached_analysis_run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cached_table.run_names
+
+    # -----------------------------------------------------------------
+
+    @property
     def analysis_run_names(self):
 
         """
