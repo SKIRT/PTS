@@ -60,7 +60,7 @@ def split_at_first(string, pattern):
     :return:
     """
 
-    return string.split('mango', 1)
+    return string.split(pattern, 1)
 
 # -----------------------------------------------------------------
 

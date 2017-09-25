@@ -49,6 +49,7 @@ from ...core.basics.range import QuantityRange
 from ...core.tools.utils import create_lazified_class
 from ...core.tools import sequences
 from ..basics.pixelscale import Pixelscale
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -207,6 +208,110 @@ class DataSet(object):
         """
 
         return len(self.paths)
+
+    # -----------------------------------------------------------------
+
+    def get_depending_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = dict()
+
+        # Loop over the image paths
+        for name in self.paths:
+
+            # Generate a unique name
+            unique_name = "image_" + name
+
+            # Set the path
+            paths[unique_name] = self.paths[name]
+
+        # Loop over the error map paths
+        for name in self.error_paths:
+
+            # Generate a unique name
+            unique_name = "error_" + name
+
+            # Set the path
+            paths[unique_name] = self.error_paths[name]
+
+        # Loop over the mask paths
+        for name in self.mask_paths:
+
+            # Generate a unique name
+            unique_name = "mask_" + name
+
+            # Set the path
+            paths[unique_name] = self.mask_paths[name]
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def set_depending_path(self, label, path):
+
+        """
+        This function ...
+        :param label:
+        :param path:
+        :return:
+        """
+
+        # Image path
+        if label.startswith("image_"):
+
+            # Get name
+            name = strings.split_at_first(label, "image_")[1]
+
+            # Check if defined
+            if name not in self.paths: raise ValueError("No such image: '" + name + "'")
+
+            # Replace the iamge path
+            self.paths[name] = path
+
+        # Error map path
+        elif label.startswith("error_"):
+
+            # Get error map name
+            name = strings.split_at_first(label, "error_")[1]
+
+            # Check if defined
+            if name not in self.error_paths: raise ValueError("No such error map: '" + name + "'")
+
+            # Replace the error map path
+            self.error_paths[name] = path
+
+        # Mask path
+        elif label.startswith("mask_"):
+
+            # Get the mask name
+            name = strings.split_at_first(label, "mask_")[1]
+
+            # Check if defined
+            if name not in self.mask_paths: raise ValueError("No such mask: '" + name + "'")
+
+            # Replace the mask path
+            self.mask_paths[name] = path
+
+        # Invalid label
+        else: raise ValueError("Invalid label")
+
+    # -----------------------------------------------------------------
+
+    def set_depending_paths(self, paths):
+
+        """
+        This function ...
+        :param paths:
+        :return:
+        """
+
+        # Set all depending paths
+        for label in paths: self.set_depending_path(label, paths[label])
 
     # -----------------------------------------------------------------
 
