@@ -627,8 +627,11 @@ class RemotePythonSession(object):
                 # Check whether this object has depending paths
                 if hasattr(value, "get_depending_paths"):
 
+                    # Get the local depending filepaths
+                    local_depending_filepaths = value.get_depending_paths()
+
                     # Set the depending filepaths for this input object
-                    depending_filepaths[name] = value.get_depending_paths()
+                    depending_filepaths[name] = local_depending_filepaths
 
             # Extension is not defined
             else:
@@ -643,6 +646,28 @@ class RemotePythonSession(object):
 
         # Upload the input files
         self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
+
+        # UPLOAD DEPENDING FILEPATHS
+
+        remote_depending_filepaths = dict()
+        for name in depending_filepaths:
+
+            # Create remote directory for this input object
+            dirname = name + "_depending"
+            dirpath = fs.join(remote_temp_path, dirname)
+            self.create_directory(dirpath)
+
+            # Initialize
+            remote_depending_filepaths[name] = dict()
+
+            # Upload all depending
+            for label in depending_filepaths:
+
+                local_depending_filepath = depending_filepaths[name][label]
+                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, show_output=log.is_debug())
+
+                # Set the remote path
+                remote_depending_filepaths[name][label] = remote_depending_filepath
 
         ### LOAD THE INPUT DICT REMOTELY
 
@@ -676,8 +701,8 @@ class RemotePythonSession(object):
                     # Loop over each label
                     for label in depending_filepaths[name]:
 
-                        # Get the filepath
-                        depending_filepath = depending_filepaths[name][label]
+                        # Get the remote filepath
+                        depending_filepath = remote_depending_filepaths[name][label]
 
                         # Set the depending path
                         self.send_line("input_dict['" + name + "'].set_depending_path('" + label + "', '" + depending_filepath + "')")
