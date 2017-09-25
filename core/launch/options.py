@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.composite import SimplePropertyComposite
+from ..basics.plot import plotting_libraries, mpl, plotting_formats, pdf
 
 # -----------------------------------------------------------------
 
@@ -130,13 +131,15 @@ class AnalysisOptions(Options):
         # Plotting
         self.add_section("plotting", "options for plotting simulation output")
         self.plotting.add_property("path", "string", "plotting directory", None)
-        self.plotting.add_property("format", "string", "image format for the plots", "pdf", choices=["pdf", "png"])
+        self.plotting.add_property("format", "string", "image format for the plots", pdf, choices=plotting_formats)
         self.plotting.add_property("progress", "boolean", "make plots of the progress of the simulation phases as a function of time", False)
         self.plotting.add_property("timeline", "boolean", "plot the timeline for the different processes", False)
         self.plotting.add_property("memory", "boolean", "plot the memory consumption as a function of time", False)
         self.plotting.add_property("seds", "boolean", "make plots of the simulated SEDs", False)
         self.plotting.add_property("grids", "boolean", "make plots of the dust grid", False)
         self.plotting.add_property("reference_seds", "filepath_list", "path to a reference SED file against which the simulated SKIRT SEDs should be plotted", None)
+        self.plotting.add_property("ignore_filters", "filter_list", "filters to ignore for the plotting", [])
+        self.plotting.add_property("library", "string", "plotting library", default_value=mpl, choices=plotting_libraries)
 
         # Misc
         ## General

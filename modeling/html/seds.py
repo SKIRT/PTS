@@ -24,9 +24,8 @@ from ...core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page
 from ...core.tools.utils import lazyproperty
 from ...core.plot.sed import SEDPlotter
 from ...core.tools import filesystem as fs
-from ...core.data.sed import SED, ObservedSED
-from ...core.launch.basicanalyser import instrument_name, number_of_columns
-from ...core.tools import parsing
+from ...core.data.sed import SED
+from ...core.plot.simulationseds import instrument_name, number_of_columns, contributions
 from pts.core.basics.rgbimage import invert_colors
 
 # -----------------------------------------------------------------
@@ -224,42 +223,6 @@ class SEDsPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def planck_filters(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return parsing.lazy_broad_band_filter_list("Planck")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def iras_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return parsing.lazy_broad_band_filter_list("IRAS")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ignore_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.planck_filters + self.iras_filters
-
-    # -----------------------------------------------------------------
-
     def plot_instruments(self):
 
         """
@@ -274,7 +237,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         plotter = SEDPlotter()
 
         # Set ignore filters
-        plotter.config.ignore_filters = self.ignore_filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Loop over the simulated SED files and add the SEDs to the SEDPlotter
         for sed_path in self.sed_paths:
@@ -329,7 +292,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         plotter = SEDPlotter()
 
         # Set ignore filters
-        plotter.config.ignore_filters = self.ignore_filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Check which SED files are produced by a FullInstrument (these files also contain the full SED of the various contributions)
         #for sed_path in self.simulation.seddatpaths():
@@ -345,7 +308,7 @@ class SEDsPageGenerator(HTMLPageComponent):
             if ncols == 2: continue # SEDInstrument
 
             # Loop over the different contributions
-            for contribution in ["total", "direct", "scattered", "dust", "dustscattered", "transparent"]:
+            for contribution in contributions:
 
                 # Load the SED contribution
                 sed = SED.from_skirt(sed_path, contribution=contribution)
@@ -417,7 +380,7 @@ class SEDsPageGenerator(HTMLPageComponent):
         plotter = SEDPlotter()
 
         # Set ignore filters
-        plotter.config.ignore_filters = self.ignore_filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Add the different stellar contribution SEDs
         plotter.add_sed(total_sed, "total", residuals=True)

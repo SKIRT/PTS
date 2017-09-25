@@ -20,7 +20,7 @@ from datetime import datetime
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.utils import lazyproperty
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -107,6 +107,7 @@ class MemoryUsageTable(Table):
 
     @property
     def processes(self):
+
         """
         This function ...
         :return:
@@ -118,6 +119,7 @@ class MemoryUsageTable(Table):
 
     @property
     def peak(self):
+
         """
         This function ...
         :return:
@@ -129,6 +131,7 @@ class MemoryUsageTable(Table):
 
     @property
     def peak_per_process(self):
+
         """
         This function ...
         :return:
@@ -219,6 +222,9 @@ class MemoryExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Extracting ...")
+
         # Initialize lists for the columns
         process_list = []
         phase_list = []
@@ -308,6 +314,9 @@ class MemoryExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
         # Write the table to file
         self.table.saveto(output_path)
