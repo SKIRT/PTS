@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.table import Table
 
+# Import the relevant PTS classes and modules
+from ..basics.log import log
+
 # -----------------------------------------------------------------
 
 class ProgressTable(Table):
@@ -120,6 +123,9 @@ class ProgressExtractor(object):
         #self.staggered = None
         self.table = None
 
+        # The output path
+        self.output_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, simulation, output_path=None):
@@ -129,20 +135,34 @@ class ProgressExtractor(object):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup(simulation, output_path=output_path)
+
+        # 2. Perform the extraction
+        self.extract()
+
+        # 3. Write the results
+        if self.output_path is not None: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, simulation, output_path=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param output_path:
+        :return:
+        """
+
         # Obtain the log files created by the simulation
         self.log_files = simulation.logfiles()
 
         # Determine whether the emission spectra calculation was performed using a staggered assignment scheme
-        #self.staggered = simulation.parameters().staggered()
+        # self.staggered = simulation.parameters().staggered()
 
-        # Perform the extraction
-        self.extract()
-
-        # Write the results
-        if output_path is not None: self.write(output_path)
-
-        # Return the progress table
-        return self.table
+        # Set the output path
+        self.output_path = output_path
 
     # -----------------------------------------------------------------
 
@@ -152,6 +172,9 @@ class ProgressExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Extracting ...")
 
         number_of_processes = None
 
@@ -370,15 +393,18 @@ class ProgressExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def write(self, output_path):
+    def write(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the table to file
-        self.table.saveto(output_path)
+        self.table.saveto(self.output_path)
 
     # -----------------------------------------------------------------
 

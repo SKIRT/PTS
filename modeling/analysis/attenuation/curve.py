@@ -69,15 +69,16 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the simulated SEDs
         self.load_seds()
@@ -92,19 +93,20 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         self.write()
 
         # 6. Plotting
-        self.plot()
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(AttenuationCurveAnalyser, self).setup()
+        super(AttenuationCurveAnalyser, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

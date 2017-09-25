@@ -457,8 +457,9 @@ class BasicAnalyser(Configurable):
         # Determine the path to the progress file
         path = fs.join(self.extraction_options.path, progress_filename)
 
-        # Run the progress extractor
-        self.progress = extractor.run(self.simulation, path)
+        # Run the progress extractor, get the progress table
+        extractor.run(self.simulation, path)
+        self.progress = extractor.table
 
         # Done
         self.simulation.analysed_extraction.append(progress_name)
@@ -482,8 +483,9 @@ class BasicAnalyser(Configurable):
         # Determine the path to the timeline file
         path = fs.join(self.extraction_options.path, timeline_filename)
 
-        # Run the timeline extractor
-        self.timeline = extractor.run(self.simulation, path)
+        # Run the timeline extractor, get the timeline table
+        extractor.run(self.simulation, path)
+        self.timeline = extractor.table
 
         # Done
         self.simulation.analysed_extraction.append(timeline_name)
@@ -507,8 +509,9 @@ class BasicAnalyser(Configurable):
         # Determine the path to the memory file
         path = fs.join(self.extraction_options.path, memory_filename)
 
-        # Run the memory extractor
-        self.memory = extractor.run(self.simulation, path)
+        # Run the memory extractor, get the memory usage table
+        extractor.run(self.simulation, path)
+        self.memory = extractor.table
 
         # Done
         self.simulation.analysed_extraction.append(memory_name)

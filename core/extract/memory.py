@@ -187,9 +187,31 @@ class MemoryExtractor(object):
         self.log_files = None
         self.table = None
 
+        self.output_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, simulation, output_path=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param output_path:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(simulation, output_path=output_path)
+
+        # 2. Perform the extraction
+        self.extract()
+
+        # 3. Write the results
+        if self.output_path is not None: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, simulation, output_path=None):
 
         """
         This function ...
@@ -204,14 +226,8 @@ class MemoryExtractor(object):
         # Check whether the log files contain memory information
         if not self.log_files[0].has_memory: raise ValueError("The log files don't contain memory information")
 
-        # Perform the extraction
-        self.extract()
-
-        # Write the results
-        if output_path is not None: self.write(output_path)
-
-        # Return the memory usage table
-        return self.table
+        # Set the output path
+        self.output_path = output_path
 
     # -----------------------------------------------------------------
 
@@ -308,7 +324,7 @@ class MemoryExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def write(self, output_path):
+    def write(self):
 
         """
         This function ...
@@ -319,7 +335,7 @@ class MemoryExtractor(object):
         log.info("Writing ...")
 
         # Write the table to file
-        self.table.saveto(output_path)
+        self.table.saveto(self.output_path)
 
     # -----------------------------------------------------------------
 

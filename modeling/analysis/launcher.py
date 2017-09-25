@@ -818,6 +818,9 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.plotting.grids = False # are already plotted for each initialized analysis run
         self.analysis_options.plotting.reference_seds = [self.observed_sed_path]
 
+        # Ignore filters for plotting
+        self.analysis_options.plotting.ignore_filters = self.ignore_sed_plot_filters
+
     # -----------------------------------------------------------------
 
     @lazyproperty

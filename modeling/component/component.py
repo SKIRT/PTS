@@ -27,7 +27,8 @@ from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 from ..core.commands import ModelingCommands
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -510,6 +511,42 @@ class ModelingComponent(Configurable):
         """
 
         return BroadBandFilter("SPIRE PSW")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def planck_filters(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("Planck")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def iras_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("IRAS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ignore_sed_plot_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.planck_filters + self.iras_filters
 
     # -----------------------------------------------------------------
 

@@ -47,7 +47,8 @@ else:
     extractor = MemoryExtractor()
 
     # Run the extractor and get the memory table
-    table = extractor.run(simulation)
+    extractor.run(simulation)
+    table = extractor.table
 
 # -----------------------------------------------------------------
 

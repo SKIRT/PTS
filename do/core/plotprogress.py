@@ -64,7 +64,8 @@ else:
     extractor = ProgressExtractor()
 
     # Run the extractor and get the table
-    table = extractor.run(simulation)
+    extractor.run(simulation)
+    table = extractor.table
 
 # -----------------------------------------------------------------
 
