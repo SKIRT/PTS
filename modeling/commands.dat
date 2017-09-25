@@ -69,6 +69,7 @@ analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | argu
 analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
+cache_analysis_runs | -- | analysis.cache.AnalysisRunsCacher | arguments | Cache certain analysis runs to a remote host
 
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
