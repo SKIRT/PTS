@@ -81,8 +81,11 @@ def add_command(command_name, cwd):
     :return:
     """
 
+    # Get the command-line arguments
+    arguments = [add_quotes_if_spaces(string) for string in sys.argv[1:]]
+
     # Get the argument string
-    argument_string = "pts " + command_name + " " + " ".join(add_quotes_if_spaces(sys.argv[1:]))
+    argument_string = "pts " + command_name + " " + " ".join(arguments)
 
     # Load the commmands
     from .component.component import load_modeling_commands
