@@ -18,8 +18,9 @@ from ...core.tools.utils import lazyproperty
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .run import AnalysisRuns
-from .run import AnalysisRunInfo, AnalysisRun
+from .run import AnalysisRunInfo, AnalysisRun, CachedAnalysisRun
 from .tables import CachedRunsTable
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -124,6 +125,18 @@ class AnalysisContext(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def timing_table(self):
 
@@ -196,6 +209,18 @@ class AnalysisContext(object):
 
     # -----------------------------------------------------------------
 
+    def get_host_id_for_run_name(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        return self.cached_table.host_id_for_run_name(run_name)
+
+    # -----------------------------------------------------------------
+
     @property
     def analysis_run_names(self):
 
@@ -221,7 +246,7 @@ class AnalysisContext(object):
 
     # -----------------------------------------------------------------
 
-    def get_run_info(self, run_name):
+    def get_run_info_path(self, run_name):
 
         """
         This function ...
@@ -230,6 +255,19 @@ class AnalysisContext(object):
         """
 
         path = fs.join(self.get_run_path(run_name), "info.dat")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_run_info(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        path = self.get_run_info_path(run_name)
         return AnalysisRunInfo.from_file(path)
 
     # -----------------------------------------------------------------
@@ -244,5 +282,75 @@ class AnalysisContext(object):
 
         info_path = fs.join(self.get_run_path(run_name), "info.dat")
         return AnalysisRun.from_info(info_path)
+
+    # -----------------------------------------------------------------
+
+    def get_remote_for_run_name(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        # Get host ID
+        host_id = self.get_host_id_for_run_name(run_name)
+
+        # Connect and return
+        remote = Remote(host_id=host_id, silent=True)
+        return remote
+
+    # -----------------------------------------------------------------
+
+    def get_cached_run_info(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        # Get the remote
+        remote = self.get_remote_for_run_name(run_name)
+
+        # Determine name of the remote analysis cache directory
+        cache_directory_name = self.galaxy_name + "_analysis"
+
+        # Get the cache path
+        cache_path = fs.join(remote.home_directory, cache_directory_name)
+
+        # Get the analysis run path on the remote
+        run_path = fs.join(cache_path, run_name)
+
+        # Get the info file path
+        info_path = fs.join(run_path, "info.dat")
+
+        # Return the info
+        return AnalysisRunInfo.from_remote_file(info_path, remote)
+
+    # -----------------------------------------------------------------
+
+    def get_cached_run(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        # Get the remote
+        remote = self.get_remote_for_run_name(run_name)
+
+        # Determine name of the remote analysis cache directory
+        cache_directory_name = self.galaxy_name + "_analysis"
+
+        # Get the cache path
+        cache_path = fs.join(remote.home_directory, cache_directory_name)
+
+        # Get the analysis run path on the remote
+        run_path = fs.join(cache_path, run_name)
+
+        # Create the cached analysis run and return it
+        return CachedAnalysisRun(run_path, remote)
 
 # -----------------------------------------------------------------

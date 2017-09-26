@@ -335,8 +335,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
         # Use deprojections
         else: earth, faceon, edgeon, deprojection_name = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
-                                                                                               azimuth, self.config.dg.scale_heights,
-                                                                                               return_deprojection_name=True)
+                                                                                               azimuth, self.config.old_scale_heights,
+                                                                                               return_deprojection_name=True, scale_heights_reference="old")
 
         # Set the projection systems
         self.projections[earth_name] = earth

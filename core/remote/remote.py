@@ -123,18 +123,57 @@ def add_key(name, password=None, show_output=False):
 
 # -----------------------------------------------------------------
 
+def load_remote(remote, silent=False):
+
+    """
+    This function ...
+    :param remote:
+    :param silent:
+    :return:
+    """
+
+    # Make remote
+    if types.is_string_type(remote): remote = Remote(host_id=remote, silent=silent)
+    elif isinstance(remote, Host): remote = Remote(host_id=remote, silent=silent)
+    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+
+    # Return the remote instance
+    return remote
+
+# -----------------------------------------------------------------
+
+def get_host_id(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    # Get host ID
+    if isinstance(host_id, Host): the_host_id = host_id.id
+    elif types.is_string_type(host_id): the_host_id = host_id
+    elif isinstance(host_id, Remote): the_host_id = host_id.host_id
+    else: raise ValueError("Invalid value for 'host_id'")
+
+    # Return the host iD
+    return the_host_id
+
+# -----------------------------------------------------------------
+
 class Remote(object):
 
     """
     This function ...
     """
 
-    def __init__(self, log_conda=False, host_id=None):
+    def __init__(self, log_conda=False, host_id=None, silent=False):
 
         """
         The constructor ...
         :param log_conda:
         :param host_id:
+        :param silent:
         :return:
         """
 
@@ -165,13 +204,17 @@ class Remote(object):
         # Remember the commands that were executed on the remote host
         self.commands = []
 
+        # Set silent flag
+        self.silent = silent
+
         # If host ID is given, setup
         if host_id is not None:
-            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
+            if not self.setup(host_id, silent=self.silent): log.warning("The connection could not be made. Run setup().")
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=30, nrows=None, ncols=200, one_attempt=False, retry_factor=4):
+    def setup(self, host_id, cluster_name=None, login_timeout=30, nrows=None, ncols=200, one_attempt=False,
+              retry_factor=4, silent=False):
 
         """
         This function ...
@@ -182,6 +225,7 @@ class Remote(object):
         :param ncols:
         :param one_attempt:
         :param retry_factor:
+        :param silent:
         :return:
         """
 
@@ -200,8 +244,11 @@ class Remote(object):
         if self.host.key is not None:
             if self.host.key not in active_keys(): add_key(self.host.key, self.host.key_password)
 
+        # Set the silent flag
+        self.silent = silent
+
         # Make the connection
-        try: self.login(login_timeout)
+        try: self.login(login_timeout, silent=silent)
         except HostDownException:
 
             if one_attempt:
@@ -212,7 +259,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout * retry_factor) # try now with a timeout that is four times as long
+            try: self.login(login_timeout * retry_factor, silent=silent) # try now with a timeout that is four times as long
             except HostDownException:
                 self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -1725,16 +1772,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def login(self, login_timeout=20):
+    def login(self, login_timeout=20, silent=False):
 
         """
         This function ...
         :param login_timeout:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
+        if not silent: log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Try connecting to the remote host
         try: self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
@@ -1753,7 +1801,7 @@ class Remote(object):
         """
 
         # Inform the user
-        if log is not None: log.info("Logging out from the remote environment on host '" + self.host_id + "' ...")
+        if log is not None and not self.silent: log.info("Logging out from the remote environment on host '" + self.host_id + "' ...")
         # the conditional statement is because of this error message during destruction at the end of a script:
         # Exception AttributeError: "'NoneType' object has no attribute 'info'" in <bound method SKIRTRemote.__del__ of <pts.core.simulation.remote.SKIRTRemote object at 0x118628d50>> ignored
 
@@ -3568,11 +3616,12 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def read_lines(self, path):
+    def read_lines(self, path, add_sep=False):
 
         """
         This function ...
         :param path:
+        :param add_sep:
         :return:
         """
 
@@ -3583,7 +3632,34 @@ class Remote(object):
         self.execute("value='cat " + path + "'")
 
         # Print the variable to the console, and obtain the output
-        for line in self.execute('echo "$($value)"'): yield line
+        for line in self.execute('echo "$($value)"'):
+            if add_sep: yield line + "\n"
+            else: yield line
+
+    # -----------------------------------------------------------------
+
+    def get_lines(self, path, add_sep=False):
+
+        """
+        This function ...
+        :param path:
+        :param add_sep:
+        :return:
+        """
+
+        return list(self.read_lines(path, add_sep=add_sep))
+
+    # -----------------------------------------------------------------
+
+    def get_text(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return "\n".join(self.get_lines(path))
 
     # -----------------------------------------------------------------
 
@@ -3615,6 +3691,18 @@ class Remote(object):
         """
 
         return self.read_first_lines(path, 1)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_first_line(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.read_first_line(path)
 
     # -----------------------------------------------------------------
 

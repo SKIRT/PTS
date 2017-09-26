@@ -848,14 +848,10 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        from ..remote.remote import Remote
-        from ..remote.host import Host
+        from ..remote.remote import load_remote
 
-        # Check type
-        if types.is_string_type(value): value = Remote(host_id=value)
-        elif isinstance(value, Host): value = Remote(host_id=value)
-        elif isinstance(value, Remote): pass
-        else: raise ValueError("Invalid value '" + str(value) + "'")
+        # Load remote
+        value = load_remote(value)
 
         # Check host ID
         if self.host_id is not None:

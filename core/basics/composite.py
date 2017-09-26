@@ -565,10 +565,13 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def __repr__(self):
+    def to_lines(self, line_prefix="", ignore=None, ignore_none=False):
 
         """
         This function ...
+        :param line_prefix:
+        :param ignore:
+        :param ignore_none:
         :return:
         """
 
@@ -577,40 +580,87 @@ class SimplePropertyComposite(object):
         # The simple properties
         for name in self.property_names:
 
-            dtype, value = stringify(getattr(self, name))
+            # Get the value
+            value = getattr(self, name)
+
+            # Check ignore
+            if ignore is not None and name in ignore: continue
+            if ignore_none and value is None: continue
+
+            # Generate line
+            dtype, value = stringify(value)
             line = " - " + fmt.bold + name + fmt.reset + ": " + value
-            lines.append(line)
+            lines.append(line_prefix + line)
 
         # Sections
         for name in self.section_names:
 
+            # Check ignore
+            if ignore is not None and name in ignore: continue
+
             line = " - " + fmt.bold + name + fmt.reset + ":"
-            lines.append(line)
-            if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = ["    " + line for line in repr(getattr(self, name)).split("\n")]
+            lines.append(line_prefix + line)
+
+            if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = [line for line in getattr(self, name).to_lines(line_prefix=line_prefix+"    ")]
             elif isinstance(getattr(self, name), Map):
+
                 section_lines = []
                 section = getattr(self, name)
                 for key in section:
-                    line = "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+
+                    line = line_prefix + "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
                     section_lines.append(line)
+
             else: raise ValueError("Unknown type for section: " + str(type(getattr(self, name))))
+
             lines += section_lines
 
-        # Return
-        return "\n".join(lines)
+        # Return the lines
+        return lines
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_file(cls, path):
+    def to_string(self, line_prefix="", ignore=None, ignore_none=False):
+
+        """
+        This function ...
+        :param line_prefix:
+        :param ignore:
+        :param ignore_none:
+        :return:
+        """
+
+        # Return
+        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none))
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
 
         """
         This function ...
         :return:
         """
 
+        return self.to_string()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, remote=None):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # FROM REMOTE FILE
+        if remote is not None: return cls.from_remote_file(path, remote)
+
         # Inform the user
-        log.debug("Loading " + cls.__name__ + " from " + path + " ...")
+        log.debug("Loading " + cls.__name__ + " from '" + path + "' ...")
 
         # Initialize dictionary to contain the properties
         properties = dict()
@@ -636,6 +686,44 @@ class SimplePropertyComposite(object):
 
         # Set the path
         composite._path = path
+
+        # Return
+        return composite
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Loading " + cls.__name__ + " from '" + path + "' on remote host '" + remote.host_id + "' ...")
+
+        # Initialize dictionary to contain the properties
+        properties = dict()
+
+        # Create iterator for the lines
+        lines_iterator = remote.read_lines(path)
+
+        # Read first line (skip it)
+        for line in lines_iterator:
+            first = line
+            break
+
+        # Load the properties
+        load_properties(properties, lines_iterator)
+
+        # Create the class instance
+        composite = cls(**properties)
+
+        # Set the path: NO
+        #composite._path = path
 
         # Return
         return composite
@@ -763,22 +851,24 @@ def write_properties(properties, fh, indent=""):
 
 # -----------------------------------------------------------------
 
-def load_properties(properties, fh, indent=""):
+def load_properties(properties, fh_or_iterator, indent=""):
 
     """
     Thisf unction ...
     :param properties:
-    :param fh:
+    :param fh_or_iterator:
     :param indent:
     :return:
     """
 
     # Loop over the lines
-    for line in fh:
+    for line in fh_or_iterator:
 
         #if "Type:" in line: continue
 
-        line = line[:-1]
+        if line.endswith("\n"): line = line[:-1]
+
+        # Empty line
         if not line: continue
 
         name, rest = line.split(":")
@@ -796,7 +886,7 @@ def load_properties(properties, fh, indent=""):
 
             # Load properties
             properties[name] = dict()
-            load_properties(properties[name], fh, indent=indent+"  ")
+            load_properties(properties[name], fh_or_iterator, indent=indent+"  ")
 
         else:
 

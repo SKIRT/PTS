@@ -16,6 +16,7 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from .host import Host, load_host
+from .remote import get_host_id
 from .vpn import VPN
 from ..basics.log import log
 from ..tools import filesystem as fs
@@ -183,9 +184,7 @@ class RemoteMounter(object):
         """
 
         # Get host ID
-        if isinstance(host_id, Host): the_host_id = host_id.id
-        elif types.is_string_type(host_id): the_host_id = host_id
-        else: raise ValueError("Invalid value for 'host_id'")
+        the_host_id = get_host_id(host_id)
 
         # Check if already mounted
         if self.is_mounted(the_host_id):

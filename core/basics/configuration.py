@@ -785,6 +785,31 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Create the config
+        config = cls()
+
+        # Load the settings
+        lines_iterator = remote.read_lines(path)
+        load_mapping(lines_iterator, config)
+
+        # Set the path: NO
+        #config._path = path
+
+        # Return the config
+        return config
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """

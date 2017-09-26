@@ -1681,6 +1681,18 @@ def get_first_lines(path, nlines):
 
 # -----------------------------------------------------------------
 
+def get_first_line(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_first_lines(path, 1)[0]
+
+# -----------------------------------------------------------------
+
 def read_lines_reversed(path, buf_size=8192):
 
     """

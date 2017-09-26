@@ -34,7 +34,7 @@ from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
 from ...core.tools import sequences, types
 from ...core.launch.pts import execute_pts_remote
-from ...core.remote.remote import Remote
+from ...core.remote.remote import Remote, load_remote
 from ...core.remote.host import Host
 from ...core.tools import introspection
 from ...core.tools import time
@@ -2811,11 +2811,7 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
 
     # Get remote
     remote = kwargs.pop("remote")
-
-    # Make remote
-    if types.is_string_type(remote): remote = Remote(host_id=remote)
-    elif isinstance(remote, Host): remote = Remote(host_id=remote)
-    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+    remote = load_remote(remote)
 
     # Create temporary directory
     dirname = time.unique_name("rebin")
@@ -2901,10 +2897,9 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
         # Make remote session, ONLY IF IT WILL BE NECESSARY
         if any_frame_above_threshold(frames, rebin_remote_threshold):
+
             # Make remote
-            if types.is_string_type(remote): remote = Remote(host_id=remote)
-            elif isinstance(remote, Host): remote = Remote(host_id=remote)
-            elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+            remote = load_remote(remote)
 
             # START SESSION
             new_connection = False
@@ -3155,11 +3150,7 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
 
     # Get remote
     remote = kwargs.pop("remote")
-
-    # Make remote
-    if types.is_string_type(remote): remote = Remote(host_id=remote)
-    elif isinstance(remote, Host): remote = Remote(host_id=remote)
-    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+    remote = load_remote(remote)
 
     # Create temporary directory
     dirname = time.unique_name("convolve")

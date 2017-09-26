@@ -47,3 +47,8 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", True)
 
 # -----------------------------------------------------------------
+
+# Vertical extent of the total model
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+
+# -----------------------------------------------------------------

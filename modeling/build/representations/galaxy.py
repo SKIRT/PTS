@@ -30,6 +30,7 @@ from .base import RepresentationBuilderBase
 from ....magic.basics.vector import PixelShape
 from ...basics.projection import get_center, get_physical_center
 from ....magic.basics.stretch import PhysicalExtent
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -43,6 +44,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
 
         """
         The constructor ...
+        :param args:
         :param kwargs:
         :return:
         """
@@ -183,7 +185,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
 
         # Use deprojections
         # galaxy_distance, azimuth
-        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.old_scale_heights, scale_heights_reference="old")
 
         # Set the projection systems
         self.projections["earth"] = earth
@@ -398,7 +400,7 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 # -----------------------------------------------------------------
 
 def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights,
-                                          return_deprojection_name=False):
+                                          return_deprojection_name=False, scale_heights_reference=None):
 
     """
     This function ...
@@ -407,6 +409,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :param azimuth:
     :param scale_heights:
     :param return_deprojection_name:
+    :param scale_heights_reference:
     :return:
     """
 
@@ -417,10 +420,19 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = create_faceon_projection(reference_deprojection, scale_heights)
+    faceon_projection = create_faceon_projection(reference_deprojection)
+
+    # Determine the reference scale height for determining the physical z scale
+    if scale_heights_reference is not None:
+        deprojection = get_deprojection(deprojections, scale_heights_reference)
+        scale_height = deprojection.scale_height
+    else: scale_height = reference_deprojection.scale_height
+
+    # Determine the z extent of the model based on the given number of scale heights
+    z_extent = 2. * scale_height * scale_heights
 
     # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection(reference_deprojection, scale_heights)
+    edgeon_projection = create_edgeon_projection(reference_deprojection, z_extent)
 
     # Return the projections
     if return_deprojection_name: return earth_projection, faceon_projection, edgeon_projection, deprojection_name
@@ -457,12 +469,11 @@ def create_projection(deprojection, distance, azimuth):
 
 # -----------------------------------------------------------------
 
-def create_faceon_projection(deprojection, scale_heights):
+def create_faceon_projection(deprojection):
 
     """
     This function ...
     :param deprojection:
-    :param scale_heights:
     :return:
     """
 
@@ -496,12 +507,12 @@ def create_faceon_projection(deprojection, scale_heights):
 
 # -----------------------------------------------------------------
 
-def create_edgeon_projection(deprojection, scale_heights):
+def create_edgeon_projection(deprojection, z_extent):
 
     """
     Thisf unction ...
     :param deprojection:
-    :param scale_heights:
+    :param z_extent:
     :return:
     """
 
@@ -511,7 +522,6 @@ def create_edgeon_projection(deprojection, scale_heights):
 
     # Determine extent in the radial and in the vertical direction
     radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
-    z_extent = 2. * deprojection.scale_height * scale_heights
 
     # Determine number of pixels
     nx = int(round(radial_extent / physical_pixelscale))
@@ -583,5 +593,30 @@ def prompt_deprojection(deprojections, return_name=False):
     deprojection = deprojections[(answer, answer_title)]
     if return_name: return deprojection, answer
     else: return deprojection
+
+# -----------------------------------------------------------------
+
+def get_deprojection(deprojections, name):
+
+    """
+    This function ...
+    :param deprojections:
+    :param name:
+    :return:
+    """
+
+    matching_titles = []
+    valid_names = set()
+
+    # Loop over the deprojections
+    for name_i, title_i in deprojections:
+        if name_i == name: matching_titles.append(title_i)
+        valid_names.add(name_i)
+    valid_names = list(valid_names)
+
+    # Return the deprojection if possible
+    if len(matching_titles) == 1: return deprojections[(name, matching_titles[0])]
+    elif len(matching_titles) == 0: raise ValueError("Deprojection with the name '" + name + "' not found, valid names are: '" + tostr(valid_names) + "'")
+    else: raise ValueError("Ambigious result: matching titles are '" + tostr(matching_titles) + "'")
 
 # -----------------------------------------------------------------

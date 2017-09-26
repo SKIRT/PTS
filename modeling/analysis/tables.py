@@ -80,6 +80,31 @@ class CachedRunsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def index_for_run_name(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        return self.run_names.index(run_name)
+
+    # -----------------------------------------------------------------
+
+    def host_id_for_run_name(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        index = self.index_for_run_name(run_name)
+        return self["Host id"][index]
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, run_name, host_id):
 
         """
