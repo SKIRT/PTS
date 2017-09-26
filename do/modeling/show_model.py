@@ -58,7 +58,7 @@ print("")
 # Show
 bulge_path = model.get_stellar_component_path(bulge_component_name)
 show_component(bulge_path, line_prefix="    ")
-print("")
+#print("")
 
 print("  " + fmt.magenta + "OLD STELLAR DISK: " + fmt.reset)
 print("")
@@ -66,7 +66,7 @@ print("")
 # Show
 old_path = model.get_stellar_component_path(old_component_name)
 show_component(old_path, line_prefix="    ")
-print("")
+#print("")
 
 print("  " + fmt.magenta + "YOUNG STELLAR DISK:" + fmt.reset)
 print("")
@@ -74,7 +74,7 @@ print("")
 # Show
 young_path = model.get_stellar_component_path(young_component_name)
 show_component(young_path, line_prefix="    ")
-print("")
+#print("")
 
 print("  " + fmt.magenta + "IONIZING STELLAR DISK: " + fmt.reset)
 print("")
@@ -82,7 +82,7 @@ print("")
 # Show
 ionizing_path = model.get_stellar_component_path(ionizing_component_name)
 show_component(ionizing_path, line_prefix="    ")
-print("")
+#print("")
 
 # Loop over the extra stellar components
 for name in model.additional_stellar_names:
@@ -95,11 +95,11 @@ for name in model.additional_stellar_names:
 
     # Show the component
     show_component(path, line_prefix="    ")
-    print("")
+    #print("")
 
 # -----------------------------------------------------------------
 
-print("")
+#print("")
 print(fmt.green + fmt.underlined + "DUST COMPONENTS" + fmt.reset)
 print("")
 
@@ -111,7 +111,7 @@ print("")
 # Show component
 dust_path = model.get_dust_component_path(disk_component_name)
 show_component(dust_path, line_prefix="    ")
-print("")
+#print("")
 
 # Loop over the extra dust components
 for name in model.additional_dust_names:
@@ -124,6 +124,6 @@ for name in model.additional_dust_names:
 
     # Show
     show_component(path, line_prefix="    ")
-    print("")
+    #print("")
 
 # -----------------------------------------------------------------

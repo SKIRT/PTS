@@ -1114,9 +1114,14 @@ def adjust_parameters(parameters):
     # Loop over the parameters
     for name in parameters:
 
+        # Get the default value
         default = parameters[name]
+
+        # Adjust?
         value = prompt_automatic(name, "adjusted '" + name + "' value", default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            parameters[name] = value
 
     # Return the adjusted flag
     return adjusted
@@ -1138,10 +1143,15 @@ def adjust_deprojection(deprojection, return_map_path=False):
     # Loop over the properties
     for name in deprojection:
 
+        # Get the default value and the parsing type
         default = deprojection[name]
         ptype = deprojection.get_ptype(name)
+
+        # Adjust?
         value = prompt_variable(name, ptype, "adjusted '" + name + "' value", default=default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            deprojection[name] = value
 
         # If this is a filename, assume it's for the map
         if name.lower() == "filename": map_path = value
@@ -1165,10 +1175,15 @@ def adjust_model(model):
     # Loop over the properties
     for name in model:
 
+        # Get the default value and the parsing type
         default = model[name]
         ptype = model.get_ptype(name)
+
+        # Adjust?
         value = prompt_variable(name, ptype, "adjusted '" + name + "' value", default=default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            model[name] = value
 
     # Return the adjusted flag
     return adjusted
@@ -1250,9 +1265,14 @@ def adjust_geometry_properties(properties, return_map_path=False):
     # Loop over the properties
     for name in properties:
 
+        # Get the default value
         default = properties[name]
+
+        # Adjust?
         value = prompt_automatic(name, "adjusted '" + name + "' value", default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            properties[name] = value
 
         # Check for filename property, assume it's for a map
         if name.lower() == "filename": map_path = value
@@ -1276,9 +1296,14 @@ def adjust_sed_properties(properties):
     # Loop over the properties
     for name in properties:
 
+        # Get the default value
         default = properties[name]
+
+        # Adjust?
         value = prompt_automatic(name, "adjusted '" + name + "' value", default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            properties[name] = value
 
     # Return the adjusted flag
     return adjusted
@@ -1298,9 +1323,14 @@ def adjust_mix_properties(properties):
     # Loop over the properties
     for name in properties:
 
+        # Get the default value
         default = properties[name]
+
+        # Adjust?
         value = prompt_automatic(name, "adjusted '" + name + "' value", default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            properties[name] = value
 
     # Return the adjusted flag
     return adjusted
@@ -1320,9 +1350,14 @@ def adjust_normalization_properties(properties):
     # Loop over the properties
     for name in properties:
 
+        # Get the default value
         default = properties[name]
+
+        # Adjust?
         value = prompt_automatic(name, "adjusted '" + name + "' value", default)
-        if value != default: adjusted = True
+        if value != default:
+            adjusted = True
+            properties[name] = value
 
     # Return the adjusted flag
     return adjusted

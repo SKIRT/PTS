@@ -17,6 +17,7 @@ import sys
 
 # Import the relevant PTS classes and modules
 from ..core.tools import introspection
+from ..core.tools.strings import add_quotes_if_spaces
 
 # -----------------------------------------------------------------
 
@@ -81,7 +82,7 @@ def add_command(command_name, cwd):
     """
 
     # Get the argument string
-    argument_string = "pts " + command_name + " " + " ".join(sys.argv[1:])
+    argument_string = "pts " + command_name + " " + " ".join(add_quotes_if_spaces(sys.argv[1:]))
 
     # Load the commmands
     from .component.component import load_modeling_commands
