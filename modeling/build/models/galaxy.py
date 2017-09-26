@@ -761,7 +761,8 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
         # Add the map paths
         table = self.maps_table
-        table.add_maps(self.old_map_name, self.young_map_name, self.ionizing_map_name, self.dust_map_name)
+        # name, old_map_name, young_map_name, ionizing_map_name, dust_map_name
+        table.add_maps(self.model_name, self.old_map_name, self.young_map_name, self.ionizing_map_name, self.dust_map_name)
 
         # Save the table
         table.saveto(self.maps_table_path)
