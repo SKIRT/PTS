@@ -112,6 +112,12 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         self.parameter_values = parameter_values
         self.input_paths = input_paths
 
+        # Set the 'distance' parameter value, since instruments are still not adapted from the default template.
+        # Instruments will only be added to the ski file later, so the parameter value obtained from the 'distance'
+        # label in 'select_from_model_suite' is still incorrect
+        # Other instrument properties should have been fixed (with the 'fix_labels' function)
+        self.parameter_values["distance"] = self.galaxy_distance
+
         # Return the model name
         return model_name
 
