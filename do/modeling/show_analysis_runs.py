@@ -17,6 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
+from pts.modeling.config.parameters import parameter_descriptions
 
 # -----------------------------------------------------------------
 
@@ -32,9 +33,15 @@ definition = ConfigurationDefinition()
 
 # Add flags
 definition.add_flag("info", "show the analysis run info", False)
+definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
 
 # Get configuration
 config = parse_arguments("show_model", definition)
+
+# -----------------------------------------------------------------
+
+# Cannot define parameters and enable info
+if config.info and config.parameters is not None: raise ValueError("Cannot specify parameters and enable info")
 
 # -----------------------------------------------------------------
 
@@ -154,10 +161,22 @@ for host_id in context.cache_host_ids:
             show_run_info(run)
             print("")
 
+        # Show the parameters
+        elif config.parameters is not None:
+
+            # Load the run
+            run = context.get_cached_run(name)
+
+            print("")
+            # Show the parameter values
+            for name in config.parameters:
+                print("   - " + fmt.bold + name + ": " + fmt.reset + tostr(run.info.parameter_values[name]))
+            print("")
+
 # -----------------------------------------------------------------
 
 # Empty line to separate
-if not config.info: print("")
+if not (config.info or config.parameters is not None): print("")
 
 # Show the local analysis runs
 print(fmt.yellow + "LOCAL:" + fmt.reset)
@@ -179,7 +198,19 @@ for name in context.analysis_run_names:
         show_run_info(run)
         print("")
 
+    # Show the parameters
+    elif config.parameters is not None:
+
+        # Load the run
+        run = context.get_run(name)
+
+        print("")
+        # Show the parameter values
+        for name in config.parameters:
+            print("   - " + fmt.bold + name + ": " + fmt.reset + tostr(run.info.parameter_values[name]))
+        print("")
+
 # End with empty line
-if not config.info: print("")
+if not (config.info or config.parameters is not None): print("")
 
 # -----------------------------------------------------------------
