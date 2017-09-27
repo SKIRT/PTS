@@ -4147,12 +4147,14 @@ class Remote(object):
 
             #origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
             #origin = ["'\\\"" + path + "\\\"'" for path in origin]
-            origin = [path for path in origin]
+            #origin = [path for path in origin]
+            #origin_strings = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
+            origin_strings = ["'" + path + "'" for path in origin]
 
             origin_type = "files"
 
             # Add the file paths to the command string
-            copy_command += " ".join(origin) + " "
+            copy_command += " ".join(origin_strings) + " "
 
         # Invalid argument
         else: raise ValueError("The origin must be a string or a list of strings")
