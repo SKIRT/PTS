@@ -95,7 +95,7 @@ def set_debug_log_level(session):
     log.debug("Setting debug logging level remotely ...")
 
     # Import logging module and setup logger to DEBUG level
-    session.import_package("setup_log", from_name="pts.core.tools.logging")
+    session.import_package("setup_log", from_name="pts.core.basics.log")
     session.send_line("setup_log(level='DEBUG')")
 
 # -----------------------------------------------------------------

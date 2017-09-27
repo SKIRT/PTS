@@ -383,7 +383,7 @@ class GalaxyModelingComponent(ModelingComponent):
     def initial_dataset_path(self):
 
         """
-        This function ...
+        This property ...
         :return:
         """
 

@@ -4147,7 +4147,7 @@ class Remote(object):
 
             #origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
             #origin = ["'\\\"" + path + "\\\"'" for path in origin]
-            origin = ["'" + path + "'" for path in origin]
+            origin = [path for path in origin]
 
             origin_type = "files"
 
