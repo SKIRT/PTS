@@ -37,7 +37,7 @@ from .python import AttachedPythonSession, DetachedPythonSession
 from ..units.parsing import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings, types
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -123,18 +123,57 @@ def add_key(name, password=None, show_output=False):
 
 # -----------------------------------------------------------------
 
+def load_remote(remote, silent=False):
+
+    """
+    This function ...
+    :param remote:
+    :param silent:
+    :return:
+    """
+
+    # Make remote
+    if types.is_string_type(remote): remote = Remote(host_id=remote, silent=silent)
+    elif isinstance(remote, Host): remote = Remote(host_id=remote, silent=silent)
+    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+
+    # Return the remote instance
+    return remote
+
+# -----------------------------------------------------------------
+
+def get_host_id(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    # Get host ID
+    if isinstance(host_id, Host): the_host_id = host_id.id
+    elif types.is_string_type(host_id): the_host_id = host_id
+    elif isinstance(host_id, Remote): the_host_id = host_id.host_id
+    else: raise ValueError("Invalid value for 'host_id'")
+
+    # Return the host iD
+    return the_host_id
+
+# -----------------------------------------------------------------
+
 class Remote(object):
 
     """
     This function ...
     """
 
-    def __init__(self, log_conda=False, host_id=None):
+    def __init__(self, log_conda=False, host_id=None, silent=False):
 
         """
         The constructor ...
         :param log_conda:
         :param host_id:
+        :param silent:
         :return:
         """
 
@@ -165,13 +204,17 @@ class Remote(object):
         # Remember the commands that were executed on the remote host
         self.commands = []
 
+        # Set silent flag
+        self.silent = silent
+
         # If host ID is given, setup
         if host_id is not None:
-            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
+            if not self.setup(host_id, silent=self.silent): log.warning("The connection could not be made. Run setup().")
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=30, nrows=None, ncols=200, one_attempt=False, retry_factor=4):
+    def setup(self, host_id, cluster_name=None, login_timeout=30, nrows=None, ncols=200, one_attempt=False,
+              retry_factor=4, silent=False):
 
         """
         This function ...
@@ -182,6 +225,7 @@ class Remote(object):
         :param ncols:
         :param one_attempt:
         :param retry_factor:
+        :param silent:
         :return:
         """
 
@@ -200,8 +244,11 @@ class Remote(object):
         if self.host.key is not None:
             if self.host.key not in active_keys(): add_key(self.host.key, self.host.key_password)
 
+        # Set the silent flag
+        self.silent = silent
+
         # Make the connection
-        try: self.login(login_timeout)
+        try: self.login(login_timeout, silent=silent)
         except HostDownException:
 
             if one_attempt:
@@ -212,7 +259,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout * retry_factor) # try now with a timeout that is four times as long
+            try: self.login(login_timeout * retry_factor, silent=silent) # try now with a timeout that is four times as long
             except HostDownException:
                 self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -1725,16 +1772,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def login(self, login_timeout=20):
+    def login(self, login_timeout=20, silent=False):
 
         """
         This function ...
         :param login_timeout:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
+        if not silent: log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Try connecting to the remote host
         try: self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
@@ -1753,9 +1801,9 @@ class Remote(object):
         """
 
         # Inform the user
-        if log is not None: log.info("Logging out from the remote environment on host '" + self.host_id + "' ...")
+        if log is not None and not self.silent: log.info("Logging out from the remote environment on host '" + self.host_id + "' ...")
         # the conditional statement is because of this error message during destruction at the end of a script:
-        # Exception AttributeError: "'NoneType' object has no attribute 'info'" in <bound method SkirtRemote.__del__ of <pts.core.simulation.remote.SkirtRemote object at 0x118628d50>> ignored
+        # Exception AttributeError: "'NoneType' object has no attribute 'info'" in <bound method SKIRTRemote.__del__ of <pts.core.simulation.remote.SKIRTRemote object at 0x118628d50>> ignored
 
         # Disconnect
         if self.connected:
@@ -2736,6 +2784,9 @@ class Remote(object):
         # Use the 'mv' command to rename the file
         self.execute("mv " + old_path + " " + new_path)
 
+        # Return the new filepath
+        return new_path
+
     # -----------------------------------------------------------------
 
     def rename_directory(self, parent, old_name, new_name):
@@ -2793,7 +2844,9 @@ class Remote(object):
         self.debug("Clearing directory '" + path + "' ...")
 
         # Remove all files
-        for file_path in self.files_in_path(path): self.remove_file(file_path)
+        for file_path in self.files_in_path(path):
+            print(file_path)
+            self.remove_file(file_path)
 
         # Remove all d irectories
         for directory_path in self.directories_in_path(path): self.remove_directory(directory_path)
@@ -3024,8 +3077,9 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                      exact_name=None, exact_not_name=None, startswith=None, endswith=None, returns="path", extensions=False):
+    def files_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, not_extension=None,
+                      contains=None, not_contains=None, exact_name=None, exact_not_name=None, startswith=None,
+                      endswith=None, returns="path", extensions=False):
 
         """
         This function ...
@@ -3033,6 +3087,7 @@ class Remote(object):
         :param recursive:
         :param ignore_hidden:
         :param extension:
+        :param not_extension:
         :param contains:
         :param not_contains:
         :param exact_name:
@@ -3058,6 +3113,7 @@ class Remote(object):
             paths = [filepath for filepath in paths if self.is_file(filepath)]
         else:
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
+            if len(output) == 1 and output[0] == "*": return []
             paths = [fs.join(path, name) for name in output]
 
         if returns == "dict":
@@ -3089,9 +3145,17 @@ class Remote(object):
             if extension is not None:
                 if types.is_string_type(extension):
                     if item_extension != extension: continue
-                elif types.is_sequence(extension):
+                elif types.is_string_sequence(extension):
                     if item_extension not in extension: continue
                 else: raise ValueError("Unknown type for 'extension': " + str(extension))
+
+            # Ignore files with extensions that are in 'not_extension'
+            if not_extension is not None:
+                if types.is_string_type(not_extension):
+                    if item_extension == not_extension: continue
+                elif types.is_string_sequence(not_extension):
+                    if item_extension in not_extension: continue
+                else: raise ValueError("Unknown type for 'not_extension': " + str(not_extension))
 
             # Ignore filenames that do not contain a certain string, if specified
             if contains is not None and contains not in item_name: continue
@@ -3134,6 +3198,19 @@ class Remote(object):
         # Return the result
         if return_dict: return dict(result)
         else: return result
+
+    # -----------------------------------------------------------------
+
+    def nfiles_in_path(self, *args, **kwargs):
+
+        """
+        Thisf unction ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return len(self.files_in_path(*args, **kwargs))
 
     # -----------------------------------------------------------------
 
@@ -3281,31 +3358,44 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def create_directory(self, path, show_output=False):
+    def create_directory(self, path, show_output=False, recursive=False):
 
         """
         This function ...
         :param path:
         :param show_output:
+        :param recursive:
         :return:
         """
 
         # Create the remote directory
-        output = self.execute("mkdir '" + path + "'", output=True, show_output=show_output)
+        if recursive: command = "mkdir -p '" + path + "'"
+        else: command = "mkdir '" + path + "'"
+
+        # Execute
+        output = self.execute(command, output=True, show_output=show_output)
         for line in output:
             if "cannot create directory" in line: raise IOError("Cannot create directory '" + path + "'")
 
     # -----------------------------------------------------------------
 
-    def create_directories(self, *paths):
+    def create_directories(self, *paths, **kwargs):
 
         """
         This function ...
+        :param paths:
+        :param kwargs:
         :return:
         """
 
+        recursive = kwargs.pop("recursive", False)
+
         # Create the remote directories
-        output = self.execute("mkdir '" + "' '".join(paths) + "'", output=False)
+        if recursive: command = "mkdir -p '" + "' '".join(paths) + "'"
+        else: command = "mkdir '" + "' '".join(paths) + "'"
+
+        # Execute
+        output = self.execute(command, output=False)
         for line in output:
             if "cannot create directory" in line:
                 which = line.split("cannot create directory ")[1].split(":")[0]
@@ -3526,11 +3616,12 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def read_lines(self, path):
+    def read_lines(self, path, add_sep=False):
 
         """
         This function ...
         :param path:
+        :param add_sep:
         :return:
         """
 
@@ -3541,7 +3632,77 @@ class Remote(object):
         self.execute("value='cat " + path + "'")
 
         # Print the variable to the console, and obtain the output
-        for line in self.execute('echo "$($value)"'): yield line
+        for line in self.execute('echo "$($value)"'):
+            if add_sep: yield line + "\n"
+            else: yield line
+
+    # -----------------------------------------------------------------
+
+    def get_lines(self, path, add_sep=False):
+
+        """
+        This function ...
+        :param path:
+        :param add_sep:
+        :return:
+        """
+
+        return list(self.read_lines(path, add_sep=add_sep))
+
+    # -----------------------------------------------------------------
+
+    def get_text(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return "\n".join(self.get_lines(path))
+
+    # -----------------------------------------------------------------
+
+    def read_first_lines(self, path, nlines):
+
+        """
+        This function ...
+        :param path:
+        :param nlines:
+        :return:
+        """
+
+        command = "head -n " + str(nlines) + " " + path
+
+        # Execute
+        output = self.execute(command)
+
+        # Return the lines
+        return output
+
+    # -----------------------------------------------------------------
+
+    def read_first_line(self, path):
+
+        """
+        Thisf unction ...
+        :param path:
+        :return:
+        """
+
+        return self.read_first_lines(path, 1)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_first_line(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.read_first_line(path)
 
     # -----------------------------------------------------------------
 
@@ -3559,6 +3720,18 @@ class Remote(object):
 
         # Return the lines
         return output
+
+    # -----------------------------------------------------------------
+
+    def read_last_line(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.read_last_lines(path, 1)[0]
 
     # -----------------------------------------------------------------
 
@@ -3669,14 +3842,14 @@ class Remote(object):
 
             # Escape possible space characters
             #origin = [path.replace(" ", "\\\ ") for path in origin]
-            origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
+            origin_strings = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
 
             # Add a quotation mark character because the seperate file paths are going to be separated by spaces
             # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
             copy_command += '"'
 
             # Add the file paths to the command string
-            copy_command += " ".join(origin)
+            copy_command += " ".join(origin_strings)
 
             # Add another quotation mark to identify the end of the filepath list
             copy_command += '" '
@@ -3757,7 +3930,7 @@ class Remote(object):
             for path in origin:
                 name = fs.name(path)
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + name + "' is missing from destination (" + local_path + ")")
 
         elif origin_type == "file":
 
@@ -3765,22 +3938,22 @@ class Remote(object):
 
                 name = fs.name(origin) if new_name is None else new_name
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + name + "' is missing from destination (" + local_path + ")")
 
             # It must be a file then
-            elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is missing")
+            elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file '" + destination + "' is missing")
 
         elif origin_type == "directory":
 
             for remote_path in self.files_in_path(origin):
                 filename = fs.name(remote_path)
                 local_path = fs.join(destination, filename)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + filename + " is missing (" + local_path + ")")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file '" + filename + "' is missing (" + local_path + ")")
 
             for remote_path in self.directories_in_path(origin):
                 dirname = fs.name(remote_path)
                 local_path = fs.join(destination, dirname)
-                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory " + dirname + " is missing (" + local_path + ")")
+                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory '" + dirname + "' is missing (" + local_path + ")")
 
         else: raise ValueError("Invalid origin type")
 
@@ -5758,7 +5931,11 @@ class Remote(object):
         #raise RuntimeError("Remote '" + name + "' not found!")
 
         from ..tools import git
-        return git.get_url_repository(self, self.pts_package_path, name)
+        from ..prep.update import fix_repo_url
+        try: return git.get_url_repository(self, self.pts_package_path, name)
+        except git.AuthenticationError as e:
+            url = fix_repo_url(e.url, self.pts_package_path, remote=self)
+            return url
 
     # -----------------------------------------------------------------
 
@@ -5807,7 +5984,11 @@ class Remote(object):
         """
 
         from ..tools import git
-        return git.get_url_repository(self, self.skirt_repo_path, name)
+        from ..prep.update import fix_repo_url
+        try: return git.get_url_repository(self, self.skirt_repo_path, name)
+        except git.AuthenticationError as e:
+            url = fix_repo_url(e.url, self.skirt_repo_path, remote=self)
+            return url
 
     # -----------------------------------------------------------------
 
@@ -5846,6 +6027,18 @@ class Remote(object):
 
         path = self.absolute_path("~/PTS")
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pts_root_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_directory(self.pts_root_path)
 
     # -----------------------------------------------------------------
 
@@ -5894,8 +6087,21 @@ class Remote(object):
         """
 
         path = fs.join(self.pts_root_path, "temp")
-        if not self.is_directory(path): self.create_directory(path)
+        if not self.is_directory(path) and self.has_pts_root_path: self.create_directory(path)
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pts_temp_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "temp")
+        return self.is_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -5908,8 +6114,21 @@ class Remote(object):
         """
 
         path = fs.join(self.pts_root_path, "test")
-        if not self.is_directory(path): self.create_directory(path)
+        if not self.is_directory(path) and self.has_pts_root_path: self.create_directory(path)
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pts_tests_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "test")
+        return self.is_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -5920,7 +6139,7 @@ class Remote(object):
         :return: 
         """
 
-        self.clear_pts_temp()
+        if self.has_pts_temp_path: self.clear_pts_temp()
         self.close_all_screen_sessions()
         self.close_all_tmux_sessions()
 

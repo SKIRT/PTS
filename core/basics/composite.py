@@ -58,7 +58,7 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def add_property(self, name, ptype, description, default_value=None, choices=None):
+    def add_property(self, name, ptype, description, default_value=None, choices=None, convert_default=False):
 
         """
         This function ...
@@ -67,6 +67,7 @@ class SimplePropertyComposite(object):
         :param description:
         :param default_value:
         :param choices:
+        :param convert_default:
         :return:
         """
 
@@ -84,6 +85,11 @@ class SimplePropertyComposite(object):
 
         # Set the choices
         self._choices[name] = choices
+
+        # Convert default
+        if default_value is not None and convert_default:
+            parsing_function = getattr(parsing, ptype)
+            default_value = parsing_function(default_value)
 
         # Set the attribute with the default value
         setattr(self, name, default_value)
@@ -214,7 +220,7 @@ class SimplePropertyComposite(object):
         # Set 'simple' property
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
-        elif isinstance(value, Map):
+        elif isinstance(value, dict):  # elif isinstance(value, Map):
             assert name in self._descriptions
             #print(value)
             #print(getattr(self, name))
@@ -326,6 +332,53 @@ class SimplePropertyComposite(object):
 
         # Return the names
         return names
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.property_names: yield name
+
+    # -----------------------------------------------------------------
+
+    def get_value(self, name):
+
+        """
+        This funtion ...
+        :param name:
+        :return:
+        """
+
+        return getattr(self, name)
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_value(name)
+
+    # -----------------------------------------------------------------
+
+    def get_ptype(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._ptypes[name]
 
     # -----------------------------------------------------------------
 
@@ -512,10 +565,13 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def __repr__(self):
+    def to_lines(self, line_prefix="", ignore=None, ignore_none=False):
 
         """
         This function ...
+        :param line_prefix:
+        :param ignore:
+        :param ignore_none:
         :return:
         """
 
@@ -524,67 +580,150 @@ class SimplePropertyComposite(object):
         # The simple properties
         for name in self.property_names:
 
-            dtype, value = stringify(getattr(self, name))
+            # Get the value
+            value = getattr(self, name)
+
+            # Check ignore
+            if ignore is not None and name in ignore: continue
+            if ignore_none and value is None: continue
+
+            # Generate line
+            dtype, value = stringify(value)
             line = " - " + fmt.bold + name + fmt.reset + ": " + value
-            lines.append(line)
+            lines.append(line_prefix + line)
 
         # Sections
         for name in self.section_names:
 
+            # Check ignore
+            if ignore is not None and name in ignore: continue
+
             line = " - " + fmt.bold + name + fmt.reset + ":"
-            lines.append(line)
-            if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = ["    " + line for line in repr(getattr(self, name)).split("\n")]
+            lines.append(line_prefix + line)
+
+            if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = [line for line in getattr(self, name).to_lines(line_prefix=line_prefix+"    ")]
             elif isinstance(getattr(self, name), Map):
+
                 section_lines = []
                 section = getattr(self, name)
                 for key in section:
-                    line = "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+
+                    line = line_prefix + "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
                     section_lines.append(line)
+
             else: raise ValueError("Unknown type for section: " + str(type(getattr(self, name))))
+
             lines += section_lines
 
-        # Return
-        return "\n".join(lines)
+        # Return the lines
+        return lines
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_file(cls, path):
+    def to_string(self, line_prefix="", ignore=None, ignore_none=False):
+
+        """
+        This function ...
+        :param line_prefix:
+        :param ignore:
+        :param ignore_none:
+        :return:
+        """
+
+        # Return
+        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none))
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.debug("Loading " + cls.__name__ + " from " + path + " ...")
+        return self.to_string()
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, remote=None):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # FROM REMOTE FILE
+        if remote is not None: return cls.from_remote_file(path, remote)
+
+        # Inform the user
+        log.debug("Loading " + cls.__name__ + " from '" + path + "' ...")
+
+        # Initialize dictionary to contain the properties
         properties = dict()
 
+        # Open the file
         with open(path, 'r') as f:
 
+            # Read first line
             for line in f:
+                first = line
+                break
 
-                if "Type:" in line: continue
+            #composite_type = first.split("Type: ")[1]
+            #assert composite_type == cls.__name__
 
-                line = line[:-1]
-                if not line: continue
+            # Load
+            load_properties(properties, f)
 
-                name, rest = line.split(": ")
-                value, dtype = rest.split(" [")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                if dtype == "None" or value.strip() == "None": properties[name] = None
-                else: properties[name] = getattr(parsing, dtype)(value)
-
-            # TODO: sections!!
+        #print(properties)
 
         # Create the class instance
         composite = cls(**properties)
 
         # Set the path
         composite._path = path
+
+        # Return
+        return composite
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Loading " + cls.__name__ + " from '" + path + "' on remote host '" + remote.host_id + "' ...")
+
+        # Initialize dictionary to contain the properties
+        properties = dict()
+
+        # Create iterator for the lines
+        lines_iterator = remote.read_lines(path)
+
+        # Read first line (skip it)
+        for line in lines_iterator:
+            first = line
+            break
+
+        # Load the properties
+        load_properties(properties, lines_iterator)
+
+        # Create the class instance
+        composite = cls(**properties)
+
+        # Set the path: NO
+        #composite._path = path
 
         # Return
         return composite
@@ -623,14 +762,8 @@ class SimplePropertyComposite(object):
             # Print the type
             print("Type:", self.__class__.__name__, file=fh)
 
-            # Loop over the properties
-            for name in self.property_names:
-
-                dtype, value = stringify(getattr(self, name))
-                actual_dtype = self._ptypes[name]
-                print(name + ":", value + " [" + actual_dtype + "]", file=fh)
-
-            # TODO: sections!!
+            # Write
+            write_properties(self, fh)
 
         # Update the path
         self._path = path
@@ -669,3 +802,100 @@ class SimplePropertyComposite(object):
         return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
+
+def write_properties(properties, fh, indent=""):
+
+    """
+    This function ...
+    :param properties:
+    :param fh:
+    :param indent:
+    :return:
+    """
+
+    # Property composite
+    if isinstance(properties, SimplePropertyComposite):
+
+        # Loop over the properties
+        for name in properties.property_names:
+
+            dtype, value = stringify(getattr(properties, name))
+            actual_dtype = properties._ptypes[name]
+            print(indent + name + ":", value + " [" + actual_dtype + "]", file=fh)
+
+        # Loop over the sections
+        for name in properties.section_names:
+
+            print(indent + name + ":", file=fh)
+            write_properties(getattr(properties, name), fh, indent=indent+"  ")
+
+    # Dict-like
+    elif isinstance(properties, dict):
+
+        # Loop over the keys
+        for key in properties:
+
+            value = properties[key]
+            if isinstance(value, dict):
+
+                print(indent + key + ":", file=fh)
+                write_properties(properties[key], fh, indent=indent+"  ")
+
+            else:
+
+                dtype, string = stringify(value)
+                print(indent + key + ":", string + " [" + dtype + "]", file=fh)
+
+    # Invalid
+    else: raise ValueError("Cannot write the properties of type '" + str(type(properties)))
+
+# -----------------------------------------------------------------
+
+def load_properties(properties, fh_or_iterator, indent=""):
+
+    """
+    Thisf unction ...
+    :param properties:
+    :param fh_or_iterator:
+    :param indent:
+    :return:
+    """
+
+    # Loop over the lines
+    for line in fh_or_iterator:
+
+        #if "Type:" in line: continue
+
+        if line.endswith("\n"): line = line[:-1]
+
+        # Empty line
+        if not line: continue
+
+        name, rest = line.split(":")
+        rest = rest.strip()
+
+        # End of section?
+        if not name.startswith(indent): return
+
+        # Not end of section: remove the indent
+        name = name.lstrip(indent)
+
+        if rest == "":
+
+            #expect_section = name
+
+            # Load properties
+            properties[name] = dict()
+            load_properties(properties[name], fh_or_iterator, indent=indent+"  ")
+
+        else:
+
+            value, dtype = rest.split(" [")
+            dtype = dtype.split("]")[0]
+
+            # Set the property value
+            if dtype == "None" or value.strip() == "None": properties[name] = None
+            else: properties[name] = getattr(parsing, dtype)(value)
+
+# -----------------------------------------------------------------
+

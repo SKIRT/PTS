@@ -62,7 +62,7 @@ class ModelBuilderBase(BuildComponent):
     def setup(self, **kwargs):
 
         """
-        This functio n...
+        This function...
         :param kwargs:
         :return:
         """
@@ -71,7 +71,14 @@ class ModelBuilderBase(BuildComponent):
         super(ModelBuilderBase, self).setup(**kwargs)
 
         # Set the model path and create it
-        self.model_path = fs.create_directory_in(self.models_path, self.model_name)
+        self.model_path = fs.join(self.models_path, self.model_name)
+
+        # Check whether there is not yet a directory for this model
+        if fs.is_directory(self.model_path):
+            if fs.is_empty(self.model_path, recursive=True): fs.clear_directory(self.model_path)
+            elif self.config.overwrite: fs.clear_directory(self.model_path)
+            else: raise IOError("A directory for a model called '" + self.model_name + "' already exists")
+        else: fs.create_directory(self.model_path)
 
         # Set the path of the directory for the stellar components
         self.model_stellar_path = fs.create_directory_in(self.model_path, "stellar")

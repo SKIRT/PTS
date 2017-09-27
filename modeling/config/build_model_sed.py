@@ -26,3 +26,8 @@ if len(model_names) == 0: definition.add_positional_optional("name", "string", "
 else: definition.add_required("name", "string", "name for the model", forbidden=model_names)
 
 # -----------------------------------------------------------------
+
+# Force overwrite
+definition.add_flag("overwrite", "overwrite possibly existing model with this name", False)
+
+# -----------------------------------------------------------------

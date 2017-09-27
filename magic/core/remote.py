@@ -1769,6 +1769,10 @@ class RemoteDataCube(RemoteImage):
         # Get file name
         filename = fs.name(path)
 
+        ## CHECK WHETHER THE FILE IS VALID BEFORE UPLOADING!!
+        from . import fits
+        if not fits.is_valid(path): raise fits.DamagedFITSFileError("Local FITS file is damaged", path=path)
+
         ### UPLOAD DATACUBE
 
         # Upload the datacube file
@@ -1843,6 +1847,89 @@ class RemoteDataCube(RemoteImage):
 
         # Return the new remotedatacube
         return remotedatacube
+
+    # -----------------------------------------------------------------
+
+    def get_frame_index_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Import the unit parsing function rmeotely
+        self.session.import_package("parse_unit", from_name="pts.core.units.parsing")
+        #self.session.import_package("tostr", from_name="pts.core.tools.stringify")
+        from pts.core.tools.stringify import tostr
+        return self.session.get_simple_property(self.label, "get_frame_index_for_wavelength(parse_unit('" + tostr(wavelength) + "'))")
+
+    # -----------------------------------------------------------------
+
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8):
+
+        """
+        This function ...
+        :param filters:
+        :param convolve:
+        :param nprocesses:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting frames for " + str(len(filters)) + " different filters ...")
+
+        from ...core.filter.broad import BroadBandFilter
+
+        remoteframes = []
+        for_convolution = []
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Broad band filter, with spectral convolution
+            if isinstance(fltr, BroadBandFilter) and convolve:
+
+                # Debugging
+                log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+                # Add to list
+                for_convolution.append(fltr)
+
+                # Add placeholder
+                remoteframes.append(None)
+
+            # Broad band filter without spectral convolution or narrow band filter
+            else:
+
+                # Debugging
+                log.debug("Getting the frame for the " + str(fltr) + " filter ...")
+
+                # Get the index of the wavelength closest to that of the filter
+                index = self.get_frame_index_for_wavelength(fltr.pivot)
+
+                # Assign a remote label to this result frame
+                label_i = get_new_label("Frame", self.session)
+
+                # Do the assignment remotely
+                self.session.send_line(label_i + " = " + self.label + ".frames[" + str(index) + "]")
+                remoteframe = RemoteFrame(label_i, self.session)
+
+                # Get the frame
+                remoteframes.append(remoteframe)
+
+        # Calculate convolved frames
+        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        else: convolved_frames = []
+
+        # Add the convolved frames
+        for fltr, remoteframe in zip(for_convolution, convolved_frames):
+
+            # Set the remote frame
+            index = filters.index(fltr)
+            remoteframes[index] = remoteframe
+
+        # Return the list of remote frames
+        return remoteframes
 
     # -----------------------------------------------------------------
 

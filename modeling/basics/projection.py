@@ -20,6 +20,8 @@ from astropy.units import Unit, dimensionless_angles
 from ...magic.basics.pixelscale import Pixelscale
 from ...magic.basics.vector import Position
 from ...magic.basics.vector import Extent
+from ...magic.basics.stretch import PhysicalExtent
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -137,8 +139,12 @@ class GalaxyProjection(object):
         :return:
         """
 
+        from ...magic.basics.vector import PixelShape
+        from ...magic.basics.coordinate import PixelCoordinate
+
         pixels_x = deprojection.x_size
         pixels_y = deprojection.y_size
+        npixels = PixelShape.from_xy(pixels_x, pixels_y)
 
         pixelscale = deprojection.pixelscale
 
@@ -147,18 +153,23 @@ class GalaxyProjection(object):
         y_center = deprojection.y_center
 
         # To physical
-        center_x = x_center * pixelscale
-        center_y = y_center * pixelscale
+        #center_x = x_center * pixelscale
+        #center_y = y_center * pixelscale
 
-        # Detemrine field of view
+        # Determine field of view
         field_x = pixelscale * pixels_x
         field_y = pixelscale * pixels_y
+        field = PhysicalExtent(field_x, field_y)
+
+        # Get physical center
+        center = PixelCoordinate(x=x_center, y=y_center)
+        center_physical = get_physical_center(field, npixels, center)
 
         inclination = deprojection.inclination
         position_angle = deprojection.position_angle
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_physical.x, center_physical.y, field.x, field.y)
 
     # -----------------------------------------------------------------
 
@@ -579,5 +590,98 @@ def get_relevant_wcs_properties(wcs, center, distance):
 
     # Return the properties
     return pixels_x, pixels_y, center_x, center_y, field_x_physical, field_y_physical
+
+# -----------------------------------------------------------------
+
+def get_npixels(npixels):
+
+    """
+    This function ...
+    :param npixels:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    from ...magic.basics.vector import IntegerExtent
+
+    # Set npixels
+    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
+    elif isinstance(npixels, PixelShape): pass
+    elif isinstance(npixels, IntegerExtent): npixels = PixelShape.from_xy(npixels.x, npixels.y)
+    else: raise ValueError("Don't know what to do with npixels of type " + str(type(npixels)))
+
+    return npixels
+
+# -----------------------------------------------------------------
+
+def get_field(pixelscale, npixels, distance):
+
+    """
+    This function ...
+    :param pixelscale:
+    :param npixels:
+    :param distance:
+    :return:
+    """
+
+    from ...magic.basics.pixelscale import Pixelscale
+    from astropy.units import Quantity
+
+    # Get pixelscale instance
+    if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
+    elif isinstance(pixelscale, Pixelscale): pass
+    else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
+
+    # Determine physical pixelscale
+    phys_pixelscale = pixelscale.to_physical(distance)
+
+    # Determine field of view
+    field = PhysicalExtent(phys_pixelscale.x * npixels.x, phys_pixelscale.y * npixels.y)
+
+    # Reutnr the field of view
+    return field
+
+# -----------------------------------------------------------------
+
+def get_center(npixels):
+
+    """
+    This function ...
+    :param npixels:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    if types.is_integer_type(npixels): npixels = PixelShape.square(npixels)
+    from ...magic.basics.coordinate import PixelCoordinate
+    center = PixelCoordinate(x=0.5*npixels.x, y=0.5*npixels.y)
+    return center
+
+# -----------------------------------------------------------------
+
+def get_physical_center(field, npixels, center):
+
+    """
+    Thisf unction ...
+    :param field:
+    :param npixels:
+    :param center: pixel center
+    :return:
+    """
+
+    from ...magic.basics.coordinate import PhysicalCoordinate, PixelCoordinate
+
+    # Physical scales per pixel
+    x_scale = field.x / npixels.x
+    y_scale = field.y / npixels.y
+
+    # Get center in physical coordinates
+    center = PixelCoordinate(0.5 * (npixels.x-1) - center.x, 0.5 * (npixels.y-1) - center.y)
+
+    center_x = center.x * x_scale
+    center_y = center.y * y_scale
+
+    # Return the physical coordinate
+    return PhysicalCoordinate(center_x, center_y)
 
 # -----------------------------------------------------------------

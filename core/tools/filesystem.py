@@ -408,22 +408,32 @@ def has_file(directory, filename):
 
 # -----------------------------------------------------------------
 
-def is_empty(directory, ignore_hidden=True, besides=None):
+def is_empty(directory, ignore_hidden=True, besides=None, recursive=False):
 
     """
     This function ...
     :param directory:
     :param ignore_hidden:
     :param besides:
+    :param recursive:
     :return:
     """
 
-    items = os.listdir(directory)
-    if ignore_hidden: items = [item for item in items if not item.startswith(".")]
+    # Recursive: look for only files within the directory hierarchy
+    if recursive:
 
-    if besides is not None:
-        return len(items) == 0 or (len(items) == 1 and items[0] == besides)
-    else: return len(items) == 0
+        filepaths = files_in_path(directory, ignore_hidden=ignore_hidden, exact_not_name=besides, recursive=True)
+        return len(filepaths) == 0
+
+    # Not recursive: count directories and files within the specified directory
+    else:
+
+        items = os.listdir(directory)
+        if ignore_hidden: items = [item for item in items if not item.startswith(".")]
+
+        if besides is not None:
+            return len(items) == 0 or (len(items) == 1 and items[0] == besides)
+        else: return len(items) == 0
 
 # -----------------------------------------------------------------
 
@@ -606,7 +616,7 @@ def create_temporary_directory(prefix=None):
 
 # -----------------------------------------------------------------
 
-def clear_directory(path):
+def clear_directory(path, recursive=False):
 
     """
     This function ...
@@ -614,8 +624,30 @@ def clear_directory(path):
     :return:
     """
 
-    for file_path in files_in_path(path): remove_file(file_path)
-    for directory_path in directories_in_path(path): remove_directory(directory_path)
+    if recursive:
+
+        for file_path in files_in_path(path): remove_file(file_path)
+        for directory_path in directories_in_path(path): clear_directory(directory_path, recursive=True)
+
+    else:
+
+        for file_path in files_in_path(path): remove_file(file_path)
+        for directory_path in directories_in_path(path): remove_directory(directory_path)
+
+# -----------------------------------------------------------------
+
+def remove_directory_if_present(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_directory(path):
+        remove_directory(path)
+        return True
+    else: return False
 
 # -----------------------------------------------------------------
 
@@ -666,6 +698,21 @@ def remove_directories_but_keep(paths, keep_path):
 
 # -----------------------------------------------------------------
 
+def remove_file_if_present(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_file(path):
+        remove_file(path)
+        return True
+    else: return False
+
+# -----------------------------------------------------------------
+
 def remove_file(path):
 
     """
@@ -674,6 +721,7 @@ def remove_file(path):
     :return:
     """
 
+    if not is_file(path): raise ValueError("Not a file: '" + path + "'")
     os.remove(path)
 
 # -----------------------------------------------------------------
@@ -869,9 +917,22 @@ def nitems_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                  extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None, contains_operator="OR", recursion_level=None, unpack=False, convert=None):
+def files_in_cwd(**kwargs):
+
+    """
+    This function ...
+    :param kwargs:
+    :return:
+    """
+
+    return files_in_path(cwd(), **kwargs)
+
+# -----------------------------------------------------------------
+
+def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, not_extension=None, contains=None,
+                  not_contains=None, extensions=False, returns="path", exact_name=None, exact_not_name=None,
+                  startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False,
+                  convert=None):
 
     """
     This function ...
@@ -948,9 +1009,17 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         if extension is not None:
             if types.is_string_type(extension):
                 if item_extension != extension: continue
-            elif types.is_sequence(extension):
+            elif types.is_string_sequence(extension):
                 if item_extension not in extension: continue
             else: raise ValueError("Unknown type for 'extension': " + str(extension))
+
+        # Ignore files with extensions that are in not_extension
+        if not_extension is not None:
+            if types.is_string_type(not_extension):
+                if item_extension == not_extension: continue
+            elif types.is_string_sequence(not_extension):
+                if item_extension in not_extension: continue
+            else: raise ValueError("Unknown type for 'not_extension': " + str(not_extension))
 
         # Ignore filenames that do not contain a certain string, if specified
         if contains is not None:
@@ -1062,30 +1131,23 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
 # -----------------------------------------------------------------
 
-def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                      exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+def find_file_in_path(path, **kwargs):
 
     """
     This function ...
     :param path: 
-    :param recursive:
-    :param ignore_hidden:
-    :param extension:
-    :param contains:
-    :param not_contains:
-    :param exact_name:
-    :param exact_not_name:
-    :param startswith:
-    :param endswith:
+    :param kwargs:
     :return: 
     """
 
+    return_none = kwargs.pop("return_none", False)
+
     # Get paths
-    paths = files_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, extension=extension, contains=contains,
-                          not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
-                          startswith=startswith, endswith=endswith)
+    paths = files_in_path(path, **kwargs)
     if len(paths) == 1: return paths[0]
-    elif len(paths) == 0: raise ValueError("Not found")
+    elif len(paths) == 0:
+        if return_none: return None
+        else: raise ValueError("Not found")
     else: raise ValueError("Multiple files found")
 
 # -----------------------------------------------------------------
@@ -1388,6 +1450,10 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     # Copy files
     copy_files(files_in_path(from_directory, **kwargs), to_directory)
 
+    if "extension" in kwargs: del kwargs["extension"]
+    if "not_extension" in kwargs: del kwargs["not_extension"]
+    if "extensions" in kwargs: del kwargs["extensions"]
+
     # Copy directories
     copy_directories(directories_in_path(from_directory, **kwargs), to_directory)
 
@@ -1569,6 +1635,61 @@ def read_last_lines(path, nlines):
     """
 
     for line in list(read_lines(path))[-nlines:]: yield line
+
+# -----------------------------------------------------------------
+
+def get_last_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    return list(read_last_lines(path, nlines))
+
+# -----------------------------------------------------------------
+
+def read_first_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    count = 0
+    for line in read_lines(path):
+        yield line
+        count += 1
+        if count == nlines: return
+
+# -----------------------------------------------------------------
+
+def get_first_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    return list(read_first_lines(path, nlines))
+
+# -----------------------------------------------------------------
+
+def get_first_line(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_first_lines(path, 1)[0]
 
 # -----------------------------------------------------------------
 
@@ -2190,7 +2311,7 @@ def equal_number_of_items(directory_a, directory_b, recursive=True, create=False
 
 # -----------------------------------------------------------------
 
-def update_file_in(source, directory, create=False, report=False):
+def update_file_in(source, directory, create=False, report=False, return_target=False):
 
     """
     This function ...
@@ -2198,12 +2319,16 @@ def update_file_in(source, directory, create=False, report=False):
     :param directory:
     :param create:
     :param report:
+    :param return_target
     :return:
     """
 
     filename = name(source)
     target = join(directory, filename)
-    return update_file(source, target, create=create, report=report)
+    updated = update_file(source, target, create=create, report=report)
+
+    if return_target: return updated, target
+    else: return updated
 
 # -----------------------------------------------------------------
 

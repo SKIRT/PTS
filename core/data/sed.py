@@ -29,6 +29,30 @@ from ..simulation import textfile
 
 # -----------------------------------------------------------------
 
+def is_from_skirt(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import filesystem as fs
+
+    # Read the two first lines
+    first, second = fs.get_first_lines(path, nlines=2)
+
+    # Check first
+    if not first.startswith("# column 1: lambda"): return False
+
+    # Check second
+    if not second.startswith("# column 2:"): return False
+
+    # Checks passed for SKIRT
+    return True
+
+# -----------------------------------------------------------------
+
 class SED(WavelengthCurve):
     
     """
@@ -104,7 +128,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -112,7 +136,7 @@ class SED(WavelengthCurve):
         :return:
         """
 
-        return self.value_for_wavelength(wavelength)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness)
 
     # -----------------------------------------------------------------
 

@@ -18,6 +18,22 @@ from . import terminal
 
 # -----------------------------------------------------------------
 
+class AuthenticationError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, url=None):
+
+        # Call the base class constructor with the parameters it needs
+        super(AuthenticationError, self).__init__(message)
+
+        # The URL for which authentication failed
+        self.url = url
+
+# -----------------------------------------------------------------
+
 def clone(url, path, show_output=False):
 
     """
@@ -183,7 +199,10 @@ def get_url_repository(remote, repo_path, repo_name="origin"):
 
     # Check for errors
     for line in output:
-        if "Authentication failed" in line: raise RuntimeError(line)
+        if "Authentication failed" in line:
+            # Try to determine repo URL
+            url = line.split("Authentication failed for '")[1][:-1]
+            raise AuthenticationError("Connection problem for '" + url + "'", url=url)
 
     url = None
     for line in output:
@@ -256,17 +275,26 @@ def get_short_git_version(repo_path, remote=None):
 
 # -----------------------------------------------------------------
 
-def decompose_repo_url(url):
+def decompose_repo_url(url, return_type=False):
 
     """
     This function ...
     :param url:
+    :param return_type:
     :return:
     """
 
     # Already https link
-    if url.startswith("https://"): return decompose_https(url)
-    else: return decompose_ssh(url)
+    if url.startswith("https://"):
+        if return_type:
+            host, user_or_organization, repo_name, username, password = decompose_https(url)
+            return host, user_or_organization, repo_name, username, password, "https"
+        else: return decompose_https(url)
+    else:
+        if return_type:
+            host, user_or_organization, repo_name, username, password = decompose_ssh(url)
+            return host, user_or_organization, repo_name, username, password, "ssh"
+        else: return decompose_ssh(url)
 
 # -----------------------------------------------------------------
 
@@ -320,6 +348,37 @@ def decompose_ssh(url):
 
 # -----------------------------------------------------------------
 
+def compose_repo_url(url_type, host, user_or_organization, repo_name, username=None, password=None):
+
+    """
+    This function ...
+    :param url_type:
+    :param host:
+    :param user_or_organization:
+    :param repo_name:
+    :param username:
+    :param password:
+    :return:
+    """
+
+    # SSH
+    if url_type == "ssh":
+
+        # Check input
+        if username is not None: raise ValueError("Username cannot be specified for SSH urls")
+        if password is not None: raise ValueError("Password cannot be specified for SSH urls")
+
+        # Compose
+        return compose_ssh(host, user_or_organization, repo_name)
+
+    # HTTPS
+    elif url_type == "https": return compose_https(host, user_or_organization, repo_name, username=username, password=password)
+
+    # Invalid
+    else: raise ValueError("Url type '" + url_type + "' not recognized")
+
+# -----------------------------------------------------------------
+
 def compose_https(host, user_or_organization, repo_name, username=None, password=None):
 
     """
@@ -347,6 +406,22 @@ def compose_https(host, user_or_organization, repo_name, username=None, password
 
 # -----------------------------------------------------------------
 
+def compose_ssh(host, user_or_organization, repo_name):
+
+    """
+    This function ...
+    :param host:
+    :param user_or_organization:
+    :param repo_name:
+    :return:
+    """
+
+    # COmpose the URL
+    url = "git@" + host + ":" + user_or_organization + "/" + repo_name + ".git"
+    return url
+
+# -----------------------------------------------------------------
+
 def transform_to_simple_https(url):
 
     """
@@ -357,5 +432,34 @@ def transform_to_simple_https(url):
 
     host, user_or_organization, repo_name, username, password = decompose_repo_url(url)
     return compose_https(host, user_or_organization, repo_name)
+
+# -----------------------------------------------------------------
+
+def replace_remote_url(url, repo_path, repo_name="origin", remote=None, show_output=False):
+
+    """
+    This function ...
+    :param url:
+    :param repo_path:
+    :param repo_name:
+    :param remote:
+    :param show_output:
+    :return:
+    """
+
+    # Determine the command
+    command = "git remote set-url " + repo_name + " '" + url + "'"
+
+    # Remote
+    if remote is not None:
+        output = remote.execute(command, cwd=repo_path, show_output=show_output)
+        for line in output:
+            if "fatal:" in line: raise RuntimeError("Error: " + line)
+
+    # Local
+    else:
+        output = terminal.execute_no_pexpect(command, cwd=repo_path, show_output=show_output)
+        for line in output:
+            if "fatal:" in line: raise RuntimeError("Error: " + line)
 
 # -----------------------------------------------------------------

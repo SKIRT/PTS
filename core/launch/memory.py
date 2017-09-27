@@ -207,7 +207,7 @@ class MemoryTable(SmartTable):
             grid_type = ski.gridtype()
 
             # If the grid is a tree grid, get additional properties
-            if ski.treegrid():
+            if ski.treegrid_notfile():
 
                 min_level = ski.tree_min_level()
                 max_level = ski.tree_max_level()
@@ -216,6 +216,13 @@ class MemoryTable(SmartTable):
                 max_optical_depth = ski.tree_max_optical_depth()
                 max_mass_fraction = ski.tree_max_mass_fraction()
                 max_dens_disp = ski.tree_max_dens_disp()
+
+            # File tree grid
+            elif ski.filetreegrid():
+
+                min_level = max_level = None
+                search_method = ski.tree_search_method()
+                sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
 
             # Else, set all properties to None
             else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None

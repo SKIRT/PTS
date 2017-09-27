@@ -22,6 +22,7 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from pts.core.tools.utils import lazyproperty
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -829,6 +830,9 @@ class TimeLineExtractor(object):
         # The table containing the timeline information
         self.table = None
 
+        # The output path
+        self.output_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, simulation, output_path=None):
@@ -840,17 +844,31 @@ class TimeLineExtractor(object):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup(simulation, output_path=output_path)
+
+        # 2. Perform the extraction
+        self.extract()
+
+        # 3. Write the results
+        if self.output_path is not None: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, simulation, output_path=None):
+
+        """
+        This funtion ...
+        :param simulation:
+        :param output_path:
+        :return:
+        """
+
         # Obtain the log files created by the simulation
         self.log_files = simulation.logfiles()
 
-        # Perform the extraction
-        self.extract()
-
-        # Write the results
-        if output_path is not None: self.write(output_path)
-
-        # Return the timeline table
-        return self.table
+        # Set the output path
+        self.output_path = output_path
 
     # -----------------------------------------------------------------
 
@@ -860,6 +878,9 @@ class TimeLineExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Extracting ...")
 
         # Initialize lists for the columns
         process_list = []
@@ -969,7 +990,7 @@ class TimeLineExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def write(self, output_path):
+    def write(self):
 
         """
         This function ...
@@ -977,8 +998,11 @@ class TimeLineExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the table to file
-        tables.write(self.table, output_path)
+        tables.write(self.table, self.output_path)
 
     # -----------------------------------------------------------------
 

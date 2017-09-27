@@ -202,7 +202,7 @@ def prompt_yn(name, description, default=None):
     definition.add_flag(name, description, default=default)
 
     # Create setter
-    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     while True:
@@ -227,13 +227,36 @@ def prompt_proceed(description=None):
     definition.add_flag("proceed", description, default=None)
 
     # Create setter
-    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     while True:
         config = setter.run(definition, prompt_optional=True)
         if config.proceed is None: log.warning("Answer with yes (y) or no (n)")
         else: return config.proceed
+
+# -----------------------------------------------------------------
+
+def prompt_automatic(name, description, default, choices=None, default_alias=None):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param default:
+    :param choices:
+    :param default_alias:
+    :return:
+    """
+
+    # None is not allowed
+    if default is None: raise ValueError("Default value cannot be None")
+
+    # Determine parsing type
+    ptype, string = stringify.stringify(default)
+
+    # Prompt
+    return prompt_variable(name, ptype, description, choices=choices, default=default, default_alias=default_alias)
 
 # -----------------------------------------------------------------
 
@@ -259,7 +282,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     else: definition.add_optional(name, parsing_type, description, choices=choices)
 
     # Create setter
-    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False)
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False)
 
     # Get the answer
     config = setter.run(definition, prompt_optional=True)
@@ -434,21 +457,21 @@ def create_configuration_flexible(name, definition, settings=None, default=False
     if settings is not None:
 
         # Create the configuration
-        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False)
+        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False, add_config_path=False)
         config = setter.run(definition)
 
     # Settings are not given, default flag is added
     elif default:
 
         # Create the configuration
-        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False, add_config_path=False)
         config = setter.run(definition)
 
     # No test configuration is given and default flag is not added
     else:
 
         # Create the configuration
-        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False, add_config_path=False)
         config = setter.run(definition, prompt_optional=True)
 
     # Return the configuration
@@ -456,7 +479,7 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None):
 
     """
     This function ...
@@ -465,6 +488,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
     :param interactive:
     :param cwd:
     :param prompt_optional:
+    :param use_default:
     :return:
     """
 
@@ -488,7 +512,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
 
                 # Create configuration with InteractiveConfigurationSetter
                 setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, settings=config, prompt_optional=prompt_optional)
+                config = setter.run(definition, settings=config, prompt_optional=prompt_optional, use_default=use_default)
 
             # Not interactive, use dict configuration setter
             else:
@@ -525,7 +549,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
             if interactive:
 
                 setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, prompt_optional=prompt_optional)
+                config = setter.run(definition, prompt_optional=prompt_optional, use_default=use_default)
 
             # Not interactive
             else:
@@ -543,6 +567,9 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
 
         # Command is not fond
         else:
+
+            # Cannot pass use_default
+            if use_default is not None: raise ValueError("Cannot specifiy 'use_default': command is not recognized so configuration definition cannot be found")
 
             # Create an empty definition
             definition = ConfigurationDefinition(write_config=False)
@@ -752,6 +779,31 @@ class Configuration(Map):
         # Load the settings
         lines = string.split("\n")
         load_mapping(iter(lines), config)
+
+        # Return the config
+        return config
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Create the config
+        config = cls()
+
+        # Load the settings
+        lines_iterator = remote.read_lines(path)
+        load_mapping(lines_iterator, config)
+
+        # Set the path: NO
+        #config._path = path
 
         # Return the config
         return config
@@ -1843,7 +1895,7 @@ class ConfigurationDefinition(object):
 
             # List-type default value
             if types.is_sequence(default):
-                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ")) + ")"
+                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ") + ")")
 
             # Regular default value
             elif default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
@@ -1885,7 +1937,7 @@ class ConfigurationSetter(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -1893,6 +1945,7 @@ class ConfigurationSetter(object):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Set the name and description
@@ -1905,6 +1958,7 @@ class ConfigurationSetter(object):
         # Set options
         self.add_logging = add_logging
         self.add_cwd = add_cwd
+        self.add_config_path = add_config_path
 
         # The configuration
         self.config = Configuration()
@@ -1947,7 +2001,7 @@ class ConfigurationSetter(object):
             else: self.definition.add_flag("report", "write a report file")  # otherwise, ask
 
         # Add config path
-        if self.definition.write_config:
+        if self.add_config_path and self.definition.write_config:
 
             # Set the path to the directory where the configuration file should be saved
             if self.definition.config_path is not None: self.definition.add_fixed("config_path", "directory for the configuration file to be written to", self.definition.config_path)
@@ -1968,7 +2022,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -1976,20 +2030,22 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
     # -----------------------------------------------------------------
 
-    def run(self, definition, prompt_optional=None, settings=None):
+    def run(self, definition, prompt_optional=None, settings=None, use_default=None):
 
         """
         This function ...
         :param definition:
         :param prompt_optional:
         :param settings:
+        :param use_default:
         :return:
         """
 
@@ -2000,19 +2056,20 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         self.set_logging_and_cwd()
 
         # Do interactive
-        self.interactive(prompt_optional, settings=settings)
+        self.interactive(prompt_optional, settings=settings, use_default=use_default)
 
         # Return the config
         return self.config
 
     # -----------------------------------------------------------------
 
-    def interactive(self, prompt_optional, settings=None):
+    def interactive(self, prompt_optional, settings=None, use_default=None):
 
         """
         This function ...
         :param prompt_optional:
         :param options:
+        :param use_default:
         :return:
         """
 
@@ -2034,7 +2091,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
                     except ValueError: log.warning("Invalid input. Try again.")
 
         # Get the settings from an interactive prompt
-        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings)
+        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings, use_default=use_default)
 
 # -----------------------------------------------------------------
 
@@ -2044,7 +2101,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2052,10 +2109,11 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Create the command-line parser
         self.parser = argparse.ArgumentParser(prog=name, description=description)
@@ -2135,7 +2193,7 @@ class FileConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2143,10 +2201,11 @@ class FileConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(FileConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Set the path to the specified configuration file
         self.path = path
@@ -2211,7 +2270,7 @@ class DictConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -2220,10 +2279,11 @@ class DictConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(DictConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # Set the user-provided dictionary
         self.dictionary = dictionary
@@ -2271,7 +2331,7 @@ class PassiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         The constructor ...
@@ -2279,10 +2339,11 @@ class PassiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(PassiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(PassiveConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
     # -----------------------------------------------------------------
 
@@ -2326,7 +2387,7 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
 
         """
         This function ...
@@ -2334,10 +2395,11 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
+        :param add_config_path:
         """
 
         # Call the constructor of the base class
-        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
 
         # ...
 
@@ -3092,7 +3154,7 @@ def add_settings_default(config, definition):
 
 # -----------------------------------------------------------------
 
-def add_settings_interactive(config, definition, prompt_optional=True, settings=None):
+def add_settings_interactive(config, definition, prompt_optional=True, settings=None, use_default=None):
 
     """
     This function ...
@@ -3100,11 +3162,15 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
     :param definition:
     :param prompt_optional:
     :param settings:
+    :param use_default:
     :return:
     """
 
     # Fixed
     for name in definition.fixed:
+
+        # Check
+        if use_default is not None and name in use_default: raise ValueError("Cannot use the default value for a fixed setting")
 
         # Check in settings
         if settings is not None and name in settings:
@@ -3131,6 +3197,9 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         if settings is not None and name in settings:
             config[name] = settings[name]
             continue
+
+        # Check
+        if use_default is not None and name in use_default: raise ValueError("Cannot use the default value for a required setting")
 
         # Get properties
         real_type = definition.required[name].type
@@ -3327,6 +3396,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         max_value = definition.pos_optional[name].max_value
         forbidden = definition.pos_optional[name].forbidden
         default_alias = definition.pos_optional[name].default_alias
+
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -3554,6 +3628,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         forbidden = definition.optional[name].forbidden
         default_alias = definition.optional[name].default_alias
 
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
+
         # Get list of choices and a dict of their descriptions
         if choices is not None:
             choices_list = choices.keys() if isinstance(choices, dict) else choices
@@ -3582,8 +3661,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 # Dynamic list
                 if dynamic_list:
 
-                    log.info(
-                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
 
                     real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
 
@@ -3776,6 +3854,11 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         letter = definition.flags[name].letter
         default = definition.flags[name].default  # True or False
 
+        # Check
+        if use_default is not None and name in use_default:
+            config[name] = default
+            continue
+
         if not prompt_optional:
             value = default
             # Set the value
@@ -3959,6 +4042,7 @@ def check_default(default, user_type):
     """
 
     default_type, default_string = stringify.stringify(default)
+    #print(default_type, default_string)
     if default_type != user_type and not are_related_types(default_type, user_type):
 
         # List-like property
@@ -4031,7 +4115,7 @@ def try_to_convert_to_type(default, user_type):
     elif types.is_string_type(default): return try_to_convert_from_string(default, user_type)
     else:
         #raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
-        try: return try_to_convert_from_string(str(default), user_type)
+        try: return try_to_convert_from_string(tostr(default), user_type)
         except ValueError: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------

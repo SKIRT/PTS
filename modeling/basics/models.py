@@ -39,7 +39,7 @@ from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
-default_truncation = 2.5
+default_truncation = 3.
 
 # -----------------------------------------------------------------
 

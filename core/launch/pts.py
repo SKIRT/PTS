@@ -652,43 +652,9 @@ class PTSRemoteLauncher(object):
             # Debugging
             log.debug("Uploading the input ...")
 
-            ## Save the input locally
+            # Load the dictionary in the remote session
+            python.load_dictionary("input_dict", input_dict, local_temp_path=temp_path, remote_temp_path=remote_temp_path)
 
-            local_input_filepaths = []
-
-            for name in input_dict:
-
-                # Determine filepath
-                path = fs.join(temp_path, name + "." + input_dict[name].default_extension)
-
-                # Save
-                input_dict[name].saveto(path)
-
-                # Add the filepath
-                local_input_filepaths.append(path)
-
-            #### UPLOAD THE INPUT :
-
-            # Upload the input files
-            self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
-
-            ### LOAD THE INPUT DICT REMOTELY
-            python.send_line("input_dict = dict()", show_output=log.is_debug())
-            for name in input_dict:
-
-                # Determine the remote filepath
-                remote_filepath = fs.join(remote_temp_path, name + "." + input_dict[name].default_extension)
-
-                # Import the class of the filetype remotely
-                classpath = str(type(input_dict[name])).split("'")[1].split("'")[0]
-
-                modulepath, classname = classpath.rsplit(".", 1)
-
-                python.send_line("input_module = importlib.import_module('" + modulepath + "')", show_output=log.is_debug())  # get the module of the class
-                python.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug())  # get the class
-
-                # Open the input file
-                python.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
         ###
 
         # Import the Configuration class remotely

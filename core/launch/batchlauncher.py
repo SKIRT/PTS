@@ -19,7 +19,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import SKIRTRemote
 from ..remote.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
@@ -36,6 +36,7 @@ from ..simulation.execute import SkirtExec
 from ..simulation.input import SimulationInput
 from ..simulation.skifile import SkiFile
 from ..simulation.arguments import SkirtArguments
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -61,7 +62,7 @@ class BatchLauncher(Configurable):
         # The local SKIRT execution context
         self.skirt = SkirtExec()
 
-        # Initialize a list to contain different SkirtRemote instances for the different remote hosts
+        # Initialize a list to contain different SKIRTRemote instances for the different remote hosts
         self.remotes = []
 
         # For some remote hosts, if they use a scheduling system, defines the name of the cluster to be used
@@ -701,8 +702,11 @@ class BatchLauncher(Configurable):
         # 4. Retrieve the simulations that are finished
         self.try_retrieving()
 
+        # Show the simulations that are finished
+        if self.has_simulations and self.config.show: self.show()
+
         # 5. Analyse the output of the retrieved simulations
-        self.try_analysing()
+        if self.has_simulations: self.try_analysing()
 
         # Write
         self.write()
@@ -805,7 +809,7 @@ class BatchLauncher(Configurable):
         for host_id in host_ids:
 
             # Create a remote SKIRT execution context
-            remote = SkirtRemote()
+            remote = SKIRTRemote()
 
             # Check whether a cluster name is defined
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
@@ -1254,7 +1258,9 @@ class BatchLauncher(Configurable):
                 log.info("Launching simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Run the simulation
-                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), show_progress=self.config.show_progress)
+                simulation = self.skirt.run(definition, logging_options=logging_options,
+                                            parallelization=parallelization_item, silent=(not log.is_debug()),
+                                            show_progress=self.config.show_progress)
 
                 # Overwrite the simulation object when the definition had been altered by this class
                 if original_definition is not None:
@@ -1393,7 +1399,7 @@ class BatchLauncher(Configurable):
                 # Success
                 log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
 
-                # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
+                # Set the parallelization scheme of the simulation (important since SKIRTRemote does not know whether
                 # hyperthreading would be enabled if the user provided the parallelization_item when adding the
                 # simulation to the queue
                 simulation.parallelization = parallelization_item
@@ -1572,6 +1578,52 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.nsimulations > 0
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the output of retrieved simulations ...")
+
+        # Loop over the simulations
+        print("")
+        for simulation in self.simulations:
+
+            # Print the simulation name
+            print(fmt.blue + simulation.prefix() + fmt.reset + ":")
+
+            # Show the output
+            simulation.output.show(line_prefix="  ")
+
+    # -----------------------------------------------------------------
+
     def try_analysing(self):
 
         """
@@ -1640,7 +1692,7 @@ class BatchLauncher(Configurable):
             extraction_path = fs.join(definition.base_path, "extr")
             # the ski files of multiple simulations can be int he same directory
             if fs.is_directory(extraction_path): extraction_path = fs.join(definition.base_path, definition.name, "extr")
-        elif self.config.analysis.relative: extraction_path = fs.join(definition.base_path, self.config.analysis.extraction.path)
+        elif self.config.relative_analysis_paths: extraction_path = fs.join(definition.base_path, self.config.analysis.extraction.path)
         else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation_name)
 
         # Create the extraction directory only if it is necessary
@@ -1656,7 +1708,7 @@ class BatchLauncher(Configurable):
             plotting_path = fs.join(definition.base_path, "plot")
             # the ski files of multiple simulations can be in the same directory
             if fs.is_directory(plotting_path): plotting_path = fs.join(definition.base_path, simulation_name, "plot")
-        elif self.config.analysis.relative: plotting_path = fs.join(definition.base_path, self.config.analysis.plotting.path)
+        elif self.config.relative_analysis_paths: plotting_path = fs.join(definition.base_path, self.config.analysis.plotting.path)
         else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation_name)
 
         # Create the plotting directory only if it is necessary
@@ -1672,7 +1724,7 @@ class BatchLauncher(Configurable):
             misc_path = fs.join(definition.base_path, "misc")
             # the ski files of multiple simulations can be int he same directory
             if fs.is_directory(misc_path): misc_path = fs.join(definition.base_path, simulation_name, "misc")
-        elif self.config.analysis.relative: misc_path = fs.join(definition.base_path, self.config.analysis.misc.path)
+        elif self.config.relative_analysis_paths: misc_path = fs.join(definition.base_path, self.config.analysis.misc.path)
         else: misc_path = fs.join(self.config.analysis.misc.path, simulation_name)
 
         # Create the misc directory only if it is necessary

@@ -65,8 +65,12 @@ def represent_unit(unit, **kwargs):
     for key in output_replacements:
         string = string.replace(key, output_replacements[key])
 
-    # Remove whitespace
+    # Remove whitespace -> NO: makes ssr from s * sr
     #string = string.replace(" ", "")
+
+    # NECESSARY FOR SKI FILES: REMOVE WHITESPACE AROUND '/'
+    string = string.replace(" /", "/")
+    string = string.replace("/ ", "/")
 
     # Add details if requested
     if add_physical_type: string += " [" + unit.physical_type + "]"

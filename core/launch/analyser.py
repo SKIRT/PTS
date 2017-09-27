@@ -52,6 +52,30 @@ class SimulationAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def analysed_batch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.analysed_batch
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysed_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.analysed_scaling
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -70,10 +94,10 @@ class SimulationAnalyser(Configurable):
         self.analyse_basic()
 
         # 3. Run the batch analysis
-        if self.simulation.from_batch: self.analyse_batch()
+        if self.simulation.from_batch and not self.analysed_batch: self.analyse_batch()
 
         # 3. Analyse the scaling, if the simulation is part of a scaling test
-        if self.simulation.from_scaling_test: self.analyse_scaling()
+        if self.simulation.from_scaling_test and not self.analysed_scaling: self.analyse_scaling()
 
         # 4. Perform extra analysis
         self.analyse_extra()
@@ -143,6 +167,10 @@ class SimulationAnalyser(Configurable):
         # Run the batch analyser on the simulation
         self.batch_analyser.run(simulation=self.simulation, timeline=self.basic_analyser.timeline, memory=self.basic_analyser.memory)
 
+        # Set flag
+        self.simulation.analysed_batch = True
+        self.simulation.save()
+
     # -----------------------------------------------------------------
 
     def analyse_scaling(self):
@@ -157,6 +185,10 @@ class SimulationAnalyser(Configurable):
 
         # Run the scaling analyser
         self.scaling_analyser.run(simulation=self.simulation, timeline=self.basic_analyser.timeline, memory=self.basic_analyser.memory)
+
+        # Set flag
+        self.simulation.analysed_scaling = True
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -173,14 +205,26 @@ class SimulationAnalyser(Configurable):
         # Loop over the 'extra' analyser classes that are defined for this simulation
         for analyser_class in self.simulation.analyser_classes:
 
+            # Get name
+            class_name = analyser_class.__name__
+
+            # Check
+            if class_name in self.simulation.analysed_extra:
+                log.debug("Analysis with the " + class_name + " class has already been performed")
+                continue
+
             # Debugging
-            log.debug("Running the " + analyser_class.__name__ + " on the simulation ...")
+            log.debug("Running the " + class_name + " on the simulation ...")
 
             # Create an instance of the analyser class
             analyser = analyser_class.for_simulation(self.simulation)
 
             # Run the analyser, giving this simulation analyser instance as an argument
             analyser.run(simulation_analyser=self)
+
+            # Add name to analysed_extra
+            self.simulation.analysed_extra.append(class_name)
+            self.simulation.save()
 
         # Indicate that this simulation has been analysed
         self.simulation.analysed = True

@@ -845,7 +845,9 @@ def string_list(argument):
     """
 
     if argument == "": return []
-    else: return argument.split(",")
+    else:
+        parts = argument.split(",")
+        return [part.strip() for part in parts]
 
 # -----------------------------------------------------------------
 
@@ -1147,6 +1149,19 @@ def string_filepath_dictionary(argument):
         if not types.is_string_type(key): raise ValueError("All keys must be strings")
         d[key] = file_path(value) # check if parsing as filepath succeeds
     return d
+
+# -----------------------------------------------------------------
+
+def filepath_or_string_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_filepath_dictionary(argument)
+    except (ValueError, SyntaxError) as e: return file_path(argument)
 
 # -----------------------------------------------------------------
 
@@ -2113,17 +2128,21 @@ def parallelization(argument, default_nthreads_per_core=1):
 
     # Parse
     splitted = argument.split(":")
-    if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
-    if len(splitted) > 3: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core]'")
+    if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
+    if len(splitted) > 4: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
 
     ncores = integer(splitted[0])
     nprocesses = integer(splitted[1])
 
     # Get number of threads per core (hyperthreading)
-    if len(splitted) == 3: nthreads_per_core = integer(splitted[2])
+    if len(splitted) > 2: nthreads_per_core = integer(splitted[2])
     else: nthreads_per_core = default_nthreads_per_core
 
+    # Get data_parallel flag
+    if len(splitted) > 3: data_parallel = boolean(splitted[3])
+    else: data_parallel = False
+
     # Create and return the parallelization
-    return Parallelization(ncores, nthreads_per_core, nprocesses)
+    return Parallelization(ncores, nthreads_per_core, nprocesses, data_parallel=data_parallel)
 
 # -----------------------------------------------------------------

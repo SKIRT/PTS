@@ -1659,7 +1659,7 @@ class FitSKIRTLauncher(Configurable):
 
         # Setup the remote execution context
         #if self.config.remote is not None:
-        #    self.remote = SkirtRemote()
+        #    self.remote = SKIRTRemote()
         #    self.remote.setup(self.config.remote, self.config.cluster)
 
         # Create output directory

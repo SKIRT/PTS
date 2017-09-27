@@ -22,6 +22,9 @@ from ...core.tools import filesystem as fs
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import time
 from ...core.tools import browser
+from ...core.tools.utils import lazyproperty
+from ..truncation.component import ellipse_page_filename, significance_page_filename
+from ..core.environment import all_maps_filename, maps_summary_filename, old_maps_filename, young_maps_filename, ionizing_maps_filename, dust_maps_filename, clip_maps_filename
 
 # -----------------------------------------------------------------
 
@@ -51,7 +54,984 @@ title_size = 20
 
 # -----------------------------------------------------------------
 
-class HTMLPageComponent(GalaxyModelingComponent):
+data_page_filename = "data.html"
+photometry_page_filename = "photometry.html"
+components_page_filename = "components.html"
+preparation_page_filename = "preparation.html"
+model_page_filename = "model.html"
+maps_page_filename = "maps.html"
+fitting_page_filename = "fitting.html"
+seds_page_filename = "seds.html"
+datacubes_page_filename = "datacubes.html"
+fluxes_page_filename = "fluxes.html"
+images_page_filename = "images.html"
+heating_page_filename = "heating.html"
+colours_page_filename = "colours.html"
+attenuation_page_filename = "attenuation.html"
+
+# -----------------------------------------------------------------
+
+class HTMLComponent(GalaxyModelingComponent):
+
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        Thisf ucntion ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(HTMLComponent, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fetch_properties")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fetch_images")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_prepared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("prepare_data")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("decompose")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_photometry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("photometry")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("build_model")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("configure_fit")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fit_sed")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "launch_analysis" in self.history
+        #return self.history.finished("launch_analysis")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_datacubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "launch_analysis" in self.history
+        #return self.history.finished("launch_analysis")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("launch_analysis")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model_images(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return self.history.finished("launch_analysis")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished_any("analyse_attenuation_map", "analyse_attenuation_curve")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("analyse_colours")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished_any("analyse_cell_heating", "analyse_projected_heating")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def index_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.html_index_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def status_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.html_status_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_index_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.index_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_status_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.status_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def status_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.status_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, data_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_data_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.data_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_page_name(self):
+        """
+        THisn function ...
+        :return:
+        """
+
+        return fs.name(self.data_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, photometry_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_photometry_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.photometry_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.photometry_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def components_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, components_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_components_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.components_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def components_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.components_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preparation_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, preparation_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_preparation_page(self):
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.preparation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preparation_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.preparation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, model_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.model_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.model_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, maps_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, fitting_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fitting_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.fitting_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, seds_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.seds_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, seds_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def datacubes_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, datacubes_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_datacubes_page(self):
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.datacubes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def datacubes_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.datacubes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, fluxes_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_page_name(self):
+        """
+        This fnc
+        :return:
+        """
+
+        return fs.name(self.fluxes_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, images_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.images_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, heating_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_heating_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.heating_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.heating_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_page_path(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, colours_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.colours_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.colours_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, attenuation_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_page(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.attenuation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_page_name(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.attenuation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_html_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.truncation_path, "html")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_ellipse_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.truncation_html_path, ellipse_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_significance_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.truncation_html_path, significance_page_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_truncation_ellipse_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.truncation_ellipse_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_truncation_significance_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.truncation_significance_page_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_html_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, "html")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_maps_page_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, all_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_summary_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, maps_summary_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_maps_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, old_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_maps_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, young_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_maps_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, ionizing_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_maps_page_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, dust_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def clip_maps_page_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, clip_maps_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.all_maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_summary_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.maps_summary_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_maps_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ionizing_maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_maps_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_clip_maps_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.clip_maps_page_path)
+
+# -----------------------------------------------------------------
+
+class HTMLPageComponent(HTMLComponent):
 
     """
     This function ...
@@ -115,6 +1095,42 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def scripts_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.environment.html_scripts_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scripts_model_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.scripts_path, "model")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scripts_components_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.scripts_path, "components")
+
+    # -----------------------------------------------------------------
+
+    @property
     def images_path(self):
 
         """
@@ -126,375 +1142,51 @@ class HTMLPageComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def index_page_path(self):
+    @lazyproperty
+    def images_data_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.environment.html_index_path
+        return fs.create_directory_in(self.images_path, "data")
 
     # -----------------------------------------------------------------
 
-    @property
-    def status_page_path(self):
+    @lazyproperty
+    def images_maps_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.environment.html_status_path
+        return fs.create_directory_in(self.images_path, "maps")
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_status_page(self):
+    @lazyproperty
+    def images_seds_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.status_page_path)
+        return fs.create_directory_in(self.images_path, "seds")
 
     # -----------------------------------------------------------------
 
-    @property
-    def status_page_name(self):
+    @lazyproperty
+    def images_datacubes_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.name(self.status_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def data_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "data.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_data_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.data_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def data_page_name(self):
-
-        """
-        THisn function ...
-        :return:
-        """
-
-        return fs.name(self.data_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def components_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "components.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_components_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.components_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def components_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.components_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def preparation_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "preparation.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_preparation_page(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
-        return fs.is_file(self.preparation_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def preparation_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.preparation_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "model.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_model_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.model_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.model_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "maps.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_maps_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.maps_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.maps_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fitting_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "fitting.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_fitting_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.fitting_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fitting_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.fitting_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def heating_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "heating.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_heating_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.heating_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def heating_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.heating_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def colours_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "colours.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_colours_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.colours_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def colours_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.colours_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def attenuation_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "attenuation.html")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_attenuation_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.attenuation_page_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def attenuation_page_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.attenuation_page_path)
+        return fs.create_directory_in(self.images_path, "datacubes")
 
     # -----------------------------------------------------------------
 
@@ -656,6 +1348,9 @@ class HTMLPageComponent(GalaxyModelingComponent):
         #fs.write_text(self.page_path, self.page)
         self.page.saveto(self.page_path)
 
+        # Fix
+        fix_local_paths(self.page_path, self.html_path)
+
     # -----------------------------------------------------------------
 
     def show(self):
@@ -670,5 +1365,51 @@ class HTMLPageComponent(GalaxyModelingComponent):
 
         # Open
         browser.open_path(self.page_path)
+
+# -----------------------------------------------------------------
+
+def fix_local_paths(filepath, html_path):
+
+    """
+    This function ...
+    :param filepath:
+    :param html_path:
+    :return:
+    """
+
+    filename = fs.name(filepath)
+
+    # Debugging
+    log.debug("Fixing local paths in the '" + filename + "' file ...")
+
+    fixed = False
+    newlines = []
+
+    html_path = html_path + "/"
+
+    # Loop over the lines in the file
+    for line in fs.read_lines(filepath):
+
+        if html_path in line:
+
+            #print(line)
+            line = line.replace(html_path, "")
+            fixed = True
+            #print("NEWLINE", line)
+
+        # Add the line
+        newlines.append(line)
+
+    # Write, only if fixed
+    if not fixed: return
+
+    # Debugging
+    log.debug("Overwriting the '" + filename + "' file with the new image paths ...")
+
+    # Remove original file
+    fs.remove_file(filepath)
+
+    # Write the new lines
+    fs.write_lines(filepath, newlines)
 
 # -----------------------------------------------------------------

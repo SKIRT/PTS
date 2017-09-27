@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.composite import SimplePropertyComposite
+from ..basics.plot import plotting_libraries, mpl, plotting_formats, pdf
 
 # -----------------------------------------------------------------
 
@@ -92,6 +93,18 @@ class SchedulingOptions(Options):
 
 # -----------------------------------------------------------------
 
+progress_name = "progress"
+timeline_name = "timeline"
+memory_name = "memory"
+seds_name = "seds"
+grids_name = "grids"
+rgb_name = "rgb"
+wave_name = "wave"
+fluxes_name = "fluxes"
+images_name = "images"
+
+# -----------------------------------------------------------------
+
 class AnalysisOptions(Options):
 
     """
@@ -118,30 +131,63 @@ class AnalysisOptions(Options):
         # Plotting
         self.add_section("plotting", "options for plotting simulation output")
         self.plotting.add_property("path", "string", "plotting directory", None)
-        self.plotting.add_property("format", "string", "image format for the plots", "pdf", choices=["pdf", "png"])
+        self.plotting.add_property("format", "string", "image format for the plots", pdf, choices=plotting_formats)
         self.plotting.add_property("progress", "boolean", "make plots of the progress of the simulation phases as a function of time", False)
         self.plotting.add_property("timeline", "boolean", "plot the timeline for the different processes", False)
         self.plotting.add_property("memory", "boolean", "plot the memory consumption as a function of time", False)
         self.plotting.add_property("seds", "boolean", "make plots of the simulated SEDs", False)
         self.plotting.add_property("grids", "boolean", "make plots of the dust grid", False)
         self.plotting.add_property("reference_seds", "filepath_list", "path to a reference SED file against which the simulated SKIRT SEDs should be plotted", None)
+        self.plotting.add_property("ignore_filters", "filter_list", "filters to ignore for the plotting", [])
+        self.plotting.add_property("library", "string", "plotting library", default_value=mpl, choices=plotting_libraries)
 
         # Misc
+        ## General
         self.add_section("misc", "settings for creating data of various types from the simulation output")
         self.misc.add_property("path", "string", "misc output directory", None)
+
+        ## RGB images
         self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
+
+        ## Wave movies
         self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
-        self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
-        self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
+
+        ## Observed fluxes and images
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
         self.misc.add_property("observation_instruments", "string_list", "the names of the instruments for which to recreate the observations", None)
-        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
-        self.misc.add_property("images_wcs", "file_path", "the path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images", None)
-        self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
-        self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
-        self.misc.add_property("rebin_wcs", "string_string_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
-        self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
+
+        ## Observed fluxes
+        self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
         self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
+
+        ## Observed images
+        self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
+        self.misc.add_property("wcs_instrument", "string", "instrument for which to take the images_wcs as the WCS (if not a dictionary)")
+        self.misc.add_property("images_wcs", "filepath_or_string_filepath_dictionary", "path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images (single path or path for each datacube as a dictionary)", None)
+        self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
+
+        ## CONVOLUTION
+        self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
+        self.misc.add_property("images_psfs_auto", "boolean", "automatically determine the appropriate PSF kernel for each image", False)
+
+        # Remote thresholds
+        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
+        self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "2 GB", convert_default=True)
+        self.misc.add_property("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
+        self.misc.add_property("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
+
+        ## REBINNING
+        self.misc.add_property("rebin_instrument", "string", "instrument for which the rebin_wcs or rebin_dataset should be used")
+        self.misc.add_property("rebin_wcs", "filepath_or_string_filepath_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
+        self.misc.add_property("rebin_dataset", "file_path", "path to the dataset of which the coordinate systems are to be used as rebinning references")
+
+        ## OTHER
+        self.misc.add_property("images_nprocesses_local", "positive_integer", "number of parallel processes to use when creating the observed images (local execution)", 2)
+        self.misc.add_property("images_nprocesses_remote", "positive_integer", "number of parallel processes to use when creating the observed images (remote execution)", 8)
+        #self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
+        self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
+        self.misc.add_property("images_spectral_convolution", "boolean", "use spectral convolution to create observed images", True)
+        self.misc.add_property("fluxes_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes", True)
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)
@@ -195,12 +241,13 @@ class AnalysisOptions(Options):
 
     # -----------------------------------------------------------------
 
-    def check(self, logging_options=None, output_path=None):
+    def check(self, logging_options=None, output_path=None, retrieve_types=None):
 
         """
         This function ...
         :param logging_options:
         :param output_path:
+        :param retrieve_types:
         :return:
         """
 
@@ -208,6 +255,32 @@ class AnalysisOptions(Options):
         log.info("Checking the analysis options ...")
 
         # MISC
+        self.check_misc(output_path=output_path, retrieve_types=retrieve_types)
+
+        # PLOTTING
+        self.check_plotting(output_path=output_path, retrieve_types=retrieve_types)
+
+        # EXTRACTION
+        self.check_extraction(output_path=output_path, retrieve_types=retrieve_types)
+
+        # Check logging options
+        self.check_logging(logging_options)
+
+    # -----------------------------------------------------------------
+
+    def check_misc(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking miscellaneous settings ...")
+
+        from ..simulation.output import output_types as ot
 
         # If any misc setting has been enabled, check whether the misc path has been set
         if self.any_misc and self.misc.path is None:
@@ -216,7 +289,40 @@ class AnalysisOptions(Options):
                 log.warning("Misc output will be written to " + output_path)
                 self.misc.path = output_path
 
-        # PLOTTING
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            if self.misc.rgb and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+                log.warning("Creating RGB images is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(ot.total_images)
+
+            if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+                log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(ot.total_images)
+
+            if self.misc.fluxes and ot.seds not in retrieve_types:
+                log.warning("Calculating observed fluxes is enabled so SED retrieval will also be enabled")
+                retrieve_types.append(ot.seds)
+
+            if self.misc.images and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+                log.warning("Creating observed images is enabled so total datacube retrieval will also be enabled")
+                retrieve_types.append(ot.images)
+
+    # -----------------------------------------------------------------
+
+    def check_plotting(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking plotting settings ...")
+
+        from ..simulation.output import output_types as ot
 
         # If any plotting setting has been enabled, check whether the plotting path has been set
         if self.any_plotting and self.plotting.path is None:
@@ -240,7 +346,34 @@ class AnalysisOptions(Options):
             log.warning("Timeline plotting is enabled so timeline extraction will also be enabled")
             self.extraction.timeline = True
 
-        # EXTRACTION
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            # If SED plotting has been enabled, enable SED retrieval
+            if self.plotting.seds and ot.seds not in retrieve_types:
+                log.warning("SED plotting is enabled so SED file retrieval will also be enabled")
+                retrieve_types.append(ot.seds)
+
+            # If grid plotting has been enabled:
+            if self.plotting.grids and ot.grid not in retrieve_types:
+                log.warning("Grid plotting is enabled so grid data retrieval will also be enabled")
+                retrieve_types.append(ot.grid)
+
+    # -----------------------------------------------------------------
+
+    def check_extraction(self, output_path=None, retrieve_types=None):
+
+        """
+        This function ...
+        :param output_path:
+        :param retrieve_types:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking extraction settings ...")
+
+        from ..simulation.output import output_types as ot
 
         # If any extraction setting has been enabled, check whether the extraction path has been set
         if self.any_extraction and self.extraction.path is None:
@@ -248,6 +381,37 @@ class AnalysisOptions(Options):
             else:
                 log.warning("Extraction data will be placed in " + output_path)
                 self.extraction.path = output_path
+
+        # Adjust retrieve types
+        if retrieve_types is not None:
+
+            # If progress plotting has been enabled, enable log file retrieval
+            if self.extraction.progress and ot.logfiles not in retrieve_types:
+                log.warning("Progress extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(ot.logfiles)
+
+            # If memory extraction has been enabled, enable log file retrieval
+            if self.extraction.memory and ot.logfiles not in retrieve_types:
+                log.warning("Memory extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(ot.logfiles)
+
+            # If timeline extraction has been enabled, enable log file retrieval
+            if self.extraction.timeline and ot.logfiles not in retrieve_types:
+                log.warning("Timeline extraction is enabled so log file retrieval will also be enabled")
+                retrieve_types.append(ot.logfiles)
+
+    # -----------------------------------------------------------------
+
+    def check_logging(self, logging_options):
+
+        """
+        This function ...
+        :param logging_options:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking logging options ...")
 
         # Check the logging options, and adapt if necessary
         if logging_options is not None:

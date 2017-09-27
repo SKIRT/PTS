@@ -29,14 +29,19 @@ basic_dust_map_names = [basic_dust_map_name]
 
 # -----------------------------------------------------------------
 
+disk_component_name = "disk"
+basic_dust_component_names = [disk_component_name]
+
+# -----------------------------------------------------------------
+
 # Define titles for the fixed components
 titles = dict()
-titles["disk"] = "Dust disk"
+titles[disk_component_name] = "Dust disk"
 
 # -----------------------------------------------------------------
 
 component_name_for_map_name = dict()
-component_name_for_map_name["dust_disk"] = "disk"
+component_name_for_map_name["dust_disk"] = disk_component_name
 
 # -----------------------------------------------------------------
 
@@ -61,6 +66,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # The scaleheight of the old stellar population
         self.old_scaleheight = None
+
+        # The name of the dust map from the maps selection
+        self.dust_map_name = None
 
     # -----------------------------------------------------------------
 
@@ -202,10 +210,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
             config = setter.run(definition, prompt_optional=True)
 
         # Set the title
-        config.title = titles["disk"]
+        config.title = titles[disk_component_name]
 
         # Set the parameters
-        self.parameters["disk"] = config
+        self.parameters[disk_component_name] = config
 
     # -----------------------------------------------------------------
 
@@ -244,7 +252,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         path = prompt_filepath("filepath", "dust disk map path")
 
         # Load the map
-        self.maps["disk"] = Frame.from_file(path)
+        self.maps[disk_component_name] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -264,11 +272,14 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Ask for the dust map to use
         name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
 
+        # Set the name of the dust map from the selection
+        self.dust_map_name = name
+
         # Set the path
         filepath = self.static_maps_selection.dust_map_paths[name]
 
         # Set the map
-        self.maps["disk"] = Frame.from_file(filepath)
+        self.maps[disk_component_name] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -283,10 +294,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["disk"], model_map_filename, self.parameters["disk"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[disk_component_name], model_map_filename, self.parameters[disk_component_name].scale_height)
 
         # Set the deprojection model
-        self.deprojections["disk"] = deprojection
+        self.deprojections[disk_component_name] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -301,7 +312,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building additional dust components ...")
 
         # Proceed?
-        while prompt_proceed():
+        while prompt_proceed("build additional dust components?"):
 
             # Set parameters
             name = self.set_additional_parameters()
@@ -444,6 +455,33 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Change the filename in the geometry parameters
         parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        component_name = disk_component_name
+        return self.paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def additional_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.component_names:
+            if name in basic_dust_component_names: continue
+            else: yield name
 
     # -----------------------------------------------------------------
 

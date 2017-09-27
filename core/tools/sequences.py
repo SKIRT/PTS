@@ -670,6 +670,20 @@ def any_empty(*sequences):
 
 # -----------------------------------------------------------------
 
+def find_index(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    index = next((i for i, t in enumerate(sequence) if element == t), None)
+    return index
+
+# -----------------------------------------------------------------
+
 def find_indices(sequence, element):
 
     """
@@ -947,6 +961,22 @@ def intersection(*sequences):
 
 # -----------------------------------------------------------------
 
+def difference(sequence_a, sequence_b):
+
+    """
+    This function returns the elements that are in sequence a but not in sequence b
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    items = []
+    for item in sequence_a:
+        if item not in sequence_b: items.append(item)
+    return items
+
+# -----------------------------------------------------------------
+
 def prepend(sequence, item):
 
     """
@@ -1174,5 +1204,32 @@ def all_false(sequence):
     for item in sequence:
         if item: return False
     return True
+
+# -----------------------------------------------------------------
+
+def noccurences(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    return sequence.count(value)
+
+# -----------------------------------------------------------------
+
+def is_unique(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    if value not in sequence: raise ValueError("The value '" + str(value) + "' is not in the sequence '" + str(sequence) + "'")
+    return noccurences(sequence, value) == 1
 
 # -----------------------------------------------------------------

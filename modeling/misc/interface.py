@@ -27,6 +27,12 @@ from ...core.basics.configuration import prompt_yn
 
 # -----------------------------------------------------------------
 
+earth_name = "earth"
+faceon_name = "faceon"
+edgeon_name = "edgeon"
+
+# -----------------------------------------------------------------
+
 class ModelSimulationInterface(GalaxyModelingComponent):
 
     """
@@ -98,13 +104,22 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Prompting for the model from the model suite ...")
 
         # Select the model
-        model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite)
+        model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite, adapt=self.config.adapt, name=self.config.model_name)
 
         # Set attributes
         self.ski = ski
         self.definition = definition
         self.parameter_values = parameter_values
         self.input_paths = input_paths
+
+        # Set the 'distance' parameter value, since instruments are still not adapted from the default template.
+        # Instruments will only be added to the ski file later, so the parameter value obtained from the 'distance'
+        # label in 'select_from_model_suite' is still incorrect
+        # Other instrument properties should have been fixed (with the 'fix_labels' function)
+        self.parameter_values["distance"] = self.galaxy_distance
+
+        # Return the model name
+        return model_name
 
     # -----------------------------------------------------------------
 
@@ -130,6 +145,9 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         self.parameter_values = parameter_values
         self.input_paths = input_paths
 
+        # Return the fitting run ID, generation name, simulation name, and chi_squared
+        return run_id, generation_name, simulation_name, chi_squared
+
     # -----------------------------------------------------------------
 
     def create_wavelength_grid(self):
@@ -149,12 +167,21 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         if self.config.wg.add_emission_lines: emission_lines = EmissionLines()
         else: emission_lines = None
 
+        # Get the min and max wavelength
+        min_wavelength = self.config.wg.range.min
+        max_wavelength = self.config.wg.range.max
+
+        # Check the range
+        for fltr in self.observed_filters:
+            if fltr.wavelength < min_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+            if fltr.wavelength > max_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
         # Create the grid
         # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
         grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
             create_one_subgrid_wavelength_grid(self.config.wg.npoints, emission_lines, fixed,
-                                               min_wavelength=self.config.wg.range.min,
-                                               max_wavelength=self.config.wg.range.max)
+                                               min_wavelength=min_wavelength,
+                                               max_wavelength=max_wavelength)
 
         # Set the grid
         self.wavelength_grid = grid
@@ -290,15 +317,17 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_projections(self):
+    def create_projection_systems(self, make_edgeon=True, make_faceon=True):
 
         """
         This function ...
+        :param make_edgeon:
+        :param make_faceon:
         :return:
         """
 
         # Inform the user
-        log.info("Creating the projection systems ...")
+        #log.info("Creating the projection systems ...")
 
         azimuth = 0.0
 
@@ -308,14 +337,20 @@ class ModelSimulationInterface(GalaxyModelingComponent):
             earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
                                                                       self.galaxy_inclination, azimuth,
                                                                       self.disk_position_angle)
+            deprojection_name = "grid"
 
         # Use deprojections
-        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth, self.config.dg.scale_heights)
+        else: earth, faceon, edgeon, deprojection_name = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
+                                                                                               azimuth, self.config.old_scale_heights,
+                                                                                               return_deprojection_name=True, scale_heights_reference="old")
 
         # Set the projection systems
-        self.projections["earth"] = earth
-        self.projections["faceon"] = faceon
-        self.projections["edgeon"] = edgeon
+        self.projections[earth_name] = earth
+        if make_faceon: self.projections[faceon_name] = faceon
+        if make_edgeon: self.projections[edgeon_name] = edgeon
+
+        # Return the deprojection name, or 'grid' if grid resolution was used to create the instruments
+        return deprojection_name
 
     # -----------------------------------------------------------------
 
@@ -327,7 +362,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["earth"]
+        return self.projections[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -339,7 +374,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["faceon"]
+        if not self.has_faceon_projection: return None
+        return self.projections[faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -351,7 +387,32 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.projections["edgeon"]
+        if not self.has_edgeon_projection: return None
+        return self.projections[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return faceon_name in self.projections
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_projection(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return edgeon_name in self.projections
 
     # -----------------------------------------------------------------
 
@@ -378,13 +439,13 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Creating the instruments ...")
 
         # Create an earth instrument
-        self.instruments["earth"] = self.instrument_class.from_projection(self.earth_projection)
+        self.instruments[earth_name] = self.instrument_class.from_projection(self.earth_projection)
 
         # Create a faceon instrument
-        self.instruments["faceon"] = self.instrument_class.from_projection(self.faceon_projection)
+        if self.has_faceon_projection: self.instruments[faceon_name] = self.instrument_class.from_projection(self.faceon_projection)
 
         # Create an edgeon instrument
-        self.instruments["edgeon"] = self.instrument_class.from_projection(self.edgeon_projection)
+        if self.has_edgeon_projection: self.instruments[edgeon_name] = self.instrument_class.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
@@ -396,7 +457,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["earth"]
+        return self.instruments[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -408,7 +469,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["faceon"]
+        if not self.has_faceon_instrument: return None
+        return self.instruments[faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -420,6 +482,31 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        return self.instruments["edgeon"]
+        if not self.has_edgeon_instrument: return None
+        return self.instruments[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_instrument(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return faceon_name in self.instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return edgeon_name in self.instruments
 
 # -----------------------------------------------------------------

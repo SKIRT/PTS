@@ -22,7 +22,14 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_optional("host_name", "string", "remote host name", default_host_name, choices=smb_host_ids())
 
 # Flags
-definition.add_flag("regenerate", "regenerate the pages", False)
+definition.add_flag("generate", "generate the pages", True)
+definition.add_flag("regenerate", "regenerate all pages", False)
 definition.add_flag("replot", "make plots again", False)
+definition.add_flag("show", "show after publishing", False)
+
+definition.add_flag("regenerate_index", "regenerate the index page", False)
+
+# Add detail pages
+definition.add_flag("details", "add detailed pages", True)
 
 # -----------------------------------------------------------------

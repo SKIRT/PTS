@@ -640,7 +640,8 @@ class ScalingPlotter(Configurable):
                 extractor = TimeLineExtractor()
 
                 # Run the timeline extractor
-                timeline = extractor.run(simulation)
+                extractor.run(simulation)
+                timeline = extractor.table
 
                 # Add an entry to the timing table
                 unique_name = self.timing.add_from_simulation(simulation, ski, log_file, timeline, parameters=parameters)

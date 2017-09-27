@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from .tables import ModelsTable, RepresentationsTable
+from .tables import ModelsTable, RepresentationsTable, ModelMapsTable
 from ...core.basics.map import Map
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
@@ -24,12 +24,17 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from .representation import Representation
 from ...core.basics.log import log
 from .construct import add_stellar_component, add_dust_component
+from ...core.tools.utils import create_lazified_class
+
+# -----------------------------------------------------------------
+
+model_map_basename = "map"
 
 # -----------------------------------------------------------------
 
 parameters_filename = "parameters.cfg"
 deprojection_filename = "deprojection.mod"
-model_map_filename = "map.fits"
+model_map_filename = model_map_basename + ".fits"
 model_filename = "model.mod"
 properties_filename = "properties.dat"
 
@@ -41,6 +46,7 @@ representations_name = "representations"
 # -----------------------------------------------------------------
 
 models_table_filename = "models.dat"
+maps_table_filename = "maps.dat"
 representations_table_filename = "representations.dat"
 
 # -----------------------------------------------------------------
@@ -71,6 +77,14 @@ class ModelSuite(object):
         if not fs.is_file(self.models_table_path):
             table = ModelsTable()
             table.saveto(self.models_table_path)
+
+        # Determine the path to the maps table
+        self.maps_table_path = fs.join(self.models_path, maps_table_filename)
+
+        # Initialize the maps table if necessary
+        if not fs.is_file(self.maps_table_path):
+            table = ModelMapsTable()
+            table.saveto(self.maps_table_path)
 
         # Determine the path to the representations directory
         self.representations_path = fs.create_directory_in(self.build_path, representations_name)
@@ -132,9 +146,21 @@ class ModelSuite(object):
 
         from .definition import ModelDefinition
 
+        # Determine model path
         path = self.get_model_path(model_name)
         if not fs.is_directory(path): raise ValueError("Model does not exist")
-        return ModelDefinition(model_name, path)
+
+        # Load the table
+        table = self.models_table
+
+        # Determine the stellar component paths
+        stellar_paths = table.stellar_component_paths_for_model(model_name)
+
+        # Determine the dust component paths
+        dust_paths = table.dust_component_paths_for_model(model_name)
+
+        # Create the model definition and return
+        return ModelDefinition(model_name, path, stellar_paths=stellar_paths, dust_paths=dust_paths)
 
     # -----------------------------------------------------------------
 
@@ -148,6 +174,66 @@ class ModelSuite(object):
 
         # Open the table
         return ModelsTable.from_file(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ModelMapsTable.from_file(self.maps_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.old_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_name_for_model(self, model_name):
+
+        """
+        Thisn function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.young_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.ionizing_stars_map_name_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_name_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.maps_table.dust_map_name_for_model(model_name)
 
     # -----------------------------------------------------------------
 
@@ -172,6 +258,18 @@ class ModelSuite(object):
         """
 
         return len(self.model_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmodels > 0
 
     # -----------------------------------------------------------------
 
@@ -247,6 +345,18 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def get_stellar_component_paths(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.models_table.stellar_component_paths_for_model(model_name).values()
+
+    # -----------------------------------------------------------------
+
     def get_stellar_component_names(self, model_name):
 
         """
@@ -254,7 +364,24 @@ class ModelSuite(object):
         :return:
         """
 
-        return fs.directories_in_path(self.get_model_stellar_path(model_name), returns="name")
+        # NO
+        #return fs.directories_in_path(self.get_model_stellar_path(model_name), returns="name")
+
+        # NEW
+        table = self.models_table
+        return table.stellar_component_names_for_model(model_name)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_paths(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.models_table.dust_component_paths_for_model(model_name).values()
 
     # -----------------------------------------------------------------
 
@@ -266,7 +393,12 @@ class ModelSuite(object):
         :return:
         """
 
-        return fs.directories_in_path(self.get_model_dust_path(model_name), returns="name")
+        # NO
+        #return fs.directories_in_path(self.get_model_dust_path(model_name), returns="name")
+
+        # NEW
+        table = self.models_table
+        return table.dust_component_names_for_model(model_name)
 
     # -----------------------------------------------------------------
 
@@ -375,6 +507,18 @@ class ModelSuite(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_representations(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return self.nrepresentations > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def no_representations(self):
 
         """
@@ -469,6 +613,18 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def load_component_map(self, path):
+
+        """
+        Thisf unction ...
+        :param path:
+        :return:
+        """
+
+        return load_component_map(path)
+
+    # -----------------------------------------------------------------
+
     def get_stellar_component_path(self, model_name, component_name):
 
         """
@@ -478,7 +634,11 @@ class ModelSuite(object):
         :return:
         """
 
-        return fs.join(self.get_model_stellar_path(model_name), component_name)
+        # NO
+        #return fs.join(self.get_model_stellar_path(model_name), component_name)
+
+        # NEW
+        return self.models_table.stellar_component_path_for_name(model_name, component_name)
 
     # -----------------------------------------------------------------
 
@@ -492,7 +652,11 @@ class ModelSuite(object):
         :return:
         """
 
-        return fs.join(self.get_model_dust_path(model_name), component_name)
+        # NO
+        #return fs.join(self.get_model_dust_path(model_name), component_name)
+
+        # NEW
+        return self.models_table.dust_component_path_for_name(model_name, component_name)
 
     # -----------------------------------------------------------------
 
@@ -511,6 +675,23 @@ class ModelSuite(object):
 
         # Load the component
         return self.load_component(path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_components(self, model_name, add_map=False):
+
+        """
+        This function ...
+        :param model_name:
+        :param add_map:
+        :return:
+        """
+
+        # Loop over the paths
+        for path in self.get_stellar_component_paths(model_name):
+
+            # Give the component
+            yield self.load_component(path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
@@ -592,6 +773,40 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def get_stellar_component_map_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Return the map path
+        return get_component_map_path(path)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_component_map(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Load the map
+        return self.load_component_map(path)
+
+    # -----------------------------------------------------------------
+
     def load_dust_component(self, model_name, component_name, add_map=False):
 
         """
@@ -607,6 +822,23 @@ class ModelSuite(object):
 
         # Load the component
         return self.load_component(path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_components(self, model_name, add_map=False):
+
+        """
+        This function ...
+        :param model_name:
+        :param add_map:
+        :return:
+        """
+
+        # Loop over the paths
+        for path in self.get_dust_component_paths(model_name):
+
+            # Give the component
+            yield self.load_component(path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
@@ -688,6 +920,40 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def get_dust_component_map_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Return the map path
+        return get_component_map_path(path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component_map(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Load the map
+        return self.load_component_map(path)
+
+    # -----------------------------------------------------------------
+
     def add_model_components(self, model_name, ski, input_map_paths):
 
         """
@@ -725,15 +991,17 @@ class ModelSuite(object):
         log.info("Adding the stellar components of model '" + model_name + "' to the ski file ...")
 
         # Loop over the stellar components
-        for name in self.get_stellar_component_names(model_name):
+        #for name in self.get_stellar_component_names(model_name): # SLOWER BECAUSE MODELS TABLE WILL BE READ MULTIPLE TIMES
+        for component in self.load_stellar_components(model_name, add_map=False):
 
             # Debugging
-            log.debug("Adding the '" + name + "' stellar component ...")
+            log.debug("Adding the '" + component.name + "' stellar component ...")
 
             # Load the component
-            component = self.load_stellar_component(model_name, name, add_map=False)
+            #component = self.load_stellar_component(model_name, name, add_map=False) # SLOWER BECAUSE ...
 
             # Try to get the title
+            name = component.name
             title = stellar_titles[name] if name in stellar_titles else None
 
             # Debugging
@@ -763,15 +1031,17 @@ class ModelSuite(object):
         log.info("Adding the dust components of model '" + model_name + "' to the ski file ...")
 
         # Loop over the dust components
-        for name in self.get_dust_component_names(model_name):
+        #for name in self.get_dust_component_names(model_name): # SLOWER BECAUSE MODELS TABLE WILL BE READ MULTIPLE TIMES
+        for component in self.load_dust_components(model_name, add_map=False):
 
             # Debugging
-            log.debug("Adding the '" + name + "' dust component ...")
+            log.debug("Adding the '" + component.name + "' dust component ...")
 
             # Load the component
-            component = self.load_dust_component(model_name, name, add_map=False)
+            #component = self.load_dust_component(model_name, name, add_map=False) # SLOWER BECAUSE ...
 
             # Try to get the title
+            name = component.name
             title = dust_titles[name] if name in dust_titles else None
 
             # Debugging
@@ -782,6 +1052,10 @@ class ModelSuite(object):
 
             # If map filename is defined, set path in dictionary
             if map_filename is not None: input_map_paths[map_filename] = component.map_path
+
+# -----------------------------------------------------------------
+
+StaticModelSuite = create_lazified_class(ModelSuite, "StaticModelSuite")
 
 # -----------------------------------------------------------------
 
@@ -947,5 +1221,40 @@ def load_component(path, add_map=False):
 
     # Return the component
     return component
+
+# -----------------------------------------------------------------
+
+def get_component_map_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Determine map path
+    map_path = fs.join(path, model_map_filename)
+
+    # Check
+    if not fs.is_file(map_path): raise IOError("The component map '" + map_path + "' does not exist")
+
+    # Return the map path
+    return map_path
+
+# -----------------------------------------------------------------
+
+def load_component_map(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Get the path
+    map_path = get_component_map_path(path)
+
+    # Load the map and return
+    return Frame.from_file(map_path)
 
 # -----------------------------------------------------------------

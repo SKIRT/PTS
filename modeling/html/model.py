@@ -50,7 +50,7 @@ class ModelPageGenerator(HTMLPageComponent):
         super(ModelPageGenerator, self).__init__(*args, **kwargs)
 
         # The fitting run
-        self.fitting_run = None
+        #self.fitting_run = None
 
         # Models
         self.old_model = None
@@ -112,17 +112,20 @@ class ModelPageGenerator(HTMLPageComponent):
         # Set the scripts path
         self.scripts_path = fs.create_directory_in(self.html_path, "scripts_model")
 
+        # Load the model definition
+        self.definition = self.static_model_suite.get_model_definition(self.config.model_name)
+
     # -----------------------------------------------------------------
 
-    @property
-    def definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.fitting_run.model_definition
+    # @property
+    # def definition(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.fitting_run.model_definition
 
     # -----------------------------------------------------------------
 

@@ -2936,7 +2936,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def to_rgba(self, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
+    def to_rgba(self, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None,
+                return_minmax=False):
 
         """
         This function ...
@@ -2946,12 +2947,13 @@ class Frame(NDDataArray):
         :param peak_alpha:
         :param colours:
         :param normalize_in:
+        :param return_minmax:
         :return:
         """
 
         from .rgba import RGBAImage
         return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha,
-                                    colours=colours, normalize_in=normalize_in)
+                                    colours=colours, normalize_in=normalize_in, return_minmax=return_minmax)
 
     # -----------------------------------------------------------------
 
@@ -3136,10 +3138,14 @@ class Frame(NDDataArray):
         """
 
         # Get image values
-        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in)
+        image, vmin, vmax = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha,
+                                         colours=colours, normalize_in=normalize_in, return_minmax=True)
 
         # Save
         image.saveto(path)
+
+        # Return vmin and vmax
+        return vmin, vmax
 
 # -----------------------------------------------------------------
 

@@ -207,7 +207,8 @@ class TimeLinePlotter(Configurable):
             extractor = TimeLineExtractor()
 
             # Run the timeline extractor
-            timeline = extractor.run(simulation)
+            extractor.run(simulation)
+            timeline = extractor.table
 
             # Get the simulation output path
             output_path = simulation.output_path

@@ -95,6 +95,18 @@ class BuildComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.suite.maps_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def representations_table_path(self):
 
         """
@@ -127,6 +139,18 @@ class BuildComponent(ModelingComponent):
         """
 
         return self.suite.models_table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.suite.maps_table
 
     # -----------------------------------------------------------------
 

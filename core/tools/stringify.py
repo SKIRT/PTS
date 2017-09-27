@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import warnings
 
 # Import the relevant PTS classes and modules
 from . import types
@@ -134,10 +135,10 @@ def stringify(value, **kwargs):
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value, **kwargs)
+    elif types.is_array_like(value): return stringify_array(value, **kwargs)
 
     # Column or masked masked column
-    elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value, **kwargs)
+    elif types.is_astropy_column(value): return stringify_array(value, **kwargs)
 
     # Tuple or derived from tuple
     elif isinstance(value, tuple): return stringify_tuple(value, **kwargs)
@@ -418,12 +419,15 @@ def stringify_tuple(value, **kwargs):
     ptype = None
     for entry in value:
 
-        parsetype, val = stringify_not_list(entry, **kwargs)
+        #parsetype, val = stringify_not_list(entry, **kwargs)
+        parsetype, val = stringify(entry, **kwargs)
 
         if ptype is None:
             ptype = parsetype
         elif ptype != parsetype:
-            raise ValueError("Nonuniform tuple")
+            #raise ValueError("Nonuniform tuple")
+            warnings.warn("Nonuniform tuple")
+            ptype = "mixed"
 
         strings.append(val)
 

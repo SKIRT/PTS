@@ -23,7 +23,7 @@ from ..tools import monitoring, introspection
 from ..simulation.definition import SingleSimulationDefinition
 from .options import LoggingOptions
 from .analyser import SimulationAnalyser
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import SKIRTRemote
 from ..basics.log import log
 from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool, determine_parallelization
@@ -33,6 +33,9 @@ from .options import AnalysisOptions
 from ..tools import filesystem as fs
 from ..tools import parallelization
 from ..simulation.skifile import SkiFile
+from ..tools import formatting as fmt
+from ..remote.host import load_host
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -66,12 +69,17 @@ class SKIRTLauncher(Configurable):
 
         # The simulation definition
         self.definition = None
+        self.remote_input_path = None
+        self.has_remote_input_files = False
 
         # The logging options
         self.logging_options = None
 
         # The analysis options
         self.analysis_options = None
+
+        # Scheduling options
+        self.scheduling_options = None
 
         # The parallelization scheme
         self.parallelization = None
@@ -80,11 +88,18 @@ class SKIRTLauncher(Configurable):
         self.nprocesses = None
         self.nprocesses_per_node = None
 
+        # ADVANCED
+        self.local_script_path = None
+        self.screen_output_path = None
+
         # The simulation object
         self.simulation = None
 
         # Initialize a list to contain the retrieved finished simulations
         self.simulations = []
+
+        # The specified number of cells
+        self.ncells = None
 
         # Estimates of the memory requirement
         self.memory = None
@@ -106,6 +121,86 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.remote
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host(self):
+
+        """
+        This function returns the Host object
+        :return:
+        """
+
+        # If the setup has not been called yet, load the host
+        if self.remote is None:
+            if self.host_id is None: return None # local
+            else: return load_host(self.host_id) # remote
+
+        # If the setup has already been called
+        else: return self.remote.host
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Local execution
+        if self.host_id is None: return None
+
+        # Remote, but setup has not been called yet
+        elif self.remote is None: # setup has not been called
+
+            # Check cluster_name configuration setting
+            if self.config.cluster_name is not None: return self.config.cluster_name
+
+            # Get default cluster for host
+            else: return self.host.clusters.default
+
+        # Remote, and setup has been called (remote has been setup)
+        else: return self.remote.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_scheduler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.host is None: return False
+        else: return self.host.scheduler
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -122,7 +217,7 @@ class SKIRTLauncher(Configurable):
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
-        else: self.check_parallelization()
+        elif self.config.check_parallelization: self.check_parallelization()
 
         # 3. Launch the simulation
         self.launch()
@@ -131,8 +226,11 @@ class SKIRTLauncher(Configurable):
         if self.config.remote: self.retrieve()
         else: self.simulations.append(self.simulation) # add the locally run simulation to the list of simulations to be analysed
 
+        # Show the output of the retrieved simulations
+        if self.has_simulations and self.config.show: self.show()
+
         # 5. Analyse the output of the retrieved simulations
-        self.analyse()
+        if self.has_simulations: self.analyse()
 
     # -----------------------------------------------------------------
 
@@ -147,21 +245,41 @@ class SKIRTLauncher(Configurable):
         # Call the setup function of the base class
         super(SKIRTLauncher, self).setup(**kwargs)
 
+        # Check 'remote' input
+        if "remote" in kwargs:
+            remote = kwargs.pop("remote")
+            if not remote.connected:
+                if self.config.remote is None: raise ValueError("Unconnected remote is passed but host ID is not specified in configuration")
+                remote.setup(self.config.remote, self.config.cluster_name)
+            elif self.config.remote is not None and remote.host_id != self.config.remote:
+                raise ValueError("Remote is passed for host '" + remote.host_id + "' but configured host ID is '" + self.config.remote + "'")
+            self.remote = SKIRTRemote.from_remote(remote)
+
         # Setup the remote execution context
         if self.config.remote is not None:
-            self.remote = SkirtRemote()
-            self.remote.setup(self.config.remote, self.config.cluster)
+            self.remote = SKIRTRemote()
+            self.remote.setup(self.config.remote, self.config.cluster_name)
 
         # Create output directory
         if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
 
         # Create the logging options
-        self.logging_options = LoggingOptions()
-        self.logging_options.set_options(self.config.logging)
+        if "logging_options" in kwargs and kwargs["logging_options"] is not None: self.logging_options = kwargs.pop("logging_options")
+        else:
+            self.logging_options = LoggingOptions()
+            self.logging_options.set_options(self.config.logging)
 
         # Create the analysis options
         if "analysis_options" in kwargs and kwargs["analysis_options"] is not None: self.set_analysis_options(kwargs.pop("analysis_options"))
         else: self.create_analysis_options()
+
+        # Get scheduling options
+        if self.uses_scheduler:
+            if "scheduling_options" in kwargs and kwargs["scheduling_options"] is not None: self.scheduling_options = kwargs.pop("scheduling_options")
+            # Add the walltime to the scheduling options
+            if self.config.walltime is not None:
+                if self.scheduling_options is None: self.scheduling_options = SchedulingOptions()
+                self.scheduling_options.walltime = self.config.walltime
 
         # Get the memory information passed to this instance
         self.memory = kwargs.pop("memory", None)
@@ -169,12 +287,28 @@ class SKIRTLauncher(Configurable):
         # Get the definition
         if "definition" in kwargs: self.definition = kwargs.pop("definition")
 
+        # Has remote input?
+        if "has_remote_input_files" in kwargs: self.has_remote_input_files = kwargs.pop("has_remote_input_files")
+        if self.has_remote_input_files and self.remote is None: raise ValueError("Cannot have remote input files when launching simulation locally")
+
+        # Has remote input path?
+        if "remote_input_path" in kwargs: self.remote_input_path = kwargs.pop("remote_input_path")
+        if self.remote_input_path is not None and self.remote is None: raise ValueError("Cannot have remote input path when launching simulation locally")
+        if self.remote_input_path is not None and self.has_remote_input_files: raise ValueError("Cannot have remote input path and have seperate remote input files simultaneously")
+
         # Get the parallelization
         if "parallelization" in kwargs: self.parallelization = kwargs.pop("parallelization")
 
         # Get the number of processes
         if "nprocesses" in kwargs: self.nprocesses = kwargs.pop("nprocesses")
         if "nprocesses_per_node" in kwargs: self.nprocesses_per_node = kwargs.pop("nprocesses_per_node")
+
+        # ADVANCED
+        if "local_script_path" in kwargs: self.local_script_path = kwargs.pop("local_script_path")
+        if "screen_output_path" in kwargs: self.screen_output_path = kwargs.pop("screen_output_path")
+
+        # Get the number of dust cells if given
+        if "ncells" in kwargs: self.ncells = kwargs.pop("ncells")
 
     # -----------------------------------------------------------------
 
@@ -217,7 +351,8 @@ class SKIRTLauncher(Configurable):
         self.analysis_options.set_options(self.config.analysis)
 
         # Check the options
-        self.analysis_options.check(self.logging_options, self.config.output)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
+                                    retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 
@@ -236,7 +371,8 @@ class SKIRTLauncher(Configurable):
         self.analysis_options = options
 
         # Check the options
-        self.analysis_options.check(self.logging_options, self.config.output)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
+                                    retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 
@@ -336,7 +472,7 @@ class SKIRTLauncher(Configurable):
 
             # If memory requirement is not set
             if self.memory is None: self.memory = estimate_memory(self.definition.ski_path,
-                                                                  input_path=self.config.input)
+                                                                  input_path=self.config.input, ncells=self.ncells)
 
             # Determine the number of possible nprocesses
             processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), self.memory.serial,
@@ -344,6 +480,79 @@ class SKIRTLauncher(Configurable):
 
         # Return
         return processes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkiFile(self.definition.ski_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No file wavelength grid
+        if not self.ski.wavelengthsfile(): return self.ski.nwavelengths()
+
+        # File wavelength grid
+        # Remote
+        elif self.uses_remote:
+
+            # Some input files may be remote
+            if self.has_remote_input_files:
+
+                from ..simulation.input import find_input_filepath
+                filename = self.ski.wavelengthsfilename()
+                filepath = find_input_filepath(filename, self.definition.input_path)
+
+                if fs.is_file(filepath): return self.ski.nwavelengthsfile(self.definition.input_path)
+                elif self.remote.is_file(filepath):
+                    nwavelengths = int(self.remote.read_first_line(filepath))
+                    return nwavelengths
+                else: raise ValueError("We shouldn't get here")
+
+            # Remote input directory is specified
+            elif self.remote_input_path is not None:
+
+                filename = self.ski.wavelengthsfilename()
+                filepath = fs.join(self.remote_input_path, filename)
+
+                # Check
+                if not self.remote.is_file(filepath): raise IOError("The remote input file '" + filename + "' does not exist in '" + self.remote_input_path + "'")
+
+                # Get the number of wavelengths and return
+                nwavelengths = int(self.remote.read_first_line(filepath))
+                return nwavelengths
+
+            # Nothing is remote
+            else: return self.ski.nwavelengthsfile(self.definition.input_path)
+
+        # No remote
+        else: return self.ski.nwavelengthsfile(self.definition.input_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustlib_dimension(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski.dustlib_dimension()
 
     # -----------------------------------------------------------------
 
@@ -386,21 +595,27 @@ class SKIRTLauncher(Configurable):
         # The number of processes is defined
         if self.has_nprocesses:
 
-            # Set data parallel flag
+            # Determine cores per node and total number of cores
+            cores_per_node = nsockets * ncores
+            total_ncores = nnodes * cores_per_node
+
+            # Check number of processes
+            if self.nprocesses > cores_per_node: raise ValueError("The number of processes cannot be larger than the number of cores per node (" + str(cores_per_node) + ")")
+
+            # Determine other parameters
             ppn = nsockets * ncores
             nprocesses_per_node = int(self.nprocesses / nnodes)
             nprocesses = nprocesses_per_node * nnodes
             ncores_per_process = ppn / nprocesses_per_node
             threads_per_core = threads_per_core if hyperthreading else 1
             threads_per_process = threads_per_core * ncores_per_process
-            total_ncores = nnodes * nsockets * ncores
 
             # Determine data-parallel flag
             if self.config.data_parallel_remote is None:
-                ski = SkiFile(self.definition.ski_path)
-                nwavelengths = ski.nwavelengthsfile(self.definition.input_path) if ski.wavelengthsfile() else ski.nwavelengths()
-                if nwavelengths >= 10 * nprocesses and ski.dustlib_dimension() == 3: data_parallel = True
+
+                if self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3: data_parallel = True
                 else: data_parallel = False
+
             else: data_parallel = self.config.data_parallel_remote
 
             # Create the parallelization object
@@ -411,6 +626,7 @@ class SKIRTLauncher(Configurable):
         # The number of processes per node is defined
         elif self.has_nprocesses_per_node:
 
+            # Determine other parameters
             ppn = nsockets * ncores
             nprocesses = self.nprocesses_per_node * self.config.nnodes
             ncores_per_process = ppn / self.nprocesses_per_node
@@ -420,10 +636,10 @@ class SKIRTLauncher(Configurable):
 
             # Determine data-parallel flag
             if self.config.data_parallel_remote is None:
-                ski = SkiFile(self.definition.ski_path)
-                nwavelengths = ski.nwavelengthsfile(self.definition.input_path) if ski.wavelengthsfile() else ski.nwavelengths()
-                if nwavelengths >= 10 * nprocesses and ski.dustlib_dimension() == 3: data_parallel = True
+
+                if self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3: data_parallel = True
                 else: data_parallel = False
+
             else: data_parallel = self.config.data_parallel_remote
 
             # Create the parallelization object
@@ -432,7 +648,8 @@ class SKIRTLauncher(Configurable):
                                                              data_parallel=data_parallel)
 
         # Determine the parallelization scheme with the parallelization tool
-        else: self.parallelization = determine_parallelization(self.definition.ski_path, self.definition.input_path, self.memory, nnodes, nsockets, ncores, memory, mpi, hyperthreading, threads_per_core)
+        # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
+        else: self.parallelization = determine_parallelization(self.definition.ski_path, self.definition.input_path, self.memory, nnodes, nsockets, ncores, memory, mpi, hyperthreading, threads_per_core, ncells=self.ncells, nwavelengths=self.nwavelengths)
 
         # Debugging
         log.debug("The parallelization scheme is " + str(self.parallelization))
@@ -478,7 +695,7 @@ class SKIRTLauncher(Configurable):
 
             # Determine the number of processes per node (this same calculation is also done in JobScript)
             # self.remote.cores = cores per node
-            processes_per_node = self.remote.cores_per_node // self.config.arguments.parallel.threads
+            processes_per_node = self.remote.cores_per_node // self.parallelization.threads
 
             # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
             requested_nodes = math.ceil(self.config.arguments.parallel.processes / processes_per_node)
@@ -492,7 +709,7 @@ class SKIRTLauncher(Configurable):
         else:
 
             # Determine the total number of requested threads
-            requested_threads = self.config.arguments.parallel.processes * self.config.arguments.parallel.threads
+            requested_threads = self.parallelization.processes * self.parallelization.threads
 
             # Determine the total number of hardware threads that can be used on the remote host
             hardware_threads = self.remote.cores_per_node
@@ -579,22 +796,29 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulation remotely ...")
 
-        # Add the walltime to the scheduling options
-        if self.config.walltime is not None:
-            scheduling_options = SchedulingOptions()
-            scheduling_options.walltime = self.config.walltime
-        else: scheduling_options = None
+        # Resolve the remote screen output directory path
+        screen_output_path = self.screen_output_path.replace("$HOME", self.remote.home_directory).replace("$SKIRT", self.remote.skirt_root_path)
+
+        # Create the necessary directories for the screen output file
+        #screen_output_dirpath = fs.directory_of(screen_output_path)
+        #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
+        if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
+
+        # Set options to remove remote files
+        if self.remote_input_path is not None or self.has_remote_input_files: remove_remote_input = False
+        else: remove_remote_input = not self.config.keep
+        remove_remote_output = not self.config.keep
+        remove_remote_simulation_directory = not self.config.keep
 
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
-                                          scheduling_options=scheduling_options, attached=self.config.attached,
-                                          analysis_options=self.analysis_options, show_progress=self.config.show_progress)
-
-        # Set the analysis options for the simulation
-        self.set_remote_simulation_options()
-
-        # Save the simulation object
-        self.simulation.save()
+                                          scheduling_options=self.scheduling_options, attached=self.config.attached,
+                                          analysis_options=self.analysis_options, show_progress=self.config.show_progress,
+                                          local_script_path=self.local_script_path, screen_output_path=screen_output_path,
+                                          remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files,
+                                          debug_output=self.config.debug_output, retrieve_types=self.config.retrieve_types,
+                                          remove_remote_input=remove_remote_input, remove_remote_output=remove_remote_output,
+                                          remove_remote_simulation_directory=remove_remote_simulation_directory)
 
     # -----------------------------------------------------------------
 
@@ -610,6 +834,52 @@ class SKIRTLauncher(Configurable):
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the output of finished simulations ...")
+
+        # Loop over the simulations
+        print("")
+        for simulation in self.simulations:
+
+            # Print the simulation name
+            print(fmt.blue + simulation.prefix() + fmt.reset + ":")
+
+            # Show the output
+            simulation.output.show(line_prefix="  ")
 
     # -----------------------------------------------------------------
 
@@ -631,23 +901,6 @@ class SKIRTLauncher(Configurable):
 
             # Clear the analyser
             self.analyser.clear()
-
-    # -----------------------------------------------------------------
-
-    def set_remote_simulation_options(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Remove remote files
-        self.simulation.remove_remote_input = not self.config.keep
-        self.simulation.remove_remote_output = not self.config.keep
-        self.simulation.remove_remote_simulation_directory = not self.config.keep
-
-        # Retrieval
-        self.simulation.retrieve_types = self.config.retrieve_types
 
 # -----------------------------------------------------------------
 

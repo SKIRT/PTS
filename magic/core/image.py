@@ -1562,25 +1562,26 @@ class Image(object):
                                                        rebin_to_wcs, hdulist_index, no_filter)
 
         # Set frames, masks and meta information
-        for frame_name in frames: self.add_frame(frames[frame_name], frame_name)
-        for mask_name in masks: self.add_mask(masks[mask_name], mask_name)
-        for segments_name in segments: self.add_segments(segments[segments_name], segments_name)
+        for frame_name in frames: self.add_frame(frames[frame_name], frame_name, silent=True)
+        for mask_name in masks: self.add_mask(masks[mask_name], mask_name, silent=True)
+        for segments_name in segments: self.add_segments(segments[segments_name], segments_name, silent=True)
         for keyword in meta: self.metadata[keyword] = meta[keyword]
 
     # -----------------------------------------------------------------
 
-    def add_frame(self, frame, name, overwrite=False):
+    def add_frame(self, frame, name, overwrite=False, silent=False):
 
         """
         This function ...
         :param frame:
         :param name:
         :param overwrite:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.debug("Adding '" + name + "' to the set of frames ...")
+        if not silent: log.debug("Adding '" + name + "' to the set of frames ...")
 
         # Check whether a frame with this name already exists
         if name in self.frames and not overwrite: raise RuntimeError("A frame with this name already exists")
@@ -1795,18 +1796,19 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_mask(self, mask, name, overwrite=False):
+    def add_mask(self, mask, name, overwrite=False, silent=False):
 
         """
         This function ...
         :param mask:
         :param name:
         :param overwrite:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.debug("Adding '" + name + "' to the set of masks ...")
+        if not silent: log.debug("Adding '" + name + "' to the set of masks ...")
 
         # Check whether a mask with this name already exists
         if name in self.masks and not overwrite: raise RuntimeError("A mask with this name already exists")
@@ -1872,18 +1874,19 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_segments(self, segments, name, overwrite=False):
+    def add_segments(self, segments, name, overwrite=False, silent=False):
 
         """
         This function ...
         :param segments:
         :param name:
         :param overwrite:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.debug("Adding '" + name + "' to the set of segmentation maps ...")
+        if not silent: log.debug("Adding '" + name + "' to the set of segmentation maps ...")
 
         # Check whether a segmentation map with this name already exists
         if name in self.segments and not overwrite: raise RuntimeError("A segmentation map with this name already exists")

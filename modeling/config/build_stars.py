@@ -28,13 +28,14 @@ default_ionizing_contribution = 0.5
 
 kregel_ratio = 8.21
 degeyter_ratio = 8.26
-#mosenkov_ratio = None
+mosenkov_ratio = 9.06
 
 # -----------------------------------------------------------------
 
 scalelength_scaleheight_ratios = dict()
 scalelength_scaleheight_ratios[degeyter_ratio] = "De Geyter et al. (2014)"
 scalelength_scaleheight_ratios[kregel_ratio] = "Kregel et al. (2002)"
+scalelength_scaleheight_ratios[mosenkov_ratio] = "Mosenkov et al. (2015)"
 
 # -----------------------------------------------------------------
 

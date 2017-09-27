@@ -15,30 +15,26 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
-from pts.core.basics.log import log
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.simulation.simulation import RemoteSimulation
 from pts.core.remote.remote import Remote
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Add required
+# Add settings
 definition.add_positional_optional("remotes", "string_list", "the IDs of the remote hosts for which to clear the simulations", choices=find_host_ids(), default=find_host_ids())
-
-# Add optional
 definition.add_positional_optional("ids", "integer_list", "the IDs of the simulations to clear")
-
-# Add flags
 definition.add_flag("full", "fully clear the simulations, also remove remote simulation directories")
 
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = parse_arguments("clear_tasks", definition, description="Clear PTS tasks for a certain remote host")
+config = parse_arguments("clear_tasks", definition, description="Clear PTS tasks for a certain remote host")
 
 # -----------------------------------------------------------------
 
@@ -57,6 +53,9 @@ for host_id in config.remotes:
     host_run_path = fs.join(introspection.skirt_run_dir, host_id)
 
     # Check if there are simulations
+    if not fs.is_directory(host_run_path):
+        log.debug("No run directory for host '" + host_id + "'")
+        continue
     if fs.is_empty(host_run_path): log.debug("No simulations for host '" + host_id + "'")
 
     # Loop over the simulation files in the run directory
@@ -87,6 +86,6 @@ for host_id in config.remotes:
         fs.remove_file(path)
 
     # Success
-    log.success("All cleared for host '" + host_id)
+    log.success("All cleared for host '" + host_id + "'")
 
 # -----------------------------------------------------------------

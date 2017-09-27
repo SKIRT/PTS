@@ -32,6 +32,7 @@ definition.add_optional("threads_per_core", "integer", "number of hyperthreads p
 
 # Add optional
 definition.add_optional("ncells", "integer", "number of dust cells (relevant if ski file uses a tree dust grid)")
+definition.add_optional("nwavelengths", "integer", "number of wavelengths (relevant if ski file uses input file)")
 
 # Flags
 definition.add_flag("show", "show the parallelization", True)

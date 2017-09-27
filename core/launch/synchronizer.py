@@ -17,7 +17,7 @@ from ..simulation.simulation import RemoteSimulation
 from ..remote.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import SKIRTRemote
 from ..remote.remote import Remote
 from ..tools import filesystem as fs
 from ..basics.log import log
@@ -47,7 +47,7 @@ class RemoteSynchronizer(Configurable):
 
         # -- Attributes --
 
-        # Initialize a list to contain different SkirtRemote instances for the different remote hosts
+        # Initialize a list to contain different SKIRTRemote instances for the different remote hosts
         self.remotes = []
 
         # The simulation results analyser
@@ -106,14 +106,14 @@ class RemoteSynchronizer(Configurable):
                 # If there are currently no simulations corresponding to this host, skip it
                 if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
-                # Create a remote SKIRT execution context
+                # Create and setup a remote execution context
                 remote = Remote()
-                if introspection.skirt_is_present() and remote.has_skirt: remote = SkirtRemote.from_remote(remote)
-
-                # Setup the remote execution context
                 if not remote.setup(host_id):
                     log.warning("Remote host '" + host_id + "' is not available: skipping ...")
                     continue
+
+                # Setup SKIRT remote environment
+                if introspection.skirt_is_present() and remote.has_skirt: remote = SKIRTRemote.from_remote(remote)
 
                 # Add the remote to the list of remote objects
                 self.remotes.append(remote)

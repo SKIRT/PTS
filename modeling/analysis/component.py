@@ -104,6 +104,18 @@ class AnalysisComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cached_table(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.context.cached_table
+
+    # -----------------------------------------------------------------
+
+    @property
     def analysis_run_names(self):
 
         """

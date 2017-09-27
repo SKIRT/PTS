@@ -27,7 +27,8 @@ from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 from ..core.commands import ModelingCommands
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -253,13 +254,18 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # Do imports
-        from .sed import get_observed_sed as get_sed_other
-        from .galaxy import get_observed_sed as get_sed_galaxy
+        # # Do imports
+        # from .sed import get_observed_sed as get_sed_other
+        # from .galaxy import get_observed_sed as get_sed_galaxy
+        #
+        # # Return the observed SED
+        # if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
+        # else: return get_sed_other(self.config.path)
 
         # Return the observed SED
-        if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
-        else: return get_sed_other(self.config.path)
+        if self.is_galaxy_modeling: return self.environment.observed_sed
+        elif self.is_sed_modeling: return self.environment.observed_sed
+        else: raise ValueError("Observed SED is not defined for modeling types other than 'galaxy' or 'sed'")
 
     # -----------------------------------------------------------------
 
@@ -271,13 +277,18 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # Do imports
-        from .sed import get_observed_sed_file_path as get_path_other
-        from .galaxy import get_observed_sed_file_path as get_path_galaxy
+        # # Do imports
+        # from .sed import get_observed_sed_file_path as get_path_other
+        # from .galaxy import get_observed_sed_file_path as get_path_galaxy
+        #
+        # # Return the observed sed
+        # if self.modeling_type == "galaxy": return get_path_galaxy(self.config.path)
+        # else: return get_path_other(self.config.path)
 
-        # Return the observed sed
-        if self.modeling_type == "galaxy": return get_path_galaxy(self.config.path)
-        else: return get_path_other(self.config.path)
+        # Return the correct path
+        if self.is_galaxy_modeling: return self.environment.observed_sed_path
+        elif self.is_sed_modeling: return self.environment.sed_path
+        else: raise ValueError("Observed SED not defined for modeling types other than 'galaxy' or 'sed'")
 
     # -----------------------------------------------------------------
 
@@ -504,6 +515,42 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def planck_filters(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("Planck")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def iras_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("IRAS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ignore_sed_plot_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.planck_filters + self.iras_filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def v_band_wavelength(self):
 
         """
@@ -572,6 +619,18 @@ class ModelingComponent(Configurable):
         """
 
         return self.environment.model_suite
+
+    # -----------------------------------------------------------------
+
+    @property
+    def static_model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_model_suite
 
     # -----------------------------------------------------------------
 

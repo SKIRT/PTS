@@ -13,6 +13,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import warnings
+
 # Import astronomical modules
 from astropy.table import Table
 
@@ -90,6 +93,7 @@ class LogFile(object):
                 host = message.split("on ")[1].split(" for")[0]
 
                 if len(host.split(".")) == 3: return host.split(".")[1]
+                elif len(host.split(".")) == 2: return host.split(".")[0]
                 else: return host
 
         return None
@@ -786,7 +790,8 @@ class LogFile(object):
             if "photon packages for each of" in self.contents["Message"][i]:
 
                 # Return the number of wavelengths
-                wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                #wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" ")[0]) # There was a corrupted log line once, and this helped
                 return wavelengths
 
         # If the number of wavelengths is not found, return None
@@ -948,8 +953,25 @@ def parse(path):
             # Remove the line ending
             line = line[:-1]
 
-            # Get the date and time information of the current line
-            t = time.parse_line(line)
+            # Check whether the timestamp is valid
+            # 17/09/2017 19:51:29.080
+            if has_valid_timestamp(line): t = time.parse_line(line) # Get the date and time information of the current line
+            else:
+                index = 1
+                while True:
+                    if index > len(line) - 26:
+                        index = None
+                        break
+                    if has_valid_timestamp(line[index:]): break
+                    index += 1
+                if index is None:
+                    warnings.warn("Not a valid line: '" + line + "': skipping ...")
+                    continue
+                else:
+                    line = line[index:]
+                    t = time.parse_line(line)
+
+            # Add the time
             times.append(t)
 
             # Check whether the log file was created in verbose logging mode
@@ -961,7 +983,10 @@ def parse(path):
             # Get the memory usage at the current line, if memory logging was enabled for the simulation
             if memory_logging:
 
-                memory = float(line.split(" (")[1].split(" GB)")[0])
+                try: memory = float(line.split(" (")[1].split(" GB)")[0])
+                except ValueError:
+                    warnings.warn("Invalid line: '" + line + "': cannot interpret memory")
+                    memory = None
                 memories.append(memory)
 
             if memory_logging: message = line.split("GB) ")[1]
@@ -1245,5 +1270,27 @@ def get_simulation_phase(line, simulation_phase):
     else: pass
 
     return simulation_phase
+
+# -----------------------------------------------------------------
+
+def has_valid_timestamp(line):
+
+    """
+    This function ...
+    :param line:
+    :return:
+    """
+
+    # 17/09/2017 19:51:29.080
+
+    if line[2] != "/": return False
+    if line[5] != "/": return False
+    if line[10] != " ": return False
+    if line[13] != ":": return False
+    if line[16] != ":": return False
+    if line[19] != ".": return False
+
+    # All checks passed
+    return True
 
 # -----------------------------------------------------------------

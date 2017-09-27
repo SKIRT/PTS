@@ -20,22 +20,27 @@ from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
-def load_grid(path):
+def load_grid(path, remote=None):
 
     """
     This function ...
     :param path:
+    :param remote:
     :return:
     """
 
+    from ..tools import filesystem as fs
+
     # Get the first line of the file
-    with open(path, 'r') as f: first_line = f.readline()
+    #with open(path, 'r') as f: first_line = f.readline()
+    if remote is not None: first_line = remote.get_first_line(path)
+    else: first_line = fs.get_first_line(path)
 
     # Create and return the appropriate dust grid
-    if "BinaryTreeDustGrid" in first_line: return BinaryTreeDustGrid.from_file(path)
-    elif "OctTreeDustGrid" in first_line: return OctTreeDustGrid.from_file(path)
-    elif "CartesianDustGrid" in first_line: return CartesianDustGrid.from_file(path)
-    elif "FileTreeDustGrid" in first_line: return FileTreeDustGrid.from_file(path)
+    if "BinaryTreeDustGrid" in first_line: return BinaryTreeDustGrid.from_file(path, remote=remote)
+    elif "OctTreeDustGrid" in first_line: return OctTreeDustGrid.from_file(path, remote=remote)
+    elif "CartesianDustGrid" in first_line: return CartesianDustGrid.from_file(path, remote=remote)
+    elif "FileTreeDustGrid" in first_line: return FileTreeDustGrid.from_file(path, remote=remote)
     else: raise ValueError("Unrecognized dust grid file")
 
 # -----------------------------------------------------------------

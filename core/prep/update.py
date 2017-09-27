@@ -524,13 +524,15 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Getting latest version ...")
+        log.info("Getting latest version of SKIRT ...")
 
         # Load the git module
         if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug())
 
-        # Get the url of the "origin"
-        url = git.get_url_repository(self.remote, self.remote.skirt_repo_path)
+        # Get the url of the 'origin'
+        repo_name = "origin"
+        try: url = git.get_url_repository(self.remote, self.remote.skirt_repo_path, repo_name=repo_name)
+        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.skirt_repo_path, remote=self.remote, repo_name=repo_name)
 
         # Get latest hash
         latest_git_hash = git.get_hash_remote_repository(url)
@@ -948,12 +950,12 @@ class PTSUpdater(Updater):
         """
 
         # Debugging
-        log.debug("Getting latest version ...")
+        log.debug("Getting latest version of PTS ...")
 
-        #print(self.remote.pts_package_path)
-
-        # Get the url of the "origin"
-        url = git.get_url_repository(self.remote, self.remote.pts_package_path)
+        # Get the url of the 'origin'
+        repo_name = "origin"
+        try: url = git.get_url_repository(self.remote, self.remote.pts_package_path, repo_name=repo_name)
+        except git.AuthenticationError as e: url = fix_repo_url(e.url, self.remote.pts_package_path, remote=self.remote, repo_name=repo_name)
 
         # Get latest hash
         latest_git_hash = git.get_hash_remote_repository(url)
@@ -1530,5 +1532,45 @@ def first_three_items_in_iterator(iterator):
     else: raise ValueError("Iterator contains less than 3 elements")
 
     return output[0], output[1], output[2]
+
+# -----------------------------------------------------------------
+
+def fix_repo_url(url, repo_path, remote=None, repo_name="origin"):
+
+    """
+    Thisf unction ...
+    :param url:
+    :param repo_path:
+    :param remote:
+    :param repo_name:
+    :return:
+    """
+
+    # Warning
+    log.warning("Authentication for repository url '" + url + "' failed")
+
+    # Decompose the (faulty) URL
+    host, user_or_organization, remote_repo_name, username, password, url_type = git.decompose_repo_url(url, return_type=True)
+
+    # If username or password are not in the URL, exit with an error (there is nothing we can do)
+    if username is None and password is None: raise RuntimeError("Authentication problem could not be solved")
+
+    # Check username and password with the configured user accounts
+    correct_username, correct_password = introspection.get_account(host)
+
+    # If username and password are already correct, exit with an error
+    if username == correct_username and password == correct_password: raise RuntimeError("Authentication problem could not be solved by replacing username or password")
+
+    # Compose the new (correct) URL
+    new_url = git.compose_repo_url(url_type, host, user_or_organization, remote_repo_name, username=correct_username, password=correct_password)
+
+    # Warning
+    log.warning("Replacing the url of the '" + repo_name + "' remote repository to '" + new_url + "' ...")
+
+    # Replace the URL
+    git.replace_remote_url(new_url, repo_path, repo_name=repo_name, remote=remote, show_output=log.is_debug())
+
+    # Return the correct URL
+    return new_url
 
 # -----------------------------------------------------------------

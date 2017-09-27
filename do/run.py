@@ -121,7 +121,7 @@ def run_script(matches, args):
     del sys.argv[1]
     print("Executing: " + match[0] + "/" + match[1] + " " + " ".join(sys.argv[1:]))
 
-    command_name = match[1]
+    #command_name = match[1]
 
     # Set target
     #def start(): exec open(target)
@@ -149,6 +149,13 @@ def run_configurable(table_matches, args, tables):
     elif args.configfile is not None: configuration_method = "file:" + args.configfile
     elif args.rerun: configuration_method = "last"
 
+    # Regenerate the configuration method option
+    if args.interactive: configuration_method_argument = "--interactive"
+    elif args.arguments: configuration_method_argument = "--arguments"
+    elif args.configfile is not None: configuration_method_argument = "--configfile '" + args.configfile + "'"
+    elif args.rerun: configuration_method_argument = "--rerun"
+    else: configuration_method_argument = ""
+
     # Resolve
     subproject, index = table_matches[0]
     resolved = introspection.resolve_from_match(subproject, tables[subproject], index)
@@ -168,6 +175,9 @@ def run_configurable(table_matches, args, tables):
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
     del sys.argv[1] # but this is important
 
+    # Get a list of the leftover arguments
+    leftover_arguments = sys.argv[1:]
+
     # Welcome message
     if subproject == "modeling": welcome_modeling()
     elif subproject == "magic": welcome_magic()
@@ -179,6 +189,9 @@ def run_configurable(table_matches, args, tables):
 
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table
+
+    # Check whether arguments are passed and the configuration method is interactive
+    if configuration_method == "interactive" and len(leftover_arguments) > 0: raise ValueError("Arguments on the command-line are not supported by default for this command. Run with pts --arguments to change this behaviour.")
 
     # Create the configuration
     config = create_configuration(definition, command_name, description, configuration_method)
@@ -194,7 +207,7 @@ def run_configurable(table_matches, args, tables):
         config.saveto(config_cache_path)
 
     # Setup function
-    if subproject == "modeling": setup_modeling(command_name, fs.cwd())
+    if subproject == "modeling": setup_modeling(command_name, fs.cwd(), configuration_method_argument)
     elif subproject == "magic": setup_magic(command_name, fs.cwd())
     elif subproject == "dustpedia": setup_dustpedia(command_name, fs.cwd())
     elif subproject == "evolve": setup_evolve(command_name, fs.cwd())

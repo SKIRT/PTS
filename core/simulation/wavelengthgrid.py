@@ -237,18 +237,22 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt_input(cls, path):
+    def from_skirt_input(cls, path, remote=None):
 
         """
         This function ...
         :param path:
+        :param remote:
         :return:
         """
 
         # Create a new class instance
         grid = cls()
 
-        wavelengths = np.loadtxt(path, unpack=True, skiprows=1)
+        if remote is not None:
+            lines = remote.get_lines(path, add_sep=True)
+            wavelengths = np.loadtxt(lines, unpack=True, skiprows=1)
+        else: wavelengths = np.loadtxt(path, unpack=True, skiprows=1)
 
         # Create the table
         table = Table()
@@ -283,6 +287,19 @@ class WavelengthGrid(object):
         """
 
         return len(self.table)
+
+    # -----------------------------------------------------------------
+
+    def covers(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        scalar = wavelength.to("micron").value
+        return self.min_wavelength < scalar < self.max_wavelength
 
     # -----------------------------------------------------------------
 

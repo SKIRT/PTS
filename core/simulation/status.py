@@ -467,13 +467,19 @@ class LogSimulationStatus(SimulationStatus):
                         while True:
 
                             if self.stage != last_stage:
+                                #print("END OF STAGE?")
                                 bar.show(100) # make sure it always ends on 100%
                                 break
                             if self.cycle != last_cycle:
+                                #print("END OF CYCLE?")
                                 bar.show(100) # make sure it always ends on 100%
                                 break
-                            if self.progress is None: bar.show(100)
-                            else: bar.show(int(self.progress))
+                            if self.progress is None:
+                                #print("PROGRESS IS NONE!")
+                                bar.show(100)
+                            else:
+                                #print("PROGRESS: " + str(int(self.progress)))
+                                bar.show(int(self.progress))
                             self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
                     self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
@@ -493,11 +499,15 @@ class LogSimulationStatus(SimulationStatus):
                     # Loop
                     while True:
                         if self.phase != last_phase:
+                            #print("END OF PHASE?")
                             bar.show(100) # make sure it always ends on 100%
                             break
                         if self.progress is None:
+                            #print("PROGRESS IS NONE!")
                             bar.show(100)
-                        else: bar.show(int(self.progress))
+                        else:
+                            #print("PROGRESS: " + str(int(self.progress)))
+                            bar.show(int(self.progress))
                         self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
             # Still the same phase
@@ -731,7 +741,7 @@ class LogSimulationStatus(SimulationStatus):
             self.status = "running"
 
             # Get the phase info
-            self.phase, self.simulation_phase, stage, cycle, progress, extra = get_phase_info(lines)
+            self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(lines)
 
 # -----------------------------------------------------------------
 
@@ -1176,8 +1186,10 @@ def get_stellar_info(lines):
     for line in reversed(lines):
 
         if "Launched stellar emission photon packages" in line:
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                break
+            except: pass # SOMETHING WEIRD WITH THE LINE
 
     # Set initial value for progress
     else: progress = 0
@@ -1266,16 +1278,21 @@ def get_dust_info(lines):
     for line in reversed(lines):
 
         if "Launched dust emission photon packages" in line:
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST EMISSION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST EMISSION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Launched last-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 2
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the last-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])
@@ -1287,9 +1304,11 @@ def get_dust_info(lines):
         elif "Launched second-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 1
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the second-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])
@@ -1301,9 +1320,11 @@ def get_dust_info(lines):
         elif "Launched first-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
             stage = 0
-            progress = float(line.split("packages: ")[1].split("%")[0])
-            simulation_phase = "DUST SELF-ABSORPTION"
-            break
+            try:
+                progress = float(line.split("packages: ")[1].split("%")[0])
+                simulation_phase = "DUST SELF-ABSORPTION"
+                break
+            except: pass  # SOMETHING WEIRD WITH THE LINE
 
         elif "Starting the first-stage dust self-absorption cycle" in line:
             cycle = int(line.split("cycle ")[1].split("...")[0])
@@ -1328,7 +1349,7 @@ def get_phase_info(lines):
     """
 
     # Initialize everything
-    phase = None
+    #phase = None
     simulation_phase = None
     stage = None
     cycle = None

@@ -24,7 +24,9 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
 from ..basics.instruments import FullInstrument
-from ..misc.interface import ModelSimulationInterface
+from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
+from .run import info_filename
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -86,25 +88,25 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # 5. Create the dust grid
         self.create_dust_grid()
 
-        # Load the deprojections
+        # 6. Load the deprojections
         self.load_deprojections()
 
-        # Create the projections
+        # 7. Create the projections
         self.create_projections()
 
-        # 6. Create the instruments
+        # 8. Create the instruments
         self.create_instruments()
 
-        # 7. Adapt ski file
+        # 9. Adapt ski file
         self.adapt_ski()
 
-        # Build the dust grid
+        # 10. Build the dust grid
         self.build_dust_grid()
 
-        # Set the input
+        # 11. Set the input
         self.set_input()
 
-        # 8. Write
+        # 12. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -143,21 +145,53 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Call the setup function of the base class
         #super(AnalysisInitializer, self).setup(**kwargs)
-        AnalysisComponent.setup(**kwargs)
-        ModelSimulationInterface.setup(**kwargs)
+        AnalysisComponent.setup(self, **kwargs)
+        ModelSimulationInterface.setup(self, **kwargs)
 
         # Generate a name for this analysis run
-        self.analysis_run_name = time.unique_name()
+        if self.config.name is not None: analysis_run_name = self.config.name
+        else: analysis_run_name = time.unique_name()
 
         # Create a directory for this analysis run
-        self.analysis_run_path = fs.join(self.analysis_path, self.analysis_run_name)
+        analysis_run_path = fs.join(self.analysis_path, analysis_run_name)
+        if not fs.is_directory(analysis_run_path): fs.create_directory(analysis_run_path)
+        elif fs.is_empty(analysis_run_path, recursive=True): fs.clear_directory(analysis_run_path)
+        elif self.config.overwrite: fs.clear_directory(analysis_run_path)
+        else: raise ValueError("There already exists a directory for this analysis run")
 
         # Create the info object
         self.analysis_run_info = AnalysisRunInfo()
 
         # Set the analysis run name and path
-        self.analysis_run_info.name = self.analysis_run_name
-        self.analysis_run_info.path = self.analysis_run_path
+        self.analysis_run_info.name = analysis_run_name
+        self.analysis_run_info.path = analysis_run_path
+
+        # Set run info path
+        self.run_info_path = fs.join(self.analysis_run_path, info_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.analysis_run_info.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run_info.path
 
     # -----------------------------------------------------------------
 
@@ -172,20 +206,49 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Getting the analysis model ...")
 
         # Load from model
-        if self.from_model: self.prompt_model()
+        if self.from_model:
+
+            # Get the model
+            model_name = self.prompt_model()
+
+            # Update the analysis info
+            self.analysis_run_info.model_name = model_name
+            self.analysis_run_info.parameter_values = self.parameter_values
 
         # Prompt for a fitting run
-        elif self.from_fitting_run: self.prompt_fitting()
+        elif self.from_fitting_run:
+
+            # Get the model
+            run_id, generation_name, simulation_name, chi_squared = self.prompt_fitting()
+
+            # Update the analysis info
+            self.analysis_run_info.fitting_run = run_id
+            self.analysis_run_info.generation_name = generation_name
+            self.analysis_run_info.simulation_name = simulation_name
+            self.analysis_run_info.chi_squared = chi_squared
+            self.analysis_run_info.parameter_values = self.parameter_values
+
+            # Set the name of the corresponding model of the model suite
+            self.analysis_run_info.model_name = self.definition.name
 
         # Invalid
         else: raise ValueError("Invalid value for 'origin'")
 
         # Show the model parameters
-        print("")
-        print("Model parameter values:")
-        print("")
-        for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
-        print("")
+        if self.from_fitting_run or self.config.adapt:
+            print("")
+            print("Adapted model parameter values:")
+            print("")
+            for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
+            print("")
+
+        # Show all model parameters
+        else:
+            print("")
+            print("All model parameter values:")
+            print("")
+            for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -217,6 +280,24 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Create the generation object
         self.analysis_run = AnalysisRun(self.galaxy_name, self.analysis_run_info)
+
+    # -----------------------------------------------------------------
+
+    def create_projections(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projections ...")
+
+        # Create projections
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True)
+
+        # Set the deprojection name in the analysis info
+        self.analysis_run_info.reference_deprojection = deprojection_name
 
     # -----------------------------------------------------------------
 
@@ -458,13 +539,13 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Writing the projection systems ...")
 
         # Write the earth projection system
-        self.projections["earth"].saveto(self.analysis_run.earth_projection_path)
+        self.projections[earth_name].saveto(self.analysis_run.earth_projection_path)
 
         # Write the faceon projection system
-        self.projections["faceon"].saveto(self.analysis_run.faceon_projection_path)
+        self.projections[faceon_name].saveto(self.analysis_run.faceon_projection_path)
 
         # Write the edgeon projection system
-        self.projections["edgeon"].saveto(self.analysis_run.edgeon_projection_path)
+        self.projections[edgeon_name].saveto(self.analysis_run.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -479,12 +560,12 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Writing the instruments ...")
 
         # Write the SED instrument
-        self.instruments["earth"].saveto(self.analysis_run.earth_instrument_path)
+        self.instruments[earth_name].saveto(self.analysis_run.earth_instrument_path)
 
         # Write the frame instrument
-        self.instruments["faceon"].saveto(self.analysis_run.faceon_instrument_path)
+        self.instruments[faceon_name].saveto(self.analysis_run.faceon_instrument_path)
 
         # Write the simple instrument
-        self.instruments["edgeon"].saveto(self.analysis_run.edgeon_instrument_path)
+        self.instruments[edgeon_name].saveto(self.analysis_run.edgeon_instrument_path)
 
 # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.simulation.remote Contains the SkirtRemote class, used for launching, checking and retrieving
+## \package pts.core.simulation.remote Contains the SKIRTRemote class, used for launching, checking and retrieving
 #  remote SKIRT simulations.
 
 # -----------------------------------------------------------------
@@ -31,24 +31,69 @@ from ..basics.handle import ExecutionHandle
 from .status import LogSimulationStatus
 from .input import SimulationInput
 from ..tools import types
+from .output import get_output_type, get_parent_type
 
 # -----------------------------------------------------------------
 
-class SkirtRemote(Remote):
+def get_simulation_for_host(host_id, simulation_id):
+
+    """
+    This function ...
+    :param host_id:
+    :param simulation_id:
+    :return:
+    """
+
+    # Determine the simulation path
+    simulation_path = fs.join(introspection.skirt_run_dir, host_id, str(simulation_id) + ".sim")
+
+    # load the simulation and return
+    return RemoteSimulation.from_file(simulation_path)
+
+# -----------------------------------------------------------------
+
+def needs_retrieval(filename, types):
+
+    """
+    This function ...
+    :param filename:
+    :param types: retrieve types
+    :return:
+    """
+
+    # Get the output type
+    output_type = get_output_type(filename)
+
+    # Check whether in specified retrieval types
+    if output_type in types: return True
+
+    # Get parent types
+    parent_type = get_parent_type(output_type)
+
+    # Check if (different from type itself) parent type is in the specified retrieval types
+    if parent_type != output_type and parent_type in types: return True
+
+    # Otherwise, return False
+    return False
+
+# -----------------------------------------------------------------
+
+class SKIRTRemote(Remote):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, host_id=None):
 
         """
         The constructor ...
+        :param host_id:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SkirtRemote, self).__init__()
+        super(SKIRTRemote, self).__init__()
 
         # -- Attributes --
 
@@ -65,6 +110,10 @@ class SkirtRemote(Remote):
         # Initialize a dictionary for the scheduling options
         self.scheduling_options = dict()
 
+        # If host ID is given, setup
+        if host_id is not None:
+            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -80,7 +129,7 @@ class SkirtRemote(Remote):
         skirt = cls()
 
         # Give warning
-        log.warning("When creating a SkirtRemote instance from a regular Remote instance, the original Remote instance should not be used anymore")
+        log.warning("When creating a SKIRTRemote instance from a regular Remote instance, the original Remote instance can not be used anymore")
 
         # Set attributes
         skirt.ssh = remote.ssh
@@ -89,9 +138,15 @@ class SkirtRemote(Remote):
         skirt.connected = remote.connected
         skirt.commands = remote.commands
 
-        # Locate SKRIT
-        success = skirt.locate_skirt()
-        if not success: raise RuntimeError("Could not locate SKIRT on the remote host")
+        # Reset attributes of original remote
+        remote.ssh = None
+        remote.connected = False
+
+        # Locate SKIRT, if we are already connected
+        if skirt.connected:
+            success = skirt.locate_skirt()
+            if not success: raise RuntimeError("Could not locate SKIRT on the remote host")
+        else: log.warning("Not yet connected to the remote host; use setup() to initiate the connection")
 
         # Return the instance
         return skirt
@@ -108,7 +163,7 @@ class SkirtRemote(Remote):
         """
 
         # Call the setup function of the base class
-        success = super(SkirtRemote, self).setup(host_id, cluster_name)
+        success = super(SKIRTRemote, self).setup(host_id, cluster_name)
         if not success: return False
 
         # Locate SKIRT
@@ -165,7 +220,7 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-                     remote_input_path=None, analysis_options=None, emulate=False):
+                     remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False):
 
         """
         This function ...
@@ -177,6 +232,7 @@ class SkirtRemote(Remote):
         :param remote_input_path:
         :param analysis_options:
         :param emulate:
+        :param has_remote_input:
         :return:
         """
 
@@ -198,7 +254,7 @@ class SkirtRemote(Remote):
         if name is None: name = remote_simulation_name
 
         # Make preparations for this simulation, create the SkirtArguments object
-        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate)
+        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate, has_remote_input=has_remote_input)
 
         # Add the SkirtArguments object to the queue
         self.queue.append((arguments, name))
@@ -534,7 +590,8 @@ class SkirtRemote(Remote):
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
             analysis_options=None, local_script_path=None, screen_output_path=None, attached=False,
-            show_progress=False):
+            show_progress=False, remote_input_path=None, has_remote_input=False, debug_output=False,
+            retrieve_types=None, remove_remote_input=True, remove_remote_output=True, remove_remote_simulation_directory=True):
 
         """
         This function ...
@@ -548,6 +605,13 @@ class SkirtRemote(Remote):
         :param screen_output_path:
         :param attached:
         :param show_progress:
+        :param remote_input_path:
+        :param has_remote_input:
+        :param debug_output:
+        :param retrieve_types:
+        :param remove_remote_input:
+        :param remove_remote_output:
+        :param remove_remote_simulation_directory:
         :return:
         """
 
@@ -558,7 +622,7 @@ class SkirtRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
+        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options, remote_input_path=remote_input_path, has_remote_input=has_remote_input)
 
         # Check whether attached mode is not requested for a scheduling remote
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
@@ -570,26 +634,36 @@ class SkirtRemote(Remote):
         # Start the queue, get execution handle(s)
         handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
 
+        # Set remote simulation properties
+        simulation.retrieve_types = retrieve_types
+
+        # Set remove remote files settings
+        simulation.remove_remote_input = remove_remote_input
+        simulation.remove_remote_output = remove_remote_output
+        simulation.remove_remote_simulation_directory = remove_remote_simulation_directory
+
+        # Set the execution handle for the simulation
+        simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
+        simulation.save()
+
         # Show progress bar with progress
         if show_progress:
 
             #out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
             #prefix = arguments.prefix
             #log_path = fs.join(out_path, prefix + "_log.txt")
-            status = LogSimulationStatus(simulation.remote_log_file_path, remote=self)
+            status = LogSimulationStatus(simulation.remote_log_file_path, remote=self, debug_output=debug_output)
 
             # Get the execution handle for the simulation
             handle = handles
 
             # Show the simulation progress
-            with no_debugging(): success = status.show_progress(handle)
+            if debug_output: success = status.show_progress(handle)
+            else:
+                with no_debugging(): success = status.show_progress(handle)
 
             # Check whether not crashed
             if not success: raise RuntimeError("The simulation crashed")
-
-        # Set the execution handle for the simulation
-        simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
-        simulation.save()
 
         # Return the simulation object
         return simulation
@@ -619,7 +693,8 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None, emulate=False):
+    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None,
+                emulate=False, has_remote_input=False):
 
         """
         This function ...
@@ -629,6 +704,7 @@ class SkirtRemote(Remote):
         :param remote_simulation_path:
         :param remote_input_path:
         :param emulate:
+        :param has_remote_input:
         :return:
         """
 
@@ -662,6 +738,9 @@ class SkirtRemote(Remote):
         # The simulation input is defined in terms of a single local directory
         elif isinstance(definition.input_path, basestring):
 
+            # Check has_remote_input flag
+            if has_remote_input: raise ValueError("Cannot enable 'has_remote_input' flag when input is a directory, only when input is defined in terms of a list or dictionary of filepaths (or SimulationInput object)")
+
             # A remote input path is not specified, this means that we have yet to copy the input
             if remote_input_path is None:
 
@@ -672,7 +751,9 @@ class SkirtRemote(Remote):
                 self.upload(definition.input_path, remote_input_path, show_output=True)
 
             # The specified remote input directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If the simulation input is defined as a list of seperate file paths
         elif isinstance(definition.input_path, list):
@@ -689,14 +770,30 @@ class SkirtRemote(Remote):
                 # Create the remote directory
                 self.create_directory(remote_input_path)
 
+                # Check which files are actually local and which are already remote
+                if has_remote_input:
+                    nfiles = len(local_input_file_paths)
+                    remote_input_file_paths = [filepath for filepath in local_input_file_paths if self.is_file(filepath)]
+                    local_input_file_paths = [filepath for filepath in local_input_file_paths if fs.is_file(filepath)]
+                    if len(remote_input_file_paths) + len(local_input_file_paths) != nfiles: raise ValueError("Some input files were not found")
+                else: remote_input_file_paths = None
+
                 # Upload the local input files to the new remote directory
                 self.upload(local_input_file_paths, remote_input_path)
 
+                # Copy the already remote files to the new remote directory
+                if remote_input_file_paths is not None: self.copy_files(remote_input_file_paths, remote_input_path)
+
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If we have a SimulationInput instance
         elif isinstance(definition.input_path, SimulationInput):
+
+            # Check
+            if has_remote_input: raise ValueError("Currently, has_remote_input is not possible with SimulationInput objects (due to internal checking in the latter class)")
 
             # If a remote input path is not specified
             if remote_input_path is None:
@@ -717,7 +814,9 @@ class SkirtRemote(Remote):
                     self.upload(path, remote_input_path, new_name=name)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # We have a dictionary
         elif types.is_dictionary(definition.input_path):
@@ -734,14 +833,43 @@ class SkirtRemote(Remote):
                 # Upload the local input files to the new remote directory
                 for name, path in definition.input_path.items():
 
-                    # Debugging
-                    log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+                    # Check
+                    if has_remote_input:
 
-                    # Upload the file, giving it the desired name
-                    self.upload(path, remote_input_path, new_name=name)
+                        # Is local
+                        if fs.is_file(path):
+
+                            # Debugging
+                            log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                            # Upload
+                            self.upload(path, remote_input_path, new_name=name)
+
+                        # Is remote
+                        elif self.is_file(path):
+
+                            # Debugging
+                            log.debug("Copying the '" + path + "' file from '" + fs.directory_of(path) + "' to '" + remote_input_path + "' under the name '" + name + "'")
+
+                            # Copy
+                            self.copy_file(path, remote_input_path, new_name=name)
+
+                        # Not found
+                        else: raise ValueError("The input file '" + name + "' is not found remotely or locally")
+
+                    # No checking
+                    else:
+
+                        # Debugging
+                        log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                        # Upload the file, giving it the desired name
+                        self.upload(path, remote_input_path, new_name=name)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            else:
+                if has_remote_input: raise ValueError("Cannot specify 'has_remote_input' and 'remote_input_path' simultaneously")
+                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # Invalid format for arguments.input_path
         else: raise ValueError("Invalid value for 'input_path': must be None, local directory path, list of file paths or SimulationInput object")
@@ -1098,6 +1226,8 @@ class SkirtRemote(Remote):
             # Finished simulations
             elif simulation_status == "finished":
 
+                from ...magic.core.fits import is_valid
+
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
@@ -1114,74 +1244,79 @@ class SkirtRemote(Remote):
                     # Check whether the output directory exists; if not, create it
                     if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
 
-                    # Download the simulation output
-                    self.download(simulation.remote_output_path, simulation.output_path)
+                    # Check whether the local output directory is not empty
+                    if not fs.is_empty(simulation.output_path):
 
-                # If retrieve file types are defined, download these files seperately to the local fs
+                        # Same number of files?
+                        #if fs.nfiles_in_path(simulation.output_path) == self.nfiles_in_path(simulation.remote_output_path):
+
+                        # Check the exact filenames
+                        copy_paths = []
+                        for remote_filepath, filename in self.files_in_path(simulation.remote_output_path, returns=["path", "name"], extensions=True):
+
+                            # Determine local filepath
+                            local_filepath = fs.join(simulation.output_path, filename)
+
+                            if fs.is_file(local_filepath):
+
+                                # For a FITS file, check whether it's valid
+                                if local_filepath.endswith(".fits") and not is_valid(local_filepath):
+                                    log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                                    fs.remove_file(local_filepath)
+                                    copy_paths.append(remote_filepath)
+
+                            else: copy_paths.append(remote_filepath)
+
+                        # If the files have all been download already
+                        if len(copy_paths) == 0: log.success("All output files have already been retrieved succesfully")
+                        else:
+
+                            # Debugging
+                            log.debug("Retrieving files: " + ", ".join(copy_paths))
+
+                            # Download
+                            self.download(copy_paths, simulation.output_path)
+
+                    # Download the simulation output
+                    else: self.download(simulation.remote_output_path, simulation.output_path)
+
+                # If retrieve file types are defined, download these files seperately to the local filesystem
                 else:
 
-                    # Create a list for the paths of the files that have to be copied to the local fs
+                    # Create a list for the paths of the files that have to be copied to the local filesystem
                     copy_paths = []
 
                     # Loop over the files that are present in the remoute output directory
-                    for filename in self.files_in_path(simulation.remote_output_path):
+                    for filename in self.files_in_path(simulation.remote_output_path, extensions=True):
 
                         # Determine the full path to the output file
                         filepath = fs.join(simulation.remote_output_path, filename)
 
-                        # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
-                        if filename.endswith("_ds_isrf.dat"):
-                            if "isrf" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_abs.dat"):
-                            if "abs" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_temp" in filename and filename.endswith(".fits"):
-                            if "temp" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_sed.dat"):
-                            if "sed" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_total.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-total" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_direct.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-direct" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_transparent.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-transparent" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_scattered.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-scattered" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_dust.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-dust" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_dustscattered.fits"):
-                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
-                            elif "image-dustscattered" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_celltemps.dat"):
-                            if "celltemp" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_log" in filename and filename.endswith(".txt"):
-                            if "log" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_wavelengths.dat"):
-                            if "wavelengths" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_grid" in filename and filename.endswith(".dat"):
-                            if "grid" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_grho" in filename and filename.endswith(".fits"):
-                            if "grho" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_trho" in filename and filename.endswith(".fits"):
-                            if "trho" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif filename.endswith("_ds_convergence.dat"):
-                            if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
-                        elif "_ds_tree" in filename and filename.endswith(".dat"):
-                            if "tree" in simulation.retrieve_types: copy_paths.append(filepath)
+                        # Check whether the file has to be retrieved
+                        if needs_retrieval(filename, simulation.retrieve_types):
 
-                    # Debugging
-                    log.debug("Retrieving files: " + str(copy_paths))
-                    log.debug("Local output directory: " + simulation.output_path)
+                            local_filepath = fs.join(simulation.output_path, filename)
 
-                    # Check whether the output directory exists; if not, create it
-                    if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
+                            if not fs.is_file(local_filepath): copy_paths.append(filepath)
+                            elif local_filepath.endswith(".fits") and not is_valid(local_filepath):
+                                log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                                fs.remove_file(local_filepath)
+                                copy_paths.append(filepath)
+                            else: log.warning("The output file '" + filename + "' has already been retrieved: skipping ...")
 
-                    # Download the list of files to the local output directory
-                    self.download(copy_paths, simulation.output_path)
+                    # All already retrieved
+                    if len(copy_paths) == 0: log.success("All necessary output files have already been retrieved succesfully")
+                    else:
+
+                        # Debugging
+                        log.debug("Retrieving files: " + ", ".join(copy_paths))
+                        log.debug("Local output directory: " + simulation.output_path)
+
+                        # Check whether the output directory exists; if not, create it
+                        if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
+
+                        # Download the list of files to the local output directory
+                        self.download(copy_paths, simulation.output_path)
 
                 # If retrieval was succesful, add this information to the simulation file
                 simulation.retrieved = True
@@ -1407,11 +1542,21 @@ class SkirtRemote(Remote):
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
-                # Get the status
-                simulation_status = self._get_simulation_status_not_scheduler(simulation)
+                # Check whether the handle is defined
+                if simulation.handle is None:
 
-                # Add the simulation properties to the list
-                entries.append((path, simulation_status))
+                    # Warning to get attention
+                    log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + self.host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
+                    entries.append((path, "running"))
+
+                # Handle is defined
+                else:
+
+                    # Get the status
+                    simulation_status = self._get_simulation_status_not_scheduler(simulation)
+
+                    # Add the simulation properties to the list
+                    entries.append((path, simulation_status))
 
         # If the remote has a scheduling system for launching jobs
         else:

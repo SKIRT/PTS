@@ -7,11 +7,12 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.core.environment import load_modeling_environment_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = verify_modeling_cwd()
+environment = load_modeling_environment_cwd()
+run_names = environment.analysis_runs.names
 
 # -----------------------------------------------------------------
 
@@ -27,6 +28,11 @@ default_dust_grid_type = "bintree"
 # -----------------------------------------------------------------
 
 definition.add_required("origin", "string", "origin of the analysis model", choices=origins)
+
+# -----------------------------------------------------------------
+
+# Give the analysis run a custom name
+definition.add_optional("name", "string", "name for the analysis run") #forbidden=run_names) # don't forbid because --overwrite flag exists
 
 # -----------------------------------------------------------------
 
@@ -49,7 +55,25 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 
 # -----------------------------------------------------------------
 
+# Vertical extent of the total model
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+
+# -----------------------------------------------------------------
+
 # Whether quality has to be calculated
 definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", True)
+
+# -----------------------------------------------------------------
+
+# Whether model has to be adapted
+definition.add_flag("adapt", "adapt the parameters of the chosen model (from model suite origin, not from fitting)", True)
+
+# ADVANCED: specify the model name on the command line
+definition.add_optional("model_name", "string", "name of the model (from the model suite) to use (only specify when origin is 'model')")
+
+# -----------------------------------------------------------------
+
+# ADVANCED: force overwrite
+definition.add_flag("overwrite", "overwrite a possibly existing analysis run with this name (use with care!)", False)
 
 # -----------------------------------------------------------------

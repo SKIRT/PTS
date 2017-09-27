@@ -57,6 +57,9 @@ def add_new_stellar_component(ski, name, component, title=None):
     :return:
     """
 
+    # Debugging
+    log.debug("Adding new stellar component '" + name + "' to the ski file ...")
+
     # From properties
     if component.properties is not None:
 
@@ -162,6 +165,9 @@ def adjust_stellar_component(ski, name, component, title=None):
     :param title:
     :return:
     """
+
+    # Debugging
+    log.debug("Adjusting existing stellar component '" + name + "' in the ski file ...")
 
     # Set geometry
     if "model" in component: set_stellar_component_model(ski, component)
@@ -394,6 +400,9 @@ def add_new_dust_component(ski, name, component, title=None):
     :return:
     """
 
+    # Debugging
+    log.debug("Adding new dust component '" + name + "' to the ski file ...")
+
     # From properties
     if component.properties is not None:
 
@@ -503,6 +512,9 @@ def adjust_dust_component(ski, name, component, title=None):
     :param title:
     :return:
     """
+
+    # Debugging
+    log.debug("Adjusting existing dust component '" + name + "' in the ski file ...")
 
     # Set geometry
     if "model" in component: set_dust_component_model(ski, component)

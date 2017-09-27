@@ -69,7 +69,7 @@ class ProgressPlotter(Plotter):
         """
 
         # Inform the user
-        log.info("Preparing the input data into plottable format...")
+        log.info("Preparing the input data into plottable format ...")
 
         # Get the number of processes
         ranks = np.unique(self.table["Process rank"])
@@ -110,7 +110,7 @@ class ProgressPlotter(Plotter):
         """
 
         # Inform the user
-        log.info("Making the plots...")
+        log.info("Making the plots ...")
 
         # Loop over the different phases in the data structure
         for phase in self.data:
