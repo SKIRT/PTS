@@ -453,6 +453,9 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs, check_in_box=False
 
         # Query Vizier and obtain the resulting table
         result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=code)
+        if len(result) == 0:
+            log.warning("No point sources could be found around " + str(center) + " with a RA span of " + str(ra_span) + " and a DEC span of " + str(dec_span) + " with the '" + catalog + "' catalog")
+            continue
         table = result[0]
 
         number_of_stars = 0
@@ -570,7 +573,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs, check_in_box=False
 
                 difference_ra = saved_star_position.ra - position.ra
                 difference_dec = saved_star_position.dec - position.dec
-                difference = Extent((difference_ra * pixelscale.average).to("").value, (difference_dec * pixelscale.average).to("").value)
+                difference = Extent((difference_ra / pixelscale.to("deg")).to("").value, (difference_dec / pixelscale.to("deg")).to("").value)
 
                 # Check whether the distance is less then 3 pixels
                 if difference.norm < 3.0:

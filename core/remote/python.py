@@ -77,10 +77,10 @@ class RemotePythonSession(object):
         # Set logging level to match that of local PTS
         if log.is_debug():
 
-            self.import_package("setup_log", from_name="pts.core.tools.logging")
+            self.import_package("setup_log", from_name="pts.core.basics.log")
             self.send_line("log = setup_log('DEBUG')")
 
-        else: self.import_package("log", from_name="pts.core.tools.logging")
+        else: self.import_package("log", from_name="pts.core.basics.log")
 
     # -----------------------------------------------------------------
 

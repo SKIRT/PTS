@@ -304,7 +304,7 @@ class SourceExtractor(Configurable):
                         star_region_path = None
 
             # Load the star regions
-            if fs.is_file(star_region_path): self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs)
+            if star_region_path is not None: self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs)
 
         # Load the saturation region
         if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
@@ -335,7 +335,7 @@ class SourceExtractor(Configurable):
                         saturation_region_path = None
 
             # Load the saturation regions
-            if fs.is_file(saturation_region_path): self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs)
+            if saturation_region_path is not None: self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs)
 
         # Load the region of other sources
         if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
@@ -366,7 +366,7 @@ class SourceExtractor(Configurable):
                         other_region_path = None
 
             # Load the other regions
-            if fs.is_file(other_region_path): self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs)
+            if other_region_path is not None: self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs)
 
         # Debugging
         if self.galaxy_region is not None: log.debug("Galaxy regions: PRESENT")

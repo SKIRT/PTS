@@ -380,6 +380,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def initial_dataset_path(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.environment.initial_dataset_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def initial_dataset(self):
 
         """

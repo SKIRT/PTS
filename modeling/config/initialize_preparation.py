@@ -11,6 +11,7 @@ from pts.core.remote.host import find_host_ids
 from pts.magic.config.find_sources import definition as sources_definition
 from pts.modeling.component.component import get_cache_host_id
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.magic.tools.catalogs import stellar_catalog_descriptions
 
 # -----------------------------------------------------------------
 
@@ -35,8 +36,8 @@ definition.add_flag("attached", "run remotely in attached mode")
 definition.import_section("sources", "options for the source finder", sources_definition)
 
 # Flags
-default_catalogs = ["II/246"]
-definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs)
+default_catalogs = ["2MASS"]
+definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, choices=stellar_catalog_descriptions)
 definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
 
 definition.add_flag("manual", "don't find sources, but mark them from the catalog, and let the selection be done manually", False)
