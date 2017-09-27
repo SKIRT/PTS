@@ -31,6 +31,7 @@ class Model(object):
         :return:
         """
 
+        # The attributes
         self.simulation_name = None
         self.chi_squared = None
         self.parameter_values = None

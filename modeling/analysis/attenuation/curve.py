@@ -20,8 +20,13 @@ from .component import AttenuationAnalysisComponent
 from ....core.basics.log import log
 from ....core.tools import filesystem as fs
 from ....core.data.sed import SED
-from ....core.data.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
+#from ....core.data.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
 from ....core.plot.attenuation import AttenuationPlotter
+from ....core.data.attenuation import AttenuationCurve
+from ....core.data.extinction import ExtinctionCurve
+from ....core.data.extinction import CardelliClaytonMathisExtinctionCurve, ODonnellExtinctionCurve, FitzpatrickExtinctionCurve
+from ....core.data.extinction import FitzpatrickMassaExtinctionCurve, CalzettiExtinctionCurve, BattistiExtinctionCurve
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -131,6 +136,90 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def wavelengths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.total_sed.wavelengths()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.analysis_run.model
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.mappings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_mass(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.model.sfr_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.parameter_values["dust_mass"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.parameter_values["fuv_ionizing"]
+
+    # -----------------------------------------------------------------
+
     def calculate_attenuation(self):
 
         """
@@ -186,13 +275,10 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         # Inform the user
         log.info("Calculating the SFR contribution to the attenuation curve ...")
 
-        # Get the dust mass in SFR clouds for the model
-        dust_mass = self.analysis_run.model.sfr_dust_mass
+        # Get the dust mass column density = total dust mass in SFR clouds / total surface of the galaxy (model)
+        average_column_density = (self.sfr_dust_mass / self.truncation_area).to("Msun / kpc2").value
 
-        # Get the dust mass column density
-        average_column_density = (dust_mass / self.truncation_area).to("Msun / kpc2").value
-
-        # V band attenuation = total dust mass in SFR clouds / total surface of M31 / 1e5 * 0.67
+        # V band attenuation = 1e5 * 0.67
         a_v_mappings = 0.67 * average_column_density / 1e5
 
         # Creat the attenuation curve for the SFR dust
@@ -274,10 +360,17 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         log.info("Loading the reference attenuation curves ...")
 
         # Load the Milky Way, SMC and Calzetti attenuation curves
-        self.references["Milky Way"] = MilkyWayAttenuationCurve()
-        self.references["SMC"] = SMCAttenuationCurve()
-        self.references["Calzetti"] = CalzettiAttenuationCurve()
-        self.references["Battisti"] = BattistiAttenuationCurve()
+        #self.references["Milky Way"] = MilkyWayAttenuationCurve()
+        #self.references["SMC"] = SMCAttenuationCurve()
+        #self.references["Calzetti"] = CalzettiAttenuationCurve()
+        #self.references["Battisti"] = BattistiAttenuationCurve()
+
+        self.references["Cardelli"] = CardelliClaytonMathisExtinctionCurve(self.wavelengths)
+        self.references["O'Donnell"] = ODonnellExtinctionCurve(self.wavelengths)
+        self.references["Fitzpatrick"] = FitzpatrickExtinctionCurve(self.wavelengths)
+        self.references["Fitzpatrick & Massa"] = FitzpatrickMassaExtinctionCurve(self.wavelengths)
+        self.references["Calzetti"] = CalzettiExtinctionCurve(self.wavelengths)
+        self.references["Battisti"] = BattistiExtinctionCurve(self.wavelengths)
 
     # -----------------------------------------------------------------
 
@@ -306,17 +399,62 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         # Inform the user
         log.info("Writing the attenuations ...")
 
+        # Diffuse dust
+        self.write_diffuse_attenuations()
+
+        # SFR dust
+        self.write_sfr_attenuations()
+
+        # Total
+        self.write_total_attenuations()
+
+    # -----------------------------------------------------------------
+
+    def write_diffuse_attenuations(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the diffuse dust attenuations ...")
+
         # Determine the path to the diffuse dust attenuation file
         diffuse_path = fs.join(self.attenuation_curve_path, "diffuse.dat")
 
         # Write the diffuse dust attenuations
         self.attenuation_diffuse.saveto(diffuse_path)
 
+    # -----------------------------------------------------------------
+
+    def write_sfr_attenuations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the SRF dust attenuations ...")
+
         # Determine the path to the SFR attenuation file
         sfr_path = fs.join(self.attenuation_curve_path, "sfr.dat")
 
         # Write the SFR attenuation curve
         self.attenuation_sfr.saveto(sfr_path)
+
+    # -----------------------------------------------------------------
+
+    def write_total_attenuations(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total dust attenuations ...")
 
         # Determine the path to the total dust attenuation file
         total_path = fs.join(self.attenuation_curve_path, "total.dat")

@@ -88,7 +88,7 @@ def add_command(command_name, cwd, configuration_method_argument=None):
 
     # Get the argument string
     argument_string = "pts "
-    if configuration_method_argument is not None: argument_string += configuration_method_argument + " "
+    if configuration_method_argument is not None: argument_string += configuration_method_argument
     argument_string += command_name + " " + " ".join(arguments)
 
     # Load the commmands

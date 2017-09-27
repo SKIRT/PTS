@@ -1047,12 +1047,10 @@ class AnalysisRun(AnalysisRunBase):
         # Set attributes
         model.simulation_name = self.simulation_name
         model.chi_squared = self.chi_squared
-        #model.parameter_values = self.parameter_values # set the parameter values
-
-        raise NotImplementedError("This function has to be modified: the parameter_values list depends on the fitting run (the order of the free parameter labels), but the analysis run only has a dictionary of the parameter values")
+        model.parameter_values = self.parameter_values
 
         # Return the model
-        #return model
+        return model
 
     # -----------------------------------------------------------------
 
