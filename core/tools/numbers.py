@@ -34,9 +34,33 @@ def is_number(value_or_string):
     """
 
     try:
+        #print(value_or_string)
         float(value_or_string)
         return True
     except ValueError: return False
+
+# -----------------------------------------------------------------
+
+def find_numbers_in_string(string, left, right):
+
+    """
+    This function
+    e.g. find numbers 0, 3, 5 in blabla[0]blabla[3]blabla[5] with left = "[" and right = "]"
+    :param string:
+    :param left:
+    :param right:
+    :return:
+    """
+
+    numbers = []
+
+    for part in string.split(left):
+
+        test = part.split(right)[0]
+        if is_number(test): numbers.append(float(test))
+
+    # Return the list of numbers
+    return numbers
 
 # -----------------------------------------------------------------
 

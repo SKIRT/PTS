@@ -1124,3 +1124,35 @@ def similarity(string_a, string_b):
     return difflib.SequenceMatcher(None, string_a, string_b).ratio()
 
 # -----------------------------------------------------------------
+
+def split_cumulative(string, pattern, include_total=True):
+
+    """
+    THis function ...
+    :param string:
+    :param pattern:
+    :param include_total:
+    :return:
+    """
+
+    parts = string.split(pattern)
+
+    if len(parts) == 1:
+        if include_total: return parts
+        else: return []
+
+    result = []
+    for index in range(len(parts)):
+
+        previous_indices = range(index)
+        all_indices = previous_indices + [index]
+
+        cumulative_parts = [parts[i] for i in all_indices]
+        joined = pattern.join(cumulative_parts)
+
+        result.append(joined)
+
+    if include_total: return result
+    else: return result[:-1]
+
+# -----------------------------------------------------------------

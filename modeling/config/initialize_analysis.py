@@ -32,7 +32,7 @@ definition.add_required("origin", "string", "origin of the analysis model", choi
 # -----------------------------------------------------------------
 
 # Give the analysis run a custom name
-definition.add_optional("name", "string", "name for the analysis run", forbidden=run_names)
+definition.add_optional("name", "string", "name for the analysis run") #forbidden=run_names) # don't forbid because --overwrite flag exists
 
 # -----------------------------------------------------------------
 
@@ -73,7 +73,7 @@ definition.add_optional("model_name", "string", "name of the model (from the mod
 
 # -----------------------------------------------------------------
 
-# Force overwrite
-definition.add_flag("overwrite", "overwrite a possibly existing analysis run with this name", False)
+# ADVANCED: force overwrite
+definition.add_flag("overwrite", "overwrite a possibly existing analysis run with this name (use with care!)", False)
 
 # -----------------------------------------------------------------

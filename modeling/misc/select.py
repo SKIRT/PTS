@@ -46,7 +46,11 @@ def select_from_model_suite(model_suite, adapt=True, name=None):
 
     # Load the labeled ski template file
     ski = LabeledSkiFile(template_ski_path)
-    labels_before = ski.labels
+    #labels_before = ski.labels
+
+    # Get paths for each label
+    label_paths = ski.get_labels_and_paths()
+    #print(label_paths["position_angle"])
 
     # Load the model
     definition = model_suite.get_model_definition(model_name)
@@ -54,12 +58,18 @@ def select_from_model_suite(model_suite, adapt=True, name=None):
     # Add the components to the ski file and to the input map paths dictionary
     input_paths = dict()
     model_suite.add_model_components(model_name, ski, input_paths)
-    labels_after = ski.labels
 
+    # Re-add the labels
+    ski.add_labels(label_paths, allow_change=False)
+
+    # Set the correct values for the instruments from labeled values elsewhere in the ski file
+    ski.fix_labels("instrumentSystem")
+
+    #labels_after = ski.labels
     # Check
-    if not sequences.same_contents(labels_before, labels_after):
-        labels_string = ", ".join(sequences.difference(labels_before, labels_after))
-        log.warning("The parameter labels '" + labels_string + "' have been lost in the ski file after setting the components")
+    #if not sequences.same_contents(labels_before, labels_after):
+    #    labels_string = ", ".join(sequences.difference(labels_before, labels_after))
+    #    log.warning("The parameter labels '" + labels_string + "' have been lost in the ski file after setting the components")
 
     # Get the parameter values
     if adapt: parameter_values = prompt_parameters(ski) # only adapted parameters

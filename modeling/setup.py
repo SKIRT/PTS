@@ -34,12 +34,13 @@ for index in range(len(table["Command"])):
 
 # -----------------------------------------------------------------
 
-def setup(command_name, cwd):
+def setup(command_name, cwd, configuration_method_argument=None):
 
     """
     This function ...
     :param command_name:
     :param cwd:
+    :param configuration_method_argument:
     :return: 
     """
 
@@ -47,7 +48,7 @@ def setup(command_name, cwd):
     mark_start(command_name, cwd)
 
     # Add command to commands file
-    add_command(command_name, cwd)
+    add_command(command_name, cwd, configuration_method_argument=configuration_method_argument)
 
 # -----------------------------------------------------------------
 
@@ -72,12 +73,13 @@ def mark_start(command_name, cwd):
 
 # -----------------------------------------------------------------
 
-def add_command(command_name, cwd):
+def add_command(command_name, cwd, configuration_method_argument=None):
 
     """
     This fucntion ...
     :param command_name:
     :param cwd:
+    :param configuration_method_argument:
     :return:
     """
 
@@ -85,7 +87,9 @@ def add_command(command_name, cwd):
     arguments = [add_quotes_if_spaces(string) for string in sys.argv[1:]]
 
     # Get the argument string
-    argument_string = "pts " + command_name + " " + " ".join(arguments)
+    argument_string = "pts "
+    if configuration_method_argument is not None: argument_string += configuration_method_argument + " "
+    argument_string += command_name + " " + " ".join(arguments)
 
     # Load the commmands
     from .component.component import load_modeling_commands

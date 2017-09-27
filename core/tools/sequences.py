@@ -1206,3 +1206,30 @@ def all_false(sequence):
     return True
 
 # -----------------------------------------------------------------
+
+def noccurences(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    return sequence.count(value)
+
+# -----------------------------------------------------------------
+
+def is_unique(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    if value not in sequence: raise ValueError("The value '" + str(value) + "' is not in the sequence '" + str(sequence) + "'")
+    return noccurences(sequence, value) == 1
+
+# -----------------------------------------------------------------

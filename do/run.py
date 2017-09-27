@@ -149,6 +149,13 @@ def run_configurable(table_matches, args, tables):
     elif args.configfile is not None: configuration_method = "file:" + args.configfile
     elif args.rerun: configuration_method = "last"
 
+    # Regenerate the configuration method option
+    if args.interactive: configuration_method_argument = "--interactive"
+    elif args.arguments: configuration_method_argument = "--arguments"
+    elif args.configfile is not None: configuration_method_argument = "--configfile '" + args.configfile + "'"
+    elif args.rerun: configuration_method_argument = "--rerun"
+    else: configuration_method_argument = ""
+
     # Resolve
     subproject, index = table_matches[0]
     resolved = introspection.resolve_from_match(subproject, tables[subproject], index)
@@ -200,7 +207,7 @@ def run_configurable(table_matches, args, tables):
         config.saveto(config_cache_path)
 
     # Setup function
-    if subproject == "modeling": setup_modeling(command_name, fs.cwd())
+    if subproject == "modeling": setup_modeling(command_name, fs.cwd(), configuration_method_argument)
     elif subproject == "magic": setup_magic(command_name, fs.cwd())
     elif subproject == "dustpedia": setup_dustpedia(command_name, fs.cwd())
     elif subproject == "evolve": setup_evolve(command_name, fs.cwd())

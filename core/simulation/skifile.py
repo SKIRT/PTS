@@ -14,6 +14,7 @@
 # Import standard modules
 import os.path
 import copy
+from collections import OrderedDict
 from datetime import datetime
 from lxml import etree
 from numpy import arctan
@@ -137,9 +138,14 @@ class SkiFile:
     def root(self):
         return self.tree.getroot()
 
-    ## This fucntion returns the simulation element
+    ## This function returns the simulation element
     def get_simulation(self):
         return self.tree.getroot().getchildren()[0]
+
+    ## This property returns the simulation class (PanMonteCarloSimulation or OligoMonteCarloSimulation)
+    @property
+    def simulation_class(self):
+        return self.get_simulation().tag
 
     ## This property returns whether the ski file required input
     @property
@@ -4297,10 +4303,8 @@ class LabeledSkiFile(SkiFile):
             # Loop over the settings of the element
             for setting_name, setting_value in element.items():
 
-                if setting_value.startswith("[") and setting_value.endswith("]"):
-
-                    label = setting_value.split("[")[1].split(":")[0]
-                    labels.add(label)
+                # Get label, if labeled
+                if is_labeled(setting_value): labels.add(get_label(setting_value))
 
         # Return the list of labels
         return list(labels)
@@ -4435,8 +4439,8 @@ class LabeledSkiFile(SkiFile):
             # Loop over the settings of the element
             for setting_name, setting_value in element.items():
 
-                if setting_value.startswith("[") and setting_value.endswith("]"):
-                    label_item = setting_value.split("[")[1].split(":")[0]
+                if is_labeled(setting_value):
+                    label_item = get_label(setting_value)
                     if label_item == label: elements.append((element, setting_name))
 
         # Return the list of elements
@@ -4459,6 +4463,9 @@ class LabeledSkiFile(SkiFile):
 
         # Loop over the elements
         for element, setting_name in elements:
+
+            #print(setting_name)
+            #print(element.get(setting_name))
 
             # Get the value
             value = self.get_quantity(element, setting_name)
@@ -4486,9 +4493,9 @@ class LabeledSkiFile(SkiFile):
             # Loop over the settings of the element
             for setting_name, setting_value in element.items():
 
-                if setting_value.startswith("[") and setting_value.endswith("]"):
+                if is_labeled(setting_value):
 
-                    label = setting_value.split("[")[1].split(":")[0]
+                    label = get_label(setting_value)
                     value = self.get_quantity(element, setting_name)
 
                     if label in values and values[label] != value:
@@ -4500,18 +4507,17 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
-    def add_label_to_path(self, property_path, label, element=None):
+    def get_element_for_path(self, property_path, element=None):
 
         """
         This function ...
         :param property_path:
-        :param label:
         :param element:
         :return:
         """
 
-        # Determine the name of the property
-        property_name = property_path.split("/")[-1]
+        from ..tools.numbers import is_number
+        from ..tools.strings import is_quoted, unquote
 
         # Start with the simulation object as the root for searching through the simulation hierarchy
         if element is None: last = self.get_simulation()
@@ -4520,17 +4526,394 @@ class LabeledSkiFile(SkiFile):
         else: last = element
 
         # Find the property to be set
-        for link in property_path.split("/")[:-1]:
-            last = self.get_child_with_name(last, link)
+        for link in property_path.split("/"):
 
-        # Get the current property value
-        value = last.get(property_name)
+            # Bracket specification
+            if link.startswith("[") and link.endswith("]"):
 
-        # Add the label
-        value = "[" + label + ":" + value + "]"
+                specification = link.split("[")[1].split("]")[0]
 
-        # Set the property with the label
-        last.set(property_name, value)
+                # All children
+                if specification == ":":
+
+                    elements = self.get_children(last)
+                    if len(elements) == 0: raise ValueError("The path defines to existing elements")
+                    elif len(elements) > 1: raise ValueError("The path defines multiple elements")
+                    else: last = elements[0]
+
+                # Child with certain index
+                elif is_number(specification):
+
+                    index = int(specification)
+                    children = self.get_children(last)
+                    child = children[index]
+                    #elements = [child]
+                    last = child
+
+                # Child with certain title
+                elif is_quoted(specification):
+
+                    title = unquote(specification)
+                    children = self.get_ids_children(last)
+                    child = None
+                    for key in children:
+                        if key == title:
+                            child = children[key]
+                            break
+                    if child is None: raise RuntimeError("Something went wrong")
+                    #elements = [child]
+                    last = child
+
+                # Invalid specification
+                else: raise ValueError("Invalid specification: '" + specification + "'")
+
+            # REGULAR SPECIFICATION
+            else: last = self.get_child_with_name(last, link)
+
+        # Return the last element
+        return last
+
+    # -----------------------------------------------------------------
+
+    def add_label_to_path(self, property_path, label, element=None, allow_change=True):
+
+        """
+        This function ...
+        :param property_path:
+        :param label:
+        :param element:
+        :param allow_change:
+        :return:
+        """
+
+        # Determine the name of the property
+        property_name = property_path.split("/")[-1]
+        property_element_path = "/".join(property_path.split("/")[:-1])
+
+        # Start with the simulation object as the root for searching through the simulation hierarchy
+        if element is None: last = self.get_simulation()
+
+        # Or start with the passed element
+        else: last = element
+
+        # Start with the base element
+        elements = self.get_elements(last, property_element_path)
+
+        #print(elements)
+
+        # Loop over the elements
+        for el in elements:
+
+            # Get the current property value
+            value = el.get(property_name)
+
+            # If labeled, strip the label
+            if is_labeled(value):
+                old_label = get_label(value)
+                value = self.get_value(el, property_name)
+                if not allow_change and old_label != label: raise ValueError("The already present label '" + old_label + "' does not correspond to the new label '" + label + "'")
+
+            # Add the label
+            value = "[" + label + ":" + value + "]"
+
+            # Set the property with the label
+            el.set(property_name, value)
+
+    # -----------------------------------------------------------------
+
+    def get_ids_children(self, element):
+
+        """
+        This function ...
+        :param element:
+        :return:
+        """
+
+        # Get all children
+        children = element.getchildren()
+
+        # Get the child elements
+        child_elements = [child for child in children if child.tag is not etree.Comment]
+
+        # Loop over the components (also includes the comments)
+        number_of_components = 0
+        i = 0
+        ids = []
+        while i < len(children):
+            if children[i].tag is etree.Comment:
+                ids.append(children[i].text.strip())
+                i += 2  # skip the next component -> it is the component corresponding to this comment
+            # No name -> add the index of this component as the ID
+            else:
+                ids.append(number_of_components)
+                i += 1
+            # Increment the number of components
+            number_of_components += 1
+
+        # Create resulting dictionary
+        result = OrderedDict()
+        for id, element in zip(ids, child_elements):
+            result[id] = element
+
+        # Return the dictionary
+        return result
+
+    # -----------------------------------------------------------------
+
+    def get_children(self, element, include_comments=False):
+
+        """
+        This function ...
+        :param element:
+        :param include_comments:
+        :return:
+        """
+
+        # Return the stellar components as a list
+        if include_comments: return element.getchildren()
+        else: return [child for child in element.getchildren() if child.tag is not etree.Comment]
+
+    # -----------------------------------------------------------------
+
+    def add_labels(self, paths, allow_change=True):
+
+        """
+        This function ...
+        :param paths:
+        :param allow_change:
+        :return:
+        """
+
+        # Loop over the labels
+        for label in paths:
+
+            # Loop over the paths, add the labels
+            label_paths = paths[label]
+            for label_path in label_paths: self.add_label_to_path(label_path, label, allow_change=allow_change)
+
+    # -----------------------------------------------------------------
+
+    def fix_labels(self, base_path):
+
+        """
+        This function ...
+        :param base_path:
+        :return:
+        """
+
+        paths = self.get_labels_and_paths(merge=False)
+
+        # Loop over all labels
+        for label in paths:
+
+            label_paths = paths[label]
+            if len(label_paths) == 1: continue # We cannot fix anything, only one so no comparison
+
+            reference_label_path = None
+
+            for label_path in label_paths:
+                if not label_path.startswith(base_path):
+                    reference_label_path = label_path
+                    break
+            if reference_label_path is None:
+                #raise ValueError("No comparison for the '" + label + "' labeled property")
+                continue # We CANNOT FIX ANYTHING
+
+            reference_property_name = reference_label_path.split("/")[-1]
+            reference_base_path = "/".join(reference_label_path.split("/")[:-1])
+            #print(reference_base_path)
+            reference_element = self.get_element_for_path(reference_base_path)
+            reference_value = self.get_value(reference_element, reference_property_name)
+
+            # Fix
+            for label_path in label_paths:
+
+                if not label_path.startswith(base_path): continue
+
+                property_name = label_path.split("/")[-1]
+                base_path = "/".join(label_path.split("/")[:-1])
+                element = self.get_element_for_path(base_path)
+                self.set_value(element, property_name, reference_value)
+
+    # -----------------------------------------------------------------
+
+    def get_elements_for_label(self, label):
+
+        """
+        Thisf unction ...
+        :param label:
+        :return:
+        """
+
+        # Initialize a list for the elements
+        elements = []
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                # This is a labeled value
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+
+                    # Get the label
+                    label_i = setting_value.split("[")[1].split(":")[0]
+
+                    # Add the element if the label corresponds
+                    if label_i == label: elements.append((element, setting_name))
+
+        # Return the list of elements
+        return elements
+
+    # -----------------------------------------------------------------
+
+    def get_paths_for_label(self, label, merge=True):
+
+        """
+        This function ...
+        :param label:
+        :param merge:
+        :return:
+        """
+
+        # Initialize a list for the different paths
+        paths = []
+
+        # Loop over the elements (with setting name) that contain the label
+        for element, setting_name in self.get_elements_for_label(label):
+
+            # Get element path
+            path = get_element_path(element)
+
+            # Make relative to simulation
+            path = path.split(self.simulation_class + "/")[1]
+
+            # Add the setting name
+            path += "/" + setting_name
+
+            # Add the path
+            paths.append(path)
+
+        # MERGE?
+        if merge:
+
+            from ..tools.numbers import find_numbers_in_string
+            from ..tools.strings import split_cumulative
+            from ..tools.sequences import same_contents
+
+            # Check the paths, if some can be merged together
+            merge_candidates = []
+            for path in paths:
+                if "[" not in path: continue
+                if "]" not in path: continue
+                numbers = find_numbers_in_string(path, left="[", right="]")
+                if len(numbers) > 0: merge_candidates.append(path)
+
+            # More than one candidate
+            if len(merge_candidates) > 1:
+                merged = []
+                merged_indices = []  # merged indices
+                for index in range(len(merge_candidates)):
+
+                    # Skip already merged
+                    if index in merged_indices: continue
+
+                    path = merge_candidates[index]
+                    parts = split_cumulative(path, "[", include_total=False)
+
+                    merged_with_index = []
+
+                    for other_index in range(len(merge_candidates)):
+
+                        # Skip already merged
+                        if other_index in merged_indices: continue
+
+                        # Do not check yourself
+                        if other_index == index: continue
+
+                        other_path = merge_candidates[other_index]
+                        for part in parts:
+                            if part in other_path:
+                                #merged_with_index.append(other_path)
+                                merged_with_index.append(other_index)
+                                merged_indices.append(other_index)
+                                break
+
+                    if len(merged_with_index) > 0:
+                        #merged_with_index.append(path)
+                        merged_with_index.append(index)
+                        merged_indices.append(index)
+                        merged.append(merged_with_index)
+
+                # Check whether the merged paths span the entire list (e.g. , xxx[0]yyy, xxx[1]yyy, xxx[2]yyy until [n-1])
+                for mergers in merged:
+                    first = merge_candidates[mergers[0]]
+                    #first = mergers[0]
+                    common = first.split("/[")[0] # HERE WE ASSUME THERE IS ONLY ONE [I] !!!
+                    nchildren = len(self.get_children_for_path(common))
+                    #print(common, nchildren)
+                    merger_indices = [int(merge_candidates[index].split("/[")[1].split("]")[0]) for index in mergers]
+                    #print(nchildren, merger_indices)
+                    # CHECK IF THEY'RE ALL THERE
+                    needed_indices = range(nchildren)
+
+                    # SUCCES: MERGE
+                    if same_contents(needed_indices, merger_indices):
+
+                        start = common + "/["
+                        end = "]" + first.split("/[")[1].split("]")[1]
+                        merged_path = start + ":" + end
+                        #print(merged_path)
+
+                        # REMOVE THE MERGER INDICES FROM THE PATHS
+                        for merger_index in sorted(mergers, reverse=True):
+                            del paths[merger_index]
+
+                        # Add the merged path
+                        paths.append(merged_path)
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_children_for_path(self, path, include_comments=False):
+
+        """
+        This function ...
+        :param path:
+        :param include_comments:
+        :return:
+        """
+
+        element = self.get_element_for_path(path)
+        return self.get_children(element, include_comments=include_comments)
+
+    # -----------------------------------------------------------------
+
+    def get_labels_and_paths(self, merge=True):
+
+        """
+        This function ...
+        :param merge:
+        :return:
+        """
+
+        # Initialize a dictionary to contain the paths
+        paths = dict()
+
+        # Loop over the labels
+        for label in self.labels:
+
+            # Get the paths
+            label_paths = self.get_paths_for_label(label, merge=merge)
+
+            # Set the paths
+            paths[label] = label_paths
+
+        # Return the dictionary
+        return paths
 
     # -----------------------------------------------------------------
 
@@ -4566,7 +4949,7 @@ class LabeledSkiFile(SkiFile):
         # Not a new property
         if prop is not None:
             # Labeled value, add label to stringified quantity
-            if prop.startswith("[") and prop.endswith("]"):
+            if is_labeled(prop):
                 label = prop[1:-1].split(":")[0]
                 string = "[" + label + ":" + string + "]"
 
@@ -4627,6 +5010,87 @@ class LabeledSkiFile(SkiFile):
 
         # Set the value
         self.set_value(element, name, string)
+
+    # -----------------------------------------------------------------
+
+    def get_elements(self, base, path):
+
+        """
+        This function ...
+        :param base:
+        :param path:
+        :return:
+        """
+
+        elements = [base]
+
+        # Find the property to be set
+        for link in path.split("/"):
+
+            # Make new elements
+            new_elements = []
+            for element in elements: new_elements.extend(self.get_next_elements(element, link))
+
+            # Replace
+            elements = new_elements
+
+        # Return
+        return elements
+
+    # -----------------------------------------------------------------
+
+    def get_next_elements(self, base, link):
+
+        """
+        This function ...
+        :param base: 
+        :param link: 
+        :return: 
+        """
+
+        from ..tools.numbers import is_number
+        from ..tools.strings import is_quoted, unquote
+
+        # Bracket specification
+        if link.startswith("[") and link.endswith("]"):
+
+            specification = link.split("[")[1].split("]")[0]
+
+            # All children
+            if specification == ":": elements = self.get_children(base)
+
+            # Child with certain index
+            elif is_number(specification):
+
+                index = int(specification)
+                children = self.get_children(base)
+                child = children[index]
+                elements = [child]
+
+            # Child with certain title
+            elif is_quoted(specification):
+
+                title = unquote(specification)
+                children = self.get_ids_children(base)
+                child = None
+                for key in children:
+                    if key == title:
+                        child = children[key]
+                        break
+                if child is None: raise RuntimeError("Something went wrong")
+                elements = [child]
+
+            # Invalid specification
+            else: raise ValueError("Invalid specification: '" + specification + "'")
+
+        # Regular specification
+        else:
+            last = self.get_child_with_name(base, link)
+            if last is None: raise ValueError("Could not find the element with the link '" + link + "'")
+            elements = [last]
+
+        # Return the elements
+        return elements
 
 # -----------------------------------------------------------------
 
@@ -4696,3 +5160,113 @@ def replace_ski_file_lines(path, replacement_dict):
     fs.write_lines(path, new_lines)
 
 # -----------------------------------------------------------------
+
+def get_element_path(element):
+
+    """
+    This function ...
+    :param element:
+    :return:
+    """
+
+    from ..tools import sequences
+
+    name = element.tag
+
+    parent = element.getparent()
+    if parent is not None:
+
+        # Get the children of the parent
+        children = parent.getchildren()
+
+        # The parent has multiple children
+        nchildren = len(children)
+        if nchildren > 1:
+
+            # Get the child labels (names)
+            labels = [child.tag for child in children if child.tag is not etree.Comment]
+            nactual_children = len(labels)
+
+            # Loop over the components (also includes the comments)
+            number_of_components = 0
+            i = 0
+            ids = []
+            while i < len(children):
+                if children[i].tag is etree.Comment:
+                    ids.append(children[i].text.strip())
+                    i += 2  # skip the next component -> it is the component corresponding to this comment
+                # No name -> add the index of this component as the ID
+                else:
+                    ids.append(number_of_components)
+                    i += 1
+                # Increment the number of components
+                number_of_components += 1
+
+            #print(ids)
+
+            # Check the index of this element
+            index = 0
+            actual_index = 0
+            while True:
+                if children[actual_index].tag is etree.Comment:
+                    actual_index += 1
+                    continue
+                if children[actual_index] == element: break
+                index += 1
+                actual_index += 1
+                if actual_index == nchildren:
+                    index = None
+                    break
+            if index is None: raise RuntimeError("Something went wrong")
+
+            #print(labels)
+            #print(index)
+
+            # Get the label and the ID
+            element_label = labels[index]
+            element_id = ids[index]
+
+            if types.is_integer_type(element_id):
+                if element_id != index: raise RuntimeError("Something went wrong")
+                identifier = str(index)
+            elif types.is_string_type(element_id): identifier = "'" + element_id + "'"
+            else: raise RuntimeError("Something went wrong")
+
+            if sequences.is_unique(labels, element_label): path = get_element_path(parent) + "/" + name
+            else: path = get_element_path(parent) + "/[" + identifier + "]"
+
+        # No multiple children
+        else: path = get_element_path(parent) + "/" + name
+
+    # No parent
+    else: path = name
+
+    # Return the total path
+    return path
+
+# -----------------------------------------------------------------
+
+def is_labeled(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return value.startswith("[") and value.endswith("]")
+
+# -----------------------------------------------------------------
+
+def get_label(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    label = value.split("[")[1].split(":")[0]
+    return label
+
+#-----------------------------------------------------------------
