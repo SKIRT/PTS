@@ -1024,15 +1024,15 @@ class SpawnSimulationStatus(SimulationStatus):
 
                     if self.stage != last_stage:
                         self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__()
+                        self._bar.__exit__(None, None, None)
 
                     if self.cycle != last_cycle:
                         self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__()
+                        self._bar.__exit__(None, None, None)
 
                     if self.progress is None:
                         self._bar.show(100)
-                        #self._bar.__exit__() # ?
+                        #self._bar.__exit__(None, None, None) # ?
 
                     else: self._bar.show(int(self.progress))
                     #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
@@ -1043,7 +1043,7 @@ class SpawnSimulationStatus(SimulationStatus):
                 else: continue
                 #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
-            # Stellar emission: show progress bar
+            # Stellar emission, dust emission or spectra calculation: show progress bar
             elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
 
                 total_length = 100
@@ -1057,11 +1057,11 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 if self.phase != last_phase:
                     self._bar.show(100)  # make sure it always ends on 100%
-                    self._bar.__exit__()
+                    self._bar.__exit__(None, None, None)
 
                 if self.progress is None:
                     self._bar.show(100)
-                    self._bar.__exit__()
+                    self._bar.__exit__(None, None, None)
 
                 else: self._bar.show(int(self.progress))
                 #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)

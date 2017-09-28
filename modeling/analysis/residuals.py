@@ -50,8 +50,14 @@ class ResidualAnalyser(AnalysisComponent):
         # The observed images
         self.observed = dict()
 
+        # The error maps
+        self.errors = dict()
+
         # The residual images
         self.residuals = dict()
+
+        # The weighed residual images
+        self.weighed = dict()
 
     # -----------------------------------------------------------------
 
@@ -65,16 +71,19 @@ class ResidualAnalyser(AnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the observed and simulated images
+        # 2. Load the observed and simulated images
         self.load_images()
 
-        # 5. Calculate the residual images
+        # 3. Calculate the residual images
         self.calculate_residuals()
 
-        # 6. Writing
+        # 4. Calculate the weighed residual images
+        self.calculate_weighed()
+
+        # 5. Writing
         self.write()
 
-        # 7. Plotting
+        # 6. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -124,6 +133,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Load ...
         self.load_simulated_images()
+
+        # Load error maps
+        self.load_errors()
 
     # -----------------------------------------------------------------
 
@@ -196,6 +208,33 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the error maps ...")
+
+        # Load all data
+        for name in self.dataset.names:
+
+            # Debugging
+            log.debug("Loading the " + name + " error map ...")
+
+            # Load the error map, not truncated
+            errors = self.dataset.get_errormap(name, masked=False)
+
+            # Define the name of the filter as the image name
+            image_name = str(errors.filter)
+
+            # Add the error map to the dictionary
+            self.errors[image_name] = errors
+
+    # -----------------------------------------------------------------
+
     def calculate_residuals(self):
 
         """
@@ -223,6 +262,32 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate_weighed(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the weighed residual images ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the observed image, simulated image and error map
+            simulated = self.simulated[filter_name]
+            observed = self.observed[filter_name]
+            errors = self.errors[filter_name]
+
+            # Calculate the weighed residual image
+            residual = (simulated - observed) / errors
+
+            # Add the weighed residual image to the dictionary
+            self.weighed[filter_name] = residual
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -235,6 +300,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Write the residual frames
         self.write_residuals()
+
+        # Write the weighed residual frames
+        self.write_weighed()
 
     # -----------------------------------------------------------------
 
@@ -255,10 +323,34 @@ class ResidualAnalyser(AnalysisComponent):
             path = fs.join(self.analysis_run.residuals_path, filter_name + ".fits")
 
             # Debugging
-            log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
+            log.debug("Writing the residual frame for the '" + filter_name + "' band to '" + path + "' ...")
 
             # Write the image
             self.residuals[filter_name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_weighed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the weighed residual frames ...")
+
+        # Loop over the residual frames
+        for filter_name in self.weighed:
+
+            # Determine the path for this residual image
+            path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".fits")
+
+            # Debugging
+            log.debug("Writing the weighed residual frame for the '" + filter_name + "' band to '" + path + "' ...")
+
+            # Write
+            self.weighed[filter_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -274,6 +366,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Plot a grid with the observed, simulated and residual images
         self.plot_image_grid()
+
+        # Plot a grid with the observed, simulated and weighed residual images
+        self.plot_image_grid_weighed()
 
     # -----------------------------------------------------------------
 
@@ -293,9 +388,11 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names, add a row to the image grid plotter for each filter
         for filter_name in self.filter_names_sorted:
 
+            # Get input
             observed = self.observed[filter_name]
             simulated = self.simulated[filter_name]
 
+            # Add row
             plotter.add_row(observed, simulated, filter_name)
 
         # Set the bounding box for the plotter
@@ -303,6 +400,41 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Determine the path to the plot file
         path = fs.join(self.analysis_run.residuals_path, "residuals.pdf")
+
+        # Run the plotter
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_image_grid_weighed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a grid with the observed, simulated and weighed residual images ...")
+
+        # Create the image grid plotter
+        plotter = ResidualImageGridPlotter(title="Weighed image residuals", weighed=True)
+
+        # Loop over the filter names, add a row to the image grid plotter for each filter
+        for filter_name in self.filter_names_sorted:
+
+            # Get input
+            observed = self.observed[filter_name]
+            simulated = self.simulated[filter_name]
+            errors = self.errors[filter_name]
+
+            # Add row
+            plotter.add_row(observed, simulated, filter_name, errors=errors)
+
+        # Set the bounding box for the plotter
+        plotter.set_bounding_box(self.truncation_box)
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_run.weighed_residuals_path, "weighed_residuals.pdf")
 
         # Run the plotter
         plotter.run(path)

@@ -407,10 +407,15 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     This class ...
     """
 
-    def __init__(self, title=None):
+    def __init__(self, title=None, weighed=False, histogram=False, absolute=False):
 
         """
         The constructor ...
+        :param title:
+        :param weighed:
+        :param histogram:
+        :param absolute:
+        :param
         """
 
         # Call the constructor of the base class
@@ -421,12 +426,22 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Set the title
         self.title = title
 
+        # Set the weighed flag
+        self.weighed = weighed
+
+        # Set the histogram flag
+        self.histogram = histogram
+
         # The rows of the grid
         self.rows = OrderedDict()
         self.plot_residuals = []
 
+        # Error maps (for weighed residuals)
+        self.errors = dict()
+
         # The names of the columns
-        self.column_names = ["Observation", "Model", "Residual"]
+        if self.weighed: self.column_names = ["Observation", "Model", "Weighed residuals"]
+        else: self.column_names = ["Observation", "Model", "Residuals"]
 
         # Box (SkyRectangle) where to cut off the maps
         self.box = None
@@ -449,7 +464,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def add_row(self, image_a, image_b, label, residuals=True):
+    def add_row(self, image_a, image_b, label, residuals=True, errors=None):
 
         """
         This function ...
@@ -457,11 +472,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param image_b:
         :param label:
         :param residuals:
+        :param errors:
         :return:
         """
 
         self.rows[label] = (image_a, image_b)
-        if residuals: self.plot_residuals.append(label)
+
+        # If residuals have to be plotted
+        if residuals:
+            self.plot_residuals.append(label)
+            if self.weighed:
+                if errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
+                self.errors[label] = errors
 
     # -----------------------------------------------------------------
 
@@ -502,11 +524,51 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Set default values for all attributes
         self.title = None
         self.rows = OrderedDict()
+        self.errors = dict()
         self.plot_residuals = []
         self.column_names = ["Observation", "Model", "Residual"]
         self._figure = None
         self._grid = None
         self._plotted_rows = 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nresidual_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.plot_residuals)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_residual_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nresidual_rows > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolumns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_residual_rows: return 2
+        else:
+            if self.histogram: return 4
+            else: return 3
 
     # -----------------------------------------------------------------
 
@@ -538,7 +600,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Create grid
         self._grid = AxesGrid(self._figure, 111,
-                                nrows_ncols=(len(self.rows), 3),
+                                nrows_ncols=(len(self.rows), self.ncolumns),
                                 axes_pad=0.02,
                                 label_mode="L",
                                 share_all=True,
@@ -573,7 +635,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 model = self.rows[label][1][y_min:y_max, x_min:x_max]
                 data[label] = (reference, model)
 
-                print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
+                #print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
 
                 if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
 
@@ -599,8 +661,13 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 reference = ndimage.zoom(data[label][0], factor, order=order)
                 model = ndimage.zoom(data[label][1], factor, order=order)
 
-            if self.absolute: residual = model - reference
-            else: residual = (model - reference)/model
+            # CREATE THE RESIDUAL
+            if self.weighed:
+                errors = self.errors[label]
+                residual = (model - reference) / errors
+            else:
+                if self.absolute: residual = model - reference
+                else: residual = (model - reference)/model
 
             # Plot the reference image
             x0, x1, y0, y1, vmin, vmax = self.plot_frame(reference, label, 0)
