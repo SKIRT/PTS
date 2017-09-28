@@ -1530,6 +1530,8 @@ class SKIRTRemote(Remote):
         :return:
         """
 
+        from ..basics.configuration import prompt_proceed
+
         # Initialize a list to contain the statuses
         entries = []
 
@@ -1540,7 +1542,13 @@ class SKIRTRemote(Remote):
             for path in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
 
                 # Open the simulation file
-                simulation = RemoteSimulation.from_file(path)
+                try: simulation = RemoteSimulation.from_file(path)
+                except EOFError:
+                    log.error("The simulation file '" + path + "' is not readable: perhaps serialization has failed")
+                    remove = prompt_proceed("remove the simulation file?")
+                    if remove: fs.remove_file(path)
+                    log.error("Skipping this simulation ...")
+                    continue
 
                 # Check whether the handle is defined
                 if simulation.handle is None:
