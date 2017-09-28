@@ -48,9 +48,7 @@ if not remote.setup(host_id=config.remote): raise RuntimeError("Could not connec
 status = LogSimulationStatus(simulation.remote_log_file_path, remote=remote, debug_output=config.debug_output)
 
 # Show the simulation progress
-if config.debug_output: success = status.show_progress(simulation.handle)
-else:
-    with no_debugging(): success = status.show_progress(simulation.handle)
+with no_debugging(): success = status.show_progress(simulation.handle)
 
 # Check whether not crashed
 if not success: raise RuntimeError("The simulation crashed")

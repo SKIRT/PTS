@@ -3324,8 +3324,14 @@ class Remote(object):
         command = "du -sh '" + path + "'"
         output = self.execute(command)
 
-        string = output[0].split(" ")[0].lower() + "byte"
-        return parse_quantity(string)
+        string = output[0].split(" ")[0].split("\t")[0].strip()
+
+        if string.endswith("G") or string.endswith("M"): string += "B"
+        elif string.lower().endswith("terra") or string.lower().endswith("giga") or string.lower().endswith("mega"): string = string.lower() + "byte"
+        else: string += "byte" # guess
+
+        # Parse the quantity and convert to GB
+        return parse_quantity(string).to("GB")
 
     # -----------------------------------------------------------------
 
@@ -3899,28 +3905,31 @@ class Remote(object):
 
         # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
+        lines = child.before.split("\r\n") # output lines
         child.close()
 
+        #
         if not show_output:
 
             # Retrieve file contents -- this will be
             # 'First line.\nSecond line.\n'
-            stdout = child.logfile.getvalue()
+            #stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
-            if child.exitstatus != 0: raise RuntimeError(stdout)
+            if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
 
             # Get the output lines
-            lines = stdout.split("\n")
-
-            # Check for messages that signal an error that has occured
-            for line in lines:
-                if "not a regular file" in line: raise ValueError(line)
-                if "scp: ambiguous target" in line: raise ValueError(line)
-                if "No such file or directory" in line: raise ValueError(line)
+            #lines = stdout.split("\n")
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        # Check for errors
+        for line in lines:
+            if "not a regular file" in line: raise ValueError(line)
+            if "scp: ambiguous target" in line: raise ValueError(line)
+            if "No such file or directory" in line: raise ValueError(line)
+            if "No space left on device" in line: raise IOError("Not enough disk space")
 
         #else:
 
@@ -4199,30 +4208,36 @@ class Remote(object):
         # Execute the command and get the output
         try:
             child.expect(pexpect.EOF, timeout=None)
+            lines = child.before.split("\r\n")
         except pexpect.EOF:
             pass
+            lines = None
         child.close()
 
+        if lines is None: lines = child.logfile.getvalue()
+
+        # Show output lines in debug mode
         if not show_output:
 
             # Retrieve file contents -- this will be
             # 'First line.\nSecond line.\n'
-            stdout = child.logfile.getvalue()
+            #stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
-            if child.exitstatus != 0: raise RuntimeError(stdout)
+            if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
 
             # Get the output lines
-            lines = stdout.split("\n")
-
-            # Check for messages that signal an error that has occured
-            for line in lines:
-                if "not a regular file" in line: raise ValueError(line)
-                if "scp: ambiguous target" in line: raise ValueError(line)
-                if "No such file or directory" in line: raise ValueError(line)
+            #lines = stdout.split("\n")
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        # Check for errors
+        for line in lines:
+            if "not a regular file" in line: raise ValueError(line)
+            if "scp: ambiguous target" in line: raise ValueError(line)
+            if "No such file or directory" in line: raise ValueError(line)
+            if "No space left on device" in line: raise IOError("Not enough disk space")
 
         #else:
             #print(sys.stdout)

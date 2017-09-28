@@ -72,7 +72,7 @@ class SkiFile:
             # Set the path to the ski file
             self.path = os.path.expanduser(filepath)
 
-            # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+            # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
             self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
 
             # Replace path by the full, absolute path
@@ -86,6 +86,33 @@ class SkiFile:
 
         # Missing input
         else: raise ValueError("Either filepath or tree must be passed to the constructor")
+
+    ## Open a ski file from a path
+    @classmethod
+    def from_file(cls, path):
+        return cls(filepath=path)
+
+    ## Open a ski file from a remote path (and the remote instance)
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        # Get the lines
+        #contents = remote.get_text(path)
+
+        import StringIO
+        #output = StringIO.StringIO()
+        #for line in remote.read_lines(path): output.write(line + "\n") # DOESN'T WORK??
+        output = StringIO.StringIO(remote.get_text(path)) # WORKS!!
+
+        #print(output)
+
+        # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+        #tree = etree.fromstring(contents, parser=etree.XMLParser(remove_blank_text=True)) # doesn't work, cannot acces getroot()??
+        #tree = etree.parse(remote.read_lines(path, add_sep=True), parser=etree.XMLParser(remove_blank_text=True)) # cannot parse from generator
+        tree = etree.parse(output, parser=etree.XMLParser(remove_blank_text=True))
+
+        # Create ski file from the tree
+        return cls(tree=tree)
 
     ## This function converts the tree into a string
     def __str__(self):

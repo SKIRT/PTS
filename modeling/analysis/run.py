@@ -427,7 +427,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return self.join(self.path, weighed_residuals_name)
+        return fs.join(self.path, weighed_residuals_name)
 
     # -----------------------------------------------------------------
 
@@ -611,6 +611,30 @@ class AnalysisRun(AnalysisRunBase):
 
         # Return the analysis run object
         return run
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.nfiles_in_path(self.path, recursive=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_space(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_size(self.path)
 
     # -----------------------------------------------------------------
 
@@ -1406,6 +1430,18 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.original_modeling_path)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_path(cls, path, remote):
 
@@ -1444,6 +1480,30 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def original_analysis_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.original_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def original_modeling_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.original_analysis_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def config(self):
 
@@ -1477,6 +1537,42 @@ class CachedAnalysisRun(AnalysisRunBase):
         """
 
         return load_grid(self.dust_grid_path, remote=self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.nfiles_in_path(self.path, recursive=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_space(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.directory_size(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LabeledSkiFile.from_remote_file(self.ski_file_path, self.remote)
 
 # -----------------------------------------------------------------
 

@@ -808,7 +808,7 @@ def directory_size(path):
             fp = os.path.join(dirpath, f)
             total_size += file_size(fp)
 
-    return total_size
+    return total_size.to("GB")
 
 # -----------------------------------------------------------------
 

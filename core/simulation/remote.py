@@ -658,9 +658,7 @@ class SKIRTRemote(Remote):
             handle = handles
 
             # Show the simulation progress
-            if debug_output: success = status.show_progress(handle)
-            else:
-                with no_debugging(): success = status.show_progress(handle)
+            with no_debugging(): success = status.show_progress(handle)
 
             # Check whether not crashed
             if not success: raise RuntimeError("The simulation crashed")

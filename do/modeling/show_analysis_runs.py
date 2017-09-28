@@ -23,7 +23,6 @@ from pts.modeling.config.parameters import parameter_descriptions
 
 # Determine the modeling path
 environment = load_modeling_environment_cwd()
-#runs = environment.analysis_runs
 context = environment.analysis_context
 
 # -----------------------------------------------------------------
@@ -131,6 +130,21 @@ def show_launch_info(run):
 
 # -----------------------------------------------------------------
 
+def show_directory_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    # Show the launch options
+    print("     - " + fmt.bold + "directory info:" + fmt.reset)
+    print("        - " + fmt.bold + "number of files: " + fmt.reset + tostr(run.nfiles))
+    print("        - " + fmt.bold + "directory size: " + fmt.reset + tostr(run.disk_space))
+
+# -----------------------------------------------------------------
+
 def show_run_info(run):
 
     """
@@ -156,6 +170,11 @@ def show_run_info(run):
 
     # Show launch info
     show_launch_info(run)
+
+    print("")
+
+    # Show directory info
+    show_directory_info(run)
 
 # -----------------------------------------------------------------
 

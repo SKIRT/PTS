@@ -789,9 +789,7 @@ class RemoteSynchronizer(Configurable):
         status = LogSimulationStatus(simulation.remote_log_file_path, remote=self.get_remote(simulation.host_id), debug_output=self.config.debug_output)
 
         # Show the simulation progress
-        if self.config.debug_output: success = status.show_progress(simulation.handle)
-        else:
-            with no_debugging(): success = status.show_progress(simulation.handle)
+        with no_debugging(): success = status.show_progress(simulation.handle)
 
         # Check whether not crashed
         if not success: raise RuntimeError("The simulation crashed")
