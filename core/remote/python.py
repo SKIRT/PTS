@@ -601,7 +601,7 @@ class RemotePythonSession(object):
         local_input_filepaths = []
 
         # Depending paths
-        depending_filepaths = []
+        depending_filepaths = dict()
 
         # Strings
         input_strings = dict()
