@@ -695,6 +695,16 @@ class SkirtSimulation(object):
             # Set the attribute
             setattr(simulation, attr_name, value)
 
+        # THIS IS A HACK, FOR WHEN A FILTER OBJECT COULD STILL CONTAIN AN LXML.ETREE ELEMENT (NOW SOLVED)
+        if hasattr(simulation, "analysis_plotting_ignore_filter_names"):
+            from ..filter.filter import parse_filter
+            # Check
+            assert simulation.analysis.plotting.ignore_filters == []
+            # Set the filters to the analysis options
+            simulation.analysis.plotting.ignore_filters = [parse_filter(name) for name in simulation.analysis_plotting_ignore_filter_names]
+            # Remove the 'hack' attribute, make the simulation object 'normal' again
+            delattr(simulation, "analysis_plotting_ignore_filter_names")
+
         # Return the simulation object
         return simulation
 
@@ -748,6 +758,13 @@ class SkirtSimulation(object):
         # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
         parameters = self._parameters
         self._parameters = None
+
+        # THIS IS A HACK, FOR WHEN A FILTER OBJECT COULD STILL CONTAIN AN LXML.ETREE ELEMENT (NOW SOLVED)
+        if len(self.analysis.plotting.ignore_filters) > 0:
+            filters = self.analysis.plotting.ignore_filters
+            self.analysis.plotting.ignore_filters = []
+            filter_names = [str(fltr) for fltr in filters]
+            self.analysis_plotting_ignore_filter_names = filter_names
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")
