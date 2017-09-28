@@ -57,6 +57,7 @@ def show_basic_info(run):
     :return:
     """
 
+    # Show the contents of the info file
     print(run.info.to_string(line_prefix="    ", ignore_none=True, ignore=ignore_properties))
 
     # From config

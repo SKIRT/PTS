@@ -3644,35 +3644,12 @@ class Remote(object):
         :return:
         """
 
-        #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done"
-        command = 'while read LINE; do     echo "$LINE"; done < "' + path + '"'
-        for line in self.execute(command):
-            if add_sep: yield line + "\n"
-            else: yield line
-
-    # -----------------------------------------------------------------
-
-    def read_lines_old(self, path, add_sep=False):
-
-        """
-        This function ...
-        :param path:
-        :param add_sep:
-        :return:
-        """
-
-        # Expand the path to absolute form
+        # Make absolute
         path = self.absolute_path(path)
 
-        # Load the text file into a variable
-        #command = "value='cat " + '"' + path + '"' + "'" # DOESN'T WORK!
-        command = "value='cat " + path + "'"
-        #print(command)
-        self.execute(command)
-        #self.execute("value='cat " + path.replace(" ", "\ ") + "'")
-
-        # Print the variable to the console, and obtain the output
-        for line in self.execute('echo "$($value)"'):
+        #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done" # DOES WEIRD THINGS
+        command = 'while IFS= read -r LINE; do     echo "$LINE"; done < "' + path + '"'
+        for line in self.execute(command):
             if add_sep: yield line + "\n"
             else: yield line
 
