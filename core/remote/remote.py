@@ -3214,6 +3214,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def has_files_in_path(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self.nfiles_in_path(*args, **kwargs) > 0
+
+    # -----------------------------------------------------------------
+
     def find_file_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                             exact_name=None, exact_not_name=None, startswith=None, endswith=None):
 
@@ -3631,11 +3644,32 @@ class Remote(object):
         :return:
         """
 
+        #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done"
+        command = 'while read LINE; do     echo "$LINE"; done < "' + path + '"'
+        for line in self.execute(command):
+            if add_sep: yield line + "\n"
+            else: yield line
+
+    # -----------------------------------------------------------------
+
+    def read_lines_old(self, path, add_sep=False):
+
+        """
+        This function ...
+        :param path:
+        :param add_sep:
+        :return:
+        """
+
         # Expand the path to absolute form
         path = self.absolute_path(path)
 
         # Load the text file into a variable
-        self.execute("value='cat " + path + "'")
+        #command = "value='cat " + '"' + path + '"' + "'" # DOESN'T WORK!
+        command = "value='cat " + path + "'"
+        #print(command)
+        self.execute(command)
+        #self.execute("value='cat " + path.replace(" ", "\ ") + "'")
 
         # Print the variable to the console, and obtain the output
         for line in self.execute('echo "$($value)"'):

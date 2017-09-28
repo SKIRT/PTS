@@ -33,6 +33,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.log import log
 from ...core.remote.remote import load_remote
 from ...core.basics.configuration import Configuration
+from ...core.simulation.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -444,6 +445,30 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def dust_grid_build_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, dust_grid_build_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_simulation_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.dust_grid_build_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_wavelength_grid_path(self):
 
         """
@@ -512,6 +537,53 @@ class AnalysisRunBase(object):
         """
 
         return self.info.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_simulation_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the output path of the dust grid simulation
+        out_path = self.dust_grid_simulation_out_path
+
+        # Determine the log file path
+        logfile_path = fs.join(out_path, "dustgrid_log.txt")
+
+        # Return the log file path
+        return logfile_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Read the log file
+        if self.has_dust_grid_simulation_logfile:
+
+            # Debugging
+            log.debug("Determining the number of dust cells by reading the dust grid simulation's log file ...")
+
+            # Load the log file and get the number of dust cells
+            return self.dust_grid_simulation_logfile.dust_cells
+
+        # Log file cannot be found
+        else:
+
+            # Debugging
+            log.debug("Determining the number of dust cells by reading the dust cell tree data file (this can take a while) ...")
+
+            # Get the number of leave nodes
+            return self.dust_grid_tree.nleaves  # requires loading the entire tree file!
 
 # -----------------------------------------------------------------
 
@@ -611,6 +683,78 @@ class AnalysisRun(AnalysisRunBase):
 
         # Return the analysis run object
         return run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grid_simulation_logfile(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_grid_simulation_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_simulation_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile.from_file(self.dust_grid_simulation_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_output(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_misc(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.misc_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extracted(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.extr_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_plots(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.plot_path)
 
     # -----------------------------------------------------------------
 
@@ -743,30 +887,6 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return load_dict(self.input_file_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust_grid_build_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.path, dust_grid_build_name)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust_grid_simulation_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.dust_grid_build_path, "out")
 
     # -----------------------------------------------------------------
 
@@ -1565,6 +1685,54 @@ class CachedAnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_output(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.remote.has_files_in_path(self.output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_misc(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.remote.has_files_in_path(self.misc_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extracted(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.remote.has_files_in_path(self.extr_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_plots(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.remote.has_files_in_path(self.plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ski_file(self):
 
         """
@@ -1573,6 +1741,46 @@ class CachedAnalysisRun(AnalysisRunBase):
         """
 
         return LabeledSkiFile.from_remote_file(self.ski_file_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grid_simulation_logfile(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.remote.is_file(self.dust_grid_simulation_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_simulation_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile.from_remote_file(self.dust_grid_simulation_logfile_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Give debug message
+        log.debug("Loading the dust grid tree, this may take a while (depending on the number of nodes) ...")
+
+        # Return the tree
+        return DustGridTree.from_remote_file(self.dust_grid_tree_path, self.remote)
 
 # -----------------------------------------------------------------
 

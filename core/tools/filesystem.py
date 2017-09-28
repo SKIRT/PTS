@@ -889,6 +889,19 @@ def nfiles_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def has_files_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    return nfiles_in_path(*args, **kwargs) > 0
+
+# -----------------------------------------------------------------
+
 def ndirectories_in_path(*args, **kwargs):
 
     """

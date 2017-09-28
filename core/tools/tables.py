@@ -179,6 +179,37 @@ def write(table, path, format="ascii.ecsv"):
 
 # -----------------------------------------------------------------
 
+def from_remote_file(path, remote, format="ascii.ecsv", fix_floats=False, fix_string_length=False):
+
+    """
+    This function ...
+    :param path:
+    :param remote:
+    :param format:
+    :param fix_floats:
+    :param fix_string_length:
+    :return:
+    """
+
+    contents = remote.get_text(path)
+
+    # Read the table from file
+    fill_values = [('--', '0')]
+    table = Table.read(contents, fill_values=fill_values, format=format)
+
+    # Fix boolean values
+    fix_logical(table)
+
+    if fix_floats: fix_float(table)
+    # Sometimes, a column of floats is parsed as a column of strings ... But then importing this function from the python command line and loading the same table does work ... straaange..
+
+    if fix_string_length: fix_string_length_column(table, fix_string_length[0], fix_string_length[1])
+
+    # Return the new table
+    return table
+
+# -----------------------------------------------------------------
+
 def from_file(path, format="ascii.ecsv", fix_floats=False, fix_string_length=False):
 
     """

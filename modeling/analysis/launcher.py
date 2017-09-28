@@ -726,7 +726,7 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         if self.config.ncells is not None: return self.config.ncells
-        else: return self.dust_grid_tree.nleaves # requires loading the entire tree file!
+        else: return self.analysis_run.ncells
 
     # -----------------------------------------------------------------
 

@@ -73,7 +73,7 @@ def show_wavelength_grid_info(run):
     """
 
     print("     - " + fmt.bold + "wavelength grid:" + fmt.reset)
-    print("        - " + fmt.bold + "npoints: " + fmt.reset + tostr(run.nwavelengths))
+    print("        - " + fmt.bold + "number of points: " + fmt.reset + tostr(run.nwavelengths))
     print("        - " + fmt.bold + "emission lines: " + fmt.reset + tostr(run.config.wg.add_emission_lines))
 
 # -----------------------------------------------------------------
@@ -86,8 +86,13 @@ def show_dust_grid_info(run):
     :return:
     """
 
-    # From config
+    # Title
     print("     - " + fmt.bold + "dust grid:" + fmt.reset)
+
+    # From log file or tree file
+    print("        - " + fmt.bold + "number of cells: " + fmt.reset + tostr(run.ncells))
+
+    # From config
     print("        - " + fmt.bold + "type: " + fmt.reset + run.config.dg.grid_type)
     print("        - " + fmt.bold + "relative scale: " + fmt.reset + tostr(run.config.dg.scale))
     print("        - " + fmt.bold + "scale heights: " + fmt.reset + tostr(run.config.dg.scale_heights))
@@ -127,6 +132,10 @@ def show_launch_info(run):
     print("        - " + fmt.bold + "number of photon packages: " + fmt.reset + tostr(ski.packages()))
     print("        - " + fmt.bold + "dust self-absorption: " + fmt.reset + tostr(ski.dustselfabsorption()))
     print("        - " + fmt.bold + "transient heating: " + fmt.reset + tostr(ski.transient_dust_emissivity))
+    print("        - " + fmt.bold + "has output: " + fmt.reset + tostr(run.has_output))
+    print("        - " + fmt.bold + "has extracted data: " + fmt.reset + tostr(run.has_extracted))
+    print("        - " + fmt.bold + "has plots: " + fmt.reset + tostr(run.has_plots))
+    print("        - " + fmt.bold + "has misc output: " + fmt.reset + tostr(run.has_misc))
 
 # -----------------------------------------------------------------
 
