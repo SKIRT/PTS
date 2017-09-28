@@ -173,6 +173,18 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def normalized_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.normalized_mappings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr(self):
 
         """

@@ -74,6 +74,7 @@ wavelength_grid_filename = "wavelength_grid.dat"
 dust_grid_build_name = "dust grid"
 info_filename = "info.dat"
 config_filename = "config.cfg"
+launch_config_filename = "launch_config.cfg"
 input_filename = "input.dat"
 instruments_name = "instruments"
 projections_name = "projections"
@@ -294,6 +295,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, config_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def launch_config_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, launch_config_filename)
 
     # -----------------------------------------------------------------
 

@@ -89,22 +89,22 @@ class AnalysisLauncher(AnalysisComponent):
         # 2. Load the ski file
         self.load_ski()
 
-        # 7. Adjust the ski file
+        # 3. Adjust the ski file
         self.adjust_ski()
 
-        # Set the input paths
+        # 4. Set the input paths
         self.set_input_paths()
 
-        # 9. Estimate the runtime for the simulation
+        # 5. Estimate the runtime for the simulation
         if self.uses_scheduler: self.estimate_runtime()
 
-        # 10. Set the analysis options
+        # 6. Set the analysis options
         self.set_analysis_options()
 
-        # 11. Writing
+        # 7. Writing
         self.write()
 
-        # 12. Launch the simulation
+        # 8. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -971,8 +971,26 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the config
+        self.write_config()
+
         # Write the ski file
         self.write_ski()
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the configuration used to create this analysis run ...")
+
+        # Write
+        self.config.saveto(self.analysis_run.launch_config_path)
 
     # -----------------------------------------------------------------
 
