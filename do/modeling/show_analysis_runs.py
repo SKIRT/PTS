@@ -34,6 +34,7 @@ definition = ConfigurationDefinition()
 # Add flags
 definition.add_flag("info", "show the analysis run info", False)
 definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
+definition.add_flag("cached", "include cached analysis runs", True)
 
 # Get configuration
 config = parse_arguments("show_model", definition)
@@ -111,6 +112,25 @@ def show_dust_grid_info(run):
 
 # -----------------------------------------------------------------
 
+def show_launch_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    # Get the ski file
+    ski = run.ski_file
+
+    # Show the launch options
+    print("     - " + fmt.bold + "launch options:" + fmt.reset)
+    print("        - " + fmt.bold + "number of photon packages: " + fmt.reset + tostr(ski.packages()))
+    print("        - " + fmt.bold + "dust self-absorption: " + fmt.reset + tostr(ski.dustselfabsorption()))
+    print("        - " + fmt.bold + "transient heating: " + fmt.reset + tostr(ski.transient_dust_emissivity))
+
+# -----------------------------------------------------------------
+
 def show_run_info(run):
 
     """
@@ -132,46 +152,53 @@ def show_run_info(run):
     # Show dust grid info
     show_dust_grid_info(run)
 
+    print("")
+
+    # Show launch info
+    show_launch_info(run)
+
 # -----------------------------------------------------------------
 
-# Loop over the cache host IDS
-for host_id in context.cache_host_ids:
+if config.cached:
 
-    print("")
-    print(fmt.yellow + host_id.upper() + ":" + fmt.reset)
-    print("")
+    # Loop over the cache host IDS
+    for host_id in context.cache_host_ids:
 
-    # Get the run names
-    run_names = context.get_run_names_for_host_id(host_id)
+        print("")
+        print(fmt.yellow + host_id.upper() + ":" + fmt.reset)
+        print("")
 
-    # Loop over the runs
-    for name in run_names:
+        # Get the run names
+        run_names = context.get_run_names_for_host_id(host_id)
 
-        # Show the name
-        print(" - " + fmt.underlined + fmt.blue + name + fmt.reset)
+        # Loop over the runs
+        for name in run_names:
 
-        # Show the info
-        if config.info:
-
-            # Load the run
-            run = context.get_cached_run(name)
+            # Show the name
+            print(" - " + fmt.underlined + fmt.blue + name + fmt.reset)
 
             # Show the info
-            print("")
-            show_run_info(run)
-            print("")
+            if config.info:
 
-        # Show the parameters
-        elif config.parameters is not None:
+                # Load the run
+                run = context.get_cached_run(name)
 
-            # Load the run
-            run = context.get_cached_run(name)
+                # Show the info
+                print("")
+                show_run_info(run)
+                print("")
 
-            print("")
-            # Show the parameter values
-            for name in config.parameters:
-                print("   - " + fmt.bold + name + ": " + fmt.reset + tostr(run.info.parameter_values[name]))
-            print("")
+            # Show the parameters
+            elif config.parameters is not None:
+
+                # Load the run
+                run = context.get_cached_run(name)
+
+                print("")
+                # Show the parameter values
+                for name in config.parameters:
+                    print("   - " + fmt.bold + name + ": " + fmt.reset + tostr(run.info.parameter_values[name]))
+                print("")
 
 # -----------------------------------------------------------------
 
