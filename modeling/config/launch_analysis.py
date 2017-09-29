@@ -37,6 +37,8 @@ definition.add_optional("cluster_name", "string", "cluster of the remote host to
 definition.add_optional("images_remote", "string", "remote host on which to make the observed images", default_other_host_id, choices=other_host_ids)
 definition.add_flag("attached", "launch remote executions in attached mode", True)
 definition.add_flag("debug_output", "show all simulation output when in debugging mode", False)
+definition.add_flag("keep_remote_input", "keep the remote input directory after the simulation is retrieved", True)  # KEEP REMOTE INPUT FOR NEW LAUNCHES AND FOR HEATING LAUNCHES
+definition.add_flag("keep_remote_input_and_output", "keep the remote input and output after the simulation is retrieved", False)
 
 # ANALYSIS RUN
 if runs.empty: raise RuntimeError("No analysis runs are present (yet)")
@@ -73,7 +75,7 @@ definition.add_flag("spectral_convolution_images", "enable spectral convolution 
 # -----------------------------------------------------------------
 
 # Get temperature data
-definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
+definition.add_flag("temperatures", "get dust temperature data from the simulation", True)
 
 # Retrieval
 definition.add_flag("retrieve_contributions", "retrieve datacubes for the different contributions to the flux", True)

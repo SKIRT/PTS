@@ -786,6 +786,44 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def remove_remote_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote_input_path is not None or self.has_remote_input_files: return False
+        elif self.config.keep_input: return False
+        else: return not self.config.keep
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_remote_output(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return not self.config.keep
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_remote_simulation_directory(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return not self.config.keep
+
+    # -----------------------------------------------------------------
+
     def launch_remote(self):
 
         """
@@ -804,12 +842,6 @@ class SKIRTLauncher(Configurable):
         #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
         if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
 
-        # Set options to remove remote files
-        if self.remote_input_path is not None or self.has_remote_input_files: remove_remote_input = False
-        else: remove_remote_input = not self.config.keep
-        remove_remote_output = not self.config.keep
-        remove_remote_simulation_directory = not self.config.keep
-
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=self.scheduling_options, attached=self.config.attached,
@@ -817,8 +849,8 @@ class SKIRTLauncher(Configurable):
                                           local_script_path=self.local_script_path, screen_output_path=screen_output_path,
                                           remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files,
                                           debug_output=self.config.debug_output, retrieve_types=self.config.retrieve_types,
-                                          remove_remote_input=remove_remote_input, remove_remote_output=remove_remote_output,
-                                          remove_remote_simulation_directory=remove_remote_simulation_directory)
+                                          remove_remote_input=self.remove_remote_input, remove_remote_output=self.remove_remote_output,
+                                          remove_remote_simulation_directory=self.remove_remote_simulation_directory)
 
     # -----------------------------------------------------------------
 

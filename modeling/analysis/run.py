@@ -34,6 +34,10 @@ from ...core.basics.log import log
 from ...core.remote.remote import load_remote
 from ...core.basics.configuration import Configuration
 from ...core.simulation.logfile import LogFile
+from ...core.tools import strings
+from ...core.extract.progress import ProgressTable
+from ...core.extract.timeline import TimeLineTable
+from ...core.extract.memory import MemoryUsageTable
 
 # -----------------------------------------------------------------
 
@@ -337,6 +341,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.out_path, self.galaxy_name + "_log.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
     def extr_path(self):
 
         """
@@ -357,6 +373,42 @@ class AnalysisRunBase(object):
         """
 
         return self.extr_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def progress_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.extr_path, "progress.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def timeline_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.extr_path, "timeline.dat")
+
+    #  -----------------------------------------------------------------
+
+    @property
+    def memory_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.extr_path, "memory.dat")
 
     # -----------------------------------------------------------------
 
@@ -585,6 +637,30 @@ class AnalysisRunBase(object):
             # Get the number of leave nodes
             return self.dust_grid_tree.nleaves  # requires loading the entire tree file!
 
+    # -----------------------------------------------------------------
+
+    def get_remote_script_input_paths_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        paths = []
+
+        # Loop over the commands
+        for command in self.get_remote_script_commands_for_host(host_id):
+
+            input_path = command.split("-i ")[1]
+            if strings.is_quote_character(input_path[0]): input_path = input_path[1:].split(input_path[0])[0]
+            else: input_path = input_path.split(" ")[0]
+
+            paths.append(input_path)
+
+        # Return the list of paths
+        return input_path
+
 # -----------------------------------------------------------------
 
 class AnalysisRun(AnalysisRunBase):
@@ -723,6 +799,30 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile.from_file(self.logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_misc(self):
 
         """
@@ -743,6 +843,78 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.has_files_in_path(self.extr_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_progress(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.progress_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_timeline(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.timeline_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.memory_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def progress(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ProgressTable.from_file(self.progress_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return TimeLineTable.from_file(self.timeline_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryUsageTable.from_file(self.memory_path)
 
     # -----------------------------------------------------------------
 
@@ -1351,6 +1523,65 @@ class AnalysisRun(AnalysisRunBase):
         if self.reference_map_path is None: return None
         else: return CoordinateSystem.from_file(self.reference_map_path)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_script_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.path, extension="sh")
+
+    # -----------------------------------------------------------------
+
+    def get_remote_script_commands(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        commands = dict()
+
+        # Loop over the script paths
+        for path in self.remote_script_paths:
+
+            # Get host ID
+            host_id = fs.strip_extension(fs.name(path))
+
+            lines = []
+
+            # Open the file
+            for line in fs.read_lines(path):
+
+                if line.startswith("#"): continue
+                if not line.strip(): continue
+
+                lines.append(line)
+
+            # Set the commands
+            commands[host_id] = lines
+
+        # Return the commands
+        return commands
+
+    # -----------------------------------------------------------------
+
+    def get_remote_script_commands_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        commands = self.get_remote_script_commands()
+        if host_id in commands: return commands[host_id]
+        else: return []
+
 # -----------------------------------------------------------------
 
 class AnalysisRuns(object):
@@ -1697,6 +1928,30 @@ class CachedAnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_file(self.logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile.from_remote_file(self.logfile_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_misc(self):
 
         """
@@ -1717,6 +1972,78 @@ class CachedAnalysisRun(AnalysisRunBase):
         """
 
         return self.remote.has_files_in_path(self.extr_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_progress(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.remote.is_file(self.progress_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_timeline(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.remote.is_file(self.timeline_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.remote.is_file(self.memory_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def progress(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ProgressTable.from_remote_file(self.progress_path, remote=self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return TimeLineTable.from_remote_file(self.timeline_path, remote=self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryUsageTable.from_remote_file(self.memory_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
@@ -1781,6 +2108,65 @@ class CachedAnalysisRun(AnalysisRunBase):
 
         # Return the tree
         return DustGridTree.from_remote_file(self.dust_grid_tree_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_script_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.files_in_path(self.path, extension="sh")
+
+    # -----------------------------------------------------------------
+
+    def get_remote_script_commands(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        commands = dict()
+
+        # Loop over the script paths
+        for path in self.remote_script_paths:
+
+            # Get host ID
+            host_id = fs.strip_extension(fs.name(path))
+
+            lines = []
+
+            # Open the file
+            for line in self.remote.read_lines(path):
+
+                if line.startswith("#"): continue
+                if not line.strip(): continue
+
+                lines.append(line)
+
+            # Set the commands
+            commands[host_id] = lines
+
+        # Return the commands
+        return commands
+
+    # -----------------------------------------------------------------
+
+    def get_remote_script_commands_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        commands = self.get_remote_script_commands()
+        if host_id in commands: return commands[host_id]
+        else: return []
 
 # -----------------------------------------------------------------
 

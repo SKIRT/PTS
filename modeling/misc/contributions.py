@@ -70,9 +70,6 @@ class ModelContributionsLauncher(ModelSimulationInterface):
 
         # Define paths
         self.run_path = None
-        #self.simulation_path = None
-        #self.ski_path = None
-        #self.out_path = None
         self.dust_grid_path = None
         self.wavelength_grid_path = None
         self.dust_grid_build_path = None
@@ -82,16 +79,8 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         self.instruments_path = None
         self.input_file_path = None
 
-        ##
-
-        # The ski file template
-        #self.ski = None
-
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
-
-        # The analysis options for the simulation of the total stellar contribution
-        #self.analysis_options_total = dict()
 
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
@@ -99,16 +88,7 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         # The paths to the ski files
         self.ski_paths = dict()
 
-        # The parameter values of the best model
-        #self.parameter_values = None
-
-        # The wavelength grid and dust grid
-        #self.wavelength_grid = None
-        #self.dust_grid = None
-
-        # The path to the directory for the simulations
-        #self.best_generation_path = None
-
+        # The simulation and output paths
         self.contributions_simulation_paths = dict()
         self.contributions_output_paths = dict()
 
@@ -170,26 +150,11 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         # 7. Create the instruments
         self.create_instruments()
 
-        # 5. Set the paths to the input files
-        #self.set_input()
-
-        # 6. Get the best parameter values
-        #self.get_parameter_values()
-
-        # 6. Adjust the ski template
-        #self.adjust_ski()
-
         # Adapt the ski file
         self.adapt_ski()
 
         # 9. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         if not self.has_dust_grid_tree: self.build_dust_grid()
-
-        # # 7. Set the parallelization scheme
-        # if self.uses_scheduler: self.set_parallelization()
-        #
-        # # 8. Estimate the runtimes, create the scheduling options
-        # if self.uses_scheduler: self.estimate_runtimes()
 
         # Set the input
         self.set_input()

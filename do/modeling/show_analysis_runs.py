@@ -30,10 +30,25 @@ context = environment.analysis_context
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
+# Add positional optional
+definition.add_positional_optional("runs", "string_list", "names of analysis runs")
+
 # Add flags
 definition.add_flag("info", "show the analysis run info", False)
-definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
 definition.add_flag("cached", "include cached analysis runs", True)
+
+# Different sections
+definition.add_flag("basic", "show basic info", True)
+definition.add_flag("wavelength", "show wavelength grid info", True)
+definition.add_flag("grid", "show dust grid info", True)
+definition.add_flag("launch", "show launch info", False)
+definition.add_flag("parallelization", "show parallelization", False)
+definition.add_flag("timing", "show timing info", False)
+definition.add_flag("memory", "show memory usage info", False)
+definition.add_flag("directory", "show directory info", False)
+
+# Add optional
+definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
 
 # Get configuration
 config = parse_arguments("show_model", definition)
@@ -129,7 +144,7 @@ def show_launch_info(run):
     ski = run.ski_file
 
     # Show the launch options
-    print("     - " + fmt.bold + "launch options:" + fmt.reset)
+    print("     - " + fmt.bold + "launch info:" + fmt.reset)
     print("        - " + fmt.bold + "number of photon packages: " + fmt.reset + tostr(ski.packages()))
     print("        - " + fmt.bold + "dust self-absorption: " + fmt.reset + tostr(ski.dustselfabsorption()))
     print("        - " + fmt.bold + "transient heating: " + fmt.reset + tostr(ski.transient_dust_emissivity))
@@ -137,6 +152,61 @@ def show_launch_info(run):
     print("        - " + fmt.bold + "has extracted data: " + fmt.reset + tostr(run.has_extracted))
     print("        - " + fmt.bold + "has plots: " + fmt.reset + tostr(run.has_plots))
     print("        - " + fmt.bold + "has misc output: " + fmt.reset + tostr(run.has_misc))
+
+# -----------------------------------------------------------------
+
+def show_parallelization_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    # Get the log file
+    logfile = run.logfile
+
+    # Show the parallelization info
+    print("     - " + fmt.bold + "parallelization options:" + fmt.reset)
+    print("        - " + fmt.bold + "number of processes: " + fmt.reset + tostr(logfile.nprocesses))
+    print("        - " + fmt.bold + "number of threads: " + fmt.reset + tostr(logfile.nthreads))
+    print("        - " + fmt.bold + "data parallelization: " + fmt.reset + tostr(logfile.data_parallel))
+
+# -----------------------------------------------------------------
+
+def show_timing_info(run):
+
+    """
+    Thisn function ...
+    :param run:
+    :return:
+    """
+
+    # Show the timing info
+    print("     - " + fmt.bold + "timing:" + fmt.reset)
+    print("        - " + fmt.bold + "total: " + fmt.reset + tostr(run.timeline.total))
+    print("        - " + fmt.bold + "setup: " + fmt.reset + tostr(run.timeline.setup))
+    print("        - " + fmt.bold + "stellar: " + fmt.reset + tostr(run.timeline.stellar))
+    print("        - " + fmt.bold + "spectra: " + fmt.reset + tostr(run.timeline.spectra))
+    print("        - " + fmt.bold + "dust: " + fmt.reset + tostr(run.timeline.dust))
+    print("        - " + fmt.bold + "writing: " + fmt.reset + tostr(run.timeline.writing))
+    print("        - " + fmt.bold + "communication: " + fmt.reset + tostr(run.timeline.communication))
+    print("        - " + fmt.bold + "waiting: " + fmt.reset + tostr(run.timeline.waiting))
+
+# -----------------------------------------------------------------
+
+def show_memory_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    # Show the memory info
+    print("     - " + fmt.bold + "memory:" + fmt.reset)
+    print("        - " + fmt.bold + "peak: " + fmt.reset + tostr(run.memory.peak))
+    print("        - " + fmt.bold + "peak per process: " + fmt.reset + tostr(run.memory.peak_per_process))
 
 # -----------------------------------------------------------------
 
@@ -164,27 +234,44 @@ def show_run_info(run):
     """
 
     # Show basic info
-    show_basic_info(run)
-
-    print("")
+    if config.basic:
+        show_basic_info(run)
+        print("")
 
     # Show wavelength grid info
-    show_wavelength_grid_info(run)
-
-    print("")
+    if config.wavelength:
+        show_wavelength_grid_info(run)
+        print("")
 
     # Show dust grid info
-    show_dust_grid_info(run)
-
-    print("")
+    if config.grid:
+        show_dust_grid_info(run)
+        print("")
 
     # Show launch info
-    show_launch_info(run)
+    if config.launch:
+        show_launch_info(run)
+        print("")
 
-    print("")
+    # Show parallelization
+    if config.parallelization and run.has_logfile:
+        show_parallelization_info(run)
+        print("")
+
+    # Show timing info
+    if config.timing and run.has_timeline:
+        show_timing_info(run)
+        print("")
+
+    # Show memory info
+    if config.memory and run.has_memory:
+        show_memory_info(run)
+        print("")
 
     # Show directory info
-    show_directory_info(run)
+    if config.directory:
+        show_directory_info(run)
+        print("")
 
 # -----------------------------------------------------------------
 
@@ -203,6 +290,9 @@ if config.cached:
         # Loop over the runs
         for name in run_names:
 
+            # Check in runs
+            if config.runs is not None and name not in config.runs: continue
+
             # Show the name
             print(" - " + fmt.underlined + fmt.blue + name + fmt.reset)
 
@@ -215,7 +305,7 @@ if config.cached:
                 # Show the info
                 print("")
                 show_run_info(run)
-                print("")
+                #print("")
 
             # Show the parameters
             elif config.parameters is not None:
@@ -238,7 +328,11 @@ if not (config.info or config.parameters is not None): print("")
 print(fmt.yellow + "LOCAL:" + fmt.reset)
 print("")
 
+# Loop over the names
 for name in context.analysis_run_names:
+
+    # Check in runs
+    if config.runs is not None and name not in config.runs: continue
 
     # Show the name
     print(" - " + fmt.underlined + fmt.blue + name + fmt.reset)
@@ -252,7 +346,7 @@ for name in context.analysis_run_names:
         # Show the info
         print("")
         show_run_info(run)
-        print("")
+        #print("")
 
     # Show the parameters
     elif config.parameters is not None:

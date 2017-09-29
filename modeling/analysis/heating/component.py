@@ -19,7 +19,12 @@ from ....core.basics.log import log
 
 # -----------------------------------------------------------------
 
-contributions = ["total", "old", "young", "ionizing", "unevolved"]
+total = "total"
+old = "old"
+young = "young"
+ionizing = "ionizing"
+unevolved = "unevolved"
+contributions = [total, old, young, ionizing, unevolved]
 
 # -----------------------------------------------------------------
 

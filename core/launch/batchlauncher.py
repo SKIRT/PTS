@@ -229,6 +229,23 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_remote(self, host_id):
+
+        """
+        This function ..
+        :param host_id:
+        :return:
+        """
+
+        # Search in remotes
+        for remote in self.remotes:
+            if remote.host_id == host_id: return remote
+
+        # Create new remote (shouldn't happen if the setup has been called)
+        return Remote(host_id=host_id)
+
+    # -----------------------------------------------------------------
+
     def set_cluster_for_host(self, host_id, cluster_name):
 
         """
@@ -239,6 +256,31 @@ class BatchLauncher(Configurable):
         """
 
         self.cluster_names[host_id] = cluster_name
+
+    # -----------------------------------------------------------------
+
+    def get_clustername_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Cluster name is specifically defined
+        if host_id in self.cluster_names and self.cluster_names[host_id] is not None: return self.cluster_names[host_id]
+
+        # The setup has not been called yet
+        elif len(self.remotes) == 0:
+
+            # Get the default cluster name
+            host = load_host(host_id)
+
+            # Return the default cluster name
+            return host.clusters.default
+
+        # The setup has been called
+        else: return self.get_remote(host_id).cluster_name
 
     # -----------------------------------------------------------------
 
@@ -340,7 +382,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        self.in_queue_for_host(host_id)
+        return self.in_queue_for_host(host_id)
 
     # -----------------------------------------------------------------
 
