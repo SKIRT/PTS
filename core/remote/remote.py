@@ -3227,6 +3227,33 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def contains_files(self, directory, filenames=None):
+
+        """
+        This function ...
+        :param directory:
+        :param filenames:
+        :return:
+        """
+
+        # Filenames are given
+        if filenames is not None:
+
+            # Loop over the filenames
+            for filename in filenames:
+
+                # Check
+                filepath = fs.join(directory, filename)
+                if not self.is_file(filepath): return False
+
+            # All checks passed
+            return True
+
+        # No filenames are given
+        else: return self.has_files_in_path(directory)
+
+    # -----------------------------------------------------------------
+
     def find_file_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                             exact_name=None, exact_not_name=None, startswith=None, endswith=None):
 

@@ -474,7 +474,10 @@ def stringify_not_list(value, **kwargs):
     #elif introspection.isinstance(Instrument):
 
     # Unrecognized
-    else: raise ValueError("Unrecognized type: " + str(type(value)))
+    #else: raise ValueError("Unrecognized type: " + str(type(value)))
+    else:
+        warnings.warn("Unrecognized type: " + str(type(value)))
+        return None, str(value)
 
 # -----------------------------------------------------------------
 

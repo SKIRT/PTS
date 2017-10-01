@@ -41,6 +41,11 @@ from ...core.extract.memory import MemoryUsageTable
 
 # -----------------------------------------------------------------
 
+wavelengths_filename = "wavelengths.txt"
+dustgridtree_filename = "tree.dat"
+
+# -----------------------------------------------------------------
+
 class AnalysisRunInfo(SimplePropertyComposite):
 
     """
@@ -1059,6 +1064,20 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return load_dict(self.input_file_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.input_paths
+        paths[wavelengths_filename] = self.heating_wavelength_grid_path
+        return paths
 
     # -----------------------------------------------------------------
 

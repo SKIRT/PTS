@@ -289,16 +289,20 @@ def contains_files(directory, filenames=None):
     :return:
     """
 
+    # Filenames are given
     if filenames is not None:
 
         # Loop over the filenames
         for filename in filenames:
 
+            # Check
             filepath = join(directory, filename)
             if not is_file(filepath): return False
 
+        # All checks passed
         return True
 
+    # No filenames are given
     else: return len(files_in_path(directory)) > 0
 
 # -----------------------------------------------------------------

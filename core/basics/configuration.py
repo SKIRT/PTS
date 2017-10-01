@@ -269,6 +269,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     :param description: 
     :param choices: 
     :param default:
+    :param required:
     :param default_alias:
     :return: 
     """

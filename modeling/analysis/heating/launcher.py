@@ -124,6 +124,18 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
+    @property
+    def heating(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -137,6 +149,18 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # Set options for the batch launcher
         self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def local_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_input_paths
 
     # -----------------------------------------------------------------
 
@@ -256,22 +280,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.uses_remote: return None
-        else:
-            remote = Remote()
-            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
-            else: return remote
-
-    # -----------------------------------------------------------------
-
     @property
     def uses_remote(self):
 
@@ -323,89 +331,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         """
 
         return SimpleInstrument
-
-    # -----------------------------------------------------------------
-
-    # def set_input(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Setting the input paths ...")
-    #
-    #     # Set the paths to the input maps
-    #     self.input_paths = self.input_map_paths
-    #
-    #     # Set the path to the wavelength grid file
-    #     self.input_paths.append(self.analysis_run.heating_wavelength_grid_path)
-
-    # -----------------------------------------------------------------
-
-    def set_input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the simulation input paths ...")
-
-        # No remote
-        if not self.uses_remote: self.set_input_paths_local()
-
-        # Remote execution
-        else: self.set_input_paths_remote()
-
-    # -----------------------------------------------------------------
-
-    def set_input_paths_local(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Setting input paths for local execution ...")
-
-        # Check config
-        if self.config.remote_input is not None or self.config.remote_input_path is not None:
-            raise ValueError("Cannot specifiy remote input path(s) if simulation is not launched remotely")
-
-        # Set input paths
-        self.input_paths = self.analysis_run.input_paths
-
-        # Set things
-        self.has_remote_input_files = False
-        self.remote_input_path = None
-
-    # -----------------------------------------------------------------
-
-    def set_input_paths_remote(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Setting input paths for remote execution ...")
-
-        # No remote files
-        if self.config.remote_input is None and self.config.remote_input_path is None: self.find_input_paths_remote()
-
-        # Remote files defined in a dictionary
-        elif self.config.remote_input is not None: self.set_input_paths_remote_from_dictionary()
-
-        # Remote input directory is specified
-        elif self.config.remote_input_path is not None: self.set_input_paths_remote_from_directory()
-
-        # We shouldn't get here
-        else: raise RuntimeError("We shouldn't get here")
 
     # -----------------------------------------------------------------
 

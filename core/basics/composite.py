@@ -256,6 +256,23 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def set_property(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Check
+        if name not in self.property_names: raise ValueError("Not a property of this class: '" + name + "'")
+
+        # Set attribute
+        setattr(self, name, value)
+
+    # -----------------------------------------------------------------
+
     def set_properties(self, properties):
 
         """
@@ -282,6 +299,51 @@ class SimplePropertyComposite(object):
 
             # If the option does not exist, ignore it but give a warning
             else: warnings.warn("The property '" + name + "' does not exist")
+
+    # -----------------------------------------------------------------
+
+    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None):
+
+        """
+        This function ...
+        :param recursive:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :return:
+        """
+
+        from .configuration import prompt_variable
+
+        # Loop over the properties
+        for name in self.property_names:
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+
+            description = self.get_description(name)
+            ptype = self.get_ptype(name)
+            default = self.get_value(name)
+            choices = self.get_choices(name)
+
+            # Ask for the new value
+            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=False)
+
+            # Set the new value
+            self.set_property(name, value)
+
+        # Recursive: also loop over the settings
+        if recursive:
+
+            # Loop over the sections
+            for name in self.section_names:
+
+                # Prompt the settings of the section
+                self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
 
     # -----------------------------------------------------------------
 
@@ -379,6 +441,30 @@ class SimplePropertyComposite(object):
         """
 
         return self._ptypes[name]
+
+    # -----------------------------------------------------------------
+
+    def get_description(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._descriptions[name]
+
+    # -----------------------------------------------------------------
+
+    def get_choices(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return self._choices[name]
 
     # -----------------------------------------------------------------
 

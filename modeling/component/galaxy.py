@@ -1282,6 +1282,18 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cached_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.cached_analysis_runs
+
+    # -----------------------------------------------------------------
+
     def deproject_maps(self, maps, scale_height, root_path, method="pts", edgeon=False, write=True,
                        return_deprojections=False, downsample_factor=2.):
 
