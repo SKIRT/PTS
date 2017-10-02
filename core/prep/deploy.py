@@ -295,72 +295,95 @@ class Deployer(RemotesConfigurable):
             installed = remote.has_pts
 
             # If installed, update
-            if installed:
-
-                # Check origins
-                local_origin_url = introspection.pts_git_remote_url(self.config.pts_repo_name, pubkey_password=self.config.pubkey_password)
-                remote_origin_url = remote.pts_git_remote_url("origin")
-
-                # Decompose
-                host_local, user_or_organization_local, repo_name_local, username_local, password_local = git.decompose_repo_url(local_origin_url)
-                host_remote, user_or_organization_remote, repo_name_remote, username_remote, password_remote = git.decompose_repo_url(remote_origin_url)
-
-                # Compose in simple https to compare whether equal
-                local_simple = git.compose_https(host_local, user_or_organization_local, repo_name_local)
-                remote_simple = git.compose_https(host_remote, user_or_organization_remote, repo_name_remote)
-
-                # Reinstall because of wrong origin
-                if local_simple != remote_simple:
-
-                    # Debugging
-                    log.debug("Local and remote PTS repositories do not have the same source")
-                    log.debug("Local original repository for PTS: '" + local_simple + "'")
-                    log.debug("Remote original repository for PTS: '" + remote_simple + "'")
-                    log.debug("Reinstalling PTS on the remote host '" + remote.host_id + "' ...")
-
-                    # Install
-                    installer = PTSInstaller()
-                    installer.config.force = True
-                    installer.config.repository = self.config.pts_repo_name
-                    installer.run(remote=remote)
-
-                # Clean install
-                elif self.config.clean:
-
-                    # Debugging
-                    log.debug("Performing a clean install of PTS on remote host '" + remote.host_id + "' ...")
-
-                    # Install
-                    installer = PTSInstaller()
-                    installer.config.force = True
-                    installer.config.repository = self.config.pts_repo_name
-                    installer.run(remote=remote)
-
-                else:
-
-                    # Debugging
-                    log.debug("PTS is present on host '" + remote.host_id + "', updating ...")
-
-                    # Create the updater
-                    updater = PTSUpdater()
-                    updater.config.dependencies = self.config.update_dependencies
-
-                    # Run the updater
-                    updater.run(remote=remote)
+            if installed: self.update_pts_on_remote(remote)
 
             # If not installed, install
-            else:
+            else: self.install_pts_on_remote(remote)
 
-                # Debugging
-                log.debug("PTS is not present on host '" + remote.host_id + "', installing ...")
+    # -----------------------------------------------------------------
 
-                # Create installer
-                installer = PTSInstaller()
-                installer.config.force = True
-                installer.config.repository = self.config.pts_repo_name
+    def update_pts_on_remote(self, remote):
 
-                # Install
-                installer.run(remote=remote)
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        #log.debug("Updating PTS on remote host '" + remote.host_id + "' ...")
+
+        # Check origins
+        local_origin_url = introspection.pts_git_remote_url(self.config.pts_repo_name, pubkey_password=self.config.pubkey_password)
+        remote_origin_url = remote.pts_git_remote_url("origin")
+
+        # Decompose
+        host_local, user_or_organization_local, repo_name_local, username_local, password_local = git.decompose_repo_url(local_origin_url)
+        host_remote, user_or_organization_remote, repo_name_remote, username_remote, password_remote = git.decompose_repo_url(remote_origin_url)
+
+        # Compose in simple https to compare whether equal
+        local_simple = git.compose_https(host_local, user_or_organization_local, repo_name_local)
+        remote_simple = git.compose_https(host_remote, user_or_organization_remote, repo_name_remote)
+
+        # Reinstall because of wrong origin
+        if local_simple != remote_simple:
+
+            # Debugging
+            log.debug("Local and remote PTS repositories do not have the same source")
+            log.debug("Local original repository for PTS: '" + local_simple + "'")
+            log.debug("Remote original repository for PTS: '" + remote_simple + "'")
+            log.debug("Reinstalling PTS on the remote host '" + remote.host_id + "' ...")
+
+            # Install
+            installer = PTSInstaller()
+            installer.config.force = True
+            installer.config.repository = self.config.pts_repo_name
+            installer.run(remote=remote)
+
+        # Clean install
+        elif self.config.clean:
+
+            # Debugging
+            log.debug("Performing a clean install of PTS on remote host '" + remote.host_id + "' ...")
+
+            # Install
+            installer = PTSInstaller()
+            installer.config.force = True
+            installer.config.repository = self.config.pts_repo_name
+            installer.run(remote=remote)
+
+        else:
+
+            # Debugging
+            log.debug("PTS is present on host '" + remote.host_id + "', updating ...")
+
+            # Create the updater
+            updater = PTSUpdater()
+            updater.config.dependencies = self.config.update_dependencies
+
+            # Run the updater
+            updater.run(remote=remote)
+
+    # -----------------------------------------------------------------
+
+    def install_pts_on_remote(self, remote):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("PTS is not present on host '" + remote.host_id + "', installing ...")
+
+        # Create installer
+        installer = PTSInstaller()
+        installer.config.force = True
+        installer.config.repository = self.config.pts_repo_name
+
+        # Install
+        installer.run(remote=remote)
 
     # -----------------------------------------------------------------
 

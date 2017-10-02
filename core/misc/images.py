@@ -31,6 +31,7 @@ from ..simulation.simulation import createsimulations
 from ..tools.utils import lazyproperty
 from ..tools import types
 from ..remote.remote import Remote
+from ..prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 
@@ -264,6 +265,9 @@ class ObservedImageMaker(Configurable):
 
         # Get remote host ID
         self.get_host_id(**kwargs)
+
+        # Update the remote
+        if self.has_remote and self.config.deploy_pts: self.deploy_pts()
 
     # -----------------------------------------------------------------
 
@@ -597,6 +601,46 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def deploy_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deploying PTS remotely ...")
+
+        # Create the deployer
+        deployer = Deployer()
+
+        # Don't do anything locally
+        deployer.config.local = False
+
+        # Only deploy PTS
+        deployer.config.skirt = False
+        deployer.config.pts = True
+
+        # Set the host ids
+        deployer.config.host_ids = [self.host_id]
+
+        # Check versions between local and remote
+        deployer.config.check = self.config.check_versions
+
+        # Update PTS dependencies
+        deployer.config.update_dependencies = self.config.update_dependencies
+
+        # Do clean install
+        #deployer.config.clean = self.config.deploy_clean
+
+        # Pubkey pass
+        #deployer.config.pubkey_password = self.config.pubkey_password
+
+        # Run the deployer
+        deployer.run()
+
+    # -----------------------------------------------------------------
+
     def create_wavelength_grid(self):
 
         """
@@ -699,7 +743,7 @@ class ObservedImageMaker(Configurable):
         if self.host_id is None: return False
 
         # File size is exceeded
-        if self.remote_threshold is not None and fs.files_size(path) > self.remote_threshold: return True
+        if self.remote_threshold is not None and fs.file_size(path) > self.remote_threshold: return True
 
         # Remote spectral convolution
         if self.config.spectral_convolution and self.remote_spectral_convolution: return True

@@ -29,4 +29,8 @@ definition.add_optional("nprocesses_remote", "positive_integer", "number of para
 # ADVANCED: regenerate?
 definition.add_flag("regenerate", "regenerate images that are already present", False)
 
+# Update PTS on the remote
+definition.add_flag("deploy_pts", "deply (install or update) PTS on the remote host", True)
+definition.add_flag("update_dependencies", "update PTS dependencies (use with care!)", False)
+
 # -----------------------------------------------------------------
