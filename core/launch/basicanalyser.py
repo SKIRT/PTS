@@ -769,6 +769,7 @@ class BasicAnalyser(Configurable):
 
         # Remote
         input_dict["host_id"] = self.misc_options.make_images_remote
+        input_dict["remote_spectral_convolution"] = self.misc_options.remote_spectral_convolution
         input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
         input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
         input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold

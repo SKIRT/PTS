@@ -27,6 +27,7 @@ definition = ConfigurationDefinition()
 
 # Add required
 definition.add_required("host_ids", "string_list", "names of the remote hosts", choices=find_host_ids())
+definition.add_positional_optional("simulation_ids", "integer_list", "simulations to show")
 
 # Add flag
 definition.add_flag("analysis", "show analysis options", False)
@@ -48,6 +49,9 @@ for host_id in config.host_ids:
 
     # Loop over the simulations
     for simulation_id in introspection.simulation_ids_for_host(host_id):
+
+        # Check simulation ID
+        if config.simulation_ids is not None and simulation_id not in config.simulation_ids: continue
 
         # Open the simulation object
         simulation = get_simulation_for_host(host_id, simulation_id)

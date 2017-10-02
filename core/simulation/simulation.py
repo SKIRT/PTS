@@ -668,6 +668,18 @@ class SkirtSimulation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def log_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.outfilepath("log.txt")
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path):
 

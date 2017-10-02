@@ -54,6 +54,7 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 definition.add_section("wg", "options for the wavelength grid")
 definition.sections["wg"].add_optional("range", "quantity_range", "the wavelength range", wavelength_range)
 definition.sections["wg"].add_optional("npoints", "integer", "the number of wavelength points", 50)
+definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", True)
 
 # -----------------------------------------------------------------
 
@@ -82,5 +83,12 @@ definition.add_optional("old_scale_heights", "real", "number of times to take th
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations", 4)
 definition.add_flag("data_parallel", "data parallelization mode", False)
+
+# -----------------------------------------------------------------
+
+# EXTRA SIMULATION OUTPUT
+definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
+definition.add_flag("emissivities", "get dust emissivity data from the simulation", False)
+definition.add_flag("isrf", "get ISRF data from the simulation", False)
 
 # -----------------------------------------------------------------

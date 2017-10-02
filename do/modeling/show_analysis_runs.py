@@ -18,6 +18,7 @@ from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
 from pts.modeling.config.parameters import parameter_descriptions
+from pts.modeling.analysis.heating.component import contributions
 
 # -----------------------------------------------------------------
 
@@ -46,6 +47,7 @@ definition.add_flag("parallelization", "show parallelization", False)
 definition.add_flag("timing", "show timing info", False)
 definition.add_flag("memory", "show memory usage info", False)
 definition.add_flag("directory", "show directory info", False)
+definition.add_flag("heating", "show heating launch info", False)
 
 # Add optional
 definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
@@ -225,6 +227,71 @@ def show_directory_info(run):
 
 # -----------------------------------------------------------------
 
+def show_heating_info(run):
+
+    """
+    Thisf unction ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "heating simulations:" + fmt.reset)
+    print("")
+
+    # BASIC
+    print("        - " + fmt.bold + "basic:" + fmt.reset)
+    print("           - " + fmt.bold + "old scale heights: " + fmt.reset + tostr(run.heating_config.old_scale_heights))
+
+    print("")
+
+    # WAVELENGTH GRID
+    print("        - " + fmt.bold + "wavelength grid:" + fmt.reset)
+    print("           - " + fmt.bold + "range: " + fmt.reset + tostr(run.heating_config.wg.range))
+    print("           - " + fmt.bold + "number of points: " + fmt.reset + tostr(run.nwavelengths_heating))
+    print("           - " + fmt.bold + "emission lines: " + fmt.reset + tostr(run.heating_config.wg.add_emission_lines))
+
+    print("")
+
+    # Loop over the contributions
+    npackages = None
+    selfabsorption = None
+    transient_heating = None
+    for contribution in contributions:
+
+        # Get the ski path
+        #ski_path = run.heating_ski_path_for_contribution(contribution)
+        #ski = SkiFile(ski_path)
+        ski = run.get_heating_ski_for_contribution(contribution)
+
+        if npackages is None: npackages = ski.packages()
+        elif ski.packages() != npackages: raise RuntimeError("")
+
+        if selfabsorption is None: selfabsorption = ski.dustselfabsorption()
+        elif ski.dustselfabsorption() != selfabsorption: raise RuntimeError("")
+
+        if transient_heating is None: transient_heating = ski.transient_dust_emissivity
+        elif ski.transient_dust_emissivity != transient_heating: raise RuntimeError("")
+
+        # Get the output path
+        #output_path = run.heating_output_path_for_contribution(contribution)
+
+    # LAUNCH INFO
+    print("        - " + fmt.bold + "launch info:" + fmt.reset)
+    print("           - " + fmt.bold + "number of photon packages: " + fmt.reset + tostr(npackages))
+    print("           - " + fmt.bold + "dust self-absorption: " + fmt.reset + tostr(selfabsorption))
+    print("           - " + fmt.bold + "transient heating: " + fmt.reset + tostr(transient_heating))
+    print("")
+
+    # Loop over the contributions
+    print("        - " + fmt.bold + "finished:" + fmt.reset)
+
+    for contribution in contributions:
+
+        output_path = run.heating_output_path_for_contribution(contribution)
+        print("           - " + fmt.bold + contribution + ": " + fmt.reset + tostr(output_path))
+
+# -----------------------------------------------------------------
+
 def show_run_info(run):
 
     """
@@ -271,6 +338,11 @@ def show_run_info(run):
     # Show directory info
     if config.directory:
         show_directory_info(run)
+        print("")
+
+    # Show heating launch info
+    if config.heating and run.has_heating:
+        show_heating_info(run)
         print("")
 
 # -----------------------------------------------------------------

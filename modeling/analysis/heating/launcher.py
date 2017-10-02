@@ -96,37 +96,37 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # 2. Get the model
         self.get_model()
 
-        # 2. Create the wavelength grid
+        # 3. Create the wavelength grid
         self.create_wavelength_grid(check_filters=False)
 
-        # 3. Load the deprojections
+        # 4. Load the deprojections
         self.load_deprojections()
 
-        # 4. Create the projections
+        # 5. Create the projections
         self.create_projections()
 
-        # 5. Create the instruments
+        # 6. Create the instruments
         self.create_instruments()
 
-        # 6. Load the ski file
+        # 7. Load the ski file
         self.load_ski()
 
-        # 7. Create the ski files for the different contributions
+        # 8. Create the ski files for the different contributions
         self.adjust_ski()
 
-        # 8. Set the simulation input paths
+        # 9. Set the simulation input paths
         self.set_input_paths()
 
-        # 9. Set the parallelization scheme
+        # 10. Set the parallelization scheme
         self.set_parallelization()
 
-        # 10. Estimate the runtimes, create the scheduling options
+        # 11. Estimate the runtimes, create the scheduling options
         if self.uses_scheduler: self.estimate_runtimes()
 
-        # 11. Writing
+        # 12. Writing
         self.write()
 
-        # 12. Launch the simulations
+        # 13. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -226,54 +226,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
-    # def create_wavelength_grid(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Creating the wavelength grid ...")
-    #
-    #     # Create the emission lines instance
-    #     emission_lines = EmissionLines()
-    #
-    #     # Fixed wavelengths in the grid
-    #     fixed = [self.i1_filter.pivot, self.fuv_filter.pivot] # in micron, for normalization of stellar components
-    #
-    #     # Range in micron
-    #     micron_range = RealRange(self.config.wg.range.min.to("micron").value, self.config.wg.range.max.to("micron").value)
-    #
-    #     # Create and set the grid
-    #     self.wavelength_grid = create_one_logarithmic_wavelength_grid(micron_range, self.config.wg.npoints, emission_lines, fixed)
-
-    # -----------------------------------------------------------------
-
-    # def create_instruments(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Creating the instruments ...")
-    #
-    #     # Debugging
-    #     log.debug("Creating a simple instrument for the earth projection ...")
-    #
-    #     # Create the instrument and add it to the dictionary
-    #     self.instruments["earth"] = self.create_instrument("simple", "earth")
-    #
-    #     # Debugging
-    #     log.debug("Creating a frame instrument for the faceon projection ...")
-    #
-    #     # Create the instrument and add it to the dictionary
-    #     self.instruments["faceon"] = self.create_instrument("frame", "faceon")
-
-    # -----------------------------------------------------------------
-
     @property
     def host_id(self):
 
@@ -297,8 +249,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         if not self.uses_remote: return None
         else: return self.launcher.single_host
-
-        #return self.launcher.host
 
     # -----------------------------------------------------------------
 
@@ -487,11 +437,16 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # self.ski.set_write_quality()
         self.ski.set_write_cell_properties()
         # self.ski.set_write_cells_crossed()
-        # self.ski.set_write_emissivity()
-        # self.ski.set_write_temperature()
-        # self.ski.set_write_isrf()
+
+        # EXTRA OUTPUT
+        if self.config.temperatures: self.ski.set_write_temperature()
+        if self.config.emissivities: self.ski.set_write_emissivity()
+        if self.config.isrf: self.ski.set_write_isrf()
+
+        # Write absorption
         self.ski.set_write_absorption()
-        self.ski.set_write_grid()
+
+        #self.ski.set_write_grid()
 
     # -----------------------------------------------------------------
 
@@ -650,6 +605,9 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Inform the user
         log.info("Writing ...")
 
+        # Write the config
+        self.write_config()
+
         # Write the wavelength grid
         self.write_wavelength_grid()
 
@@ -659,6 +617,21 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Write the ski files
         self.write_ski_files()
         
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the configuration ...")
+
+        # Write
+        self.config.saveto(self.analysis_run.config_path)
+
     # -----------------------------------------------------------------
 
     def write_wavelength_grid(self):
@@ -828,20 +801,5 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # Run the launcher, schedules the simulations
         self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths, parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
-
-        # # Loop over the scheduled simulations
-        # for simulation in self.launcher.launched_simulations:
-        #
-        #     # Add the path to the modeling directory to the simulation object
-        #     simulation.analysis.modeling_path = self.config.path
-        #
-        #     # Set the path to an analyser
-        #     # analyser_path = "pts.modeling.analysis. ..."
-        #
-        #     # Add the analyser class path
-        #     # simulation.add_analyser(analyser_path)
-        #
-        #     # Save the simulation
-        #     simulation.save()
 
 # -----------------------------------------------------------------

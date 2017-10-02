@@ -34,6 +34,11 @@ from ..remote.remote import Remote
 
 # -----------------------------------------------------------------
 
+default_filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
+                        "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+
+# -----------------------------------------------------------------
+
 class ObservedImageMaker(Configurable):
 
     """
@@ -66,8 +71,7 @@ class ObservedImageMaker(Configurable):
         self.wavelength_grid = None
 
         # Filter names
-        self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
-                             "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+        self.filter_names = default_filter_names
 
         # The instrument names
         self.instrument_names = None
@@ -92,6 +96,9 @@ class ObservedImageMaker(Configurable):
 
         # Threshold for using remote datacubes
         self.remote_threshold = None
+
+        # Flag
+        self.remote_spectral_convolution = False
 
         # Thresholds (frame size) for remote rebinning and convolution
         self.remote_rebin_threshold = None
@@ -578,6 +585,9 @@ class ObservedImageMaker(Configurable):
         # Get the host ID
         self.host_id = kwargs.pop("host_id", None)
 
+        # Remote spectral convolution flag
+        self.remote_spectral_convolution = kwargs.pop("remote_spectral_convolution", False)
+
         # Remote threshold
         self.remote_threshold = kwargs.pop("remote_threshold", None)
 
@@ -678,6 +688,27 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def needs_remote(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No remote is set
+        if self.host_id is None: return False
+
+        # File size is exceeded
+        if self.remote_threshold is not None and fs.files_size(path) > self.remote_threshold: return True
+
+        # Remote spectral convolution
+        if self.config.spectral_convolution and self.remote_spectral_convolution: return True
+
+        # Not remote
+        return False
+
+    # -----------------------------------------------------------------
+
     def load_datacubes(self):
 
         """
@@ -707,39 +738,66 @@ class ObservedImageMaker(Configurable):
             # Debugging
             log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
 
-            ## LOAD AND CONVERT UNITS TO SPECTRAL (WAVELENGTH-DENSITY)
+            # Load datacube remotely
+            if self.needs_remote(path): datacube = self.load_datacube_remote(path)
 
-            # Load the datacube (locally or remotely)
-            if self.host_id is not None:
+            # Load datacube locally
+            else: datacube = self.load_datacube_local(path)
 
-                # Remote threshold not specified or file is smaller than threshold
-                if self.remote_threshold is None or fs.file_size(path) < self.remote_threshold:
-                    try: datacube = DataCube.from_file(path, self.wavelength_grid)
-                    except fits.DamagedFITSFileError as e:
-                        log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
-                        continue
-
-                # Remote threshold
-                else:
-
-                    try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
-                    except fits.DamagedFITSFileError as e:
-                        log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
-                        continue
-
-            # No host specified: local datacube
-            else:
-
-                try: datacube = DataCube.from_file(path, self.wavelength_grid)
-                except fits.DamagedFITSFileError as e:
-                    log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
-                    continue
+            # If datacube is None, something went wrong, skip the datacube
+            if datacube is None: continue
 
             # Convert the datacube from neutral flux density to wavelength flux density
             datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
 
             # Add the datacube to the dictionary
             self.datacubes[instr_name] = datacube
+
+    # -----------------------------------------------------------------
+
+    def load_datacube_local(self, path):
+
+        """
+        Thisj function ...
+        :param self:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Trying to load the datacube '" + path + "' locally ...")
+
+        # Load
+        try: datacube = DataCube.from_file(path, self.wavelength_grid)
+        except fits.DamagedFITSFileError as e:
+            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+            datacube = None
+
+        # Return the datacube
+        return datacube
+
+    # -----------------------------------------------------------------
+
+    def load_datacube_remote(self, path):
+
+        """
+        This function ...
+        :param self:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Trying to load the datacube '" + path + "' remotely ...")
+
+        # Load
+        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
+        except fits.DamagedFITSFileError as e:
+            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+            datacube = None
+
+        # Return
+        return datacube
 
     # -----------------------------------------------------------------
 
@@ -782,12 +840,6 @@ class ObservedImageMaker(Configurable):
 
             # Debugging
             log.debug("Making the observed images for the " + instr_name + " instrument ...")
-
-            # Create a list of the filter names
-            #filter_names = self.filters.keys()
-
-            # Create the corresponding list of filters
-            #filters = self.filters.values()
 
             # Get the filters that don't have an image yet saved on disk
             filters_dict = self.filters_without_image_for_instrument(instr_name)

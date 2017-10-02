@@ -17,7 +17,7 @@ from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import LabeledSkiFile, SkiFile
 from ..core.model import Model
 from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
@@ -272,6 +272,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def nwavelengths_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.wavelength_grid_heating)
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_grid_path(self):
 
         """
@@ -306,6 +318,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, config_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_config_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.heating_path, config_filename)
 
     # -----------------------------------------------------------------
 
@@ -938,6 +962,18 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.heating_config_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def nfiles(self):
 
@@ -1011,6 +1047,18 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def heating_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Configuration.from_file(self.heating_config_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def wavelength_grid(self):
 
         """
@@ -1019,6 +1067,18 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.heating_wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -1604,6 +1664,19 @@ class AnalysisRun(AnalysisRunBase):
         if host_id in commands: return commands[host_id]
         else: return []
 
+    # -----------------------------------------------------------------
+
+    def get_heating_ski_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        path = self.heating_ski_path_for_contribution(contribution)
+        return SkiFile(path)
+
 # -----------------------------------------------------------------
 
 class AnalysisRuns(object):
@@ -1890,6 +1963,18 @@ class CachedAnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def heating_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Configuration.from_remote_file(self.heating_config_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def wavelength_grid(self):
 
         """
@@ -1898,6 +1983,18 @@ class CachedAnalysisRun(AnalysisRunBase):
         """
 
         return WavelengthGrid.from_skirt_input(self.wavelength_grid_path, remote=self.remote)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid_heating(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.heating_wavelength_grid_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
@@ -2082,6 +2179,18 @@ class CachedAnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_file(self.heating_config_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ski_file(self):
 
         """
@@ -2189,6 +2298,19 @@ class CachedAnalysisRun(AnalysisRunBase):
         commands = self.get_remote_script_commands()
         if host_id in commands: return commands[host_id]
         else: return []
+
+    # -----------------------------------------------------------------
+
+    def get_heating_ski_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        path = self.heating_ski_path_for_contribution(contribution)
+        return SkiFile.from_remote_file(path, self.remote)
 
 # -----------------------------------------------------------------
 
