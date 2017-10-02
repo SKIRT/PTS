@@ -54,6 +54,18 @@ class RemotePythonSession(object):
     # -----------------------------------------------------------------
 
     @property
+    def host_id(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
+    @property
     def session_temp_directory(self):
 
         """
@@ -85,7 +97,62 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
-    def import_package(self, name, as_name=None, from_name=None, show_output=False):
+    def import_package_update(self, name, as_name=None, from_name=None, show_output=False):
+
+        """
+        Thins function ...
+        :param name:
+        :param as_name:
+        :param from_name:
+        :param show_output:
+        :return:
+        """
+
+        # Try to import
+        success, module_name, import_statement = self.import_package(name, as_name=as_name, from_name=from_name, show_output=show_output, return_false_if_fail=True, return_failed_module=True)
+
+        # Not succesful, try updating the module on which it failed
+        if not success:
+
+            # Debugging
+            log.debug("Import of '" + name + "' was unsuccesful: trying updating the '" + module_name + "' package ...")
+
+            from ..prep.update import update_pts_dependencies_remote
+
+            # Find conda
+            conda_installation_path, conda_main_executable_path = self.remote.find_conda()
+
+            # Determine the conda environment for PTS
+            env_name = self.remote.conda_environment_for_pts
+            if env_name is None: raise Exception("Cannot determine the conda environment used for pts")
+            conda_environment = env_name
+
+            environment_bin_path = fs.join(conda_installation_path, "envs", conda_environment, "bin")
+            if not self.remote.is_directory(environment_bin_path): raise RuntimeError("The environment directory is not present")
+            conda_executable_path = fs.join(environment_bin_path, "conda")
+
+            # Set ...
+            conda_pip_path = fs.join(environment_bin_path, "pip")
+            conda_python_path = fs.join(environment_bin_path, "python")
+            conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+            # Update the module
+            packages = [module_name]
+            update_pts_dependencies_remote(self.remote, packages, conda_executable_path,
+                                           conda_environment, conda_python_path, conda_pip_path,
+                                           conda_easy_install_path)
+
+            # Try again
+            success, module_name, import_statement = self.import_package(name, as_name=as_name, from_name=from_name,
+                                                       show_output=show_output, return_false_if_fail=True,
+                                                       return_failed_module=True)
+
+            # Not succesful again
+            if not success: raise ImportError("The import statement '" + import_statement + "' failed on remote host '" + self.host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def import_package(self, name, as_name=None, from_name=None, show_output=False, return_false_if_fail=True, return_failed_module=False):
 
         """
         This function ...
@@ -93,6 +160,8 @@ class RemotePythonSession(object):
         :param as_name:
         :param from_name:
         :param show_output:
+        :param return_false_if_fail:
+        :param return_failed_module:
         :return:
         """
 
@@ -115,12 +184,48 @@ class RemotePythonSession(object):
 
             # Check output
             last_line = output[-1]
-            if "cannot import" in last_line: log.warning(last_line)
-            if "ImportError" in last_line: log.warning(last_line)
 
-            return False
+            # Error
+            if "cannot import" in last_line:
+                #log.warning(last_line)
+                which = last_line.split("cannot import")[1]
+                message = "[" + self.host_id + "] Cannot import " + which
+                if return_false_if_fail: log.warning(message)
+                else: raise ImportError(message)
 
-        return True
+            # Error
+            if "ImportError" in last_line:
+                #log.warning(last_line)
+                message = last_line.split("ImportError")[1]
+                message = "[" + self.host_id + "] " + message
+                if return_false_if_fail: log.warning(message)
+                else: raise ImportError(message)
+
+            # Read the traceback
+            module_name = None
+            import_statement = None
+            for line in reversed(output[:-1]):
+                line = line.strip()
+                if line.startswith("import"):
+                    module_name = line.split("import ")[1].split(" ")[0]
+                    import_statement = line
+                    break
+                elif line.startswith("from") and "import" in line:
+                    module_name = line.split("from ")[1].split(" ")[0]
+                    import_statement = line
+                    break
+
+            # Get base module name
+            if module_name is not None: base_model_name = module_name.split(".")[0]
+            else: base_model_name = None
+
+            # Import failed
+            if return_failed_module: return False, base_model_name, import_statement
+            else: return False
+
+        # Import was succesfull
+        if return_failed_module: return True, None, None
+        else: return True
 
     # -----------------------------------------------------------------
 

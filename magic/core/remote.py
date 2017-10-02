@@ -68,18 +68,20 @@ def import_necessary_modules(session):
 
     # Import standard modules
     #session.import_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
-    session.import_package("urllib", show_output=log.is_debug())
-    session.import_package("numpy", as_name="np", show_output=log.is_debug())
+
+    # Import standard modules
+    session.import_package_update("urllib", show_output=log.is_debug())
+    session.import_package_update("numpy", as_name="np", show_output=log.is_debug())
 
     # Import the necessary PTS classes and modules
-    session.import_package("Frame", from_name="pts.magic.core.frame", show_output=log.is_debug())
-    session.import_package("Image", from_name="pts.magic.core.image", show_output=log.is_debug())
-    session.import_package("DataCube", from_name="pts.magic.core.datacube", show_output=log.is_debug())
-    session.import_package("ConvolutionKernel", from_name="pts.magic.core.kernel", show_output=log.is_debug())
-    session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem", show_output=log.is_debug())
-    session.import_package("archive", from_name="pts.core.tools", show_output=log.is_debug())
-    session.import_package("parsing", from_name="pts.core.tools", show_output=log.is_debug())
-    session.import_package("parse_filter", from_name="pts.core.filter.filter", show_output=log.is_debug())
+    session.import_package_update("Frame", from_name="pts.magic.core.frame", show_output=log.is_debug())
+    session.import_package_update("Image", from_name="pts.magic.core.image", show_output=log.is_debug())
+    session.import_package_update("DataCube", from_name="pts.magic.core.datacube", show_output=log.is_debug())
+    session.import_package_update("ConvolutionKernel", from_name="pts.magic.core.kernel", show_output=log.is_debug())
+    session.import_package_update("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem", show_output=log.is_debug())
+    session.import_package_update("archive", from_name="pts.core.tools", show_output=log.is_debug())
+    session.import_package_update("parsing", from_name="pts.core.tools", show_output=log.is_debug())
+    session.import_package_update("parse_filter", from_name="pts.core.filter.filter", show_output=log.is_debug())
 
 # -----------------------------------------------------------------
 

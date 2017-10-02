@@ -173,6 +173,21 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def session(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #new_connection = False
+        new_connection = True
+        session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
+        return session
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -835,7 +850,7 @@ class ObservedImageMaker(Configurable):
         log.debug("Trying to load the datacube '" + path + "' remotely ...")
 
         # Load
-        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
+        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
         except fits.DamagedFITSFileError as e:
             log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
             datacube = None
@@ -924,7 +939,7 @@ class ObservedImageMaker(Configurable):
         from ...magic.core.remote import RemoteFrame
         from ...magic.core.frame import Frame
 
-        session = None
+        #session = None
 
         # Loop over the images
         for instr_name in self.images:
@@ -955,20 +970,20 @@ class ObservedImageMaker(Configurable):
                 # Convert into remote frame if necessary
                 if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
 
-                    # Create session if necessary
-                    if session is None:
-                        # START SESSION
-                        new_connection = False
-                        session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
+                    # # Create session if necessary
+                    # if session is None:
+                    #     # START SESSION
+                    #     new_connection = False
+                    #     session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
                     # Convert into remote
-                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, session)
+                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
 
                 # Convolve the frame
                 self.images[instr_name][filter_name].convolve(kernel)
 
         # End the session
-        if session is not None: del session
+        #if session is not None: del session
 
     # -----------------------------------------------------------------
 
@@ -985,7 +1000,7 @@ class ObservedImageMaker(Configurable):
         from ...magic.core.remote import RemoteFrame
         from ...magic.core.frame import Frame
 
-        session = None
+        #session = None
 
         # Loop over the datacubes
         for instr_name in self.images:
@@ -1038,14 +1053,14 @@ class ObservedImageMaker(Configurable):
                 # Convert to remote frame if necessary
                 if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
 
-                    # Create session if necessary
-                    if session is None:
-                        # START SESSION
-                        new_connection = False
-                        session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
+                    # # Create session if necessary
+                    # if session is None:
+                    #     # START SESSION
+                    #     new_connection = False
+                    #     session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
                     # Convert
-                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, session)
+                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
 
                 # Rebin
                 self.images[instr_name][filter_name].rebin(wcs)
@@ -1054,7 +1069,7 @@ class ObservedImageMaker(Configurable):
                 if converted: self.images[instr_name][filter_name].convert_to(original_unit)
 
         # End the session
-        if session is not None: del session
+        #if session is not None: del session
 
     # -----------------------------------------------------------------
 

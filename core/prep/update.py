@@ -1327,109 +1327,9 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Updating the PTS dependencies ...")
 
-        # Get dependency version restrictions
-        versions = introspection.get_constricted_versions()
-
-        # Get names of packages for import names
-        real_names = introspection.get_package_names()
-
-        # Get the versions of the packages currently installed
-        conda_versions = self.remote.installed_conda_packages(self.conda_executable_path, self.conda_environment)
-
-        # Get available conda packages
-        available_packages = self.remote.available_conda_packages(self.conda_executable_path)
-
-        # Loop over the already installed packages and update them if permitted
-        #for module_name in not_installed:
-        for module_name in self.already_installed_packages:
-
-            # Check if the module name may be different from the import name
-            if module_name in real_names.values():
-                import_name = real_names.keys()[real_names.values().index(module_name)]
-            else: import_name = module_name
-
-            # Check if there is a version restriction
-            if import_name in versions:
-
-                version = versions[import_name]
-
-                # Debugging
-                log.debug("Package '" + module_name + "' has a version restriction: " + version)
-
-                # Debugging
-                log.debug("Checking version ...")
-
-                # Get installed version
-                installed_version = conda_versions[module_name]
-                if version != installed_version:
-
-                    log.error("The version of the package '" + module_name + "' is " + installed_version + " but it should be " + version)
-                    log.info("Installing the correct version instead ...")
-
-                    # Get the installation command
-                    packages = []
-                    installation_commands, installed, not_installed, std_lib, real_names = get_installation_commands([module_name],
-                                                                                                                     packages,
-                                                                                                                     [],
-                                                                                                                     available_packages,
-                                                                                                                     conda_path=self.conda_executable_path,
-                                                                                                                     pip_path=self.conda_pip_path,
-                                                                                                                     conda_environment=self.conda_environment,
-                                                                                                                     python_path=self.conda_python_path,
-                                                                                                                     easy_install_path=self.conda_easy_install_path,
-                                                                                                                     remote=self.remote, check_by_importing=False)
-
-                    if len(installation_commands) == 0: log.warning("Could not determine the installation command")
-                    elif len(installation_commands) == 1:
-
-                        # Inform the user
-                        log.info("Installing '" + module_name + "' ...")
-
-                        command = installation_commands[installation_commands.keys()[0]]
-
-                        real_module_name = real_names[module_name] if module_name in real_names else module_name
-
-                        # Debugging
-                        if types.is_list(command): log.debug("Installation command: '" + command[0] + "'")
-                        elif types.is_string_type(command): log.debug("Installation_command: '" + command + "'")
-                        else: raise ValueError("Invalid installation command: " + str(command))
-
-                        # Install remotely
-                        # remote, command, conda_path, module, conda_environment
-                        result = install_module_remote(self.remote, command, self.conda_executable_path, real_module_name, self.conda_environment, check_present=False)
-
-                        # Fail, stack trace back
-                        if isinstance(result, list):
-
-                            installed.remove(module_name)
-                            log.warning("Something went wrong installing '" + module_name + "'")
-                            for line in result: print(line)
-                            not_installed.append(module_name)
-
-                        # Success
-                        elif result: log.success("Installation of '" + module_name + "' was succesful")
-                        else: log.warning("Unable to handle the situation")
-
-                    # To many installation commands for one package ?
-                    else: log.warning("Don't know what to do with installation commands: " + str(installation_commands))
-
-            # No version restriction: update
-            else:
-
-                # Debugging
-                log.debug("Updating package '" + module_name + "' to the latest version ...")
-
-                # Set command
-                command = self.conda_executable_path + " update " + module_name + " -n " + self.conda_environment + " --no-update-dependencies"
-
-                # Debugging
-                log.debug("Update command: " + command)
-
-                # Launch the command
-                self.remote.ssh.sendline(command)
-
-                # Expect the prompt or question
-                while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
+        # Update dependencies
+        update_pts_dependencies_remote(self.remote, self.already_installed_packages, self.conda_executable_path,
+                                       self.conda_environment, self.conda_python_path, self.conda_pip_path, self.conda_easy_install_path)
 
         # Success
         log.success("Succesfully installed and updated the dependencies on the remote host")
@@ -1572,5 +1472,180 @@ def fix_repo_url(url, repo_path, remote=None, repo_name="origin"):
 
     # Return the correct URL
     return new_url
+
+# -----------------------------------------------------------------
+
+def update_pts_dependencies_remote(remote, packages, conda_executable_path, conda_environment, conda_python_path, conda_pip_path, conda_easy_install_path):
+
+    """
+    This function ...
+    :param remote:
+    :param packages:
+    :param conda_executable_path:
+    :param conda_environment:
+    :param conda_python_path:
+    :param conda_pip_path:
+    :param conda_easy_install_path:
+    :return:
+    """
+
+    # Get dependency version restrictions
+    versions = introspection.get_constricted_versions()
+
+    # Get names of packages for import names
+    real_names = introspection.get_package_names()
+
+    # Get the versions of the packages currently installed
+    conda_versions = remote.installed_conda_packages(conda_executable_path, conda_environment)
+
+    # Get available conda packages
+    available_packages = remote.available_conda_packages(conda_executable_path)
+
+    # Get repositories for import names
+    repositories = introspection.get_package_repositories()
+
+    # Loop over the already installed packages and update them if permitted
+    # for module_name in not_installed:
+    for module_name in packages:
+
+        # Check if the module name may be different from the import name
+        if module_name in real_names.values(): import_name = real_names.keys()[real_names.values().index(module_name)]
+        else: import_name = module_name
+
+        # Check if there is a version restriction
+        if import_name in versions:
+
+            version = versions[import_name]
+
+            # Debugging
+            log.debug("Package '" + module_name + "' has a version restriction: " + version)
+
+            # Debugging
+            log.debug("Checking version ...")
+
+            # Get installed version
+            installed_version = conda_versions[module_name]
+            if version != installed_version:
+
+                log.error("The version of the package '" + module_name + "' is " + installed_version + " but it should be " + version)
+                log.info("Installing the correct version instead ...")
+
+                # Get the installation command
+                _packages = []
+                installation_commands, installed, not_installed, std_lib, real_names = get_installation_commands([module_name], _packages, [],
+                    available_packages,
+                    conda_path=conda_executable_path,
+                    pip_path=conda_pip_path,
+                    conda_environment=conda_environment,
+                    python_path=conda_python_path,
+                    easy_install_path=conda_easy_install_path,
+                    remote=remote, check_by_importing=False, repositories=repositories)
+
+                if len(installation_commands) == 0: log.warning("Could not determine the installation command")
+                elif len(installation_commands) == 1:
+
+                    # Inform the user
+                    log.info("Installing '" + module_name + "' ...")
+
+                    command = installation_commands[installation_commands.keys()[0]]
+
+                    real_module_name = real_names[module_name] if module_name in real_names else module_name
+
+                    # Debugging
+                    if types.is_list(command): log.debug("Installation command: '" + command[0] + "'")
+                    elif types.is_string_type(command): log.debug("Installation_command: '" + command + "'")
+                    else: raise ValueError("Invalid installation command: " + str(command))
+
+                    # Install remotely
+                    # remote, command, conda_path, module, conda_environment
+                    result = install_module_remote(remote, command, conda_executable_path, real_module_name, conda_environment, check_present=False)
+
+                    # Fail, stack trace back
+                    if isinstance(result, list):
+
+                        installed.remove(module_name)
+                        log.warning("Something went wrong installing '" + module_name + "'")
+                        for line in result: print(line)
+                        not_installed.append(module_name)
+
+                    # Success
+                    elif result: log.success("Installation of '" + module_name + "' was succesful")
+                    else: log.warning("Unable to handle the situation")
+
+                # To many installation commands for one package ?
+                else: log.warning("Don't know what to do with installation commands: " + str(installation_commands))
+
+        # No version restriction: update
+        else:
+
+            # Debugging
+            log.debug("Updating package '" + module_name + "' to the latest version ...")
+
+            # Check if a repository link is defined for this package
+            if module_name in repositories:
+
+                # Get the way of updating
+                via = repositories[module_name]
+
+                # Not implemented
+                raise NotImplementedError("Updating a package installed from a repository is not supported yet")
+
+            # Not via repository
+            else:
+
+                from .installation import find_real_name
+
+                # Find name, check if available
+                install_module_name, via, version = find_real_name(module_name, available_packages, real_names)
+
+                # Debugging
+                log.debug("The local version of the package is " + str(version))
+
+            # Update via conda
+            if via == "conda":
+
+                # Set command
+                command = conda_executable_path + " update " + module_name + " -n " + conda_environment + " --no-update-dependencies"
+
+            # Update with pip
+            elif via == "pip":
+
+                # Example: pip install Django --upgrade
+                # Dependencies strategy:
+                # --no-deps
+                # OR
+                # --upgrade-strategy only-if-needed mypackage
+                command = conda_pip_path + " install " + module_name + " --upgrade --upgrade-strategy only-if-needed"
+
+            # GitHub url
+            elif "github.com" in via: raise NotImplementedError("Not implemented")
+
+            # Link with source code
+            elif via.startswith("http"): raise NotImplementedError("Not implemented")
+
+            # Not recognized
+            else: raise ValueError("Invalid value for 'via': '" + str(via) + "'")
+
+            # Debugging
+            log.debug("Update command: " + command)
+
+            # Launch the command
+            remote.ssh.sendline(command)
+
+            # Expect the prompt or question
+            while True:
+
+                index = remote.ssh.expect([remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None)
+                if index == 1: remote.ssh.sendline("y")
+                else: break
+
+            # Get the output lines
+            lines = remote.ssh.before.replace('\x1b[K', '').split("\r\n")
+
+            # Check for errors
+            for line in lines:
+                if "PackageNotFoundError" in line:
+                    message = line.split("PackageNotFoundError: ")[1]
+                    raise RuntimeError(message)
 
 # -----------------------------------------------------------------
