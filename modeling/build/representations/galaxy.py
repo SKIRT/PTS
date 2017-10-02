@@ -400,7 +400,8 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 # -----------------------------------------------------------------
 
 def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights,
-                                          return_deprojection_name=False, scale_heights_reference=None):
+                                          return_deprojection_name=False, scale_heights_reference=None,
+                                          reference_deprojection_name=None):
 
     """
     This function ...
@@ -410,11 +411,18 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :param scale_heights:
     :param return_deprojection_name:
     :param scale_heights_reference:
+    :param reference_deprojection_name:
     :return:
     """
 
-    # Get the desired deprojection to base the instruments on
-    reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
+    # Reference dprojection name not given
+    if reference_deprojection_name is None:
+
+        # Get the desired deprojection to base the instruments on
+        reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
+
+    # Reference deprojection name is given
+    else: reference_deprojection, deprojection_name = get_deprojection(deprojections, reference_deprojection_name), reference_deprojection_name
 
     # Create the 'earth' projection system
     earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)

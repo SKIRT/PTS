@@ -43,7 +43,6 @@ class ModelDefinition(object):
         :param path:
         :param stellar_paths: stellar component paths (dictionary)
         :param dust_paths: dust component paths (dictionary)
-        :param references:
         """
 
         # Set model name and directory path

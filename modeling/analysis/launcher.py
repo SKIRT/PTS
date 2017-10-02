@@ -316,8 +316,17 @@ class AnalysisLauncherBase(AnalysisComponent):
                 # Determine the remote file path
                 remote_filepath = fs.join(remote_input_path, filename)
 
-                # If the file (still) exists, add it
-                if self.remote.is_file(remote_filepath): remote_paths[filename] = remote_filepath
+                # If the file (still) exists
+                if self.remote.is_file(remote_filepath):
+
+                    # If it is the wavelength file, check the number of wavelengths
+                    if filename == wavelengths_filename:
+                        if self.heating: continue # Don't add remote wavelengths file for heating launcher
+                        else:
+                            remote_wavelengths_path = remote_filepath
+                            remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
+                            if remote_nwavelengths != self.nwavelengths: continue
+                            remote_paths[filename] = remote_filepath
 
         # Return the dictionary of paths
         return remote_paths
@@ -352,10 +361,14 @@ class AnalysisLauncherBase(AnalysisComponent):
         filenames = self.input_filenames
 
         # Loop over the analysis runs
-        for analysis_run in self.analysis_runs:
+        for analysis_run_name in self.analysis_runs.names:
 
             # Only other analysis runs
-            if analysis_run.name == self.analysis_run.name: continue
+            #if analysis_run.name == self.analysis_run.name: continue
+            if analysis_run_name == self.analysis_run.name: continue
+
+            # Load the analysis run
+            analysis_run = self.analysis_runs.load(analysis_run_name)
 
             # Get SKIRT input paths from a previous script in this analysis run with the same host
             remote_input_paths = analysis_run.get_remote_script_input_paths_for_host(self.host_id)
@@ -368,6 +381,12 @@ class AnalysisLauncherBase(AnalysisComponent):
 
                 # Loop over the filenames
                 for filename in filenames:
+
+                    # Skip wavelength files (will not be the same from other analysis run)
+                    if filename == wavelengths_filename: continue
+
+                    # Skip dust grid tree files (will not be the same from other analysis run)
+                    if filename == dustgridtree_filename: continue
 
                     # Determine the remote file path
                     remote_filepath = fs.join(remote_input_path, filename)
@@ -414,6 +433,12 @@ class AnalysisLauncherBase(AnalysisComponent):
 
                     # Loop over the filenames
                     for filename in filenames:
+
+                        # Skip wavelength files (will not be the same from other analysis run)
+                        if filename == wavelengths_filename: continue
+
+                        # Skip dust grid tree files (will not be the same from other analysis run)
+                        if filename == dustgridtree_filename: continue
 
                         # Determine the remote file path
                         remote_filepath = fs.join(remote_input_path, filename)
@@ -616,8 +641,9 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # The remote SKIRT environment
         self.launcher = SKIRTLauncher()
 
-        # The parallelization scheme
+        # The parallelization scheme (or the number of processes)
         self.parallelization = None
+        self.nprocesses = None
 
         # The scheduling options
         self.scheduling_options = None
@@ -647,16 +673,19 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # 4. Set the input paths
         self.set_input_paths()
 
-        # 5. Estimate the runtime for the simulation
+        # 5. Set the parallelization scheme
+        self.set_parallelization()
+
+        # 6. Estimate the runtime for the simulation
         if self.uses_scheduler: self.estimate_runtime()
 
-        # 6. Set the analysis options
+        # 7. Set the analysis options
         self.set_analysis_options()
 
-        # 7. Writing
+        # 8. Writing
         self.write()
 
-        # 8. Launch the simulation
+        # 9. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -1098,6 +1127,53 @@ class AnalysisLauncher(AnalysisLauncherBase):
 
     # -----------------------------------------------------------------
 
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme ...")
+
+        # Set options for parallelization and number of processes
+        # Remote execution
+        if self.uses_remote:
+
+            # Parallelization is defined
+            if self.config.parallelization_remote is not None:
+
+                self.parallelization = self.config.parallelization_remote
+                self.nprocesses = None
+                self.launcher.config.check_parallelization = False
+
+            # Parallelization is not defined
+            else:
+
+                self.parallelization = None
+                self.nprocesses = self.config.nprocesses_remote
+                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+
+        # Local execution
+        else:
+
+            # Parallelization is defined
+            if self.config.parallelization_local is not None:
+
+                self.parallelization = self.config.parallelization_local
+                self.nprocesses = None
+                self.launcher.config.check_parallelization = False
+
+            # Parallelization is not defined
+            else:
+
+                self.parallelization = None
+                self.nprocesses = self.config.nprocesses_local
+                self.launcher.config.data_parallel_local = self.config.data_parallel_local
+
+    # -----------------------------------------------------------------
+
     # def set_parallelization(self):
     #
     #     """
@@ -1475,30 +1551,6 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # Add temperature file retrieval
         if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
 
-        # Set options for parallelization and number of processes
-        # Remote execution
-        if self.uses_remote:
-            # Parallelization is defined
-            if self.config.parallelization_remote is not None:
-                parallelization = self.config.parallelization_remote
-                nprocesses = None
-                self.launcher.config.check_parallelization = False
-            else:
-                parallelization = None
-                nprocesses = self.config.nprocesses_remote
-                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
-        # Local execution
-        else:
-            # Parallelization is defined
-            if self.config.parallelization_local is not None:
-                parallelization = self.config.parallelization_local
-                nprocesses = None
-                self.launcher.config.check_parallelization = False
-            else:
-                parallelization = None
-                nprocesses = self.config.nprocesses_local
-                self.launcher.config.data_parallel_local = self.config.data_parallel_local
-
         # Other settings
         if log.is_debug(): self.launcher.config.show = True
 
@@ -1510,8 +1562,8 @@ class AnalysisLauncher(AnalysisLauncherBase):
 
         # Run the simulation
         self.launcher.run(definition=definition, logging_options=logging, analysis_options=self.analysis_options,
-                          scheduling_options=self.scheduling_options, parallelization=parallelization,
-                          nprocesses=nprocesses, local_script_path=local_script_path,
+                          scheduling_options=self.scheduling_options, parallelization=self.parallelization,
+                          nprocesses=self.nprocesses, local_script_path=local_script_path,
                           screen_output_path=screen_output_path, ncells=self.ndust_cells, remote=self.remote,  # pass remote because possibly already used here (don't connect again in the SKIRTLauncher)
                           remote_input_path=self.remote_input_path, has_remote_input_files=self.has_remote_input_files)
 

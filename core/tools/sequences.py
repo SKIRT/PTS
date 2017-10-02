@@ -335,6 +335,7 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
     if hasattr(first, "unit"): first_value = first.to(first.unit).value
     else: first_value = first
 
+    # Loop over the entries in the list
     for index in range(len(lst)):
 
         # Ignore None?

@@ -557,7 +557,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.heating_path, contribution)
+        return fs.create_directory_in(self.heating_path, contribution)
 
     # -----------------------------------------------------------------
 
@@ -664,7 +664,7 @@ class AnalysisRunBase(object):
             paths.append(input_path)
 
         # Return the list of paths
-        return input_path
+        return paths
 
 # -----------------------------------------------------------------
 
@@ -708,6 +708,9 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.weighed_residuals_path): fs.create_directory(self.weighed_residuals_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
+
+        # Heating directories
+        if not fs.is_directory(self.heating_instruments_path): fs.create_directory(self.heating_instruments_path)
 
     # -----------------------------------------------------------------
 
@@ -2269,7 +2272,7 @@ class CachedAnalysisRuns(AnalysisRunBase):
         :return:
         """
 
-        return fs.directories_in_path(self.cache_directory_path, returns="name")
+        return self.remote.directories_in_path(self.cache_directory_path, returns="name")
 
     # -----------------------------------------------------------------
 

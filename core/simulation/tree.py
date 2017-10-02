@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..tools import tables
 from . import textfile
 from ..basics.range import QuantityRange
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

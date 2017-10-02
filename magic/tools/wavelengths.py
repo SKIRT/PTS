@@ -354,6 +354,182 @@ def regimes_between_and_including(regime_a, regime_b):
 
 # -----------------------------------------------------------------
 
+def regimes_after(regime):
+
+    """
+    Thisf unction ...
+    :param regime:
+    :return:
+    """
+
+    regimes = []
+
+    # Loop over the regimes in reversed order
+    for key in reversed(spectrum_wavelengths):
+
+        # Check if end
+        if key[0] == regime or key[1] == regime: break
+
+        # Not end
+        else: regimes.append(key)
+
+    # Return the regimes
+    return list(reversed(regimes))
+
+# -----------------------------------------------------------------
+
+def regimes_after_and_including(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    return [find_first_key(regime)] + regimes_after(regime)
+
+# -----------------------------------------------------------------
+
+def wavelength_range_after(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    min_wavelength = None
+    max_wavelength = None
+
+    # Loop over the regimes after
+    for regime_i in regimes_after(regime):
+
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_regime(regime_i)
+
+        # Adapt min and max wavelength
+        if min_wavelength is None or wavelength_range.min < min_wavelength: min_wavelength = wavelength_range.min
+        if max_wavelength is None or wavelength_range.max > max_wavelength: max_wavelength = wavelength_range.max
+
+    # Return the wavelength range
+    return QuantityRange(min_wavelength, max_wavelength)
+
+# -----------------------------------------------------------------
+
+def wavelength_range_after_and_including(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    min_wavelength = None
+    max_wavelength = None
+
+    # Loop over the regimes after and including
+    for regime_i in regimes_after_and_including(regime):
+
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_regime(regime_i)
+
+        # Adapt min and max wavelength
+        if min_wavelength is None or wavelength_range.min < min_wavelength: min_wavelength = wavelength_range.min
+        if max_wavelength is None or wavelength_range.max > max_wavelength: max_wavelength = wavelength_range.max
+
+    # Return the wavelength range
+    return QuantityRange(min_wavelength, max_wavelength)
+
+# -----------------------------------------------------------------
+
+def wavelength_range_before(regime):
+
+    """
+    Thisnfunction ...
+    :param regime:
+    :return:
+    """
+
+    min_wavelength = None
+    max_wavelength = None
+
+    # Loop over the regimes before
+    for regime_i in regimes_before(regime):
+
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_regime(regime_i)
+
+        # Adapt min and max wavelength
+        if min_wavelength is None or wavelength_range.min < min_wavelength: min_wavelength = wavelength_range.min
+        if max_wavelength is None or wavelength_range.max > max_wavelength: max_wavelength = wavelength_range.max
+
+    # Return the wavelength range
+    return QuantityRange(min_wavelength, max_wavelength)
+
+# -----------------------------------------------------------------
+
+def wavelength_range_before_and_including(regime):
+
+    """
+    Thisf unction ...
+    :param regime:
+    :return:
+    """
+
+    min_wavelength = None
+    max_wavelength = None
+
+    # Loop over the regimes before and including
+    for regime_i in regimes_before_and_including(regime):
+
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_regime(regime_i)
+
+        # Adapt min and max wavelength
+        if min_wavelength is None or wavelength_range.min < min_wavelength: min_wavelength = wavelength_range.min
+        if max_wavelength is None or wavelength_range.max > max_wavelength: max_wavelength = wavelength_range.max
+
+    # Return the wavelength range
+    return QuantityRange(min_wavelength, max_wavelength)
+
+# -----------------------------------------------------------------
+
+def regimes_before(regime):
+
+    """
+    Thisj function ...
+    :param regime:
+    :return:
+    """
+
+    regimes = []
+
+    # Loop over the regimes
+    for key in spectrum_wavelengths:
+
+        # Check if end
+        if key[0] == regime or key[1] == regime: break
+
+        # Not end
+        else: regimes.append(key)
+
+    # Return the regimes
+    return regimes
+
+# -----------------------------------------------------------------
+
+def regimes_before_and_including(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    return regimes_before(regime) + [find_first_key(regime)]
+
+# -----------------------------------------------------------------
+
 def wavelength_in_regime(wavelength, regime):
 
     """

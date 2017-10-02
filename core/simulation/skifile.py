@@ -404,6 +404,30 @@ class SkiFile:
         nwavelengths = int(first_line.split("\n")[0])
         return nwavelengths
 
+    ## This function
+    def treegridfile(self, input_path=None):
+        # If this ski file contains a file tree dust grid
+        entry = self.tree.xpath("//FileTreeDustGrid")
+        if entry:
+
+            filename = self.get_value(entry[0], "filename")
+
+            # Simulation input is specified
+            if input_path is not None:
+
+                # Find the file
+                from .input import find_input_filepath
+                tree_path = find_input_filepath(filename, input_path)
+
+            # Input path is not specified
+            else: tree_path = filename
+
+            # Return the file path
+            return tree_path
+
+        # No file tree dust grid in this ski file
+        else: return None
+
     ## This function returns the number of photon packages per wavelength
     def packages(self):
         # Get the MonteCarloSimulation element

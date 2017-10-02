@@ -20,12 +20,12 @@ from ....core.simulation.definition import SingleSimulationDefinition
 from ....core.basics.log import log
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
-from ....core.advanced.dustgridtool import DustGridTool
 from ....core.tools.utils import lazyproperty
 from ...misc.interface import ModelSimulationInterface
 from ...basics.instruments import SimpleInstrument
-from ....core.remote.remote import Remote
 from ..launcher import AnalysisLauncherBase
+from ....core.tools import formatting as fmt
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -64,9 +64,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # The ski files for the different contributions
         self.ski_contributions = dict()
 
-        # The paths to the simulation input files
-        #self.input_paths = None
-
         # The wavelength grid
         self.wavelength_grid = None
 
@@ -75,6 +72,13 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
         self.scheduling_options = dict()
+
+        # The parameter values
+        self.parameter_values = None
+
+        # The parallelization scheme (or the number of processes)
+        self.parallelization = None
+        self.nprocesses = None
 
     # -----------------------------------------------------------------
 
@@ -89,8 +93,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Get the model
+        self.get_model()
+
         # 2. Create the wavelength grid
-        self.create_wavelength_grid()
+        self.create_wavelength_grid(check_filters=False)
 
         # 3. Load the deprojections
         self.load_deprojections()
@@ -101,25 +108,25 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # 5. Create the instruments
         self.create_instruments()
 
-        # 7. Load the ski file
+        # 6. Load the ski file
         self.load_ski()
 
-        # 6. Create the ski files for the different contributions
+        # 7. Create the ski files for the different contributions
         self.adjust_ski()
 
-        # 6. Set the simulation input paths
+        # 8. Set the simulation input paths
         self.set_input_paths()
 
-        # 7. Set the parallelization scheme
-        #if self.uses_scheduler: self.set_parallelization()
+        # 9. Set the parallelization scheme
+        self.set_parallelization()
 
-        # 8. Estimate the runtimes, create the scheduling options
+        # 10. Estimate the runtimes, create the scheduling options
         if self.uses_scheduler: self.estimate_runtimes()
 
-        # 9. Writing
+        # 11. Writing
         self.write()
 
-        # 10. Launch the simulations
+        # 12. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -128,7 +135,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
     def heating(self):
 
         """
-        This functino ...
+        This function ...
         :return:
         """
 
@@ -187,7 +194,35 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Logging options
         self.launcher.config.logging.verbose = True           # verbose logging mode
 
-        # No simulation analysis options
+        ## No simulation analysis options ?
+
+        # SET THE MODELING PATH
+        self.launcher.config.analysis.modeling_path = self.config.path
+
+    # -----------------------------------------------------------------
+
+    def get_model(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the model ...")
+
+        # Load the model definition
+        self.definition = self.static_model_suite.get_model_definition(self.analysis_run.model_name)
+
+        # Get the parameter values
+        self.parameter_values = self.analysis_run.parameter_values
+
+        # Show the parameter values
+        print("")
+        print("All model parameter values:")
+        print("")
+        for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -315,7 +350,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         log.info("Creating the projections ...")
 
         # Create projections
-        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=False)
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=False, use_grid=self.config.use_grid_resolution, reference_name=self.config.resolution_reference)
 
         # Set the deprojection name in the analysis info
         self.analysis_run_info.reference_deprojection = deprojection_name
@@ -359,6 +394,27 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Inform the user
         log.info("Adjusting the ski files for simulating the different contributions ...")
 
+        # 1. Set basic settings
+        self.set_basic()
+
+        # 2. Set the instruments
+        self.set_instruments()
+
+        # 3. Set writing options
+        self.set_writing_options()
+
+        # 4. Create the ski files for the different contributions
+        self.create_ski_contributions()
+
+    # -----------------------------------------------------------------
+
+    def set_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
 
@@ -366,10 +422,42 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         self.ski.setpackages(self.config.npackages)
 
         # Debugging
+        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+
+        # Set dust self-absorption
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
+
+        # Debugging
+        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+
+        # Set transient heating
+        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
+
+    # -----------------------------------------------------------------
+
+    def set_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
         log.debug("Setting the wavelength grid file ...")
 
         # Set the name of the wavelength grid file
         self.ski.set_file_wavelength_grid(fs.name(self.analysis_run.heating_wavelength_grid_path))
+
+    # -----------------------------------------------------------------
+
+    def set_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Adding the instruments ...")
@@ -378,7 +466,16 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         self.ski.remove_all_instruments()
 
         # Add the instruments
-        for name in self.instruments: self.ski.add_instrument(self.instruments[name])
+        for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
+
+    # -----------------------------------------------------------------
+
+    def set_writing_options(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
 
         # Debugging
         log.debug("Setting writing options ...")
@@ -386,15 +483,24 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Set dust system writing options
         self.ski.set_write_convergence()
         self.ski.set_write_density()
-        #self.ski.set_write_depth_map()
-        #self.ski.set_write_quality()
+        # self.ski.set_write_depth_map()
+        # self.ski.set_write_quality()
         self.ski.set_write_cell_properties()
-        #self.ski.set_write_cells_crossed()
-        #self.ski.set_write_emissivity()
-        #self.ski.set_write_temperature()
-        #self.ski.set_write_isrf()
+        # self.ski.set_write_cells_crossed()
+        # self.ski.set_write_emissivity()
+        # self.ski.set_write_temperature()
+        # self.ski.set_write_isrf()
         self.ski.set_write_absorption()
         self.ski.set_write_grid()
+
+    # -----------------------------------------------------------------
+
+    def create_ski_contributions(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Adjusting stellar components for simulating the different contributions ...")
@@ -419,26 +525,75 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
-    # def set_parallelization(self):
-    #
-    #     """
-    #     This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
-    #     a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
-    #     based on the current load of the corresponding system).
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Setting the parallelization scheme for the remote host (" + self.config.remote + ") ...")
-    #
-    #     # Get the parallelization scheme for this host
-    #     parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes, self.config.data_parallel)
-    #
-    #     # Debugging
-    #     log.debug("Parallelization scheme for host " + self.remote_host_id + ": " + str(parallelization))
-    #
-    #     # Set the parallelization for this host
-    #     self.launcher.set_parallelization_for_host(self.remote_host_id, parallelization)
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme ...")
+
+        # Remote execution
+        if self.uses_remote: self.set_parallelization_remote()
+
+        # Local execution
+        else: self.set_parallelization_local()
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_remote(self):
+
+        """
+        Thins function ...
+        :param self:
+        :return:
+        """
+
+        # Parallelization is defined
+        if self.config.parallelization_remote is not None:
+
+            self.parallelization = self.config.parallelization_remote
+            self.nprocesses = None
+            self.launcher.config.check_parallelization = False
+
+            # Set the parallelization
+            self.launcher.set_parallelization_for_host(self.host_id, self.parallelization)
+
+        # Parallelization is not defined
+        else:
+
+            self.parallelization = None
+            self.nprocesses = self.config.nprocesses_remote
+            self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+
+            # Set the number of processes
+            self.launcher.set_nprocesses_for_host(self.host_id, self.nprocesses)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_local(self):
+
+        """
+        Thins function ...
+        :param self:
+        :return:
+        """
+
+        # Parallelization is defined
+        if self.config.parallelization_local is not None:
+
+            self.parallelization = self.config.parallelization_local
+            self.nprocesses = None
+            self.launcher.config.check_parallelization = False
+
+        # Parallelization is not defined
+        else:
+
+            self.parallelization = None
+            self.nprocesses = self.config.nprocesses_local
+            self.launcher.config.data_parallel_local = self.config.data_parallel_local
 
     # -----------------------------------------------------------------
 
@@ -459,13 +614,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         log.debug("Estimating the runtime for host '" + self.remote_host_id + "' ...")
 
         # Get the parallelization scheme that we have defined for this remote host
-        parallelization = self.launcher.parallelization_for_host(self.remote_host_id)
+        #parallelization = self.launcher.parallelization_for_host(self.remote_host_id)
+        parallelization = self.parallelization
 
         # Dictionary of estimated walltimes for the different simulations
         walltimes = dict()
-
-        # Determine the number of dust cells by building the tree locally
-        #ncells = self.estimate_ncells()
 
         # Loop over the different ski files`
         for contribution in self.ski_contributions:
@@ -484,28 +637,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # Create and set scheduling options for each host that uses a scheduling system
         for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
-
-    # -----------------------------------------------------------------
-
-    # def estimate_ncells(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Estimating the number of dust cells ...")
-    #
-    #     # Create simulation directory and output directory
-    #     simulation_path = fs.create_directory_in(self.analysis_run.path, "temp_heating")
-    #
-    #     # Initialize dust grid tool
-    #     tool = DustGridTool()
-    #
-    #     # Get the dust grid statistics
-    #     statistics = tool.get_statistics(self.ski_contributions["total"], simulation_path, self.maps_path, self.galaxy_name)
-    #     return statistics.ncells
 
     # -----------------------------------------------------------------
 
@@ -541,7 +672,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         log.info("Writing the wavelength grid ...")
 
         # Save the wavelength grid
-        self.wavelength_grid.saveto(self.analysis_run.heating_wavelength_grid_path)
+        self.wavelength_grid.to_skirt_input(self.analysis_run.heating_wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -660,7 +791,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         for contribution in contributions:
 
             # Determine a name for this simulation
-            simulation_name = self.galaxy_name + "_heating_" + self.analysis_run.name + contribution
+            simulation_name = self.galaxy_name + "__heating__" + self.analysis_run.name + "__" + contribution
 
             # Create the simulation path
             fs.create_directory(self.analysis_run.heating_simulation_path_for_contribution(contribution))
@@ -684,22 +815,33 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
             # Set scheduling options for this simulation
             if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
 
+        # Set parallelization and nprocesses
+        if self.uses_remote:
+            parallelization_local = None
+            nprocesses_local = None
+        else:
+            parallelization_local = self.parallelization
+            nprocesses_local = self.nprocesses
+
+        # Memory usage
+        memory = None
+
         # Run the launcher, schedules the simulations
-        self.launcher.run()
+        self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths, parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
 
-        # Loop over the scheduled simulations
-        for simulation in self.launcher.launched_simulations:
-
-            # Add the path to the modeling directory to the simulation object
-            simulation.analysis.modeling_path = self.config.path
-
-            # Set the path to an analyser
-            # analyser_path = "pts.modeling.analysis. ..."
-
-            # Add the analyser class path
-            # simulation.add_analyser(analyser_path)
-
-            # Save the simulation
-            simulation.save()
+        # # Loop over the scheduled simulations
+        # for simulation in self.launcher.launched_simulations:
+        #
+        #     # Add the path to the modeling directory to the simulation object
+        #     simulation.analysis.modeling_path = self.config.path
+        #
+        #     # Set the path to an analyser
+        #     # analyser_path = "pts.modeling.analysis. ..."
+        #
+        #     # Add the analyser class path
+        #     # simulation.add_analyser(analyser_path)
+        #
+        #     # Save the simulation
+        #     simulation.save()
 
 # -----------------------------------------------------------------

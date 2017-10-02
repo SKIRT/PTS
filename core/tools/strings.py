@@ -839,6 +839,18 @@ double_quote = '"'
 
 # -----------------------------------------------------------------
 
+def is_quote_character(character):
+
+    """
+    Thisnfunction ...
+    :param character:
+    :return:
+    """
+
+    return character == single_quote or character == double_quote
+
+# -----------------------------------------------------------------
+
 def is_single_quoted(string):
 
     """

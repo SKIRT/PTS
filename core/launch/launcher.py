@@ -26,7 +26,7 @@ from .analyser import SimulationAnalyser
 from ..simulation.remote import SKIRTRemote
 from ..basics.log import log
 from .options import SchedulingOptions
-from ..advanced.parallelizationtool import ParallelizationTool, determine_parallelization
+from ..advanced.parallelizationtool import determine_parallelization
 from ..advanced.memoryestimator import estimate_memory
 from ..simulation.parallelization import Parallelization, get_possible_nprocesses_in_memory
 from .options import AnalysisOptions
@@ -415,7 +415,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Determining the optimal parallelization scheme ...")
+        log.info("Determining the optimal parallelization scheme for local execution ...")
 
         # Determine the number of processes
         processes = self.get_nprocesses_local()
@@ -441,7 +441,7 @@ class SKIRTLauncher(Configurable):
         log.debug("The number of processes is " + str(processes))
 
         # Set the parallelization scheme
-        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel)
+        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
 
         # Debugging
         log.debug("The parallelization scheme is " + str(self.parallelization))
@@ -476,7 +476,7 @@ class SKIRTLauncher(Configurable):
 
             # Determine the number of possible nprocesses
             processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), self.memory.serial,
-                                                          self.memory.parallel, data_parallel=self.config.data_parallel)
+                                                          self.memory.parallel, data_parallel=self.config.data_parallel_local)
 
         # Return
         return processes
@@ -564,7 +564,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the parallelization scheme for remote execution ...")
+        log.info("Setting the optimal parallelization scheme for remote execution ...")
 
         # If the remote uses a scheduling system
         if self.remote.scheduler:
