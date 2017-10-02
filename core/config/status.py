@@ -22,3 +22,8 @@ definition.add_flag("show_progress", "show the progress of the simulation that i
 definition.add_flag("debug_output", "show all simulation output in debug mode")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("retrieve", "retrieve finished simulations", True)
+definition.add_flag("analyse", "analyse retrieved simulations", True)
+
+# -----------------------------------------------------------------

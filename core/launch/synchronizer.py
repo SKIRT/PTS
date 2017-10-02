@@ -80,10 +80,10 @@ class RemoteSynchronizer(Configurable):
         self.setup(**kwargs)
 
         # 2. Retrieve the simulations and tasks
-        self.retrieve()
+        if self.config.retrieve: self.retrieve()
 
         # 3. Analyse
-        self.analyse()
+        if self.config.analyse: self.analyse()
 
         # 4. Announce the status of the simulations and tasks
         self.announce()
@@ -102,6 +102,9 @@ class RemoteSynchronizer(Configurable):
 
         # Call the setup function of the base class
         super(RemoteSynchronizer, self).setup(**kwargs)
+
+        # Check flags
+        if not self.config.retrieve and self.config.analyse: raise ValueError("Cannot analyse when retrieve is disabled")
 
         # Load the remote instances
         if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
