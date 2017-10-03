@@ -700,7 +700,8 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
                                  filter_names=self.misc_options.observation_filters,
                                  instrument_names=self.misc_options.observation_instruments,
-                                 errors=self.misc_options.flux_errors)
+                                 errors=self.misc_options.flux_errors,
+                                 no_spectral_convolution_filters=self.misc_options.no_fluxes_spectral_convolution_filters)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
@@ -773,6 +774,9 @@ class BasicAnalyser(Configurable):
         input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
         input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
         input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold
+
+        # NO SPECTRAL CONVOLUTION FOR CERTAIN IMAGES?
+        input_dict["no_spectral_convolution_filters"] = self.misc_options.no_images_spectral_convolution_filters
 
         # Run
         self.image_maker.run(**input_dict)

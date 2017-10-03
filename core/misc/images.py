@@ -105,6 +105,9 @@ class ObservedImageMaker(Configurable):
         self.remote_rebin_threshold = None
         self.remote_convolve_threshold = None
 
+        # No spectral convolution for certain filters
+        self.no_spectral_convolution_filters = []
+
         # The path to the output data cubes
         self.paths = defaultdict(dict)
 
@@ -254,6 +257,9 @@ class ObservedImageMaker(Configurable):
         # Get output directory
         output_path = kwargs.pop("output_path", None)
         self.config.output = output_path
+
+        # Get filters for which not to perform spectral convolution
+        self.no_spectral_convolution_filters = kwargs.pop("no_spectral_convolution_filters", [])
 
         # Get filter names for which to create observed images
         self.get_filter_names(**kwargs)
@@ -828,7 +834,7 @@ class ObservedImageMaker(Configurable):
         if self.remote_threshold is not None and fs.file_size(path) > self.remote_threshold: return True
 
         # Remote spectral convolution
-        if self.config.spectral_convolution and self.remote_spectral_convolution: return True
+        if self.has_spectral_convolution_filters and self.remote_spectral_convolution: return True
 
         # Not remote
         return False
@@ -951,6 +957,55 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def spectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No spectral convolution for any filter
+        if not self.config.spectral_convolution: return []
+
+        # Initialize list
+        filters = []
+
+        # Loop over the filters
+        for fltr in self.filters:
+
+            if fltr in self.no_spectral_convolution_filters: pass
+            else: filters.append(fltr)
+
+        # Return the list of filters
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.spectral_convolution_filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nspectral_convolution_filters > 0
+
+    # -----------------------------------------------------------------
+
     def make_images(self):
 
         """
@@ -976,7 +1031,7 @@ class ObservedImageMaker(Configurable):
             images = dict()
 
             # Determine the number of processes
-            if not self.config.spectral_convolution: nprocesses = 1
+            if not self.has_spectral_convolution_filters: nprocesses = 1
             else:
                 if isinstance(self.datacubes[instr_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
                 elif isinstance(self.datacubes[instr_name], DataCube): nprocesses = self.config.nprocesses_local
@@ -986,7 +1041,7 @@ class ObservedImageMaker(Configurable):
             nprocesses = min(len(filters), nprocesses)
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses, check_previous_sessions=True)
+            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.spectral_convolution_filters, nprocesses=nprocesses, check_previous_sessions=True)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube

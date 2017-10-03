@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.change_analysis_remote_options Change certain analysis options related to remote analysis
+## \package pts.do.core.change_analysis_options Change certain analysis options for a simulation.
 
 # -----------------------------------------------------------------
 
@@ -25,11 +25,12 @@ definition = ConfigurationDefinition()
 # Add required
 definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
 definition.add_required("id", "positive_integer", "simulation ID")
+definition.add_optional("matching", "string", "only adapt settings with a name matching this string", suggestions=["remote"])
 
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-config = parse_arguments("change_analysis_remote_settings", definition, description="Change certain analysis options related to remote analysis")
+config = parse_arguments("change_analysis_options", definition, description="Change certain analysis options for a simulation")
 
 # -----------------------------------------------------------------
 
@@ -39,6 +40,6 @@ simulation = get_simulation_for_host(config.remote, config.id)
 # -----------------------------------------------------------------
 
 # Check whether analysis options are defined
-simulation.analysis.prompt_properties(contains="remote")
+simulation.analysis.prompt_properties(contains=config.matching)
 
 # -----------------------------------------------------------------

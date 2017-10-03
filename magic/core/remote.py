@@ -22,6 +22,7 @@ from ...core.tools import filesystem as fs
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
+from .datacube import needs_spectral_convolution
 from ...core.filter.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
@@ -1923,16 +1924,14 @@ class RemoteDataCube(RemoteImage):
         # Inform the user
         log.info("Getting frames for " + str(len(filters)) + " different filters ...")
 
-        from ...core.filter.broad import BroadBandFilter
-
         remoteframes = []
         for_convolution = []
 
         # Loop over the filters
         for fltr in filters:
 
-            # Broad band filter, with spectral convolution
-            if isinstance(fltr, BroadBandFilter) and convolve:
+            # Needs spectral convolution
+            if needs_spectral_convolution(fltr, convolve):
 
                 # Debugging
                 log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
@@ -1943,7 +1942,7 @@ class RemoteDataCube(RemoteImage):
                 # Add placeholder
                 remoteframes.append(None)
 
-            # Broad band filter without spectral convolution or narrow band filter
+            # No spectral convolution for this filter
             else:
 
                 # Debugging
@@ -1962,9 +1961,15 @@ class RemoteDataCube(RemoteImage):
                 # Get the frame
                 remoteframes.append(remoteframe)
 
-        # Calculate convolved frames
-        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
-        else: convolved_frames = []
+        # Calculate convolved frames (if necessary)
+        if len(for_convolution) > 0:
+            # Debugging
+            log.debug(str(len(for_convolution)) + " filters require spectral convolution")
+            convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+        else:
+            # Debugging
+            log.debug("Spectral convolution will be used for none of the filters")
+            convolved_frames = []
 
         # Add the convolved frames
         for fltr, remoteframe in zip(for_convolution, convolved_frames):

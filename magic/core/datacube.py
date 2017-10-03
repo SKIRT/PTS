@@ -30,6 +30,7 @@ from ...core.tools import time
 from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
 from ...core.tools.parallelization import ParallelTarget
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -579,8 +580,8 @@ class DataCube(Image):
         # Loop over the filters
         for fltr in filters:
 
-            # Broad band filter, with spectral convolution
-            if isinstance(fltr, BroadBandFilter) and convolve:
+            # Needs spectral convolution?
+            if needs_spectral_convolution(fltr, convolve):
 
                 # Debugging
                 log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
@@ -591,7 +592,7 @@ class DataCube(Image):
                 # Add placeholder
                 frames.append(None)
 
-            # Broad band filter without spectral convolution or narrow band filter
+            # No spectral convolution
             else:
 
                 # Debugging
@@ -604,8 +605,14 @@ class DataCube(Image):
                 frames.append(self.frames[index])
 
         # Calculate convolved frames
-        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
-        else: convolved_frames = []
+        if len(for_convolution) > 0:
+            # Debugging
+            log.debug(str(len(for_convolution)) + " filters require spectral convolution")
+            convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+        else:
+            # Debugging
+            log.debug("Spectral convolution will be used for none of the filters")
+            convolved_frames = []
 
         # Add the convolved frames
         for fltr, frame in zip(for_convolution, convolved_frames):
@@ -968,7 +975,8 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     frame.saveto(result_path)
 
     # Success
-    log.success(message_prefix + "Succesfully saved the convolved frame for the '" + fltrname + "' filter to '" + result_path + "'")
+    if fs.is_file(result_path): log.success(message_prefix + "Succesfully saved the convolved frame for the '" + fltrname + "' filter to '" + result_path + "'")
+    else: raise RuntimeError("Something went wrong saving the resulting frame")
 
 # -----------------------------------------------------------------
 
@@ -1005,5 +1013,31 @@ def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wc
 
     # Add the frame to the list
     frames[index] = frame
+
+# -----------------------------------------------------------------
+
+def needs_spectral_convolution(fltr, spectral_convolution):
+
+    """
+    This function ...
+    :param fltr:
+    :param spectral_convolution: flag or list of Filters
+    :return:
+    """
+
+    # Broad band filter
+    if isinstance(fltr, BroadBandFilter):
+
+        # Single boolean
+        if types.is_boolean_type(spectral_convolution): return spectral_convolution
+
+        # Sequence of filters: return whether the filter is in it
+        elif types.is_sequence(spectral_convolution): return fltr in spectral_convolution
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'spectral_convolution'")
+
+    # Narrow band filters: no spectral convolution
+    else: return False
 
 # -----------------------------------------------------------------

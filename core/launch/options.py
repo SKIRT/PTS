@@ -188,6 +188,8 @@ class AnalysisOptions(Options):
         self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
         self.misc.add_property("images_spectral_convolution", "boolean", "use spectral convolution to create observed images", True)
         self.misc.add_property("fluxes_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes", True)
+        self.misc.add_property("no_images_spectral_convolution_filters", "filter_list", "don't spectrally convolve to create the observed images for these filters", [])
+        self.misc.add_property("no_fluxes_spectral_convolution_filters", "filter_list", "don't spectrally convolve to calculate the observed fluxes for these filters", [])
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)

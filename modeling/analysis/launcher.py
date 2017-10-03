@@ -1423,6 +1423,9 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.fluxes_spectral_convolution = self.config.spectral_convolution_fluxes
         self.analysis_options.misc.images_spectral_convolution = self.config.spectral_convolution_images
 
+        # NO SPECTRAL CONVOLUTION FOR CREATING THE PLANCK IMAGES
+        self.analysis_options.misc.no_images_spectral_convolution_filters = self.planck_filters
+
         # For these filters and for the earth instrument
         self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range_without_iras  # the filters for which to create the observations (no IRAS)
         self.analysis_options.misc.observation_instruments = [earth_name]
