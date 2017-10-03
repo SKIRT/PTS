@@ -99,7 +99,7 @@ def set_debug_log_level(session):
 
     # Import logging module and setup logger to DEBUG level
     session.import_package("setup_log", from_name="pts.core.basics.log")
-    session.send_line("setup_log(level='DEBUG')")
+    session.send_line_and_raise("setup_log(level='DEBUG')")
 
 # -----------------------------------------------------------------
 
@@ -194,7 +194,7 @@ def get_filter_name(frame_path, session):
 
     # header = fits.getheader(frame_path)
     session.import_package("getheader", from_name="astropy.io.fits")
-    session.send_line("header = getheader('" + frame_path + "')")
+    session.send_line_and_raise("header = getheader('" + frame_path + "')")
     session.import_package("get_filter", from_name="pts.magic.tools.headers")
     name = fs.name(frame_path[:-5])
     # fltr = headers.get_filter(fs.name(frame_path[:-5]), header)
@@ -300,7 +300,7 @@ class RemoteFrame(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Multiply remotely
-        self.session.send_line(self.label + " *= " + repr(value))
+        self.session.send_line_and_raise(self.label + " *= " + repr(value))
 
         # Return self
         return self
@@ -319,7 +319,7 @@ class RemoteFrame(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Divide remotely
-        self.session.send_line(self.label + " /= " + repr(value))
+        self.session.send_line_and_raise(self.label + " /= " + repr(value))
 
         # Return self
         return self
@@ -359,7 +359,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
+        self.session.send_line_and_raise(self.label + ".unit = '" + str(unit) + "'")
 
     # -----------------------------------------------------------------
 
@@ -383,7 +383,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return CoordinateSystem(self.session.get_string(self.label + ".wcs.to_header_string()"))
+        return CoordinateSystem.from_header_string(self.session.get_string(self.label + ".wcs.to_header_string()"))
 
     # -----------------------------------------------------------------
 
@@ -397,7 +397,7 @@ class RemoteFrame(object):
         """
 
         # Set the WCS remotely
-        self.session.send_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+        self.session.send_line_and_raise(self.label + '.wcs = CoordinateSystem.from_header_string("' + wcs.to_header_string() + '")')
 
     # -----------------------------------------------------------------
 
@@ -427,7 +427,7 @@ class RemoteFrame(object):
         """
 
         # Set the filter
-        self.session.send_line(self.label + ".filter = '" + str(fltr) + "'")
+        self.session.send_line_and_raise(self.label + ".filter = '" + str(fltr) + "'")
 
     # -----------------------------------------------------------------
 
@@ -452,7 +452,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+        self.session.send_line_and_raise(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
 
     # -----------------------------------------------------------------
 
@@ -483,29 +483,29 @@ class RemoteFrame(object):
 
         # Local path
         remote_temp_path = session.session_temp_directory
-        session.send_line("filename = fs.name(url)")
-        session.send_line("local_path = fs.join('" + remote_temp_path + "', filename)")
+        session.send_line_and_raise("filename = fs.name(url)")
+        session.send_line_and_raise("local_path = fs.join('" + remote_temp_path + "', filename)")
 
         # Download
-        session.send_line("urllib.urlretrieve(url, local_path)")
+        session.send_line_and_raise("urllib.urlretrieve(url, local_path)")
 
         # Get local path (on remote)
         local_path = session.get_string("local_path")
 
-        if local_path.endswith(".fits"): session.send_line("fits_path = local_path")
+        if local_path.endswith(".fits"): session.send_line_and_raise("fits_path = local_path")
         else:
 
             # Inform the user
             log.info("Decompressing kernel file ...")
 
             # Fits path
-            session.send_line("fits_path = fs.join(temp_path, fs.strip_extension(filename))")
+            session.send_line_and_raise("fits_path = fs.join(temp_path, fs.strip_extension(filename))")
 
             # Decompress the kernel FITS file
-            session.send_line("archive.decompress_file(local_path, fits_path)")
+            session.send_line_and_raise("archive.decompress_file(local_path, fits_path)")
 
             # Remove the compressed file
-            session.send_line("fs.remove_file(local_path)")
+            session.send_line_and_raise("fs.remove_file(local_path)")
 
         # Find label
         label = get_new_label(cls.local_classname(), session)
@@ -514,7 +514,7 @@ class RemoteFrame(object):
         remoteframe = cls(label, session)
 
         # Actually create the frame remotely
-        session.send_line(label + " = " + cls.local_classname() + ".from_file(fits_path)")
+        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file(fits_path)")
 
         # Return the remoteframe instance
         return remoteframe
@@ -550,7 +550,7 @@ class RemoteFrame(object):
         log.info("Loading the frame on the remote host ...")
 
         # Actually create the frame remotely
-        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + path + "')")
+        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + path + "')")
 
         # Set the path
         remoteframe.path = path
@@ -606,7 +606,7 @@ class RemoteFrame(object):
         log.info("Loading the frame on the remote host ...")
 
         # Actually create the frame remotely
-        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
+        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
 
         # Set the path
         remoteframe.path = path
@@ -630,7 +630,7 @@ class RemoteFrame(object):
         label = get_new_label(self.local_classname(), self.session)
 
         # Copy the frame remotely
-        self.session.send_line(label + " = " + self.label + ".copy()")
+        self.session.send_line_and_raise(label + " = " + self.label + ".copy()")
 
         # Create new RemoteFrame instance
         newremoteframe = self.__class__(label, self.session)
@@ -696,7 +696,7 @@ class RemoteFrame(object):
         """
 
         # Call the function on the remote
-        self.session.send_line(self.label + ".normalize(" + str(to) + ")")
+        self.session.send_line_and_raise(self.label + ".normalize(" + str(to) + ")")
 
     # -----------------------------------------------------------------
 
@@ -765,7 +765,7 @@ class RemoteFrame(object):
         self.session.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
 
         # Open the kernel remotely
-        self.session.send_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
+        self.session.send_line_and_raise("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
 
         # Prepare the kernel if necessary
         #self.remote.send_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
@@ -783,7 +783,7 @@ class RemoteFrame(object):
         # OR JUST: (does constant check again and creates copy for the prepared kernel, but... much more maintainable in this way)
 
         # Do the convolution on the remote frame
-        self.session.send_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
+        self.session.send_line_and_raise(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -815,7 +815,7 @@ class RemoteFrame(object):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
-        output = self.session.send_line('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
+        output = self.session.send_line_and_raise('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
         for line in output:
             if "Error:" in line: raise RuntimeError(line)
 
@@ -823,7 +823,7 @@ class RemoteFrame(object):
         footprint_label = get_new_label("Frame", self.session)
 
         # Rebin, get the footprint
-        self.session.send_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
+        self.session.send_line_and_raise(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
 
         # Create a new remoteframe instance for the footprint
         remote_footprint_frame = RemoteFrame(footprint_label, self.session)
@@ -862,7 +862,7 @@ class RemoteFrame(object):
         """
 
         # Crop remotely
-        self.session.send_line(self.label + ".crop(" + str(x_min) + ", " + str(x_max) + ", " + str(y_min) + ", " + str(y_max))
+        self.session.send_line_and_raise(self.label + ".crop(" + str(x_min) + ", " + str(x_max) + ", " + str(y_min) + ", " + str(y_max))
 
     # -----------------------------------------------------------------
 
@@ -891,7 +891,7 @@ class RemoteFrame(object):
         """
 
         # Pad remotely
-        self.session.send_line(self.label + ".pad(" + str(nx) + ", " + str(ny) + ")")
+        self.session.send_line_and_raise(self.label + ".pad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -904,7 +904,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".unpad(" + str(nx) + ", " + str(ny) + ")")
+        self.session.send_line_and_raise(self.label + ".unpad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -930,7 +930,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
+        self.session.send_line_and_raise(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
 
     # -----------------------------------------------------------------
 
@@ -958,7 +958,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".upsample(" + str(factor) + ", " + str(integers) + ")")
+        self.session.send_line_and_raise(self.label + ".upsample(" + str(factor) + ", " + str(integers) + ")")
 
     # -----------------------------------------------------------------
 
@@ -970,7 +970,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".fill(" + str(value) + ")")
+        self.session.send_line_and_raise(self.label + ".fill(" + str(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -982,7 +982,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".replace_nans(" + repr(value) + ")")
+        self.session.send_line_and_raise(self.label + ".replace_nans(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -994,7 +994,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".replace_infs(" + repr(value) + ")")
+        self.session.send_line_and_raise(self.label + ".replace_infs(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1006,7 +1006,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".replace_negatives(" + repr(value) + ")")
+        self.session.send_line_and_raise(self.label + ".replace_negatives(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1109,7 +1109,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".saveto('" + remote_file_path + "')", show_output=True)
+        self.session.send_line_and_raise(self.label + ".saveto('" + remote_file_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the frame ...")
@@ -1155,7 +1155,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha='" + str(alpha) + "', peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')", show_output=True)
+        self.session.send_line_and_raise(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha='" + str(alpha) + "', peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")
@@ -1269,7 +1269,7 @@ class RemoteImage(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Multiply remotely
-        self.session.send_line(self.label + " *= " + repr(value))
+        self.session.send_line_and_raise(self.label + " *= " + repr(value))
 
         # Return self
         return self
@@ -1288,7 +1288,7 @@ class RemoteImage(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Divide remotely
-        self.session.send_line(self.label + " /= " + repr(value))
+        self.session.send_line_and_raise(self.label + " /= " + repr(value))
 
         # Return self
         return self
@@ -1344,7 +1344,7 @@ class RemoteImage(object):
         log.info("Loading the image on the remote host ...")
 
         # Actually create the frame remotely
-        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
+        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
 
         # Set the path
         remoteimage.path = path
@@ -1368,7 +1368,7 @@ class RemoteImage(object):
         label = get_new_label(self.local_classname(), self.session)
 
         # Copy the frame remotely
-        self.session.send_line(label + " = " + self.label + ".copy()")
+        self.session.send_line_and_raise(label + " = " + self.label + ".copy()")
 
         # Create new RemoteImage instance
         newremoteimage = self.__class__(label, self.session)
@@ -1390,7 +1390,7 @@ class RemoteImage(object):
         label = get_new_label("Frame", self.session)
 
         # Reference the primary frame to the new variable
-        self.session.send_line(label + " = " + self.label + ".primary")
+        self.session.send_line_and_raise(label + " = " + self.label + ".primary")
 
         # Create a new RemoteFrame instance
         newremoteframe = RemoteFrame(label, self.session) # We assume the frame of the remote image is not of a type derived from Frame
@@ -1481,7 +1481,7 @@ class RemoteImage(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
+        self.session.send_line_and_raise(self.label + ".unit = '" + str(unit) + "'")
 
     # -----------------------------------------------------------------
 
@@ -1505,7 +1505,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return CoordinateSystem(self.session.get_string(self.label + ".wcs.to_header_string()"))
+        return CoordinateSystem.from_header_string(self.session.get_string(self.label + ".wcs.to_header_string()"))
 
     # -----------------------------------------------------------------
 
@@ -1519,7 +1519,7 @@ class RemoteImage(object):
         """
 
         # Set the WCS remotely
-        self.session.send_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+        self.session.send_line_and_raise(self.label + '.wcs = CoordinateSystem.from_header_string("' + wcs.to_header_string() + '")')
 
     # -----------------------------------------------------------------
 
@@ -1544,7 +1544,7 @@ class RemoteImage(object):
         :return:
         """
 
-        self.session.send_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+        self.session.send_line_and_raise(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1594,7 +1594,7 @@ class RemoteImage(object):
         log.debug("Remote temporary path of image: " + remote_image_path)
 
         # Save the image remotely
-        self.session.send_line(self.label + ".saveto('" + remote_image_path + "')", show_output=True)
+        self.session.send_line_and_raise(self.label + ".saveto('" + remote_image_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")
@@ -1708,10 +1708,10 @@ class RemoteImage(object):
         self.session.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
 
         # Open the kernel remotely
-        self.session.send_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
+        self.session.send_line_and_raise("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
 
         # Convolve the image remotely
-        self.session.send_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
+        self.session.send_line_and_raise(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -1729,12 +1729,10 @@ class RemoteImage(object):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
-        output = self.session.send_line('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
-        for line in output:
-            if "Error:" in line: raise RuntimeError(line)
+        self.session.send_line_and_raise('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
 
         # Rebin remotely
-        self.session.send_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
+        self.session.send_line_and_raise(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
 
 # -----------------------------------------------------------------
 
@@ -1853,13 +1851,13 @@ class RemoteDataCube(RemoteImage):
 
         # Import the WavelengthGrid class remotely
         session.import_package("WavelengthGrid", from_name="pts.core.simulation.wavelengthgrid")
-        session.send_line("wavelength_grid = WavelengthGrid.from_file('" + remote_wavelength_grid_path + "')")
+        session.send_line_and_raise("wavelength_grid = WavelengthGrid.from_file('" + remote_wavelength_grid_path + "')")
 
         # Open the frame remotely
         log.info("Loading the datacube on the remote host ...")
 
         # Actually create the frame remotely
-        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
+        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
 
         # Return the remotedatacube instance
         return remotedatacube
@@ -1958,7 +1956,7 @@ class RemoteDataCube(RemoteImage):
                 label_i = get_new_label("Frame", self.session)
 
                 # Do the assignment remotely
-                self.session.send_line(label_i + " = " + self.label + ".frames[" + str(index) + "]")
+                self.session.send_line_and_raise(label_i + " = " + self.label + ".frames[" + str(index) + "]")
                 remoteframe = RemoteFrame(label_i, self.session)
 
                 # Get the frame
@@ -1991,16 +1989,16 @@ class RemoteDataCube(RemoteImage):
         """
 
         # Initialize filter list remotely
-        self.session.send_line("filters = []")
+        self.session.send_line_and_raise("filters = []")
 
         # Reconstruct the list of filters remotely
-        for fltr in filters: self.session.send_line("filters.append(BroadBandFilter('" + str(fltr) + "'))")
+        for fltr in filters: self.session.send_line_and_raise("filters.append(BroadBandFilter('" + str(fltr) + "'))")
 
         # Initialize a list with remoteframes
         remoteframes = []
 
         # Do the convolution remotely
-        self.session.send_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ", check_previous_sessions=" + str(check_previous_sessions) + ")", timeout=None, show_output=True)
+        self.session.send_line_and_raise("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ", check_previous_sessions=" + str(check_previous_sessions) + ")", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         last_label = None
@@ -2013,7 +2011,7 @@ class RemoteDataCube(RemoteImage):
             if label_i == last_label: raise RuntimeError("Something went wrong: previous frame was not created")
 
             # Do the assignment remotely
-            self.session.send_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
+            self.session.send_line_and_raise(label_i + " = filterconvolvedframes[" + str(i) + "]")
 
             # Create remoteframe and add it to the list
             remoteframe = RemoteFrame(label_i, self.session)
@@ -2037,6 +2035,6 @@ class RemoteDataCube(RemoteImage):
         """
 
         # Convert to wavelength density remotely
-        self.session.send_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
+        self.session.send_line_and_raise(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
 
 # -----------------------------------------------------------------

@@ -274,6 +274,43 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    def send_line_and_raise(self, command, show_output=False, timeout=None):
+
+        """
+        This function ...
+        :param command:
+        :param show_output:
+        :param timeout:
+        :return:
+        """
+
+        # Send the command and get the output
+        output = self.send_line(command, show_output=show_output, timeout=timeout)
+
+        # There is output
+        if len(output) > 0:
+
+            # Get the last line
+            last_line = output[-1]
+
+            # Check for errors
+            if "Error: " in last_line:
+
+                # Get the error type
+                try: error_class = eval(last_line.split(": ")[0])
+                except NameError: error_class = Exception
+
+                message = last_line.split(error_class + ": ")[1]
+                message = "[" + self.host_id + "] " + message
+
+                # Re-raise the remote error
+                raise error_class(message)
+
+            # Show the output (because none was expected)
+            for line in output: log.warning("[" + self.host_id + "] " + line)
+
+    # -----------------------------------------------------------------
+
     def send_lines(self, lines):
 
         """

@@ -877,7 +877,7 @@ class ObservedImageMaker(Configurable):
             if instr_name not in self.coordinate_systems: continue
 
             # Debugging
-            log.debug("Setting the coordinate system of the " + instr_name + "' datacube ...")
+            log.debug("Setting the coordinate system of the '" + instr_name + "' instrument ...")
 
             # Set the coordinate system for this datacube
             self.datacubes[instr_name].wcs = self.coordinate_systems[instr_name]
