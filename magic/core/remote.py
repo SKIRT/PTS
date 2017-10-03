@@ -1911,13 +1911,14 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8):
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False):
 
         """
         This function ...
         :param filters:
         :param convolve:
         :param nprocesses:
+        :param check_previous_sessions:
         :return:
         """
 
@@ -1964,7 +1965,7 @@ class RemoteDataCube(RemoteImage):
                 remoteframes.append(remoteframe)
 
         # Calculate convolved frames
-        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
         else: convolved_frames = []
 
         # Add the convolved frames
@@ -1979,12 +1980,13 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, nprocesses=8):
+    def convolve_with_filters(self, filters, nprocesses=8, check_previous_sessions=False):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
+        :param check_previous_sessions:
         :return:
         """
 
@@ -1998,7 +2000,7 @@ class RemoteDataCube(RemoteImage):
         remoteframes = []
 
         # Do the convolution remotely
-        self.session.send_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ")", timeout=None, show_output=True)
+        self.session.send_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ", check_previous_sessions=" + str(check_previous_sessions) + ")", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         last_label = None

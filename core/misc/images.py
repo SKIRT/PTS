@@ -916,7 +916,7 @@ class ObservedImageMaker(Configurable):
                 else: raise ValueError("Invalid datacube object for '" + instr_name + "' instrument")
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses)
+            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses, check_previous_sessions=True)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube

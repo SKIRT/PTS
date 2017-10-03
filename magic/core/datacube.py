@@ -556,13 +556,14 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8):
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False):
 
         """
         This function ...
         :param filters:
         :param convolve:
         :param nprocesses:
+        :param check_previous_sessions:
         :return:
         """
 
@@ -600,7 +601,7 @@ class DataCube(Image):
                 frames.append(self.frames[index])
 
         # Calculate convolved frames
-        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
         else: convolved_frames = []
 
         # Add the convolved frames
