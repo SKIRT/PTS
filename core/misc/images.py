@@ -32,6 +32,7 @@ from ..tools.utils import lazyproperty
 from ..tools import types
 from ..remote.remote import Remote
 from ..prep.deploy import Deployer
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -117,6 +118,37 @@ class ObservedImageMaker(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def output_path_hash(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return strings.hash_string(self.output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_intermediate_results_path(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        dirname = "observedimagemaker_" + self.output_path_hash
+        dirpath = fs.join(self.remote.pts_temp_path, dirname)
+
+        # Create
+        if self.config.write_intermediate and not self.remote.is_directory(dirpath): self.remote.create_directory(dirpath)
+
+        # Return the path
+        return dirpath
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def intermediate_results_path(self):
 
         """
@@ -124,8 +156,64 @@ class ObservedImageMaker(Configurable):
         :return:
         """
 
-        if self.config.write_intermediate: return self.output_path_directory("intermediate", create=True)
-        else: return None
+        return self.output_path_directory("intermediate", create=self.config.write_intermediate)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_intermediate_initial_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set path
+        initial_path = fs.join(self.remote_intermediate_results_path, "initial")
+
+        # Create?
+        if self.config.write_intermediate and not self.remote.is_directory(initial_path): self.remote.create_directory(initial_path)
+
+        # Return the path
+        return initial_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intermediate_initial_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set path
+        initial_path = fs.join(self.intermediate_results_path, "initial")
+
+        # Create?
+        if self.config.write_intermediate and not fs.is_directory(initial_path): fs.create_directory(initial_path)
+
+        # Return the path
+        return initial_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_intermediate_rebin_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set path
+        rebin_path = fs.join(self.remote_intermediate_results_path, "rebin")
+
+        # Create?
+        if self.config.write_intermediate and not self.remote.is_directory(rebin_path): self.remote.create_directory(rebin_path)
+
+        # Return the path
+        return rebin_path
 
     # -----------------------------------------------------------------
 
@@ -137,8 +225,33 @@ class ObservedImageMaker(Configurable):
         :return:
         """
 
-        if self.config.write_intermediate: return fs.create_directory_in(self.intermediate_results_path, "rebin")
-        else: return None
+        # Set path
+        rebin_path = fs.join(self.intermediate_results_path, "rebin")
+
+        # Create?
+        if self.config.write_intermediate and not fs.is_directory(rebin_path): fs.create_directory(rebin_path)
+
+        # Return the path
+        return rebin_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_intermediate_convolve_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set path
+        convolve_path = fs.join(self.remote_intermediate_results_path, "convolve")
+
+        # Create?
+        if self.config.write_intermediate and not self.remote.is_directory(convolve_path): self.remote.create_directory(convolve_path)
+
+        # Return the path
+        return convolve_path
 
     # -----------------------------------------------------------------
 
@@ -150,8 +263,14 @@ class ObservedImageMaker(Configurable):
         :return:
         """
 
-        if self.config.write_intermediate: return fs.create_directory_in(self.intermediate_results_path, "convolve")
-        else: return None
+        # Set path
+        convolve_path = fs.join(self.intermediate_results_path, "convolve")
+
+        # Create?
+        if self.config.write_intermediate and not fs.is_directory(convolve_path): fs.create_directory(convolve_path)
+
+        # Return the path
+        return convolve_path
 
     # -----------------------------------------------------------------
 
@@ -270,6 +389,9 @@ class ObservedImageMaker(Configurable):
 
         # 11. Write the results
         if self.output_path is not None: self.write()
+
+        # 12. Clear intermediate results
+        if not self.config.keep_intermediate: self.clear()
 
     # -----------------------------------------------------------------
 
@@ -1045,6 +1167,32 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def remote_intermediate_initial_path_for_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.remote_intermediate_initial_path, instr_name + "__" + filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def intermediate_initial_path_for_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.intermediate_initial_path, instr_name + "__" + filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
     def make_images(self):
 
         """
@@ -1055,38 +1203,123 @@ class ObservedImageMaker(Configurable):
         # Inform the user
         log.info("Making the observed images (this may take a while) ...")
 
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
         # Loop over the datacubes
         for instr_name in self.datacubes:
 
             # Debugging
             log.debug("Making the observed images for the " + instr_name + " instrument ...")
 
-            # Get the filters that don't have an image yet saved on disk
+            # Get the filters that don't have an image (end result) yet saved on disk
             filters_dict = self.filters_without_image_for_instrument(instr_name)
+
+            # Get filters list and filter names list
             filter_names = filters_dict.keys()
             filters = filters_dict.values()
 
             # Initialize a dictionary, indexed by the filter names, to contain the images
             images = dict()
 
+            # Get the datacube
+            datacube = self.datacubes[instr_name]
+
+            # Check for which filters an initial image is already present
+            make_filter_names = []
+            make_filters = []
+            for filter_name, fltr in zip(filter_names, filters):
+
+                # Remote datacube
+                if isinstance(datacube, RemoteDataCube):
+                    path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
+                    if self.remote.is_file(path):
+                        # Success
+                        log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the remote directory '" + self.remote_intermediate_initial_path + "': not making it again")
+                        # Load as remote frame
+                        frame = RemoteFrame.from_remote_file(path, self.session)
+                        # Add to the dictionary of initial images
+                        images[filter_name] = frame
+                    else:
+                        make_filter_names.append(filter_name)
+                        make_filters.append(fltr)
+
+                # Regular datacube
+                elif isinstance(datacube, DataCube):
+                    path = self.intermediate_initial_path_for_image(instr_name, filter_name)
+                    if fs.is_file(path):
+                        # Success
+                        log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the directory '" + self.intermediate_initial_path + "': not making it again")
+                        # Load as frame
+                        frame = Frame.from_file(path)
+                        # Add to the dictionary of initial images
+                        images[filter_name] = frame
+                    else:
+                        make_filter_names.append(filter_name)
+                        make_filters.append(fltr)
+
+                # Invalid
+                else: raise ValueError("Something went wrong")
+
             # Determine the number of processes
             if not self.has_spectral_convolution_filters: nprocesses = 1
             else:
-                if isinstance(self.datacubes[instr_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
-                elif isinstance(self.datacubes[instr_name], DataCube): nprocesses = self.config.nprocesses_local
+                if isinstance(datacube, RemoteDataCube): nprocesses = self.config.nprocesses_remote
+                elif isinstance(datacube, DataCube): nprocesses = self.config.nprocesses_local
                 else: raise ValueError("Invalid datacube object for '" + instr_name + "' instrument")
 
             # Limit the number of processes to the number of filters
-            nprocesses = min(len(filters), nprocesses)
+            nprocesses = min(len(make_filters), nprocesses)
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.spectral_convolution_filters, nprocesses=nprocesses, check_previous_sessions=True)
+            frames = self.datacubes[instr_name].frames_for_filters(make_filters, convolve=self.spectral_convolution_filters, nprocesses=nprocesses, check_previous_sessions=True)
 
             # Add the observed images to the dictionary
-            for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
+            for filter_name, frame in zip(make_filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
 
             # Add the observed image dictionary for this datacube to the total dictionary (with the datacube name as a key)
             self.images[instr_name] = images
+
+            # Save intermediate results
+            if self.config.write_intermediate:
+
+                # Loop over the images
+                for filter_name in self.images:
+
+                    # Remote frame?
+                    frame = self.images[instr_name][filter_name]
+                    if isinstance(frame, RemoteFrame):
+
+                        # Determine the path
+                        path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
+
+                        # Save the frame remotely
+                        frame.saveto_remote(path)
+
+                    # Regular frame?
+                    elif isinstance(frame, Frame):
+
+                        # Determine the path
+                        path = self.intermediate_initial_path_for_image(instr_name, filter_name)
+
+                        # Save the frame
+                        frame.saveto(path)
+
+                    # Invalid
+                    else: raise ValueError("Something went wrong")
+
+    # -----------------------------------------------------------------
+
+    def remote_intermediate_convolve_path_for_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.remote_intermediate_convolve_path, instr_name + "__" + filter_name + ".fits")
 
     # -----------------------------------------------------------------
 
@@ -1120,6 +1353,11 @@ class ObservedImageMaker(Configurable):
 
         # Loop over the images
         for instr_name in self.images:
+
+            # Debugging
+            log.debug("Convolving images from the '" + instr_name + "' instrument ...")
+
+            # Loop over the filters
             for filter_name in self.images[instr_name]:
 
                 # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
@@ -1128,6 +1366,48 @@ class ObservedImageMaker(Configurable):
                     # Debugging
                     log.debug("The filter '" + filter_name + "' is not in the kernel paths: no convolution")
                     continue
+
+                # Check whether the end result is already there
+                if self.has_image(instr_name, filter_name):
+                    log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping convolution ...")
+                    continue
+
+                # Get the frame
+                frame = self.images[instr_name][filter_name]
+
+                # Check whether intermediate result is there
+                # Remote frame?
+                if isinstance(frame, RemoteFrame):
+                    # Get path
+                    path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
+                    if self.remote.is_file(path):
+                        # Success
+                        log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_convolve_path + "': not making it again")
+                        # Load as remote frame
+                        frame = RemoteFrame.from_remote_file(path, self.session)
+                        # Replace the frame by the convolved frame
+                        self.images[instr_name][filter_name] = frame
+                        # Skip
+                        continue
+                    else: pass # go on
+
+                # Regular frame?
+                elif isinstance(frame, Frame):
+                    # Get path
+                    path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+                    if fs.is_file(path):
+                        # Success
+                        log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_convolve_path + "': not making it again")
+                        # Load as frame
+                        frame = Frame.from_file(path)
+                        # Replace the frame by the convolved frame
+                        self.images[instr_name][filter_name] = frame
+                        # Skip
+                        continue
+                    else: pass # go on
+
+                # Invalid
+                else: raise RuntimeError("Something went wrong")
 
                 # Check whether the pixelscale is defined
                 if self.images[instr_name][filter_name].pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
@@ -1140,9 +1420,6 @@ class ObservedImageMaker(Configurable):
 
                 # Debugging
                 log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
-
-                # Get the frame
-                frame = self.images[instr_name][filter_name]
 
                 # Convert into remote frame if necessary
                 if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
@@ -1162,14 +1439,43 @@ class ObservedImageMaker(Configurable):
                 # If intermediate results have to be written
                 if self.config.write_intermediate:
 
-                    # Determine the path
-                    path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+                    # Remote frame?
+                    frame = self.images[instr_name][filter_name]
+                    if isinstance(frame, RemoteFrame):
 
-                    # Save the frame
-                    self.images[instr_name][filter_name].saveto(path)
+                        # Determine the path
+                        path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
+
+                        # Save the frame remotely
+                        frame.saveto_remote(path)
+
+                    # Regular frame?
+                    elif isinstance(frame, Frame):
+
+                        # Determine the path
+                        path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+
+                        # Save the frame locally
+                        frame.saveto(path)
+
+                    # Invalid
+                    else: raise ValueError("Something went wrong")
 
         # End the session
         #if session is not None: del session
+
+    # -----------------------------------------------------------------
+
+    def remote_intermediate_rebin_path_for_image(self, instr_name, filter_name):
+
+        """
+        Thisnf unction ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.remote_intermediate_rebin_path, instr_name + "__" + filter_name + ".fits")
 
     # -----------------------------------------------------------------
 
@@ -1224,6 +1530,47 @@ class ObservedImageMaker(Configurable):
                     log.debug("The filter '" + filter_name + "' is not in the rebin coordinate systems for this instrument: no rebinning")
                     continue
 
+                # Check whether the end result is already there
+                if self.has_image(instr_name, filter_name):
+                    log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping rebinning ...")
+                    continue
+
+                # Get the frame
+                frame = self.images[instr_name][filter_name]
+
+                # Check whether intermediate result is there
+                # Remote frame?
+                if isinstance(frame, RemoteFrame):
+                    # Get path
+                    path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
+                    if self.remote.is_file(path):
+                        # Success
+                        log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_rebin_path + "': not making it again")
+                        # Load as remote frame
+                        frame = RemoteFrame.from_remote_file(path, self.session)
+                        # Replace the frame by the rebinned frame
+                        self.images[instr_name][filter_name] = frame
+                        # Skip
+                        continue
+                    else: pass # go on
+                # Regular frame
+                elif isinstance(frame, Frame):
+                    # Get path
+                    path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+                    if fs.is_file(path):
+                        # Success
+                        log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_rebin_path + "': not making it again")
+                        # Load as frame
+                        frame = Frame.from_file(path)
+                        # Replace the frame by the rebinned frame
+                        self.images[instr_name][filter_name] = frame
+                        # Skip
+                        continue
+                    else: pass # go on
+
+                # Invalid
+                else: raise RuntimeError("Something went wrong")
+
                 # Debugging
                 log.debug("Rebinning the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
@@ -1245,8 +1592,7 @@ class ObservedImageMaker(Configurable):
                     self.images[instr_name][filter_name].convert_to(new_unit)
                     converted = True
 
-                # Get frame and target WCS
-                frame = self.images[instr_name][filter_name]
+                # Get target WCS
                 wcs = self.rebin_coordinate_systems[instr_name][filter_name]
 
                 # Convert to remote frame if necessary
@@ -1270,11 +1616,27 @@ class ObservedImageMaker(Configurable):
                 # If intermediate results have to be written
                 if self.config.write_intermediate:
 
-                    # Determine the path
-                    path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+                    # Remote frame?
+                    frame = self.images[instr_name][filter_name]
+                    if isinstance(frame, RemoteFrame):
 
-                    # Save the frame
-                    self.images[instr_name][filter_name].saveto(path)
+                        # Determine the path
+                        path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
+
+                        # Save the frame remotely
+                        frame.saveto_remote(path)
+
+                    # Regular frame?
+                    elif isinstance(frame, Frame):
+
+                        # Determine the path
+                        path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+
+                        # Save the frame
+                        frame.saveto(path)
+
+                    # Invalid
+                    else: raise ValueError("Something went wrong")
 
         # End the session
         #if session is not None: del session
@@ -1495,6 +1857,20 @@ class ObservedImageMaker(Configurable):
 
             # Cleanup?
             gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing intermediate results ...")
+
+        # TODO
 
 # -----------------------------------------------------------------
 

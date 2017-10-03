@@ -26,6 +26,7 @@ definition.add_optional("output", "string", "output directory")
 
 # Intermediate results
 definition.add_flag("write_intermediate", "write intermediate results", False)
+definition.add_flag("keep_intermediate", "keep intermediate results", False)
 
 # -----------------------------------------------------------------
 
