@@ -677,6 +677,71 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :return:
+        """
+
+        from ...core.units.unit import PhotometricUnit
+        from ...core.tools import types
+        from ...core.tools.stringify import tostr
+
+        # Determine distance string
+        if distance is not None:
+            distance_string = tostr(distance)
+            self.session.import_package("parse_quantity", from_name="pts.core.units.parsing")
+            parse_distance_string = "parse_quantity('" + distance_string + "')"
+        else: parse_distance_string = "None"
+
+        # Photometric unit
+        if isinstance(to_unit, PhotometricUnit):
+
+            # Get unit string
+            to_unit_string = tostr(to_unit)
+
+            # Density unit
+            if to_unit.density:
+                if not density and density_strict: raise ValueError("Density = False and density_strict = True is incompatible with the passed unit")
+                density = True
+                density_strict = True
+
+            # Not density unit
+            else:
+                if density and density_strict: raise ValueError("Density = True and density_strict = True is incompatible with the passed unit")
+                density = False
+                density_strict = True
+
+            # Brightness unit
+            if to_unit.brightness:
+                if not brightness and brightness_strict: raise ValueError("Brightness = False and brightness_strict = True is incompatible with the passed unit")
+                brightness = True
+                brightness_strict = True
+
+            # Not a brightness unit
+            else:
+                if brightness and brightness_strict: raise ValueError("Brightness = True and brightness_strict = True is incompatible with the passed unit")
+                brightness = False
+                brightness_strict = True
+
+        # String
+        elif types.is_string_type(to_unit): to_unit_string = to_unit
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'to_unit': must be photometric unit or string")
+
+        # Send command
+        self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
+
+    # -----------------------------------------------------------------
+
     def sum(self):
 
         """
@@ -1544,6 +1609,64 @@ class RemoteImage(object):
         """
 
         self.session.send_line_and_raise(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+
+    # -----------------------------------------------------------------
+
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        """
+
+        from ...core.units.unit import PhotometricUnit
+        from ...core.tools import types
+        from ...core.tools.stringify import tostr
+
+        # Determine distance string
+        if distance is not None:
+            distance_string = tostr(distance)
+            self.session.import_package("parse_quantity", from_name="pts.core.units.parsing")
+            parse_distance_string = "parse_quantity('" + distance_string + "')"
+        else: parse_distance_string = "None"
+
+        # Photometric unit
+        if isinstance(to_unit, PhotometricUnit):
+
+            # Get unit string
+            to_unit_string = tostr(to_unit)
+
+            # Density unit
+            if to_unit.density:
+                if not density and density_strict: raise ValueError("Density = False and density_strict = True is incompatible with the passed unit")
+                density = True
+                density_strict = True
+
+            # Not density unit
+            else:
+                if density and density_strict: raise ValueError("Density = True and density_strict = True is incompatible with the passed unit")
+                density = False
+                density_strict = True
+
+            # Brightness unit
+            if to_unit.brightness:
+                if not brightness and brightness_strict: raise ValueError("Brightness = False and brightness_strict = True is incompatible with the passed unit")
+                brightness = True
+                brightness_strict = True
+
+            # Not a brightness unit
+            else:
+                if brightness and brightness_strict: raise ValueError("Brightness = True and brightness_strict = True is incompatible with the passed unit")
+                brightness = False
+                brightness_strict = True
+
+        # String
+        elif types.is_string_type(to_unit): to_unit_string = to_unit
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'to_unit': must be photometric unit or string")
+
+        # Send command
+        self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
 
     # -----------------------------------------------------------------
 
