@@ -957,6 +957,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param recursive:
     :param ignore_hidden:
     :param extension:
+    :param not_extension:
     :param contains:
     :param not_contains:
     :param extensions:
@@ -2565,5 +2566,18 @@ def get_file_hash(path, blocksize=2**20):
     # Return the hash
     #return md5.digest()
     return md5.hexdigest()
+
+# -----------------------------------------------------------------
+
+def equal_files_hash(filepath_a, filepath_b):
+
+    """
+    This function ...
+    :param filepath_a:
+    :param filepath_b:
+    :return:
+    """
+
+    return get_file_hash(filepath_a) == get_file_hash(filepath_b)
 
 # -----------------------------------------------------------------

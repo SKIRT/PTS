@@ -378,6 +378,34 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def is_identical(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if self.wcs != other.wcs: return False
+        return np.all(self.data == other.data)
+
+    # -----------------------------------------------------------------
+
+    def is_close(self, other, rtol=1.e-5, atol=1.e-8, equal_nan=False):
+
+        """
+        This function ...
+        :param other:
+        :param rtol
+        :param atol
+        :param equal_nan:
+        :return:
+        """
+
+        return np.all(np.isclose(self.data, other.data, rtol=rtol, atol=atol, equal_nan=equal_nan))
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """
@@ -481,8 +509,6 @@ class Frame(NDDataArray):
         :param value:
         :return:
         """
-
-        self.__array__
 
         self._data *= value
         return self

@@ -157,6 +157,20 @@ def remove_temp_dirs():
 
 # -----------------------------------------------------------------
 
+def find_temp_dirs(**kwargs):
+
+    """
+    Thisj function ...
+    :param kwargs:
+    :return:
+    """
+
+    # Find directories in the PTS temporary directory
+    paths = fs.directories_in_path(pts_temp_dir, **kwargs)
+    return list(sorted(paths)) # Sorted based on date
+
+# -----------------------------------------------------------------
+
 # Path to the user paths file (create if necessary)
 paths_file_path = fs.join(pts_user_dir, "paths.txt")
 

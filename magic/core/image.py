@@ -208,6 +208,54 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def frame_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frames.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mask_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.masks.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def regions_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.regions.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def segments_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.segments.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_frames(self):
 
         """
@@ -1454,6 +1502,50 @@ class Image(object):
 
         # Loop over the frames, and set the values for each frame
         for frame_name in self.frames: self.frames[frame_name][item] = value
+
+    # -----------------------------------------------------------------
+
+    def is_identical(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Not an image
+        if not isinstance(other, Image): return False
+
+        # First checks
+        if self.nframes != other.nframes: return False
+        if self.nregions != other.nregions: return False
+        if self.nmasks != other.nmasks: return False
+        if self.nsegments != other.nsegments: return False
+
+        # Check names (with their order)
+        if self.frame_names != other.frame_names: return False
+        if self.mask_names != other.mask_names: return False
+        if self.regions_names != other.regions_names: return False
+        if self.segments_names != other.segments_names: return False
+
+        # Check the frames
+        for frame_name in self.frame_names:
+            if not self.frames[frame_name].is_identical(other.frames[frame_name]): return False
+
+        # Check the regions
+        for regions_name in self.regions_names:
+            if self.regions[regions_name] != other.regions[regions_name]: return False
+
+        # Check the masks
+        for mask_name in self.mask_names:
+            if not self.masks[mask_name].is_identical(other.masks[mask_name]): return False
+
+        # Check the segmentation maps
+        for segments_name in self.segments_names:
+            if not self.segments[segments_name].is_identical(other.segments[segments_name]): return False
+
+        # All checks passed
+        return True
 
     # -----------------------------------------------------------------
 

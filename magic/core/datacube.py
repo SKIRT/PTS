@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from multiprocessing import Pool, Process, Manager
+from multiprocessing import Pool
+from collections import defaultdict
 import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -29,6 +30,10 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
+
+# -----------------------------------------------------------------
+
+parallel_filter_convolution_dirname = "datacube-parallel-filter-convolution"
 
 # -----------------------------------------------------------------
 
@@ -54,6 +59,117 @@ class DataCube(Image):
 
         # The wavelength grid
         self.wavelength_grid = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_skirt_output(cls, instrument_name, output_path=None, contribution="total"):
+
+        """
+        This function ...
+        :param instrument_name:
+        :param output_path:
+        :param contribution:
+        :return:
+        """
+
+        # Determine output path
+        if output_path is None: output_path = fs.cwd()
+
+        # Get datacube paths
+        datacube_paths = fs.files_in_path(output_path, extension="fits")
+
+        # Get SED paths
+        sed_paths = fs.files_in_path(output_path, extension="dat", endswith="_sed")
+
+        # Determine prefix
+        prefix = None
+        for path in datacube_paths:
+            filename = fs.strip_extension(fs.name(path))
+            if prefix is None: prefix = filename.split("_")[0]
+            elif prefix != filename.split("_")[0]: raise IOError("Not all datacubes have the same simulation prefix")
+        if prefix is None: raise IOError("No datacubes were found")
+
+        # Arrange the datacubes per instrument and per contribution
+        datacube_paths_instruments = defaultdict(dict)
+        sed_paths_instruments = dict()
+        for path in datacube_paths:
+            filename = fs.strip_extension(fs.name(path))
+            instrument = filename.split(prefix + "_")[1].split("_")[0]
+            contr = filename.split("_")[-1]
+            datacube_paths_instruments[instrument][contr] = path
+        for path in sed_paths:
+            filename = fs.strip_extension(fs.name(path))
+            instrument = filename.split(prefix + "_")[1].split("_sed")[0]
+            sed_paths_instruments[instrument] = path
+
+        #print(datacube_paths_instruments)
+        #print(sed_paths_instruments)
+
+        # Get the desired datacube path
+        datacube_path = datacube_paths_instruments[instrument_name][contribution]
+
+        # Get the SED path for the instrument
+        sed_path = sed_paths_instruments[instrument_name]
+
+        # Return
+        return cls.from_file_and_sed_file(datacube_path, sed_path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file_and_sed_file(cls, image_path, sed_path):
+
+        """
+        This function ...
+        :param image_path:
+        :param sed_path:
+        :return:
+        """
+
+        from ...core.data.sed import load_sed
+
+        # Load the SED (can be ObservedSED, and can be from SKIRT output)
+        sed = load_sed(sed_path)
+
+        # Create
+        return cls.from_file_and_sed(image_path, sed)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file_and_sed(cls, image_path, sed):
+
+        """
+        This function ...
+        :param image_path:
+        :param sed:
+        :return:
+        """
+
+        # Get the wavelength grid
+        wavelength_grid = WavelengthGrid.from_sed(sed)
+
+        # Create the datacube
+        return cls.from_file(image_path, wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file_and_wavelength_grid_file(cls, image_path, wavelengths_path):
+
+        """
+        This function ...
+        :param image_path:
+        :param wavelengths_path:
+        :return:
+        """
+
+        # Get the wavelength grid
+        wavelength_grid = WavelengthGrid.from_file(wavelengths_path)
+
+        # Create the datacube
+        return cls.from_file(image_path, wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -257,6 +373,22 @@ class DataCube(Image):
 
         # Not implemented
         elif isinstance(item, slice): raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    def is_identical(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Check the wavelength grid
+        if self.wavelengths(asarray=True, unit="micron") != other.wavelengths(asarray=True, unit="micron"): return False
+
+        # Call the implementation of the base class Image
+        return super(DataCube, self).is_identical(other)
 
     # -----------------------------------------------------------------
 
@@ -483,28 +615,129 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, nprocesses=8):
+    def convolve_with_filters(self, filters, nprocesses=8, check_previous_sessions=False):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
+        :param check_previous_sessions:
         :return:
         """
 
         # Inform the user
-        parallel_info = " in parallel with " + str(nprocesses) + " processes" if nprocesses > 1 else ""
-        log.info("Convolving the datacube with " + str(len(filters)) + " different filters" + parallel_info + " ...")
+        log.info("Convolving the datacube with " + str(len(filters)) + " different filters ...")
+
+        # PARALLEL EXECUTION
+        if nprocesses > 1: return self.convolve_with_filters_parallel(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+
+        # SERIAL EXECUTION
+        else: return self.convolve_with_filters_serial(filters)
+
+    # -----------------------------------------------------------------
+
+    def convolve_with_filters_serial(self, filters):
+
+        """
+        Thisj function ...
+        :param filters:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Convolving the datacube with " + str(len(filters)) + " different filters on one process ...")
 
         # Initialize list to contain the output frames per filter
         nfilters = len(filters)
         frames = [None] * nfilters
 
-        # PARALLEL EXECUTION
-        if nprocesses > 1:
+        # Debugging
+        log.debug("Converting the datacube into a single 3D array ...")
+
+        # Convert the datacube to a numpy array where wavelength is the third dimension
+        array = self.asarray()
+
+        # Get the array of wavelengths
+        wavelengths = self.wavelengths(asarray=True, unit="micron")
+
+        # Loop over the filters
+        for index in range(nfilters):
+
+            # Get the current filter
+            fltr = filters[index]
+
+            # Do the filter convolution, put frame in the frames list
+            _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
+
+        # Return the list of resulting frames
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def find_previous_filter_convolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the previous 'datacube-parallel-filter-convolution' sessions in reversed order (last times first)
+        for session_path in introspection.find_temp_dirs(startswith=parallel_filter_convolution_dirname):
+
+            # Determine the path to the datacube
+            temp_datacube_path = fs.join(session_path, "datacube.fits")
+
+            # Determine the path to the wavelength grid
+            temp_wavelengthgrid_path = fs.join(session_path, "wavelengthgrid.dat")
+
+            # Check whether the datacube file is equal by comparing hash, and the same for the wavelength grid file
+            if (self.path is not None and fs.equal_files_hash(temp_datacube_path, self.path)) and (self.wavelength_grid.path is not None and fs.equal_files_hash(temp_wavelengthgrid_path, self.wavelength_grid.path)):
+
+                # Match!
+                return session_path, temp_datacube_path, temp_wavelengthgrid_path
+
+            # Check by opening the datacube
+            else:
+
+                # Open the datacube
+                test_datacube = DataCube.from_file_and_wavelength_grid_file(temp_datacube_path, temp_wavelengthgrid_path)
+
+                # Match!
+                if self.is_identical(test_datacube): return session_path, temp_datacube_path, temp_wavelengthgrid_path
+
+        # No match found
+        return None, None, None
+
+    # -----------------------------------------------------------------
+
+    def convolve_with_filters_parallel(self, filters, nprocesses=8, check_previous_sessions=False):
+
+        """
+        This function ...
+        :param filters:
+        :param nprocesses:
+        :param check_previous_sessions:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Convolving the datacube with " + str(len(filters)) + " different filters with " + str(nprocesses) + " parallel processes ...")
+
+        # Initialize list to contain the output frames per filter
+        nfilters = len(filters)
+        frames = [None] * nfilters
+
+        # Find (intermediate) results from previous filter convolution
+        if check_previous_sessions: temp_dir_path, temp_datacube_path, temp_wavelengthgrid_path = self.find_previous_filter_convolution()
+        else: temp_dir_path = temp_datacube_path = temp_wavelengthgrid_path = None
+
+        present_frames = None
+
+        # Not found?
+        if temp_dir_path is None:
 
             # Save the datacube to a temporary directory
-            temp_dir_path = introspection.create_temp_dir(time.unique_name("datacube-parallel-filter-convolution"))
+            temp_dir_path = introspection.create_temp_dir(time.unique_name(parallel_filter_convolution_dirname))
 
             # Save the datacube
             temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
@@ -514,60 +747,60 @@ class DataCube(Image):
             temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
             self.wavelength_grid.saveto(temp_wavelengthgrid_path)
 
-            # Create process pool
-            pool = Pool(processes=nprocesses)
-
-            # Get string for the unit of the datacube
-            unitstring = str(self.unit)
-
-            # EXECUTE THE LOOP IN PARALLEL
-            for index in range(nfilters):
-
-                # Get filtername
-                fltrname = str(filters[index])
-
-                # Determine path for resulting frame
-                result_path = fs.join(temp_dir_path, str(index) + ".fits")
-
-                # Get the current filter
-                pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,)) # All simple types (strings)
-
-            # CLOSE AND JOIN THE PROCESS POOL
-            pool.close()
-            pool.join()
-
-            # Load the resulting frames
-            for index in range(nfilters):
-
-                # Determine path of resulting frame
-                result_path = fs.join(temp_dir_path, str(index) + ".fits")
-
-                # Inform the user
-                log.debug("Loading the frame for filter " + str(filters[index]) + " from '" + result_path + "' ...")
-
-                # Load the frame and set it in the list
-                frames[index] = Frame.from_file(result_path)
-
-        # SERIAL EXECUTION
+        # Found
         else:
 
+            # Look which frames are already created in the directory
+            result_paths = fs.files_in_path(temp_dir_path, exact_not_name=["datacube", "wavelengthgrid"], extension="fits", sort=int)
+
+            # Create a dictionary of the paths of the already created frames
+            present_frames = dict()
+            for path in result_paths:
+                name = fs.strip_extension(fs.name(path))
+                index = int(name)
+                present_frames[index] = path
+
+        # Create process pool
+        pool = Pool(processes=nprocesses)
+
+        # Get string for the unit of the datacube
+        unitstring = str(self.unit)
+
+        # EXECUTE THE LOOP IN PARALLEL
+        for index in range(nfilters):
+
+            # Check whether already present
+            if present_frames is not None and index in present_frames:
+                log.success("The convolved frame for the '" + str(filters[index]) + "' filter is already created in a previous session: skipping calculation ...")
+                continue
+
             # Debugging
-            log.debug("Converting the datacube into a single 3D array ...")
+            log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame ...")
 
-            # Convert the datacube to a numpy array where wavelength is the third dimension
-            array = self.asarray()
+            # Get filtername
+            fltrname = str(filters[index])
 
-            # Get the array of wavelengths
-            wavelengths = self.wavelengths(asarray=True, unit="micron")
+            # Determine path for resulting frame
+            result_path = fs.join(temp_dir_path, str(index) + ".fits")
 
-            # Loop over the filters
-            for index in range(nfilters):
+            # Get the current filter
+            pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,))  # All simple types (strings)
 
-                # Get the current filter
-                fltr = filters[index]
+        # CLOSE AND JOIN THE PROCESS POOL
+        pool.close()
+        pool.join()
 
-                # Do the filter convolution, put frame in the frames list
-                _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
+        # Load the resulting frames
+        for index in range(nfilters):
+
+            # Determine path of resulting frame
+            result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+            # Inform the user
+            log.debug("Loading the frame for filter " + str(filters[index]) + " from '" + result_path + "' ...")
+
+            # Load the frame and set it in the list
+            frames[index] = Frame.from_file(result_path)
 
         # Return the list of resulting frames
         return frames

@@ -53,6 +53,25 @@ def is_from_skirt(path):
 
 # -----------------------------------------------------------------
 
+def load_sed(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_from_skirt(path): return SED.from_skirt(path)
+    else:
+
+        table = tables.from_file(path)
+
+        # Observed SED or SED?
+        if "Observatory" in table.colnames and "Instrument" in table.colnames: return ObservedSED.from_file(path)
+        else: return SED.from_file(path)
+
+# -----------------------------------------------------------------
+
 class SED(WavelengthCurve):
     
     """
