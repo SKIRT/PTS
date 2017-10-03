@@ -816,9 +816,7 @@ class RemoteFrame(object):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
-        output = self.session.send_line_and_raise('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
-        for line in output:
-            if "Error:" in line: raise RuntimeError(line)
+        self.session.send_line_and_raise('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
 
         # Create remote frame label for the footprint
         footprint_label = get_new_label("Frame", self.session)
