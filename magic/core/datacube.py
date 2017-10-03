@@ -385,7 +385,7 @@ class DataCube(Image):
         """
 
         # Check the wavelength grid
-        if self.wavelengths(asarray=True, unit="micron") != other.wavelengths(asarray=True, unit="micron"): return False
+        if not np.all(self.wavelengths(asarray=True, unit="micron") == other.wavelengths(asarray=True, unit="micron")): return False
 
         # Call the implementation of the base class Image
         return super(DataCube, self).is_identical(other)

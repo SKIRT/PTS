@@ -126,6 +126,9 @@ class RemotePythonSession(object):
         # Not succesful, try updating the module on which it failed
         if not success:
 
+            # No problem module, show import statement
+            if module_name is None: raise RuntimeError("Unsolvable import error occured at: '" + import_statement + "'")
+
             # Debugging
             log.debug("Import of '" + name + "' was unsuccesful: trying updating the '" + module_name + "' package ...")
 
@@ -206,12 +209,24 @@ class RemotePythonSession(object):
                 else: raise ImportError(message)
 
             # Error
-            if "ImportError" in last_line:
+            elif "ImportError" in last_line:
                 #log.warning(last_line)
                 message = last_line.split("ImportError")[1]
                 message = "[" + self.host_id + "] " + message
                 if return_false_if_fail: log.warning(message)
                 else: raise ImportError(message)
+
+            # What else?
+            else:
+
+                # Show output
+                for line in output: log.warning(line)
+
+                # Probably OKAY, RETURN SUCCESS
+                if return_failed_module: return True, None, None
+                else: return True
+
+            # NOT SUCCESS
 
             # Read the traceback
             module_name = None
@@ -228,11 +243,14 @@ class RemotePythonSession(object):
                     break
 
             # Get base module name
-            if module_name is not None: base_model_name = module_name.split(".")[0]
-            else: base_model_name = None
+            if module_name is not None: base_module_name = module_name.split(".")[0]
+            else: base_module_name = None
+
+            # Give command
+            if base_module_name: import_statement = command
 
             # Import failed
-            if return_failed_module: return False, base_model_name, import_statement
+            if return_failed_module: return False, base_module_name, import_statement
             else: return False
 
         # Import was succesfull
