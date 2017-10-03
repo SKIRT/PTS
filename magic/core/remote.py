@@ -1904,9 +1904,10 @@ class RemoteDataCube(RemoteImage):
 
         # Import the unit parsing function rmeotely
         self.session.import_package("parse_unit", from_name="pts.core.units.parsing")
+        self.session.import_package("parse_quantity", from_name="pts.core.units.parsing")
         #self.session.import_package("tostr", from_name="pts.core.tools.stringify")
         from pts.core.tools.stringify import tostr
-        return self.session.get_simple_property(self.label, "get_frame_index_for_wavelength(parse_unit('" + tostr(wavelength) + "'))")
+        return self.session.get_simple_property(self.label, "get_frame_index_for_wavelength(parse_quantity('" + tostr(wavelength) + "'))")
 
     # -----------------------------------------------------------------
 

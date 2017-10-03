@@ -786,7 +786,7 @@ class Image(object):
         for frame_name in frame_names:
 
             # Inform the user that this frame will be saved to the image file
-            log.debug("Exporting the " + frame_name + " frame to " + path)
+            #log.debug("Exporting the " + frame_name + " frame to '" + path + "' ...")
 
             # Check if the coordinate system of this frame matches that of the other frames ?
 
@@ -810,7 +810,7 @@ class Image(object):
             for mask_name in self.masks:
 
                 # Inform the user that this mask will be saved to the image file
-                log.debug("Exporting the " + mask_name + " mask to " + path)
+                #log.debug("Exporting the " + mask_name + " mask to '" + path + "' ...")
 
                 # Add this mask to the data cube
                 datacube.append(self.masks[mask_name].astype(int))
@@ -832,7 +832,7 @@ class Image(object):
             for segments_name in self.segments:
 
                 # Inform the user that this segmentation map will be saved to the image file
-                log.debug("Exporting the " + segments_name + " segmentation map to " + path)
+                #log.debug("Exporting the " + segments_name + " segmentation map to '" + path + "' ...")
 
                 # Add this segmentation map to the data cube
                 datacube.append(self.segments[segments_name].data)

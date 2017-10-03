@@ -311,8 +311,9 @@ class RemotePythonSession(object):
                 # Re-raise the remote error
                 raise error_class(message)
 
-            # Show the output (no errors)
-            for line in output: log.debug("[" + self.host_id + "] " + line)
+            # Show the output (no errors) if debugging and show_output is False
+            if not show_output: # Output was not shown in realtime
+                for line in output: log.debug("[" + self.host_id + "] " + line)
 
     # -----------------------------------------------------------------
 
@@ -438,7 +439,7 @@ class RemotePythonSession(object):
         :return:
         """
 
-        return self.get_simple_variable(name)[1:-1]
+        return self.get_simple_variable(name)
 
         #return output[0][1:-1]
 
@@ -1011,6 +1012,7 @@ class AttachedPythonSession(RemotePythonSession):
         :return:
         """
 
+        # Type the name of the variable in the python prompt, so its value is shown
         self.send_line(name, show_output=show_output)
 
         #print(self.parent.ssh.before)
@@ -1020,7 +1022,7 @@ class AttachedPythonSession(RemotePythonSession):
 
         lines = output.split("\r\n")
         if lines[0] == name: lines = lines[1:]
-        print(lines)
+        #print(lines)
 
         # Return the value
         return eval(lines[0])

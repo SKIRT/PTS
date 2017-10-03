@@ -333,8 +333,14 @@ class SimplePropertyComposite(object):
             # Ask for the new value
             value = prompt_variable(name, ptype, description, choices=choices, default=default, required=False)
 
-            # Set the new value
-            self.set_property(name, value)
+            # Set the property
+            if value != default:
+
+                # Debugging
+                log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+
+                # Set the new value
+                self.set_property(name, value)
 
         # Recursive: also loop over the settings
         if recursive:
