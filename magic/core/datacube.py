@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from multiprocessing import Pool
 from collections import defaultdict
 import numpy as np
 
@@ -30,6 +29,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
+from ...core.tools.parallelization import ParallelTarget
 
 # -----------------------------------------------------------------
 
@@ -682,6 +682,9 @@ class DataCube(Image):
         :return:
         """
 
+        # Debugging
+        log.debug("Searching for the (partial) results of a previous filter convolution session with this datacube ...")
+
         # Loop over the previous 'datacube-parallel-filter-convolution' sessions in reversed order (last times first)
         for session_path in introspection.find_temp_dirs(startswith=parallel_filter_convolution_dirname):
 
@@ -751,6 +754,9 @@ class DataCube(Image):
         # Found
         else:
 
+            # Success
+            log.success("The results of a previous filter convolution session with this datacube were found in the '" + fs.name(temp_dir_path) + "' temporary directory")
+
             # Look which frames are already created in the directory
             result_paths = fs.files_in_path(temp_dir_path, exact_not_name=["datacube", "wavelengthgrid"], extension="fits", sort=int)
 
@@ -762,34 +768,40 @@ class DataCube(Image):
                 present_frames[index] = path
 
         # Create process pool
-        pool = Pool(processes=nprocesses)
+        #pool = Pool(processes=nprocesses)
 
         # Get string for the unit of the datacube
         unitstring = str(self.unit)
 
-        # EXECUTE THE LOOP IN PARALLEL
-        for index in range(nfilters):
+        # Parallel execution
+        with ParallelTarget(_do_one_filter_convolution_from_file, nprocesses) as target:
 
-            # Check whether already present
-            if present_frames is not None and index in present_frames:
-                log.success("The convolved frame for the '" + str(filters[index]) + "' filter is already created in a previous session: skipping calculation ...")
-                continue
+            # EXECUTE THE LOOP IN PARALLEL
+            for index in range(nfilters):
 
-            # Debugging
-            log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame ...")
+                # Check whether already present
+                if present_frames is not None and index in present_frames:
+                    log.success("The convolved frame for the '" + str(filters[index]) + "' filter is already created in a previous session: skipping calculation ...")
+                    continue
 
-            # Get filtername
-            fltrname = str(filters[index])
+                # Debugging
+                log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame ...")
 
-            # Determine path for resulting frame
-            result_path = fs.join(temp_dir_path, str(index) + ".fits")
+                # Get filtername
+                fltrname = str(filters[index])
 
-            # Get the current filter
-            pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,))  # All simple types (strings)
+                # Determine path for resulting frame
+                result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+                # Get the current filter
+                #pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,))  # All simple types (strings)
+
+                # Call the target function
+                target(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname)
 
         # CLOSE AND JOIN THE PROCESS POOL
-        pool.close()
-        pool.join()
+        #pool.close()
+        #pool.join()
 
         # Load the resulting frames
         for index in range(nfilters):
