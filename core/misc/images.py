@@ -116,6 +116,45 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def intermediate_results_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.write_intermediate: return self.output_path_directory("intermediate", create=True)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intermediate_rebin_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.write_intermediate: return fs.create_directory_in(self.intermediate_results_path, "rebin")
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intermediate_convolve_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if self.config.write_intermediate: return fs.create_directory_in(self.intermediate_results_path, "convolve")
+        else: return None
+
+    # -----------------------------------------------------------------
+
     @property
     def has_coordinate_systems(self):
 
@@ -510,7 +549,7 @@ class ObservedImageMaker(Configurable):
         elif kwargs.pop("psf_paths", None) is not None: self.kernel_paths = kwargs.pop("psf_paths")
 
         # Automatic PSF determination
-        elif kwargs.pop("auto_psfs", None) is not None: self.set_psf_kernels()
+        elif auto_psfs: self.set_psf_kernels()
 
     # -----------------------------------------------------------------
 
@@ -1051,6 +1090,19 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def intermediate_convolve_path_for_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.intermediate_convolve_path, instr_name + "__" + filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
     def convolve(self):
 
         """
@@ -1107,8 +1159,30 @@ class ObservedImageMaker(Configurable):
                 # Convolve the frame
                 self.images[instr_name][filter_name].convolve(kernel)
 
+                # If intermediate results have to be written
+                if self.config.write_intermediate:
+
+                    # Determine the path
+                    path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+
+                    # Save the frame
+                    self.images[instr_name][filter_name].saveto(path)
+
         # End the session
         #if session is not None: del session
+
+    # -----------------------------------------------------------------
+
+    def intermediate_rebin_path_for_image(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.intermediate_rebin_path, instr_name + "__" + filter_name + ".fits")
 
     # -----------------------------------------------------------------
 
@@ -1192,6 +1266,15 @@ class ObservedImageMaker(Configurable):
 
                 # Convert the unit back
                 if converted: self.images[instr_name][filter_name].convert_to(original_unit)
+
+                # If intermediate results have to be written
+                if self.config.write_intermediate:
+
+                    # Determine the path
+                    path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+
+                    # Save the frame
+                    self.images[instr_name][filter_name].saveto(path)
 
         # End the session
         #if session is not None: del session

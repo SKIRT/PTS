@@ -1169,11 +1169,8 @@ class RemoteFrame(object):
         # Remote file path
         remote_file_path = fs.join(remote_temp_path, filename)
 
-        # Debugging
-        log.debug("Saving the frame remotely ...")
-
-        # Save the frame remotely
-        self.session.send_line_and_raise(self.label + ".saveto('" + remote_file_path + "')", show_output=True)
+        # SAVE REMOTELY
+        self.saveto_remote(remote_file_path)
 
         # Debugging
         log.debug("Downloading the frame ...")
@@ -1186,6 +1183,22 @@ class RemoteFrame(object):
 
         # Update the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_remote(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Saving the frame remotely ...")
+
+        # Save the frame remotely
+        self.session.send_line_and_raise(self.label + ".saveto('" + path + "')", show_output=True)
 
     # -----------------------------------------------------------------
 
@@ -1710,13 +1723,10 @@ class RemoteImage(object):
         remote_image_path = fs.join(remote_temp_path, filename)
 
         # Debugging
-        log.debug("Saving the image remotely ...")
-
-        # Debugging
         log.debug("Remote temporary path of image: " + remote_image_path)
 
-        # Save the image remotely
-        self.session.send_line_and_raise(self.label + ".saveto('" + remote_image_path + "')", show_output=True)
+        # SAVE REMOTELY
+        self.saveto_remote(remote_image_path)
 
         # Debugging
         log.debug("Downloading the image ...")
@@ -1729,6 +1739,22 @@ class RemoteImage(object):
 
         # Update the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_remote(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Saving the image remotely ...")
+
+        # Save the image remotely
+        self.session.send_line_and_raise(self.label + ".saveto('" + path + "')", show_output=True)
 
     # -----------------------------------------------------------------
 

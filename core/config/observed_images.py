@@ -24,6 +24,11 @@ definition.add_optional("instruments", "string_list", "instruments for which to 
 # Add optional
 definition.add_optional("output", "string", "output directory")
 
+# Intermediate results
+definition.add_flag("write_intermediate", "write intermediate results", False)
+
+# -----------------------------------------------------------------
+
 # Add flags
 definition.add_flag("spectral_convolution", "convolve over the wavelengths to get the most accurate images", True)
 definition.add_flag("group", "group the images per instrument", False)
