@@ -122,7 +122,7 @@ class AnalysisOptions(Options):
         super(AnalysisOptions, self).__init__()
 
         # Extraction
-        self.add_section("extraction", "options for extractin data from the simulation's log files")
+        self.add_section("extraction", "options for extracting data from the simulation's log files")
         self.extraction.add_property("path", "string", "extraction directory", None)
         self.extraction.add_property("progress", "boolean", "extract information about the progress in the different simulation phases", False)
         self.extraction.add_property("timeline", "boolean", "extract timeline information for the different simulation phases on the different processes", False)

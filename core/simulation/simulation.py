@@ -633,6 +633,10 @@ class SkirtSimulation(object):
     def check_analysis_options(self, logging_options=None):
         self.analysis.check(logging_options)
 
+    ## This function updates the analysis options with extra options that have been added after this simulation object was created
+    def update_analysis_options(self):
+        self.analysis = AnalysisOptions(**self.analysis.to_dict())
+
     @property
     def from_batch(self):
         return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None

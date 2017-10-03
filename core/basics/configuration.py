@@ -3709,6 +3709,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
                         answer = raw_input("   : ")
+                        #print(answer)
                         if answer == "":
                             value = default
                             break

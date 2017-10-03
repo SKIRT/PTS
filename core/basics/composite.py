@@ -651,6 +651,24 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def to_dict(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create dict with the properties
+        result = self.get_properties()
+
+        # Add the sections (as dicts as well)
+        for name in self.section_names: result[name] = self.sections[name].to_dict()
+
+        # Return the resulting dict
+        return result
+
+    # -----------------------------------------------------------------
+
     def to_lines(self, line_prefix="", ignore=None, ignore_none=False):
 
         """

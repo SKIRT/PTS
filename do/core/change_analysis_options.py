@@ -25,7 +25,7 @@ definition = ConfigurationDefinition()
 # Add required
 definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
 definition.add_required("id", "positive_integer", "simulation ID")
-definition.add_optional("matching", "string", "only adapt settings with a name matching this string", suggestions=["remote"])
+definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string", suggestions=["remote"])
 
 # -----------------------------------------------------------------
 
@@ -39,7 +39,17 @@ simulation = get_simulation_for_host(config.remote, config.id)
 
 # -----------------------------------------------------------------
 
+# Update
+simulation.update_analysis_options()
+
+# -----------------------------------------------------------------
+
 # Check whether analysis options are defined
 simulation.analysis.prompt_properties(contains=config.matching)
+
+# -----------------------------------------------------------------
+
+# Save the simulation
+simulation.save()
 
 # -----------------------------------------------------------------
