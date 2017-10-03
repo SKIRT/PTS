@@ -785,7 +785,7 @@ class DataCube(Image):
                     continue
 
                 # Debugging
-                log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame ...")
+                log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame [index " + str(index) + "]...")
 
                 # Get filtername
                 fltrname = str(filters[index])
@@ -803,11 +803,55 @@ class DataCube(Image):
         #pool.close()
         #pool.join()
 
+        # Check whether they have all been created
+        retry = []
+        for index in range(nfilters):
+
+            # Determine the path of the resulting frame
+            result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+            # File exists -> OK
+            if fs.is_file(result_path): continue
+
+            # Get filter name
+            fltrname = str(filters[index])
+
+            # Give warning
+            log.warning("The frame for the '" + fltrname + "' filter has not been created")
+
+            # Add to retry list
+            retry.append(index)
+
+        #
+        if len(retry) > 0:
+            log.warning("Frames " + ", ".join(str(index) for index in retry) + " are missing from the output")
+            log.warning("corresponding to the following filters: " + ", ".join(str(filters[index]) for index in retry))
+
+        # RETRY SPECIFIC FRAMES
+        with ParallelTarget(_do_one_filter_convolution_from_file, nprocesses) as target:
+
+            # Loop over the retry indices
+            for index in retry:
+
+                # Debugging
+                log.debug("Peforming convolution of the datacube to create the '" + str(filters[index]) + "' frame again [index " + str(index) + "]...")
+
+                # Get filtername
+                fltrname = str(filters[index])
+
+                # Determine path for resulting frame
+                result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+                # Call the target function
+                target(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname)
+
         # Load the resulting frames
         for index in range(nfilters):
 
             # Determine path of resulting frame
             result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+            if not fs.is_file(result_path): raise RuntimeError("Something went wrong: frame " + str(index) + " for the '" + str(filters[index]) + "' filter is missing from the output")
 
             # Inform the user
             log.debug("Loading the frame for filter " + str(filters[index]) + " from '" + result_path + "' ...")

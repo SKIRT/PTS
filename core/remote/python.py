@@ -297,17 +297,22 @@ class RemotePythonSession(object):
             if "Error: " in last_line:
 
                 # Get the error type
-                try: error_class = eval(last_line.split(": ")[0])
-                except NameError: error_class = Exception
+                error_class_name = last_line.split(": ")[0]
+                try:
+                    error_class = eval(error_class_name)
+                    error_specifier = ""
+                except NameError:
+                    error_class = Exception
+                    error_specifier = " (" + error_class_name + ") "
 
-                message = last_line.split(error_class + ": ")[1]
-                message = "[" + self.host_id + "] " + message
+                message = last_line.split(error_class_name + ": ")[1]
+                message = "[" + self.host_id + "] " + error_specifier + message
 
                 # Re-raise the remote error
                 raise error_class(message)
 
-            # Show the output (because none was expected)
-            for line in output: log.warning("[" + self.host_id + "] " + line)
+            # Show the output (no errors)
+            for line in output: log.debug("[" + self.host_id + "] " + line)
 
     # -----------------------------------------------------------------
 
