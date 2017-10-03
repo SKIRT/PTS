@@ -165,6 +165,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("wcs_instrument", "string", "instrument for which to take the images_wcs as the WCS (if not a dictionary)")
         self.misc.add_property("images_wcs", "filepath_or_string_filepath_dictionary", "path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images (single path or path for each datacube as a dictionary)", None)
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
+        self.misc.add_property("write_intermediate_images", "boolean", "write intermediate results from the observed image making procedure", False)
 
         ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)

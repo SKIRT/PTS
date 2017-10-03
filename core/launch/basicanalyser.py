@@ -733,6 +733,9 @@ class BasicAnalyser(Configurable):
         self.image_maker.config.nprocesses_local = self.misc_options.images_nprocesses_local
         self.image_maker.config.nprocesses_remote = self.misc_options.images_nprocesses_remote
 
+        # Set other
+        self.image_maker.config.write_intermediate = self.misc_options.write_intermediate_images
+
         # Set input
         input_dict = dict()
 
