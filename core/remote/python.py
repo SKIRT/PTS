@@ -77,6 +77,18 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def previous_temp_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.previous_temp_directories
+
+    # -----------------------------------------------------------------
+
     def import_pts(self):
 
         """

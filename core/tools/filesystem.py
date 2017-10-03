@@ -2536,3 +2536,34 @@ def read_start(path, ncharacters):
     with open(path) as f: return f.read(ncharacters)
 
 # -----------------------------------------------------------------
+
+def get_file_hash(path, blocksize=2**20):
+
+    """
+    This function ...
+    :param path:
+    :param blocksize:
+    :return:
+    """
+
+    import hashlib
+
+    # Open the file
+    f = open(path)
+
+    md5 = hashlib.md5()
+
+    # Read the file
+    while True:
+        data = f.read(blocksize)
+        if not data: break
+        md5.update(data)
+
+    # Close the file
+    f.close()
+
+    # Return the hash
+    #return md5.digest()
+    return md5.hexdigest()
+
+# -----------------------------------------------------------------

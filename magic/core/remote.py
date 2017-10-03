@@ -82,6 +82,7 @@ def import_necessary_modules(session):
     session.import_package_update("archive", from_name="pts.core.tools", show_output=log.is_debug())
     session.import_package_update("parsing", from_name="pts.core.tools", show_output=log.is_debug())
     session.import_package_update("parse_filter", from_name="pts.core.filter.filter", show_output=log.is_debug())
+    session.import_package_update("BroadBandFilter", from_name="pts.core.filter.broad", show_output=log.is_debug())
 
 # -----------------------------------------------------------------
 
@@ -1748,6 +1749,42 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
+    @staticmethod
+    def find_in_previous_session(path, session):
+
+        """
+        This function ...
+        :param path:
+        :param session:
+        :return:
+        """
+
+        filename = fs.name(path)
+
+        # FIRST CHECK WHETHER THE FILE WAS ALREADY UPLOADED IN A PREVIOUS SESSION
+        # Loop over the previous sessions in reversed order
+        for session_path in session.previous_temp_directories:
+
+            # Determine the potential path to the datacube
+            remote_datacube_path = fs.join(session_path, filename)
+
+            # Determine the potential path to the wavelength grid
+            remote_wavelength_grid_path = fs.join(session_path, "wavelength_grid.dat")
+
+            # Check whether the file exists and the same as the local file
+            if session.remote.exists_and_equal_to_local(remote_datacube_path, path) and session.remote.is_file(remote_wavelength_grid_path):
+
+                # Inform the user
+                log.success("The datacube is found to be already uploaded in previous session '" + fs.name(session_path) + "': not uploading ...")
+
+                # Return the paths
+                return remote_datacube_path, remote_wavelength_grid_path
+
+        # Nothing found
+        return None, None
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path, wavelength_grid, session):
 
@@ -1762,43 +1799,50 @@ class RemoteDataCube(RemoteImage):
         # Show which image we are importing
         log.info("Reading in file '" + path + "' ...")
 
-        # Get the remote instance
-        prepare_session(session)
-
-        # Remote temp path
-        remote_temp_path = session.session_temp_directory
-
         # Get file name
         filename = fs.name(path)
 
-        ## CHECK WHETHER THE FILE IS VALID BEFORE UPLOADING!!
-        from . import fits
-        if not fits.is_valid(path): raise fits.DamagedFITSFileError("Local FITS file is damaged", path=path)
+        # Get the remote instance
+        prepare_session(session)
 
-        ### UPLOAD DATACUBE
+        # Find in previous session
+        remote_datacube_path, remote_wavelength_grid_path = cls.find_in_previous_session(path, session)
+        #print(remote_datacube_path, remote_wavelength_grid_path)
 
-        # Upload the datacube file
-        remote_datacube_path = fs.join(remote_temp_path, filename)
-        log.info("Uploading the datacube to '" + remote_datacube_path + "' ...")
-        session.remote.upload(path, remote_temp_path, compress=True, show_output=True)
+        # Not found
+        if remote_datacube_path is None:
 
-        ### SAVE AND UPLOAD WAVELENGTH GRID
+            # Remote temp path
+            remote_temp_path = session.session_temp_directory
 
-        local_temp_path = tempfile.gettempdir()
-        local_wavelength_grid_path = fs.join(local_temp_path, "wavelength_grid.dat")
-        log.debug("Saving the wavelength grid locally to '" + local_wavelength_grid_path + "' ...")
+            ## CHECK WHETHER THE FILE IS VALID BEFORE UPLOADING!!
+            from . import fits
+            if not fits.is_valid(path): raise fits.DamagedFITSFileError("Local FITS file is damaged", path=path)
 
-        # Save
-        wavelength_grid.saveto(local_wavelength_grid_path)
+            ### UPLOAD DATACUBE
 
-        # Upload
-        remote_wavelength_grid_path = fs.join(remote_temp_path, "wavelength_grid.dat")
-        log.info("Uploading the wavelength grid to '" + remote_wavelength_grid_path + "' ...")
-        session.remote.upload(local_wavelength_grid_path, remote_temp_path, show_output=True)
+            # Upload the datacube file
+            remote_datacube_path = fs.join(remote_temp_path, filename)
+            log.info("Uploading the datacube to '" + remote_datacube_path + "' ...")
+            session.remote.upload(path, remote_temp_path, compress=True, show_output=True)
+
+            ### SAVE AND UPLOAD WAVELENGTH GRID
+
+            local_temp_path = tempfile.gettempdir()
+            local_wavelength_grid_path = fs.join(local_temp_path, "wavelength_grid.dat")
+            log.debug("Saving the wavelength grid locally to '" + local_wavelength_grid_path + "' ...")
+
+            # Save
+            wavelength_grid.saveto(local_wavelength_grid_path)
+
+            # Upload
+            remote_wavelength_grid_path = fs.join(remote_temp_path, "wavelength_grid.dat")
+            log.info("Uploading the wavelength grid to '" + remote_wavelength_grid_path + "' ...")
+            session.remote.upload(local_wavelength_grid_path, remote_temp_path, show_output=True)
 
         ###
 
-        # Find label
+        # Find new label
         label = get_new_label(cls.local_classname(), session)
 
         # Create RemoteDataCube instance
@@ -1948,7 +1992,7 @@ class RemoteDataCube(RemoteImage):
         self.session.send_line("filters = []")
 
         # Reconstruct the list of filters remotely
-        for fltr in filters: self.session.send_line("filters.append(BroadBand('" + str(fltr) + "'))")
+        for fltr in filters: self.session.send_line("filters.append(BroadBandFilter('" + str(fltr) + "'))")
 
         # Initialize a list with remoteframes
         remoteframes = []
@@ -1957,10 +2001,14 @@ class RemoteDataCube(RemoteImage):
         self.session.send_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ")", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
+        last_label = None
         for i in range(len(filters)):
 
             # Assign a remote label to this result frame
             label_i = get_new_label("Frame", self.session)
+
+            # Check
+            if label_i == last_label: raise RuntimeError("Something went wrong: previous frame was not created")
 
             # Do the assignment remotely
             self.session.send_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
@@ -1968,6 +2016,9 @@ class RemoteDataCube(RemoteImage):
             # Create remoteframe and add it to the list
             remoteframe = RemoteFrame(label_i, self.session)
             remoteframes.append(remoteframe)
+
+            # Set last label
+            last_label = label_i
 
         # Return the list of remoteframes
         return remoteframes

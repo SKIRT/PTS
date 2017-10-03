@@ -4990,6 +4990,32 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def previous_temp_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.directories_in_path(self.pts_temp_path, returns="path", startswith="session", exact_not_name=self.session_temp_name)
+        return list(sorted(paths))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_temp_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.directories_in_path(self.pts_temp_path, returns="name", startswith="session", exact_not_name=self.session_temp_name)
+        return list(sorted(names))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def session_temp_directory(self):
 
         """
@@ -5005,6 +5031,18 @@ class Remote(object):
 
         # Return the path to the new temporary directory
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def session_temp_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.session_temp_directory)
 
     # -----------------------------------------------------------------
 
@@ -5882,6 +5920,73 @@ class Remote(object):
         path = self.absolute_path(path)
         parent_path = self.absolute_path(parent_path)
         return path.startswith(parent_path)
+
+    # -----------------------------------------------------------------
+
+    def get_file_hash(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # MacOS
+        if self.is_macos:
+
+            command = "md5 '" + path + "'"
+            output = self.execute(command)
+            if len(output) == 0: raise RuntimeError("No output")
+            elif len(output) > 1: raise RuntimeError("Too much output")
+            line = output[0]
+            # MD5(path) =
+            hash = line.split(") = ")[1]
+
+        # Linux
+        elif self.is_linux:
+
+            command = "md5sum '" + path + "' | awk '{ print $1 }'"
+            output = self.execute(command)
+            if len(output) == 0: raise RuntimeError("No output")
+            elif len(output) > 1: raise RuntimeError("Too much output")
+            hash = output[0]
+
+        # Not supported
+        else: raise NotImplementedError("Only MacOS and Linux are supported")
+
+        # Return the hash code
+        return hash
+
+    # -----------------------------------------------------------------
+
+    def exists_and_equal_to_local(self, path, local_path):
+
+        """
+        This function ...
+        :param path:
+        :param local_path:
+        :return:
+        """
+
+        return self.is_file(path) and self.equal_to_local_file(path, local_path)
+
+    # -----------------------------------------------------------------
+
+    def equal_to_local_file(self, path, local_path):
+
+        """
+        This function ...
+        :param path:
+        :param local_path:
+        :return:
+        """
+
+        # Get hash of local file and of remote file
+        hash = self.get_file_hash(path)
+        local_hash = fs.get_file_hash(local_path)
+
+        # Return whether the hashes are equal
+        return hash == local_hash
 
     # -----------------------------------------------------------------
 
