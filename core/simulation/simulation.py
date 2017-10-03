@@ -184,6 +184,9 @@ class SkirtSimulation(object):
         else:
             self.base_path = None # if ski path is not specified, base path is unknown
             self.ski_path = self.outfilepath("parameters.xml")
+            if not fs.is_file(self.ski_path):
+                warnings.warn("No parameters file can be found for this simulation")
+                self.ski_path = None
 
         # Set parameters, if passed
         self._parameters = parameters

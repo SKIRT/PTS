@@ -1361,6 +1361,18 @@ class AnalysisLauncher(AnalysisLauncherBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_filters_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.observed_filters_in_range if fltr not in self.iras_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_filter_names_in_range(self):
 
         """
@@ -1369,6 +1381,18 @@ class AnalysisLauncher(AnalysisLauncherBase):
         """
 
         return [str(fltr) for fltr in self.observed_filters_in_range]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filter_names_in_range_without_iras]
 
     # -----------------------------------------------------------------
 
@@ -1400,7 +1424,7 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.images_spectral_convolution = self.config.spectral_convolution_images
 
         # For these filters and for the earth instrument
-        self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range  # the filters for which to create the observations
+        self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range_without_iras  # the filters for which to create the observations (no IRAS)
         self.analysis_options.misc.observation_instruments = [earth_name]
 
         # Group the images per instrument (only when more instruments are being converted into images)

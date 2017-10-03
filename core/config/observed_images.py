@@ -13,6 +13,14 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
+# -----------------------------------------------------------------
+
+# Filters for which to create the images
+definition.add_optional("filters", "filter_list", "filters for which to create the images")
+definition.add_optional("instruments", "string_list", "instruments for which to create the images")
+
+# -----------------------------------------------------------------
+
 # Add optional
 definition.add_optional("output", "string", "output directory")
 

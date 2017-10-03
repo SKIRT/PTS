@@ -570,6 +570,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Getting frames for " + str(len(filters)) + " different filters ...")
 
+        # Limit the number of processes to the number of filters
+        nprocesses = min(nprocesses, len(filters))
+
         frames = []
         for_convolution = []
 
@@ -628,6 +631,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Convolving the datacube with " + str(len(filters)) + " different filters ...")
+
+        # Limit the number of processes to the number of filters
+        nprocesses = min(nprocesses, len(filters))
 
         # PARALLEL EXECUTION
         if nprocesses > 1: return self.convolve_with_filters_parallel(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
@@ -785,7 +791,7 @@ class DataCube(Image):
                     continue
 
                 # Debugging
-                log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame [index " + str(index) + "]...")
+                log.debug("Convolving the datacube to create the '" + str(filters[index]) + "' frame [index " + str(index) + "] ...")
 
                 # Get filtername
                 fltrname = str(filters[index])
@@ -908,37 +914,46 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     :return:
     """
 
-    log.info("[convolution with " + fltrname + " filter] Loading filter ...")
+    message_prefix = "[convolution with " + fltrname + " filter] "
+
+    # Inform the user
+    log.info(message_prefix + "Loading filter ...")
 
     # Resurrect the filter
     fltr = BroadBandFilter(fltrname)
 
-    log.info("[convolution with " + fltrname + " filter] Loading wavelength grid ...")
+    # Inform the user
+    log.info(message_prefix + "Loading wavelength grid ...")
 
     # Resurrect the wavelength grid
     wavelength_grid = WavelengthGrid.from_file(wavelengthgrid_path)
 
-    log.info("[convolution with " + fltrname + " filter] Loading datacube ...")
+    # Inform the user
+    log.info(message_prefix + "Loading datacube ...")
 
     # Resurrect the datacube
     datacube = DataCube.from_file(datacube_path, wavelength_grid)
 
-    log.info("[convolution with " + fltrname + " filter] Getting wavelength array ...")
+    # Inform the user
+    log.info(message_prefix + "Getting wavelength array ...")
 
     # Get the array of wavelengths
     wavelengths = datacube.wavelengths(asarray=True, unit="micron")
 
-    log.info("[convolution with " + fltrname + " filter] Converting datacube to 3D array ...")
+    # Inform the user
+    log.info(message_prefix + "Converting datacube to 3D array ...")
 
     # Convert the datacube to a numpy array where wavelength is the third dimension
     array = datacube.asarray()
 
-    log.info("[convolution with " + fltrname + " filter] Starting convolution ...")
+    # Inform the user
+    log.info(message_prefix + "Starting convolution ...")
 
     # Do the convolution
     data = fltr.convolve(wavelengths, array)
 
-    log.info("[convolution with " + fltrname + " filter] Convolution completed")
+    # Inform the user
+    log.info(message_prefix + "Convolution completed")
 
     # Create frame
     frame = Frame(data)
@@ -946,10 +961,14 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     frame.filter = fltr
     frame.wcs = datacube.wcs
 
-    log.info("[convolution with " + fltrname + " filter] Saving result to " + result_path + " ...")
+    # Inform
+    log.info(message_prefix + "Saving result to " + result_path + " ...")
 
     # Save the frame with the index as name
     frame.saveto(result_path)
+
+    # Success
+    log.success(message_prefix + "Succesfully saved the convolved frame for the '" + fltrname + "' filter to '" + result_path + "'")
 
 # -----------------------------------------------------------------
 

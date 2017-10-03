@@ -243,18 +243,13 @@ class ObservedImageMaker(Configurable):
 
         # simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
         # kernel_paths=None, unit=None, host_id=None
-        if "simulation" in kwargs: simulation = kwargs.pop("simulation")
-        elif "simulation_output_path" in kwargs: simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
-        else: raise ValueError("Simulation or simulation output path must be specified")
-
-        # Obtain the paths to the 'total' FITS files created by the simulation
-        self.fits_paths = simulation.totalfitspaths()
-
-        # Get the list of wavelengths for the simulation
-        self.wavelengths = simulation.wavelengths()
-
-        # Get the simulation prefix
-        self.simulation_prefix = simulation.prefix()
+        if "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.initialize_from_simulation(simulation)
+        elif "simulation_output_path" in kwargs:
+            simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
+            self.initialize_from_simulation(simulation)
+        else: self.initialize_from_cwd()
 
         # Get output directory
         output_path = kwargs.pop("output_path", None)
@@ -286,6 +281,72 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def initialize_from_simulation(self, simulation):
+
+        """
+        Thisf unction ...
+        :param simulation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Initializing from simulation object ...")
+
+        # Obtain the paths to the 'total' FITS files created by the simulation
+        self.fits_paths = simulation.totalfitspaths()
+
+        # Get the list of wavelengths for the simulation
+        self.wavelengths = simulation.wavelengths()
+
+        # Get the simulation prefix
+        self.simulation_prefix = simulation.prefix()
+
+    # -----------------------------------------------------------------
+
+    def initialize_from_cwd(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Simulation or simulation output path not specified: searching for simulation output in the current working directory ...")
+
+        # Get datacube paths
+        #datacube_paths = fs.files_in_path(self.config.path, extension="fits")
+        total_datacube_paths = fs.files_in_path(self.config.path, extension="fits", endswith="_total")
+
+        # Get SED paths
+        sed_paths = fs.files_in_path(self.config.path, extension="dat", endswith="_sed")
+
+        # Determine prefix
+        prefix = None
+        for path in total_datacube_paths:
+            filename = fs.strip_extension(fs.name(path))
+            if prefix is None:
+                prefix = filename.split("_")[0]
+            elif prefix != filename.split("_")[0]:
+                raise IOError("Not all datacubes have the same simulation prefix")
+        if prefix is None: raise IOError("No datacubes were found")
+
+        # Set the paths to the toatl FITS files created by the simulation
+        self.fits_paths = total_datacube_paths
+
+        from ..data.sed import load_sed
+
+        # Load one of the SEDs
+        if len(sed_paths) == 0: raise IOError("No SED files") # TODO: look for wavelength grid
+        sed = load_sed(sed_paths[0])
+
+        # Set the list of wavelengths for the simulation
+        self.wavelengths = sed.wavelengths(asarray=True, unit="micron")
+
+        # Set the simulation prefix
+        self.simulation_prefix = prefix
+
+    # -----------------------------------------------------------------
+
     def get_filter_names(self, **kwargs):
 
         """
@@ -305,6 +366,9 @@ class ObservedImageMaker(Configurable):
 
         # Filters
         elif kwargs.get("filters", None) is not None: self.filter_names = [str(fltr) for fltr in kwargs.pop("filters")]
+
+        # From config
+        elif self.config.filters is not None: self.filter_names = [str(fltr) for fltr in self.config.filters]
 
     # -----------------------------------------------------------------
 
@@ -329,7 +393,10 @@ class ObservedImageMaker(Configurable):
             self.instrument_names = kwargs.pop("instrument_names")
 
         # Instruments
-        elif kwargs.get("instruments", None) is not None: self.instruments = kwargs.pop("instruments")
+        elif kwargs.get("instruments", None) is not None: self.instrument_names = kwargs.pop("instruments")
+
+        # From config
+        elif self.config.instruments is not None: self.instrument_names = self.config.instruments
 
     # -----------------------------------------------------------------
 
@@ -575,7 +642,7 @@ class ObservedImageMaker(Configurable):
 
                 # Check whether there is such an image
                 if image_name is None:
-                    log.warning("There is no image in the dataset for the '" + filter_name + "' filter: skipping ...")
+                    log.warning("There is no image in the dataset for the '" + filter_name + "' filter: skipping for rebinning ...")
                     continue
 
                 # Get the coordinate system
@@ -914,6 +981,9 @@ class ObservedImageMaker(Configurable):
                 if isinstance(self.datacubes[instr_name], RemoteDataCube): nprocesses = self.config.nprocesses_remote
                 elif isinstance(self.datacubes[instr_name], DataCube): nprocesses = self.config.nprocesses_local
                 else: raise ValueError("Invalid datacube object for '" + instr_name + "' instrument")
+
+            # Limit the number of processes to the number of filters
+            nprocesses = min(len(filters), nprocesses)
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             frames = self.datacubes[instr_name].frames_for_filters(filters, convolve=self.config.spectral_convolution, nprocesses=nprocesses, check_previous_sessions=True)
