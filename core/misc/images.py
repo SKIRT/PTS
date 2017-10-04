@@ -1427,6 +1427,32 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_kernel_for_filter(self, filter_name, pixelscale):
+
+        """
+        This function ...
+        :param filter_name:
+        :param pixelscale:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
+
+        # Get the kernel
+        if self.has_kernel_path(filter_name): kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
+
+        # Get the PSF kernel
+        elif self.has_psf_fwhm(filter_name): kernel = create_psf_kernel(self.psf_fwhms[filter_name], pixelscale)
+
+        # Error
+        else: raise RuntimeError("Something went wrong")
+
+        # Return the kernel
+        return kernel
+
+    #  -----------------------------------------------------------------
+
     def convolve(self):
 
         """
@@ -1504,23 +1530,8 @@ class ObservedImageMaker(Configurable):
                 pixelscale = self.images[instr_name][filter_name].pixelscale
                 if pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
 
-                # Debugging
-                log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
-
-                # Get the kernel
-                if self.has_kernel_path(filter_name):
-
-                    # Load the kernel
-                    kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
-
-                # Get the PSF kernel
-                elif self.has_psf_fwhm(filter_name):
-
-                    # Create the kernel
-                    kernel = create_psf_kernel(self.psf_fwhms[filter_name], pixelscale)
-
-                # Error
-                else: raise RuntimeError("Something went wrong")
+                # Get kernel for this filter
+                kernel = self.get_kernel_for_filter(filter_name, pixelscale)
 
                 # Debugging
                 log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")

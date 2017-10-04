@@ -423,22 +423,82 @@ class AnianoKernels(Kernels):
         basename = "PSF_" + psf_name
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
 
+        # Determine the (potential) compressed filepath
+        compressed_psf_file_path = fs.join(self.kernels_path, basename + ".fits.gz")
+
         # Download the PSF file if it is not present
         if not fs.is_file(psf_file_path):
 
-            # Download the PSF
-            self.download_psf(basename)
+            # The compressed file is present
+            if fs.is_file(compressed_psf_file_path):
 
-            # Get the FWHM of the PSF
-            fwhm = get_fwhm_for_aniano_name(psf_name)
+                # Check whether the file is indeed compressed
+                if archive.is_compressed(compressed_psf_file_path):
 
-            # Set the FWHM of the PSF
-            psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm, to_filter=fltr)
-            psf.saveto(psf_file_path)
+                    # Initialize the PSF file
+                    self.initialize_compressed_psf_file(psf_name, compressed_psf_file_path, fltr)
+
+                # Not actually compressed, just rename
+                else: fs.rename_file_path(compressed_psf_file_path, basename + ".fits")
+
+            # No file is present
+            else:
+
+                # Download the PSF
+                self.download_psf(basename)
+
+                # Initialize the PSF file
+                self.initialize_psf_file(psf_name, psf_file_path, fltr)
+
+        # Check whether maybe the regular FITS file is actually a compressed file
+        elif archive.is_compressed(psf_file_path):
+
+            # Initialize the PSF file
+            self.initialize_compressed_psf_file(psf_name, psf_file_path, fltr)
 
         # Return
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path
+
+    # -----------------------------------------------------------------
+
+    def initialize_compressed_psf_file(self, psf_name, filepath, fltr):
+
+        """
+        This function ...
+        :param psf_name:
+        :param filepath:
+        :param fltr:
+        :return:
+        """
+
+        # Fix extension
+        filepath = archive.fix_extension(filepath)
+
+        # Unpack
+        fits_path = archive.decompress_file_in_place(filepath, remove=True)
+
+        # Initialize psf file
+        self.initialize_psf_file(psf_name, fits_path, fltr)
+
+    # -----------------------------------------------------------------
+
+    def initialize_psf_file(self, psf_name, filepath, fltr):
+
+        """
+        This function ...
+        :param psf_name:
+        :param filepath:
+        :param fltr:
+        :return:
+        """
+
+        # Get the FWHM of the PSF
+        fwhm = get_fwhm_for_aniano_name(psf_name)
+
+        # Set the FWHM of the PSF
+        psf = ConvolutionKernel.from_file(filepath, fwhm=fwhm, to_filter=fltr)
+        psf.saveto(filepath)
 
     # -----------------------------------------------------------------
 
