@@ -274,7 +274,7 @@ class ConvolutionKernel(Frame):
         xfwhms = self.x_fwhms
         yfwhms = self.y_fwhms
 
-        if np.isclose(xfwhms, yfwhms, rtol=0.05): return np.mean(xfwhms, yfwhms)
+        if np.isclose(xfwhms, yfwhms, rtol=0.05): return np.mean([xfwhms, yfwhms])
         else: raise ValueError("The number of FWHMs along the x and y axis differs more than 5%")
 
     # -----------------------------------------------------------------
@@ -338,7 +338,7 @@ class ConvolutionKernel(Frame):
         xsigmas = self.x_sigmas
         ysigmas = self.y_sigmas
 
-        if np.isclose(xsigmas, ysigmas, rtol=0.05): return np.mean(xsigmas, ysigmas)
+        if np.isclose(xsigmas, ysigmas, rtol=0.05): return np.mean([xsigmas, ysigmas])
         else: raise ValueError("The number of sigmas along the x and y axis differs more than 5%")
 
     # -----------------------------------------------------------------
