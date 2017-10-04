@@ -604,7 +604,7 @@ def get_fwhm(kernel_path):
     from .fits import get_header
 
     # Get the header
-    header = fits.get_header(kernel_path)
+    header = get_header(kernel_path)
 
     # Get and return the FWHM
     fwhm = headers.get_fwhm(header)
