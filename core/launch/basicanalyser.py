@@ -652,8 +652,11 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Making RGB images ...")
 
+        # Define the wavelengths for the RGB
+        wavelength_tuples = [(0.77, 0.55, 0.33), (333, 100, 24)]
+
         # Make RGB images from the output images
-        makergbimages(self.simulation, output_path=self.misc_options.path)
+        makergbimages(self.simulation, output_path=self.misc_options.path, wavelength_tuples=wavelength_tuples)
 
         # Done
         self.simulation.analysed_misc.append(rgb_name)

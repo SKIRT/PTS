@@ -39,7 +39,7 @@ aniano_psf_files_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ke
 # 2017 !
 aniano_kernels_highres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Hi_Resolution/"
 aniano_kernels_lowres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Low_Resolution/"
-aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_fits_Files/"
+aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_FITS_Files/"
 
 # -----------------------------------------------------------------
 
@@ -49,7 +49,7 @@ aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ke
 
 aniano_kernels_highres_link = aniano_kernels_highres_link_2017
 aniano_kernels_lowres_link = aniano_kernels_lowres_link_2017
-aniano_psf_files_link = aniano_psf_files_link_2017
+aniano_psf_files_link = aniano_psf_files_link_2012
 
 # -----------------------------------------------------------------
 

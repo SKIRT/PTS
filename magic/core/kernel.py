@@ -83,6 +83,7 @@ class ConvolutionKernel(Frame):
                 self.from_filter = parse_filter(self.metadata["frmfltr"])
             else:
                 self.from_filter = None
+        else: self.from_filter = None
 
         self.to_filter = parse_filter(self.metadata["tofltr"])
         self._psf_filter = self.to_filter
@@ -572,7 +573,7 @@ class ConvolutionKernel(Frame):
         # Set extra header info
         extra_header_info = dict()
         extra_header_info["PREPARED"] = self.prepared
-        extra_header_info["FRMFLTR"] = str(self.from_filter)
+        if self.from_filter is not None: extra_header_info["FRMFLTR"] = str(self.from_filter)
         extra_header_info["TOFLTR"] = str(self.to_filter)
 
         # Call the save function of the base class
