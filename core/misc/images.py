@@ -1345,7 +1345,7 @@ class ObservedImageMaker(Configurable):
             if self.config.write_intermediate:
 
                 # Loop over the images
-                for filter_name in self.images:
+                for filter_name in self.images[instr_name]:
 
                     # Remote frame?
                     frame = self.images[instr_name][filter_name]
