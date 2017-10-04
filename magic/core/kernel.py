@@ -94,6 +94,18 @@ class ConvolutionKernel(Frame):
             else:
                 self.to_filter = parse_filter(self.metadata["tofltr"])
                 self._psf_filter = self.to_filter
+        elif self.name is not None and "PSF_" in self.name:
+            filtername = self.name.split("PSF_")[1]
+            #print(filtername)
+            try:
+                fltr = parse_filter(filtername)
+                self.to_filter = fltr
+                self._psf_filter = fltr
+            except ValueError:
+                log.warning("The target filter for this convolution kernel is not defined")
+                self.to_filter = None
+                self._psf_filter = None
+        # Cannot find target filter
         else:
             log.warning("The target filter for this convolution kernel is not defined")
             self.to_filter = None

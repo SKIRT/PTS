@@ -177,7 +177,8 @@ def get_info(path):
 
 # -----------------------------------------------------------------
 
-def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False, no_wcs=False):
+def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False,
+                hdulist_index=0, no_filter=False, no_wcs=False):
 
     """
     This function ...
@@ -253,7 +254,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
     # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
-    else: pixelscale = None
+    #else: pixelscale = None
 
     # IF NO_WCS, SET TO NONE (BUT STILL GET IT FIRST TO GET THE PIXELSCALE)
     if no_wcs: wcs = None
@@ -516,7 +517,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         #for key in flat_header: print(key, flat_header[key])
         #for key in flat_header: print(key)
         wcs = CoordinateSystem(flat_header)
+        #print(wcs)
         pixelscale = wcs.pixelscale
+        #print(pixelscale)
     except ValueError as e:
         if not no_wcs:
             log.warning("An error occured while trying to interpret the coordinate system of the image:")
@@ -525,6 +528,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                  log.warning("  " + line)
         wcs = None
         pixelscale = None
+
+    #print(wcs)
+    #print(pixelscale)
 
     # No WCS information
     #else: wcs = pixelscale = None
@@ -542,7 +548,6 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
-    else: pixelscale = None
 
     # IF NO_WCS, SET TO NONE (BUT GET IT FIRST TO GET THE PIXELSCALE)
     if no_wcs: wcs = None
