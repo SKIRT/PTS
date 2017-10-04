@@ -28,6 +28,9 @@ definition.add_optional("output", "string", "output directory")
 definition.add_flag("write_intermediate", "write intermediate results", False)
 definition.add_flag("keep_intermediate", "keep intermediate results", False)
 
+# Save kernels
+definition.add_flag("write_kernels", "write the prepared convolution kernels", False)
+
 # -----------------------------------------------------------------
 
 # Add flags
@@ -37,6 +40,14 @@ definition.add_flag("group", "group the images per instrument", False)
 # Number of parallel processes to use to create the images
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes to use for local calculation", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes to use for remote calculation", 8)
+
+# -----------------------------------------------------------------
+
+# LIMIT TO THE RATIO BETWEEN CONVOLUTION KERNEL FWHM AND IMAGE PIXELSCALE
+definition.add_optional("max_fwhm_pixelscale_ratio", "positive_real", "maximum ratio between the convolution kernel FWHM and the image pixelscale before downsampling is applied")
+
+# REBIN TO SMALLER PIXELSCALES?
+definition.add_flag("upsample", "rebin images where upsampling is required?", False)
 
 # -----------------------------------------------------------------
 

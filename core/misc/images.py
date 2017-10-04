@@ -277,6 +277,37 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def remote_kernels_path(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        dirname = "observedimagemaker_" + self.output_path_hash + "_kernels"
+        dirpath = fs.join(self.remote.pts_temp_path, dirname)
+
+        # Create
+        if self.config.write_kernels and not self.remote.is_directory(dirpath): self.remote.create_directory(dirpath)
+
+        # Return the path
+        return dirpath
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def kernels_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("kernels", create=self.config.write_kernels)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_coordinate_systems(self):
 
@@ -1686,6 +1717,18 @@ class ObservedImageMaker(Configurable):
                 # Invalid
                 else: raise RuntimeError("Something went wrong")
 
+                # Get target WCS
+                wcs = self.rebin_coordinate_systems[instr_name][filter_name]
+
+                # CHECK THE PIXELSCALES
+                if not self.config.upsample and wcs.average_pixelscale < self.images[instr_name][filter_name].average_pixelscale:
+
+                    # Give warning that rebinning will not be performed
+                    log.warning("Rebinning will not be peformed for the '" + filter_name + "' image of the '" + instr_name + "' instrument since the target pixelscale is smaller than the current pixelscale")
+
+                    # Skip the rebin step for this image
+                    continue
+
                 # Debugging
                 log.debug("Rebinning the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
@@ -1706,9 +1749,6 @@ class ObservedImageMaker(Configurable):
                     # Convert
                     self.images[instr_name][filter_name].convert_to(new_unit)
                     converted = True
-
-                # Get target WCS
-                wcs = self.rebin_coordinate_systems[instr_name][filter_name]
 
                 # Convert to remote frame if necessary
                 if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
