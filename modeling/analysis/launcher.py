@@ -1419,6 +1419,10 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.fluxes = True
         self.analysis_options.misc.images = True
 
+        # WRITE INTERMEDIATE RESULTS
+        self.analysis_options.misc.write_intermediate_images = True
+        self.analysis_options.misc.write_convolution_kernels = True
+
         # Use spectral convolution
         self.analysis_options.misc.fluxes_spectral_convolution = self.config.spectral_convolution_fluxes
         self.analysis_options.misc.images_spectral_convolution = self.config.spectral_convolution_images
@@ -1449,6 +1453,8 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # Convolution kernels
         #self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_psfs_auto = True # automatically determine the PSF for each filter
+        # FWHMS
+        self.analysis_options.misc.fwhms_dataset = self.dataset_path
 
         # REBINNING
         #self.analysis_options.misc.rebin_wcs = # dictionary of FITS files per filter?

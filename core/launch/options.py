@@ -177,6 +177,7 @@ class AnalysisOptions(Options):
         ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
         self.misc.add_property("images_psfs_auto", "boolean", "automatically determine the appropriate PSF kernel for each image", False)
+        self.misc.add_property("fwhms_dataset", "file_path", "path to the dataset that should be used to get the target FWHM for the different images", None)
 
         # Remote thresholds
         self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)

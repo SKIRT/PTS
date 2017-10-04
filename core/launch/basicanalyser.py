@@ -767,6 +767,7 @@ class BasicAnalyser(Configurable):
         input_dict["auto_psfs"] = self.misc_options.images_psfs_auto
         input_dict["kernel_paths"] = self.misc_options.images_kernels
         #input_dict["psf_paths"] =
+        if self.misc_options.fwhms_dataset is not None: input_dict["fwhms_dataset"] = self.misc_options.fwhms_dataset
 
         # Rebinning
         if types.is_dictionary(self.misc_options.rebin_wcs): input_dict["rebin_wcs_paths"] = self.misc_options.rebin_wcs

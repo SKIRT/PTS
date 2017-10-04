@@ -90,6 +90,9 @@ class ObservedImageMaker(Configurable):
         # The coordinate systems of each instrument
         self.coordinate_systems = None
 
+        # The FWHMs
+        self.fwhms = None
+
         # The kernel paths
         self.kernel_paths = None
 
@@ -725,6 +728,31 @@ class ObservedImageMaker(Configurable):
         if kwargs.get("psf_paths", None) is not None and auto_psfs: raise ValueError("Cannot specify 'psf_paths' when 'auto_psfs' is enabled")
         if auto_psfs and kwargs.get("kernel_paths", None) is not None: raise ValueError("Cannot specify 'kernel_paths' when 'auto_psfs' is enabled")
 
+        # Get FWHMs reference dataset
+        if kwargs.get("fwhms_dataset", None) is not None:
+
+            # Load the dataset
+            from ...magic.core.dataset import DataSet
+            fwhms_dataset = kwargs.pop("fwhms_dataset")
+            if types.is_string_type(fwhms_dataset): fwhms_dataset = DataSet.from_file(fwhms_dataset)
+
+            image_names_for_filters = fwhms_dataset.get_names_for_filters(self.filter_names)
+            for filter_name, image_name in zip(self.filter_names, image_names_for_filters):
+
+                # Check whether there is such an image
+                if image_name is None:
+                    log.warning("There is no image in the dataset for the '" + filter_name + "' filter: FWHM cannot be obtained")
+                    continue
+
+                # Get the FWHM
+                fwhm = fwhms_dataset.get_fwhm(image_name)
+
+                # If defined, set the FWHM
+                if fwhm is not None:
+                    if self.fwhms is None: self.fwhms = dict()
+                    self.fwhms[filter_name] = fwhm
+                else: log.warning("The FWHM of the '" + filter_name + "' image in the dataset is not defined")
+
         # Kernel paths
         if kwargs.get("kernel_paths", None) is not None: self.kernel_paths = kwargs.pop("kernel_paths")
 
@@ -733,6 +761,18 @@ class ObservedImageMaker(Configurable):
 
         # Automatic PSF determination
         elif auto_psfs: self.set_psf_kernels()
+
+    # -----------------------------------------------------------------
+
+    def has_fwhm(self, filter_name):
+
+        """
+        This fnction ...
+        :param filter_name:
+        :return:
+        """
+
+        return self.fwhms is not None and filter_name in self.fwhms and self.fwhms[filter_name] is not None
 
     # -----------------------------------------------------------------
 
@@ -768,7 +808,17 @@ class ObservedImageMaker(Configurable):
                 # Set the PSF kernel path
                 self.kernel_paths[filter_name] = psf_path
 
-            # Check whether we have a FWHM
+            # check whether we have a FWHM
+            elif self.has_fwhm(filter_name):
+
+                # Get the FWHM
+                fwhm = self.fwhms[filter_name]
+
+                # Set the FWHM
+                if self.psf_fwhms is None: self.psf_fwhms = dict()
+                self.psf_fwhms[filter_name] = fwhm
+
+            # Variable FWHM?
             elif not has_variable_fwhm(filter_name):
 
                 # Get the FWHM
@@ -1472,6 +1522,9 @@ class ObservedImageMaker(Configurable):
         :return:
         """
 
+        # Has FWHM defined
+        if self.has_fwhm(filter_name): return self.fwhms[filter_name]
+
         # Has kernel
         if self.has_kernel_path(filter_name): fwhm = get_kernel_fwhm(self.kernel_paths[filter_name])
 
@@ -1519,6 +1572,11 @@ class ObservedImageMaker(Configurable):
 
         # Error
         else: raise RuntimeError("Something went wrong")
+
+        # SET FWHM IF UNDEFINED
+        if kernel.fwhm is None:
+            if self.has_fwhm(filter_name): kernel.fwhm = self.fwhms[filter_name]
+            else: log.warning("The FWHM of the convolution kernel for the '" + filter_name + "' image is undefined")
 
         # Return the kernel
         return kernel
@@ -1605,6 +1663,7 @@ class ObservedImageMaker(Configurable):
 
                 # CHECK THE RATIO BETWEEN FWHM AND PIXELSCALE
                 target_fwhm = self.get_fwhm_for_filter(filter_name)
+                if target_fwhm is None: raise ValueError("The FWHM cannot be determined for the '" + filter_name + "' image")
                 if target_fwhm > self.config.max_fwhm_pixelscale_ratio * pixelscale.average:
 
                     # GIVE WARNING

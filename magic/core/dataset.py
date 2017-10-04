@@ -1523,6 +1523,20 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_fwhm(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        header = self.get_header(name)
+        header_fwhm = headers.get_fwhm(header)
+        return header_fwhm
+
+    # -----------------------------------------------------------------
+
     @property
     def min_fwhm(self):
 
@@ -1536,8 +1550,7 @@ class DataSet(object):
         for name in self.paths:
 
             # Get the FWHM
-            header = self.get_header(name)
-            header_fwhm = headers.get_fwhm(header)
+            header_fwhm = self.get_fwhm(name)
 
             if fwhm is None or header_fwhm < fwhm: fwhm = header_fwhm
 
@@ -1559,8 +1572,7 @@ class DataSet(object):
         for name in self.paths:
 
             # Get the FWHM
-            header = self.get_header(name)
-            header_fwhm = headers.get_fwhm(header)
+            header_fwhm = self.get_fwhm(name)
 
             if fwhm is None or header_fwhm > fwhm: fwhm = header_fwhm
 
