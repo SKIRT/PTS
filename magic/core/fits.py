@@ -518,12 +518,13 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         wcs = CoordinateSystem(flat_header)
         pixelscale = wcs.pixelscale
     except ValueError as e:
-         log.warning("An error occured while trying to interpret the coordinate system of the image:")
-         for line in e.message.split("\n"):
-             if not line.strip(): continue
-             log.warning("  " + line)
-         wcs = None
-         pixelscale = None
+        if not no_wcs:
+            log.warning("An error occured while trying to interpret the coordinate system of the image:")
+            for line in e.message.split("\n"):
+                 if not line.strip(): continue
+                 log.warning("  " + line)
+        wcs = None
+        pixelscale = None
 
     # No WCS information
     #else: wcs = pixelscale = None

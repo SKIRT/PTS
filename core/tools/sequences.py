@@ -498,7 +498,7 @@ def elements_not_in_other(sequence_a, sequence_b, check_existing=False):
     # Check whether each item in sequence_b exists in sequence_a
     if check_existing:
         for element in sequence_b:
-            if element not in sequence_a: raise ValueError("The element '" + str(element) + "' from the second sequence is not in the first sequence")
+            if element not in sequence_a: raise ValueError("The element '" + str(element) + "' from the second sequence is not in the first sequence (" + str(sequence_a) + ")")
 
     for element in sequence_a:
 
