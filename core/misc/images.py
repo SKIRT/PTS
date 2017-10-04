@@ -1552,6 +1552,19 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_fwhm(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        if not self.has_fwhm(filter_name): return None
+        else: return self.fwhms[filter_name]
+
+    # -----------------------------------------------------------------
+
     def get_kernel_for_filter(self, filter_name, pixelscale):
 
         """
@@ -1565,7 +1578,7 @@ class ObservedImageMaker(Configurable):
         log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
 
         # Get the kernel
-        if self.has_kernel_path(filter_name): kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
+        if self.has_kernel_path(filter_name): kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name], fwhm=self.get_fwhm(filter_name))
 
         # Get the PSF kernel
         elif self.has_psf_fwhm(filter_name): kernel = create_psf_kernel(self.psf_fwhms[filter_name], pixelscale)
