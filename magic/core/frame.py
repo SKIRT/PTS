@@ -800,7 +800,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None):
+                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None, no_wcs=False):
 
         """
         This function ...
@@ -816,6 +816,7 @@ class Frame(NDDataArray):
         :param extra_meta:
         :param silent:
         :param distance:
+        :param no_wcs:
         :return:
         """
 
@@ -824,7 +825,7 @@ class Frame(NDDataArray):
 
         from ..core.fits import load_frame
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance)
+        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance, no_wcs=no_wcs)
         except TypeError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------

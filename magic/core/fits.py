@@ -177,7 +177,7 @@ def get_info(path):
 
 # -----------------------------------------------------------------
 
-def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
+def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False, no_wcs=False):
 
     """
     This function ...
@@ -188,6 +188,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param always_call_first_primary:
     :param rebin_to_wcs:
     :param hdulist_index:
+    :param no_filter:
+    :param no_wcs:
     :return:
     """
 
@@ -230,13 +232,28 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Fix
     fix_ctypes(flattened_header)
 
-    # Obtain the world coordinate system
-    try:
-        wcs = CoordinateSystem(flattened_header)
-        pixelscale = None
-    except ValueError:
-        wcs = None
-        pixelscale = headers.get_pixelscale(original_header)
+    # If WCS is needed or expected
+    if not no_wcs:
+
+        # Obtain the world coordinate system
+        try:
+            wcs = CoordinateSystem(flattened_header)
+            pixelscale = None
+        except ValueError:
+            wcs = None
+            #pixelscale = headers.get_pixelscale(original_header)
+            pixelscale = None
+
+    else: wcs = pixelscale = None
+
+    # Get the pixelscale from the header
+    header_pixelscale = headers.get_pixelscale(original_header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
+
+    # COMPARE PIXELSCALE AND HEADER PIXELSCALE?
+
+    # Set pixelscale from direct header information
+    if wcs is None: pixelscale = header_pixelscale
+    else: pixelscale = None
 
     # Set the filter
     if no_filter: fltr = None
@@ -395,7 +412,7 @@ other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE
 # -----------------------------------------------------------------
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-               fwhm=None, add_meta=True, extra_meta=None, distance=None):
+               fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False):
 
     """
     This function ...
@@ -411,6 +428,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param add_meta:
     :param extra_meta:
     :param distance:
+    :param no_wcs:
     :return:
     """
 
@@ -443,6 +461,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Get the primary HDU
     hdu = hdulist[hdulist_index]
 
+    # Check whether the data can be read
+    try: first_plane = hdu.data[0]
+    except TypeError: raise DamagedFITSFileError("The FITS file is damaged", path=path)
+
     # Get the image header
     header = hdu.header
 
@@ -472,7 +494,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Remove references to a potential third axis
     flat_header = headers.flattened(header)
 
-    # Load the frames
+    # Get the pixelscale
     header_pixelscale = headers.get_pixelscale(header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
 
     # Simplify the header
@@ -483,19 +505,25 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     #print(flat_header)
 
-    # Obtain the world coordinate system from the 'flattened' header
-    try:
-        #for key in flat_header: print(key, flat_header[key])
-        #for key in flat_header: print(key)
-        wcs = CoordinateSystem(flat_header)
-        pixelscale = wcs.pixelscale
-    except ValueError as e:
-         log.warning("An error occured while trying to interpret the coordinate system of the image:")
-         for line in e.message.split("\n"):
-             if not line.strip(): continue
-             log.warning("  " + line)
-         wcs = None
-         pixelscale = None
+    # If the coordinate system is needed or expected
+    if not no_wcs:
+
+        # Obtain the world coordinate system from the 'flattened' header
+        try:
+            #for key in flat_header: print(key, flat_header[key])
+            #for key in flat_header: print(key)
+            wcs = CoordinateSystem(flat_header)
+            pixelscale = wcs.pixelscale
+        except ValueError as e:
+             log.warning("An error occured while trying to interpret the coordinate system of the image:")
+             for line in e.message.split("\n"):
+                 if not line.strip(): continue
+                 log.warning("  " + line)
+             wcs = None
+             pixelscale = None
+
+    # No WCS information
+    else: wcs = pixelscale = None
 
     # Check whether pixelscale as defined by header keyword and pixelscale derived from WCS match!
     if header_pixelscale is not None and pixelscale is not None:
@@ -508,6 +536,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec")) + ", " + str(header_pixelscale.y.to("arcsec")) + ")")
             log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec")) + ", " + str(pixelscale.y.to("arcsec")) + ")")
 
+    # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
     else: pixelscale = None
 

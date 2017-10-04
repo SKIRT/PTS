@@ -76,7 +76,7 @@ class ConvolutionKernel(Frame):
         self._prepared = False
         if "prepared" in self.metadata: self._prepared = self.metadata["prepared"]
 
-        # Get from and to filter, set PSF filter
+        # Get from filter
         if "frmfltr" in self.metadata:
             # Prevent sending None string to parse_filter
             if self.metadata["frmfltr"] != 'None':
@@ -85,8 +85,14 @@ class ConvolutionKernel(Frame):
                 self.from_filter = None
         else: self.from_filter = None
 
-        self.to_filter = parse_filter(self.metadata["tofltr"])
-        self._psf_filter = self.to_filter
+        # Get target filter
+        if "tofltr" in self.metadata:
+            self.to_filter = parse_filter(self.metadata["tofltr"])
+            self._psf_filter = self.to_filter
+        else:
+            log.warning("The target filter for this convolution kernel is not defined")
+            self.to_filter = None
+            self._psf_filter = None
 
         # Make sure that the data is in 64 bit floating-point precision (the reason is the precision of Astropy's normalization criterion)
         self._data = self._data.astype("float64")
@@ -111,7 +117,7 @@ class ConvolutionKernel(Frame):
         if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
 
         # Call the from_file function of the base class
-        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta, no_filter=True)
+        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta, no_filter=True, no_wcs=True)
 
     # -----------------------------------------------------------------
 

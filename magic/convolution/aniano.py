@@ -28,6 +28,7 @@ from ...core.units.parsing import parse_unit
 from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.tools import network
+from ..core import fits
 
 # -----------------------------------------------------------------
 
@@ -278,14 +279,14 @@ class AnianoKernels(Kernels):
         """
 
         # Get the local path to the kernel (will be downloaded if necessary)
-        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
+        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True, check_valid=False)
 
         # Load the kernel frame
         try: kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
-        except IOError:
+        except fits.DamagedFITSFileError:
             log.warning("The kernel image was probably damaged. Removing it and downloading it again ...")
             fs.remove_file(kernel_path)
-            kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
+            kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True, check_valid=False)
             kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
 
         # Get the FWHM of the kernel (should have been done already!)
@@ -303,7 +304,7 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="BiGauss"):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="BiGauss", check_valid=True):
 
         """
         This function ...
@@ -315,6 +316,7 @@ class AnianoKernels(Kernels):
         :param return_name:
         :param from_model: BiGauss is for SDSS
         :param to_model: BiGauss is for SDSS
+        :param check_valid:
         :return:
         """
 
@@ -363,16 +365,51 @@ class AnianoKernels(Kernels):
             # Download the kernel
             self.download_kernel(kernel_file_basename)
 
-            # Find the appropriate FWHM
-            fwhm = get_fwhm_for_aniano_name(to_psf_name)
+            # Initialize the kernel file
+            self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
-            # Set the FWHM of the kernel
-            kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm, from_filter=from_filter, to_filter=to_filter)
-            kernel.saveto(kernel_file_path)
+        # Check
+        if check_valid:
+
+            # CHeck whether the file is OK
+            if check_valid and not fits.is_valid(kernel_file_path):
+
+                # Give warning
+                log.warning("The kernel file is damaged. Removing it and downloading it again ...")
+
+                # Remove damaged file
+                fs.remove_file(kernel_file_path)
+
+                # Download the PSF
+                self.download_kernel(kernel_file_basename)
+
+                # Initialize the kernel file
+                self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
         # Return
         if return_name: return kernel_file_path, to_psf_name
         else: return kernel_file_path # Return the local kernel path
+
+    # -----------------------------------------------------------------
+
+    def initialize_kernel_file(self, to_psf_name, filepath, from_filter, to_filter):
+
+        """
+        This function ...
+        :param kernel_basename:
+        :param to_psf_name:
+        :param filepath:
+        :param from_filter:
+        :param to_filter:
+        :return:
+        """
+
+        # Find the appropriate FWHM
+        fwhm = get_fwhm_for_aniano_name(to_psf_name)
+
+        # Set the FWHM of the kernel
+        kernel = ConvolutionKernel.from_file(filepath, fwhm=fwhm, from_filter=from_filter, to_filter=to_filter)
+        kernel.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -388,10 +425,15 @@ class AnianoKernels(Kernels):
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         # Get the local path to the PSF file (will be downloaded if necessary)
-        psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
+        psf_path, psf_name = self.get_psf_path(fltr, return_name=True, check_valid=False)
 
         # Load the PSF frame
-        psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
+        try: psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
+        except fits.DamagedFITSFileError:
+            log.warning("The kernel image was probably damaged. Removing it and downloading it again ...")
+            fs.remove_file(psf_path)
+            psf_path, psf_name = self.get_psf_path(fltr, return_name=True, check_valid=False)
+            psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
 
         # Get the FWHM of the PSF
         fwhm = get_fwhm_for_aniano_name(psf_name)
@@ -404,12 +446,13 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_psf_path(self, fltr, return_name=False):
+    def get_psf_path(self, fltr, return_name=False, check_valid=True):
 
         """
         This function ...
         :param fltr:
         :param return_name:
+        :param check_valid:
         :return:
         """
 
@@ -455,6 +498,21 @@ class AnianoKernels(Kernels):
 
             # Initialize the PSF file
             self.initialize_compressed_psf_file(psf_name, psf_file_path, fltr)
+
+        # CHeck whether the file is OK
+        if check_valid and not fits.is_valid(psf_file_path):
+
+            # Give warning
+            log.warning("The PSF file is damaged. Removing it and downloading it again ...")
+
+            # Remove damaged file
+            fs.remove_file(psf_file_path)
+
+            # Download the PSF
+            self.download_psf(basename)
+
+            # Initialize the PSF file
+            self.initialize_psf_file(psf_name, psf_file_path, fltr)
 
         # Return
         if return_name: return psf_file_path, psf_name
