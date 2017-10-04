@@ -101,11 +101,13 @@ class Pixelscale(AngleExtent):
         # Check if the x pixelscale and y pixelscale are close
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
 
+            from ...core.tools.stringify import tostr
+
             # Warn about the difference in x and y pixelscale
             from ...core.basics.log import log
             log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
-            log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
-            log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))
+            log.warning("  * x pixelscale (absolute value) = " + tostr(x_pixelscale))
+            log.warning("  * y pixelscale (absolute value) = " + tostr(y_pixelscale))
 
         # Return a single value for the pixelscale in arcseconds
         return 0.5 * (x_pixelscale + y_pixelscale)
@@ -288,11 +290,13 @@ class PhysicalPixelscale(PhysicalExtent):
         # Check if the x pixelscale and y pixelscale are close
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
 
+            from ...core.tools.stringify import tostr
+
             # Warn about the difference in x and y pixelscale
             from ...core.basics.log import log
             log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
-            log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
-            log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))
+            log.warning("  * x pixelscale (absolute value) = " + tostr(x_pixelscale))
+            log.warning("  * y pixelscale (absolute value) = " + tostr(y_pixelscale))
 
         # Return a single value for the pixelscale in parsec
         return 0.5 * (x_pixelscale + y_pixelscale)

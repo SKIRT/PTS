@@ -2201,7 +2201,7 @@ def create_psf_kernel(fwhm, pixelscale, fltr=None, sigma_level=5.0):
     kernel.normalize()  # to suppress warning
 
     # Create convolution kernel object
-    kernel = ConvolutionKernel(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm)
+    kernel = ConvolutionKernel(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm, pixelscale=pixelscale)
 
     # Return the kernel
     return kernel
