@@ -87,8 +87,13 @@ class ConvolutionKernel(Frame):
 
         # Get target filter
         if "tofltr" in self.metadata:
-            self.to_filter = parse_filter(self.metadata["tofltr"])
-            self._psf_filter = self.to_filter
+            if self.metadata["tofltr"] is None or self.metadata["tofltr"] == "None":
+                log.warning("The target filter for this convolution kernel is not defined")
+                self.to_filter = None
+                self._psf_filter = None
+            else:
+                self.to_filter = parse_filter(self.metadata["tofltr"])
+                self._psf_filter = self.to_filter
         else:
             log.warning("The target filter for this convolution kernel is not defined")
             self.to_filter = None
