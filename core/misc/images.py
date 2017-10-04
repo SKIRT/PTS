@@ -1622,7 +1622,7 @@ class ObservedImageMaker(Configurable):
 
                         # Get the target pixelscale
                         target_pixelscale = target_wcs.average_pixelscale
-                        target_downsample_factor = (target_pixelscale / pixelscale).to("").value
+                        target_downsample_factor = (target_pixelscale / pixelscale.average).to("").value
 
                         # Get the target FWHM to pixelscale ratio
                         target_fwhm_pixelscale_ratio = (target_fwhm / target_pixelscale).to("").value
@@ -1634,7 +1634,7 @@ class ObservedImageMaker(Configurable):
                         new_pixelscale = target_fwhm / ratio
 
                         # Determine the downsample factor
-                        downsample_factor = (new_pixelscale / pixelscale).to("").value
+                        downsample_factor = (new_pixelscale / pixelscale.average).to("").value
                         downsample_factor = numbers.nearest_even_integer_below(downsample_factor, below=target_downsample_factor)
 
                     # No rebinning: we can freely choose the downsampling factor
@@ -1647,7 +1647,7 @@ class ObservedImageMaker(Configurable):
                         ideal_pixelscale = target_fwhm / ideal_fwhm_pixelscale_ratio
 
                         # Determine the downsample factor
-                        downsample_factor = (ideal_pixelscale / pixelscale).to("").value
+                        downsample_factor = (ideal_pixelscale / pixelscale.average).to("").value
                         downsample_factor = numbers.nearest_even_integer(downsample_factor)
 
                     # Debugging
