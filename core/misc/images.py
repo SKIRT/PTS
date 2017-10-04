@@ -90,6 +90,9 @@ class ObservedImageMaker(Configurable):
         # The kernel paths
         self.kernel_paths = None
 
+        # The PSF FWHMs
+        self.psf_fwhms = None
+
         # The target unit
         self.unit = None
 
@@ -287,6 +290,30 @@ class ObservedImageMaker(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def has_kernel_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.kernel_paths is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_psf_fwhms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.psf_fwhms is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def convolution(self):
 
         """
@@ -294,7 +321,7 @@ class ObservedImageMaker(Configurable):
         :return:
         """
 
-        return self.kernel_paths is not None
+        return self.has_kernel_paths or self.has_psf_fwhms
 
     # -----------------------------------------------------------------
 
@@ -685,21 +712,55 @@ class ObservedImageMaker(Configurable):
         # Debugging
         log.debug("Determining the PSF kernel automatically for each image filter ...")
 
-        # Get Aniano kernels object
+        # Imports
         from pts.magic.convolution.aniano import AnianoKernels
+        from pts.magic.convolution.kernels import get_fwhm, has_variable_fwhm, has_average_variable_fwhm, get_average_variable_fwhm
+
+        # Get Aniano kernels object
         aniano = AnianoKernels()
 
-        # Initialieze the kernel paths dictionary
+        # Initialize the kernel paths dictionary
         self.kernel_paths = dict()
 
         # Loop over the filter names
         for filter_name in self.filter_names:
 
-            # Get the psf path
-            psf_path = aniano.get_psf_path(filter_name)
+            # Check whether we have Aniano PSF
+            if aniano.has_psf_for_filter(filter_name):
 
-            # Set the PSF kernel path
-            self.kernel_paths[filter_name] = psf_path
+                # Get the psf path
+                psf_path = aniano.get_psf_path(filter_name)
+
+                # Set the PSF kernel path
+                self.kernel_paths[filter_name] = psf_path
+
+            # Check whether we have a FWHM
+            elif not has_variable_fwhm(filter_name):
+
+                # Get the FWHM
+                fwhm = get_fwhm(filter_name)
+
+                # Set the FWHM
+                if self.psf_fwhms is None: self.psf_fwhms = dict()
+                self.psf_fwhms[filter_name] = fwhm
+
+            # The FWHM is variable, but we have a good average value
+            elif has_average_variable_fwhm(filter_name):
+
+                # Get the average FWHM
+                fwhm = get_average_variable_fwhm(filter_name)
+
+                # Give warning
+                log.warning("The FWHM for the '" + filter_name + "' is variable, but using the average value for this filter (Clark et al., 2017) ...")
+
+                # Set the FWHM
+                if self.psf_fwhms is None: self.psf_fwhms = dict()
+                self.psf_fwhms[filter_name] = fwhm
+
+            # No FWHM can be found
+            else:
+                #raise ValueError("")
+                log.error("The FWHM for the '" + filter_name + "' could not be determined: convolution will not be performed")
 
     # -----------------------------------------------------------------
 
@@ -1336,6 +1397,36 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_kernel_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        if not self.has_kernel_paths: return False
+
+        # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
+        return filter_name in self.kernel_paths and self.kernel_paths[filter_name] is not None
+
+    # -----------------------------------------------------------------
+
+    def has_psf_fwhm(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        if not self.has_psf_fwhms: return False
+
+        # Check
+        return filter_name in self.psf_fwhms and self.psf_fwhms[filter_name] is not None
+
+    # -----------------------------------------------------------------
+
     def convolve(self):
 
         """
@@ -1361,10 +1452,10 @@ class ObservedImageMaker(Configurable):
             for filter_name in self.images[instr_name]:
 
                 # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
-                if filter_name not in self.kernel_paths or self.kernel_paths[filter_name] is None:
+                if not self.has_kernel_path(filter_name) and not self.has_psf_fwhm(filter_name):
 
                     # Debugging
-                    log.debug("The filter '" + filter_name + "' is not in the kernel paths: no convolution")
+                    log.debug("The filter '" + filter_name + "' is not in the kernel paths nor is PSF FWHM defined: no convolution")
                     continue
 
                 # Check whether the end result is already there
@@ -1410,13 +1501,26 @@ class ObservedImageMaker(Configurable):
                 else: raise RuntimeError("Something went wrong")
 
                 # Check whether the pixelscale is defined
-                if self.images[instr_name][filter_name].pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
+                pixelscale = self.images[instr_name][filter_name].pixelscale
+                if pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
 
                 # Debugging
                 log.debug("Loading the convolution kernel for the '" + filter_name + "' filter ...")
 
-                # Load the kernel
-                kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
+                # Get the kernel
+                if self.has_kernel_path(filter_name):
+
+                    # Load the kernel
+                    kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
+
+                # Get the PSF kernel
+                elif self.has_psf_fwhm(filter_name):
+
+                    # Create the kernel
+                    kernel = create_psf_kernel(self.psf_fwhms[filter_name], pixelscale)
+
+                # Error
+                else: raise RuntimeError("Something went wrong")
 
                 # Debugging
                 log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
@@ -1898,5 +2002,42 @@ def instrument_name(datacube_path, prefix):
     """
 
     return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
+
+# -----------------------------------------------------------------
+
+def create_psf_kernel(fwhm, pixelscale, fltr=None, sigma_level=5.0):
+
+    """
+    This function ...
+    :param fwhm:
+    :param pixelscale:
+    :param fltr:
+    :param sigma_level:
+    :return:
+    """
+
+    from astropy.convolution import Gaussian2DKernel
+    from pts.magic.tools import statistics
+    from pts.core.tools.stringify import tostr
+
+    # Debugging
+    log.debug("Creating a PSF kernel for a FWHM of " + tostr(fwhm) + " and a pixelscale of " + tostr(pixelscale.average) + ", cut-off at a sigma level of " + tostr(sigma_level) + " ...")
+
+    # Get FWHM in pixels
+    fwhm_pix = (fwhm / pixelscale.average).to("").value
+
+    # Get the sigma in pixels
+    sigma_pix = fwhm_pix * statistics.fwhm_to_sigma
+
+    # Create a kernel
+    kernel_size = int(round(2.0 * sigma_level))
+    kernel = Gaussian2DKernel(sigma_pix, x_size=kernel_size, y_size=kernel_size)
+    kernel.normalize()  # to suppress warning
+
+    # Create convolution kernel object
+    kernel = ConvolutionKernel(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm)
+
+    # Return the kernel
+    return kernel
 
 # -----------------------------------------------------------------

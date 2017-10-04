@@ -42,12 +42,31 @@ from ..tools import archive as arch
 def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_percentile=100, output_path=None):
 
     # loop over the wavelength tuples
-    if wavelength_tuples==None: wavelength_tuples = [ None ]
+    if wavelength_tuples is None: wavelength_tuples = [None]
+
+    # Loop over the tuples
     for index in range(len(wavelength_tuples)):
 
-        # get the frame indices corresponding to the requested wavelengths
-        if wavelength_tuples[index] is None: frames = None
-        else: frames = simulation.frameindices(wavelength_tuples[index])
+        # Tuples in a list
+        if isinstance(wavelength_tuples, list):
+
+            # get the frame indices corresponding to the requested wavelengths
+            if wavelength_tuples[index] is None: frames = None
+            else: frames = simulation.frameindices(wavelength_tuples[index])
+
+            # Set name
+            if index > 0: name = "_" + str(index + 1)
+            else: name = ""
+
+        # Tuples in a dict
+        elif isinstance(wavelength_tuples, dict):
+
+            name = "_" + wavelength_tuples.keys()[index]
+            wavelengths = wavelength_tuples.values()[index]
+            frames = simulation.frameindices(wavelengths)
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'wavelength_tuples'")
 
         # get a list of output file names, including extension, one for each instrument
         outnames = simulation.totalfitspaths()
@@ -73,7 +92,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
                 im.setrange(rmin,rmax)
                 im.applylog()
                 im.applycurve()
-                savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
+                savename = outname[:-5] + name + ".png"
                 if output_path is not None: savename = os.path.join(output_path, os.path.basename(savename))
                 im.saveto(savename)
                 print("Created RGB image file " + savename)

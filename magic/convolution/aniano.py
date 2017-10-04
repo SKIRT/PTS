@@ -250,6 +250,21 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
+    def has_psf_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr: 
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # Check whether the filter string is in the Aniano names
+        return str(fltr) in aniano_names
+
+    # -----------------------------------------------------------------
+
     def get_kernel(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None):
 
         """

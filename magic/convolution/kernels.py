@@ -180,6 +180,19 @@ def has_variable_fwhm(fltr):
 
 # -----------------------------------------------------------------
 
+def has_average_variable_fwhm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...dustpedia.core.properties import has_fwhm as has_dustpedia_fwhm
+    return has_dustpedia_fwhm(fltr)
+
+# -----------------------------------------------------------------
+
 def get_average_variable_fwhm(fltr):
 
     """

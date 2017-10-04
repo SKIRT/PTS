@@ -79,6 +79,19 @@ def get_fwhm(fltr):
 
 # -----------------------------------------------------------------
 
+def has_fwhm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    properties = DustPediaProperties()
+    return properties.has_filter(fltr)
+
+# -----------------------------------------------------------------
+
 class DustPediaProperties(object):
 
     """

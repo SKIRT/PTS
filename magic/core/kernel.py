@@ -111,7 +111,7 @@ class ConvolutionKernel(Frame):
         if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
 
         # Call the from_file function of the base class
-        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta)
+        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta, no_filter=True)
 
     # -----------------------------------------------------------------
 
