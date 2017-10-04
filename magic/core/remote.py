@@ -494,7 +494,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        string = self.session.get_string("tostr(" + self.label + "pixelscale.y)")
+        string = self.session.get_string("tostr(" + self.label + ".pixelscale.y)")
         return parsing.angle_or_length_quantity(string)
 
     # -----------------------------------------------------------------
