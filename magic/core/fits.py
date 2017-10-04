@@ -254,7 +254,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
     # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
-    #else: pixelscale = None
+
+    # WCS IS DEFINED, SO DON'T SPECIFICALLY ADD PIXELSCALE AS AN ATTRIBUTE TO THE FRAME
+    # UNLESS WCS DOESN'T NEED TO BE SET
+    elif not no_wcs: pixelscale = None
 
     # IF NO_WCS, SET TO NONE (BUT STILL GET IT FIRST TO GET THE PIXELSCALE)
     if no_wcs: wcs = None
@@ -548,6 +551,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
+
+    # WCS IS DEFINED, SO DON'T SPECIFICALLY ADD PIXELSCALE AS AN ATTRIBUTE TO THE FRAME
+    # UNLESS WCS DOESN'T NEED TO BE SET
+    elif not no_wcs: pixelscale = None
 
     # IF NO_WCS, SET TO NONE (BUT GET IT FIRST TO GET THE PIXELSCALE)
     if no_wcs: wcs = None
