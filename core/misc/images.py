@@ -280,22 +280,22 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def remote_kernels_path(self):
-
-        """
-        Thisnf unction ...
-        :return:
-        """
-
-        dirname = "observedimagemaker_" + self.output_path_hash + "_kernels"
-        dirpath = fs.join(self.remote.pts_temp_path, dirname)
-
-        # Create
-        if self.config.write_kernels and not self.remote.is_directory(dirpath): self.remote.create_directory(dirpath)
-
-        # Return the path
-        return dirpath
+    # @lazyproperty
+    # def remote_kernels_path(self):
+    #
+    #     """
+    #     Thisnf unction ...
+    #     :return:
+    #     """
+    #
+    #     dirname = "observedimagemaker_" + self.output_path_hash + "_kernels"
+    #     dirpath = fs.join(self.remote.pts_temp_path, dirname)
+    #
+    #     # Create
+    #     if self.config.write_kernels and not self.remote.is_directory(dirpath): self.remote.create_directory(dirpath)
+    #
+    #     # Return the path
+    #     return dirpath
 
     # -----------------------------------------------------------------
 
@@ -1483,6 +1483,19 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def kernel_path_for_image(self, instr_name, filter_name):
+
+        """
+        Thisf unction ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.kernels_path, instr_name + "__" + filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
     def get_kernel_for_filter(self, filter_name, pixelscale):
 
         """
@@ -1643,8 +1656,26 @@ class ObservedImageMaker(Configurable):
                     # Re-determine the pixelscale
                     pixelscale = self.images[instr_name][filter_name].pixelscale
 
-                # Get the kernel
-                kernel = self.get_kernel_for_filter(filter_name, pixelscale)
+                # Determine the path to save the kernel
+                saved_kernel_path = self.kernel_path_for_image(instr_name, filter_name)
+
+                # Exists? -> load the kernel from file
+                if fs.is_file(saved_kernel_path):
+
+                    # Success
+                    log.success("Kernel file for the '" + filter_name + "' of the '" + instr_name + "' instrument is found in directory '" + self.intermediate_rebin_path + "'")
+
+                    # Load the kernel
+                    kernel = ConvolutionKernel.from_file(saved_kernel_path)
+
+                # Create or get the kernel
+                else:
+
+                    # Get the kernel
+                    kernel = self.get_kernel_for_filter(filter_name, pixelscale)
+
+                    # Write the kernel
+                    if self.config.write_kernels: kernel.saveto(saved_kernel_path)
 
                 # Debugging
                 log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")

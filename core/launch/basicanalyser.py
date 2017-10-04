@@ -740,6 +740,7 @@ class BasicAnalyser(Configurable):
 
         # Set other
         self.image_maker.config.write_intermediate = self.misc_options.write_intermediate_images
+        self.image_maker.config.write_kernels = self.misc_options.write_convolution_kernels
 
         # Set input
         input_dict = dict()
