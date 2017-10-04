@@ -27,6 +27,8 @@ from ...core.filter.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.units.parsing import parse_unit as u
+from ...core.tools import types
+from ..basics.pixelscale import Pixelscale, PhysicalPixelscale
 
 # -----------------------------------------------------------------
 
@@ -84,6 +86,7 @@ def import_necessary_modules(session):
     session.import_package_update("parsing", from_name="pts.core.tools", show_output=log.is_debug())
     session.import_package_update("parse_filter", from_name="pts.core.filter.filter", show_output=log.is_debug())
     session.import_package_update("BroadBandFilter", from_name="pts.core.filter.broad", show_output=log.is_debug())
+    session.import_package_update("tostr", from_name="pts.core.tools.stringify", show_output=log.is_debug())
 
 # -----------------------------------------------------------------
 
@@ -454,6 +457,87 @@ class RemoteFrame(object):
         """
 
         self.session.send_line_and_raise(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixelscale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        string = self.session.get_string("tostr(" + self.label + ".pixelscale.x)")
+        return string != "None"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        string = self.session.get_string("tostr(" + self.label + ".pixelscale.x)")
+        return parsing.angle_or_length_quantity(string)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        string = self.session.get_string("tostr(" + self.label + "pixelscale.y)")
+        return parsing.angle_or_length_quantity(string)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_angle(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_length_quantity(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: return None
+        else:
+            if self.has_angular_pixelscale: return Pixelscale(x=self.x_pixelscale, y=self.y_pixelscale)
+            elif self.has_physical_pixelscale: return PhysicalPixelscale(x=self.x_pixelscale, y=self.y_pixelscale)
+            else: raise ValueError("Uknown pixelscale type")
 
     # -----------------------------------------------------------------
 

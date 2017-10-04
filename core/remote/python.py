@@ -1024,8 +1024,11 @@ class AttachedPythonSession(RemotePythonSession):
         if lines[0] == name: lines = lines[1:]
         #print(lines)
 
+        # None?
+        if len(lines) == 0: return None
+
         # Return the value
-        return eval(lines[0])
+        else: return eval(lines[0])
 
     # -----------------------------------------------------------------
 

@@ -51,6 +51,32 @@ def integer_or_real_or_string(argument):
 
 # -----------------------------------------------------------------
 
+def angle_or_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return angle(argument)
+    except ValueError: return quantity(argument)
+
+# -----------------------------------------------------------------
+
+def angle_or_length_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return angle(argument)
+    except ValueError: return length_quantity(argument)
+
+# -----------------------------------------------------------------
+
 def integer_or_real_or_quantity(argument):
 
     """
