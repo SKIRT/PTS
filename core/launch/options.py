@@ -173,6 +173,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
         self.misc.add_property("write_intermediate_images", "boolean", "write intermediate results from the observed image making procedure", False)
         self.misc.add_property("write_convolution_kernels", "boolean", "write the convolution kernels used in the observed image making procedure", False)
+        self.misc.add_property("no_images_filters", "filter_list", "don't create observed images for these filters", [])
 
         ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)

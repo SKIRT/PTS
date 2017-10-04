@@ -33,6 +33,7 @@ from .options import progress_name, timeline_name, memory_name, seds_name, grids
 from ..extract.progress import ProgressTable
 from ..extract.timeline import TimeLineTable
 from ..extract.memory import MemoryUsageTable
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -685,6 +686,18 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters_for_fluxes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.misc_options.observation_filters
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes(self):
 
         """
@@ -703,7 +716,7 @@ class BasicAnalyser(Configurable):
 
         # Run
         self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
-                                 filter_names=self.misc_options.observation_filters,
+                                 filter_names=self.filters_for_fluxes,
                                  instrument_names=self.misc_options.observation_instruments,
                                  errors=self.misc_options.flux_errors,
                                  no_spectral_convolution_filters=self.misc_options.no_fluxes_spectral_convolution_filters)
@@ -711,6 +724,18 @@ class BasicAnalyser(Configurable):
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
         self.simulation.save()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filters_for_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.elements_not_in_other(self.misc_options.observation_filters, self.misc_options.no_images_filters, check_existing=True)
 
     # -----------------------------------------------------------------
 
@@ -750,7 +775,7 @@ class BasicAnalyser(Configurable):
         input_dict["output_path"] = self.misc_options.path
 
         # Filters and instruments
-        input_dict["filter_names"] = self.misc_options.observation_filters
+        input_dict["filter_names"] = self.filters_for_images
         input_dict["instrument_names"] = self.misc_options.observation_instruments
 
         # Coordinate system of the datacubes

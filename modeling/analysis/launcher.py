@@ -1434,6 +1434,9 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range_without_iras  # the filters for which to create the observations (no IRAS)
         self.analysis_options.misc.observation_instruments = [earth_name]
 
+        # DON'T CREATE OBSERVED IMAGES FOR THE PLANCK FILTERS
+        self.analysis_options.misc.no_images_filters = self.planck_filters
+
         # Group the images per instrument (only when more instruments are being converted into images)
         #self.analysis_options.misc.group_images = True
 
