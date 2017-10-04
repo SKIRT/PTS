@@ -105,6 +105,12 @@ images_name = "images"
 
 # -----------------------------------------------------------------
 
+extraction_names = [progress_name, timeline_name, memory_name]
+plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
+misc_names = [rgb_name, wave_name, fluxes_name, images_name]
+
+# -----------------------------------------------------------------
+
 class AnalysisOptions(Options):
 
     """

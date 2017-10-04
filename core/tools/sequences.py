@@ -483,16 +483,22 @@ def contains_same_elements(sequence_a, sequence_b):
 
 # -----------------------------------------------------------------
 
-def elements_not_in_other(sequence_a, sequence_b):
+def elements_not_in_other(sequence_a, sequence_b, check_existing=False):
 
     """
     This function ...
     :param sequence_a: 
-    :param sequence_b: 
+    :param sequence_b:
+    :param check_existing:
     :return: 
     """
 
     elements = set()
+
+    # Check whether each item in sequence_b exists in sequence_a
+    if check_existing:
+        for element in sequence_b:
+            if element not in sequence_a: raise ValueError("The element '" + str(element) + "' from the second sequence is not in the first sequence")
 
     for element in sequence_a:
 
