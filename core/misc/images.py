@@ -803,7 +803,7 @@ class ObservedImageMaker(Configurable):
             if aniano.has_psf_for_filter(filter_name):
 
                 # Get the psf path
-                psf_path = aniano.get_psf_path(filter_name)
+                psf_path = aniano.get_psf_path(filter_name, fwhm=self.get_fwhm(filter_name))
 
                 # Set the PSF kernel path
                 self.kernel_paths[filter_name] = psf_path
