@@ -2216,7 +2216,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def crop(self, x_min, x_max, y_min, y_max):
+    def crop(self, x_min, x_max, y_min, y_max, out_of_bounds="error"):
 
         """
         This function ...
@@ -2224,11 +2224,15 @@ class Frame(NDDataArray):
         :param x_max:
         :param y_min:
         :param y_max:
+        :param out_of_bounds:
         :return:
         """
 
         # Crop the frame
-        new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
+        if out_of_bounds == "error": new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "adjust": new_data, x_min, x_max, y_min, y_max = cropping.crop_direct(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "expand": new_data = cropping.crop_absolute(self._data, x_min, x_max, y_min, y_max)
+        else: raise ValueError("Invalid option for 'out_of_bounds'")
 
         # Adapt the WCS
         if self.wcs is not None:

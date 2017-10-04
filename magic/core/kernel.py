@@ -239,6 +239,122 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_fwhms(self):
+
+        """
+        Thisf nction ...
+        :return:
+        """
+
+        return 0.5 * float(self.xsize) / self.fwhm_pix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_fwhms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * float(self.ysize) / self.fwhm_pix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        xfwhms = self.x_fwhms
+        yfwhms = self.y_fwhms
+
+        if np.isclose(xfwhms, yfwhms, rtol=0.05): return np.mean(xfwhms, yfwhms)
+        else: raise ValueError("The number of FWHMs along the x and y axis differs more than 5%")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fwhm * statistics.fwhm_to_sigma
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.sigma / self.average_pixelscale).to("").value if self.sigma is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_sigmas(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return 0.5 * float(self.xsize) / self.sigma_pix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_sigmas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * float(self.ysize) / self.sigma_pix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigmas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        xsigmas = self.x_sigmas
+        ysigmas = self.y_sigmas
+
+        if np.isclose(xsigmas, ysigmas, rtol=0.05): return np.mean(xsigmas, ysigmas)
+        else: raise ValueError("The number of sigmas along the x and y axis differs more than 5%")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sigmas
+
+    # -----------------------------------------------------------------
+
     def prepare(self, pixelscale, sigma_level=10.0):
 
         """
@@ -314,6 +430,12 @@ class ConvolutionKernel(Frame):
         # Debugging
         log.debug("Truncating the kernel to a sigma level of " + str(sigma_level) + " ...")
 
+        # Determine the current sigma level
+        current_sigma_level = self.sigmas
+        if current_sigma_level < sigma_level:
+            log.warning("The current sigma level of the kernel (" + str(current_sigma_level) + ") is smaller than the requested sigma level")
+            return
+
         # Determine the radius in number of pixels
         sigma_pix = statistics.fwhm_to_sigma * self.fwhm_pix
         radius = sigma_level * sigma_pix
@@ -336,7 +458,7 @@ class ConvolutionKernel(Frame):
         max_y = center_y + radius_npixels + 1
 
         # Crop
-        self.crop(min_x, max_x, min_y, max_y)
+        self.crop(min_x, max_x, min_y, max_y, out_of_bounds="adjust")
 
     # -----------------------------------------------------------------
 

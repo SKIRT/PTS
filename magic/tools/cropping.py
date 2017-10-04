@@ -49,13 +49,15 @@ def crop_absolute(data, x_min, x_max, y_min, y_max, fill_value=0.0):
     :param x_max:
     :param y_min:
     :param y_max:
+    :param fill_value:
     :return:
     """
 
     x_size = x_max - x_min
     y_size = y_max - y_min
 
-    box = np.zeros((y_size, x_size))
+    #box = np.zeros((y_size, x_size))
+    box = np.full((y_size, x_size), fill_value)
 
     data_x_min = 0 if x_min < 0 else x_min
     data_x_max = data.shape[1] if x_max >= data.shape[1] else x_max
@@ -72,6 +74,7 @@ def crop_absolute(data, x_min, x_max, y_min, y_max, fill_value=0.0):
 
     box[box_y_min:box_y_max, box_x_min:box_x_max] = data[data_y_min:data_y_max, data_x_min:data_x_max]
 
+    # Return the box
     return box
 
 # -----------------------------------------------------------------
