@@ -1381,6 +1381,9 @@ class ObservedImageMaker(Configurable):
                 # Loop over the images
                 for filter_name in self.images[instr_name]:
 
+                    # If the image didn't need to be made, it means it was already saved
+                    if filter_name not in make_filter_names: continue
+
                     # Remote frame?
                     frame = self.images[instr_name][filter_name]
                     if isinstance(frame, RemoteFrame):

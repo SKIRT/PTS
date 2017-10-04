@@ -44,7 +44,7 @@ definition.add_optional("nprocesses_remote", "positive_integer", "number of para
 # -----------------------------------------------------------------
 
 # LIMIT TO THE RATIO BETWEEN CONVOLUTION KERNEL FWHM AND IMAGE PIXELSCALE
-definition.add_optional("max_fwhm_pixelscale_ratio", "positive_real", "maximum ratio between the convolution kernel FWHM and the image pixelscale before downsampling is applied")
+definition.add_optional("max_fwhm_pixelscale_ratio", "positive_real", "maximum ratio between the convolution kernel FWHM and the image pixelscale before downsampling is applied", 50)
 
 # REBIN TO SMALLER PIXELSCALES?
 definition.add_flag("upsample", "rebin images where upsampling is required?", False)
