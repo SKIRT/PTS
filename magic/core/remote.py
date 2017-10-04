@@ -541,6 +541,21 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: return None
+        else:
+            string = self.session.get_string("tostr(" + self.label + ".average_pixelscale)")
+            return parsing.angle_or_length_quantity(string)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_url(cls, url, session, index=None, name=None, description=None, plane=None, hdulist_index=None,
                  no_filter=False, fwhm=None, add_meta=True):

@@ -586,3 +586,23 @@ class ConvolutionKernel(Frame):
         super(ConvolutionKernel, self).saveto(path, extra_header_info=extra_header_info)
 
 # -----------------------------------------------------------------
+
+def get_fwhm(kernel_path):
+
+    """
+    Thisf untion ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import headers
+    from .fits import get_header
+
+    # Get the header
+    header = fits.get_header(kernel_path)
+
+    # Get and return the FWHM
+    fwhm = headers.get_fwhm(header)
+    return fwhm
+
+# -----------------------------------------------------------------

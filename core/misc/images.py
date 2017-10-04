@@ -21,6 +21,7 @@ from ..basics.log import log
 from ..tools import filesystem as fs
 from ..filter.filter import parse_filter
 from ...magic.core.kernel import ConvolutionKernel
+from ...magic.core.kernel import get_fwhm as get_kernel_fwhm
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
@@ -33,6 +34,8 @@ from ..tools import types
 from ..remote.remote import Remote
 from ..prep.deploy import Deployer
 from ..tools import strings
+from ..tools.stringify import tostr
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -1458,6 +1461,28 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_fwhm_for_filter(self, filter_name):
+
+        """
+        Thisf unction ...
+        :param filter_name:
+        :return:
+        """
+
+        # Has kernel
+        if self.has_kernel_path(filter_name): fwhm = get_kernel_fwhm(self.kernel_paths[filter_name])
+
+        # Has FWHM
+        elif self.has_psf_fwhm(filter_name): fwhm = self.psf_fwhms[filter_name]
+
+        # Error
+        else: raise RuntimeError("Something went wrong")
+
+        # Return the FWHM
+        return fwhm
+
+    # -----------------------------------------------------------------
+
     def get_kernel_for_filter(self, filter_name, pixelscale):
 
         """
@@ -1496,8 +1521,6 @@ class ObservedImageMaker(Configurable):
 
         from ...magic.core.remote import RemoteFrame
         from ...magic.core.frame import Frame
-
-        #session = None
 
         # Loop over the images
         for instr_name in self.images:
@@ -1562,6 +1585,65 @@ class ObservedImageMaker(Configurable):
                 if pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
 
                 # Get kernel for this filter
+                #kernel = self.get_kernel_for_filter(filter_name, pixelscale)
+
+                # CHECK THE RATIO BETWEEN FWHM AND PIXELSCALE
+                target_fwhm = self.get_fwhm_for_filter(filter_name)
+                if target_fwhm > self.config.max_fwhm_pixelscale_ratio * pixelscale.average:
+
+                    # GIVE WARNING
+                    log.warning("The target FWHM (" + tostr(target_fwhm) + ") is greater than " + tostr(self.config.max_fwhm_pixelscale_ratio) + " times the pixelscale of the image (" + tostr(pixelscale.average) + ")")
+                    log.warning("Downsampling the image to a more reasonable pixelscale prior to convolution ...")
+
+                    # Get the original FWHM to pixelscale ratio
+                    original_fwhm_pixelscale_ratio = (target_fwhm / pixelscale.average).to("").value
+
+                    # When rebinning has to be performed, check the
+                    if self.needs_rebinning(instr_name, filter_name):
+
+                        # Get the target coordinate system
+                        target_wcs = self.rebin_coordinate_systems[instr_name][filter_name]
+
+                        # Get the target pixelscale
+                        target_pixelscale = target_wcs.average_pixelscale
+                        target_downsample_factor = (target_pixelscale / pixelscale).to("").value
+
+                        # Get the target FWHM to pixelscale ratio
+                        target_fwhm_pixelscale_ratio = (target_fwhm / target_pixelscale).to("").value
+
+                        # Get the geometric mean between original and target ratios
+                        ratio = numbers.geometric_mean(original_fwhm_pixelscale_ratio, target_fwhm_pixelscale_ratio)
+
+                        # Translate this ratio into a pixelscale
+                        new_pixelscale = target_fwhm / ratio
+
+                        # Determine the downsample factor
+                        downsample_factor = (new_pixelscale / pixelscale).to("").value
+                        downsample_factor = numbers.nearest_even_integer_below(downsample_factor, below=target_downsample_factor)
+
+                    # No rebinning: we can freely choose the downsampling factor
+                    else:
+
+                        # Define the ideal FWHM to pixelscale ratio
+                        ideal_fwhm_pixelscale_ratio = 25
+
+                        # Translate this ratio into a pixelscale
+                        ideal_pixelscale = target_fwhm / ideal_fwhm_pixelscale_ratio
+
+                        # Determine the downsample factor
+                        downsample_factor = (ideal_pixelscale / pixelscale).to("").value
+                        downsample_factor = numbers.nearest_even_integer(downsample_factor)
+
+                    # Debugging
+                    log.debug("The downsampling factor is " + tostr(downsample_factor))
+
+                    # DOWNSAMPLE
+                    self.images[instr_name][filter_name].downsample(downsample_factor)
+
+                    # Re-determine the pixelscale
+                    pixelscale = self.images[instr_name][filter_name].pixelscale
+
+                # Get the kernel
                 kernel = self.get_kernel_for_filter(filter_name, pixelscale)
 
                 # Debugging
@@ -1569,12 +1651,6 @@ class ObservedImageMaker(Configurable):
 
                 # Convert into remote frame if necessary
                 if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
-
-                    # # Create session if necessary
-                    # if session is None:
-                    #     # START SESSION
-                    #     new_connection = False
-                    #     session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
                     # Convert into remote
                     self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
@@ -1607,9 +1683,6 @@ class ObservedImageMaker(Configurable):
                     # Invalid
                     else: raise ValueError("Something went wrong")
 
-        # End the session
-        #if session is not None: del session
-
     # -----------------------------------------------------------------
 
     def remote_intermediate_rebin_path_for_image(self, instr_name, filter_name):
@@ -1638,6 +1711,26 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def needs_rebinning(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        # Check if the name of the datacube appears in the rebin_wcs dictionary
+        if instr_name not in self.rebin_coordinate_systems: return False
+
+        # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
+        if filter_name not in self.rebin_coordinate_systems[instr_name]: return False
+
+        # Target coordinate system for rebinning is defined
+        return True
+
+    # -----------------------------------------------------------------
+
     def rebin(self):
 
         """
@@ -1650,8 +1743,6 @@ class ObservedImageMaker(Configurable):
 
         from ...magic.core.remote import RemoteFrame
         from ...magic.core.frame import Frame
-
-        #session = None
 
         # Loop over the datacubes
         for instr_name in self.images:
@@ -1753,12 +1844,6 @@ class ObservedImageMaker(Configurable):
                 # Convert to remote frame if necessary
                 if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
 
-                    # # Create session if necessary
-                    # if session is None:
-                    #     # START SESSION
-                    #     new_connection = False
-                    #     session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
-
                     # Convert
                     self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
 
@@ -1792,9 +1877,6 @@ class ObservedImageMaker(Configurable):
 
                     # Invalid
                     else: raise ValueError("Something went wrong")
-
-        # End the session
-        #if session is not None: del session
 
     # -----------------------------------------------------------------
 
@@ -2069,7 +2151,6 @@ def create_psf_kernel(fwhm, pixelscale, fltr=None, sigma_level=5.0):
 
     from astropy.convolution import Gaussian2DKernel
     from pts.magic.tools import statistics
-    from pts.core.tools.stringify import tostr
 
     # Debugging
     log.debug("Creating a PSF kernel for a FWHM of " + tostr(fwhm) + " and a pixelscale of " + tostr(pixelscale.average) + ", cut-off at a sigma level of " + tostr(sigma_level) + " ...")
