@@ -26,9 +26,6 @@ from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
 from ...magic.core import fits
-from ..simulation.wavelengthgrid import WavelengthGrid
-from ..basics.configurable import Configurable
-from ..simulation.simulation import createsimulations
 from ..tools.utils import lazyproperty
 from ..tools import types
 from ..remote.remote import Remote
@@ -36,6 +33,7 @@ from ..prep.deploy import Deployer
 from ..tools import strings
 from ..tools.stringify import tostr
 from ..tools import numbers
+from .datacubes import DatacubesMiscMaker
 
 # -----------------------------------------------------------------
 
@@ -44,7 +42,7 @@ default_filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "
 
 # -----------------------------------------------------------------
 
-class ObservedImageMaker(Configurable):
+class ObservedImageMaker(DatacubesMiscMaker):
 
     """
     This class ...
@@ -63,23 +61,8 @@ class ObservedImageMaker(Configurable):
 
         # -- Attributes --
 
-        # The simulation prefix
-        self.simulation_prefix = None
-
-        # The paths to the 'total' FITS files produced by SKIRT
-        self.fits_paths = None
-
-        # The wavelengths of the simulation
-        self.wavelengths = None
-
-        # The wavelength grid of the simulation
-        self.wavelength_grid = None
-
         # Filter names
         self.filter_names = default_filter_names
-
-        # The instrument names
-        self.instrument_names = None
 
         # The dictionary containing the different SKIRT output datacubes
         self.datacubes = dict()
@@ -469,28 +452,11 @@ class ObservedImageMaker(Configurable):
         # Call the setup function of the base class
         super(ObservedImageMaker, self).setup(**kwargs)
 
-        # simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
-        # kernel_paths=None, unit=None, host_id=None
-        if "simulation" in kwargs:
-            simulation = kwargs.pop("simulation")
-            self.initialize_from_simulation(simulation)
-        elif "simulation_output_path" in kwargs:
-            simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
-            self.initialize_from_simulation(simulation)
-        else: self.initialize_from_cwd()
-
-        # Get output directory
-        output_path = kwargs.pop("output_path", None)
-        self.config.output = output_path
-
         # Get filters for which not to perform spectral convolution
         self.no_spectral_convolution_filters = kwargs.pop("no_spectral_convolution_filters", [])
 
         # Get filter names for which to create observed images
         self.get_filter_names(**kwargs)
-
-        # Get instrument (datacube names)
-        self.get_instrument_names(**kwargs)
 
         # Get coordinate systems of the datacubes
         self.get_coordinate_systems(**kwargs)
@@ -509,72 +475,6 @@ class ObservedImageMaker(Configurable):
 
         # Update the remote
         if self.has_remote and self.config.deploy_pts: self.deploy_pts()
-
-    # -----------------------------------------------------------------
-
-    def initialize_from_simulation(self, simulation):
-
-        """
-        Thisf unction ...
-        :param simulation:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Initializing from simulation object ...")
-
-        # Obtain the paths to the 'total' FITS files created by the simulation
-        self.fits_paths = simulation.totalfitspaths()
-
-        # Get the list of wavelengths for the simulation
-        self.wavelengths = simulation.wavelengths()
-
-        # Get the simulation prefix
-        self.simulation_prefix = simulation.prefix()
-
-    # -----------------------------------------------------------------
-
-    def initialize_from_cwd(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Simulation or simulation output path not specified: searching for simulation output in the current working directory ...")
-
-        # Get datacube paths
-        #datacube_paths = fs.files_in_path(self.config.path, extension="fits")
-        total_datacube_paths = fs.files_in_path(self.config.path, extension="fits", endswith="_total")
-
-        # Get SED paths
-        sed_paths = fs.files_in_path(self.config.path, extension="dat", endswith="_sed")
-
-        # Determine prefix
-        prefix = None
-        for path in total_datacube_paths:
-            filename = fs.strip_extension(fs.name(path))
-            if prefix is None:
-                prefix = filename.split("_")[0]
-            elif prefix != filename.split("_")[0]:
-                raise IOError("Not all datacubes have the same simulation prefix")
-        if prefix is None: raise IOError("No datacubes were found")
-
-        # Set the paths to the toatl FITS files created by the simulation
-        self.fits_paths = total_datacube_paths
-
-        from ..data.sed import load_sed
-
-        # Load one of the SEDs
-        if len(sed_paths) == 0: raise IOError("No SED files") # TODO: look for wavelength grid
-        sed = load_sed(sed_paths[0])
-
-        # Set the list of wavelengths for the simulation
-        self.wavelengths = sed.wavelengths(asarray=True, unit="micron")
-
-        # Set the simulation prefix
-        self.simulation_prefix = prefix
 
     # -----------------------------------------------------------------
 
@@ -600,34 +500,6 @@ class ObservedImageMaker(Configurable):
 
         # From config
         elif self.config.filters is not None: self.filter_names = [str(fltr) for fltr in self.config.filters]
-
-    # -----------------------------------------------------------------
-
-    def get_instrument_names(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Getting the instrument names ...")
-
-        # Instrument names
-        if kwargs.get("instrument_names", None) is not None:
-
-            # Check
-            if "instruments" in kwargs: raise ValueError("Cannot specify 'instruments' and 'instrument_names' simultaneously")
-
-            # Get names of the instruments (datacubes) of which to create observed images
-            self.instrument_names = kwargs.pop("instrument_names")
-
-        # Instruments
-        elif kwargs.get("instruments", None) is not None: self.instrument_names = kwargs.pop("instruments")
-
-        # From config
-        elif self.config.instruments is not None: self.instrument_names = self.config.instruments
 
     # -----------------------------------------------------------------
 
@@ -1035,21 +907,6 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the wavelength grid ...")
-
-        # Construct the wavelength grid from the array of wavelengths
-        self.wavelength_grid = WavelengthGrid.from_wavelengths(self.wavelengths, "micron")
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def filters(self):
 
@@ -1110,22 +967,6 @@ class ObservedImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def total_datacube_paths(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        paths = []
-        for path in self.fits_paths:
-            if not is_total_datacube(path): continue
-            paths.append(path)
-        return paths
-
-    # -----------------------------------------------------------------
-
     def needs_remote(self, path):
 
         """
@@ -1163,8 +1004,8 @@ class ObservedImageMaker(Configurable):
             # Get the name of the instrument
             instr_name = instrument_name(path, self.simulation_prefix)
 
-            # If a list of instruments is defined an this instrument is not in this list, skip it
-            if self.instrument_names is not None and instr_name not in self.instrument_names: continue
+            # Make for this instrument?
+            if not self.make_for_instrument(instr_name): continue
 
             # Check if already present
             if self.has_all_images(instr_name):
@@ -1738,7 +1579,7 @@ class ObservedImageMaker(Configurable):
                 if fs.is_file(saved_kernel_path):
 
                     # Success
-                    log.success("Kernel file for the '" + filter_name + "' of the '" + instr_name + "' instrument is found in directory '" + self.intermediate_rebin_path + "'")
+                    log.success("Kernel file for the '" + filter_name + "' of the '" + instr_name + "' instrument is found in directory '" + self.kernels_path + "'")
 
                     # Load the kernel
                     kernel = ConvolutionKernel.from_file(saved_kernel_path)
@@ -2214,20 +2055,6 @@ class ObservedImageMaker(Configurable):
         log.info("Clearing intermediate results ...")
 
         # TODO
-
-# -----------------------------------------------------------------
-
-def is_total_datacube(datacube_path):
-
-    """
-    This function ...
-    :param datacube_path:
-    :return:
-    """
-
-    name = fs.strip_extension(fs.name(datacube_path))
-    if name.endswith("_total"): return True
-    else: return False
 
 # -----------------------------------------------------------------
 

@@ -46,6 +46,8 @@ load | -- | remote.load.LoadChecker | arguments | Check the load of remote syste
 filters | -- | filter.show.FilterShower | arguments | Show the narrow- and broad band filters defined in PTS
 
 # MISC
+make_rgb_images | -- | misc.rgb.RGBImageMaker | arguments | Make RGB images from the simulated datacubes
+make_datacube_animations | -- | misc.animations.DataCubeAnimationsMaker | arguments | Make animations from the simulated datacubes
 observed_fluxes | -- | misc.fluxes.ObservedFluxCalculator | arguments | Calculate (mock) observed fluxes for certain filters from a simulation
 observed_images | -- | misc.images.ObservedImageMaker | arguments | Calculate (mock) observed images for certain filters from a simulation
 

@@ -21,15 +21,15 @@ from ..plot.progress import ProgressPlotter
 from ..plot.timeline import TimeLinePlotter
 from ..plot.memory import MemoryPlotter
 from ..plot.grids import plotgrids
-from ..plot.rgbimages import makergbimages
-from ..plot.wavemovie import makewavemovie
+from ..misc.rgb import RGBImageMaker
+from ..misc.animations import DataCubeAnimationsMaker
 from ..misc.fluxes import ObservedFluxCalculator
 from ..misc.images import ObservedImageMaker
 from ..basics.log import log
 from ..tools import filesystem as fs
 from ..plot.simulationseds import SimulationSEDPlotter
 from ..tools import types
-from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, wave_name, fluxes_name, images_name
+from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, animations_name, fluxes_name, images_name
 from ..extract.progress import ProgressTable
 from ..extract.timeline import TimeLineTable
 from ..extract.memory import MemoryUsageTable
@@ -81,6 +81,10 @@ class BasicAnalyser(Configurable):
         self.progress = None
         self.timeline = None
         self.memory = None
+
+        # The RGB and animations makers
+        self.rgb_maker = None
+        self.animations_maker = None
 
         # The flux calculator and image maker
         self.flux_calculator = None
@@ -379,14 +383,14 @@ class BasicAnalyser(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def has_wave(self):
+    def has_animations(self):
 
         """
-        Thins function ...
+        This fucntion ...
         :return:
         """
 
-        return wave_name in self.simulation.analysed_misc
+        return animations_name in self.simulation.analysed_misc
 
     # -----------------------------------------------------------------
 
@@ -431,8 +435,8 @@ class BasicAnalyser(Configurable):
         # If requested, make RGB images of the output FITS files
         if self.misc_options.rgb and not self.has_rgb: self.make_rgb()
 
-        # If requested, make wave movies from the ouput FITS files
-        if self.misc_options.wave and not self.has_wave: self.make_wave()
+        # If requested, make datacube animations from the output datacubes
+        if self.misc_options.animations and not self.has_animations: self.make_animations()
 
         # If requested, calculate observed fluxes from the output SEDs
         if self.misc_options.fluxes and not self.has_fluxes: self.calculate_observed_fluxes()
@@ -653,13 +657,11 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Making RGB images ...")
 
-        # Define the wavelengths for the RGB
-        wavelengths = dict()
-        wavelengths["optical"] = (0.77, 0.55, 0.33)
-        wavelengths["infrared"] = (333, 100, 24)
+        # Create the RGBImageMaker
+        self.rgb_maker = RGBImageMaker()
 
-        # Make RGB images from the output images
-        makergbimages(self.simulation, output_path=self.misc_options.path, wavelength_tuples=wavelengths)
+        # Run the maker
+        self.rgb_maker.run(simulation=self.simulation, output_path=self.misc_options.path)
 
         # Done
         self.simulation.analysed_misc.append(rgb_name)
@@ -667,7 +669,7 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_wave(self):
+    def make_animations(self):
 
         """
         This function ...
@@ -675,13 +677,19 @@ class BasicAnalyser(Configurable):
         """
 
         # Inform the user
-        log.info("Making wave movies ...")
+        log.info("Making datacube animations ...")
 
-        # Make wave movies from the output images
-        #makewavemovie(self.simulation, output_path=self.misc_options.path)
+        # Create the animations maker
+        self.animations_maker = DataCubeAnimationsMaker()
+
+        # Set options
+        self.animations_maker.config.write_frames = self.misc_options.write_animation_frames
+
+        # Run the maker
+        self.animations_maker.run(simulation=self.simulation, output_path=self.misc_options.path)
 
         # Done
-        self.simulation.analysed_misc.append(wave_name)
+        self.simulation.analysed_misc.append(animations_name)
         self.simulation.save()
 
     # -----------------------------------------------------------------

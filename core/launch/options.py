@@ -99,7 +99,8 @@ memory_name = "memory"
 seds_name = "seds"
 grids_name = "grids"
 rgb_name = "rgb"
-wave_name = "wave"
+#wave_name = "wave"
+animations_name = "animations"
 fluxes_name = "fluxes"
 images_name = "images"
 
@@ -107,7 +108,7 @@ images_name = "images"
 
 extraction_names = [progress_name, timeline_name, memory_name]
 plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
-misc_names = [rgb_name, wave_name, fluxes_name, images_name]
+misc_names = [rgb_name, animations_name, fluxes_name, images_name]
 
 # -----------------------------------------------------------------
 
@@ -155,8 +156,9 @@ class AnalysisOptions(Options):
         ## RGB images
         self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
 
-        ## Wave movies
-        self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
+        ## Animation
+        self.misc.add_property("animations", "boolean", "make an animation of the images of the simulated datacube(s)", False)
+        self.misc.add_property("write_animation_frames", "boolean", "write the frames of the created animations seperately", False)
 
         ## Observed fluxes and images
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
@@ -249,7 +251,7 @@ class AnalysisOptions(Options):
         :return:
         """
 
-        return self.misc.rgb or self.misc.wave or self.misc.fluxes or self.misc.images
+        return self.misc.rgb or self.misc.animations or self.misc.fluxes or self.misc.images
 
     # -----------------------------------------------------------------
 
@@ -305,11 +307,15 @@ class AnalysisOptions(Options):
         if retrieve_types is not None:
 
             if self.misc.rgb and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
-                log.warning("Creating RGB images is enabled so total datacube retrieval will also be enabled")
+                log.warning("Making RGB images is enabled so total datacube retrieval will also be enabled")
                 retrieve_types.append(ot.total_images)
 
-            if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
-                log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+            # if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+            #     log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+            #     retrieve_types.append(ot.total_images)
+
+            if self.misc.animations and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+                log.warning("Making datacube animations is enabled so total datacube retrieval will also be enabled")
                 retrieve_types.append(ot.total_images)
 
             if self.misc.fluxes and ot.seds not in retrieve_types:

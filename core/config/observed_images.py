@@ -15,9 +15,9 @@ definition = ConfigurationDefinition()
 
 # -----------------------------------------------------------------
 
-# Filters for which to create the images
-definition.add_optional("filters", "filter_list", "filters for which to create the images")
-definition.add_optional("instruments", "string_list", "instruments for which to create the images")
+# Filters and instruments for which to create the images
+definition.add_positional_optional("instruments", "string_list", "instruments for which to create the images")
+definition.add_positional_optional("filters", "filter_list", "filters for which to create the images")
 
 # -----------------------------------------------------------------
 
