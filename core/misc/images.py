@@ -2267,8 +2267,14 @@ def create_psf_kernel(fwhm, pixelscale, fltr=None, sigma_level=5.0):
     # Get the sigma in pixels
     sigma_pix = fwhm_pix * statistics.fwhm_to_sigma
 
-    # Create a kernel
+    # DETERMINE THE ODD!! KERNEL SIZE
     kernel_size = int(round(2.0 * sigma_level))
+    if numbers.is_even(kernel_size): kernel_size += 1
+
+    # Debugging
+    log.debug("The size for the kernel image is " + str(kernel_size) + " pixels")
+
+    # Create a kernel
     kernel = Gaussian2DKernel(sigma_pix, x_size=kernel_size, y_size=kernel_size)
     kernel.normalize()  # to suppress warning
 
