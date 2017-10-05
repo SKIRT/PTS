@@ -514,15 +514,16 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
-    def recenter(self, centroid_method="2dg"):
+    def recenter(self, centroid_method="2dg", check=True, limit=0.2, tolerance=0.1):
 
         """
         This function ...
+        :param centroid_method:
+        :param check:
+        :param limit: shift limit
+        :param tolerance: tolerance (of ratio of required new shift to first shift) after shift
         :return:
         """
-
-        center_x = 0.5 * (self.xsize - 1)
-        center_y = 0.5 * (self.ysize - 1)
 
         if centroid_method == "com": x_centroid, y_centroid = self.centroid_com()
         elif centroid_method == "fit": x_centroid, y_centroid = self.centroid_fit()
@@ -532,19 +533,18 @@ class ConvolutionKernel(Frame):
 
         # Debugging
         log.debug("The centroid coordinate of the kernel was found to be " + str(x_centroid) + ", " + str(y_centroid))
-        log.debug("The center of the kernel image is " + str(center_x) + ", " + str(center_y))
+        log.debug("The center of the kernel image is " + str(self.x_center) + ", " + str(self.y_center))
 
         # Calculate shift
-        shift_x = center_x - x_centroid
-        shift_y = center_y - y_centroid
+        shift_x = self.x_center - x_centroid
+        shift_y = self.y_center - y_centroid
 
         # Debugging
         log.debug("The required shift is (" + str(shift_x) + ", " + str(shift_y) + ")")
 
         # If the shift (in ABSOLUTE VALUE) is less than 0.2 pixel, don't shift
-        if abs(shift_x) < 0.2 and abs(shift_y) < 0.2:
-
-            log.debug("Kernel is already perfectly aligned with the center: skipping recentering ...")
+        if abs(shift_x) < limit and abs(shift_y) < limit:
+            log.debug("Kernel is already perfectly aligned with the center (within " + str(limit) + " pixels): skipping recentering ...")
             return
 
         # Debugging
@@ -552,7 +552,29 @@ class ConvolutionKernel(Frame):
 
         # Shift
         #self._data = shift(self._data, [shift_x, shift_y])
+        original_data = self._data
         self._data = shift(self._data, [shift_y, shift_x])
+
+        # CHECK
+        if check: self.check_recenter(shift_x, shift_y, original_data, centroid_method=centroid_method, tolerance=tolerance)
+
+    # -----------------------------------------------------------------
+
+    def check_recenter(self, shift_x, shift_y, original_data, centroid_method="2dg", tolerance=0.1, fail_tolerance=1.):
+
+        """
+        This function ...
+        :param shift_x:
+        :param shift_y:
+        :param original_data:
+        :param centroid_method:
+        :param tolerance: tolerance (of ratio of required new shift to first shift) after shift
+        :param fail_tolerance:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking centroid coordinate of the kernel after recentering ...")
 
         # CHECK AGAIN
         if centroid_method == "com": x_centroid, y_centroid = self.centroid_com()
@@ -561,8 +583,8 @@ class ConvolutionKernel(Frame):
         elif centroid_method == "aniano": x_centroid, y_centroid = self.get_maximum_aniano()
         else: raise ValueError("Invalid centroid method")
 
-        new_shift_x = center_x - x_centroid
-        new_shift_y = center_y - y_centroid
+        new_shift_x = self.x_center - x_centroid
+        new_shift_y = self.y_center - y_centroid
 
         new_shift_x_relative = abs(new_shift_x) / abs(shift_x)
         new_shift_y_relative = abs(new_shift_y) / abs(shift_y)
@@ -570,8 +592,26 @@ class ConvolutionKernel(Frame):
         #print("new shift x relative " + str(new_shift_x_relative))
         #print("new shift y relative " + str(new_shift_y_relative))
 
-        if new_shift_x_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))
-        if new_shift_y_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
+        #if new_shift_x_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))
+        #if new_shift_y_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
+
+        # Recentering failed because required new shift is larger than 10% of a pixel
+        if new_shift_x_relative >= tolerance or new_shift_y_relative:
+
+            # Give warnings
+            if new_shift_x_relative >= tolerance: log.warning("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))
+            if new_shift_y_relative >= tolerance: log.warning("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
+            log.warning("This is perhaps due to a low resolution of the kernel")
+
+            # Check the original shift
+            if abs(shift_x) < fail_tolerance and abs(shift_y) < fail_tolerance:
+                log.warning("The original shift was less than " + str(fail_tolerance) + " pixel(s), tolerating this and resetting the original data ...")
+                self._data = original_data
+            else:
+                # Exit with error messages
+                if abs(shift_x) > fail_tolerance: log.error("The kernel cannot be recentered in the x direction")
+                if abs(shift_y) > fail_tolerance: log.error("The kernel cannot be recentered in the y direction")
+                raise RuntimeError("The kernel cannot be recentered")
 
     # -----------------------------------------------------------------
 

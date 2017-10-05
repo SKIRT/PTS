@@ -26,20 +26,18 @@ from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 from astropy.units import UnitConversionError
-from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
 from ..basics.vector import Position
 from ..region.rectangle import SkyRectangleRegion, PixelRectangleRegion
-from ..basics.coordinate import SkyCoordinate
+from ..basics.coordinate import SkyCoordinate, PixelCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
 from ...core.basics.log import log
 from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
-from ..basics.vector import Pixel
 from ...core.units.unit import PhotometricUnit
 from ...core.filter.filter import parse_filter
 from .mask import Mask as newMask
@@ -51,7 +49,6 @@ from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
-from ..dist_ellipse import distance_ellipse
 from ..basics.vector import Pixel
 from ..region.region import PixelRegion
 
@@ -2320,14 +2317,51 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def center(self):
+    def x_center(self):
 
         """
         This function ...
         :return:
         """
 
-        return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
+        return 0.5 * (self.xsize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (self.ysize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        Thisf unction ....
+        :return:
+        """
+
+        return PixelCoordinate(self.x_center, self.y_center)
+
+    # -----------------------------------------------------------------
+
+    # WHY WAS THIS EVER CALLED CENTER?
+    # @property
+    # def center(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
 
     # -----------------------------------------------------------------
 
@@ -2340,6 +2374,30 @@ class Frame(NDDataArray):
         """
 
         return Pixel.for_coordinate(self.center)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.reference_pixel if self.has_wcs else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_coordinate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.reference_coordinate if self.has_wcs else None
 
     # -----------------------------------------------------------------
 
@@ -2490,7 +2548,7 @@ class Frame(NDDataArray):
         new_xsize = new_data.shape[1]
         new_ysize = new_data.shape[0]
 
-        relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+        relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
 
         new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
@@ -2606,7 +2664,7 @@ class Frame(NDDataArray):
             new_xsize = new_data.shape[1]
             new_ysize = new_data.shape[0]
 
-            relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+            relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
 
             new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 

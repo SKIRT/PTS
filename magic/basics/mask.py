@@ -351,6 +351,43 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (self.xsize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (self.ysize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        Thisf unction ....
+        :return:
+        """
+
+        from .coordinate import PixelCoordinate
+        return PixelCoordinate(self.x_center, self.y_center)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def empty(cls, x_size, y_size):
 
@@ -625,13 +662,9 @@ class MaskBase(object):
         # To plot the multiple segments that are detected
         # if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))
 
-        # Center
-        center_x = 0.5 * (self.xsize + 1) - 1
-        center_y = 0.5 * (self.ysize + 1) - 1
-
         # Get the label of the center segment
         #rel_center = self.cutout.rel_position(self.center)
-        label = segments[int(round(center_y)), int(round(center_x))]
+        label = segments[int(round(self.y_center)), int(round(self.x_center))]
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
