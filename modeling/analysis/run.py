@@ -1720,6 +1720,18 @@ class AnalysisRuns(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.analysis_path, returns="path")
+
+    # -----------------------------------------------------------------
+
     def __len__(self):
 
         """
@@ -1825,10 +1837,11 @@ class AnalysisRuns(object):
         :return:
         """
 
-        if self.empty: return None
-        if self.has_single: return self.single_name
+        #if self.empty: return None
+        #if self.has_single: return self.single_name
+        #return sorted(self.names)[-1]
 
-        return sorted(self.names)[-1]
+        return fs.name(self.last_path)
 
     # -----------------------------------------------------------------
 
@@ -1840,7 +1853,9 @@ class AnalysisRuns(object):
         :return:
         """
 
-        return self.get_path(self.last_name)
+        #return self.get_path(self.last_name)
+
+        return fs.last_created_path(*self.paths)
 
     # -----------------------------------------------------------------
 

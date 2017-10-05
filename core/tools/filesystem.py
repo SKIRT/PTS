@@ -1967,10 +1967,36 @@ def creation_date(filepath):
         except AttributeError:
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified.
-            seconds = stat.st_mtime
+            #seconds = stat.st_mtime
+            # NO: Giving an error is clearer!
+            raise NotImplementedError("Getting the creation date is impossible")
 
     # Return datetime object
     return datetime.datetime.fromtimestamp(seconds)
+
+# -----------------------------------------------------------------
+
+def first_created_path(*paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    return min(paths, key=creation_date)
+
+# -----------------------------------------------------------------
+
+def last_created_path(*paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    return max(paths, key=creation_date)
 
 # -----------------------------------------------------------------
 

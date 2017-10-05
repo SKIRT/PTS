@@ -1412,8 +1412,9 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # Make RGB images
         self.analysis_options.misc.rgb = True
 
-        # Wave movies
-        self.analysis_options.misc.wave = False
+        # MAKE datacube ANIMATIONS
+        self.analysis_options.misc.animations = True
+        self.analysis_options.misc.write_animation_frames = True
 
         # Recreate observed fluxes and images
         self.analysis_options.misc.fluxes = True

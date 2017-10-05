@@ -18,7 +18,8 @@ from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
-from ...magic.region.list import SkyRegionList
+from ...core.tools import sequences
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -59,6 +60,10 @@ class ResidualAnalyser(AnalysisComponent):
         # The weighed residual images
         self.weighed = dict()
 
+        # The distributions of residual values
+        self.residual_distributions = dict()
+        self.weighed_distributions = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -80,10 +85,13 @@ class ResidualAnalyser(AnalysisComponent):
         # 4. Calculate the weighed residual images
         self.calculate_weighed()
 
-        # 5. Writing
+        # 5. Create distributions of the residual values
+        self.create_distributions()
+
+        # 6. Writing
         self.write()
 
-        # 6. Plotting
+        # 7. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -128,13 +136,13 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Loading the images ...")
 
-        # Load ...
+        # Observed images
         self.load_observed_images()
 
-        # Load ...
+        # Simulated images
         self.load_simulated_images()
 
-        # Load error maps
+        # Error maps
         self.load_errors()
 
     # -----------------------------------------------------------------
@@ -193,15 +201,32 @@ class ResidualAnalyser(AnalysisComponent):
                 log.warning("The observed " + image_name + " image could not be found, skipping simulated " + image_name + " image ...")
                 continue
 
+            # Get the corresponding observed image
+            observed = self.observed[image_name]
+
             # Check whether the coordinate systems of the observed and simulated image match
-            if frame.wcs == self.observed[image_name].wcs: log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter matches")
-            else:
+            if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter matches")
+
+            # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
+            elif observed.average_pixelscale < frame.average_pixelscale:
 
                 # Debugging
-                log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter does not match: rebinning the simulated image ...")
+                log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
+
+                # Rebin
+                observed.rebin(frame.wcs)
+
+            # The simulated image has a smaller pixelscale as the observed image
+            elif frame.average_pixelscale < observed.average_pixelscale:
+
+                # Debugging
+                log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
 
                 # Rebin the simulated image to the coordinate system of the observed image
-                frame.rebin(self.observed[image_name].wcs)
+                frame.rebin(observed.wcs)
+
+            # Error
+            else: raise RuntimeError("Something unexpected happened")
 
             # Add the simulated image frame to the dictionary
             self.simulated[image_name] = frame
@@ -230,6 +255,18 @@ class ResidualAnalyser(AnalysisComponent):
             # Define the name of the filter as the image name
             image_name = str(errors.filter)
 
+            # Get the corresponding observed image
+            observed = self.observed[image_name]
+
+            # CHECK THE WCS:
+            if errors.wcs != observed.wcs:
+
+                # Debugging
+                log.debug("The coordinate system of the error map is not identical to the coordinate system of the observed image: rebinning the error map ...")
+
+                # Rebin
+                errors.rebin(observed.wcs)
+
             # Add the error map to the dictionary
             self.errors[image_name] = errors
 
@@ -251,11 +288,23 @@ class ResidualAnalyser(AnalysisComponent):
             # Get the observed and simulated image
             simulated = self.simulated[filter_name]
             observed = self.observed[filter_name]
+            errors = self.errors[filter_name]
 
             # Calculate the residual image
             residual = (simulated - observed) / observed
 
-            #residual.replace_infs(0.0)
+            # Replace infs
+            residual.replace_infs(0.0)
+
+            # Get the truncation mask
+            truncation_mask = self.get_truncation_mask(observed.wcs)
+
+            # Get the significance mask
+            significance_mask = self.get_significance_mask(observed, errors)
+
+            # MASK
+            residual[truncation_mask] = 0.0
+            residual[significance_mask] = 0.0
 
             # Add the residual image to the dictionary
             self.residuals[filter_name] = residual
@@ -283,8 +332,87 @@ class ResidualAnalyser(AnalysisComponent):
             # Calculate the weighed residual image
             residual = (simulated - observed) / errors
 
+            # Replace infs
+            residual.replace_infs(0.0)
+
+            # Get the truncation mask
+            truncation_mask = self.get_truncation_mask(observed.wcs)
+
+            # Get the significance mask
+            significance_mask = self.get_significance_mask(observed, errors)
+
+            # MASK
+            residual[truncation_mask] = 0.0
+            residual[significance_mask] = 0.0
+
             # Add the weighed residual image to the dictionary
             self.weighed[filter_name] = residual
+
+    # -----------------------------------------------------------------
+
+    def create_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the distributions ...")
+
+        # Residuals
+        self.create_residuals_distributions()
+
+        # Weighed residuals
+        self.create_weighed_distributions()
+
+    # -----------------------------------------------------------------
+
+    def create_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the residuals distributions ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the values within the truncation ellipse
+            values = self.residuals[filter_name].values_in(self.truncation_ellipse)
+
+            # Create distribution
+            distribution = Distribution.from_values(values, bins=self.config.nbins)
+
+            # Add the distribution
+            self.residual_distributions[filter_name] = distribution
+
+    # -----------------------------------------------------------------
+
+    def create_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the weighed residuals distributions ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the values within the truncation ellipse
+            values = self.weighed[filter_name].values_in(self.truncation_ellipse)
+
+            # Create distribution
+            distribution = Distribution.from_values(values, bins=self.config.nbins)
+
+            # Add the distribution
+            self.weighed_distributions[filter_name] = distribution
 
     # -----------------------------------------------------------------
 
@@ -303,6 +431,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Write the weighed residual frames
         self.write_weighed()
+
+        # Write distributions
+        self.write_distributions()
 
     # -----------------------------------------------------------------
 
@@ -354,6 +485,72 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def write_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distributions ...")
+
+        # Residuals
+        self.write_residuals_distributions()
+
+        # Weighed residuals
+        self.write_weighed_distributions()
+
+    # -----------------------------------------------------------------
+
+    def write_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing residuals distributions ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Determine plot path
+            path = fs.join(self.analysis_run.residuals_path, filter_name + ".dat")
+
+            # Debugging
+            log.debug("Writing the residuals distributions for the '" + filter_name + "' band to '" + path + "' ...")
+
+            # Write
+            self.residual_distributions[filter_name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing weighed residuals distributions ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Determine plot path
+            path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".dat")
+
+            # Debugging
+            log.debug("Writing the weighed residuals distributions for the '" + filter_name + "' band to '" + path + "' ...")
+
+            # Write
+            self.weighed_distributions[filter_name].saveto(path)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -363,6 +560,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Plot the distributions
+        self.plot_distributions()
 
         # Plot a grid with the observed, simulated and residual images
         self.plot_image_grid()
@@ -450,8 +650,7 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Get the filter names which appear in both the simulated and observed images
-        filter_names = list(set(self.simulated.keys() + self.observed.keys()))
-        return filter_names
+        return sequences.intersection(self.simulated.keys(), self.observed.keys())
 
     # -----------------------------------------------------------------
 

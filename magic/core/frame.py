@@ -50,7 +50,7 @@ from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
 from ..basics.vector import Pixel
-from ..region.region import PixelRegion
+from ..region.region import PixelRegion, SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -1393,6 +1393,39 @@ class Frame(NDDataArray):
         """
 
         return np.all(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    def values_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, SkyRegion):
+            if not self.has_wcs: raise ValueError("Cannot specify a sky region when frame has no WCS")
+            mask = region_or_mask.to_pixel(self.wcs).to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the values as a Numpy array
+        return self.data[mask.data]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.data.flatten()
 
     # -----------------------------------------------------------------
 
