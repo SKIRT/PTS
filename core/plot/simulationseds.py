@@ -18,6 +18,7 @@ from ...core.basics.configurable import Configurable
 from .sed import SEDPlotter
 from ..data.sed import SED, ObservedSED
 from ..tools import filesystem as fs
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -47,11 +48,11 @@ class SimulationSEDPlotter(Configurable):
         # The SKIRT simulation object
         self.simulation = None
 
-        # Matching plot limits
-        self.min_wavelength = None
-        self.max_wavelength = None
-        self.min_flux = None
-        self.max_flux = None
+        # Plot limits for the different instruments
+        self.min_wavelengths = dict()
+        self.max_wavelengths = dict()
+        self.min_fluxes = dict()
+        self.max_fluxes = dict()
 
     # -----------------------------------------------------------------
 
@@ -66,7 +67,10 @@ class SimulationSEDPlotter(Configurable):
         # 1. Call the setup function
         self.setup(simulation)
 
-        # 2. Plot SEDS for different instruments
+        # 2. Make SED plots for each instrument seperately
+        self.plot_single()
+
+        # 2. Plot SED comparing different instruments
         if self.config.instruments: self.plot_instruments()
 
         # 3. Plot various contributions to the SEDs
@@ -74,6 +78,70 @@ class SimulationSEDPlotter(Configurable):
 
         # 4. Write
         self.write()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        For ALL instruments
+        :return:
+        """
+
+        min_wavelength = None
+        for instr_name in self.instrument_names:
+            if min_wavelength is None: min_wavelength = self.min_wavelengths[instr_name]
+            elif self.min_wavelengths[instr_name] < min_wavelength: min_wavelength = self.min_wavelengths[instr_name]
+        return min_wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        For ALL instruments
+        :return:
+        """
+
+        max_wavelength = None
+        for instr_name in self.instrument_names:
+            if max_wavelength is None: max_wavelength = self.max_wavelengths[instr_name]
+            elif self.max_wavelengths[instr_name] > max_wavelength: max_wavelength = self.max_wavelengths[instr_name]
+        return max_wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_flux(self):
+
+        """
+        For ALL instruments
+        :return:
+        """
+
+        min_flux = None
+        for instr_name in self.instrument_names:
+            if min_flux is None: min_flux = self.min_fluxes[instr_name]
+            elif self.min_fluxes[instr_name] < min_flux: min_flux = self.min_fluxes[instr_name]
+        return min_flux
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_flux(self):
+
+        """
+        For ALL instruments
+        :return:
+        """
+
+        max_flux = None
+        for instr_name in self.instrument_names:
+            if max_flux is None: max_flux = self.max_fluxes[instr_name]
+            elif self.max_fluxes[instr_name] > max_flux: max_flux = self.max_fluxes[instr_name]
+        return max_flux
 
     # -----------------------------------------------------------------
 
@@ -89,6 +157,12 @@ class SimulationSEDPlotter(Configurable):
 
         # Set the attributes to default values
         self.simulation = None
+
+        # Clear the ranges
+        self.min_wavelengths = dict()
+        self.max_wavelengths = dict()
+        self.min_fluxes = dict()
+        self.max_fluxes = dict()
 
     # -----------------------------------------------------------------
 
@@ -108,6 +182,29 @@ class SimulationSEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def instrument_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+        # Loop over the simulated SED files and add the
+        for sed_path in self.simulation.seddatpaths():
+
+            # Determine the name of the corresponding instrument
+            instr_name = instrument_name(sed_path, self.prefix)
+
+            # Add the name
+            names.append(instr_name)
+
+        return names
+
+    # -----------------------------------------------------------------
+
     @property
     def prefix(self):
 
@@ -117,6 +214,71 @@ class SimulationSEDPlotter(Configurable):
         """
 
         return self.simulation.prefix()
+
+    # -----------------------------------------------------------------
+
+    def plot_single(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting SEDs for the different instruments seperately ...")
+
+        # Create a new SEDPlotter instance
+        plotter = SEDPlotter()
+
+        # Set plotting options
+        plotter.config.library = self.config.library
+        plotter.config.ignore_filters = self.config.ignore_filters
+
+        # Loop over the simulated SED files and add the
+        for sed_path in self.simulation.seddatpaths():
+
+            # Determine the name of the corresponding instrument
+            instr_name = instrument_name(sed_path, self.prefix)
+
+            # Load the SED
+            sed = SED.from_skirt(sed_path) # contribution = "total"
+
+            # Add the simulated SED to the plotter
+            plotter.add_sed(sed, instr_name)
+
+            # Check if reference SED is defined, and add it
+            if self.config.reference_seds is not None:
+
+                # Add the reference SEDs
+                for reference_sed_path in self.config.reference_seds:
+
+                    # Determine name
+                    reference_sed_name = fs.strip_extension(fs.name(reference_sed_path))
+
+                    # Add the reference SED
+                    reference_sed = ObservedSED.from_file(reference_sed_path)
+                    plotter.add_sed(reference_sed, reference_sed_name)
+
+            # Determine the path to the plot file
+            path = self.output_path_file("sed_" + instr_name + "." + self.config.format)
+
+            # Make the plot
+            plotter.run(title=self.simulation.name, output=path)
+
+            # Get the axis limits
+            min_wavelength = plotter.min_wavelength
+            max_wavelength = plotter.max_wavelength
+            min_flux = plotter.min_flux
+            max_flux = plotter.max_flux
+
+            # Reset the plotter
+            plotter.clear()
+
+            # Set the axis limits
+            self.min_wavelengths[instr_name] = min_wavelength
+            self.max_wavelengths[instr_name] = max_wavelength
+            self.min_fluxes[instr_name] = min_flux
+            self.max_fluxes[instr_name] = max_flux
 
     # -----------------------------------------------------------------
 
@@ -144,7 +306,7 @@ class SimulationSEDPlotter(Configurable):
             instr_name = instrument_name(sed_path, self.prefix)
 
             # Load the SED
-            sed = SED.from_skirt(sed_path)
+            sed = SED.from_skirt(sed_path) # contribution = "total"
 
             # Add the simulated SED to the plotter
             plotter.add_sed(sed, instr_name)
@@ -164,17 +326,7 @@ class SimulationSEDPlotter(Configurable):
 
         # Determine the path to the plot file
         path = self.output_path_file("sed." + self.config.format)
-        plotter.run(title=self.simulation.name, output=path)
-
-        # Get the axis limits
-        self.min_wavelength = plotter.min_wavelength
-        self.max_wavelength = plotter.max_wavelength
-        self.min_flux = plotter.min_flux
-        self.max_flux = plotter.max_flux
-
-        # Clear the SED plotter
-        # Doesn't clear the config (ignore filters)
-        #plotter.clear()
+        plotter.run(title=self.simulation.name, output=path, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, min_flux=self.min_flux, max_flux=self.max_flux)
 
     # -----------------------------------------------------------------
 
@@ -230,10 +382,16 @@ class SimulationSEDPlotter(Configurable):
                     plotter.add_sed(reference_sed, reference_sed_name)
 
             # Determine the path to the plot file
-            path = self.output_path_file("sed_" + instr_name + "." + self.config.format)
+            path = self.output_path_file("sed_" + instr_name + "_contributions." + self.config.format)
+
+            # Get the axis limits
+            min_wavelength = self.min_wavelengths[instr_name]
+            max_wavelength = self.max_wavelengths[instr_name]
+            min_flux = self.min_fluxes[instr_name]
+            max_flux = self.max_fluxes[instr_name]
 
             # Plot
-            plotter.run(output=path, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, min_flux=self.min_flux, max_flux=self.max_flux)
+            plotter.run(output=path, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux)
 
             # Clear the SED plotter
             # Doesn't clear the config (e.g. ignore filters)

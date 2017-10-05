@@ -380,22 +380,22 @@ class ConvolutionKernel(Frame):
         # Inform the user
         log.info("Preparing the kernel ...")
 
-        # Check the dimensions
+        # 1. Check the dimensions
         self.check_dimensions()
 
-        # Truncate
+        # 2. Truncate
         if sigma_level is not None: self.truncate(sigma_level)
 
-        # Adjust pixelscale
+        # 3. Adjust pixelscale
         self.adjust_pixelscale(pixelscale)
 
-        # Recenter
+        # 4. Recenter
         self.recenter()
 
-        # Normalize
+        # 5. Normalize
         self.normalize()
 
-        # Set prepared flag to True
+        # 6. Set prepared flag to True
         self._prepared = True
 
     # -----------------------------------------------------------------
@@ -793,6 +793,10 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
+        # Debugging
+        log.debug("Normalizing the kernel ...")
+
+        # Normalize to one
         self.__idiv__(self.sum())
 
     # -----------------------------------------------------------------
