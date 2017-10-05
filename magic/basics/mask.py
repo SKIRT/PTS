@@ -20,6 +20,7 @@ from scipy import ndimage
 # Import astronomical modules
 from astropy.io import fits
 from photutils import detect_sources
+from photutils.geometry import circular_overlap_grid, elliptical_overlap_grid
 
 # Import the relevant PTS classes and modules
 from .vector import Position
@@ -73,8 +74,12 @@ class MaskBase(object):
         :param kwargs:
         """
 
+        # Get the data
+        if kwargs.pop("invert", False): data = np.logical_not(data.astype(bool))
+        else: data = data.astype(bool)
+
         # Set data
-        self._data = data.astype(bool)
+        self._data = data
 
     # -----------------------------------------------------------------
 
@@ -137,6 +142,76 @@ class MaskBase(object):
         # Return a new Mask object
         data = region.to_mask(x_size, y_size)
         return cls(data)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def circle(cls, size, center, radius, **kwargs):
+
+        """
+        This function ...
+        :param size:
+        :param center:
+        :param radius:
+        :param kwargs:
+        :return:
+        """
+
+        x_size = size.x
+        y_size = size.y
+
+        #rel_center = self.center
+        rel_center = center
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        # Create the patch
+        fraction = circular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, radius, use_exact=0, subpixels=1)
+
+        # Create and return the mask
+        return cls(fraction, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def ellipse(cls, size, center, radius, angle, **kwargs):
+
+        """
+        Thisnfunction ...
+        :param size:
+        :param center:
+        :param radius:
+        :param angle
+        :param kwargs:
+        :return:
+        """
+
+        #rel_center = self.center
+
+        a = radius.x
+        b = radius.y
+
+        x_size = size.x
+        y_size = size.y
+
+        rel_center = center
+
+        # theta in radians !
+        theta = angle.radian
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        # Calculate the mask
+        fraction = elliptical_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, a, b, theta, use_exact=0, subpixels=1)
+
+        # Create and return the mask
+        return cls(fraction, **kwargs)
 
     # -----------------------------------------------------------------
 

@@ -30,6 +30,7 @@ from ...core.basics.log import log
 from ..tools import statistics
 from ...core.filter.filter import parse_filter
 from ..tools import fitting
+from .mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -556,11 +557,11 @@ class ConvolutionKernel(Frame):
         self._data = shift(self._data, [shift_y, shift_x])
 
         # CHECK
-        if check: self.check_recenter(shift_x, shift_y, original_data, centroid_method=centroid_method, tolerance=tolerance)
+        if check: self.check_recenter(shift_x, shift_y, original_data, centroid_method=centroid_method, limit=limit, tolerance=tolerance)
 
     # -----------------------------------------------------------------
 
-    def check_recenter(self, shift_x, shift_y, original_data, centroid_method="2dg", tolerance=0.1, fail_tolerance=1.):
+    def check_recenter(self, shift_x, shift_y, original_data, centroid_method="2dg", limit=0.2, tolerance=0.1, fail_tolerance=1., fail_cutoff=2.):
 
         """
         This function ...
@@ -568,8 +569,10 @@ class ConvolutionKernel(Frame):
         :param shift_y:
         :param original_data:
         :param centroid_method:
+        :param limit:
         :param tolerance: tolerance (of ratio of required new shift to first shift) after shift
         :param fail_tolerance:
+        :param fail_cutoff: sigma levels at which to cutoff
         :return:
         """
 
@@ -601,59 +604,180 @@ class ConvolutionKernel(Frame):
             # Give warnings
             if new_shift_x_relative >= tolerance: log.warning("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))
             if new_shift_y_relative >= tolerance: log.warning("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
-            log.warning("This is perhaps due to a low resolution of the kernel")
+            log.warning("This is perhaps due to a low resolution or asymmetry of the kernel")
 
-            # Check the original shift
-            if abs(shift_x) < fail_tolerance and abs(shift_y) < fail_tolerance:
-                log.warning("The original shift was less than " + str(fail_tolerance) + " pixel(s), tolerating this and resetting the original data ...")
-                self._data = original_data
-            else:
-                # Exit with error messages
-                if abs(shift_x) > fail_tolerance: log.error("The kernel cannot be recentered in the x direction")
-                if abs(shift_y) > fail_tolerance: log.error("The kernel cannot be recentered in the y direction")
-                raise RuntimeError("The kernel cannot be recentered")
+            log.warning("Resetting the original data ...")
+            # RESET ORIGINAL DATA
+            self._data = original_data
+
+            # ESTIMATE CENTROID AGAIN, CONSTRICT
+            log.warning("Trying to estimate the centroid again by constricting the data to a sigma level of " + str(fail_cutoff) + " ...")
+            # TRY AGAIN BY CONSTRICTING THE CENTROID ESTIMATION TO ONLY THE CENTRAL PART (TO AVOID ASYMMETRIC OUTER FEATURES)
+            if centroid_method == "com": x_centroid_restricted, y_centroid_restricted = self.centroid_com(cutoff=fail_cutoff)
+            elif centroid_method == "fit": x_centroid_restricted, y_centroid_restricted = self.centroid_fit(cutoff=fail_cutoff)
+            elif centroid_method == "2dg": x_centroid_restricted, y_centroid_restricted = self.centroid_2dg(cutoff=fail_cutoff)
+            #elif centroid_method == "aniano": x_centroid_restricted, y_centroid_restricted = self.get_maximum_aniano(cutoff=fail_cutoff)
+            else: raise ValueError("Invalid centroid method (cannot use 'aniano')")
+
+            # Debugging
+            log.warning("The centroid coordinate of the kernel with constricted data was found to be " + str(x_centroid_restricted) + ", " + str(y_centroid_restricted))
+            #log.warning("The center of the kernel image is " + str(self.x_center) + ", " + str(self.y_center))
+
+            # Calculate shift
+            shift_x_restricted = self.x_center - x_centroid_restricted
+            shift_y_restricted = self.y_center - y_centroid_restricted
+
+            # Debugging
+            log.warning("The required shift with constricted data is (" + str(shift_x_restricted) + ", " + str(shift_y_restricted) + ")")
+
+            # If the shift (in ABSOLUTE VALUE) is less than 0.2 pixel, don't shift
+            if abs(shift_x_restricted) < limit and abs(shift_y_restricted) < limit:
+                log.warning("Kernel is already perfectly aligned with the center (within " + str(limit) + " pixels): skipping recentering ...")
+                return
+
+            # Debugging
+            log.warning("Shifting the kernel again by (" + str(shift_x_restricted) + ", " + str(shift_y_restricted) + ") pixels ...")
+
+            #original_data = self._data
+            self._data = shift(self._data, [shift_y_restricted, shift_x_restricted])
+
+            # CHECK AGAIN
+            if centroid_method == "com": x_centroid, y_centroid = self.centroid_com(cutoff=fail_cutoff)
+            elif centroid_method == "fit": x_centroid, y_centroid = self.centroid_fit(cutoff=fail_cutoff)
+            elif centroid_method == "2dg": x_centroid, y_centroid = self.centroid_2dg(cutoff=fail_cutoff)
+            #elif centroid_method == "aniano": x_centroid, y_centroid = self.get_maximum_aniano(cutoff=fail_cutoff)
+            else: raise ValueError("Invalid centroid method (cannot use 'aniano')")
+
+            new_shift_x = self.x_center - x_centroid
+            new_shift_y = self.y_center - y_centroid
+
+            new_shift_x_relative = abs(new_shift_x) / abs(shift_x_restricted)
+            new_shift_y_relative = abs(new_shift_y) / abs(shift_y_restricted)
+
+            # Recentering failed because required new shift is larger than 10% of a pixel
+            if new_shift_x_relative >= tolerance or new_shift_y_relative:
+
+                # Shift with restricted was OK
+                if abs(shift_x_restricted) < fail_tolerance and abs(shift_y_restricted) < fail_tolerance:
+
+                    log.warning("The shift after restricting the data was less than " + str(fail_tolerance) + " pixel(s), tolerating this and assuming it's a resolution issue ...")
+                    log.warning("Keeping the data after last shift ...")
+
+                # Check the original shift
+                elif abs(shift_x) < fail_tolerance and abs(shift_y) < fail_tolerance:
+
+                    log.warning("The original shift was less than " + str(fail_tolerance) + " pixel(s), tolerating this and assuming it's a resolution issue ...")
+                    log.warning("Restoring the original data ...")
+                    self._data = original_data
+
+                # NOTHING WORKED
+                else:
+                    # Exit with error messages
+                    if abs(shift_x) > fail_tolerance: log.error("The kernel could not be recentered in the x direction")
+                    if abs(shift_y) > fail_tolerance: log.error("The kernel could not be recentered in the y direction")
+                    if abs(shift_x_restricted) > fail_tolerance: log.error("The kernel could not be recentered in the x direction even after restricting the data")
+                    if abs(shift_y_restricted) > fail_tolerance: log.error("The kernel could not be recentered in the y direction even after restricting the data")
+                    raise RuntimeError("The kernel cannot be recentered")
+
+            # SUCCESS
+            else: log.warning("New shift was succesful in recentering the kernel")
 
     # -----------------------------------------------------------------
 
-    def centroid_com(self):
+    def create_fwhm_mask(self, fwhms=1, invert=False):
 
         """
-        This function ...
+        Thisnf unction ...
+        :param fwhms:
+        :param invert:
         :return:
         """
 
-        return centroid_com(self._data)
+        # Determine the radius
+        radius = self.fwhm_pix * fwhms
+
+        # Create mask
+        return Mask.circle(self.shape, self.center, radius, pixelscale=self.pixelscale, invert=invert)
 
     # -----------------------------------------------------------------
 
-    def centroid_2dg(self):
+    def create_sigma_mask(self, sigmas=1, invert=False):
+
+        """
+        Thisn function ...
+        :param sigmas:
+        :param invert:
+        :return:
+        """
+
+        # Determine the radius
+        radius = self.sigma_pix * sigmas
+
+        # Create mask
+        return Mask.circle(self.shape, self.center, radius, pixelscale=self.pixelscale, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    def centroid_com(self, cutoff=None):
 
         """
         This function ...
+        :param cutoff: sigma level for cutting off the data
         :return:
         """
+
+        # Create cutoff mask
+        if cutoff: mask = self.create_sigma_mask(cutoff, invert=True)
+        else: mask = None
+
+        # Calculate centroid
+        return centroid_com(self._data, mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def centroid_2dg(self, cutoff=None):
+
+        """
+        This function ...
+        :param cutoff: sigma level for cutting off the data
+        :return:
+        """
+
+        # Create cutoff mask
+        if cutoff: mask = self.create_sigma_mask(cutoff, invert=True)
+        else: mask = None
 
         #from ..tools import plotting
         #plotting.plot_box(self._data)
-        return centroid_2dg(self._data)
+        return centroid_2dg(self._data, mask=mask)
 
     # -----------------------------------------------------------------
 
-    def center_fit(self):
+    def center_fit(self, cutoff=None):
 
         """
         This function ...
+        :param cutoff: sigma level for cutting off the data
         :return:
         """
 
         from .cutout import Cutout
         from ..basics.vector import Position
 
+        # Get the (masked) data
+        if cutoff:
+            mask = self.create_sigma_mask(cutoff, invert=True)
+            data = self._data.copy()
+            data[mask] = 0.0
+        else: data = self._data
+
         # Box
-        box = Cutout(self._data, 0, self.xsize, 0, self.ysize)
+        box = Cutout(data, 0, self.xsize, 0, self.ysize)
 
         # Fit model
         model = box.fit_model(Position(0.5*(self.xsize-1), 0.5*(self.ysize-1)), "Gaussian")
+
+        # TODO: CHECK WHETHER SIGMAS ARE PHYSICAL?
 
         # Get x and y mean
         x_mean = model.x_mean.value

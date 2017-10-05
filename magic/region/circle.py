@@ -214,12 +214,13 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
-    def to_mask(self, x_size, y_size):
+    def to_mask(self, x_size, y_size, invert=False):
 
         """
         This function ...
         :param x_size:
         :param y_size:
+        :param invert:
         :return:
         """
 
@@ -236,7 +237,10 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         #plotting.plot_mask(fraction)
 
         # Return a new mask
-        return Mask(fraction)
+        #return Mask(fraction)
+        mask = Mask(fraction)
+        if invert: return mask.inverse()
+        else: return mask
 
     # -----------------------------------------------------------------
 
