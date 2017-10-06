@@ -626,6 +626,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
                 rectangle = self.box.to_pixel(wcs)
 
+                print(rectangle)
+                print(rectangle.lower_left)
+                print(rectangle.upper_right)
+
                 y_min = rectangle.lower_left.y
                 y_max = rectangle.upper_right.y
                 x_min = rectangle.lower_left.x

@@ -745,23 +745,34 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_significance_mask(self, observed, errors, invert=True):
+    def get_significance_mask(self, observed, errors, invert=True, min_npixels=1, connectivity=4):
 
         """
         This function ...
         :param observed:
         :param errors:
         :param invert:
+        :param min_npixels:
+        :param connectivity:
         :return:
         """
 
         # Get the level
         level = self.get_significance_level(observed.filter_name)
 
-        # Return the mask
+        # Create the mask
         significance = self.get_significance_map(observed, errors)
-        if invert: return Mask.below(significance, level, wcs=observed.wcs)
-        else: return Mask.above(significance, level, wcs=observed.wcs)
+        mask = Mask.above(significance, level, wcs=observed.wcs)
+
+        # Only keep largest patch
+        mask = mask.largest(npixels=min_npixels, connectivity=connectivity)
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Return the mask
+        if invert: mask.invert()
+        return mask
 
     # -----------------------------------------------------------------
 

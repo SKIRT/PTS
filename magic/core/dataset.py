@@ -464,6 +464,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_filter_name(self, name):
+
+        """
+        Thisnf ucntion ...
+        :param name:
+        :return:
+        """
+
+        return str(self.get_filter(name))
+
+    # -----------------------------------------------------------------
+
     def get_pixelscale(self, name):
 
         """

@@ -26,23 +26,3 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
-
-definition.add_optional("nbins", "positive_integer", "number of bins for the distributions", 20)
-
-# -----------------------------------------------------------------
-
-# For clip mask
-definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
-definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
-
-# -----------------------------------------------------------------
-
-# REMAKE OR REPLOT
-definition.add_flag("remake_residuals", "remake the residual maps")
-definition.add_flag("remake_weighed", "remake the weighed residual maps")
-definition.add_flag("remake_distributions", "remake the residuals distributions")
-definition.add_flag("remake_weighed_distributions", "remake the weighed residuals distributions")
-definition.add_flag("replot_distributions", "replot the residuals distributions")
-definition.add_flag("replot_weighed_distributions", "replot the weighed residuals distributions")
-
-# -----------------------------------------------------------------

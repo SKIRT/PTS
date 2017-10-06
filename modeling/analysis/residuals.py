@@ -23,6 +23,8 @@ from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
+from ...core.tools.utils import lazyproperty
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -139,13 +141,13 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Loading the images ...")
 
-        # Observed images
+        # 1. Observed images
         self.load_observed_images()
 
-        # Simulated images
+        # 2. Simulated images
         self.load_simulated_images()
 
-        # Error maps
+        # 3. Error maps
         self.load_errors()
 
     # -----------------------------------------------------------------
@@ -163,17 +165,22 @@ class ResidualAnalyser(AnalysisComponent):
         # Load all data
         for name in self.dataset.names:
 
+            # Get filter name
+            filter_name = self.dataset.get_filter_name(name) # should be the same?
+
+            # Check whether residual frames already created
+            if self.has_residuals(filter_name) and self.has_weighed_residuals(filter_name):
+                log.success("Residual and weighed residual map for the '" + filter_name + "' filter already created")
+                continue
+
             # Debugging
             log.debug("Loading the observed " + name + " image ...")
 
             # Load the frame, not truncated
             frame = self.dataset.get_frame(name, masked=False)
 
-            # Define the name of the filter as the image name
-            image_name = str(frame.filter)
-
             # Add the image frame to the dictionary
-            self.observed[image_name] = frame
+            self.observed[filter_name] = frame
 
     # -----------------------------------------------------------------
 
@@ -188,27 +195,32 @@ class ResidualAnalyser(AnalysisComponent):
         log.info("Loading the simulated images ...")
 
         # Loop over all FITS files found in the analysis run misc directory
-        for path, name in fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns=["path", "name"], contains="__"):
+        for path, image_name in fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns=["path", "name"], contains="__"):
+
+            # Get filter name
+            filter_name = image_name.split("__")[1]
+
+            # Check whether residual frames already creeated
+            if self.has_residuals(filter_name) and self.has_weighed_residuals(filter_name):
+                log.success("Residual and weighed residual map for the '" + filter_name + "' filter already created")
+                continue
 
             # Debugging
-            log.debug("Loading the simulated " + name + " image ...")
+            log.debug("Loading the simulated " + filter_name + " image ...")
 
             # Open the image
             frame = Frame.from_file(path)
 
-            # Get the filter name
-            image_name = str(frame.filter)
-
             # Check whether a simulated image exists for this band
-            if image_name not in self.observed:
-                log.warning("The observed " + image_name + " image could not be found, skipping simulated " + image_name + " image ...")
+            if filter_name not in self.observed:
+                log.warning("The observed " + filter_name + " image could not be found, skipping simulated " + filter_name + " image ...")
                 continue
 
             # Get the corresponding observed image
-            observed = self.observed[image_name]
+            observed = self.observed[filter_name]
 
             # Check whether the coordinate systems of the observed and simulated image match
-            if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter matches")
+            if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
 
             # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
             elif observed.average_pixelscale < frame.average_pixelscale:
@@ -232,7 +244,7 @@ class ResidualAnalyser(AnalysisComponent):
             else: raise RuntimeError("Something unexpected happened")
 
             # Add the simulated image frame to the dictionary
-            self.simulated[image_name] = frame
+            self.simulated[filter_name] = frame
 
     # -----------------------------------------------------------------
 
@@ -249,17 +261,22 @@ class ResidualAnalyser(AnalysisComponent):
         # Load all data
         for name in self.dataset.names:
 
+            # Get filter name
+            filter_name = self.dataset.get_filter_name(name)  # should be the same?
+
+            # Check whether residual frames already created
+            if self.has_residuals(filter_name) and self.has_weighed_residuals(filter_name):
+                log.success("Residual and weighed residual map for the '" + filter_name + "' filter already created")
+                continue
+
             # Debugging
             log.debug("Loading the " + name + " error map ...")
 
             # Load the error map, not truncated
             errors = self.dataset.get_errormap(name, masked=False)
 
-            # Define the name of the filter as the image name
-            image_name = str(errors.filter)
-
             # Get the corresponding observed image
-            observed = self.observed[image_name]
+            observed = self.observed[filter_name]
 
             # CHECK THE WCS:
             if errors.wcs != observed.wcs:
@@ -271,7 +288,7 @@ class ResidualAnalyser(AnalysisComponent):
                 errors.rebin(observed.wcs)
 
             # Add the error map to the dictionary
-            self.errors[image_name] = errors
+            self.errors[filter_name] = errors
 
     # -----------------------------------------------------------------
 
@@ -290,9 +307,12 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Already have residuals
             if self.has_residuals(filter_name):
-                log.success("Residual frame was already created: loading it ...")
+                log.success("Residual frame was already created for the '" + filter_name + " filter': loading from file ...")
                 self.residuals[filter_name] = self.load_residuals(filter_name)
                 continue
+
+            # Debugging
+            log.debug("Creating the residual frame for the '" + filter_name + "' filter ...")
 
             # Get the observed and simulated image
             simulated = self.simulated[filter_name]
@@ -309,7 +329,7 @@ class ResidualAnalyser(AnalysisComponent):
             truncation_mask = self.get_truncation_mask(observed.wcs)
 
             # Get the significance mask
-            significance_mask = self.get_significance_mask(observed, errors)
+            significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # MASK
             residual[truncation_mask] = 0.0
@@ -335,9 +355,12 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Already have residuals
             if self.has_weighed_residuals(filter_name):
-                log.success("Weighed residual frame was already created: loading it ...")
+                log.success("Weighed residual frame was already created for the '" + filter_name + "' filter: loading from file ...")
                 self.weighed[filter_name] = self.load_weighed_residuals(filter_name)
                 continue
+
+            # Debugging
+            log.debug("Creating the weighed residual frame for the '" + filter_name + "' filter ...")
 
             # Get the observed image, simulated image and error map
             simulated = self.simulated[filter_name]
@@ -354,7 +377,7 @@ class ResidualAnalyser(AnalysisComponent):
             truncation_mask = self.get_truncation_mask(observed.wcs)
 
             # Get the significance mask
-            significance_mask = self.get_significance_mask(observed, errors)
+            significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # MASK
             residual[truncation_mask] = 0.0
@@ -396,12 +419,26 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in self.filter_names:
 
+            # Already have distribution
+            if self.has_residuals_distribution(filter_name):
+                log.success("Residuals distribution was already created for the '" + filter_name + "' filter: loading from file ...")
+                self.residual_distributions[filter_name] = self.load_residuals_distribution(filter_name)
+                continue
+
+            # Debugging
+            log.debug("Creating the residuals distribution for the '" + filter_name + "' filter ...")
+
             # Get the values within the truncation ellipse
             values = self.residuals[filter_name].values_in(self.truncation_ellipse)
 
             # REMOVE EXACT ZEROES
             indices = np.argwhere(values == 0)
             values = np.delete(values, indices)
+
+            # Check
+            if len(values) == 0 or sequences.all_equal(values):
+                log.error("Cannot create distribution for the '" + filter_name + "' filter")
+                continue
 
             # Create distribution
             distribution = Distribution.from_values(values, bins=self.config.nbins)
@@ -424,12 +461,26 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in self.filter_names:
 
+            # Already have distribution
+            if self.has_weighed_residuals_distribution(filter_name):
+                log.success("Weighed residuals distribution was already created for the '" + filter_name + "' filter: loading from file ...")
+                self.weighed_distributions[filter_name] = self.load_weighed_residuals_distribution(filter_name)
+                continue
+
+            # Debugging
+            log.debug("Creating the weighed residuals distribution for the '" + filter_name + "' filter ...")
+
             # Get the values within the truncation ellipse
             values = self.weighed[filter_name].values_in(self.truncation_ellipse)
 
             # REMOVE EXACT ZEROES
             indices = np.argwhere(values == 0)
             values = np.delete(values, indices)
+
+            # Check
+            if len(values) == 0 or sequences.all_equal(values):
+                log.error("Cannot create distribution for the '" + filter_name + "' filter")
+                continue
 
             # Create distribution
             distribution = Distribution.from_values(values, bins=self.config.nbins)
@@ -468,7 +519,23 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.is_file(self.get_residuals_path(filter_name))
+        # File present?
+        if fs.is_file(self.get_residuals_path(filter_name)):
+
+            # REMAKE?
+            if self.config.remake_residuals:
+
+                # Remove files
+                fs.remove_file(self.get_residuals_path(filter_name))
+                if self.has_residuals_distribution(filter_name): fs.remove_file(self.get_residuals_distribution_path(filter_name))
+                if self.has_residuals_distribution_plot(filter_name): fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't remake
+            else: return True
+
+        # No file
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -530,7 +597,23 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.is_file(self.get_weighed_residuals_path(filter_name))
+        # File present?
+        if fs.is_file(self.get_weighed_residuals_path(filter_name)):
+
+            # REMAKE?
+            if self.config.remake_weighed:
+
+                # Remove files
+                fs.remove_file(self.get_weighed_residuals_path(filter_name))
+                if self.has_weighed_residuals_distribution(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_path(filter_name))
+                if self.has_weighed_residuals_distribution_plot(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't remake
+            else: return True
+
+        # No file
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -603,6 +686,45 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def has_residuals_distribution(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_residuals_distribution_path(filter_name)):
+
+            # Remake?
+            if self.config.remake_distributions:
+
+                # Remove files
+                fs.remove_file(self.get_residuals_distribution_path(filter_name))
+                if self.has_residuals_distribution_plot(filter_name): fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't remake
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def load_residuals_distribution(self, filter_name):
+
+        """
+        Thisf ucntion ...
+        :param filter_name:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_residuals_distribution_path(filter_name))
+
+    # -----------------------------------------------------------------
+
     def get_residuals_distribution_path(self, filter_name):
 
         """
@@ -632,12 +754,52 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Get path
             path = self.get_residuals_distribution_path(filter_name)
+            if fs.is_file(path): continue
 
             # Debugging
             log.debug("Writing the residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
 
             # Write
             self.residual_distributions[filter_name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_residuals_distribution(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_weighed_residuals_distribution_path(filter_name)):
+
+            # Remake?
+            if self.config.remake_weighed_distributions:
+
+                # Remove files
+                fs.remove_file(self.get_weighed_residuals_distribution_path(filter_name))
+                if self.has_weighed_residuals_distribution_plot(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't remake
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def load_weighed_residuals_distribution(self, filter_name):
+
+        """
+        This function ....
+        :param filter_name:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_weighed_residuals_distribution_path(filter_name))
 
     # -----------------------------------------------------------------
 
@@ -670,6 +832,7 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Get the path
             path = self.get_weighed_residuals_distribution_path(filter_name)
+            if fs.is_file(path): continue
 
             # Debugging
             log.debug("Writing the weighed residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
@@ -693,10 +856,10 @@ class ResidualAnalyser(AnalysisComponent):
         self.plot_distributions()
 
         # Plot a grid with the observed, simulated and residual images
-        self.plot_image_grid()
+        #self.plot_image_grid()
 
         # Plot a grid with the observed, simulated and weighed residual images
-        self.plot_image_grid_weighed()
+        #self.plot_image_grid_weighed()
 
     # -----------------------------------------------------------------
 
@@ -718,6 +881,46 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def has_residuals_distribution_plot(self, filter_name):
+
+        """
+        Thisn function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_residuals_distribution_plot_path(filter_name)):
+
+            # Replot?
+            if self.config.replot_distributions:
+
+                # Remove file
+                fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't replot
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_distribution_plot_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # Determine plot path
+        path = fs.join(self.analysis_run.residuals_path, filter_name + ".pdf")
+        return path
+
+    # -----------------------------------------------------------------
+
     def plot_residuals_distributions(self):
 
         """
@@ -731,14 +934,55 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in self.filter_names:
 
-            # Determine plot path
-            path = fs.join(self.analysis_run.residuals_path, filter_name + ".pdf")
+            # Determine the path
+            path = self.get_residuals_distribution_plot_path(filter_name)
+            if fs.is_file(path): continue
 
             # Debugging
             log.debug("Plotting the residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
 
             # Plot
             self.residual_distributions[filter_name].plot(path=path)
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_residuals_distribution_plot(self, filter_name):
+
+        """
+        Thisn function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_weighed_residuals_distribution_plot_path(filter_name)):
+
+            # Replot?
+            if self.config.replot_weighed_distributions:
+
+                # Remove file
+                fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+                return False
+
+            # Don't replot
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_residuals_distribution_plot_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # Determine plot path
+        path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".pdf")
+        return path
 
     # -----------------------------------------------------------------
 
@@ -755,8 +999,9 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in self.filter_names:
 
-            # Determine plot path
-            path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".pdf")
+            # Get the path
+            path = self.get_weighed_residuals_distribution_plot_path(filter_name)
+            if fs.is_file(path): continue
 
             # Debugging
             log.debug("Plotting the weighed residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
@@ -835,7 +1080,20 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    # @property
+    # def filter_names(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Get the filter names which appear in both the simulated and observed images
+    #     return sequences.intersection(self.simulated.keys(), self.observed.keys())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def filter_names(self):
 
         """
@@ -843,8 +1101,8 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        # Get the filter names which appear in both the simulated and observed images
-        return sequences.intersection(self.simulated.keys(), self.observed.keys())
+        image_names = fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns="name", contains="__")
+        return [name.split("__")[1] for name in image_names]
 
     # -----------------------------------------------------------------
 
@@ -856,6 +1114,7 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return sorted(self.filter_names, key=lambda key: self.observed[key].filter.pivotwavelength())
+        #return sorted(self.filter_names, key=lambda key: self.observed[key].filter.pivotwavelength())
+        return sorted(self.filter_names, key=lambda key: parse_filter(key).pivotwavelength())
 
 # -----------------------------------------------------------------

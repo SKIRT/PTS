@@ -65,10 +65,20 @@ launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
 analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
 analyse_attenuation_map | -- | analysis.attenuation.map.AttenuationMapAnalyser | arguments | Analyse the attenuation map
-analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
-analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
-analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
+analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
+analyse_maps | -- | analysis.maps.maps.MapsAnalyser | arguments | Analyse maps derived from the simulated images
+analyse_colour_maps | -- | analysis.maps.colours.ColourMapsAnalyser | arguments | Analyse colour maps derived from the simulated images
+analyse_ssfr_maps | -- | analysis.maps.ssfr.SSFRMapsAnalyser | arguments | Analyse sSFR maps derived from the simulated images
+analyse_tir_maps | -- | analysis.maps.tir.TIRMapsAnalyser | arguments | Analyse TIR maps derived from the simulated images
+analyse_attenuation_maps | -- | analysis.maps.attenuation.AttenuationMapsAnalyser | arguments | Analyse attenuation maps derived from the simulated images
+analyse_old_maps | -- | analysis.maps.old.OldMapsAnalyser | arguments | Analyse old stellar maps derived from the simulated images
+analyse_dust_maps | -- | analysis.maps.dust.DustMapsAnalyser | arguments | Analyse dust maps derived from the simulated images
+analyse_young_maps | -- | analysis.maps.young.YoungMapsAnalyser | arguments | Analyse young stellar maps derived from the simulated images
+analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | arguments | Analyse ionizing stellar maps derived from the simulated images
+analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
+analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
+
 cache_analysis_run | -- | analysis.cache.AnalysisRunCacher | arguments | Cache a certain analysis run to a remote host
 
 # OTHER
