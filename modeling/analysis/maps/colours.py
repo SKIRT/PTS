@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import MapsAnalysisComponent
 from ....core.basics.log import log
+from ....magic.maps.colour.colour import ColourMapsMaker
 
 # -----------------------------------------------------------------
 
@@ -48,6 +49,9 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Make the maps
+        self.make_maps()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -66,7 +70,7 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def make_colour_maps(self):
+    def make_maps(self):
 
         """
         This function ...

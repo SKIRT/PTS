@@ -69,7 +69,7 @@ class ColourAnalyser(ColourAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -77,7 +77,7 @@ class ColourAnalyser(ColourAnalysisComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the images
         self.load_images()
@@ -96,6 +96,21 @@ class ColourAnalyser(ColourAnalysisComponent):
 
         # 6. Plotting
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        Thisn fuction ...
+        :param kwargs:
+        :return:
+        """
+
+        super(ColourAnalyser, self).setup(**kwargs)
+
+        # Load the analysis run
+        self.load_run()
 
     # -----------------------------------------------------------------
 
@@ -128,7 +143,10 @@ class ColourAnalyser(ColourAnalysisComponent):
         log.info("Loading the observed images ...")
 
         # Loop over the appropriate observed images
-        for key in keys:
+        #for key in keys:
+        filter_names_keys = [filter_names[key] for key in keys]
+        image_names_for_filters = self.dataset.get_names_for_filters(filter_names_keys) # FASTER
+        for key, image_name in zip(keys, image_names_for_filters):
 
             # Get the corresponding filter
             fltr = BroadBandFilter(filter_names[key])

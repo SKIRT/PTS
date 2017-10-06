@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import MapsAnalysisComponent
 from ....core.basics.log import log
+from ....magic.maps.ionizingstars.ionizing import IonizingStellarMapsMaker
 
 # -----------------------------------------------------------------
 

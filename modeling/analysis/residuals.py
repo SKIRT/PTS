@@ -338,6 +338,10 @@ class ResidualAnalyser(AnalysisComponent):
             # Add the residual image to the dictionary
             self.residuals[filter_name] = residual
 
+            # WRITE THE SIGNIFICANCE MASK
+            mask_path = fs.join(self.analysis_run.residuals_path, filter_name + "_significance.fits")
+            significance_mask.saveto(mask_path)
+
     # -----------------------------------------------------------------
 
     def calculate_weighed(self):
@@ -536,7 +540,13 @@ class ResidualAnalyser(AnalysisComponent):
             else: return True
 
         # No file
-        else: return False
+        else:
+
+            # Check whether derived things are present, if so, they need to be removed
+            if self.has_residuals_distribution(filter_name): fs.remove_file(self.get_residuals_distribution_path(filter_name))
+            if self.has_residuals_distribution_plot(filter_name): fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+            if self.has_residuals_plot(filter_name): fs.remove_file(self.get_residuals_plot_path(filter_name))
+            return False
 
     # -----------------------------------------------------------------
 
@@ -615,7 +625,13 @@ class ResidualAnalyser(AnalysisComponent):
             else: return True
 
         # No file
-        else: return False
+        else:
+
+            # Check whether derived things are present, if so, remove them
+            if self.has_weighed_residuals_distribution(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_path(filter_name))
+            if self.has_weighed_residuals_distribution_plot(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+            if self.has_weighed_residuals_plot(filter_name): fs.remove_file(self.get_weighed_residuals_plot_path(filter_name))
+            return False
 
     # -----------------------------------------------------------------
 
@@ -711,7 +727,11 @@ class ResidualAnalyser(AnalysisComponent):
             else: return True
 
         # No file
-        else: return False
+        else:
+
+            # Check if derived things are present, if so, remove
+            if self.has_residuals_distribution_plot(filter_name): fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+            return False
 
     # -----------------------------------------------------------------
 
@@ -789,7 +809,11 @@ class ResidualAnalyser(AnalysisComponent):
             else: return True
 
         # No file
-        else: return False
+        else:
+
+            # Check if derived things are present, if so, remove them
+            if self.has_weighed_residuals_distribution_plot(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+            return False
 
     # -----------------------------------------------------------------
 

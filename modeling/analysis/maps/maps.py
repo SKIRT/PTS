@@ -155,25 +155,25 @@ class MapsAnalyser(MapsAnalysisComponent):
         # 2. Analyse colour maps
         if self.needs_colour_maps: self.analyse_colour_maps()
 
-        # 3. Create sSFR maps
+        # 3. Analyse sSFR maps
         if self.needs_ssfr_maps: self.analyse_ssfr_maps()
 
-        # 4. Create the TIR map
+        # 4. Analyse TIR maps
         if self.needs_tir_maps: self.analyse_tir_maps()
 
-        # 5. Create the attenuation map(s)
+        # 5. Analyse the attenuation map(s)
         if self.needs_attenuation_maps: self.analyse_attenuation_maps()
 
-        # 6. Create the map of the old stellar disk
+        # 6. Analyse the map of the old stellar disk
         if self.needs_old_stellar_maps: self.analyse_old_stellar_maps()
 
-        # 7. Create the dust map
+        # 7. Analyse the dust map
         if self.needs_dust_maps: self.analyse_dust_maps()
 
-        # 8. Create the map of the young stellar population
+        # 8. Analyse the map of the young stellar population
         if self.needs_young_stellar_maps: self.analyse_young_stellar_maps()
 
-        # 9. Create the map of the ionizing stellar population
+        # 9. Analyse the map of the ionizing stellar population
         if self.needs_ionizing_stellar_maps: self.analyse_ionizing_stellar_maps()
 
     # -----------------------------------------------------------------
