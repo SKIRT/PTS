@@ -965,6 +965,9 @@ class DataSet(object):
         # FASTER IMPLEMENTATION (NOT USING THE SLOW GET_NAME_FOR_FILTER)
         # ONLY OPENENING EACH IMAGE HEADER ONCE!
 
+        # Make sure that filters are actual filter objects and not filter name
+        filters = [parse_filter(fltr) if types.is_string_type(fltr) else fltr for fltr in filters]
+
         # Initialize
         names = [None] * len(filters)
 

@@ -79,10 +79,23 @@ class ColourAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    @property
+    def colours_distributions_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.colours_path, "distributions")
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
