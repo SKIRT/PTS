@@ -17,6 +17,8 @@ from .component import MapsAnalysisComponent
 from ....core.basics.log import log
 from ....magic.maps.tir.single import SingleBandTIRMapMaker
 from ....magic.maps.tir.multi import MultiBandTIRMapMaker
+from ....magic.core.list import FrameList
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -66,8 +68,126 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(TIRMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def available_filters_singleband(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+
+        # Loop over the colours
+        for filter_name in singleband_filter_names:
+
+            # Parse fltr
+            fltr = parse_filter(filter_name)
+
+            # If no image is avilalbe for this filters, skip
+            if not self.has_frame_for_filter(fltr): continue
+
+            # otherwise, add to the list of filters
+            filters.append(fltr)
+
+        # Return the available filters
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def available_filters_multiband(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+
+        # Loop over the colours
+        for filter_name in multiband_filter_names:
+
+            # Parse filter
+            fltr = parse_filter(filter_name)
+
+            # If no image is avilalbe for this filters, skip
+            if not self.has_frame_for_filter(fltr): continue
+
+            # otherwise, add to the list of filters
+            filters.append(fltr)
+
+        # Return the available filters
+        return filters
+
+    # -----------------------------------------------------------------
+
+    def load_data_singleband(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the data ...")
+
+        frames = FrameList()
+        errormaps = FrameList()
+
+        # Loop over the filters
+        for fltr in self.available_filters_singleband:
+
+            # Debugging
+            log.debug("Loading the '" + str(fltr) + "' frame ...")
+
+            # Load the frame
+            frame = self.get_frame_for_filter(fltr)
+            frames.append(frame, fltr)
+
+            # Load the error map
+            if not self.has_errormap_for_filter(fltr): continue
+            errors = self.get_errormap_for_filter(fltr)
+            errormaps.append(errors, fltr)
+
+        # Return the frames and errors maps
+        return frames, errormaps
+
+    # -----------------------------------------------------------------
+
+    def load_data_multiband(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the data ...")
+
+        # Frames and error maps
+        frames = FrameList()
+        errormaps = FrameList()
+
+        # Loop over the filters
+        for fltr in self.available_filters_multiband:
+
+            # Debugging
+            log.debug("Loading the '" + str(fltr) + "' frame ...")
+
+            # Load the frame
+            frame = self.get_frame_for_filter(fltr)
+            frames.append(frame, fltr)
+
+            # Load the error map, if present
+            if not self.has_errormap_for_filter(fltr): continue
+            errors = self.get_errormap_for_filter(fltr)
+            errormaps.append(errors, fltr)
+
+        # Return the frames and error maps
+        return frames, errormaps
 
     # -----------------------------------------------------------------
 
@@ -81,10 +201,10 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         # Inform the user
         log.info("Making TIR map ...")
 
-        # 2. Make maps based on a single band
+        # 1. Make maps based on a single band
         self.make_tir_maps_single()
 
-        # 3. Make maps based on multiple bands
+        # 2. Make maps based on multiple bands
         self.make_tir_maps_multi()
 
     # -----------------------------------------------------------------

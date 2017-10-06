@@ -36,6 +36,24 @@ class YoungMapsAnalyser(MapsAnalysisComponent):
         # Call the constructor of the base class
         super(YoungMapsAnalyser, self).__init__(*args, **kwargs)
 
+        # The input FUV and FUV error maps
+        self.fuv = None
+        self.fuv_errors = None
+
+        # The map of the old stellar disk
+        self.old = None
+
+        # The maps of FUV attenuation
+        self.fuv_attenuations = None
+
+        # The origins
+        self.old_origin = None
+        self.fuv_attenuations_origins = None
+
+        # Methods
+        self.old_method = None
+        self.fuv_attenuations_methods = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -49,7 +67,10 @@ class YoungMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make the maps
+        # 2. Load the necessary input maps
+        self.load_input()
+
+        # 3. Make the maps
         self.make_maps()
 
     # -----------------------------------------------------------------
@@ -65,8 +86,75 @@ class YoungMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(YoungMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
+    # -----------------------------------------------------------------
+
+    def load_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the necessary input ...")
+
+        # Load the GALEX FUV image and error map
+        self.load_fuv()
+
+        # Load FUV attenuation map
+        self.load_fuv_attenuation_maps()
+
+        # Load old stellar map
+        self.load_old_stellar_map()
+
+    # -----------------------------------------------------------------
+
+    def load_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get FUV frame and error map
+        self.fuv = self.dataset.get_frame("GALEX FUV") # in original MJy/sr units
+        self.fuv_errors = self.dataset.get_errormap("GALEX FUV") # in original MJy/sr units
+
+    # -----------------------------------------------------------------
+
+    def load_fuv_attenuation_maps(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the maps of the FUV attenuation ...")
+
+        # Get the FUV attenuation maps
+        #self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
+        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    def load_old_stellar_map(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Loading the map of old stars ...")
+
+        # Get the map
+        self.old = self.get_old_stellar_disk_map(self.i1_filter)
+
+        # Set the old origin
+        self.old_origin = self.i1_filter
+
+        # Set the old method
+        self.old_method = "disk" #self.get_old_stellar_disk_methods()
 
     # -----------------------------------------------------------------
 

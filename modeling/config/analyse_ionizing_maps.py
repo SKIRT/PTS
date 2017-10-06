@@ -26,3 +26,8 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
+
+# Remake?
+definition.add_flag("remake", "remake already existing maps", False)
+
+# -----------------------------------------------------------------

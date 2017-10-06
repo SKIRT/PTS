@@ -48,7 +48,7 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make the maps
+        # 2. Make the maps
         self.make_maps()
 
     # -----------------------------------------------------------------
@@ -64,9 +64,6 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(DustMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
-
     # -----------------------------------------------------------------
 
     def make_maps(self):
@@ -79,10 +76,10 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         # Inform the user
         log.info("Making dust maps ...")
 
-        # 6. Make a dust map based on UV attenuation
+        # 1. Make a dust map based on UV attenuation
         self.make_dust_attenuation()
 
-        # Make a map of the hot dust
+        # 2. Make a map of the hot dust
         self.make_dust_hot()
 
     # -----------------------------------------------------------------
@@ -109,10 +106,8 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         attenuation_methods = self.get_attenuation_methods(flatten=True)
 
         # Get current
-        if self.config.remake:
-            current = dict()
-        else:
-            current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
         maker.run(attenuation=attenuation_maps, attenuation_origins=attenuation_origins,
@@ -165,10 +160,8 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         # print(factors)
 
         # Get already created maps
-        if self.config.remake:
-            current = dict()
-        else:
-            current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
         # maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)

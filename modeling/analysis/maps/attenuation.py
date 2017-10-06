@@ -15,8 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import MapsAnalysisComponent
 from ....core.basics.log import log
-from ....magic.maps.attenuation.cortese import CorteseAttenuationCalibration
-from ....magic.maps.attenuation.buat import BuatAttenuationCalibration
+from ....magic.maps.attenuation.cortese import CorteseAttenuationMapsMaker
+from ....magic.maps.attenuation.buat import BuatAttenuationMapsMaker
 
 # -----------------------------------------------------------------
 
@@ -66,9 +66,6 @@ class AttenuationMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(AttenuationMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
-
     # -----------------------------------------------------------------
 
     def make_maps(self):
@@ -81,10 +78,10 @@ class AttenuationMapsAnalyser(MapsAnalysisComponent):
         # Inform the user
         log.info("Making attenuation maps ...")
 
-        # 2. Cortese
+        # 1. Cortese
         self.make_cortese_attenuation_maps()
 
-        # 3. Buat
+        # 2. Buat
         self.make_buat_attenuation_maps()
 
     # -----------------------------------------------------------------

@@ -171,6 +171,22 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_current_maps_method(self, method):
+
+        """
+        This
+        :param method:
+        :return:
+        """
+
+        maps = self.get_current_maps()
+        if maps is None: return None
+
+        if method not in maps: return dict()
+        else: return maps[method]
+
+    # -----------------------------------------------------------------
+
     @property
     def maps_sub_name(self):
 
@@ -235,6 +251,156 @@ class MapMakerBase(GalaxyModelingComponent):
 
         # Return the map path
         return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_colour_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_colour_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_ssfr_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_tir_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist::
+        :return:
+        """
+
+        return self.collection.get_attenuation_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_old_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_young_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_ionizing_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_dust_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_maps(self, framelist=False):
+
+        """
+        This function ...
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_old_stellar_disk_maps(framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_disk_origins()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_disk_methods()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_map(self, fltr):
+
+        """
+        This fucntion ...
+        :param fltr:
+        :return:
+        """
+
+        return self.collection.get_old_stellar_disk_map(fltr)
 
     # -----------------------------------------------------------------
 
@@ -491,6 +657,292 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.load_static_collection()
+
+    # -----------------------------------------------------------------
+
+    # ORIGINS
+
+    def get_colours_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_colours_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ssfr_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_tir_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_attenuation_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_old_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_old_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_young_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_young_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ionizing_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_dust_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    # FILTERS
+
+    def get_all_colours_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_colours_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_ssfr_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_ssfr_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_tir_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_tir_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_attenuation_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_attenuation_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_old_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_old_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_young_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_young_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_ionizing_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_ionizing_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_dust_filters(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return self.collection.get_all_dust_filters()
+
+    # -----------------------------------------------------------------
+
+    # METHODS
+
+    def get_colours_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_colours_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ssfr_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_tir_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_attenuation_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_old_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_old_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_young_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_young_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ionizing_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_dust_methods(flatten=flatten)
 
 # -----------------------------------------------------------------
 
@@ -1288,289 +1740,7 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    # ORIGINS
 
-    def get_colours_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_colours_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_ssfr_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_ssfr_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_tir_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_tir_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_attenuation_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_attenuation_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_old_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_old_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_young_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_young_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_ionizing_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_ionizing_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_dust_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_dust_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    # FILTERS
-
-    def get_all_colours_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_colours_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_ssfr_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_ssfr_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_tir_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_tir_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_attenuation_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_attenuation_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_old_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_old_filters()
-        
-    # -----------------------------------------------------------------
-
-    def get_all_young_filters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.collection.get_all_young_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_ionizing_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_all_ionizing_filters()
-
-    # -----------------------------------------------------------------
-
-    def get_all_dust_filters(self):
-
-        """
-        This function ..
-        :return:
-        """
-
-        return self.collection.get_all_dust_filters()
-
-    # -----------------------------------------------------------------
-
-    # METHODS
-
-    def get_colours_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_colours_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_ssfr_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_ssfr_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_tir_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_tir_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_attenuation_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_attenuation_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_old_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_old_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_young_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_young_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_ionizing_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_ionizing_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_dust_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_dust_methods(flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -1897,110 +2067,6 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def get_colour_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_colour_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_ssfr_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return: 
-        """
-
-        return self.collection.get_ssfr_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_tir_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return: 
-        """
-
-        return self.collection.get_tir_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_attenuation_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist::
-        :return:
-        """
-
-        return self.collection.get_attenuation_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_old_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_old_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_young_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_young_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_ionizing_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_ionizing_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_dust_maps(self, flatten=False, framelist=False):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_dust_maps(flatten=flatten, framelist=framelist)
-
-    # -----------------------------------------------------------------
-
     def get_tir_single_maps(self):
 
         """
@@ -2172,52 +2238,6 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def get_old_stellar_disk_map(self, fltr):
-
-        """
-        This fucntion ...
-        :param fltr:
-        :return: 
-        """
-
-        return self.collection.get_old_stellar_disk_map(fltr)
-
-    # -----------------------------------------------------------------
-
-    def get_old_stellar_disk_maps(self, framelist=False):
-
-        """
-        This function ...
-        :param framelist:
-        :return:
-        """
-
-        return self.collection.get_old_stellar_disk_maps(framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_old_stellar_disk_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_old_stellar_disk_origins()
-
-    # -----------------------------------------------------------------
-
-    def get_old_stellar_disk_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_old_stellar_disk_methods()
-
-    # -----------------------------------------------------------------
-
     def get_hot_dust_maps(self):
 
         """
@@ -2302,22 +2322,6 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.collection.get_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method)
-
-    # -----------------------------------------------------------------
-
-    def get_current_maps_method(self, method):
-
-        """
-        This
-        :param method:
-        :return:
-        """
-
-        maps = self.get_current_maps()
-        if maps is None: return None
-
-        if method not in maps: return dict()
-        else: return maps[method]
 
     # -----------------------------------------------------------------
 

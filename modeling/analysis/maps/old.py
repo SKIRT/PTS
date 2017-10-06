@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import MapsAnalysisComponent
 from ....core.basics.log import log
 from ....magic.maps.oldstars.disk import DiskOldStellarMapMaker
+from ....magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
@@ -61,9 +62,6 @@ class OldMapsAnalyser(MapsAnalysisComponent):
 
         # Call the setup function of the base class
         super(OldMapsAnalyser, self).setup(**kwargs)
-
-        # Load the analysis run
-        self.load_run()
 
     # -----------------------------------------------------------------
 
