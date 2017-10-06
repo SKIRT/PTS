@@ -9,6 +9,18 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.analysis.run import AnalysisRuns
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.magic.core.rgba import alpha_methods
+
+# -----------------------------------------------------------------
+
+default_alpha_method = "combined"
+default_scale = "log"
+default_color = "jet"
+default_mask_color = "black"
+
+scales = ["log", "sqrt"]
+default_colour = "jet"
+default_interval = "pts"
 
 # -----------------------------------------------------------------
 
@@ -44,5 +56,16 @@ definition.add_flag("remake_distributions", "remake the residuals distributions"
 definition.add_flag("remake_weighed_distributions", "remake the weighed residuals distributions")
 definition.add_flag("replot_distributions", "replot the residuals distributions")
 definition.add_flag("replot_weighed_distributions", "replot the weighed residuals distributions")
+definition.add_flag("replot_residuals", "replot residual maps")
+definition.add_flag("replot_weighed", "replot weighed residual maps")
+
+# -----------------------------------------------------------------
+
+# For PNG
+definition.add_optional("colours", "string", "colour or colour map for plotting", default=default_color)
+definition.add_optional("scale", "string", "scaling", default_scale, scales)
+definition.add_optional("interval", "string", "interval", default_interval)
+definition.add_optional("alpha_method", "string", "alpha method", default_alpha_method, suggestions=alpha_methods)
+definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.5)
 
 # -----------------------------------------------------------------

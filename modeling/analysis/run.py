@@ -94,9 +94,20 @@ misc_name = "misc"
 attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
+maps_name = "maps"
 weighed_residuals_name = "weighed_residuals"
 heating_name = "heating"
 dust_grid_tree_filename = "tree.dat"
+
+# Maps subdirectories
+colour_maps_name = "colours"
+ssfr_maps_name = "ssfr"
+tir_maps_name = "tir"
+attenuation_maps_name = "attenuation"
+old_maps_name = "old"
+dust_maps_name = "dust"
+young_maps_name = "young"
+ionizing_maps_name = "ionizing"
 
 # Projections
 earth_projection_filename = "earth.proj"
@@ -514,6 +525,114 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, colour_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, ssfr_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, tir_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, attenuation_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, old_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, dust_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, young_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_path, ionizing_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_path(self):
 
         """
@@ -731,9 +850,20 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.weighed_residuals_path): fs.create_directory(self.weighed_residuals_path)
+        if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
 
-        # Heating directories
+        # Maps subdirectories
+        if not fs.is_directory(self.colour_maps_path): fs.create_directory(self.colour_maps_path)
+        if not fs.is_directory(self.ssfr_maps_path): fs.create_directory(self.ssfr_maps_path)
+        if not fs.is_directory(self.tir_maps_path): fs.create_directory(self.tir_maps_path)
+        if not fs.is_directory(self.attenuation_maps_path): fs.create_directory(self.attenuation_maps_path)
+        if not fs.is_directory(self.old_maps_path): fs.create_directory(self.old_maps_path)
+        if not fs.is_directory(self.dust_maps_path): fs.create_directory(self.dust_maps_path)
+        if not fs.is_directory(self.young_maps_path): fs.create_directory(self.young_maps_path)
+        if not fs.is_directory(self.ionizing_maps_path): fs.create_directory(self.ionizing_maps_path)
+
+        # Heating subdirectories
         if not fs.is_directory(self.heating_instruments_path): fs.create_directory(self.heating_instruments_path)
 
     # -----------------------------------------------------------------

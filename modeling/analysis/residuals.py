@@ -529,6 +529,7 @@ class ResidualAnalyser(AnalysisComponent):
                 fs.remove_file(self.get_residuals_path(filter_name))
                 if self.has_residuals_distribution(filter_name): fs.remove_file(self.get_residuals_distribution_path(filter_name))
                 if self.has_residuals_distribution_plot(filter_name): fs.remove_file(self.get_residuals_distribution_plot_path(filter_name))
+                if self.has_residuals_plot(filter_name): fs.remove_file(self.get_residuals_plot_path(filter_name))
                 return False
 
             # Don't remake
@@ -607,6 +608,7 @@ class ResidualAnalyser(AnalysisComponent):
                 fs.remove_file(self.get_weighed_residuals_path(filter_name))
                 if self.has_weighed_residuals_distribution(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_path(filter_name))
                 if self.has_weighed_residuals_distribution_plot(filter_name): fs.remove_file(self.get_weighed_residuals_distribution_plot_path(filter_name))
+                if self.has_weighed_residuals_plot(filter_name): fs.remove_file(self.get_weighed_residuals_plot_path(filter_name))
                 return False
 
             # Don't remake
@@ -855,6 +857,12 @@ class ResidualAnalyser(AnalysisComponent):
         # Plot the distributions
         self.plot_distributions()
 
+        # Plot the residuals
+        self.plot_residuals()
+
+        # Plot the weighed rsiduals
+        self.plot_weighed_residuals()
+
         # Plot a grid with the observed, simulated and residual images
         #self.plot_image_grid()
 
@@ -1008,6 +1016,134 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Plot
             self.weighed_distributions[filter_name].plot(path=path)
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_plot(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_residuals_plot_path(filter_name)):
+
+            # Replot
+            if self.config.replot_residuals:
+
+                # Remove file
+                fs.remove_file(self.get_residuals_plot_path(filter_name))
+                return False
+
+            # Don't replot
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_plot_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.analysis_run.residuals_path, filter_name + ".png")
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the residuals ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the path
+            path = self.get_residuals_plot_path(filter_name)
+            if fs.is_file(path): continue
+
+            # Save as PNG
+            residuals = self.residuals[filter_name]
+            vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+                                          interval=self.config.interval,
+                                          scale=self.config.scale, alpha=self.config.alpha_method,
+                                          peak_alpha=self.config.peak_alpha)
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_residuals_plot(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_weighed_residuals_plot_path(filter_name)):
+
+            # Replot?
+            if self.config.replot_weighed:
+
+                # Remove file
+                fs.remove_file(self.get_weighed_residuals_plot_path(filter_name))
+                return False
+
+            # Don't replot
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_residuals_plot_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".png")
+
+    # -----------------------------------------------------------------
+
+    def plot_weighed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the weighed residuals ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the path
+            path = self.get_weighed_residuals_plot_path(filter_name)
+            if fs.is_file(path): continue
+
+            # Save as PNG
+            residuals = self.weighed[filter_name]
+            vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+                                              interval=self.config.interval,
+                                              scale=self.config.scale, alpha=self.config.alpha_method,
+                                              peak_alpha=self.config.peak_alpha)
 
     # -----------------------------------------------------------------
 
