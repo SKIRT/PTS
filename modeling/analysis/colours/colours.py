@@ -478,7 +478,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             indices = np.argwhere(values == 0)
             values = np.delete(values, indices)
 
-            # REMOVE TOO LOW OR TOO HIGH (UNPHYSICAL)
+            # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
             indices = np.argwhere(values < -20)
             values = np.delete(values, indices)
             indices = np.argwhere(values > 20)

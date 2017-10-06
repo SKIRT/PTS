@@ -70,7 +70,7 @@ definition.add_optional("images_unit", "photometric_unit", "unit for the mock ob
 
 # Spectral convolution
 definition.add_flag("spectral_convolution_fluxes", "enable spectral convolution for creating observed fluxes", True)
-definition.add_flag("spectral_convolution_images", "enable spectral convolution for creating observed images", True)
+definition.add_flag("spectral_convolution_images", "enable spectral convolution for creating observed images", False)
 
 # -----------------------------------------------------------------
 

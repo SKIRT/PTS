@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import MapsAnalysisComponent
 from ....core.basics.log import log
-from ....magic.maps.ssfr.colours import ColoursSSFRMapsMaker
+from ....magic.maps.ssfr.colours import ColoursSSFRMapsMaker, ssfr_colours
 
 # -----------------------------------------------------------------
 
@@ -36,6 +36,9 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
         # Call the constructor of the base class
         super(SSFRMapsAnalyser, self).__init__(*args, **kwargs)
 
+        # The colour maps
+        self.colours = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -48,6 +51,12 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # 2. Load the colour maps
+        self.load_colours()
+
+        # 3. Make the maps
+        self.make_maps()
 
     # -----------------------------------------------------------------
 
@@ -62,12 +71,35 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(SSFRMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
+    # -----------------------------------------------------------------
+
+    def load_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the colour maps ...")
+
+        # Loop over the possible colours for tracing sSFR
+        for colour in ssfr_colours:
+
+            # Get colour map and the name
+            colour_map, colour_name = self.get_colour_map_and_name(colour)
+
+            # Check if found
+            if colour_map is None:
+                log.warning("Could not find a '" + colour + "' colour map")
+                continue
+
+            # Add the colour map
+            self.colours[colour_name] = colour_map
 
     # -----------------------------------------------------------------
 
-    def make_ssfr_maps(self):
+    def make_maps(self):
 
         """
         This function ...
@@ -102,5 +134,38 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
 
         # Set the methods
         self.methods = maker.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ssfr_path
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the colour maps
+        self.write_maps()
+
+        # Write origins
+        self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

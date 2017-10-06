@@ -34,10 +34,10 @@ from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
 from ...core.tools import sequences, types
 from ...core.launch.pts import execute_pts_remote
-from ...core.remote.remote import Remote, load_remote
-from ...core.remote.host import Host
+from ...core.remote.remote import load_remote
 from ...core.tools import introspection
 from ...core.tools import time
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -2915,7 +2915,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
         # If the current frame is the frame with the highest pixelscale
         if frame.wcs == highest_pixelscale_wcs:
 
-            if names is not None: log.debug("Frame " + name + "has highest pixelscale of '" + str(highest_pixelscale) + "' and is not rebinned")
+            if names is not None: log.debug("Frame " + name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
 
             # Create new and set the name
             new = frame.copy()
@@ -3435,7 +3435,10 @@ def check_distance(*frames, **kwargs):
     # Get distance
     distances = [frame.distance for frame in frames]
     # print(distances)
-    if kwargs.pop("strict", True) and not sequences.all_close(distances, ignore_none=True):
+    if sequences.all_none(distances):
+        log.warning("Distances of the frames are undefined")
+        return None
+    elif kwargs.pop("strict", True) and not sequences.all_close(distances, ignore_none=True):
         # raise ValueError("Frames have to have the same distance to the object")
         log.error("Frames have to have the same distance to the object")
         log.error("Distances:")

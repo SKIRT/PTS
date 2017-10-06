@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import MapsAnalysisComponent
+#from .component import MapsAnalysisComponent
+from ..component import AnalysisComponent
 from ....core.basics.log import log
 from .colours import ColourMapsAnalyser
 from .ssfr import SSFRMapsAnalyser
@@ -26,7 +27,7 @@ from .ionizing import IonizingMapsAnalyser
 
 # -----------------------------------------------------------------
 
-class MapsAnalyser(MapsAnalysisComponent):
+class MapsAnalyser(AnalysisComponent):
 
     """
     This class...
@@ -190,7 +191,7 @@ class MapsAnalyser(MapsAnalysisComponent):
         super(MapsAnalyser, self).setup(**kwargs)
 
         # Load the analysis run
-        self.load_run()
+        #self.load_run()
 
     # -----------------------------------------------------------------
 

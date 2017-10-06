@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
@@ -115,7 +115,386 @@ def maps_commands_after_and_including(command):
 
 # -----------------------------------------------------------------
 
-class MapsComponent(GalaxyModelingComponent):
+class MapMakerBase(GalaxyModelingComponent):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MapMakerBase, self).__init__(*args, **kwargs)
+
+        # The maps
+        self.maps = dict()
+
+        # The origins
+        self.origins = dict()
+
+        # The methods
+        self.methods = dict()
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_maps(self):
+
+        """
+        This function is a memoized property implementation of the get_current_maps method
+        :return:
+        """
+
+        return self.get_current_maps()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_sub_path)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
+
+        """
+        This function ...
+        :param name:
+        :param flatten:
+        :param framelist:
+        :param method:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_current_maps(self, flatten=False, framelist=False, method=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :param method:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method)
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_map(self, name, method=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Determine path
+            map_path = fs.join(path, name + ".fits")
+
+        # Determine path
+        else: map_path = fs.join(self.maps_sub_path, name + ".fits")
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        COPY FROM FUNCTION IN MAPSCOMPONENT
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Determine path
+                    map_path = self.get_path_for_map(name, method)
+
+                    # If map already exists and we don't have to remake
+                    if fs.is_file(map_path) and not self.config.remake: continue
+
+                    # Save
+                    self.maps[method][name].saveto(map_path)
+
+            # No different methods
+            else:
+
+                # Determine path
+                map_path = self.get_path_for_map(method)
+
+                # If map already exists and we don't have to remake
+                if fs.is_file(map_path) and not self.config.remake: continue
+
+                # Save
+                self.maps[method].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]): return True
+
+            # No subdivision: method is actually the map name
+            else: return False
+
+        # We shouldn't get here
+        raise ValueError("No maps present yet")
+
+    # -----------------------------------------------------------------
+
+    def write_origins(self):
+
+        """
+        COPY FROM FUNCTION IN MAPSCOMPONENT
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map origins ...")
+
+        # CHECK WHETHER ORIGIN IS DEFINED FOR EACH MAP
+        self.check_origins()
+
+        # If has different methods
+        if self.has_methods:
+
+            # Loop over the methods
+            for method in self.origins:
+
+                # Depending on whether subdictionaries
+                # if types.is_dictionary(self.origins[method]):
+
+                # Directory path
+                path = fs.join(self.maps_sub_path, method)
+
+                # Origins path
+                origins_path = fs.join(path, origins_filename)
+
+                # Write
+                write_dict(self.origins[method], origins_path)
+
+        # No different methods
+        else:
+
+            # Determine the origins file path
+            origins_path = fs.join(self.maps_sub_path, origins_filename)
+
+            # Write
+            write_dict(self.origins, origins_path)
+
+    # -----------------------------------------------------------------
+
+    def write_methods(self):
+
+        """
+        COPY FROM THE FUNCTION IN MAPSCOMPONENT
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map methods ...")
+
+        # CHECK WHETHER METHOD IS DEFINED FOR EACH MAP
+        self.check_methods()
+
+        # If has different methods
+        if self.has_methods:
+
+            # Loop over the methods OF THIS STEP
+            for method in self.methods:
+
+                # Depending on whether subdirectories
+                # if types.is_dictionary(self.methods[method]):
+
+                # Directory path
+                path = fs.join(self.maps_sub_path, method)
+
+                # Methods path
+                methods_path = fs.join(path, methods_filename)
+
+                # Write
+                write_dict(self.methods[method], methods_path)
+
+        # No different methods
+        else:
+
+            # Determine the file path
+            methods_path = fs.join(self.maps_sub_path, methods_filename)
+
+            # Write
+            write_dict(self.methods, methods_path)
+
+    # -----------------------------------------------------------------
+
+    def check_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the origins dictionary ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                if method not in self.origins: raise ValueError(
+                    "'" + method + "' section of the origins is missing")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+                    if name not in self.origins[method]: raise ValueError(
+                        "Origin for '" + method + "/" + name + "' map is not defined")
+
+            # No different methods
+            else:
+                if method not in self.origins: raise ValueError("Origin for '" + method + "' map is not defined")
+
+    # -----------------------------------------------------------------
+
+    def check_methods(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the methods dictionary ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                if method not in self.methods: raise ValueError(
+                    "'" + method + "' section of the methods is missing")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+                    if name not in self.methods[method]: raise ValueError(
+                        "Method for '" + method + "/" + name + "' map is not defined")
+
+            # No different methods
+            else:
+                if method not in self.methods: raise ValueError("Method for '" + method + "' map is not defined")
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def load_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.load_collection()
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def load_static_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def static_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.load_static_collection()
+
+# -----------------------------------------------------------------
+
+class MapsComponent(MapMakerBase):
     
     """
     This class...
@@ -138,15 +517,8 @@ class MapsComponent(GalaxyModelingComponent):
 
         # -- Attributes --
 
-        # The maps
-        self.maps = dict()
+        # The error maps
         self.error_maps = dict()
-
-        # The origins
-        self.origins = dict()
-
-        # The methods
-        self.methods = dict()
 
         # The paths to the maps
         self.paths = dict()
@@ -667,8 +1039,7 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def collection(self):
+    def load_collection(self):
 
         """
         This function ...
@@ -679,8 +1050,7 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def static_collection(self):
+    def load_static_collection(self):
 
         """
         Thisf unction ...
@@ -1201,30 +1571,6 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.collection.get_dust_methods(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    @abstractproperty
-    def maps_sub_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_sub_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.maps_sub_path)
 
     # -----------------------------------------------------------------
 
@@ -1959,20 +2305,6 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_current_maps(self, flatten=False, framelist=False, method=None):
-
-        """
-        This function ...
-        :param flatten:
-        :param framelist:
-        :param method:
-        :return:
-        """
-
-        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method)
-
-    # -----------------------------------------------------------------
-
     def get_current_maps_method(self, method):
 
         """
@@ -1986,107 +2318,6 @@ class MapsComponent(GalaxyModelingComponent):
 
         if method not in maps: return dict()
         else: return maps[method]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def current_maps(self):
-
-        """
-        This function is a memoized property implementation of the get_current_maps method
-        :return:
-        """
-
-        return self.get_current_maps()
-
-    # -----------------------------------------------------------------
-
-    def get_path_for_map(self, name, method=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Subdivided into methods
-        if method is not None:
-
-            # Create directory, if necessary
-            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
-            else: path = fs.join(self.maps_sub_path, method)
-
-            # Determine path
-            map_path = fs.join(path, name + ".fits")
-
-        # Determine path
-        else: map_path = fs.join(self.maps_sub_path, name + ".fits")
-
-        # Return the map path
-        return map_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Depending on whether subdictionaries
-            if types.is_dictionary(self.maps[method]): return True
-
-            # No subdivision: method is actually the map name
-            else: return False
-
-        # We shouldn't get here
-        raise ValueError("No maps present yet")
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the maps ...")
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Depending on whether subdictionaries
-            if types.is_dictionary(self.maps[method]):
-
-                # Loop over the maps
-                for name in self.maps[method]:
-
-                    # Determine path
-                    map_path = self.get_path_for_map(name, method)
-
-                    # If map already exists and we don't have to remake
-                    if fs.is_file(map_path) and not self.config.remake: continue
-
-                    # Save
-                    self.maps[method][name].saveto(map_path)
-
-            # No different methods
-            else:
-
-                # Determine path
-                map_path = self.get_path_for_map(method)
-
-                # If map already exists and we don't have to remake
-                if fs.is_file(map_path) and not self.config.remake: continue
-
-                # Save
-                self.maps[method].saveto(map_path)
 
     # -----------------------------------------------------------------
 
@@ -2114,145 +2345,5 @@ class MapsComponent(GalaxyModelingComponent):
 
                 # Save the map
                 #self.maps[method][name].saveto(map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_origins(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the map origins ...")
-
-        # CHECK WHETHER ORIGIN IS DEFINED FOR EACH MAP
-        self.check_origins()
-
-        # If has different methods
-        if self.has_methods:
-
-            # Loop over the methods
-            for method in self.origins:
-
-                # Depending on whether subdictionaries
-                #if types.is_dictionary(self.origins[method]):
-
-                # Directory path
-                path = fs.join(self.maps_sub_path, method)
-
-                # Origins path
-                origins_path = fs.join(path, origins_filename)
-
-                # Write
-                write_dict(self.origins[method], origins_path)
-
-        # No different methods
-        else:
-
-            # Determine the origins file path
-            origins_path = fs.join(self.maps_sub_path, origins_filename)
-
-            # Write
-            write_dict(self.origins, origins_path)
-
-    # -----------------------------------------------------------------
-
-    def check_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Checking the origins dictionary ...")
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Depending on whether subdictionaries
-            if types.is_dictionary(self.maps[method]):
-
-                if method not in self.origins: raise ValueError("'" + method + "' section of the origins is missing")
-
-                # Loop over the maps
-                for name in self.maps[method]:
-                    if name not in self.origins[method]: raise ValueError("Origin for '" + method + "/" + name + "' map is not defined")
-
-            # No different methods
-            else:
-                if method not in self.origins: raise ValueError("Origin for '" + method + "' map is not defined")
-
-    # -----------------------------------------------------------------
-
-    def write_methods(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map methods ...")
-
-        # CHECK WHETHER METHOD IS DEFINED FOR EACH MAP
-        self.check_methods()
-
-        # If has different methods
-        if self.has_methods:
-
-            # Loop over the methods OF THIS STEP
-            for method in self.methods:
-
-                # Depending on whether subdirectories
-                #if types.is_dictionary(self.methods[method]):
-
-                # Directory path
-                path = fs.join(self.maps_sub_path, method)
-
-                # Methods path
-                methods_path = fs.join(path, methods_filename)
-
-                # Write
-                write_dict(self.methods[method], methods_path)
-
-        # No different methods
-        else:
-
-            # Determine the file path
-            methods_path = fs.join(self.maps_sub_path, methods_filename)
-
-            # Write
-            write_dict(self.methods, methods_path)
-
-    # -----------------------------------------------------------------
-
-    def check_methods(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Checking the methods dictionary ...")
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Depending on whether subdictionaries
-            if types.is_dictionary(self.maps[method]):
-
-                if method not in self.methods: raise ValueError("'" + method + "' section of the methods is missing")
-
-                # Loop over the maps
-                for name in self.maps[method]:
-                    if name not in self.methods[method]: raise ValueError("Method for '" + method + "/" + name + "' map is not defined")
-
-            # No different methods
-            else:
-                if method not in self.methods: raise ValueError("Method for '" + method + "' map is not defined")
 
 # -----------------------------------------------------------------

@@ -128,22 +128,35 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
+        # Get function that obtains name for the dataset from the filename
+        if "get_name" in kwargs: get_name = kwargs.pop("get_name")
+        else: get_name = None
+
+        # Add kwargs
+        kwargs["extension"] = "fits"
+        kwargs["returns"] = ["path", "name"]
+
         # Set the paths
-        paths, names = fs.files_in_path(path, extension="fits", returns=["path", "name"])
+        #paths, names = fs.files_in_path(path, **kwargs)
 
         # Create a new dataset instance
         dataset = cls()
 
         # Add the paths
-        for path, name in zip(paths, names):
+        #for path, name in zip(paths, names):
+        for path, name in fs.files_in_path(path, **kwargs):
+
+            # Get actual name from filename
+            if get_name is not None: name = get_name(name)
 
             # Add the image path
             dataset.add_path(name, path)

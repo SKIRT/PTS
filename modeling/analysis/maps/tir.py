@@ -159,6 +159,35 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_sub_path(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tir_path
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the colour maps
+        self.write_maps()
+
+        # Write origins
+        self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

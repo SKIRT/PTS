@@ -38,6 +38,15 @@ from ...core.tools import strings
 from ...core.extract.progress import ProgressTable
 from ...core.extract.timeline import TimeLineTable
 from ...core.extract.memory import MemoryUsageTable
+from ...magic.core.dataset import DataSet
+from ..core.environment import colours_name as colour_maps_name
+from ..core.environment import ssfr_name as ssfr_maps_name
+from ..core.environment import tir_name as tir_maps_name
+from ..core.environment import attenuation_name as attenuation_maps_name
+from ..core.environment import old_name as old_maps_name
+from ..core.environment import young_name as young_maps_name
+from ..core.environment import ionizing_name as ionizing_maps_name
+from ..core.environment import dust_name as dust_maps_name
 
 # -----------------------------------------------------------------
 
@@ -98,16 +107,6 @@ maps_name = "maps"
 weighed_residuals_name = "weighed_residuals"
 heating_name = "heating"
 dust_grid_tree_filename = "tree.dat"
-
-# Maps subdirectories
-colour_maps_name = "colours"
-ssfr_maps_name = "ssfr"
-tir_maps_name = "tir"
-attenuation_maps_name = "attenuation"
-old_maps_name = "old"
-dust_maps_name = "dust"
-young_maps_name = "young"
-ionizing_maps_name = "ionizing"
 
 # Projections
 earth_projection_filename = "earth.proj"
@@ -549,6 +548,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def colour_maps_name(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.name(self.colour_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ssfr_maps_path(self):
 
         """
@@ -557,6 +568,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.maps_path, ssfr_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_maps_name(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.name(self.ssfr_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -573,6 +596,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def tir_maps_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.tir_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def attenuation_maps_path(self):
 
         """
@@ -581,6 +616,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.maps_path, attenuation_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_maps_name(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.name(self.attenuation_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -597,6 +644,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_maps_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.old_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_maps_path(self):
 
         """
@@ -605,6 +664,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.maps_path, dust_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_maps_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.dust_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -621,6 +692,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_maps_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.young_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_maps_path(self):
 
         """
@@ -629,6 +712,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.maps_path, ionizing_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_maps_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.name(self.ionizing_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -1806,6 +1901,69 @@ class AnalysisRun(AnalysisRunBase):
 
         path = self.heating_ski_path_for_contribution(contribution)
         return SkiFile(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        get_name_function = lambda filename: filename.split("__")[1]
+        return DataSet.from_directory(self.misc_path, get_name=get_name_function)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulated_dataset.get_framelist(named=False)  # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_named_frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulated_dataset.get_framelist(named=True)  # on name
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_frame_for_filter(self, fltr):
+
+        """
+        THis function ...
+        :param fltr:
+        :return:
+        """
+
+        # Return the simulated frame
+        return self.simulated_frame_list[fltr]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.collection import MapsCollection
+        return MapsCollection.from_modeling_path(self.path, analysis_run_name=self.name)
 
 # -----------------------------------------------------------------
 
