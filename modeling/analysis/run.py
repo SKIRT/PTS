@@ -603,7 +603,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.name(self.tir_maps_name)
+        return fs.name(self.tir_maps_path)
 
     # -----------------------------------------------------------------
 

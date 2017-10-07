@@ -13,12 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import MapsAnalysisComponent
 from ....core.basics.log import log
 from ....magic.maps.tir.single import SingleBandTIRMapMaker
 from ....magic.maps.tir.multi import MultiBandTIRMapMaker
 from ....magic.core.list import FrameList
 from ....core.tools.utils import lazyproperty
+from ...maps.tir import singleband_filter_names, multiband_filter_names
+from ....core.filter.filter import parse_filter
+from .component import MapsAnalysisComponent
 
 # -----------------------------------------------------------------
 
@@ -52,8 +54,11 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make the maps
+        # 2. Make the maps
         self.make_maps()
+
+        # 3. Write
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -124,7 +129,7 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def load_data_singleband(self):
+    def load_frames_singleband(self):
 
         """
         This function ...
@@ -135,7 +140,6 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         log.info("Loading the data ...")
 
         frames = FrameList()
-        errormaps = FrameList()
 
         # Loop over the filters
         for fltr in self.available_filters_singleband:
@@ -145,19 +149,15 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
             # Load the frame
             frame = self.get_frame_for_filter(fltr)
+            frame.distance = self.galaxy_distance
             frames.append(frame, fltr)
 
-            # Load the error map
-            if not self.has_errormap_for_filter(fltr): continue
-            errors = self.get_errormap_for_filter(fltr)
-            errormaps.append(errors, fltr)
-
-        # Return the frames and errors maps
-        return frames, errormaps
+        # Return the frames
+        return frames
 
     # -----------------------------------------------------------------
 
-    def load_data_multiband(self):
+    def load_frames_multiband(self):
 
         """
         This function ...
@@ -169,7 +169,6 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
         # Frames and error maps
         frames = FrameList()
-        errormaps = FrameList()
 
         # Loop over the filters
         for fltr in self.available_filters_multiband:
@@ -179,15 +178,11 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
             # Load the frame
             frame = self.get_frame_for_filter(fltr)
+            frame.distance = self.galaxy_distance
             frames.append(frame, fltr)
 
-            # Load the error map, if present
-            if not self.has_errormap_for_filter(fltr): continue
-            errors = self.get_errormap_for_filter(fltr)
-            errormaps.append(errors, fltr)
-
-        # Return the frames and error maps
-        return frames, errormaps
+        # Return the frames
+        return frames
 
     # -----------------------------------------------------------------
 
@@ -230,8 +225,8 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         else: current = self.get_current_maps_method(method_name)
 
         # Run
-        frames, errors = self.load_data_singleband()
-        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
+        frames = self.load_frames_singleband()
+        maker.run(frames=frames, maps=current, method_name=method_name)
 
         # Set the maps
         self.maps[method_name] = maker.maps
@@ -265,8 +260,8 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         else: current = self.get_current_maps_method(method_name)
 
         # Run
-        frames, errors = self.load_data_multiband()
-        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
+        frames = self.load_frames_multiband()
+        maker.run(frames=frames, maps=current, method_name=method_name)
 
         # Set the maps
         self.maps[method_name] = maker.maps

@@ -208,6 +208,11 @@ class SkirtSimulation(object):
             # Set the attribute
             setattr(self, attr_name, value)
 
+    ## This function returns whether a ski or parameters file is found for this simulation
+    @property
+    def has_ski(self):
+        return self.ski_path is not None
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):

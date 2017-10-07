@@ -118,6 +118,30 @@ class MapsAnalysisComponent(AnalysisComponent, MapMakerBase):
     # -----------------------------------------------------------------
 
     @property
+    def frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simulated_frame_list
+
+    #  -----------------------------------------------------------------
+
+    @property
+    def named_frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simulated_named_frame_list
+
+    # -----------------------------------------------------------------
+
+    @property
     def colours_path(self):
 
         """

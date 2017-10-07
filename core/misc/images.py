@@ -988,6 +988,18 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     # -----------------------------------------------------------------
 
+    def has_distance(self, instr_name):
+
+        """
+        Thisf unction ...
+        :param instr_name:
+        :return:
+        """
+
+        return self.distances is not None and instr_name in self.distances and self.distances[instr_name] is not None
+
+    # -----------------------------------------------------------------
+
     def load_datacubes(self):
 
         """
@@ -1025,6 +1037,9 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
             # If datacube is None, something went wrong, skip the datacube
             if datacube is None: continue
+
+            # If the distance is defined, set the distance
+            if self.has_distance(instr_name): datacube.distance = self.distances[instr_name]
 
             # Convert the datacube from neutral flux density to wavelength flux density
             datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")

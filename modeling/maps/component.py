@@ -199,7 +199,6 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @abstractmethod
     def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
 
         """
@@ -211,7 +210,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :return:
         """
 
-        pass
+        return self.collection.get_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 
@@ -944,6 +943,466 @@ class MapMakerBase(GalaxyModelingComponent):
 
         return self.collection.get_dust_methods(flatten=flatten)
 
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_maps(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps_and_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_maps_and_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map(self, colour):
+
+        """
+        This function ...
+        :param colour:
+        :return:
+        """
+
+        fltr_a, fltr_b = get_filters_for_colour(colour)
+        return self.get_colour_map_for_filters(fltr_a, fltr_b)
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map_and_name(self, colour):
+
+        """
+        This function ...
+        :param colour:
+        :return:
+        """
+
+        fltr_a, fltr_b = get_filters_for_colour(colour)
+        return self.get_colour_map_and_name_for_filters(fltr_a, fltr_b)
+
+    # -----------------------------------------------------------------
+
+    def has_colour_map_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a:
+        :param fltr_b:
+        :return:
+        """
+
+        # Loop over the filters of the existing colour maps
+        for fltr_ai, fltr_bi in self.colour_map_filters:
+
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return True
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return True
+
+        # No colour map encountered
+        return False
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map_and_name_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a:
+        :param fltr_b:
+        :return:
+        """
+
+        # Loop over the existing colour maps
+        filters = self.colour_map_filters_and_paths
+        for fltr_ai, fltr_bi in filters:
+
+            # Get the path
+            path = filters[(fltr_ai, fltr_bi)]
+
+            # Determine the name
+            name = fs.strip_extension(fs.name(path))
+
+            # Check colours
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path), name
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path), name
+
+        # No colour map encountered
+        return None, None
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a:
+        :param fltr_b:
+        :return:
+        """
+
+        # Loop over the existing colour maps
+        filters = self.colour_map_filters_and_paths
+        for fltr_ai, fltr_bi in filters:
+
+            # Get the path
+            path = filters[(fltr_ai, fltr_bi)]
+
+            # Check colours
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path)
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path)
+
+        # No colour map encountered
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+
+        # Loop over the images in the colour maps directory
+        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
+
+            # Get the filters
+            fltr_a, fltr_b = get_filters_for_colour(name)
+
+            # Add a tuple
+            filters.append((fltr_a, fltr_b))
+
+        # Return the list
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_filters_and_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = dict()
+
+        # Loop over the images in the colour maps directory
+        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
+
+            # Get the filters
+            fltr_a, fltr_b = get_filters_for_colour(name)
+
+            # Add
+            filters[(fltr_a, fltr_b)] = path
+
+        # Return the dictionary
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_colours_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_colours_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_colours_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_colours_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ssfr_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_ssfr_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ssfr_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_ssfr_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_tir_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_tir_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_tir_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.collection.maps_tir_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_attenuation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_attenuation_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_attenuation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_attenuation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_old_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_old_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_old_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_old_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_young_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_young_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_young_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_young_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ionizing_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.collection.maps_ionizing_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ionizing_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.collection.maps_ionizing_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_dust_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.collection.maps_dust_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_dust_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.collection.maps_dust_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_sub_paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.maps_sub_names
+
+
+    # -----------------------------------------------------------------
+
+    def has_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # OLD
+        #return self.dataset.has_frame_for_filter(fltr)
+
+        # NEW
+        return fltr in self.frame_list.filters
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr):
+
+        """
+        THis function ...
+        :param fltr:
+        :return:
+        """
+
+        # OLD
+        #return self.dataset.get_frame_for_filter(fltr)
+
+        # NEW
+        return self.frame_list[fltr]
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Parse filter
+        fltr = parse_filter(fltr)
+
+        # Get frame
+        return self.get_frame_for_filter(fltr)
+
 # -----------------------------------------------------------------
 
 class MapsComponent(MapMakerBase):
@@ -1275,222 +1734,6 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    @property
-    def maps_colours_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_colours_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_colours_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_colours_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_ssfr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_ssfr_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_ssfr_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_ssfr_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_tir_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_tir_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_tir_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
-        return self.collection.maps_tir_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_attenuation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_attenuation_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_attenuation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_attenuation_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_old_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_old_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_old_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_old_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_young_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_young_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_young_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.maps_young_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_ionizing_path(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
-        return self.collection.maps_ionizing_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_ionizing_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
-        return self.collection.maps_ionizing_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_dust_path(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
-        return self.collection.maps_dust_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_dust_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
-        return self.collection.maps_dust_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_sub_paths(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.collection.maps_sub_paths
-
-    # -----------------------------------------------------------------
-
-    @property
-    def maps_sub_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.collection.maps_sub_names
-
-    # -----------------------------------------------------------------
-
     def load_collection(self):
 
         """
@@ -1740,58 +1983,6 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-
-
-    # -----------------------------------------------------------------
-
-    @property
-    def colour_map_filters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        filters = []
-
-        # Loop over the images in the colour maps directory
-        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
-
-            # Get the filters
-            fltr_a, fltr_b = get_filters_for_colour(name)
-
-            # Add a tuple
-            filters.append((fltr_a, fltr_b))
-
-        # Return the list
-        return filters
-
-    # -----------------------------------------------------------------
-
-    @property
-    def colour_map_filters_and_paths(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        filters = dict()
-
-        # Loop over the images in the colour maps directory
-        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
-
-            # Get the filters
-            fltr_a, fltr_b = get_filters_for_colour(name)
-
-            # Add
-            filters[(fltr_a, fltr_b)] = path
-
-        # Return the dictionary
-        return filters
-
-    # -----------------------------------------------------------------
-
     @property
     def has_colour_maps(self):
 
@@ -1888,153 +2079,6 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def has_colour_map_for_filters(self, fltr_a, fltr_b):
-
-        """
-        This function ...
-        :param fltr_a: 
-        :param fltr_b: 
-        :return: 
-        """
-
-        # Loop over the filters of the existing colour maps
-        for fltr_ai, fltr_bi in self.colour_map_filters:
-
-            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return True
-            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return True
-
-        # No colour map encountered
-        return False
-
-    # -----------------------------------------------------------------
-
-    def get_colour_map_and_name_for_filters(self, fltr_a, fltr_b):
-
-        """
-        This function ...
-        :param fltr_a:
-        :param fltr_b:
-        :return:
-        """
-
-        # Loop over the existing colour maps
-        filters = self.colour_map_filters_and_paths
-        for fltr_ai, fltr_bi in filters:
-
-            # Get the path
-            path = filters[(fltr_ai, fltr_bi)]
-
-            # Determine the name
-            name = fs.strip_extension(fs.name(path))
-
-            # Check colours
-            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path), name
-            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path), name
-
-        # No colour map encountered
-        return None, None
-
-    # -----------------------------------------------------------------
-
-    def get_colour_map_for_filters(self, fltr_a, fltr_b):
-
-        """
-        This function ...
-        :param fltr_a: 
-        :param fltr_b: 
-        :return: 
-        """
-
-        # Loop over the existing colour maps
-        filters = self.colour_map_filters_and_paths
-        for fltr_ai, fltr_bi in filters:
-
-            # Get the path
-            path = filters[(fltr_ai, fltr_bi)]
-
-            # Check colours
-            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path)
-            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path)
-
-        # No colour map encountered
-        return None
-
-    # -----------------------------------------------------------------
-
-    def get_colour_map(self, colour):
-
-        """
-        This function ...
-        :param colour:
-        :return:
-        """
-
-        fltr_a, fltr_b = get_filters_for_colour(colour)
-        return self.get_colour_map_for_filters(fltr_a, fltr_b)
-
-    # -----------------------------------------------------------------
-
-    def get_colour_map_and_name(self, colour):
-
-        """
-        This function ...
-        :param colour:
-        :return:
-        """
-
-        fltr_a, fltr_b = get_filters_for_colour(colour)
-        return self.get_colour_map_and_name_for_filters(fltr_a, fltr_b)
-
-    # -----------------------------------------------------------------
-
-    def has_frame_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        # OLD
-        #return self.dataset.has_frame_for_filter(fltr)
-
-        # NEW
-        return fltr in self.frame_list.filters
-
-    # -----------------------------------------------------------------
-
-    def get_frame_for_filter(self, fltr):
-
-        """
-        THis function ...
-        :param fltr: 
-        :return: 
-        """
-
-        # OLD
-        #return self.dataset.get_frame_for_filter(fltr)
-
-        # NEW
-        return self.frame_list[fltr]
-
-    # -----------------------------------------------------------------
-
-    def get_frame(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        # Parse filter
-        fltr = parse_filter(fltr)
-
-        # Get frame
-        return self.get_frame_for_filter(fltr)
-
-    # -----------------------------------------------------------------
-
     def has_errormap_for_filter(self, fltr):
 
         """
@@ -2108,54 +2152,6 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.collection.get_tir_multi_origins()
-
-    # -----------------------------------------------------------------
-
-    def get_fuv_attenuation_maps(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return: 
-        """
-
-        return self.collection.get_fuv_attenuation_maps(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_fuv_attenuation_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return: 
-        """
-
-        return self.collection.get_fuv_attenuation_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_fuv_attenuation_maps_and_origins(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_fuv_attenuation_maps_and_origins(flatten=flatten)
-
-    # -----------------------------------------------------------------
-
-    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
-
-        """
-        This function ...
-        :param flatten:
-        :return:
-        """
-
-        return self.collection.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -2307,21 +2303,6 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.get_map_paths_sub_name(self.maps_sub_name, flatten=flatten, method=method)
-
-    # -----------------------------------------------------------------
-
-    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
-
-        """
-        This function ...
-        :param name:
-        :param flatten:
-        :param framelist:
-        :param method:
-        :return:
-        """
-
-        return self.collection.get_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 

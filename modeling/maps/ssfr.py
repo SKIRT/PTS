@@ -128,7 +128,7 @@ class SSFRMapMaker(MapsComponent):
         log.info("Making sSFR maps based on colours ...")
 
         # Set the method name
-        method_name = "ssfr"
+        method_name = "colours"
 
         # Get current
         if self.config.remake: current = dict()

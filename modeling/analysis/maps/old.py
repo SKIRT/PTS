@@ -50,6 +50,12 @@ class OldMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Make the maps
+        self.make_maps()
+
+        # 3. Write
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -65,7 +71,7 @@ class OldMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def make_old_stellar_maps(self):
+    def make_maps(self):
 
         """
         This function ...
@@ -92,6 +98,9 @@ class OldMapsAnalyser(MapsAnalysisComponent):
         # Get the bulge frame
         bulge = self.bulge_frame
         bulges = FrameList(i1=bulge)
+
+        #print(i1.wcs)
+        #print(bulge.wcs)
 
         # Run
         maker.run(frames=frames, bulges=bulges, method_name=method_name, maps=current)

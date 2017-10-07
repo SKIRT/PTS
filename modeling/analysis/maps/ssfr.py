@@ -58,6 +58,9 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
         # 3. Make the maps
         self.make_maps()
 
+        # 4. Write
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -110,7 +113,7 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
         log.info("Making sSFR maps ...")
 
         # Set the method name
-        method_name = "ssfr"
+        method_name = "colours"
 
         # Get current
         if self.config.remake: current = dict()

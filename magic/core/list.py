@@ -2714,8 +2714,13 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
         wcs = frame.wcs
         if wcs is None:
+
             if names is not None: raise ValueError("Coordinate system of the " + names[index] + " image is not defined")
             else: raise ValueError("Coordinate system of the image is not defined")
+
+        #print(highest_pixelscale)
+        #print(wcs.average_pixelscale)
+
         if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
 
             highest_pixelscale = wcs.average_pixelscale

@@ -95,7 +95,7 @@ class MapsCollection(object):
         """
 
         # Check whether path exists
-        if not fs.is_directory(maps_path): raise IOError("THe maps directory '" + maps_path + "' does not exist")
+        if not fs.is_directory(maps_path): raise IOError("The maps directory '" + maps_path + "' does not exist")
 
         # Set the maps path
         self.maps_path = maps_path
@@ -134,7 +134,7 @@ class MapsCollection(object):
         """
 
         # Create and return the collection
-        return cls(run.modeling_path, analysis_run_name=run.name)
+        return cls.from_modeling_path(run.modeling_path, analysis_run_name=run.name)
 
     # -----------------------------------------------------------------
 
@@ -2236,7 +2236,12 @@ def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None
     :return:
     """
 
+    # Determine path
+    sub_path = fs.join(analysis_run.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
+    # Return
+    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 

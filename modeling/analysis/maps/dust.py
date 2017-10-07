@@ -51,6 +51,9 @@ class DustMapsAnalyser(MapsAnalysisComponent):
         # 2. Make the maps
         self.make_maps()
 
+        # 3. Write
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):

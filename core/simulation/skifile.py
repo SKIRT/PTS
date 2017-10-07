@@ -3851,6 +3851,13 @@ class SkiFile:
         # Unrecognized instrument
         else: raise ValueError("Unrecognized instrument: " + instrument.tag)
 
+    ## Get the instrument distance
+    def get_instrument_distance(self, name):
+
+        # Get the instrument object
+        instrument = self.get_instrument_object(name)
+        return instrument.distance
+
     ## This function returns the instrument with the specified name
     def get_instrument(self, name):
 

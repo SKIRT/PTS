@@ -63,6 +63,9 @@ class DatacubesMiscMaker(Configurable):
         # The wavelength grid of the simulation
         self.wavelength_grid = None
 
+        # The distances for the different instruments
+        self.distances = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -94,6 +97,9 @@ class DatacubesMiscMaker(Configurable):
         # Get instrument (datacube names)
         self.get_instrument_names(**kwargs)
 
+        # Get the distances
+        self.get_distances(**kwargs)
+
     # -----------------------------------------------------------------
 
     def initialize_from_simulation(self, simulation):
@@ -115,6 +121,27 @@ class DatacubesMiscMaker(Configurable):
 
         # Get the simulation prefix
         self.simulation_prefix = simulation.prefix()
+
+        # If ski file is defined
+        if simulation.has_ski:
+
+            # Initialize dictionary
+            self.distances = dict()
+
+            # Load the ski file
+            ski = simulation.parameters()
+
+            # Loop over the different simulated TOTAL datacubes
+            for path in self.total_datacube_paths:
+
+                # Get the name of the instrument
+                instr_name = get_instrument_name(path, self.simulation_prefix)
+
+                # Get the distance
+                distance = ski.get_instrument_distance(instr_name)
+
+                # Set the distance
+                self.distances[instr_name] = distance
 
     # -----------------------------------------------------------------
 
@@ -200,6 +227,34 @@ class DatacubesMiscMaker(Configurable):
 
         # From config
         elif self.config.instruments is not None: self.instrument_names = self.config.instruments
+
+    # -----------------------------------------------------------------
+
+    def get_distances(self, **kwargs):
+
+        """
+        This funciton ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Getting the instrument distances ...")
+
+        # TODO: check with distance found from ski file
+
+        # Instrument distances
+        if kwargs.get("distances", None) is not None:
+
+            self.distances = kwargs.pop("distances")
+
+        # Single distance for all instruments
+        elif kwargs.get("distance", None) is not None:
+
+            self.distances = dict()
+            distance = kwargs.pop("distance")
+            for instr_name in self.instrument_names:
+                self.distances[instr_name] = distance
 
     # -----------------------------------------------------------------
 

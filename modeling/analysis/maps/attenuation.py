@@ -50,8 +50,11 @@ class AttenuationMapsAnalyser(MapsAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make the maps
+        # 2. Make the maps
         self.make_maps()
+
+        # 3. Write
+        self.write()
 
     # -----------------------------------------------------------------
 
