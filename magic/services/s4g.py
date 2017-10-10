@@ -99,6 +99,9 @@ class S4G(Configurable):
         # Call the constructor of the base class
         super(S4G, self).__init__(*args, **kwargs)
 
+        # The inclination
+        self.inclination = None
+
         # Names
         self.ngc_name = None
         self.ngc_name_nospaces = None
@@ -176,6 +179,9 @@ class S4G(Configurable):
         # Call the setup function of the base class
         super(S4G, self).setup(**kwargs)
 
+        # Get the inclination
+        self.inclination = kwargs.pop("inclination", None)
+
         # Create the galaxy properties object
         self.properties = GalaxyProperties()
         self.properties.name = self.config.galaxy_name
@@ -230,6 +236,15 @@ class S4G(Configurable):
         # Calculate the inclination
         inclination_deg = 90. - math.degrees(math.acos(b_to_a))
         inclination = Angle(inclination_deg, "deg")
+
+        # Check the inclination
+        if self.inclination is not None:
+            difference = abs(self.inclination - inclination)
+            rel_difference = difference / self.inclination
+            if rel_difference > 0.1:
+                log.warning("The inclination angle calculated based on the decomposition differs by " + str(rel_difference*100) + "% from the specified inclination")
+
+        # Set the incliantion
         self.properties.inclination = inclination
 
     # -----------------------------------------------------------------
