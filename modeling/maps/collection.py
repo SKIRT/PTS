@@ -94,7 +94,7 @@ class MapsCollection(object):
         """
 
         # Check whether path exists
-        if not fs.is_directory(maps_path): raise IOError("THe maps directory '" + maps_path + "' does not exist")
+        if not fs.is_directory(maps_path): raise IOError("The maps directory '" + maps_path + "' does not exist")
 
         # Set the maps path
         self.maps_path = maps_path
