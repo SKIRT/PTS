@@ -39,7 +39,7 @@ aniano_psf_files_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ke
 # 2017 !
 aniano_kernels_highres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Hi_Resolution/"
 aniano_kernels_lowres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Low_Resolution/"
-aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_fits_Files/"
+aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_FITS_Files/"
 
 # -----------------------------------------------------------------
 
@@ -288,7 +288,7 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="BiGauss"):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="Gauss"):
 
         """
         This function ...
@@ -405,7 +405,7 @@ class AnianoKernels(Kernels):
         psf_name = aniano_names[str(fltr)]
 
         # Determine the path to the PSF file
-        basename = "PSF_" + psf_name
+        basename = "PSF_Original_" + psf_name
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
 
         # Download the PSF file if it is not present
