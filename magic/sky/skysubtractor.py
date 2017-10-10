@@ -724,13 +724,13 @@ class SkySubtractor(Configurable):
         background[y_slice, x_slice] = bkg.background
         #masked_background = np.ma.masked_array(background, mask=mask_cutout.data)
         #plotting.plot_box(masked_background, title="masked background")
-        background[mask_cutout] = np.NaN
+        background[background==mask_cutout] = np.NaN
 
         # Masked background rms
         background_rms = Frame.nans_like(self.frame)
         background_rms[y_slice, x_slice] = bkg.background_rms
         #masked_background_rms = np.ma.masked_array(background_rms, mask=mask_cutout.data)
-        background_rms[mask_cutout] = np.NaN
+        background_rms[background_rms==mask_cutout] = np.NaN
 
         # Set as attributes
         #self.photutils_background = background
