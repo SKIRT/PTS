@@ -491,6 +491,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def i2_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return BroadBandFilter("IRAC I2")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def pacs_red_filter(self):
 
         """
