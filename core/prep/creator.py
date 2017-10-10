@@ -24,6 +24,13 @@ from ...core.tools.utils import lazyproperty
 from ...magic.core.frame import Frame
 from ..basics.configuration import prompt_variable
 from ...magic.basics.coordinate import PixelCoordinate
+from ..tools import browser
+
+# -----------------------------------------------------------------
+
+widget_width = 400
+widget_height = 500
+widget_style = "dark" # minimal, dark or light
 
 # -----------------------------------------------------------------
 
@@ -56,6 +63,9 @@ class ModelCreator(Configurable):
         # The projected images
         self.projected = None
 
+        # The view
+        self.view = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -81,8 +91,14 @@ class ModelCreator(Configurable):
         # 5. Project the model
         if self.config.project: self.project()
 
-        # 6. Write
+        # 6. Create the view
+        if self.config.view: self.create_view()
+
+        # 7. Write
         self.write()
+
+        # Show
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -303,7 +319,7 @@ class ModelCreator(Configurable):
         self.create_projections()
 
         # Project
-        self.projected = project(self.model, self.projections, output_path=self.projection_path, simulation_path=self.projection_temp_path, npackages=self.config.npacakges, parallelization=self.config.parallelization, coordinate_systems={"earth":self.map_wcs})
+        self.projected = project(self.model, self.projections, output_path=self.projection_path, simulation_path=self.projection_temp_path, npackages=self.config.npackages, parallelization=self.config.parallelization, coordinate_systems={"earth":self.map_wcs})
 
     # -----------------------------------------------------------------
 
@@ -374,6 +390,64 @@ class ModelCreator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def view_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory(self.config.name + "_view", create=True)
+
+    # -----------------------------------------------------------------
+
+    def create_view(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the 3D view ...")
+
+        from ...modeling.plotting.model import plot_galaxy_components, generate_html
+
+        # Plot settings
+        plot_kwargs = dict()
+        plot_kwargs["width"] = widget_width
+        plot_kwargs["height"] = widget_height
+        plot_kwargs["style"] = widget_style
+
+        # Render settings
+        render_kwargs = dict()
+        #render_kwargs["only_body"] = True
+
+        # Add the component
+        components = {"model": self.model}
+        title = self.config.name
+
+        box = plot_galaxy_components(components, draw=True, show=False, **plot_kwargs)
+        html = generate_html(box, title, self.view_path, **render_kwargs)
+
+        # Set the view
+        self.view = html
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_view(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.view is not None
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -389,6 +463,9 @@ class ModelCreator(Configurable):
 
         # Write the projections
         if self.has_projections: self.write_projections()
+
+        # Write the view
+        if self.has_view: self.write_view()
 
     # -----------------------------------------------------------------
 
@@ -465,6 +542,65 @@ class ModelCreator(Configurable):
             # Save
             filepath = fs.join(path, name + ".proj")
             self.projections[name].saveto(filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def view_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.view_path, "model.html")
+
+    # -----------------------------------------------------------------
+
+    def write_view(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the view ...")
+
+        # Write
+        import io
+        with io.open(self.view_filepath, "w", encoding='utf8') as f:
+            f.write(self.view)
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing ...")
+
+        # Show the view
+        if self.has_view: self.show_view()
+
+    # -----------------------------------------------------------------
+
+    def show_view(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the view ...")
+
+        # Open the view
+        browser.open_path(self.view_filepath)
 
 # -----------------------------------------------------------------
 

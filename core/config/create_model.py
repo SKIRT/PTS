@@ -37,9 +37,13 @@ definition.add_optional("map", "file_path", "path of the input map (for deprojec
 
 definition.add_flag("project", "make projections", False)
 definition.add_flag("deproject", "make deprojections", False)
+definition.add_flag("view", "create 3D view", False)
 
 # Deprojection method
 definition.add_optional("deprojection_method", "string", "deprojection method", default=default_deprojection_method, choices=deprojection_methods)
+
+# Show the view
+definition.add_flag("show", "show the 3D view at the end", False)
 
 # -----------------------------------------------------------------
 

@@ -75,22 +75,22 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Make tables
+        # 2. Make tables
         self.make_tables()
 
-        # Make plots
+        # 3. Make plots
         self.make_plots()
 
-        # Generaet the html
+        # 4. Generate the html
         self.generate()
 
-        # Write
+        # 5. Write
         self.write()
 
-        # Show the page
+        # 6. Show the page
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -106,26 +106,8 @@ class ModelPageGenerator(HTMLPageComponent):
         # Call the setup function of the base class
         super(ModelPageGenerator, self).setup(**kwargs)
 
-        # Load the fitting run
-        #self.fitting_run = FittingRun.from_name(self.config.path, self.config.fitting_run)
-
-        # Set the scripts path
-        self.scripts_path = fs.create_directory_in(self.html_path, "scripts_model")
-
         # Load the model definition
         self.definition = self.static_model_suite.get_model_definition(self.config.model_name)
-
-    # -----------------------------------------------------------------
-
-    # @property
-    # def definition(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.fitting_run.model_definition
 
     # -----------------------------------------------------------------
 
@@ -291,10 +273,10 @@ class ModelPageGenerator(HTMLPageComponent):
         render_kwargs["only_body"] = True
 
         # Generate HTML
-        self.old_model = data.render_components_html(old_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
-        self.young_model = data.render_components_html(young_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
-        self.ionizing_model = data.render_components_html(ionizing_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
-        self.dust_model = data.render_components_html(dust_components, self.scripts_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.old_model = data.render_components_html(old_components, self.scripts_model_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.young_model = data.render_components_html(young_components, self.scripts_model_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.ionizing_model = data.render_components_html(ionizing_components, self.scripts_model_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
+        self.dust_model = data.render_components_html(dust_components, self.scripts_model_path, plot_kwargs=plot_kwargs, render_kwargs=render_kwargs)
 
     # -----------------------------------------------------------------
 

@@ -1637,12 +1637,16 @@ class SkiFile:
             # Set geometry to the stellar component
             stellar_component.append(geometry_parent)
 
-            # Add the component ID
-            comment = etree.Comment(component_id)
-            stellar_components_parent.append(comment)
+            # Add the component ID, if possible
+            if component_id is not None:
+                comment = etree.Comment(" " + component_id + " ")
+                stellar_components_parent.append(comment)
 
             # Add the new stellar component
             stellar_components_parent.append(stellar_component)
+
+            # Set component ID
+            if component_id is None: component_id = self.nstellar_components - 1
 
             # Set geometry
             if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)

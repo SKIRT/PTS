@@ -182,6 +182,18 @@ class Projector(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_coordinate_system(self, instrument_name):
+
+        """
+        Thisn function ...
+        :param instrument_name:
+        :return:
+        """
+
+        return self.has_coordinate_systems and instrument_name in self.coordinate_systems
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def smile(self):
 
@@ -404,8 +416,8 @@ class Projector(Configurable):
             other_path = fs.join(self.out_path, simulation.prefix() + "_" + instrument_name + "_total.fits")
             other_map = Frame.from_file(other_path)
 
-            # Set the coordinate system for this map
-            if self.has_coordinate_systems: other_map.wcs = self.coordinate_systems[instrument_name]  # set WCS
+            # Get coordinate system for this map
+            if self.has_coordinate_system(instrument_name): other_map.wcs = self.coordinate_systems[instrument_name]
 
             # Set the map
             self.projected[instrument_name] = other_map
