@@ -32,6 +32,7 @@ definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("colours", "string", "colour or colour scale", "red")
 definition.add_optional("alpha", "string", "alpha method", default_alpha_method, suggestions=alpha_methods)
+definition.add_flag("no_alpha", "no alpha", False)
 definition.add_optional("output", "string", "output filepath", letter="o")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
 definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels")
@@ -84,8 +85,11 @@ if config.downsample is not None:
 # Inform the user
 log.info("Converting the image to a png file ...")
 
+if config.no_alpha: alpha = None
+else: alpha = config.alpha
+
 # Save as PNG image
-frame.saveto_png(filepath, interval=config.interval, scale=config.scale, alpha=config.alpha, peak_alpha=config.peak_alpha, colours=config.colours)
+frame.saveto_png(filepath, interval=config.interval, scale=config.scale, alpha=alpha, peak_alpha=config.peak_alpha, colours=config.colours)
 
 # -----------------------------------------------------------------
 
