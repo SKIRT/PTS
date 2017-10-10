@@ -2009,6 +2009,11 @@ class Frame(NDDataArray):
         # Check whether the sum is nonnegative
         if sum < 0: raise RuntimeError("The sum of the frame is negative")
 
+        # Check whether the sum is zero
+        if sum == 0:
+            log.error("The sum of the frame is zero")
+            return
+
         # Calculate the conversion factor
         if hasattr(to, "unit"): # quantity
             factor = to.value / sum
@@ -2114,7 +2119,7 @@ class Frame(NDDataArray):
         if not kernel.normalized: raise RuntimeError("The kernel is not properly normalized: sum is " + repr(kernel.sum()) + " , difference from unity is " + repr(kernel.sum() - 1.0))
 
         # Do the convolution on this frame
-        if fft: new_data = convolve_fft(self._data, kernel.data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
+        if fft: new_data = convolve_fft(self._data, kernel.data, boundary='fill', nan_treatment='interpolate', normalize_kernel=False, allow_huge=allow_huge)
         else: new_data = convolve(self._data, kernel.data, normalize_kernel=False)
 
         # Put back NaNs
@@ -2172,7 +2177,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def cropped(self, x_min, x_max, y_min, y_max):
+    def cropped(self, x_min, x_max, y_min, y_max, out_of_bounds="error"):
 
         """
         This function ...
@@ -2184,12 +2189,12 @@ class Frame(NDDataArray):
         """
 
         new = self.copy()
-        new.crop(x_min, x_max, y_min, y_max)
+        new.crop(x_min, x_max, y_min, y_max, out_of_bounds=out_of_bounds)
         return new
 
     # -----------------------------------------------------------------
 
-    def crop(self, x_min, x_max, y_min, y_max):
+    def crop(self, x_min, x_max, y_min, y_max, out_of_bounds="error"):
 
         """
         This function ...
@@ -2197,11 +2202,15 @@ class Frame(NDDataArray):
         :param x_max:
         :param y_min:
         :param y_max:
+        :param out_of_bounds:
         :return:
         """
 
         # Crop the frame
-        new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
+        if out_of_bounds == "error": new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "adjust": new_data, x_min, x_max, y_min, y_max = cropping.crop_direct(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "expand": new_data = cropping.crop_absolute(self._data, x_min, x_max, y_min, y_max)
+        else: raise ValueError("Invalid option for 'out_of_bounds'")
 
         # Adapt the WCS
         if self.wcs is not None:
@@ -2231,7 +2240,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def cropped_to(self, region, factor=1):
+    def cropped_to(self, region, factor=1, out_of_bounds="error"):
 
         """
         Ths function ...
@@ -2241,30 +2250,31 @@ class Frame(NDDataArray):
         """
 
         new = self.copy()
-        new.crop_to(region, factor=factor)
+        new.crop_to(region, factor=factor, out_of_bounds=out_of_bounds)
         return new
 
     # -----------------------------------------------------------------
 
-    def crop_to(self, region, factor=1.):
+    def crop_to(self, region, factor=1., out_of_bounds="error"):
 
         """
         This function ...
         :param region:
         :param factor:
+        :param out_of_bounds:
         :return:
         """
 
         # Pixel rectangle
         if isinstance(region, PixelRectangleRegion):
             if factor != 1: region = region * factor
-            self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel)
+            self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel, out_of_bounds=out_of_bounds)
 
         # Sky rectangle: to pixel rectangle
-        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs), factor=factor)
+        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs), factor=factor, out_of_bounds=out_of_bounds)
 
         # Other kind of shape
-        else: self.crop_to(region.bounding_box, factor=factor)
+        else: self.crop_to(region.bounding_box, factor=factor, out_of_bounds=out_of_bounds)
 
     # -----------------------------------------------------------------
 
@@ -3172,8 +3182,13 @@ def sum_frames_quadratically(*args):
     """
 
     #arrays = [np.array(arg)**2 for arg in args]
-    arrays = [arg.data**2 for arg in args]
-    return Frame(np.sqrt(np.sum(arrays, axis=0)))
+    for arg in args:
+        if arg in args is None:
+            arrays = np.NaN
+            return Frame(np.NaN)
+        else:
+            arrays = [arg.data**2]
+            return Frame(np.sqrt(np.sum(arrays, axis=0)))
 
 # -----------------------------------------------------------------
 
