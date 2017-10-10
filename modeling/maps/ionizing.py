@@ -43,7 +43,7 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # -- Attributes --
 
-        # The Halpha map IN SOLAR UNITS
+        # The Halpha map, if present
         self.halpha = None
 
         # The maps of hot dust
@@ -101,6 +101,18 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_halpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_frame_for_filter("Halpha")
+
+    # -----------------------------------------------------------------
+
     def load_frames(self):
 
         """
@@ -115,7 +127,7 @@ class IonizingStellarMapMaker(MapsComponent):
         self.load_hot()
 
         # Load the H alpha image (and convert to solar units == > NO?)
-        self.load_halpha()
+        if self.has_halpha: self.load_halpha()
 
     # -----------------------------------------------------------------
 
@@ -152,9 +164,6 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Get the H-alpha image
         self.halpha = self.get_frame_for_filter(parse_filter("Halpha"))
-
-        # Convert from erg/s to Lsun
-        #self.halpha.convert_to("Lsun")
 
     # -----------------------------------------------------------------
 
