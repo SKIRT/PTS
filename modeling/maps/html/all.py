@@ -753,7 +753,7 @@ class AllMapsPageGenerator(MapsComponent):
         log.debug("Making an RGBA plot from the '" + name + "' map at '" + filepath + "' ...")
 
         # Crop the frame
-        frame = frame.cropped_to(self.truncation_box, factor=self.config.cropping_factor)
+        frame = frame.cropped_to(self.truncation_box, factor=self.config.cropping_factor, out_of_bounds="expand")
 
         # Get the truncation mask and mask out the pixel beyond the truncation limit
         wcs, xsize, ysize = frame.wcs, frame.xsize, frame.ysize
