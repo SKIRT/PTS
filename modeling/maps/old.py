@@ -115,13 +115,26 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = DiskOldStellarMapMaker()
 
-        # Get the I1 frame
-        i1 = self.get_frame_for_filter(self.i1_filter)
-        frames = FrameList(i1)
 
-        # Get the bulge frame
-        bulge = self.bulge_frame
-        bulges = FrameList(i1=bulge)
+        if "IRAC I1" in self.frame_list:
+
+            # Get the I1 frame
+            i1 = self.get_frame_for_filter(self.i1_filter)
+            frames = FrameList(i1)
+
+            # Get the bulge frame
+            bulge = self.bulge_frame
+            bulges = FrameList(i1=bulge)
+
+        else:
+
+            # Get the I2 frame
+            i2 = self.get_frame_for_filter(self.i2_filter)
+            frames = FrameList(i2)
+
+            # Get the bulge frame
+            bulge = self.bulge_frame
+            bulges = FrameList(i2=bulge)
 
         # Run
         maker.run(frames=frames, bulges=bulges, method_name=method_name, maps=current)
@@ -157,9 +170,17 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = TotalOldStellarMapMaker()
 
-        # Get the I1 frame
-        i1 = self.get_frame_for_filter(self.i1_filter)
-        frames = FrameList(i1)
+        if "IRAC I1" in self.frame_list:
+
+            # Get the I1 frame
+            i1 = self.get_frame_for_filter(self.i1_filter)
+            frames = FrameList(i1)
+
+        else:
+
+            # Get the I2 frame
+            i2 = self.get_frame_for_filter(self.i2_filter)
+            frames = FrameList(i2)
 
         # Run
         maker.run(frames=frames, method_name=method_name, maps=current)
@@ -195,11 +216,21 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = BulgeOldStellarMapMaker()
 
-        # Get the bulge frame
-        bulge = self.bulge_frame
-        bulge.wcs = self.get_frame_for_filter(self.i1_filter).wcs
-        #bulge.filter = self.i1_filter
-        bulges = FrameList(i1=bulge)
+        if "IRAC I1" in self.frame_list:
+
+            # Get the bulge frame
+            bulge = self.bulge_frame
+            bulge.wcs = self.get_frame_for_filter(self.i1_filter).wcs
+            # bulge.filter = self.i1_filter
+            bulges = FrameList(i1=bulge)
+
+        else:
+
+            # Get the bulge frame
+            bulge = self.bulge_frame
+            bulge.wcs = self.get_frame_for_filter(self.i2_filter).wcs
+            # bulge.filter = self.i2_filter
+            bulges = FrameList(i2=bulge)
 
         # Run
         maker.run(bulges=bulges, method_name=method_name, maps=current)
