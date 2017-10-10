@@ -31,3 +31,8 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 definition.add_flag("remake", "remake already existing maps", False)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("hot_factor_range", "real_range", "range of factor to create the hot dust maps", "0.2>0.7", convert_default=True)
+definition.add_optional("factor_nvalues", "positive_integer", "number of factors", 8)
+
+# -----------------------------------------------------------------

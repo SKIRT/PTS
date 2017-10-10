@@ -31,3 +31,8 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 definition.add_flag("remake", "remake already existing maps", False)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("factor_range", "real_range", "range (min,max) of values for the factor that denotes the contribution of the old stellar population to the FUV emission", "0.1,0.4", convert_default=True)
+definition.add_optional("factor_nvalues", "integer", "the number of values for the factor", 4)
+
+# -----------------------------------------------------------------

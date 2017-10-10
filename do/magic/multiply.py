@@ -25,7 +25,7 @@ from pts.core.basics.log import log
 
 # Create the configuration
 definition = ConfigurationDefinition()
-definition.add_required("filepath", "file_path", "path of the image")
+definition.add_required("file_path", "file_path", "path of the image")
 definition.add_required("factor", "real", "multiplication factor")
 definition.add_flag("backup", "make a backup of each image that is multiplied", False)
 config = parse_arguments("multiply", definition)

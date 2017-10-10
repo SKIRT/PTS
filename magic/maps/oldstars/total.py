@@ -153,7 +153,7 @@ class TotalOldStellarMapMaker(Configurable):
 
             # Check if already present
             if name in self.maps:
-                log.warning("The " + name + " total old stellar map is already created: not creating it again")
+                log.success("The " + name + " total old stellar map is already created: not creating it again")
                 continue
 
             # Set map

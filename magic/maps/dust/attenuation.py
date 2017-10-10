@@ -18,6 +18,7 @@ from copy import copy
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
+from ....magic.core.frame import AllZeroError
 
 # -----------------------------------------------------------------
 
@@ -180,14 +181,16 @@ class AttenuationDustMapsMaker(Configurable):
 
             # Check whether a dust map is already present
             if name in self.maps:
-                log.warning("The " + name + " dust map is already created: not creating it again")
+                log.success("The " + name + " dust map is already created: not creating it again")
                 continue
 
             # Get the map
             dust = self.attenuation[name]
 
             # Normalized
-            dust.normalize()
+            try: dust.normalize()
+            except AllZeroError:
+                log.warning("The " + name + " dust map cannot be normalized: sum is zero")
 
             # Set as dust map
             self.maps[name] = dust

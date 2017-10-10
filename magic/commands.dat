@@ -12,9 +12,11 @@ get_seds | -- | services.seds.SEDFetcher | arguments | Fetch reference SEDs for 
 
 # MISC
 summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
-get_projections | -- | misc.project.Projector | arguments | Create projections for creating a simulation of a galaxy according to the galaxy parameters
 find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry
 interpolate | -- | misc.interpolator.Interpolator | arguments | Interpolate a frame within certain regions
+project | -- | misc.project.Projector | arguments | Project a model with SKIRT
+deproject_pts | -- | misc.deproject.PTSDeprojector | arguments | Deproject a map with PTS
+deproject_skirt | -- | misc.deproject.SKIRTDeprojector | arguments | Deproject a map with SKIRT
 
 # SOURCES
 mark_sources | -- | sources.marker.SourceMarker | arguments | Mark sources based on catalogs

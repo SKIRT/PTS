@@ -58,6 +58,9 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
         # 3. Make the maps
         self.make_maps()
 
+        # Analyse
+        self.analyse_maps()
+
         # 4. Write
         self.write()
 
@@ -137,6 +140,18 @@ class SSFRMapsAnalyser(MapsAnalysisComponent):
 
         # Set the methods
         self.methods = maker.methods
+
+    # -----------------------------------------------------------------
+
+    def analyse_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the maps ...")
 
     # -----------------------------------------------------------------
 

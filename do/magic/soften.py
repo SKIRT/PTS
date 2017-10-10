@@ -21,7 +21,7 @@ from pts.core.basics.range import RealRange
 
 # Create the definition
 definition = ConfigurationDefinition()
-definition.add_required("filepath", "file_path", "name of the input image file")
+definition.add_required("file_path", "file_path", "name of the input image file")
 
 # Parse the command line arguments
 config = parse_arguments("soften", definition)

@@ -37,9 +37,11 @@ definition.add_positional_optional("runs", "string_list", "names of analysis run
 # Add flags
 definition.add_flag("info", "show the analysis run info", False)
 definition.add_flag("cached", "include cached analysis runs", True)
+definition.add_flag("all_info", "show all info", False)
 
 # Different sections
 definition.add_flag("basic", "show basic info", True)
+definition.add_flag("model", "show model info", False)
 definition.add_flag("wavelength", "show wavelength grid info", True)
 definition.add_flag("grid", "show dust grid info", True)
 definition.add_flag("launch", "show launch info", False)
@@ -48,6 +50,10 @@ definition.add_flag("timing", "show timing info", False)
 definition.add_flag("memory", "show memory usage info", False)
 definition.add_flag("directory", "show directory info", False)
 definition.add_flag("heating", "show heating launch info", False)
+definition.add_flag("residuals", "show residuals analysis info", False)
+definition.add_flag("colours", "show colours analysis info", False)
+definition.add_flag("attenuation", "show attenuation analysis info", False)
+definition.add_flag("maps", "show maps analysis info", False)
 
 # Add optional
 definition.add_optional("parameters", "string_list", "show the values of these parameters", choices=parameter_descriptions)
@@ -66,6 +72,26 @@ ignore_properties = ["name", "path"]
 
 # -----------------------------------------------------------------
 
+# All info
+if config.all_info:
+    if not config.info: raise ValueError("All info is enabled but showing info is disabled")
+    config.basic = True
+    config.model = True
+    config.wavelength = True
+    config.grid = True
+    config.launch = True
+    config.parallelization = True
+    config.timing = True
+    config.memory = True
+    config.directory = True
+    config.heating = True
+    config.residuals = True
+    config.colours = True
+    config.attenuation = True
+    config.maps = True
+
+# -----------------------------------------------------------------
+
 def show_basic_info(run):
 
     """
@@ -79,6 +105,39 @@ def show_basic_info(run):
 
     # From config
     print("     - " + fmt.bold + "old scale heights: " + fmt.reset + tostr(run.config.old_scale_heights))
+
+# -----------------------------------------------------------------
+
+def show_model_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "model:" + fmt.reset)
+    print("")
+
+    print("       - old stars:")
+    print("         - map name: " + run.model_old_map_name)
+    print("         - methods: " + tostr(run.old_map_methods))
+    print("         - origins: " + tostr(run.old_map_origins))
+
+    print("       - young stars:")
+    print("         - map name: " + run.model_young_map_name)
+    print("         - methods: " + tostr(run.young_map_methods))
+    print("         - origins: " + tostr(run.young_map_origins))
+
+    print("       - ionizing stars:")
+    print("         - map name: " + run.model_ionizing_map_name)
+    print("         - methods: " + tostr(run.ionizing_map_methods))
+    print("         - origins: " + tostr(run.ionizing_map_origins))
+
+    print("       - dust:")
+    print("         - map name: " + run.model_dust_map_name)
+    print("         - methods: " + tostr(run.dust_map_methods))
+    print("         - origins: " + tostr(run.dust_map_origins))
 
 # -----------------------------------------------------------------
 
@@ -292,6 +351,71 @@ def show_heating_info(run):
 
 # -----------------------------------------------------------------
 
+def show_residuals_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "residuals:" + fmt.reset)
+    print("")
+
+    print("      - images: " + tostr(run.residual_image_names, delimiter=", "))
+
+# -----------------------------------------------------------------
+
+def show_colours_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "colours:" + fmt.reset)
+    print("")
+
+    print("      - colours: " + tostr(run.colour_names, delimiter=", "))
+
+# -----------------------------------------------------------------
+
+def show_attenuation_info(run):
+
+    """
+    This function ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "attenuation:" + fmt.reset)
+    print("")
+
+# -----------------------------------------------------------------
+
+def show_maps_info(run):
+
+    """
+    Thisf unction ...
+    :param run:
+    :return:
+    """
+
+    print("     - " + fmt.bold + "maps:" + fmt.reset)
+    print("")
+
+    if run.has_maps_colours: print("      - colours: " + str(run.ncolour_maps) + " maps")
+    if run.has_maps_ssfr: print("      - ssfr: " + str(run.nssfr_maps) + " maps")
+    if run.has_maps_tir: print("      - tir: " + str(run.ntir_maps) + " maps")
+    if run.has_maps_attenuation: print("      - attenuation: " + str(run.nattenuation_maps) + " maps")
+    if run.has_maps_old: print("      - old: " + str(run.nold_maps) + " maps")
+    if run.has_maps_dust: print("      - dust:" + str(run.dust_maps) + " maps")
+    if run.has_maps_young: print("      - young: " + str(run.nyoung_maps) + " maps")
+    if run.has_maps_ionizing: print("      - ionizing:" + str(run.nionizing_maps) + " maps")
+
+# -----------------------------------------------------------------
+
 def show_run_info(run):
 
     """
@@ -303,6 +427,11 @@ def show_run_info(run):
     # Show basic info
     if config.basic:
         show_basic_info(run)
+        print("")
+
+    # Show model info
+    if config.model:
+        show_model_info(run)
         print("")
 
     # Show wavelength grid info
@@ -343,6 +472,26 @@ def show_run_info(run):
     # Show heating launch info
     if config.heating and run.has_heating:
         show_heating_info(run)
+        print("")
+
+    # Show residuals analysis info
+    if config.residuals and run.has_residuals:
+        show_residuals_info(run)
+        print("")
+
+    # Show colours analysis info
+    if config.colours and run.has_colours:
+        show_colours_info(run)
+        print("")
+
+    # Show attenuation analysis info
+    if config.attenuation and run.has_attenuation:
+        show_attenuation_info(run)
+        print("")
+
+    # Show maps analysis info
+    if config.maps and run.has_maps:
+        show_maps_info(run)
         print("")
 
 # -----------------------------------------------------------------

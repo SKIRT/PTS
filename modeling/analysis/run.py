@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -500,6 +500,54 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def colours_observed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.colours_path, "observed")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_simulated_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.colours_path, "simulated")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.colours_path, "residuals")
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def colour_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
     def residuals_path(self):
 
         """
@@ -854,6 +902,42 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
+    @abstractproperty
+    def has_dust_grid_simulation_logfile(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def dust_grid_simulation_logfile(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ncells(self):
 
@@ -903,6 +987,222 @@ class AnalysisRunBase(object):
 
         # Return the list of paths
         return paths
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def nyoung_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def ntir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def nssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def nold_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def nionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_dust(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def ndust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def ncolour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_maps_attenuation(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def nattenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps(self):
+
+        """
+        This unction ...
+        :return:
+        """
+
+        return self.has_maps_attenuation or self.has_maps_colours or self.has_maps_dust or self.has_maps_ionizing or self.has_maps_old or self.has_maps_ssfr or self.has_maps_tir or self.has_maps_young
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_heating(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 
@@ -1184,6 +1484,266 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.has_files_in_path(self.plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.attenuation_path) and not fs.is_empty(self.attenuation_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return fs.is_directory(self.colours_path) and not fs.is_empty(self.colours_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.colours_simulated_path, extension="fits", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_residuals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_directory(self.residuals_path) and not fs.is_empty(self.residuals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.residuals_path, extension="fits", not_contains=["significance"], returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_attenuation(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_directory(self.attenuation_maps_path) and not fs.is_empty(self.attenuation_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nattenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.attenuation_maps_path, extension="fits"): return fs.nfiles_in_path(self.attenuation_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.attenuation_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_colours(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return fs.is_directory(self.colour_maps_path) and not fs.is_empty(self.colour_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.colour_maps_path, extension="fits"): return fs.nfiles_in_path(self.colour_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.colour_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.dust_maps_path) and not fs.is_empty(self.dust_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.dust_maps_path, extension="fits"): return fs.nfiles_in_path(self.dust_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.dust_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ionizing(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_directory(self.ionizing_maps_path) and not fs.is_empty(self.ionizing_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.ionizing_maps_path, extension="fits"): return fs.nfiles_in_path(self.ionizing_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.ionizing_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.old_maps_path) and not fs.is_empty(self.old_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nold_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.old_maps_path, extension="fits"): return fs.nfiles_in_path(self.old_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.old_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ssfr(self):
+
+        """
+        Thisjfunction ...
+        :return:
+        """
+
+        return fs.is_directory(self.ssfr_maps_path) and not fs.is_empty(self.ssfr_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.ssfr_maps_path, extension="fits"): return fs.nfiles_in_path(self.ssfr_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.ssfr_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.tir_maps_path) and not fs.is_empty(self.tir_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.tir_maps_path, extension="fits"): return fs.nfiles_in_path(self.tir_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.tir_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.young_maps_path) and not fs.is_empty(self.young_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nyoung_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.has_files_in_path(self.young_maps_path, extension="fits"): return fs.nfiles_in_path(self.young_maps_path, extension="fits")
+        else: return fs.nfiles_in_path(self.young_maps_path, extension="fits", recursive=True, recursion_level=1)
 
     # -----------------------------------------------------------------
 
@@ -1629,6 +2189,115 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def model_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #from ..build.definition import ModelDefinition
+        return self.model_suite.get_model_definition(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_old_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.get_old_map_name_for_model(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_young_map_name(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.model_suite.get_young_map_name_for_model(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_ionizing_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.get_ionizing_map_name_for_model(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_dust_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.get_dust_map_name_for_model(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_old_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.load_stellar_component_map(self.model_name, "old")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_young_map(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.model_suite.load_stellar_component_map(self.model_name, "young")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_ionizing_map(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return self.model_suite.load_stellar_component_map(self.model_name, "ionizing")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_dust_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.load_dust_component_map(self.model_name, "disk")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def generation_name(self):
 
         """
@@ -1963,7 +2632,395 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         from ..maps.collection import MapsCollection
-        return MapsCollection.from_modeling_path(self.path, analysis_run_name=self.name)
+        return MapsCollection.from_modeling_path(self.modeling_path, analysis_run_name=self.name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observation_maps_collection(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        from ..maps.collection import MapsCollection
+        return MapsCollection.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_methods(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_colours_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_colours_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_ssfr_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_ssfr_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_tir_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_tir_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_attenuation_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_attenuation_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_methods(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        return self.observation_maps_collection.get_old_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.old_methods[self.model_old_map_name] # for flattened
+        #return find_value_for_unique_key_nested(self.old_methods, self.model_old_map_name)
+        return self.old_methods["disk"][self.model_old_map_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_origins(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_old_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.old_origins[self.model_old_map_name] # for flattened
+        #return find_value_for_unique_key_nested(self.old_origins, self.model_old_map_name)
+        return self.old_origins["disk"][self.model_old_map_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_method_and_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "disk", self.model_old_map_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_young_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.young_methods[self.model_young_map_name]
+        return find_value_for_unique_key_nested(self.young_methods, self.model_young_map_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_young_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.young_origins[self.model_young_map_name]
+        return find_value_for_unique_key_nested(self.young_origins, self.model_young_map_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_method_and_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        keys = find_keys_for_unique_key_nested(self.young_methods, self.model_young_map_name)
+        if len(keys) == 1:
+            method = None
+            map_name = keys[0]
+        elif len(keys) == 2:
+            method = keys[0]
+            map_name = keys[1]
+        else: raise ValueError("Something is wrong")
+        return method, map_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_ionizing_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.ionizing_methods[self.model_ionizing_map_name]
+        return find_value_for_unique_key_nested(self.ionizing_methods, self.model_ionizing_map_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_ionizing_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.ionizing_origins[self.model_ionizing_map_name]
+        return find_value_for_unique_key_nested(self.ionizing_origins, self.model_ionizing_map_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_method_and_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        keys = find_keys_for_unique_key_nested(self.ionizing_methods, self.model_ionizing_map_name)
+        if len(keys) == 1:
+            method = None
+            map_name = keys[0]
+        elif len(keys) == 2:
+            method = keys[0]
+            map_name = keys[1]
+        else: raise ValueError("Something is wrong")
+        return method, map_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_methods(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_dust_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.dust_methods[self.model_dust_map_name]
+        try: return find_value_for_unique_key_nested(self.dust_methods, self.model_dust_map_name)
+        except ValueError: return find_value_for_unique_key_nested(self.dust_methods, self.model_dust_map_name.split("_", 1)[1])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observation_maps_collection.get_dust_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.dust_origins[self.model_dust_map_name]
+        try: return find_value_for_unique_key_nested(self.dust_origins, self.model_dust_map_name)
+        except ValueError: return find_value_for_unique_key_nested(self.dust_origins, self.model_dust_map_name.split("_", 1)[1])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_method_and_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        try: keys = find_keys_for_unique_key_nested(self.dust_methods, self.model_dust_map_name)
+        except ValueError: keys = find_keys_for_unique_key_nested(self.dust_methods, self.model_dust_map_name.split("_", 1)[1])
+
+        if len(keys) == 1:
+            method = None
+            map_name = keys[0]
+        elif len(keys) == 2:
+            method = keys[0]
+            map_name = keys[1]
+        else: raise ValueError("Something is wrong")
+        return method, map_name
 
 # -----------------------------------------------------------------
 
@@ -2482,6 +3539,266 @@ class CachedAnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.attenuation_path) and not self.remote.is_empty(self.attenuation_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.colours_path) and not self.remote.is_empty(self.colours_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.files_in_path(self.colours_simulated_path, extension="fits", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_residuals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.residuals_path) and not self.remote.is_empty(self.residuals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.files_in_path(self.residuals_path, extension="fits", not_contains=["significance"], returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_attenuation(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.attenuation_maps_path) and not self.remote.is_empty(self.attenuation_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nattenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.attenuation_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.attenuation_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.attenuation_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_colours(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.colour_maps_path) and not self.remote.is_empty(self.colour_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.colour_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.colour_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.colour_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.dust_maps_path) and not self.remote.is_empty(self.dust_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.dust_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.dust_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.dust_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ionizing(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.ionizing_maps_path) and not self.remote.is_empty(self.ionizing_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nionizing_maps(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.ionizing_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.ionizing_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.ionizing_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.old_maps_path) and not self.remote.is_empty(self.old_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nold_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.old_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.old_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.old_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ssfr(self):
+
+        """
+        Thisjfunction ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.ssfr_maps_path) and not self.remote.is_empty(self.ssfr_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.ssfr_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.ssfr_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.ssfr_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.tir_maps_path) and not self.remote.is_empty(self.tir_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.tir_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.tir_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.tir_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_directory(self.young_maps_path) and not self.remote.is_empty(self.young_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nyoung_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.has_files_in_path(self.young_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.young_maps_path, extension="fits")
+        else: return self.remote.nfiles_in_path(self.young_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_heating(self):
 
         """
@@ -2795,5 +4112,70 @@ class CachedAnalysisRuns(AnalysisRunBase):
         """
 
         return CachedAnalysisRun.from_path(self.single_path, self.remote)
+
+# -----------------------------------------------------------------
+
+def find_value_for_unique_key_nested(dictionary, key, allow_none=False):
+
+    """
+    This function ...
+    :param dictionary:
+    :param key:
+    :param allow_none:
+    :return:
+    """
+
+    values = []
+
+    for key_i in dictionary:
+
+        # Sub-dict
+        if isinstance(dictionary[key_i], dict):
+            value = find_value_for_unique_key_nested(dictionary[key_i], key, allow_none=True)
+            if value is not None: values.append(value)
+
+        # Matches
+        elif key_i == key:
+            value = dictionary[key_i]
+            values.append(value)
+
+    if len(values) == 0 and not allow_none: raise ValueError("Key not found")
+    if len(values) > 1: raise ValueError("Not unique")
+
+    # Return the only value
+    if len(values) == 0: return None
+    else: return values[0]
+
+# -----------------------------------------------------------------
+
+def find_keys_for_unique_key_nested(dictionary, key, allow_none=False):
+
+    """
+    This function ...
+    :param dictionary:
+    :param key:
+    :param allow_none:
+    :return:
+    """
+
+    keys = []
+
+    for key_i in dictionary:
+
+        # Sub-dict
+        if isinstance(dictionary[key_i], dict):
+
+            keys_subdict = find_keys_for_unique_key_nested(dictionary[key_i], key, allow_none=True)
+            if keys_subdict is not None:
+                keys.append([key_i] + keys_subdict)
+
+        # Matches
+        elif key_i == key: keys.append([key])
+
+    if len(keys) == 0 and not allow_none: raise ValueError("Key not found")
+    if len(keys) > 1: raise ValueError("Not unique")
+
+    if len(keys) == 0: return None
+    else: return keys[0]
 
 # -----------------------------------------------------------------

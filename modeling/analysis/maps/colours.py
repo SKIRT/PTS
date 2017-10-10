@@ -64,6 +64,9 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
         # 4. Write
         self.write()
 
+        # 5. Plot
+        self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -204,5 +207,20 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
 
         # Write the methods
         self.write_methods()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps()
 
 # -----------------------------------------------------------------

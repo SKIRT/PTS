@@ -302,7 +302,7 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None):
+    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None, required=False):
 
         """
         This function ...
@@ -311,6 +311,7 @@ class SimplePropertyComposite(object):
         :param not_contains:
         :param exact_name:
         :param exact_not_name:
+        :param required:
         :return:
         """
 
@@ -331,7 +332,7 @@ class SimplePropertyComposite(object):
             choices = self.get_choices(name)
 
             # Ask for the new value
-            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=False)
+            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=True)
 
             # Set the property
             if value != default:
@@ -482,11 +483,20 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        from ..tools.utils import lazyproperty
+
         names = []
         for name in vars(self):
 
             # Skip internal variables
             if name.startswith("_"): continue
+
+            #print(type(getattr(self, name)))
+
+            if hasattr(self.__class__, name):
+                class_attribute = getattr(self.__class__, name)
+                assert isinstance(class_attribute, lazyproperty)
+                continue
 
             if name not in self._ptypes:
                 if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Property '" + name + "' doesn't have its type defined")
@@ -508,11 +518,18 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        from ..tools.utils import lazyproperty
+
         names = []
         for name in vars(self):
 
             # Skip internal
             if name.startswith("_"): continue
+
+            if hasattr(self.__class__, name):
+                class_attribute = getattr(self.__class__, name)
+                assert isinstance(class_attribute, lazyproperty)
+                continue
 
             # Skip simple properties
             if name in self._ptypes: continue

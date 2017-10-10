@@ -168,7 +168,7 @@ class DiskOldStellarMapMaker(Configurable):
 
             # Check if already present
             if name in self.maps:
-                log.warning("The " + name + " old stellar disk map is already created: not creating it again")
+                log.success("The " + name + " old stellar disk map is already created: not creating it again")
                 continue
 
             # Old stars = IRAC3.6 - bulge

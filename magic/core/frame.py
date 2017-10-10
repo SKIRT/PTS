@@ -54,6 +54,24 @@ from ..region.region import PixelRegion, SkyRegion
 
 # -----------------------------------------------------------------
 
+class AllZeroError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message):
+
+        """
+        Thisf unction ...
+        :param message:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(AllZeroError, self).__init__(message)
+
+# -----------------------------------------------------------------
+
 nan_value = float("nan")
 inf_value = float("inf")
 
@@ -2065,6 +2083,9 @@ class Frame(NDDataArray):
 
         # Check whether the sum is nonnegative
         if sum < 0: raise RuntimeError("The sum of the frame is negative")
+
+        # Check if the sum is not zero
+        if sum == 0: raise AllZeroError("The frame cannot be normalized")
 
         # Calculate the conversion factor
         if hasattr(to, "unit"): # quantity

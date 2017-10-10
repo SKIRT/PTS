@@ -331,7 +331,7 @@ class YoungStellarMapsMaker(Configurable):
 
                 # Check whether a map is already present
                 if key in self.maps:
-                    log.warning("The " + key + " young stars map is already created: not creating it again")
+                    log.success("The " + key + " young stars map is already created: not creating it again")
                     continue
 
                 # Calculate the non ionizing young stars map from the FUV data

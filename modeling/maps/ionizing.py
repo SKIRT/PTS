@@ -52,6 +52,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # Origins
         self.hots_origins = None
 
+        # Methods
+        self.hots_methods = None
+
     # -----------------------------------------------------------------
 
     @property

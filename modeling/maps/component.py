@@ -228,10 +228,14 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_path_for_map(self, name, method=None):
+    def get_path_for_map(self, name, method=None, add_extension=True, extension="fits"):
 
         """
         This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
         :return:
         """
 
@@ -243,10 +247,14 @@ class MapMakerBase(GalaxyModelingComponent):
             else: path = fs.join(self.maps_sub_path, method)
 
             # Determine path
-            map_path = fs.join(path, name + ".fits")
+            if add_extension: map_path = fs.join(path, name + "." + extension)
+            else: map_path = fs.join(path, name)
 
         # Determine path
-        else: map_path = fs.join(self.maps_sub_path, name + ".fits")
+        else:
+
+            if add_extension: map_path = fs.join(self.maps_sub_path, name + "." + extension)
+            else: map_path = fs.join(self.maps_sub_path, name)
 
         # Return the map path
         return map_path
@@ -567,13 +575,11 @@ class MapMakerBase(GalaxyModelingComponent):
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
 
-                if method not in self.origins: raise ValueError(
-                    "'" + method + "' section of the origins is missing")
+                if method not in self.origins: raise ValueError("'" + method + "' section of the origins is missing")
 
                 # Loop over the maps
                 for name in self.maps[method]:
-                    if name not in self.origins[method]: raise ValueError(
-                        "Origin for '" + method + "/" + name + "' map is not defined")
+                    if name not in self.origins[method]: raise ValueError("Origin for '" + method + "/" + name + "' map is not defined")
 
             # No different methods
             else:
@@ -1403,6 +1409,39 @@ class MapMakerBase(GalaxyModelingComponent):
         # Get frame
         return self.get_frame_for_filter(fltr)
 
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_hot_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_hot_dust_origins()
+
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_hot_dust_methods()
+
 # -----------------------------------------------------------------
 
 class MapsComponent(MapMakerBase):
@@ -2231,39 +2270,6 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.collection.get_old_stellar_bulge_maps(framelist=framelist)
-
-    # -----------------------------------------------------------------
-
-    def get_hot_dust_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.collection.get_hot_dust_maps()
-
-    # -----------------------------------------------------------------
-
-    def get_hot_dust_origins(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.collection.get_hot_dust_origins()
-
-    # -----------------------------------------------------------------
-
-    def get_hot_dust_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.collection.get_hot_dust_methods()
 
     # -----------------------------------------------------------------
 

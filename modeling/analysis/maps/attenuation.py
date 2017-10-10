@@ -56,6 +56,9 @@ class AttenuationMapsAnalyser(MapsAnalysisComponent):
         # 3. Write
         self.write()
 
+        # 4. Plot
+        self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -212,5 +215,20 @@ class AttenuationMapsAnalyser(MapsAnalysisComponent):
 
         # Write the methods
         self.write_methods()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps()
 
 # -----------------------------------------------------------------

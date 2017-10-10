@@ -252,6 +252,22 @@ class PhysicalPixelscale(PhysicalExtent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_shape_and_field(cls, shape, field):
+
+        """
+        This function ...
+        :param shape: PixelShape
+        :param field:
+        :return:
+        """
+
+        x = field.x / float(shape.x)
+        y = field.y / float(shape.y)
+        return cls(x=x, y=y)
+
+    # -----------------------------------------------------------------
+
     @property
     def abs_x(self):
 

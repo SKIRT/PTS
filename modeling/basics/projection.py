@@ -17,10 +17,11 @@ from astropy.coordinates import Angle
 from astropy.units import Unit, dimensionless_angles
 
 # Import the relevant PTS classes and modules
-from ...magic.basics.pixelscale import Pixelscale
+from ...magic.basics.pixelscale import Pixelscale, PhysicalPixelscale
 from ...magic.basics.vector import Position
 from ...magic.basics.vector import Extent
 from ...magic.basics.stretch import PhysicalExtent
+from ...magic.basics.coordinate import PixelCoordinate, PhysicalCoordinate
 from ...core.tools import types
 
 # -----------------------------------------------------------------
@@ -69,6 +70,63 @@ class GalaxyProjection(object):
 
         # The path
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def prompt(cls, **properties):
+
+        """
+        This function ...
+        :param properties:
+        :return:
+        """
+
+        from ...core.basics.configuration import prompt_variable
+
+        # Distance
+        if properties.get("distance", None) is None: distance = prompt_variable("distance", "length_quantity", "distance")
+        else: distance = properties.pop("distance")
+
+        # Inclination
+        if properties.get("inclination", None) is None: inclination = prompt_variable("inclination", "angle", "inclination angle")
+        else: inclination = properties.pop("inclination")
+
+        # Azimuth
+        if properties.get("azimuth", None) is None: azimuth = prompt_variable("azimuth", "angle", "azimuth angle", "0 deg", convert_default=True)
+        else: azimuth = properties.pop("azimuth")
+
+        # Position angle
+        if properties.get("position_angle", None) is None: position_angle = prompt_variable("position_angle", "angle", "position angle")
+        else: position_angle = properties.get("position_angle")
+
+        # Pixel size
+        if properties.get("npixels", None) is None:
+            #pixels_x = prompt_integer("pixels_x", "number of x pixels")
+            #pixels_y = prompt_integer("pixels_y", "number of y pixels")
+            npixels = prompt_variable("npixels", "pixelshape", "number of pixels")
+        else: npixels = properties.pop("npixels")
+
+        # Field
+        if properties.get("field", None) is None:
+            #field_x = prompt_variable("field_x", "length_quantity", "x field of view")
+            #field_y = prompt_variable("field_y", "length_quantity", "y field of view")
+            field = prompt_variable("field", "physical_extent", "field of view")
+        else: field = properties.pop("field")
+
+        # Determine physical pixelscale
+        pixelscale = PhysicalPixelscale.from_shape_and_field(npixels, field)
+
+        # Center
+        if properties.get("center", None) is None:
+            #center_x = prompt_variable("center_x", "length_quantity", "x center")
+            #center_y = prompt_variable("center_y", "length_quantity", "y center")
+            center = prompt_variable("center", "physical_or_pixel_coordinate", "center (in pixel or length coordinates)")
+        else: center = properties.pop("center")
+        if isinstance(center, PixelCoordinate): center = PhysicalCoordinate(center.x * pixelscale.x, center.y * pixelscale.y)
+
+        # Create and return
+        return cls(distance, inclination, azimuth, position_angle, npixels.x, npixels.y, center.x, center.y, field.x, field.y)
 
     # -----------------------------------------------------------------
 

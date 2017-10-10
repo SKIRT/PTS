@@ -19,6 +19,13 @@ from ....core.basics.log import log
 
 # -----------------------------------------------------------------
 
+simulated_name = "simulated"
+observed_name = "observed"
+residuals_name = "residuals"
+distributions_name = "distributions"
+
+# -----------------------------------------------------------------
+
 class ColourAnalysisComponent(AnalysisComponent):
     
     """
@@ -51,7 +58,7 @@ class ColourAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.analysis_run.colours_path, "observed")
+        return fs.create_directory_in(self.analysis_run.colours_path, observed_name)
 
     # -----------------------------------------------------------------
 
@@ -63,7 +70,7 @@ class ColourAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.analysis_run.colours_path, "simulated")
+        return fs.create_directory_in(self.analysis_run.colours_path, simulated_name)
 
     # -----------------------------------------------------------------
 
@@ -75,7 +82,7 @@ class ColourAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.analysis_run.colours_path, "residuals")
+        return fs.create_directory_in(self.analysis_run.colours_path, residuals_name)
 
     # -----------------------------------------------------------------
 
@@ -87,7 +94,7 @@ class ColourAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.analysis_run.colours_path, "distributions")
+        return fs.create_directory_in(self.analysis_run.colours_path, distributions_name)
 
     # -----------------------------------------------------------------
 

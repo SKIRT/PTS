@@ -10,15 +10,18 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
+default_npackages = 1e7
+default_parallelization = "2:1:2" # 2 cores, 1 process, 2 threads per core
+
+# -----------------------------------------------------------------
+
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Required settings
-#definition.add_required("galaxy_name", "string", "galaxy name")
-definition.add_required("wcs", "file_path", "FITS file with the desired WCS")
-definition.add_required("parameters", "directory_path", "path parameters directory")
+# -----------------------------------------------------------------
 
-# The output directory
-definition.add_optional("output", "directory_path", "output directory", letter="o")
+# SKIRT options
+definition.add_optional("npackages", "positive_integer", "number of photon packages", default_npackages)
+definition.add_optional("parallelization", "parallelization", "parallelization scheme for the simulations", default_parallelization, convert_default=True)
 
 # -----------------------------------------------------------------
