@@ -169,10 +169,13 @@ class IonizingStellarMapsMaker(Configurable):
         log.info("Making the map of ionizing stars ...")
 
         # With hot dust contribution
-        if self.hots is not None: self.make_maps_hot()
+        if self.hots is not None and self.halpha is not None: self.make_maps_hot()
 
         # Only halpha
-        self.make_map_halpha()
+        if self.halpha is not None: self.make_map_halpha()
+
+        # Only hot dust contribution, and no Halpha to combine it with
+        if self.hots is not None and self.halpha is None: self.make_maps_only_hot()
 
     # -----------------------------------------------------------------
 
@@ -287,6 +290,48 @@ class IonizingStellarMapsMaker(Configurable):
 
         # Set method
         if self.has_methods: self.methods[method_name] = [method_name]
+
+    # -----------------------------------------------------------------
+
+    def make_maps_only_hot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making map of ionizing stars based on MIPS 24 um emission ...")
+
+        method_name = "only_hot"
+
+        # MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
+        for name in self.hots:
+
+            # Set the origin
+            if self.has_origins:
+                origins = copy(self.hots_origins[name])
+                self.origins[name] = origins
+
+            # Set the method
+            if self.has_methods:
+                methods = copy(self.hots_methods[name])
+                methods.append(method_name)
+                self.methods[name] = methods
+
+            # Check whether a map is already present
+            if name in self.maps:
+                log.warning("The " + name + " ionizing stellar map is already created: not creating it again")
+                continue
+
+            ionizing = self.hots[name].copy()
+            ionizing[ionizing < 0.0] = 0.0
+
+            # Normalize the dust map
+            ionizing.normalize()
+
+            # Add the map of ionizing stars
+            self.maps[name] = ionizing
 
     # -----------------------------------------------------------------
 

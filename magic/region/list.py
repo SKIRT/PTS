@@ -646,7 +646,7 @@ def composite_to_string(composite, frame, radunit, fmt, coordsys):
     else: raise ValueError("Invalid value for 'composite'")
 
     # Add the strings for the composite elements
-    output = composite_string + "\n" + " ||\n".join([regular_to_string(element, frame, radunit, fmt) for element in composite.elements])
+    output = composite_string + "\n" + " ||\n".join([regular_to_string(element, frame, radunit, fmt, coordsys) for element in composite.elements])
 
     # Return the string
     return output
@@ -1318,7 +1318,7 @@ class RegionList(list):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, coordsys='fk5'):
+    def saveto(self, path):
 
         """
         This function ...
@@ -1326,9 +1326,9 @@ class RegionList(list):
         :param coordsys:
         :return:
         """
-
+        coordsys = 'fk5'
         # Write
-        fs.write_text(path, self.to_string(coordsys=coordsys))
+        fs.write_text(path, self.to_string(coordsys))
 
         # Update the path
         self.path = path
@@ -1992,7 +1992,7 @@ class PixelRegionList(RegionList):
         :return: 
         """
 
-        super(PixelRegionList, self).saveto(path, coordsys="image")
+        super(PixelRegionList, self).saveto(path)
 
     # -----------------------------------------------------------------
 

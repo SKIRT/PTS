@@ -97,9 +97,12 @@ definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance 
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
 
 # TRUNCATION FACTOR
-definition.add_optional("truncation_factor", "positive_real", "truncation ellipse boundary factor")
+definition.add_optional("truncation_factor", "positive_real", "truncation ellipse boundary factor", 1.5)
 
 # SIGNIFICANCE LEVELS
 definition.add_optional("significance_levels", "string_real_dictionary", "significance levels")
+
+#DECOMPOSITION FILTER FOR S4G
+definition.add_optional("decomposition_filter", "filter", "filter for decomposition", default="IRAC II")
 
 # -----------------------------------------------------------------

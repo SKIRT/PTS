@@ -18,7 +18,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
-from ...magic.region.list import PixelRegionList
+from ...magic.region.list import PixelRegionList, SkyRegionList
 from .component import PreparationComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
@@ -205,7 +205,7 @@ def steps_between(after_step, before_step):
     :return:
     """
 
-    if after_step not in steps: raise ValueError("Invalid step: '" + step + "'")
+    if after_step not in steps: raise ValueError("Invalid step: '" + after_step + "'")
 
     the_steps = []
     triggered = False
@@ -1850,8 +1850,12 @@ def get_principal_shape_sky(galaxy_region, wcs):
     :return: 
     """
 
-    shape_pixel = get_principal_shape(galaxy_region)
-    principal_shape_sky = shape_pixel.to_sky(wcs)
+    shape = get_principal_shape(galaxy_region)
+    #principal_shape_sky = shape_pixel.to_sky(wcs)
+
+    if isinstance(shape, PixelRegionList): principal_shape_sky = shape.to_sky(wcs)
+    else: principal_shape_sky = shape
+
     return principal_shape_sky
 
 # -----------------------------------------------------------------
@@ -1866,7 +1870,10 @@ def get_principal_shape_sky_from_sources_path(sources_path, wcs):
     """
 
     path = fs.join(sources_path, "galaxies.reg")
-    regions = PixelRegionList.from_file(path)
+    #regions = PixelRegionList.from_file(path)
+
+    regions = SkyRegionList.from_file(path)
+
     return get_principal_shape_sky(regions, wcs)
 
 # -----------------------------------------------------------------
@@ -1885,10 +1892,12 @@ def get_saturation_regions_sky_from_sources_path(sources_path, wcs):
 
     if not fs.is_file(path): return None
 
-    regions = PixelRegionList.from_file(path)
+    #regions = PixelRegionList.from_file(path)
 
     # Get the saturation region in sky coordinates
-    saturation_regions_sky = regions.to_sky(wcs)
+    #saturation_regions_sky = regions.to_sky(wcs)
+
+    saturation_regions_sky = SkyRegionList.from_file(path)
 
     # Return the saturation regions in sky coordinates
     return saturation_regions_sky
@@ -1909,10 +1918,12 @@ def get_star_regions_sky_from_sources_path(sources_path, wcs):
 
     if not fs.is_file(path): return None
 
-    regions = PixelRegionList.from_file(path)
+    #regions = PixelRegionList.from_file(path)
 
     # Get in sky coordinates
-    star_regions_sky = regions.to_sky(wcs)
+    #star_regions_sky = regions.to_sky(wcs)
+
+    star_regions_sky = SkyRegionList.from_file(path)
 
     # Return
     return star_regions_sky

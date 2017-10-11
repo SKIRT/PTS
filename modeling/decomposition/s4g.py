@@ -108,7 +108,7 @@ class S4GDecomposer(DecompositionComponent):
         log.info("Getting the galaxy components from S4G ...")
 
         # Run
-        self.s4g.run()
+        self.s4g.run(inclination=self.galaxy_inclination)
 
         # Get the components
         self.components = self.s4g.components

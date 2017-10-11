@@ -2474,8 +2474,19 @@ def set_nallowed_open_files(number):
     :return:
     """
 
-    import resource
-    resource.setrlimit(resource.RLIMIT_NOFILE, (number, -1))
+    from .introspection import is_linux, is_macos
+
+    if is_macos():
+
+        import resource
+        resource.setrlimit(resource.RLIMIT_NOFILE, (number, -1))
+
+    elif is_linux():
+
+        import warnings
+        warnings.warn("On Linux, setting the number of allowed open files is currently not implemented")
+
+    else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
 
 # -----------------------------------------------------------------
 

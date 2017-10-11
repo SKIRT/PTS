@@ -216,8 +216,11 @@ def plot_mask(mask, title=None, path=None, format=None):
     """
 
     # Get raw data of mask as a numpy array
-    if hasattr(mask, "data"): maskdata = mask.data
-    else: maskdata = mask
+    #if hasattr(mask, "data"): maskdata = mask.data
+    #else: maskdata = mask
+
+    if isinstance(mask, np.ndarray): maskdata = mask
+    else: maskdata = mask.data
 
     # Make the plot
     plt.figure(figsize=(7,7))

@@ -316,9 +316,16 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
     elif interval == "pts":
 
-        # Determine the maximum value in the box and the mimimum value for plotting
-        vmin = max(normalize_min, 0.)
-        vmax = 0.5 * (normalize_max + vmin)
+        nnegatives = np.sum(data < 0)
+        npositives = np.sum(data > 0)
+
+        if npositives > nnegatives:
+            # Determine the maximum value in the box and the mimimum value for plotting
+            vmin = max(normalize_min, 0.)
+            vmax = 0.5 * (normalize_max + vmin)
+        else:
+            vmax = min(normalize_max, 0.)
+            vmin = 0.5 * (normalize_min + vmax)
 
     elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
     elif isinstance(interval, list): vmin, vmax = interval

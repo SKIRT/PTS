@@ -3004,7 +3004,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
                         raise RuntimeError("Rebinning the " + name + " image failed: " + str(e))
 
                 # Multiply with ratio
-                if ratio != 1.0: rebinned *= ratio
+                if ratio != 1.0: rebinned *= float(ratio)
 
                 #print(rebinned)
 
@@ -3415,8 +3415,17 @@ def check_fwhm(*frames, **kwargs):
 
     # Get FWHM
     fwhms = [frame.fwhm for frame in frames]
-    if kwargs.pop("strict", True) and not sequences.all_close(fwhms, ignore_none=True):
-        # raise ValueError("Frames have to have the same FWHM")
+
+    # Check FWHM
+    difference = abs(fwhms[0] - fwhms[1])
+    rel_difference = difference / fwhms[0]
+    if rel_difference < 0.1 and kwargs.pop("strict", True) and not sequences.all_close(fwhms, ignore_none=True):
+        log.warning("The FWHM difference is" + str(rel_difference * 100) + "% from the highest FWHM frame")
+        log.warning("FWHMs:")
+        print("")
+        for frame in frames: print(" - " + frame.name + ": " + str(frame.fwhm))
+        print("")
+    elif rel_difference > 0.1 and kwargs.pop("strict", True) and not sequences.all_close(fwhms, ignore_none=True):
         log.error("Frames have to have the same FWHM")
         log.error("FWHMs:")
         print("")

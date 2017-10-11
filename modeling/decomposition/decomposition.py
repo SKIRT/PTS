@@ -35,6 +35,7 @@ from .s4g import S4GDecomposer
 #from .imfit import ImfitDecomposer
 from ...core.launch.launcher import SingleImageSKIRTLauncher
 from ...magic.core.frame import Frame
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -162,7 +163,8 @@ class GalaxyDecomposer(DecompositionComponent):
         self.bulge = kwargs.pop("bulge", None)
 
         # Check the method and filter
-        if self.config.method == "s4g" and self.config.filter != "IRAC I1": raise ValueError("When using the S4G method, the filter can only be 'IRAC I1'")
+        if self.config.method == "s4g" and self.config.filter != "IRAC I1": raise ValueError("When using the S4G method, the filter can either be 'IRAC I1' or 'IRAC I2'")
+        #in [parse_filter("IRAC I1"), parse_filter("IRAC I2")]
 
         # Set the WCS for the filter
         self.wcs = self.wcs_for_filter(self.config.filter)
@@ -651,7 +653,7 @@ class GalaxyDecomposer(DecompositionComponent):
         simulated_frame.normalize(to=fluxdensity)
 
         # Debugging
-        log.debug("Convolving the model image to the resolution of the " + self.config.filter + " filter ...")
+        log.debug("Convolving the model image to the resolution of the " + str(self.config.filter) + " filter ...")
 
         # Convolve the frame
         simulated_frame.convolve(self.psf)
@@ -724,7 +726,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the bulge image
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge2d_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, progress_bar=True)
+        self.bulge2d_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf)
 
         # Check WCS
         if self.bulge2d_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")

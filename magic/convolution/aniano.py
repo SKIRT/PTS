@@ -368,23 +368,20 @@ class AnianoKernels(Kernels):
             # Initialize the kernel file
             self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
-        # Check
-        if check_valid:
+        # CHeck whether the file is OK
+        if check_valid and not fits.is_valid(kernel_file_path):
 
-            # CHeck whether the file is OK
-            if check_valid and not fits.is_valid(kernel_file_path):
+            # Give warning
+            log.warning("The kernel file is damaged. Removing it and downloading it again ...")
 
-                # Give warning
-                log.warning("The kernel file is damaged. Removing it and downloading it again ...")
+            # Remove damaged file
+            fs.remove_file(kernel_file_path)
 
-                # Remove damaged file
-                fs.remove_file(kernel_file_path)
+            # Download the PSF
+            self.download_kernel(kernel_file_basename)
 
-                # Download the PSF
-                self.download_kernel(kernel_file_basename)
-
-                # Initialize the kernel file
-                self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
+            # Initialize the kernel file
+            self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
         # Return
         if return_name: return kernel_file_path, to_psf_name
@@ -473,7 +470,7 @@ class AnianoKernels(Kernels):
         psf_name = aniano_names[str(fltr)]
 
         # Determine the path to the PSF file
-        basename = "PSF_" + psf_name
+        basename = "PSF_Original_" + psf_name
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
 
         # Determine the (potential) compressed filepath
