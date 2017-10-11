@@ -272,6 +272,53 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
+    def wavelength_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Wavelength", index)
+
+    # -----------------------------------------------------------------
+
+    def value_for_index(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        # Get the value
+        value = self.get_value(self.value_name, index, add_unit=True)
+
+        # Convert unit if necessary
+        if unit is not None:
+
+            # Parse the unit
+            unit = u(unit, density=density, brightness=brightness)
+
+            # Create conversion info
+            if conversion_info is None: conversion_info = dict()
+            conversion_info["wavelength"] = self.wavelength_for_index(index)
+            value = value.to(unit, **conversion_info)
+
+        # Remove unit if requested
+        if not add_unit: value = value.value
+
+        # Return the value
+        return value
+
+    # -----------------------------------------------------------------
+
     def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
 
         """
@@ -607,14 +654,8 @@ class FilterCurve(WavelengthCurve):
         # Loop over all entries
         for i in range(len(self)):
 
-            # Get the instrument and band
-            instrument = self["Instrument"][i]
-            band = self["Band"][i]
-
-            # Create the filter
-            #fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
-
-            fltr = parse_filter(instrument + " " + band)
+            # Get the filter
+            fltr = self.get_filter(i)
 
             # Add the filter to the list
             filters.append(fltr)
@@ -640,6 +681,27 @@ class FilterCurve(WavelengthCurve):
 
         # No match found
         return False
+
+    # -----------------------------------------------------------------
+
+    def index_for_filter(self, fltr, return_none=False):
+
+        """
+        This function ...
+        :param fltr:
+        :param return_none:
+        :return:
+        """
+
+        # Loop over the rows, check instrument and band
+        for index in range(len(self)):
+
+            # Match?
+            if self["Instrument"][index] == fltr.instrument and self["Band"][index] == fltr.band: return index
+
+        # No match
+        if return_none: return None
+        else: raise ValueError("Filter not in the curve")
 
     # -----------------------------------------------------------------
 
@@ -702,5 +764,22 @@ class FilterCurve(WavelengthCurve):
         """
 
         return [isinstance(fltr, NarrowBandFilter) for fltr in self.filters()]
+
+    # -----------------------------------------------------------------
+
+    def get_filter(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Get instrument and band
+        instrument = self["Instrument"][index]
+        band = self["Band"][index]
+
+        # Parse the filter
+        return parse_filter(instrument + " " + band)
 
 # -----------------------------------------------------------------

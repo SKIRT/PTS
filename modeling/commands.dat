@@ -62,6 +62,7 @@ finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Fin
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
+evaluate_analysis | -- | analysis.evaluation.AnalysisModelEvaluator | arguments | Evaluate an analysis model (creates images and compares SEDs and residuals in a quick way)
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
 analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
 analyse_attenuation_map | -- | analysis.attenuation.map.AttenuationMapAnalyser | arguments | Analyse the attenuation map

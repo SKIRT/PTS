@@ -83,19 +83,23 @@ def get_meta(filepath):
 
 # -----------------------------------------------------------------
 
-def get_descriptions_and_units(filepath):
+def get_descriptions_and_units(filepath, remote=None):
 
     """
     This function ...
-    :param filepath: 
+    :param filepath:
+    :param remote:
     :return: 
     """
 
     descriptions = []
     units = []
 
+    if remote is not None: lines_generator = remote.read_lines(filepath)
+    else: lines_generator = fs.read_lines(filepath)
+
     # Read the SED file header
-    for line in fs.read_lines(filepath):
+    for line in lines_generator:
 
         # We are no longer at the header
         if not line.startswith("#"): break
@@ -143,15 +147,16 @@ def get_descriptions_and_units(filepath):
 
 # -----------------------------------------------------------------
 
-def get_units(filepath):
+def get_units(filepath, remote=None):
 
     """
     This function ...
-    :param filepath: 
+    :param filepath:
+    :param remote:
     :return: 
     """
 
-    descriptions, units = get_descriptions_and_units(filepath)
+    descriptions, units = get_descriptions_and_units(filepath, remote=remote)
     return units
 
 # -----------------------------------------------------------------

@@ -2048,25 +2048,31 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def sum(self):
+    def sum(self, add_unit=False):
 
         """
         This function ...
+        :param add_unit
         :return:
         """
 
-        return np.nansum(self._data)
+        result = np.nansum(self.data)
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
 
     # -----------------------------------------------------------------
 
-    def quadratic_sum(self):
+    def quadratic_sum(self, add_unit=False):
 
         """
         This function ...
+        :param add_unit:
         :return:
         """
 
-        return np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
+        result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
 
     # -----------------------------------------------------------------
 

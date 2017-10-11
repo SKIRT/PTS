@@ -539,6 +539,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def iras_and_planck_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.planck_filters + self.iras_filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ignore_sed_plot_filters(self):
 
         """

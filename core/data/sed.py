@@ -127,6 +127,40 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def get_photometry(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        return self.photometry_for_index(index, add_unit=add_unit, unit=unit, density=density, brightness=brightness, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
+    def photometry_for_index(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        return self.value_for_index(index, add_unit=add_unit, unit=unit, density=density, brightness=brightness, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
     def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False, min_wavelength=None, max_wavelength=None):
 
         """
@@ -152,6 +186,10 @@ class SED(WavelengthCurve):
         """
         This function ...
         :param wavelength:
+        :param unit:
+        :param add_unit:
+        :param density:
+        :param brightness:
         :return:
         """
 
@@ -199,7 +237,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt(cls, path, skiprows=0, contribution="total", unit=None):
+    def from_skirt(cls, path, skiprows=0, contribution="total", unit=None, remote=None):
 
         """
         This function ...
@@ -207,6 +245,7 @@ class SED(WavelengthCurve):
         :param skiprows:
         :param contribution:
         :param unit: define the unit for the photometry for the SED
+        :param remote:
         :return:
         """
 
@@ -232,7 +271,7 @@ class SED(WavelengthCurve):
         # sed.table.rename_column("col2", "Flux")
 
         # Keep track of the units of the different columns
-        units = textfile.get_units(path)
+        units = textfile.get_units(path, remote=remote)
 
         # Define index of different columns
         contributions_index = dict()
@@ -246,7 +285,12 @@ class SED(WavelengthCurve):
         # Load the column data
         if contribution not in contributions_index: raise ValueError("Wrong value for 'contribution': should be 'total', 'direct', 'scattered', 'dust', 'dustscattered' or 'transparent'")
         columns = (0, contributions_index[contribution])
-        wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+
+        # LOAD THE DATA
+        if remote is not None:
+            lines = remote.get_lines(path, add_sep=True)
+            wavelength_column, photometry_column = np.loadtxt(lines, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+        else: wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
 
         # Get column units
         wavelength_unit = units[0]
@@ -394,6 +438,40 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
+    def get_photometry(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        return self.photometry_for_index(index, add_unit=add_unit, unit=unit, density=density, brightness=brightness, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
+    def photometry_for_index(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        return self.value_for_index(index, add_unit=add_unit, unit=unit, density=density, brightness=brightness, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
     def photometry_for_band(self, instrument, band, unit=None, add_unit=True, density=False, brightness=False):
 
         """
@@ -477,21 +555,23 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def error_for_filter(self, fltr, unit=None, add_unit=True):
+    def error_for_filter(self, fltr, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
         :param fltr:
         :param unit:
         :param add_unit:
+        :param density:
+        :param brightness:
         :return:
         """
 
-        return self.error_for_band(fltr.instrument, fltr.band, unit, add_unit)
+        return self.error_for_band(fltr.instrument, fltr.band, unit=unit, add_unit=add_unit, density=density, brightness=brightness)
 
     # -----------------------------------------------------------------
 
-    def error_for_band(self, instrument, band, unit=None, add_unit=True):
+    def error_for_band(self, instrument, band, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -499,6 +579,8 @@ class ObservedSED(FilterCurve):
         :param band:
         :param unit:
         :param add_unit:
+        :param density:
+        :param brightness:
         :return:
         """
 
@@ -507,12 +589,15 @@ class ObservedSED(FilterCurve):
         assert has_mask == hasattr(self["Error+"], "mask")
 
         # If unit has to be converted, check whether the original unit is specified
-        if not has_unit and unit is not None: raise ValueError(
-            "Cannot determine the unit of the error columns so values cannot be converted to " + str(unit))
+        if not has_unit and unit is not None: raise ValueError("Cannot determine the unit of the error columns so values cannot be converted to " + str(unit))
+
+        # Parse the unit
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
 
         # Loop over all the entries in the table
         for i in range(len(self)):
 
+            # Get instrument and band
             instrument_entry = self["Instrument"][i]
             band_entry = self["Band"][i]
 

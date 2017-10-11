@@ -326,6 +326,37 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        fill_values = [('--', '0')]
+
+        # Get the contents
+        contents = remote.get_text(path)
+
+        # Read the table from file
+        table = super(SmartTable, cls).read(contents, fill_values=fill_values, format="ascii.ecsv")
+
+        # Set masks
+        set_table_masks(table)
+
+        ## Don't set the (remote) path
+
+        # Initialize
+        initialize_table(table)
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path):
 
         """
@@ -334,8 +365,6 @@ class SmartTable(Table):
         """
 
         fill_values = [('--', '0')]
-        #fill_values = [("", '0')]
-        #fill_values = None
 
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
@@ -343,54 +372,14 @@ class SmartTable(Table):
         # Open the table
         table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)
 
-        #print(table.meta)
-
         # Set masks
-        #if "masks" in table.meta:
-        #    for name in table.meta["masks"]:
-        #        for index in range(len(table)):
-        #            table[name].mask[index] = table.meta["masks"][name][index]
-        #    # Remove masks from meta
-        #    del table.meta["masks"]
-
-        # Look for masks
-        for colname in table.colnames:
-            key = colname + " mask"
-            if key not in table.meta: continue
-            if len(table) != len(table.meta[key]): raise IOError("Length of the table does not correspond to the length of the masks")
-            for index in range(len(table)):
-                table[colname].mask[index] = table.meta[key][index]
-            del table.meta[key]
+        set_table_masks(table)
 
         # Set the path
         table.path = path
 
-        # Clear the column info so that we can rebuild it
-        table.column_info = []
-
-        # Set the column info
-        # Loop over the columns
-        for name in table.colnames:
-
-            # Get the type
-            dtype = table[name].dtype
-            if np.issubdtype(dtype, np.string_): simple_dtype = str
-            elif np.issubdtype(dtype, np.float): simple_dtype = float
-            elif np.issubdtype(dtype, np.int): simple_dtype = int
-            elif np.issubdtype(dtype, np.bool): simple_dtype = bool
-            else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
-
-            # Get unit of the column
-            unit = table.column_unit(name)
-
-            # Add column info
-            table.add_column_info(name, simple_dtype, unit, None)
-
-            # Initialize "density" meta
-            if "density" not in table.meta: table.meta["density"] = []
-
-            # Initialize "brightness" meta
-            if "brightness" not in table.meta: table.meta["brightness"] = []
+        # Initialize
+        initialize_table(table)
 
         # Return the table
         return table
@@ -1039,5 +1028,59 @@ class SmartTable(Table):
             row_string = " & ".join(row) + " \\\\"
 
             print(row_string)
+
+# -----------------------------------------------------------------
+
+def set_table_masks(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    # Look for masks
+    for colname in table.colnames:
+        key = colname + " mask"
+        if key not in table.meta: continue
+        if len(table) != len(table.meta[key]): raise IOError("Length of the table does not correspond to the length of the masks")
+        for index in range(len(table)): table[colname].mask[index] = table.meta[key][index]
+        del table.meta[key]
+
+# -----------------------------------------------------------------
+
+def initialize_table(table):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Clear the column info so that we can rebuild it
+    table.column_info = []
+
+    # Set the column info
+    # Loop over the columns
+    for name in table.colnames:
+
+        # Get the type
+        dtype = table[name].dtype
+        if np.issubdtype(dtype, np.string_): simple_dtype = str
+        elif np.issubdtype(dtype, np.float): simple_dtype = float
+        elif np.issubdtype(dtype, np.int): simple_dtype = int
+        elif np.issubdtype(dtype, np.bool): simple_dtype = bool
+        else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
+
+        # Get unit of the column
+        unit = table.column_unit(name)
+
+        # Add column info
+        table.add_column_info(name, simple_dtype, unit, None)
+
+        # Initialize "density" meta
+        if "density" not in table.meta: table.meta["density"] = []
+
+        # Initialize "brightness" meta
+        if "brightness" not in table.meta: table.meta["brightness"] = []
 
 # -----------------------------------------------------------------

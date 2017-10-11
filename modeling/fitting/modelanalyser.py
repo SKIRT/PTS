@@ -51,7 +51,7 @@ class FluxDifferencesTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, instrument, band, difference, relative_difference, chi_squared_term):
+    def add_entry(self, instrument, band, difference, relative_difference, chi_squared_term=None):
 
         """
         This function ...

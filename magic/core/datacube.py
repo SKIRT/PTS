@@ -546,6 +546,9 @@ class DataCube(Image):
         data = fltr.convolve(self.wavelengths(asarray=True), array)
         frame = Frame(data)
 
+        # Set the filter
+        frame.filter = fltr
+
         # Set the unit of the frame
         frame.unit = self.unit
 
@@ -553,6 +556,47 @@ class DataCube(Image):
         frame.wcs = self.wcs
 
         # Return the resulting frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def frame_for_filter(self, fltr, convolve=False):
+
+        """
+        This function ...
+        :param fltr:
+        :param convolve:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting frame for the " + str(fltr) + " filter ...")
+
+        # Needs spectral convolution?
+        if needs_spectral_convolution(fltr, convolve):
+
+            # Debugging
+            log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+            # Create the frame
+            frame = self.convolve_with_filter(fltr)
+
+        # No spectral convolution
+        else:
+
+            # Debugging
+            log.debug("Getting the frame for the " + str(fltr) + " filter ...")
+
+            # Get the index of the wavelength closest to that of the filter
+            index = self.get_frame_index_for_wavelength(fltr.pivot)
+
+            # Get a copy of the frame
+            frame = self.frames[index].copy()
+
+        # Set filter to be sure
+        frame.filter = fltr
+
+        # Return the frame
         return frame
 
     # -----------------------------------------------------------------
@@ -601,8 +645,14 @@ class DataCube(Image):
                 # Get the index of the wavelength closest to that of the filter
                 index = self.get_frame_index_for_wavelength(fltr.pivot)
 
+                # Make a copy of the frame
+                frame = self.frames[index].copy()
+
+                # Set the filter
+                frame.filter = fltr
+
                 # Get the frame
-                frames.append(self.frames[index])
+                frames.append(frame)
 
         # Calculate convolved frames
         if len(for_convolution) > 0:
@@ -616,6 +666,9 @@ class DataCube(Image):
 
         # Add the convolved frames
         for fltr, frame in zip(for_convolution, convolved_frames):
+
+            # Set filter to be sure
+            frame.filter = fltr
 
             # Set the frame
             index = filters.index(fltr)
@@ -962,7 +1015,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     # Inform the user
     log.info(message_prefix + "Convolution completed")
 
-    # Create frame
+    # Create frame, set properties
     frame = Frame(data)
     frame.unit = unit
     frame.filter = fltr

@@ -47,6 +47,8 @@ from ..core.environment import old_name as old_maps_name
 from ..core.environment import young_name as young_maps_name
 from ..core.environment import ionizing_name as ionizing_maps_name
 from ..core.environment import dust_name as dust_maps_name
+from ...core.data.sed import ObservedSED, SED
+from ...magic.core.datacube import DataCube
 
 # -----------------------------------------------------------------
 
@@ -100,6 +102,7 @@ projections_name = "projections"
 extract_name = "extr"
 plot_name = "plot"
 misc_name = "misc"
+evaluation_name = "evaluation"
 attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
@@ -153,6 +156,18 @@ class AnalysisRunBase(object):
 
         #return self.fitting_run is None
         return self.fitting_run_name is None
+
+    # -----------------------------------------------------------------
+
+    # @abstractproperty
+    # def galaxy_name(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     pass
 
     # -----------------------------------------------------------------
 
@@ -472,6 +487,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, misc_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evaluation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, evaluation_name)
 
     # -----------------------------------------------------------------
 
@@ -1204,6 +1231,78 @@ class AnalysisRunBase(object):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.output_path, self.simulation_prefix + "_M81_earth_sed.dat")
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_simulated_sed(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_fluxes_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.misc_path, self.simulation_prefix + "_earth_fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def has_simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_datacube_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.output_path, self.galaxy_name + "_earth_total.fits")
+
 # -----------------------------------------------------------------
 
 class AnalysisRun(AnalysisRunBase):
@@ -1239,6 +1338,9 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.extract_path): fs.create_directory(self.extract_path)
         if not fs.is_directory(self.plot_path): fs.create_directory(self.plot_path)
         if not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path)
+
+        # Evaluation
+        if not fs.is_directory(self.evaluation_path): fs.create_directory(self.evaluation_path)
 
         # Analysis directories
         if not fs.is_directory(self.attenuation_path): fs.create_directory(self.attenuation_path)
@@ -2570,6 +2672,86 @@ class AnalysisRun(AnalysisRunBase):
 
         path = self.heating_ski_path_for_contribution(contribution)
         return SkiFile(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SED.from_skirt(self.simulated_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.simulated_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the datacube
+        datacube = DataCube.from_file(self.simulated_datacube_path, self.wavelength_grid)
+
+        # Set the wcs
+        datacube.wcs = self.reference_wcs
+
+        # Return the datacube
+        return datacube
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_frame_for_filter(self, fltr, convolve=False):
+
+        """
+        This function ...
+        :param fltr:
+        :param convolve:
+        :return:
+        """
+
+        return self.simulated_datacube.frame_for_filter(fltr, convolve=convolve)
 
     # -----------------------------------------------------------------
 
@@ -3931,6 +4113,54 @@ class CachedAnalysisRun(AnalysisRunBase):
 
         path = self.heating_ski_path_for_contribution(contribution)
         return SkiFile.from_remote_file(path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_file(self.simulated_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SED.from_skirt(self.simulated_sed_path, remote=self.remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.is_file(self.simulated_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_remote_file(self.simulated_fluxes_path, self.remote)
 
 # -----------------------------------------------------------------
 
