@@ -459,11 +459,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Calculate the total flux
             flux = self.images[fltr].sum(add_unit=True)
 
-            print(flux)
-            print(flux.unit)
-            print(type(flux.unit))
-            print(flux.unit.density)
-
             # Add to the SED
             self.images_fluxes.add_point(fltr, flux)
 

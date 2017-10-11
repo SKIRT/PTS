@@ -447,11 +447,12 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def _strip_units(self, values):
+    def _strip_units(self, values, conversion_info=None):
 
         """
         This function ...
         :param values:
+        :param conversion_info:
         :return:
         """
 
@@ -461,6 +462,9 @@ class SmartTable(Table):
         #print(self.column_info)
 
         for i, value in enumerate(values):
+
+            # Get the column name
+            colname = self.column_info[i][0]
 
             # If this value has a unit, we have to make sure it is converted into the proper column unit
             if hasattr(value, "unit"):
@@ -473,7 +477,14 @@ class SmartTable(Table):
                 # Quantity with photometric unit
                 if isinstance(value.unit, PhotometricUnit):
 
-                    factor = value.unit.conversion_factor(column_unit)
+                    # Get the conversion info for this column
+                    if conversion_info is not None and colname in conversion_info: conv_info = conversion_info[colname]
+                    else: conv_info = dict()
+
+                    # Determine the conversion factor
+                    factor = value.unit.conversion_factor(column_unit, **conv_info)
+
+                    # Multiply with the conversion factor
                     scalar_value = value.value * factor
 
                 # Quantity with regular Astropy Unit
@@ -597,11 +608,12 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def add_row(self, values):
+    def add_row(self, values, conversion_info=None):
 
         """
         This function ...
         :param values:
+        :param conversion_info:
         :return:
         """
 
@@ -617,7 +629,7 @@ class SmartTable(Table):
         self._resize_string_columns(values)
 
         # Strip units
-        values = self._strip_units(values)
+        values = self._strip_units(values, conversion_info=conversion_info)
 
         # Convert lists to string
         values = self._convert_lists(values)

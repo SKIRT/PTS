@@ -72,7 +72,8 @@ class Curve(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_data_file(cls, path, x_name="x", x_description="x values", x_unit=None, y_name="y", y_description="y values", y_unit=None, usecols=(0,1)):
+    def from_data_file(cls, path, x_name="x", x_description="x values", x_unit=None, y_name="y",
+                       y_description="y values", y_unit=None, usecols=(0,1), conversion_info=None):
 
         """
         This function ...
@@ -84,6 +85,7 @@ class Curve(SmartTable):
         :param y_description:
         :param y_unit:
         :param usecols:
+        :param conversion_info:
         :return:
         """
 
@@ -100,7 +102,7 @@ class Curve(SmartTable):
         # Create the curve
         curve = cls(**kwargs)
         x_values, y_values = np.loadtxt(path, unpack=True, usecols=usecols)
-        for x_value, y_value in zip(x_values, y_values): curve.add_point(x_value, y_value)
+        for x_value, y_value in zip(x_values, y_values): curve.add_point(x_value, y_value, conversion_info=conversion_info)
 
         # Return the curve
         return curve
@@ -155,12 +157,13 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, x_value, y_value):
+    def add_point(self, x_value, y_value, conversion_info=None):
 
         """
         This function ...
         :param x_value:
         :param y_value:
+        :param conversion_info:
         :return:
         """
 
@@ -168,7 +171,7 @@ class Curve(SmartTable):
         values = [x_value, y_value]
 
         # Add a row
-        self.add_row(values)
+        self.add_row(values, conversion_info=conversion_info)
 
         # Sort the table by the x values
         self.sort(self.x_name)
@@ -227,6 +230,25 @@ class WavelengthCurve(Curve):
 
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def add_point(self, wavelength, value):
+
+        """
+        This function ...
+        :param wavelength:
+        :param value:
+        :return:
+        """
+
+        # Set conversion info
+        conversion_info_value = dict()
+        conversion_info_value["wavelength"] = wavelength
+        conversion_info = {self.value_name: conversion_info_value}
+
+        # Add the point, passing the conversion info
+        super(WavelengthCurve, self).add_point(wavelength, value, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
@@ -517,8 +539,16 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
+        # Construct the
         values = [fltr.observatory, fltr.instrument, fltr.band, fltr.wavelength, value]
-        self.add_row(values)
+
+        # Create conversion info
+        conversion_info_value = dict()
+        conversion_info_value["wavelength"] = fltr.wavelength
+        conversion_info = {self.value_name: conversion_info_value}
+
+        # Add the row
+        self.add_row(values, conversion_info=conversion_info)
 
         # Sort the table by the x values
         self.sort(self.x_name)

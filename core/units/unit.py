@@ -198,7 +198,7 @@ class PhotometricUnit(CompositeUnit):
             self.density = density
 
             # Analyse the unit
-            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, length_unit, self.solid_angle_unit, cannot_be_intrinsic_brightness = analyse_unit(unit)
+            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, length_unit, self.solid_angle_unit, cannot_be_intrinsic_brightness, intrinsic_scale_unit = analyse_unit(unit)
 
             # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
             if self.wavelength_unit is not None and self.wavelength_unit != "":
@@ -215,6 +215,9 @@ class PhotometricUnit(CompositeUnit):
 
                 # if there is a solid angle unit, we can never have an intrinsic surface
                 # brightness, which is only power/area. That's why we make the distinction here.
+
+                # CHECK
+                if intrinsic_scale_unit is not None: raise ValueError("Cannot have a solid angle unit and also an intrinsic scale unit")
 
                 # Check whether we have an angular surface brightness
                 if length_unit != "":
@@ -247,18 +250,29 @@ class PhotometricUnit(CompositeUnit):
             # No solid angle unit, intrinsic surface brightness is possible
             else:
 
-                # No length unit, we have an energy, count rate or (spectral) luminosity
+                # No length unit, we have an energy, count rate or (spectral) luminosity (NO NOT ALWAYS)
                 if length_unit == "":
 
-                    # Check if the brightness flag is OK
-                    if brightness and brightness_strict: raise ValueError("The passed unit string does not correspond to a surface brightness")
+                    # SOMETHING
+                    if intrinsic_scale_unit is not None:
 
-                    # Set the distance and extent units to nohting
-                    self.distance_unit = ""
-                    self.extent_unit = ""
+                        self.distance_unit = ""
+                        self.extent_unit = intrinsic_scale_unit
 
-                    # Set the brightness flag
-                    self.brightness = False
+                        self.brightness = True
+
+                    # SOMETHING
+                    else:
+
+                        # Check if the brightness flag is OK
+                        if brightness and brightness_strict: raise ValueError("The passed unit string does not correspond to a surface brightness")
+
+                        # Set the distance and extent units to nohting
+                        self.distance_unit = ""
+                        self.extent_unit = ""
+
+                        # Set the brightness flag
+                        self.brightness = False
 
                 # There is a length unit, we have either flux or intrinsic surface brightness
                 else:
@@ -268,25 +282,47 @@ class PhotometricUnit(CompositeUnit):
                     # Check whether we can say that the unit cannot be an intrinsic surface brightness due to its original string specification (e.g. Jansky)
                     if cannot_be_intrinsic_brightness:
                         if brightness and brightness_strict: raise ValueError("The passed unit cannot be a surface brightness")
+                        if intrinsic_scale_unit is not None: raise ValueError("Cannot have an intrinsic scale unit")
                         brightness = False
 
-                    # INTRINSIC SURFACE BRIGHTNESS
+                    # INTRINSIC SURFACE BRIGHTNESS (NO NOT ALWAYS)
                     if brightness:
 
-                        self.distance_unit = ""
-                        self.extent_unit = length_unit
+                        # INTRINSIC SURFACE BRIGHTNESS
+                        if intrinsic_scale_unit is not None:
+
+                            self.distance_unit = length_unit
+                            self.extent_unit = intrinsic_scale_unit
+
+                        # INTRINSIC SURFACE BRIGHTNESS
+                        else:
+
+                            self.distance_unit = ""
+                            self.extent_unit = length_unit
 
                         # Set the brightness flag
                         self.brightness = True
 
-                    # FLUX
+                    # FLUX  (NO NOT ALWAYS)
                     else:
 
-                        self.distance_unit = length_unit
-                        self.extent_unit = ""
+                        # INTRINSIC SURFACE BRIGHTNESS
+                        if intrinsic_scale_unit is not None:
 
-                        # Set the brightness flag
-                        self.brightness = False
+                            self.distance_unit = length_unit
+                            self.extent_unit = intrinsic_scale_unit
+
+                            # Set brightness flag
+                            self.brightness = True
+
+                        # FLUX
+                        else:
+
+                            self.distance_unit = length_unit
+                            self.extent_unit = ""
+
+                            # Set the brightness flag
+                            self.brightness = False
 
             # Last checks to be sure
             if density and density_strict and not self.is_spectral_density: raise ValueError("The passed unit string does not correspond to a spectral density")
@@ -727,6 +763,40 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_non_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Not a brightness
+        if not self.is_brightness: return self.copy()
+
+        # Per angular area
+        elif self.is_per_angular_area:
+
+            new_unit = self * self.solid_angle_unit
+            new_unit_string = str(new_unit)
+
+        # Per intrinsic area
+        elif self.is_per_intrinsic_area:
+
+            new_unit = self * self.extent_unit
+            new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid unit")
+
+        # Debugging
+        log.debug("New unit string: '" + new_unit_string + "'")
+
+        # Create and return the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_angular_area_unit(self):
 
         """
@@ -849,14 +919,15 @@ class PhotometricUnit(CompositeUnit):
         # The base unit is a power
         if self.base_unit.physical_type == "power":
 
-            # / m2 dependence
-            if self.distance_unit != "":
+            # e.g. '/ kpc2' dependence: ALWAYS INTRINSIC SURFACE BRIGHTNESS
+            if self.extent_unit != "": base = "intrinsic surface brightness"
+                # SHOULD WE HAVE A DIFFERENT NAME DEPENDING ON WETHER ALSO A DISTANCE UNIT IS PRESENT??
+
+            # e.g. '/ m2' dependence, no e.g. '/ kpc2' dependence
+            elif self.distance_unit != "":
 
                 if self.solid_angle_unit != "": base = "surface brightness"
                 else: base = "flux"
-
-            # / kpc2 dependence
-            elif self.extent_unit != "": base = "intrinsic surface brightness"
 
             # No length unit
             else:
@@ -865,8 +936,7 @@ class PhotometricUnit(CompositeUnit):
                 else: base = "luminosity"
 
         # The base unit is a frequency
-        elif self.base_unit.physical_type == "frequency":
-            base = "detection rate"
+        elif self.base_unit.physical_type == "frequency": base = "detection rate"
 
         # The base unit is dimensionless
         else: base = "detections"

@@ -18,7 +18,6 @@ import numpy as np
 import urllib
 from scipy import ndimage
 import tempfile
-from sys import getsizeof
 
 # Import astronomical modules
 from reproject import reproject_exact, reproject_interp
@@ -2039,6 +2038,7 @@ class Frame(NDDataArray):
         :return: 
         """
 
+        if distance is None: distance = self.distance
         self.convert_to(self.corresponding_angular_area_unit, distance=distance)
 
     # -----------------------------------------------------------------
@@ -2051,8 +2051,46 @@ class Frame(NDDataArray):
         :return: 
         """
 
-        #print(self.corresponding_angular_area_unit)
+        if distance is None: distance = self.distance
         return self.converted_to(self.corresponding_angular_area_unit, distance=distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_intrinsic_area_unit(self, distance=None):
+
+        """
+        This function ...
+        :param distance:
+        :return:
+        """
+
+        if distance is None: distance = self.distance
+        self.convert_to(self.corresponding_intrinsic_area_unit, distance=distance)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_intrinsic_area_unit(self, distance=None):
+
+        """
+        This function ...
+        :param distance:
+        :return:
+        """
+
+        if distance is None: distance = self.distance
+        return self.converted_to(self.corresponding_intrinsic_area_unit, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -2065,7 +2103,9 @@ class Frame(NDDataArray):
         """
 
         result = np.nansum(self.data)
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit:
+            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            return result * self.unit
         else: return result
 
     # -----------------------------------------------------------------
@@ -2079,7 +2119,9 @@ class Frame(NDDataArray):
         """
 
         result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit:
+            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            return result * self.unit
         else: return result
 
     # -----------------------------------------------------------------

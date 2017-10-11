@@ -493,6 +493,9 @@ def analyse_unit(unit):
     length_unit = Unit("")
     solid_angle_unit = Unit("")
 
+    # Special extra unit that is certainly about the physical scale (intrinsic brightness)
+    intrinsic_scale_unit = None
+
     #print("BEFORE", unit)
     #print(unit)
 
@@ -547,7 +550,7 @@ def analyse_unit(unit):
             if base.physical_type == "spectral flux density":
 
                 # Decompose the unit
-                sf, bu, wu, fu, du, su, _ = analyse_unit(base.represents)
+                sf, bu, wu, fu, du, su, _, _ = analyse_unit(base.represents)
 
                 scale_factor *= sf
                 base_unit *= bu
@@ -607,37 +610,107 @@ def analyse_unit(unit):
 
             # Check the power
             if power != -1: raise ValueError("Found a unit of time but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
+
+            # Set
             base_unit *= base ** power
 
         # Length unit
         elif base.physical_type == "length":
 
-            # Check the power
-            if power == -1: wavelength_unit = base
-            elif power == -2: length_unit = base ** 2
+            # No power
+            if power == -1:
+
+                # Check whether not already defined
+                if wavelength_unit != "": raise ValueError("Encountered two wavelength units: " + str(wavelength_unit) + " and " + str(base))
+
+                # Set
+                wavelength_unit = base
+
+            # Power of 2
+            elif power == -2:
+
+                # Check whether already defined
+                if length_unit != "":
+
+                    # Check whether intrinsic scale unit is not yet defined
+                    if intrinsic_scale_unit is not None: raise ValueError("Encountered two intrinsic scale units: " + str(intrinsic_scale_unit) + " and " + str(base**2))
+
+                    # Check which one is the bigger unit (e.g. 'pc' > 'm')
+                    # PREVIOUS LENGTH UNIT WAS BIGGER THAN NEW LENGTH UNIT
+                    if length_unit > base**2:
+
+                        # Set long length unit as intrinsic scale unit (e.g. 'pc'), and the other (e.g. 'm' as unit for distance (flux = L / distance**2)
+                        intrinsic_scale_unit = length_unit
+                        length_unit = base**2
+
+                    # PREVIOUS LENGTH UNIT WAS SMALLER THAN NEW LENGTH UNIT
+                    else: intrinsic_scale_unit = base**2
+
+                # So far only length unit
+                else:
+
+                    # Set
+                    length_unit = base ** 2
+
+            # Power of 3
             elif power == -3:
+
+                # Check whether wavelength unit not already defined
+                if wavelength_unit != "": raise ValueError("Encountered two wavelength units: " + str(wavelength_unit) + " and " + str(base))
+
+                # Split into wavelength and length unit
                 wavelength_unit = base
                 length_unit = base ** 2
+
+            # Power of 4
+            elif power == -4:
+
+                # Check whether not yet defined
+                if length_unit != "": raise ValueError("Encountered two length units: " + str(length_unit) + " and " + str(base**2))
+                if intrinsic_scale_unit is not None: raise ValueError("Encountered two intrinsic scale units: " + str(intrinsic_scale_unit) + " and " + str(base**2))
+
+                # Split into length (for distance) and intrinsic scale unit
+                length_unit = base ** 2
+                intrinsic_scale_unit = base ** 2
+
+            # Invalid power
             else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
 
         # Frequency unit
         elif base.physical_type == "frequency":
 
+            # Check whether not already defined
+            if frequency_unit != "": raise ValueError("Encountered two frequency units: " + str(frequency_unit) + " and " + str(base))
+
+            # Check power
             if power != -1: raise ValueError("Found a unit of frequency but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
+
+            # Set
             frequency_unit = base
 
         # Solid angle unit
         elif base.physical_type == "solid angle":
 
+            # Check whether not already defined
+            if solid_angle_unit != "": raise ValueError("Encountered two solid angle units: " + str(solid_angle_unit) + " and " + str(base))
+
+            # Check power
             if power != -1: raise ValueError("Found a unit of solid angle but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
+
+            # Set
             solid_angle_unit = base
 
         # Angle unit
         elif base.physical_type == "angle":
 
+            # Check whether not already defined
             if solid_angle_unit != "": raise ValueError("Found an angle unit but the solid angle unit is already defined: " + str(solid_angle_unit))
+
+            # Check power
             if power != -2: raise ValueError("Found an angle unit but not as squared inversely proportional to the base unit (instead the power is " + str(power) + ")")
-            solid_angle_unit = base ** power
+
+            # Set
+            solid_angle_unit = base ** 2
 
     # Check if wavelength and frequency unit are not both defined
     if wavelength_unit != "" and frequency_unit != "": raise ValueError("Not a photometric unit: found wavelength^-1 and frequency^-1 dimensions")
@@ -646,7 +719,7 @@ def analyse_unit(unit):
     if base_unit is None or base_unit == "": raise ValueError("Not a photometric unit: found no unit of energy or luminosity")
 
     # Return
-    return scale_factor, base_unit, wavelength_unit, frequency_unit, length_unit, solid_angle_unit, cannot_be_intrinsic_brightness
+    return scale_factor, base_unit, wavelength_unit, frequency_unit, length_unit, solid_angle_unit, cannot_be_intrinsic_brightness, intrinsic_scale_unit
 
 # -----------------------------------------------------------------
 

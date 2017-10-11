@@ -402,7 +402,14 @@ class ObservedSED(FilterCurve):
             if not isinstance(error, ErrorBar): error = ErrorBar(error)
             values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, error.lower, error.upper]
         else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, None, None]
-        self.add_row(values)
+
+        # Set conversion info
+        conversion_info_photometry = dict()
+        conversion_info_photometry["wavelength"] = fltr.pivot
+        conversion_info = {self.value_name: conversion_info_photometry}
+
+        # Add the row
+        self.add_row(values, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
