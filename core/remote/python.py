@@ -784,17 +784,25 @@ class RemotePythonSession(object):
         # Strings
         input_strings = dict()
 
+        # E.G.
+        # dictionary = {"a": OBJECT_A, "b": OBJECT_B}
+
         # Loop over the names of the input objects
         for name in dictionary:
 
+            # name = "a"
+
             # Get the value
             value = dictionary[name]
+
+            # value = OBJECT_A
 
             # Check whether extension is defined
             if hasattr(value, "default_extension"):
 
                 # Determine filepath
                 path = fs.join(temp_path, name + "." + value.default_extension)
+                # path = .../a.ext
 
                 # Save
                 dictionary[name].saveto(path)
@@ -806,7 +814,7 @@ class RemotePythonSession(object):
                 if hasattr(value, "get_depending_paths"):
 
                     # Get the local depending filepaths
-                    local_depending_filepaths = value.get_depending_paths()
+                    local_depending_filepaths = value.get_depending_paths() # = dictionary
 
                     # Set the depending filepaths for this input object
                     depending_filepaths[name] = local_depending_filepaths
@@ -830,6 +838,8 @@ class RemotePythonSession(object):
         remote_depending_filepaths = dict()
         for name in depending_filepaths:
 
+            # name = "a"
+
             # Create remote directory for this input object
             dirname = name + "_depending"
             dirpath = fs.join(remote_temp_path, dirname)
@@ -839,7 +849,7 @@ class RemotePythonSession(object):
             remote_depending_filepaths[name] = dict()
 
             # Upload all depending
-            for label in depending_filepaths:
+            for label in depending_filepaths[name]:
 
                 local_depending_filepath = depending_filepaths[name][label]
                 remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, show_output=log.is_debug())
