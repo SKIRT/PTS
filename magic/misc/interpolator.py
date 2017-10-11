@@ -77,10 +77,13 @@ class Interpolator(Configurable):
         # 3. Interpolate
         self.interpolate()
 
-        # 4. Write
+        # 4. Create the mask
+        self.create_mask()
+
+        # 5. Write
         self.write()
 
-        # 5. SHow
+        # 6. SHow
         self.show()
 
     # -----------------------------------------------------------------
@@ -280,7 +283,9 @@ class Interpolator(Configurable):
             if self.config.replace:
                 if self.config.backup: fs.backup_file(path, suffix=self.config.backup_suffix)
                 fs.remove_file(path)
-            else: raise ValueError("The image already exists")
+            else:
+                #raise ValueError("The image already exists")
+                path = self.output_path_file("result.fits")
 
         # Save
         self.frame.saveto(path, header=self.header)
