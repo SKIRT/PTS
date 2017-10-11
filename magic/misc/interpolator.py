@@ -15,12 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from pts.magic.misc.imageimporter import ImageImporter
-from pts.magic.tools import interpolation
 from pts.magic.region.list import load_as_pixel_region_list
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.basics.log import log
-from pts.magic.core.cutout import interpolation_methods
 from pts.magic.core.detection import Detection
 from pts.magic.tools import plotting
 
@@ -46,8 +43,20 @@ class Interpolator(Configurable):
         # The frame
         self.frame = None
 
+        # The original header
+        self.header = None
+
+        # The nans mask
+        self.nans = None
+
         # The regions
         self.regions = None
+
+        # The sources
+        self.sources = []
+
+        # The interpolation mask
+        self.mask = None
 
     # -----------------------------------------------------------------
 
@@ -62,14 +71,17 @@ class Interpolator(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the sources
+        # 2. Load the sources
         self.load_sources()
 
-        # Interpolate
+        # 3. Interpolate
         self.interpolate()
 
-        # Write
+        # 4. Write
         self.write()
+
+        # 5. SHow
+        self.show()
 
     # -----------------------------------------------------------------
 
@@ -84,18 +96,6 @@ class Interpolator(Configurable):
         # Call the setup function of the base class
         super(Interpolator, self).setup(**kwargs)
 
-        # Set input path
-        if config.input is not None:
-            input_path = fs.absolute_or_in_cwd(config.input)
-        else:
-            input_path = fs.cwd()
-
-        # Set output path
-        if config.output is not None:
-            output_path = fs.absolute_or_in_cwd(config.output)
-        else:
-            output_path = fs.cwd()
-
         # Load the frame
         if "frame" in kwargs: self.frame = kwargs.pop("frame")
         else: self.load_frame()
@@ -104,6 +104,18 @@ class Interpolator(Configurable):
         if "region" in kwargs: self.regions = [kwargs.pop("region")]
         elif "regions" in kwargs: self.regions = kwargs.pop("regions")
         else: self.load_regions()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame.wcs
 
     # -----------------------------------------------------------------
 
@@ -117,24 +129,24 @@ class Interpolator(Configurable):
         # Debugging
         log.debug("Loading the frame ...")
 
-        # Determine the full path to the image
-        #image_path = fs.absolute_path(config.image)
-
         # Import the image
         importer = ImageImporter()
-        importer.run(image_path)
+        importer.run(self.config.image)
 
         # Get the primary image frame
         frame = importer.image.primary
 
         # Get the original header
-        header = importer.image.original_header
+        self.header = importer.image.original_header
 
-        # Create a mask of the pixels that are NaNs
-        nans = frame.nans()
+        # Get the original nan pixels
+        self.nans = frame.nans
 
         # Set the NaN pixels to zero in the frame
-        frame[nans] = 0.0
+        frame[self.nans] = 0.0
+
+        # Set the frame
+        self.frame = frame
 
     # -----------------------------------------------------------------
 
@@ -149,9 +161,7 @@ class Interpolator(Configurable):
         log.debug("Loading the regions ...")
 
         # Load the region
-        region_path = fs.join(input_path, config.regions)
-        self.regions = load_as_pixel_region_list(region_path, frame.wcs, only=config.shapes, color=config.color,
-                                            ignore_color=config.ignore_color)
+        self.regions = load_as_pixel_region_list(self.config.regions, self.wcs, only=self.config.shapes, color=self.config.color, ignore_color=self.config.ignore_color)
 
     # -----------------------------------------------------------------
 
@@ -165,13 +175,14 @@ class Interpolator(Configurable):
         # Inform the user
         log.info("Loading the sources ...")
 
-        sources = []
-
         # Create sources
-        for shape in regions:
+        for shape in self.regions:
+
             # Create a source
-            source = Detection.from_shape(frame, shape, config.source_outer_factor)
-            sources.append(source)
+            source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+            # Add the source
+            self.sources.append(source)
 
     # -----------------------------------------------------------------
 
@@ -189,22 +200,34 @@ class Interpolator(Configurable):
         log.info("Interpolating ...")
 
         # Loop over the sources
-        for source in sources:
+        for source in self.sources:
 
             # Estimate the background
-            source.estimate_background(config.interpolation_method, sigma_clip=config.sigma_clip)
+            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
 
             # Replace the pixels by the background
-            source.background.replace(frame, where=source.mask)
+            source.background.replace(self.frame, where=source.mask)
 
         # Set the original NaN pixels back to NaN
-        frame[nans] = float("nan")
+        if self.nans is not None: self.frame[self.nans] = float("nan")
+
+    # -----------------------------------------------------------------
+
+    def create_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
-        #log.info("Creating a mask from the region ...")
+        log.info("Creating the mask ...")
 
         # Create a mask from the region list
-        mask = regions.to_mask(frame.xsize, frame.ysize)
+        self.mask = self.regions.to_mask(self.frame.xsize, self.frame.ysize)
+
+        # Set WCS
+        self.mask.wcs = self.wcs
 
     # -----------------------------------------------------------------
 
@@ -226,6 +249,18 @@ class Interpolator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def image_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.config.image)
+
+    # -----------------------------------------------------------------
+
     def write_frame(self):
 
         """
@@ -237,19 +272,18 @@ class Interpolator(Configurable):
         log.info("Saving the result ...")
 
         # Determine the path
-        path = fs.join(output_path, config.image)
+        path = self.output_path_file(self.image_name)
+
+        # Check if already existing
         if fs.is_file(path):
-            if config.replace:
-                if config.backup:
-                    fs.backup_file(path, suffix=config.backup_suffix)
-                    fs.remove_file(path)
-                else:
-                    fs.remove_file(path)
-            else:
-                raise ValueError("The image already exists")
+
+            if self.config.replace:
+                if self.config.backup: fs.backup_file(path, suffix=self.config.backup_suffix)
+                fs.remove_file(path)
+            else: raise ValueError("The image already exists")
 
         # Save
-        frame.saveto(path, header=header)
+        self.frame.saveto(path, header=self.header)
 
     # -----------------------------------------------------------------
 
@@ -260,8 +294,14 @@ class Interpolator(Configurable):
         :return:
         """
 
-        path = fs.join(output_path, "mask.fits")
-        mask.saveto(path, header=header)
+        # Inform the user
+        log.info("Writing the mask ...")
+
+        # Determine the path
+        path = self.output_path_file("mask.fits")
+
+        # Write the mask
+        self.mask.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -272,7 +312,10 @@ class Interpolator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Showing the result ...")
+
         # Plot
-        if self.config.plot: plotting.plot_box(frame)
+        if self.config.plot: plotting.plot_box(self.frame)
 
 # -----------------------------------------------------------------
