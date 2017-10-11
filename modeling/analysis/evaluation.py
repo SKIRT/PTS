@@ -484,7 +484,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             flux = frame.sum(add_unit=True)
 
             # Add to the SED
-            self.images_sed.add_point(frame.fltr, flux)
+            self.images_sed.add_point(frame.filter, flux)
 
     # -----------------------------------------------------------------
 
