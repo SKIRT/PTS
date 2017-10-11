@@ -2019,6 +2019,176 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_bolometric_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_bolometric_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_bolometric_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.convert_to(self.corresponding_bolometric_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_bolometric_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_bolometric_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_wavelength_density_unit(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.unit.corresponding_wavelength_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.convert_to(self.corresponding_wavelength_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_wavelength_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_frequency_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.convert_to(self.corresponding_frequency_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_frequency_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_neutral_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.convert_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_non_brightness_unit(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return self.unit.corresponding_non_brightness_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_non_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.convert_to(self.corresponding_non_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_non_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_non_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_angular_area_unit(self):
 
         """

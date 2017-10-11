@@ -763,6 +763,145 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_bolometric_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already a bolometric unit
+        if self.is_bolometric: return self.copy()
+
+        # From frequency density
+        elif self.is_frequency_density:
+
+            new_unit = self * self.frequency_unit
+            new_unit_string = str(new_unit)
+
+        # From wavelength density
+        elif self.is_wavelength_density:
+
+            new_unit = self * self.wavelength_unit
+            new_unit_string = str(new_unit)
+
+        # From neutral density
+        elif self.is_neutral_density:
+            new_unit_string = str(self)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=False, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already wavelength density
+        if self.is_wavelength_density: return self.copy()
+
+        elif self.is_bolometric:
+
+            new_unit = self / "micron"
+            new_unit_string = str(new_unit)
+
+        elif self.is_frequency_density:
+
+            new_unit = self * self.frequency_unit / "micron"
+            new_unit_string = str(new_unit)
+
+        elif self.is_neutral_density:
+
+            new_unit = self / "micron"
+            new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=True, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already frequency density
+        if self.is_frequency_density: return self.copy()
+
+        # Bolometric
+        elif self.is_bolometric:
+
+            new_unit = self / "Hz"
+            new_unit_string = str(new_unit)
+
+        # Wavelength density
+        elif self.is_wavelength_density:
+
+            new_unit = self * self.wavelength_unit / "Hz"
+            new_unit_string = str(new_unit)
+
+        # Neutral density
+        elif self.is_neutral_density:
+
+            new_unit = self / "Hz"
+            new_unit_string = str(new_unit)
+
+        # Invalid state
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=True, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already neutral density
+        if self.is_neutral_density: return self.copy()
+
+        # Bolometric
+        elif self.is_bolometric:
+
+            new_unit_string = str(self)
+
+        elif self.is_frequency_density:
+
+            new_unit = self * self.frequency_unit
+            new_unit_string = str(new_unit)
+
+        elif self.is_wavelength_density:
+
+            new_unit = self * self.wavelength_unit
+            new_unit_string = str(new_unit)
+
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=True, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_non_brightness_unit(self):
 
         """
@@ -977,6 +1116,18 @@ class PhotometricUnit(CompositeUnit):
         """
 
         return self.density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_bolometric(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.is_spectral_density
 
     # -----------------------------------------------------------------
 

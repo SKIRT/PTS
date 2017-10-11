@@ -429,6 +429,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Get the appropriate simulated frame
             frame = self.get_frame_for_filter(fltr, convolve=False)
 
+            # Convert to non-brightness
+            frame.convert_to_corresponding_non_brightness_unit()
+
             # Add the frame
             self.images.append(frame)
 
