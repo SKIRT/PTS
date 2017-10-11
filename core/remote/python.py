@@ -54,6 +54,18 @@ class RemotePythonSession(object):
     # -----------------------------------------------------------------
 
     @property
+    def host_id(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
+    @property
     def session_temp_directory(self):
 
         """
@@ -62,6 +74,18 @@ class RemotePythonSession(object):
         """
 
         return self.remote.session_temp_directory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_temp_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.previous_temp_directories
 
     # -----------------------------------------------------------------
 
@@ -85,7 +109,65 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
-    def import_package(self, name, as_name=None, from_name=None, show_output=False):
+    def import_package_update(self, name, as_name=None, from_name=None, show_output=False):
+
+        """
+        Thins function ...
+        :param name:
+        :param as_name:
+        :param from_name:
+        :param show_output:
+        :return:
+        """
+
+        # Try to import
+        success, module_name, import_statement = self.import_package(name, as_name=as_name, from_name=from_name, show_output=show_output, return_false_if_fail=True, return_failed_module=True)
+
+        # Not succesful, try updating the module on which it failed
+        if not success:
+
+            # No problem module, show import statement
+            if module_name is None: raise RuntimeError("Unsolvable import error occured at: '" + import_statement + "'")
+
+            # Debugging
+            log.debug("Import of '" + name + "' was unsuccesful: trying updating the '" + module_name + "' package ...")
+
+            from ..prep.update import update_pts_dependencies_remote
+
+            # Find conda
+            conda_installation_path, conda_main_executable_path = self.remote.find_conda()
+
+            # Determine the conda environment for PTS
+            env_name = self.remote.conda_environment_for_pts
+            if env_name is None: raise Exception("Cannot determine the conda environment used for pts")
+            conda_environment = env_name
+
+            environment_bin_path = fs.join(conda_installation_path, "envs", conda_environment, "bin")
+            if not self.remote.is_directory(environment_bin_path): raise RuntimeError("The environment directory is not present")
+            conda_executable_path = fs.join(environment_bin_path, "conda")
+
+            # Set ...
+            conda_pip_path = fs.join(environment_bin_path, "pip")
+            conda_python_path = fs.join(environment_bin_path, "python")
+            conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+            # Update the module
+            packages = [module_name]
+            update_pts_dependencies_remote(self.remote, packages, conda_executable_path,
+                                           conda_environment, conda_python_path, conda_pip_path,
+                                           conda_easy_install_path)
+
+            # Try again
+            success, module_name, import_statement = self.import_package(name, as_name=as_name, from_name=from_name,
+                                                       show_output=show_output, return_false_if_fail=True,
+                                                       return_failed_module=True)
+
+            # Not succesful again
+            if not success: raise ImportError("The import statement '" + import_statement + "' failed on remote host '" + self.host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def import_package(self, name, as_name=None, from_name=None, show_output=False, return_false_if_fail=True, return_failed_module=False):
 
         """
         This function ...
@@ -93,6 +175,8 @@ class RemotePythonSession(object):
         :param as_name:
         :param from_name:
         :param show_output:
+        :param return_false_if_fail:
+        :param return_failed_module:
         :return:
         """
 
@@ -115,12 +199,63 @@ class RemotePythonSession(object):
 
             # Check output
             last_line = output[-1]
-            if "cannot import" in last_line: log.warning(last_line)
-            if "ImportError" in last_line: log.warning(last_line)
 
-            return False
+            # Error
+            if "cannot import" in last_line:
+                #log.warning(last_line)
+                which = last_line.split("cannot import")[1]
+                message = "[" + self.host_id + "] Cannot import " + which
+                if return_false_if_fail: log.warning(message)
+                else: raise ImportError(message)
 
-        return True
+            # Error
+            elif "ImportError" in last_line:
+                #log.warning(last_line)
+                message = last_line.split("ImportError")[1]
+                message = "[" + self.host_id + "] " + message
+                if return_false_if_fail: log.warning(message)
+                else: raise ImportError(message)
+
+            # What else?
+            else:
+
+                # Show output
+                for line in output: log.warning(line)
+
+                # Probably OKAY, RETURN SUCCESS
+                if return_failed_module: return True, None, None
+                else: return True
+
+            # NOT SUCCESS
+
+            # Read the traceback
+            module_name = None
+            import_statement = None
+            for line in reversed(output[:-1]):
+                line = line.strip()
+                if line.startswith("import"):
+                    module_name = line.split("import ")[1].split(" ")[0]
+                    import_statement = line
+                    break
+                elif line.startswith("from") and "import" in line:
+                    module_name = line.split("from ")[1].split(" ")[0]
+                    import_statement = line
+                    break
+
+            # Get base module name
+            if module_name is not None: base_module_name = module_name.split(".")[0]
+            else: base_module_name = None
+
+            # Give command
+            if base_module_name: import_statement = command
+
+            # Import failed
+            if return_failed_module: return False, base_module_name, import_statement
+            else: return False
+
+        # Import was succesfull
+        if return_failed_module: return True, None, None
+        else: return True
 
     # -----------------------------------------------------------------
 
@@ -136,6 +271,49 @@ class RemotePythonSession(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def send_line_and_raise(self, command, show_output=False, timeout=None):
+
+        """
+        This function ...
+        :param command:
+        :param show_output:
+        :param timeout:
+        :return:
+        """
+
+        # Send the command and get the output
+        output = self.send_line(command, show_output=show_output, timeout=timeout)
+
+        # There is output
+        if len(output) > 0:
+
+            # Get the last line
+            last_line = output[-1]
+
+            # Check for errors
+            if "Error: " in last_line:
+
+                # Get the error type
+                error_class_name = last_line.split(": ")[0]
+                try:
+                    error_class = eval(error_class_name)
+                    error_specifier = ""
+                except NameError:
+                    error_class = Exception
+                    error_specifier = " (" + error_class_name + ") "
+
+                message = last_line.split(error_class_name + ": ")[1]
+                message = "[" + self.host_id + "] " + error_specifier + message
+
+                # Re-raise the remote error
+                raise error_class(message)
+
+            # Show the output (no errors) if debugging and show_output is False
+            if not show_output: # Output was not shown in realtime
+                for line in output: log.debug("[" + self.host_id + "] " + line)
 
     # -----------------------------------------------------------------
 
@@ -261,7 +439,7 @@ class RemotePythonSession(object):
         :return:
         """
 
-        return self.get_simple_variable(name)[1:-1]
+        return self.get_simple_variable(name)
 
         #return output[0][1:-1]
 
@@ -601,22 +779,30 @@ class RemotePythonSession(object):
         local_input_filepaths = []
 
         # Depending paths
-        depending_filepaths = []
+        depending_filepaths = dict()
 
         # Strings
         input_strings = dict()
 
+        # E.G.
+        # dictionary = {"a": OBJECT_A, "b": OBJECT_B}
+
         # Loop over the names of the input objects
         for name in dictionary:
 
+            # name = "a"
+
             # Get the value
             value = dictionary[name]
+
+            # value = OBJECT_A
 
             # Check whether extension is defined
             if hasattr(value, "default_extension"):
 
                 # Determine filepath
                 path = fs.join(temp_path, name + "." + value.default_extension)
+                # path = .../a.ext
 
                 # Save
                 dictionary[name].saveto(path)
@@ -628,7 +814,7 @@ class RemotePythonSession(object):
                 if hasattr(value, "get_depending_paths"):
 
                     # Get the local depending filepaths
-                    local_depending_filepaths = value.get_depending_paths()
+                    local_depending_filepaths = value.get_depending_paths() # = dictionary
 
                     # Set the depending filepaths for this input object
                     depending_filepaths[name] = local_depending_filepaths
@@ -652,6 +838,8 @@ class RemotePythonSession(object):
         remote_depending_filepaths = dict()
         for name in depending_filepaths:
 
+            # name = "a"
+
             # Create remote directory for this input object
             dirname = name + "_depending"
             dirpath = fs.join(remote_temp_path, dirname)
@@ -661,7 +849,7 @@ class RemotePythonSession(object):
             remote_depending_filepaths[name] = dict()
 
             # Upload all depending
-            for label in depending_filepaths:
+            for label in depending_filepaths[name]:
 
                 local_depending_filepath = depending_filepaths[name][label]
                 remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, show_output=log.is_debug())
@@ -834,6 +1022,7 @@ class AttachedPythonSession(RemotePythonSession):
         :return:
         """
 
+        # Type the name of the variable in the python prompt, so its value is shown
         self.send_line(name, show_output=show_output)
 
         #print(self.parent.ssh.before)
@@ -843,10 +1032,13 @@ class AttachedPythonSession(RemotePythonSession):
 
         lines = output.split("\r\n")
         if lines[0] == name: lines = lines[1:]
-        print(lines)
+        #print(lines)
+
+        # None?
+        if len(lines) == 0: return None
 
         # Return the value
-        return eval(lines[0])
+        else: return eval(lines[0])
 
     # -----------------------------------------------------------------
 

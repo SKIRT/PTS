@@ -180,7 +180,7 @@ class ColoursSSFRMapsMaker(Configurable):
 
             # Check whether a colour map is already present
             if colour in self.maps:
-                log.warning("The " + colour + " sSFR map is already created: not creating it again")
+                log.success("The " + colour + " sSFR map is already created: not creating it again")
                 continue
 
             # Get the map

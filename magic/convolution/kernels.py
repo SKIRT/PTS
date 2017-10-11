@@ -81,7 +81,11 @@ fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
          "Planck 3000": 581. * u("arcsec"),
          "Planck 4260": 799. * u("arcsec"),
          "Planck 6810": 1630. * u("arcsec"),
-         "Planck 10600": 1940. * u("arcsec")}
+         "Planck 10600": 1940. * u("arcsec"),
+         "IRAS 12mu": 270 * u("arcsec"),
+         "IRAS 25mu": 276 * u("arcsec"),
+         "IRAS 60mu": 282 * u("arcsec"),
+         "IRAS 100mu": 300 * u("arcsec")}
 
 # -----------------------------------------------------------------
 
@@ -173,6 +177,19 @@ def has_variable_fwhm(fltr):
     """
 
     return fltr in get_variable_filters()
+
+# -----------------------------------------------------------------
+
+def has_average_variable_fwhm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...dustpedia.core.properties import has_fwhm as has_dustpedia_fwhm
+    return has_dustpedia_fwhm(fltr)
 
 # -----------------------------------------------------------------
 

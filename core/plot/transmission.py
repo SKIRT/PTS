@@ -34,7 +34,7 @@ from ..filter.filter import parse_filter
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
-from ..basics.plot import MPLPlot
+from ..basics.plot import MPLFigure
 from ..tools import filesystem as fs
 from pts.core.tools.utils import lazyproperty
 
@@ -292,7 +292,7 @@ class TransmissionPlotter(Configurable):
         else: self.output = self.config.output
 
         # Initialize the plot
-        self.plt = MPLPlot(self.config.plot.figsize)
+        self.plt = MPLFigure(size=self.config.plot.figsize)
 
     # -----------------------------------------------------------------
 

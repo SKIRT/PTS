@@ -37,28 +37,86 @@ class LogFile(object):
     This class ...
     """
 
-    def __init__(self, path):
+    def __init__(self, path=None, contents=None, name=None):
 
         """
         The constructor ...
+        :param contents:
+        :param name:
         :return:
         """
 
-        # Set the log file path
-        self.path = path
+        # Local path is passed
+        if path is not None:
+
+            # Set the log file path
+            self.path = path
+
+            # Determine the name of the log file
+            name = fs.name(self.path)
+
+            # Determine the simulation prefix
+            self.prefix = name.split("_")[0]
+
+            # Determine the process rank associated with this log file
+            try: self.process = int(name.split("_logP")[1].split(".txt")[0])
+            except IndexError: self.process = 0
+
+            # Parse the log file
+            self.contents = parse(path)
+
+        # Table is passed
+        elif contents is not None:
+
+            # Name must be given
+            if name is None: raise ValueError("Name must be specified")
+
+            # No path
+            self.path = None
+
+            # Determine the simulation prefix
+            self.prefix = name.split("_")[0]
+
+            # Determine the process rank associated with this log file
+            try: self.process = int(name.split("_logP")[1].split(".txt")[0])
+            except IndexError: self.process = 0
+
+            # Set contents
+            self.contents = contents
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return cls(path=path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        Thisn function ...
+        :param path:
+        :param remote:
+        :return:
+        """
 
         # Determine the name of the log file
-        name = fs.name(self.path)
+        name = fs.name(path)
 
-        # Determine the simulation prefix
-        self.prefix = name.split("_")[0]
+        # Parse the contents
+        contents = parse_from_lines(remote.read_lines(path))
 
-        # Determine the process rank associated with this log file
-        try: self.process = int(name.split("_logP")[1].split(".txt")[0])
-        except IndexError: self.process = 0
-
-        # Parse the log file
-        self.contents = parse(path)
+        # Create and return
+        return cls(contents=contents, name=name)
 
     # -----------------------------------------------------------------
 
@@ -493,8 +551,8 @@ class LogFile(object):
                 ncells = int(line.split(" (")[1].split(",")[0])
                 return ncells
 
-        # Not found
-        return None
+        # Not found, try tree dust grid
+        return self.dust_cells_tree
 
     # -----------------------------------------------------------------
 
@@ -913,6 +971,115 @@ class LogFile(object):
 
 # -----------------------------------------------------------------
 
+def parse_from_lines(lines):
+
+    """
+    This function ...
+    :param lines: lines (can be generator or file handle)
+    :return:
+    """
+
+    # Initialize lists for the columns
+    times = []
+    phases = []
+    messages = []
+    types = []
+    memories = []
+
+    verbose_logging = None
+    memory_logging = None
+
+    # PARSING
+
+    # The current phase
+    current_phase = None
+
+    # The phase before that
+    previous_phase = None
+
+    # The phase even before that
+    previousprevious_phase = None
+
+    # Loop over all lines in the log file
+    for line in lines:
+
+        # If the line contains an error, skip it (e.g. when convergence has not been reached after a certain
+        # number of dust-selfabsorption cycles)
+        if "*** Error:" in line: continue
+
+        # Remove the line ending (if there)
+        line = line.rstrip("\n")
+
+        #print(line)
+
+        # Check whether the timestamp is valid
+        # 17/09/2017 19:51:29.080
+        if has_valid_timestamp(line): t = time.parse_line(line) # Get the date and time information of the current line
+        else:
+            index = 1
+            while True:
+                if index > len(line) - 26:
+                    index = None
+                    break
+                if has_valid_timestamp(line[index:]): break
+                index += 1
+            if index is None:
+                warnings.warn("Not a valid line: '" + line + "': skipping ...")
+                continue
+            else:
+                line = line[index:]
+                t = time.parse_line(line)
+
+        # Add the time
+        times.append(t)
+
+        # Check whether the log file was created in verbose logging mode
+        if verbose_logging is None: verbose_logging = "[P" in line
+
+        # Check whether the log file was created in memory logging mode
+        if memory_logging is None: memory_logging = "GB)" in line
+
+        # Get the memory usage at the current line, if memory logging was enabled for the simulation
+        if memory_logging:
+
+            try: memory = float(line.split(" (")[1].split(" GB)")[0])
+            except ValueError:
+                warnings.warn("Invalid line: '" + line + "': cannot interpret memory")
+                memory = None
+            memories.append(memory)
+
+        if memory_logging: message = line.split("GB) ")[1]
+        elif verbose_logging: message = line.split("] ")[1]
+        else: message = line[26:]
+        messages.append(message)
+
+        typechar = line[24]
+        if typechar == " ": types.append("info")
+        elif typechar == "-": types.append("success")
+        elif typechar == "!": types.append("warning")
+        elif typechar == "*": types.append("error")
+        else:
+            #warnings.warn("Could not determine the type of log message from '" + line + "'")
+            types.append("info")
+
+        # Get the simulation phase
+        current_phase, previous_phase, previousprevious_phase = get_phase(line, current_phase, previous_phase, previousprevious_phase)
+        phases.append(current_phase)
+
+    # Create the table data structures
+    data = [times, phases, messages, types]
+    names = ["Time", "Phase", "Message", "Type"]
+
+    # If memory logging was enabled, add the 2 additional columns
+    if memory_logging:
+        data.append(memories)
+        names.append("Memory")
+
+    # Create the table and return it
+    return Table(data=data, names=names, meta={"name": "the contents of the simulation's log file"})
+
+# -----------------------------------------------------------------
+
 def parse(path):
 
     """
@@ -932,91 +1099,7 @@ def parse(path):
     memory_logging = None
 
     # Open the log file
-    with open(path, 'r') as f:
-
-        # The current phase
-        current_phase = None
-
-        # The phase before that
-        previous_phase = None
-
-        # The phase even before that
-        previousprevious_phase = None
-
-        # Loop over all lines in the log file
-        for line in f:
-
-            # If the line contains an error, skip it (e.g. when convergence has not been reached after a certain
-            # number of dust-selfabsorption cycles)
-            if "*** Error:" in line: continue
-
-            # Remove the line ending
-            line = line[:-1]
-
-            # Check whether the timestamp is valid
-            # 17/09/2017 19:51:29.080
-            if has_valid_timestamp(line): t = time.parse_line(line) # Get the date and time information of the current line
-            else:
-                index = 1
-                while True:
-                    if index > len(line) - 26:
-                        index = None
-                        break
-                    if has_valid_timestamp(line[index:]): break
-                    index += 1
-                if index is None:
-                    warnings.warn("Not a valid line: '" + line + "': skipping ...")
-                    continue
-                else:
-                    line = line[index:]
-                    t = time.parse_line(line)
-
-            # Add the time
-            times.append(t)
-
-            # Check whether the log file was created in verbose logging mode
-            if verbose_logging is None: verbose_logging = "[P" in line
-
-            # Check whether the log file was created in memory logging mode
-            if memory_logging is None: memory_logging = "GB)" in line
-
-            # Get the memory usage at the current line, if memory logging was enabled for the simulation
-            if memory_logging:
-
-                try: memory = float(line.split(" (")[1].split(" GB)")[0])
-                except ValueError:
-                    warnings.warn("Invalid line: '" + line + "': cannot interpret memory")
-                    memory = None
-                memories.append(memory)
-
-            if memory_logging: message = line.split("GB) ")[1]
-            elif verbose_logging: message = line.split("] ")[1]
-            else: message = line[26:]
-            messages.append(message)
-
-            typechar = line[24]
-            if typechar == " ": types.append("info")
-            elif typechar == "-": types.append("success")
-            elif typechar == "!": types.append("warning")
-            elif typechar == "*": types.append("error")
-            else: raise ValueError("Could not determine the type of log message")
-
-            # Get the simulation phase
-            current_phase, previous_phase, previousprevious_phase = get_phase(line, current_phase, previous_phase, previousprevious_phase)
-            phases.append(current_phase)
-
-    # Create the table data structures
-    data = [times, phases, messages, types]
-    names = ["Time", "Phase", "Message", "Type"]
-
-    # If memory logging was enabled, add the 2 additional columns
-    if memory_logging:
-
-        data.append(memories)
-        names.append("Memory")
-
-    # Create the table and return it
-    return Table(data=data, names=names, meta={"name": "the contents of the simulation's log file"})
+    with open(path, 'r') as fh: return parse_from_lines(fh)
 
 # -----------------------------------------------------------------
 

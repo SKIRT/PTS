@@ -76,6 +76,9 @@ class ObservedFluxCalculator(Configurable):
         # The errors for the different filters
         self.errors = None
 
+        # No spectral convolution for certain filters?
+        self.no_spectral_convolution_filters = []
+
         # The output observed SEDs
         self.mock_seds = dict()
 
@@ -135,6 +138,9 @@ class ObservedFluxCalculator(Configurable):
         # The ski file
         self.ski = simulation.ski_file
 
+        # No spectral convolution for certain filters?
+        self.no_spectral_convolution_filters = kwargs.pop("no_spectral_convolution_filters", [])
+
         # Set the filter names
         if filter_names is not None: self.filter_names = filter_names
 
@@ -164,6 +170,31 @@ class ObservedFluxCalculator(Configurable):
         """
 
         return [parse_filter(filter_name) for filter_name in self.filter_names]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No spectral convolution for any filter
+        if not self.config.spectral_convolution: return []
+
+        # Initialize list
+        filters = []
+
+        # Loop over the filters
+        for fltr in filters:
+
+            if fltr in self.no_spectral_convolution_filters: pass
+            else: filters.append(fltr)
+
+        # Return the filters
+        return filters
 
     # -----------------------------------------------------------------
 
@@ -203,7 +234,7 @@ class ObservedFluxCalculator(Configurable):
             log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
 
             # Convert model sed into observed SED
-            mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.config.spectral_convolution, errors=self.errors)
+            mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.spectral_convolution_filters, errors=self.errors)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed
@@ -456,29 +487,42 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
             log.warning("The wavelength of the '" + str(fltr) + "' is not covered by the modeled SED: skipping this filter ...")
             continue
 
-        #print(frequencies)
-        #central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
-        #print(central_frequency)
+        # Needs spectral convolution?
+        if needs_spectral_convolution(fltr, spectral_convolution): fluxdensity, error = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=errors)
 
-        # Broad band filter, with spectral convolution
-        if isinstance(fltr, BroadBandFilter) and spectral_convolution:
+        # No spectral convolution
+        else: fluxdensity, error = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=errors)
 
-            # Calculate
-            fluxdensity, error = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=errors)
-
-            # Add a data point to the mock SED
-            mock_sed.add_point(fltr, fluxdensity, error)
-
-        # Broad band filter without spectral convolution or narrow band filter
-        else:
-
-            # Calculate
-            fluxdensity, error = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=errors)
-
-            # Add a data point to the mock SED
-            mock_sed.add_point(fltr, fluxdensity, error)
+        # Add a data point to the mock SED
+        mock_sed.add_point(fltr, fluxdensity, error)
 
     # Return the mock observed SED
     return mock_sed
+
+# -----------------------------------------------------------------
+
+def needs_spectral_convolution(fltr, spectral_convolution):
+
+    """
+    This function ...
+    :param fltr:
+    :param spectral_convolution: flag or list of Filters
+    :return:
+    """
+
+    # Broad band filter
+    if isinstance(fltr, BroadBandFilter):
+
+        # Single boolean
+        if types.is_boolean_type(spectral_convolution): return spectral_convolution
+
+        # Sequence of filters: return whether the filter is in it
+        elif types.is_sequence(spectral_convolution): return fltr in spectral_convolution
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'spectral_convolution'")
+
+    # Narrow band filters: no spectral convolution
+    else: return False
 
 # -----------------------------------------------------------------

@@ -56,7 +56,10 @@ class RemoteMounter(object):
         self.mount_paths = dict()
 
         # Check which remotes are mounted
+        #print(pts_remotes_path)
         for path, name in fs.directories_in_path(pts_remotes_path, returns=["path", "name"]):
+
+            #print(path, fs.is_mount_point(path))
 
             # Check if this is an existing mount point
             if fs.is_mount_point(path):
@@ -95,6 +98,7 @@ class RemoteMounter(object):
         :return:
         """
 
+        #print(self.mount_paths)
         return host_id in self.mount_paths
 
     # -----------------------------------------------------------------
@@ -125,8 +129,20 @@ class RemoteMounter(object):
         :return:
         """
 
-        if pexpect: return self.mount_pexpect(host_id, path=path)
-        else: return self.mount_process(host_id, path=path)
+        # Get actual host ID string
+        if isinstance(host_id, Host): the_host_id = host_id.id
+        elif types.is_string_type(host_id): the_host_id = host_id
+        else: raise ValueError("Invalid value for 'host_id'")
+
+        # 2 different ways to mount
+        if pexpect: mount_path = self.mount_pexpect(host_id, path=path)
+        else: mount_path = self.mount_process(host_id, path=path)
+
+        # Add to mount paths
+        self.mount_paths[the_host_id] = mount_path
+
+        # Return the mount path
+        return mount_path
 
     # -----------------------------------------------------------------
 
@@ -209,6 +225,9 @@ class RemoteMounter(object):
         # Execute
         output = terminal.execute_no_pexpect(command, show_output=True)
 
+        # Check
+        if not fs.is_mount_point(mount_path): raise RuntimeError("The directory '" + mount_path + "' is not a mount pount")
+
         # Return the path
         return mount_path
 
@@ -247,26 +266,26 @@ class RemoteMounter(object):
 
         # Debugging
         log.debug("Mounting command: '" + command + "'")
-        print(command)
+        #print(command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
         #child.logfile = sys.stdout
 
         # if host.password is not None:
-        #     index = child.expect(['password: ', 'Password for ' + host.name + ": ", pexpect.EOF, pexpect.TIMEOUT])
-        #     #print(index)
-        #     #print(child.before, child.after)
-        #     if index == 0 or index == 1: child.sendline(host.password)
-        #     elif index == 2:
-        #         output = child.before.split("\r\n")[:-1]
-        #         for line in output:
-        #             if "File exists" in line: raise IOError("Remote host is already mounted somewhere else")
-        #         else:
-        #             print("\n".join(output))
-        #             exit()
-        #     elif index == 3: raise RuntimeError("A timeout has occurred")
-        #     else: raise RuntimeError("Unknown error")
+        #      index = child.expect(['password: ', 'Password for ' + host.name + ": ", pexpect.EOF, pexpect.TIMEOUT])
+        #      #print(index)
+        #      #print(child.before, child.after)
+        #      if index == 0 or index == 1: child.sendline(host.password)
+        #      elif index == 2:
+        #          output = child.before.split("\r\n")[:-1]
+        #          for line in output:
+        #              if "File exists" in line: raise IOError("Remote host is already mounted somewhere else")
+        #          else:
+        #              print("\n".join(output))
+        #              exit()
+        #      elif index == 3: raise RuntimeError("A timeout has occurred")
+        #      else: raise RuntimeError("Unknown error")
 
         if log.is_debug(): child.logfile = sys.stdout
 
@@ -291,6 +310,9 @@ class RemoteMounter(object):
 
         # Set the path
         self.mount_paths[the_host_id] = mount_path
+
+        # Check
+        if not fs.is_mount_point(mount_path): raise RuntimeError("Something went wrong: the directory '" + mount_path + "' is not a mount pount")
 
         # Return the path
         return mount_path
@@ -321,6 +343,9 @@ class RemoteMounter(object):
 
         # Create directory for remote
         path = fs.join(pts_remotes_path, host.id)
+
+        # Check
+        if not fs.is_mount_point(path): raise RuntimeError("The directory '" + path + "' is not a mount pount")
 
         # Unmount
         try: output = subprocess.check_output(["umount", path])

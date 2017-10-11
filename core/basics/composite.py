@@ -256,6 +256,23 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def set_property(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Check
+        if name not in self.property_names: raise ValueError("Not a property of this class: '" + name + "'")
+
+        # Set attribute
+        setattr(self, name, value)
+
+    # -----------------------------------------------------------------
+
     def set_properties(self, properties):
 
         """
@@ -282,6 +299,58 @@ class SimplePropertyComposite(object):
 
             # If the option does not exist, ignore it but give a warning
             else: warnings.warn("The property '" + name + "' does not exist")
+
+    # -----------------------------------------------------------------
+
+    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None, required=False):
+
+        """
+        This function ...
+        :param recursive:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param required:
+        :return:
+        """
+
+        from .configuration import prompt_variable
+
+        # Loop over the properties
+        for name in self.property_names:
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+
+            description = self.get_description(name)
+            ptype = self.get_ptype(name)
+            default = self.get_value(name)
+            choices = self.get_choices(name)
+
+            # Ask for the new value
+            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=True)
+
+            # Set the property
+            if value != default:
+
+                # Debugging
+                log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+
+                # Set the new value
+                self.set_property(name, value)
+
+        # Recursive: also loop over the settings
+        if recursive:
+
+            # Loop over the sections
+            for name in self.section_names:
+
+                # Prompt the settings of the section
+                self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
 
     # -----------------------------------------------------------------
 
@@ -382,6 +451,30 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def get_description(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._descriptions[name]
+
+    # -----------------------------------------------------------------
+
+    def get_choices(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return self._choices[name]
+
+    # -----------------------------------------------------------------
+
     @property
     def property_names(self):
 
@@ -390,11 +483,20 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        from ..tools.utils import lazyproperty
+
         names = []
         for name in vars(self):
 
             # Skip internal variables
             if name.startswith("_"): continue
+
+            #print(type(getattr(self, name)))
+
+            if hasattr(self.__class__, name):
+                class_attribute = getattr(self.__class__, name)
+                assert isinstance(class_attribute, lazyproperty)
+                continue
 
             if name not in self._ptypes:
                 if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Property '" + name + "' doesn't have its type defined")
@@ -416,11 +518,18 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        from ..tools.utils import lazyproperty
+
         names = []
         for name in vars(self):
 
             # Skip internal
             if name.startswith("_"): continue
+
+            if hasattr(self.__class__, name):
+                class_attribute = getattr(self.__class__, name)
+                assert isinstance(class_attribute, lazyproperty)
+                continue
 
             # Skip simple properties
             if name in self._ptypes: continue
@@ -562,6 +671,24 @@ class SimplePropertyComposite(object):
 
         # Return the properties as a dictionary
         return properties
+
+    # -----------------------------------------------------------------
+
+    def to_dict(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create dict with the properties
+        result = self.get_properties()
+
+        # Add the sections (as dicts as well)
+        for name in self.section_names: result[name] = self.sections[name].to_dict()
+
+        # Return the resulting dict
+        return result
 
     # -----------------------------------------------------------------
 

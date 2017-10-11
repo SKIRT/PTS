@@ -22,6 +22,28 @@ from ...core.basics.colour import parse_colour
 
 # -----------------------------------------------------------------
 
+class DamagedImageFileError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, path=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param path:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(DamagedImageFileError, self).__init__(message)
+
+        # The image file path
+        self.path = path
+
+# -----------------------------------------------------------------
+
 class RGBImage(object):
 
     """
@@ -80,7 +102,12 @@ class RGBImage(object):
         """
 
         # Read image
-        data = imageio.imread(path)
+        try: data = imageio.imread(path)
+        except ValueError as e:
+            message = str(e)
+            if "image file is truncated" in message:
+                raise DamagedImageFileError("Image file is damaged", path=path)
+            else: raise e
 
         # Create from 3D array
         image = cls.from_array(data)

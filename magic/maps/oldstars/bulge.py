@@ -186,7 +186,7 @@ class BulgeOldStellarMapMaker(Configurable):
 
             # Check if already presnet
             if name in self.maps:
-                log.warning("The " + name + " old stellar bulge map is already created: not creating it again")
+                log.success("The " + name + " old stellar bulge map is already created: not creating it again")
                 continue
 
             # Create copy

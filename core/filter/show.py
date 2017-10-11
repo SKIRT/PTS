@@ -13,6 +13,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import defaultdict
 
+# Import astronomical modules
+from astropy.units import spectral
+
 # Import the relevant PTS classes and modules
 from .broad import BroadBandFilter
 from .broad import identifiers as broad_identifiers
@@ -213,6 +216,7 @@ class FilterShower(Configurable):
                     print("")
 
                     if wavelength is not None: print("     - Wavelength: " + represent_quantity(wavelength))
+                    if wavelength is not None: print("     - Frequency: " + represent_quantity(wavelength.to("GHz", equivalencies=spectral())))
                     if wavelength_range is not None: print("    - Wavelength range: " + str(wavelength_range))
 
                     print("")
@@ -258,6 +262,7 @@ class FilterShower(Configurable):
                     if fltr.effective is not None: print("    - Effective wavelength: " + represent_quantity(fltr.effective))
                     print("    - Pivot wavelength: " + represent_quantity(fltr.pivot))
                     if fltr.effective is not None: print("    - Effective bandwidth: " + represent_quantity(fltr.bandwidth))
+                    print("    - Mean frequency: " + represent_quantity(fltr.mean.to("GHz", equivalencies=spectral())))
 
                     print("")
 

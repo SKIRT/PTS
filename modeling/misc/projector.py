@@ -143,16 +143,16 @@ class Projector(GalaxyModelingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Create the projections
+        # 2. Create the projections
         self.set_projections()
 
-        # 4. Write
+        # 3. Write
         self.write()
 
-        # 5. Project
+        # 4. Project
         self.project()
 
-        # Clear
+        # 5. Clear
         self.clear()
 
     # -----------------------------------------------------------------

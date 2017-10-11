@@ -157,6 +157,20 @@ def remove_temp_dirs():
 
 # -----------------------------------------------------------------
 
+def find_temp_dirs(**kwargs):
+
+    """
+    Thisj function ...
+    :param kwargs:
+    :return:
+    """
+
+    # Find directories in the PTS temporary directory
+    paths = fs.directories_in_path(pts_temp_dir, **kwargs)
+    return list(sorted(paths)) # Sorted based on date
+
+# -----------------------------------------------------------------
+
 # Path to the user paths file (create if necessary)
 paths_file_path = fs.join(pts_user_dir, "paths.txt")
 
@@ -1028,6 +1042,22 @@ def simulations_files_for_host(host_id):
 
     # Return the list of simulation file paths corresponding to the specified host
     return fs.files_in_path(host_run_dir, extension="sim")
+
+# -----------------------------------------------------------------
+
+def simulation_ids_for_host(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    # Determine the path to the SKIRT run subdirectory for the specified host
+    host_run_dir = fs.join(skirt_run_dir, host_id)
+
+    # Return the list of simulation file paths corresponding to the specified host
+    return fs.files_in_path(host_run_dir, extension="sim", returns="name", extensions=False, convert=int, sort=int)
 
 # -----------------------------------------------------------------
 

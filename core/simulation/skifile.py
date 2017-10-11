@@ -72,7 +72,7 @@ class SkiFile:
             # Set the path to the ski file
             self.path = os.path.expanduser(filepath)
 
-            # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+            # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
             self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
 
             # Replace path by the full, absolute path
@@ -86,6 +86,33 @@ class SkiFile:
 
         # Missing input
         else: raise ValueError("Either filepath or tree must be passed to the constructor")
+
+    ## Open a ski file from a path
+    @classmethod
+    def from_file(cls, path):
+        return cls(filepath=path)
+
+    ## Open a ski file from a remote path (and the remote instance)
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        # Get the lines
+        #contents = remote.get_text(path)
+
+        import StringIO
+        #output = StringIO.StringIO()
+        #for line in remote.read_lines(path): output.write(line + "\n") # DOESN'T WORK??
+        output = StringIO.StringIO(remote.get_text(path)) # WORKS!!
+
+        #print(output)
+
+        # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+        #tree = etree.fromstring(contents, parser=etree.XMLParser(remove_blank_text=True)) # doesn't work, cannot acces getroot()??
+        #tree = etree.parse(remote.read_lines(path, add_sep=True), parser=etree.XMLParser(remove_blank_text=True)) # cannot parse from generator
+        tree = etree.parse(output, parser=etree.XMLParser(remove_blank_text=True))
+
+        # Create ski file from the tree
+        return cls(tree=tree)
 
     ## This function converts the tree into a string
     def __str__(self):
@@ -376,6 +403,30 @@ class SkiFile:
         with open(path, 'r') as f: first_line = f.readline()
         nwavelengths = int(first_line.split("\n")[0])
         return nwavelengths
+
+    ## This function
+    def treegridfile(self, input_path=None):
+        # If this ski file contains a file tree dust grid
+        entry = self.tree.xpath("//FileTreeDustGrid")
+        if entry:
+
+            filename = self.get_value(entry[0], "filename")
+
+            # Simulation input is specified
+            if input_path is not None:
+
+                # Find the file
+                from .input import find_input_filepath
+                tree_path = find_input_filepath(filename, input_path)
+
+            # Input path is not specified
+            else: tree_path = filename
+
+            # Return the file path
+            return tree_path
+
+        # No file tree dust grid in this ski file
+        else: return None
 
     ## This function returns the number of photon packages per wavelength
     def packages(self):
@@ -1586,12 +1637,16 @@ class SkiFile:
             # Set geometry to the stellar component
             stellar_component.append(geometry_parent)
 
-            # Add the component ID
-            comment = etree.Comment(component_id)
-            stellar_components_parent.append(comment)
+            # Add the component ID, if possible
+            if component_id is not None:
+                comment = etree.Comment(" " + component_id + " ")
+                stellar_components_parent.append(comment)
 
             # Add the new stellar component
             stellar_components_parent.append(stellar_component)
+
+            # Set component ID
+            if component_id is None: component_id = self.nstellar_components - 1
 
             # Set geometry
             if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
@@ -3799,6 +3854,13 @@ class SkiFile:
 
         # Unrecognized instrument
         else: raise ValueError("Unrecognized instrument: " + instrument.tag)
+
+    ## Get the instrument distance
+    def get_instrument_distance(self, name):
+
+        # Get the instrument object
+        instrument = self.get_instrument_object(name)
+        return instrument.distance
 
     ## This function returns the instrument with the specified name
     def get_instrument(self, name):

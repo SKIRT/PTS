@@ -208,7 +208,7 @@ class IonizingStellarMapsMaker(Configurable):
 
             # Check whether a map is already present
             if name in self.maps:
-                log.warning("The " + name + " ionizing stellar map is already created: not creating it again")
+                log.success("The " + name + " ionizing stellar map is already created: not creating it again")
                 continue
 
             # Young ionizing stars = Ha + 0.031 x MIPS24_corrected

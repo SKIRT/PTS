@@ -18,6 +18,8 @@ import copy
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from .skifile import SkiFile
+from ..tools.utils import lazyproperty
+from .tree import DustGridTree
 
 # -----------------------------------------------------------------
 
@@ -164,6 +166,94 @@ class SingleSimulationDefinition(SimulationDefinition):
         """
 
         return fs.strip_extension(fs.name(self.ski_path))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkiFile(self.ski_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski.nwavelengthsfile(self.input_path) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustlib_dimension(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.ski.dustlib_dimension()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uses_dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski.filetreegrid()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_dust_grid_tree: return None
+        else: return self.ski.treegridfile(self.input_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_dust_grid_tree: return None
+        else: return DustGridTree.from_file(self.dust_grid_tree_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_cells(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if self.ski.treegrid_notfile(): return None # number of cells cannot be defined
+        elif self.ski.filetreegrid(): return self.dust_grid_tree.nleaves
+        else: return self.ski.ncells()
 
     # -----------------------------------------------------------------
 

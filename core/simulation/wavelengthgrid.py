@@ -91,6 +91,20 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_sed(cls, sed):
+
+        """
+        Thisf unction ...
+        :param sed:
+        :return:
+        """
+
+        # Create from the wavelengths of the SED
+        return cls.from_wavelengths(sed.wavelengths())
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_wavelengths(cls, wavelengths, unit=None):
 
         """

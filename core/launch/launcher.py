@@ -26,7 +26,7 @@ from .analyser import SimulationAnalyser
 from ..simulation.remote import SKIRTRemote
 from ..basics.log import log
 from .options import SchedulingOptions
-from ..advanced.parallelizationtool import ParallelizationTool, determine_parallelization
+from ..advanced.parallelizationtool import determine_parallelization
 from ..advanced.memoryestimator import estimate_memory
 from ..simulation.parallelization import Parallelization, get_possible_nprocesses_in_memory
 from .options import AnalysisOptions
@@ -415,7 +415,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Determining the optimal parallelization scheme ...")
+        log.info("Determining the optimal parallelization scheme for local execution ...")
 
         # Determine the number of processes
         processes = self.get_nprocesses_local()
@@ -441,7 +441,7 @@ class SKIRTLauncher(Configurable):
         log.debug("The number of processes is " + str(processes))
 
         # Set the parallelization scheme
-        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel)
+        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
 
         # Debugging
         log.debug("The parallelization scheme is " + str(self.parallelization))
@@ -476,7 +476,7 @@ class SKIRTLauncher(Configurable):
 
             # Determine the number of possible nprocesses
             processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), self.memory.serial,
-                                                          self.memory.parallel, data_parallel=self.config.data_parallel)
+                                                          self.memory.parallel, data_parallel=self.config.data_parallel_local)
 
         # Return
         return processes
@@ -564,7 +564,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the parallelization scheme for remote execution ...")
+        log.info("Setting the optimal parallelization scheme for remote execution ...")
 
         # If the remote uses a scheduling system
         if self.remote.scheduler:
@@ -786,6 +786,44 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def remove_remote_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote_input_path is not None or self.has_remote_input_files: return False
+        elif self.config.keep_input: return False
+        else: return not self.config.keep
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_remote_output(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return not self.config.keep
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remove_remote_simulation_directory(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return not self.config.keep
+
+    # -----------------------------------------------------------------
+
     def launch_remote(self):
 
         """
@@ -804,12 +842,6 @@ class SKIRTLauncher(Configurable):
         #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
         if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
 
-        # Set options to remove remote files
-        if self.remote_input_path is not None or self.has_remote_input_files: remove_remote_input = False
-        else: remove_remote_input = not self.config.keep
-        remove_remote_output = not self.config.keep
-        remove_remote_simulation_directory = not self.config.keep
-
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=self.scheduling_options, attached=self.config.attached,
@@ -817,8 +849,8 @@ class SKIRTLauncher(Configurable):
                                           local_script_path=self.local_script_path, screen_output_path=screen_output_path,
                                           remote_input_path=self.remote_input_path, has_remote_input=self.has_remote_input_files,
                                           debug_output=self.config.debug_output, retrieve_types=self.config.retrieve_types,
-                                          remove_remote_input=remove_remote_input, remove_remote_output=remove_remote_output,
-                                          remove_remote_simulation_directory=remove_remote_simulation_directory)
+                                          remove_remote_input=self.remove_remote_input, remove_remote_output=self.remove_remote_output,
+                                          remove_remote_simulation_directory=self.remove_remote_simulation_directory)
 
     # -----------------------------------------------------------------
 

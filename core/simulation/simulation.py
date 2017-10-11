@@ -184,6 +184,9 @@ class SkirtSimulation(object):
         else:
             self.base_path = None # if ski path is not specified, base path is unknown
             self.ski_path = self.outfilepath("parameters.xml")
+            if not fs.is_file(self.ski_path):
+                warnings.warn("No parameters file can be found for this simulation")
+                self.ski_path = None
 
         # Set parameters, if passed
         self._parameters = parameters
@@ -204,6 +207,11 @@ class SkirtSimulation(object):
 
             # Set the attribute
             setattr(self, attr_name, value)
+
+    ## This function returns whether a ski or parameters file is found for this simulation
+    @property
+    def has_ski(self):
+        return self.ski_path is not None
 
     ## This function returns whether the simulation requires input
     @property
@@ -630,6 +638,10 @@ class SkirtSimulation(object):
     def check_analysis_options(self, logging_options=None):
         self.analysis.check(logging_options)
 
+    ## This function updates the analysis options with extra options that have been added after this simulation object was created
+    def update_analysis_options(self):
+        self.analysis = AnalysisOptions(**self.analysis.to_dict())
+
     @property
     def from_batch(self):
         return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None
@@ -668,6 +680,18 @@ class SkirtSimulation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def log_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.outfilepath("log.txt")
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path):
 
@@ -694,6 +718,16 @@ class SkirtSimulation(object):
 
             # Set the attribute
             setattr(simulation, attr_name, value)
+
+        # THIS IS A HACK, FOR WHEN A FILTER OBJECT COULD STILL CONTAIN AN LXML.ETREE ELEMENT (NOW SOLVED)
+        if hasattr(simulation, "analysis_plotting_ignore_filter_names"):
+            from ..filter.filter import parse_filter
+            # Check
+            assert simulation.analysis.plotting.ignore_filters == []
+            # Set the filters to the analysis options
+            simulation.analysis.plotting.ignore_filters = [parse_filter(name) for name in simulation.analysis_plotting_ignore_filter_names]
+            # Remove the 'hack' attribute, make the simulation object 'normal' again
+            delattr(simulation, "analysis_plotting_ignore_filter_names")
 
         # Return the simulation object
         return simulation
@@ -748,6 +782,13 @@ class SkirtSimulation(object):
         # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
         parameters = self._parameters
         self._parameters = None
+
+        # THIS IS A HACK, FOR WHEN A FILTER OBJECT COULD STILL CONTAIN AN LXML.ETREE ELEMENT (NOW SOLVED)
+        if len(self.analysis.plotting.ignore_filters) > 0:
+            filters = self.analysis.plotting.ignore_filters
+            self.analysis.plotting.ignore_filters = []
+            filter_names = [str(fltr) for fltr in filters]
+            self.analysis_plotting_ignore_filter_names = filter_names
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")

@@ -25,6 +25,7 @@ definition.add_flag("emulate", "emulate the simulation while limiting computatio
 
 # Other
 definition.add_flag("keep", "keep remote input and output")
+definition.add_flag("keep_input", "keep remote input specifically")
 definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=output_type_choices)
 
 # Special things

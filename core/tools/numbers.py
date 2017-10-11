@@ -1122,3 +1122,55 @@ def int2text(number):
     else: raise ValueError("Your numbers is not supported")
 
 # -----------------------------------------------------------------
+
+def nearest_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    return int(round(number))
+
+# -----------------------------------------------------------------
+
+def nearest_even_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    return nearest_integer(number/2)*2
+
+# -----------------------------------------------------------------
+
+def nearest_even_integer_below(number, below, including=False):
+
+    """
+    This function ...
+    :param number:
+    :param below:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_even_integer(number)
+
+    # Convert float to integer if necessary
+    if not is_integer(below):
+        below = int(below)
+        including = True
+
+    if integer > below:
+
+        if is_odd(below): integer = below - 1
+        elif including: integer = below
+        else: integer = below - 2
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------

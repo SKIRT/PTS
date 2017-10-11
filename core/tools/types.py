@@ -205,6 +205,19 @@ def is_none(value):
 
 # -----------------------------------------------------------------
 
+def is_unit(value):
+
+    """
+    This fucntion ...
+    :param value:
+    :return:
+    """
+
+    from astropy.units import Unit
+    return isinstance(value, Unit)
+
+# -----------------------------------------------------------------
+
 def is_quantity(value):
 
     """
@@ -227,6 +240,18 @@ def is_angle(value):
     """
 
     return hasattr(value, "unit") and value.unit.physical_type == "angle"
+
+# -----------------------------------------------------------------
+
+def is_length_unit(value):
+
+    """
+    Thisn function ...
+    :param value:
+    :return:
+    """
+
+    return is_unit(value) and value.physical_type == "length"
 
 # -----------------------------------------------------------------
 

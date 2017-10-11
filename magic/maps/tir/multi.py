@@ -216,7 +216,7 @@ class MultiBandTIRMapMaker(Configurable):
 
             # Check whether a TIR map is already present
             if key in self.maps:
-                log.warning("The " + key + " TIR map is already created: not creating it again")
+                log.success("The " + key + " TIR map is already created: not creating it again")
                 continue
 
             # Debugging

@@ -185,8 +185,8 @@ class PhotometricUnit(CompositeUnit):
             # Parse the unit
             try: unit = Unit(unit)
             except ValueError as e:
-                traceback.print_exc()
-                print(str(e))
+                #traceback.print_exc()
+                #print(str(e))
                 raise ValueError("Unit is not recognized")
             #unit = Unit(unit)
 

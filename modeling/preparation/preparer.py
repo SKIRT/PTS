@@ -1006,20 +1006,30 @@ class DataPreparer(PreparationComponent):
 
             # Load noise frame
             noise_frame = get_noise_frame_from_sky_path(sky_path)
+            if noise_frame is not None:
 
-            # Add the sky errors
-            error_maps.append(noise_frame)
-            error_contributions.append("noise")
+                # Add the sky errors
+                error_maps.append(noise_frame)
+                error_contributions.append("noise")
+
+            # No noise map found
+            else: log.warning("Noise map from sky subtraction could not be found for the '" + name + "' image")
 
             # Add additional error frames indicated by the user
             #if self.config.error_frame_names is not None:
             #    for error_frame_name in self.config.error_frame_names: error_maps.append(image.frames[error_frame_name])
 
-            # Calculate the final error map
-            errors = sum_frames_quadratically(*error_maps)
+            # Calculate the final error map, if any error frames
+            if len(error_maps) > 0:
 
-            # Add the combined errors frame
-            image.add_frame(errors, "errors")
+                # Create the combined error map
+                errors = sum_frames_quadratically(*error_maps)
+
+                # Add the combined errors frame
+                image.add_frame(errors, "errors")
+
+            # No error map for this image
+            else: log.warning("An error map could not be made for the '" + name + "' image")
 
             # Determine the new path
             new_path = fs.join(directory_path, with_errors_name)
@@ -1929,7 +1939,8 @@ def get_noise_frame_from_sky_path(sky_path):
     """
 
     path = fs.join(sky_path, "noise.fits")
-    if fs.is_file(path): return Frame.from_file(path)
+    if not fs.is_file(path): return None
+    else: return Frame.from_file(path)
 
 # -----------------------------------------------------------------
 

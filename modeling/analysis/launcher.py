@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta, abstractproperty
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
@@ -31,7 +34,592 @@ from ...core.prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 
-class AnalysisLauncher(AnalysisComponent):
+class AnalysisLauncherBase(AnalysisComponent):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        Thisn function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(AnalysisLauncherBase, self).__init__(*args, **kwargs)
+
+        # THE ANALYSIS RUN
+        self.analysis_run = None
+
+        # The ski file for the model
+        self.ski = None
+
+        # Input file paths
+        self.input_paths = None
+        self.has_remote_input_files = False
+        self.remote_input_path = None
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def uses_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def local_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_filenames(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.local_input_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def set_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the simulation input paths ...")
+
+        # No remote
+        if not self.uses_remote: self.set_input_paths_local()
+
+        # Remote execution
+        else: self.set_input_paths_remote()
+
+    # -----------------------------------------------------------------
+
+    def set_input_paths_local(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting input paths for local execution ...")
+
+        # Check config
+        if self.config.remote_input is not None or self.config.remote_input_path is not None:
+            raise ValueError("Cannot specifiy remote input path(s) if simulation is not launched remotely")
+
+        # Set input paths
+        self.input_paths = self.local_input_paths
+
+        # Set things
+        self.has_remote_input_files = False
+        self.remote_input_path = None
+
+    # -----------------------------------------------------------------
+
+    def set_input_paths_remote(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting input paths for remote execution ...")
+
+        # No remote files
+        if self.config.remote_input is None and self.config.remote_input_path is None: self.find_input_paths_remote()
+
+        # Remote files defined in a dictionary
+        elif self.config.remote_input is not None: self.set_input_paths_remote_from_dictionary()
+
+        # Remote input directory is specified
+        elif self.config.remote_input_path is not None: self.set_input_paths_remote_from_directory()
+
+        # We shouldn't get here
+        else: raise RuntimeError("We shouldn't get here")
+
+    # -----------------------------------------------------------------
+
+    def find_input_paths_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Searching for input files that are already present on the remote host ...")
+
+        # Find remote directory
+        if not self.heating: remote_input_path = self.find_remote_directory_with_all_input()
+        else: remote_input_path = None
+
+        # Set the original paths
+        self.input_paths = self.local_input_paths
+
+        # Found
+        if remote_input_path is not None:
+
+            # Set things
+            self.has_remote_input_files = False
+            self.remote_input_path = remote_input_path
+
+        # No complete remote input directory has been found
+        else:
+
+            # Find remote files
+            remote_input_paths = self.find_remote_input_files()
+
+            # Remote input files have been found
+            if len(remote_input_paths) == 0:
+
+                # Replace files that are on the remote
+                for filename in remote_input_paths:
+
+                    # Replace by remote path
+                    self.input_paths[filename] = remote_input_paths[filename]
+
+                    # Set things
+                    self.has_remote_input_files = True
+                    self.remote_input_path = None
+
+            # Not found
+            else:
+
+                # Set things
+                self.has_remote_input_files = False
+                self.remote_input_path = None
+
+    # -----------------------------------------------------------------
+
+    def find_remote_directory_with_all_input(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get local paths
+        paths = self.local_input_paths
+        filenames = self.input_filenames
+
+        # Get SKIRT input paths from a previous script in this analysis run with the same host
+        remote_input_paths = self.analysis_run.get_remote_script_input_paths_for_host(self.host_id)
+
+        # Loop over the each of the remote input directories
+        for remote_input_path in remote_input_paths:
+
+            # Check whether the directory still exists
+            if not self.remote.is_directory(remote_input_path): continue
+
+            # Check whether all of the local input files are already in this remote directory
+            if self.remote.contains_files(remote_input_path, filenames):
+
+                # Check the wavelengths file
+                remote_wavelengths_path = fs.join(remote_input_path, wavelengths_filename)
+                #local_wavelengths_path = paths[wavelengths_filename]
+                remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
+                local_nwavelengths = self.nwavelengths
+                if remote_nwavelengths != local_nwavelengths: continue # the number of wavelengths is not equal
+
+                # Check passed, return the directory path
+                return remote_input_path
+
+        # No complete input directory from this analysis run is found
+        return None
+
+    # -----------------------------------------------------------------
+
+    def find_remote_input_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find from this analysis run
+        paths = self.find_remote_input_files_this_analysis_run()
+        if len(paths) != 0: return paths
+
+        # Find from other analysis runs
+        else: return self.find_remote_input_files_other_analysis_runs()
+
+    # -----------------------------------------------------------------
+
+    def find_remote_input_files_this_analysis_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictinoary for the paths
+        remote_paths = dict()
+
+        # Get local paths
+        #paths = self.local_input_paths
+        filenames = self.input_filenames
+
+        # Get SKIRT input paths from a previous script in this analysis run with the same host
+        remote_input_paths = self.analysis_run.get_remote_script_input_paths_for_host(self.host_id)
+
+        # Loop over the each of the remote input directories
+        for remote_input_path in remote_input_paths:
+
+            # Check whether the directory still exists
+            if not self.remote.is_directory(remote_input_path): continue
+
+            # Loop over the filenames
+            for filename in filenames:
+
+                # Determine the remote file path
+                remote_filepath = fs.join(remote_input_path, filename)
+
+                # If the file (still) exists
+                if self.remote.is_file(remote_filepath):
+
+                    # If it is the wavelength file, check the number of wavelengths
+                    if filename == wavelengths_filename:
+                        if self.heating: continue # Don't add remote wavelengths file for heating launcher
+                        else:
+                            remote_wavelengths_path = remote_filepath
+                            remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
+                            if remote_nwavelengths != self.nwavelengths: continue
+                            remote_paths[filename] = remote_filepath
+
+        # Return the dictionary of paths
+        return remote_paths
+
+    # -----------------------------------------------------------------
+
+    def find_remote_input_files_other_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Look in local analysis runs
+        paths = self.find_remote_input_files_other_local_analysis_runs()
+        if len(paths) != 0: return paths
+
+        # Look in cached analysis runs
+        else: return self.find_remote_input_files_other_cached_analysis_runs()
+
+    # -----------------------------------------------------------------
+
+    def find_remote_input_files_other_local_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        remote_paths = dict()
+
+        filenames = self.input_filenames
+
+        # Loop over the analysis runs
+        for analysis_run_name in self.analysis_runs.names:
+
+            # Only other analysis runs
+            #if analysis_run.name == self.analysis_run.name: continue
+            if analysis_run_name == self.analysis_run.name: continue
+
+            # Load the analysis run
+            analysis_run = self.analysis_runs.load(analysis_run_name)
+
+            # Get SKIRT input paths from a previous script in this analysis run with the same host
+            remote_input_paths = analysis_run.get_remote_script_input_paths_for_host(self.host_id)
+
+            # Loop over the each of the remote input directories
+            for remote_input_path in remote_input_paths:
+
+                # Check whether the directory still exists
+                if not self.remote.is_directory(remote_input_path): continue
+
+                # Loop over the filenames
+                for filename in filenames:
+
+                    # Skip wavelength files (will not be the same from other analysis run)
+                    if filename == wavelengths_filename: continue
+
+                    # Skip dust grid tree files (will not be the same from other analysis run)
+                    if filename == dustgridtree_filename: continue
+
+                    # Determine the remote file path
+                    remote_filepath = fs.join(remote_input_path, filename)
+
+                    # If the file (still) exists, add it
+                    if self.remote.is_file(remote_filepath): remote_paths[filename] = remote_filepath
+
+        # Return the dictionary of paths
+        return remote_paths
+
+    # -----------------------------------------------------------------
+
+    def find_remote_input_files_other_cached_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        remote_paths = dict()
+
+        filenames = self.input_filenames
+
+        # Get the runs
+        runs = self.cached_analysis_runs
+
+        # Loop over the remote hosts
+        for host_id in runs:
+
+            # Loop over the analysis runs
+            for run_name in runs[host_id].names:
+
+                # Load the analysis run
+                run = runs[host_id].load(run_name)
+
+                # Get SKIRT input paths from a previous script in this analysis run with the same host
+                remote_input_paths = run.get_remote_script_input_paths_for_host(self.host_id)
+
+                # Loop over the each of the remote input directories
+                for remote_input_path in remote_input_paths:
+
+                    # Check whether the directory still exists
+                    if not self.remote.is_directory(remote_input_path): continue
+
+                    # Loop over the filenames
+                    for filename in filenames:
+
+                        # Skip wavelength files (will not be the same from other analysis run)
+                        if filename == wavelengths_filename: continue
+
+                        # Skip dust grid tree files (will not be the same from other analysis run)
+                        if filename == dustgridtree_filename: continue
+
+                        # Determine the remote file path
+                        remote_filepath = fs.join(remote_input_path, filename)
+
+                        # If the file (still) exists, add it
+                        if self.remote.is_file(remote_filepath): remote_paths[filename] = remote_filepath
+
+        # Return the dictionary of paths
+        return remote_paths
+
+    # -----------------------------------------------------------------
+
+    def set_input_paths_remote_from_dictionary(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting input paths for remote execution from list of remote files ...")
+
+        # Get local paths
+        paths = self.local_input_paths
+
+        # Flag
+        has_remote_files = False
+
+        # Replace filepaths by remote filepaths if they have been uploaded to the remote already
+        for filename in self.config.remote_input:
+
+            # Check whether valid filename
+            if filename not in paths: raise ValueError("The filename '" + filename + "' is not one of the input filenames")
+
+            # Set flag
+            has_remote_files = True
+
+            # Replace by remote path
+            paths[filename] = self.config.remote_input[filename]
+
+        # Set the input paths
+        self.input_paths = paths
+
+        # Set things
+        self.has_remote_input_files = has_remote_files
+        self.remote_input_path = None
+
+    # -----------------------------------------------------------------
+
+    def set_input_paths_remote_from_directory(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting input paths for remote execution from a remote directory path ...")
+
+        # Get local paths
+        paths = self.local_input_paths
+
+        # Flag
+        are_all_remote = True
+
+        # Search for each file in the directory
+        for filename in paths:
+
+            # Determine filepath
+            filepath = fs.join(self.config.remote_input_path, filename)
+
+            # Check existence on remote
+            if self.remote.is_file(filepath):
+
+                # Add the remote path
+                paths[filename] = filepath
+
+            # Doesn't exist
+            else:
+                are_all_remote = False
+                log.warning("Remote version of the '" + filename + "' input file is not found: using local file ...")
+
+        # All files are in the remote directory
+        if are_all_remote:
+
+            # Set the original paths
+            self.input_paths = paths
+
+            # Set things
+            self.has_remote_input_files = False
+            self.remote_input_path = self.config.remote_input_path
+
+        else:
+
+            # Set paths
+            self.input_paths = paths
+
+            # Set things
+            self.has_remote_input_files = True
+            self.remote_input_path = None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.dust_grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        return self.analysis_run.dust_grid_tree
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.ncells is not None: return self.config.ncells
+        else: return self.analysis_run.ncells
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_remote: return None
+        else:
+            remote = Remote()
+            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
+            else: return remote
+
+# -----------------------------------------------------------------
+
+class AnalysisLauncher(AnalysisLauncherBase):
     
     """
     This class...
@@ -50,28 +638,18 @@ class AnalysisLauncher(AnalysisComponent):
 
         # -- Attributes --
 
-        # NEW: THE ANALYSIS RUN
-        self.analysis_run = None
-
         # The remote SKIRT environment
         self.launcher = SKIRTLauncher()
 
-        # The ski file
-        self.ski = None
-
-        # The parallelization scheme
+        # The parallelization scheme (or the number of processes)
         self.parallelization = None
+        self.nprocesses = None
 
         # The scheduling options
         self.scheduling_options = None
 
         # The analysis options
         self.analysis_options = None
-
-        # Input file paths
-        self.input_paths = None
-        self.has_remote_input_files = False
-        self.remote_input_path = None
 
     # -----------------------------------------------------------------
 
@@ -89,22 +667,25 @@ class AnalysisLauncher(AnalysisComponent):
         # 2. Load the ski file
         self.load_ski()
 
-        # 7. Adjust the ski file
+        # 3. Adjust the ski file
         self.adjust_ski()
 
-        # Set the input paths
+        # 4. Set the input paths
         self.set_input_paths()
 
-        # 9. Estimate the runtime for the simulation
+        # 5. Set the parallelization scheme
+        self.set_parallelization()
+
+        # 6. Estimate the runtime for the simulation
         if self.uses_scheduler: self.estimate_runtime()
 
-        # 10. Set the analysis options
+        # 7. Set the analysis options
         self.set_analysis_options()
 
-        # 11. Writing
+        # 8. Writing
         self.write()
 
-        # 12. Launch the simulation
+        # 9. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -127,12 +708,38 @@ class AnalysisLauncher(AnalysisComponent):
         self.launcher.config.remote = self.config.remote
         self.launcher.config.cluster_name = self.config.cluster_name
         self.launcher.config.attached = self.config.attached
+        self.launcher.config.keep = self.config.keep_remote_input_and_output
+        self.launcher.config.keep_input = self.config.keep_remote_input
 
         # Clear remotes
         if self.has_any_host_id and self.config.clear_remotes: self.clear_all_hosts()
 
         # Deploy SKIRT and PTS
         if self.has_any_host_id and self.config.deploy: self.deploy()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def local_input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.input_paths
 
     # -----------------------------------------------------------------
 
@@ -413,116 +1020,6 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def set_input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the simulation input paths ...")
-
-        # No remote
-        if not self.uses_remote:
-
-            # Check config
-            if self.config.remote_input is not None or self.config.remote_input_path is not None:
-                raise ValueError("Cannot specifiy remote input path(s) if simulation is not launched remotely")
-
-            # Set input paths
-            self.input_paths = self.analysis_run.input_paths
-
-            # Set things
-            self.has_remote_input_files = False
-            self.remote_input_path = None
-
-        # Remote execution
-        else:
-
-            # Get local paths
-            paths = self.analysis_run.input_paths
-
-            # No remote files
-            if self.config.remote_input is None and self.config.remote_input_path is None:
-
-                # Set the local input paths
-                self.input_paths = paths
-
-                # Set things
-                self.has_remote_input_files = False
-                self.remote_input_path = None
-
-            # Remote files defined in a dictionary
-            elif self.config.remote_input is not None:
-
-                has_remote_files = False
-
-                # Replace filepaths by remote filepaths if they have been uploaded to the remote already
-                for filename in self.config.remote_input:
-
-                    # Check whether valid filename
-                    if filename not in paths: raise ValueError("The filename '" + filename + "' is not one of the input filenames")
-
-                    # Set flag
-                    has_remote_files = True
-
-                    # Replace by remote path
-                    paths[filename] = self.config.remote_input[filename]
-
-                # Set the input paths
-                self.input_paths = paths
-
-                # Set things
-                self.has_remote_input_files = has_remote_files
-                self.remote_input_path = None
-
-            # Remote input directory is specified
-            elif self.config.remote_input_path is not None:
-
-                are_all_remote = True
-
-                # Search for each file in the directory
-                for filename in paths:
-
-                    # Determine filepath
-                    filepath = fs.join(self.config.remote_input_path, filename)
-
-                    # Check existence on remote
-                    if self.remote.is_file(filepath):
-
-                        # Add the remote path
-                        paths[filename] = filepath
-
-                    # Doesn't exist
-                    else:
-                        are_all_remote = False
-                        log.warning("Remote version of the '" + filename + "' input file is not found: using local file ...")
-
-                # All files are in the remote directory
-                if are_all_remote:
-
-                    # Set the original paths
-                    self.input_paths = self.analysis_run.input_paths
-
-                    # Set things
-                    self.has_remote_input_files = False
-                    self.remote_input_path = self.config.remote_input_path
-
-                else:
-
-                    # Set paths
-                    self.input_paths = paths
-
-                    # Set things
-                    self.has_remote_input_files = True
-                    self.remote_input_path = None
-
-            # We shouldn't get here
-            else: raise RuntimeError("We shouldn't get here")
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def extract_path(self):
 
@@ -630,6 +1127,53 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme ...")
+
+        # Set options for parallelization and number of processes
+        # Remote execution
+        if self.uses_remote:
+
+            # Parallelization is defined
+            if self.config.parallelization_remote is not None:
+
+                self.parallelization = self.config.parallelization_remote
+                self.nprocesses = None
+                self.launcher.config.check_parallelization = False
+
+            # Parallelization is not defined
+            else:
+
+                self.parallelization = None
+                self.nprocesses = self.config.nprocesses_remote
+                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+
+        # Local execution
+        else:
+
+            # Parallelization is defined
+            if self.config.parallelization_local is not None:
+
+                self.parallelization = self.config.parallelization_local
+                self.nprocesses = None
+                self.launcher.config.check_parallelization = False
+
+            # Parallelization is not defined
+            else:
+
+                self.parallelization = None
+                self.nprocesses = self.config.nprocesses_local
+                self.launcher.config.data_parallel_local = self.config.data_parallel_local
+
+    # -----------------------------------------------------------------
+
     # def set_parallelization(self):
     #
     #     """
@@ -678,55 +1222,6 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         return self.analysis_run.wavelength_grid
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.dust_grid
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_grid_tree(self):
-
-        """
-        This fnction ...
-        :return:
-        """
-
-        return self.analysis_run.dust_grid_tree
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ndust_cells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.config.ncells is not None: return self.config.ncells
-        else: return self.dust_grid_tree.nleaves # requires loading the entire tree file!
 
     # -----------------------------------------------------------------
 
@@ -866,6 +1361,18 @@ class AnalysisLauncher(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_filters_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.observed_filters_in_range if fltr not in self.iras_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_filter_names_in_range(self):
 
         """
@@ -874,6 +1381,18 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         return [str(fltr) for fltr in self.observed_filters_in_range]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filter_names_in_range_without_iras]
 
     # -----------------------------------------------------------------
 
@@ -893,20 +1412,31 @@ class AnalysisLauncher(AnalysisComponent):
         # Make RGB images
         self.analysis_options.misc.rgb = True
 
-        # Wave movies
-        self.analysis_options.misc.wave = False
+        # MAKE datacube ANIMATIONS
+        self.analysis_options.misc.animations = True
+        self.analysis_options.misc.write_animation_frames = True
 
         # Recreate observed fluxes and images
         self.analysis_options.misc.fluxes = True
         self.analysis_options.misc.images = True
 
+        # WRITE INTERMEDIATE RESULTS
+        self.analysis_options.misc.write_intermediate_images = True
+        self.analysis_options.misc.write_convolution_kernels = True
+
         # Use spectral convolution
         self.analysis_options.misc.fluxes_spectral_convolution = self.config.spectral_convolution_fluxes
         self.analysis_options.misc.images_spectral_convolution = self.config.spectral_convolution_images
 
+        # NO SPECTRAL CONVOLUTION FOR CREATING THE PLANCK IMAGES
+        self.analysis_options.misc.no_images_spectral_convolution_filters = self.planck_filters
+
         # For these filters and for the earth instrument
-        self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range  # the filters for which to create the observations
+        self.analysis_options.misc.observation_filters = self.observed_filter_names_in_range_without_iras  # the filters for which to create the observations (no IRAS)
         self.analysis_options.misc.observation_instruments = [earth_name]
+
+        # DON'T CREATE OBSERVED IMAGES FOR THE PLANCK FILTERS
+        self.analysis_options.misc.no_images_filters = self.planck_filters
 
         # Group the images per instrument (only when more instruments are being converted into images)
         #self.analysis_options.misc.group_images = True
@@ -927,6 +1457,8 @@ class AnalysisLauncher(AnalysisComponent):
         # Convolution kernels
         #self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_psfs_auto = True # automatically determine the PSF for each filter
+        # FWHMS
+        self.analysis_options.misc.fwhms_dataset = self.dataset_path
 
         # REBINNING
         #self.analysis_options.misc.rebin_wcs = # dictionary of FITS files per filter?
@@ -971,8 +1503,26 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the config
+        self.write_config()
+
         # Write the ski file
         self.write_ski()
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the configuration used to create this analysis run ...")
+
+        # Write
+        self.config.saveto(self.analysis_run.launch_config_path)
 
     # -----------------------------------------------------------------
 
@@ -1038,30 +1588,6 @@ class AnalysisLauncher(AnalysisComponent):
         # Add temperature file retrieval
         if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
 
-        # Set options for parallelization and number of processes
-        # Remote execution
-        if self.uses_remote:
-            # Parallelization is defined
-            if self.config.parallelization_remote is not None:
-                parallelization = self.config.parallelization_remote
-                nprocesses = None
-                self.launcher.config.check_parallelization = False
-            else:
-                parallelization = None
-                nprocesses = self.config.nprocesses_remote
-                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
-        # Local execution
-        else:
-            # Parallelization is defined
-            if self.config.parallelization_local is not None:
-                parallelization = self.config.parallelization_local
-                nprocesses = None
-                self.launcher.config.check_parallelization = False
-            else:
-                parallelization = None
-                nprocesses = self.config.nprocesses_local
-                self.launcher.config.data_parallel_local = self.config.data_parallel_local
-
         # Other settings
         if log.is_debug(): self.launcher.config.show = True
 
@@ -1073,8 +1599,8 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Run the simulation
         self.launcher.run(definition=definition, logging_options=logging, analysis_options=self.analysis_options,
-                          scheduling_options=self.scheduling_options, parallelization=parallelization,
-                          nprocesses=nprocesses, local_script_path=local_script_path,
+                          scheduling_options=self.scheduling_options, parallelization=self.parallelization,
+                          nprocesses=self.nprocesses, local_script_path=local_script_path,
                           screen_output_path=screen_output_path, ncells=self.ndust_cells, remote=self.remote,  # pass remote because possibly already used here (don't connect again in the SKIRTLauncher)
                           remote_input_path=self.remote_input_path, has_remote_input_files=self.has_remote_input_files)
 

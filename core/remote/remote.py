@@ -3214,6 +3214,46 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def has_files_in_path(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self.nfiles_in_path(*args, **kwargs) > 0
+
+    # -----------------------------------------------------------------
+
+    def contains_files(self, directory, filenames=None):
+
+        """
+        This function ...
+        :param directory:
+        :param filenames:
+        :return:
+        """
+
+        # Filenames are given
+        if filenames is not None:
+
+            # Loop over the filenames
+            for filename in filenames:
+
+                # Check
+                filepath = fs.join(directory, filename)
+                if not self.is_file(filepath): return False
+
+            # All checks passed
+            return True
+
+        # No filenames are given
+        else: return self.has_files_in_path(directory)
+
+    # -----------------------------------------------------------------
+
     def find_file_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                             exact_name=None, exact_not_name=None, startswith=None, endswith=None):
 
@@ -3324,8 +3364,14 @@ class Remote(object):
         command = "du -sh '" + path + "'"
         output = self.execute(command)
 
-        string = output[0].split(" ")[0].lower() + "byte"
-        return parse_quantity(string)
+        string = output[0].split(" ")[0].split("\t")[0].strip()
+
+        if string.endswith("G") or string.endswith("M"): string += "B"
+        elif string.lower().endswith("terra") or string.lower().endswith("giga") or string.lower().endswith("mega"): string = string.lower() + "byte"
+        else: string += "byte" # guess
+
+        # Parse the quantity and convert to GB
+        return parse_quantity(string).to("GB")
 
     # -----------------------------------------------------------------
 
@@ -3625,14 +3671,12 @@ class Remote(object):
         :return:
         """
 
-        # Expand the path to absolute form
+        # Make absolute
         path = self.absolute_path(path)
 
-        # Load the text file into a variable
-        self.execute("value='cat " + path + "'")
-
-        # Print the variable to the console, and obtain the output
-        for line in self.execute('echo "$($value)"'):
+        #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done" # DOES WEIRD THINGS
+        command = 'while IFS= read -r LINE; do     echo "$LINE"; done < "' + path + '"'
+        for line in self.execute(command):
             if add_sep: yield line + "\n"
             else: yield line
 
@@ -3899,28 +3943,31 @@ class Remote(object):
 
         # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
+        lines = child.before.split("\r\n") # output lines
         child.close()
 
+        #
         if not show_output:
 
             # Retrieve file contents -- this will be
             # 'First line.\nSecond line.\n'
-            stdout = child.logfile.getvalue()
+            #stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
-            if child.exitstatus != 0: raise RuntimeError(stdout)
+            if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
 
             # Get the output lines
-            lines = stdout.split("\n")
-
-            # Check for messages that signal an error that has occured
-            for line in lines:
-                if "not a regular file" in line: raise ValueError(line)
-                if "scp: ambiguous target" in line: raise ValueError(line)
-                if "No such file or directory" in line: raise ValueError(line)
+            #lines = stdout.split("\n")
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        # Check for errors
+        for line in lines:
+            if "not a regular file" in line: raise ValueError(line)
+            if "scp: ambiguous target" in line: raise ValueError(line)
+            if "No such file or directory" in line: raise ValueError(line)
+            if "No space left on device" in line: raise IOError("Not enough disk space")
 
         #else:
 
@@ -4199,30 +4246,36 @@ class Remote(object):
         # Execute the command and get the output
         try:
             child.expect(pexpect.EOF, timeout=None)
+            lines = child.before.split("\r\n")
         except pexpect.EOF:
             pass
+            lines = None
         child.close()
 
+        if lines is None: lines = child.logfile.getvalue()
+
+        # Show output lines in debug mode
         if not show_output:
 
             # Retrieve file contents -- this will be
             # 'First line.\nSecond line.\n'
-            stdout = child.logfile.getvalue()
+            #stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
-            if child.exitstatus != 0: raise RuntimeError(stdout)
+            if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
 
             # Get the output lines
-            lines = stdout.split("\n")
-
-            # Check for messages that signal an error that has occured
-            for line in lines:
-                if "not a regular file" in line: raise ValueError(line)
-                if "scp: ambiguous target" in line: raise ValueError(line)
-                if "No such file or directory" in line: raise ValueError(line)
+            #lines = stdout.split("\n")
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        # Check for errors
+        for line in lines:
+            if "not a regular file" in line: raise ValueError(line)
+            if "scp: ambiguous target" in line: raise ValueError(line)
+            if "No such file or directory" in line: raise ValueError(line)
+            if "No space left on device" in line: raise IOError("Not enough disk space")
 
         #else:
             #print(sys.stdout)
@@ -4937,6 +4990,32 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def previous_temp_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.directories_in_path(self.pts_temp_path, returns="path", startswith="session", exact_not_name=self.session_temp_name)
+        return list(sorted(paths))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_temp_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.directories_in_path(self.pts_temp_path, returns="name", startswith="session", exact_not_name=self.session_temp_name)
+        return list(sorted(names))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def session_temp_directory(self):
 
         """
@@ -4952,6 +5031,18 @@ class Remote(object):
 
         # Return the path to the new temporary directory
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def session_temp_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.session_temp_directory)
 
     # -----------------------------------------------------------------
 
@@ -5829,6 +5920,73 @@ class Remote(object):
         path = self.absolute_path(path)
         parent_path = self.absolute_path(parent_path)
         return path.startswith(parent_path)
+
+    # -----------------------------------------------------------------
+
+    def get_file_hash(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # MacOS
+        if self.is_macos:
+
+            command = "md5 '" + path + "'"
+            output = self.execute(command)
+            if len(output) == 0: raise RuntimeError("No output")
+            elif len(output) > 1: raise RuntimeError("Too much output")
+            line = output[0]
+            # MD5(path) =
+            hash = line.split(") = ")[1]
+
+        # Linux
+        elif self.is_linux:
+
+            command = "md5sum '" + path + "' | awk '{ print $1 }'"
+            output = self.execute(command)
+            if len(output) == 0: raise RuntimeError("No output")
+            elif len(output) > 1: raise RuntimeError("Too much output")
+            hash = output[0]
+
+        # Not supported
+        else: raise NotImplementedError("Only MacOS and Linux are supported")
+
+        # Return the hash code
+        return hash
+
+    # -----------------------------------------------------------------
+
+    def exists_and_equal_to_local(self, path, local_path):
+
+        """
+        This function ...
+        :param path:
+        :param local_path:
+        :return:
+        """
+
+        return self.is_file(path) and self.equal_to_local_file(path, local_path)
+
+    # -----------------------------------------------------------------
+
+    def equal_to_local_file(self, path, local_path):
+
+        """
+        This function ...
+        :param path:
+        :param local_path:
+        :return:
+        """
+
+        # Get hash of local file and of remote file
+        hash = self.get_file_hash(path)
+        local_hash = fs.get_file_hash(local_path)
+
+        # Return whether the hashes are equal
+        return hash == local_hash
 
     # -----------------------------------------------------------------
 

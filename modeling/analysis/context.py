@@ -18,7 +18,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .run import AnalysisRuns
-from .run import AnalysisRunInfo, AnalysisRun, CachedAnalysisRun
+from .run import AnalysisRunInfo, AnalysisRun, CachedAnalysisRun, CachedAnalysisRuns
 from .tables import CachedRunsTable
 from ...core.remote.remote import Remote
 
@@ -327,6 +327,41 @@ class AnalysisContext(object):
 
         # Return the info
         return AnalysisRunInfo.from_remote_file(info_path, remote)
+
+    # -----------------------------------------------------------------
+
+    def get_cached_runs_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Return the analysis runs object
+        return CachedAnalysisRuns(self.modeling_path, host_id)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cached_runs(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Initialize a dictionary to contain the runs per remote
+        runs = dict()
+
+        # Loop over the host IDs
+        for host_id in self.cached_table.cache_host_ids:
+
+            # Load the runs
+            runs[host_id] = self.get_cached_runs_for_remote(host_id)
+
+        # Return the runs dict
+        return runs
 
     # -----------------------------------------------------------------
 

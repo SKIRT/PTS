@@ -31,6 +31,7 @@ class Model(object):
         :return:
         """
 
+        # The attributes
         self.simulation_name = None
         self.chi_squared = None
         self.parameter_values = None
@@ -102,6 +103,28 @@ class Model(object):
 
         # Return the dust mass
         return dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalized_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the relevant parameters
+        metallicity = self.parameter_values["metallicity"]
+        compactness = self.parameter_values["sfr_compactness"]
+        pressure = self.parameter_values["sfr_pressure"]
+        covering_factor = self.parameter_values["sfr_covering"]
+
+        # Create the MAPPINGS template
+        mappings = Mappings(metallicity, compactness, pressure, covering_factor)
+
+        # Return the mappings template
+        return mappings
 
     # -----------------------------------------------------------------
 

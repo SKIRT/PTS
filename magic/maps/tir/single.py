@@ -179,7 +179,7 @@ class SingleBandTIRMapMaker(Configurable):
 
             # Check whether a TIR map is already present
             if name in self.maps:
-                log.warning("The " + name + " TIR map is already created: not creating it again")
+                log.success("The " + name + " TIR map is already created: not creating it again")
                 continue
 
             # Debugging

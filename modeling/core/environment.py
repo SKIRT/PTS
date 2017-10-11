@@ -1202,6 +1202,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cached_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_context.cached_runs
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def galaxy_properties(self):
 

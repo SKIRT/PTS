@@ -24,6 +24,8 @@ from ..basics.log import log
 from ..basics.task import Task
 from ..tools import formatting as fmt
 from ..tools import introspection
+from ..simulation.status import LogSimulationStatus
+from ..basics.log import no_debugging
 
 # -----------------------------------------------------------------
 
@@ -59,6 +61,12 @@ class RemoteSynchronizer(Configurable):
         # Initialize a list to contain the retrieved tasks
         self.tasks = []
 
+        # Initialize a list for the runnning simulations
+        self.running_simulations = []
+
+        # Initialize a list for the running tasks
+        self.running_tasks = []
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -72,13 +80,16 @@ class RemoteSynchronizer(Configurable):
         self.setup(**kwargs)
 
         # 2. Retrieve the simulations and tasks
-        self.retrieve()
+        if self.config.retrieve: self.retrieve()
 
         # 3. Analyse
-        self.analyse()
+        if self.config.analyse: self.analyse()
 
-        # 4. Announce the status of the simulations
+        # 4. Announce the status of the simulations and tasks
         self.announce()
+
+        # 5. Show the progress of the simulation
+        if self.config.show_progress: self.show_progress()
 
     # -----------------------------------------------------------------
 
@@ -91,6 +102,9 @@ class RemoteSynchronizer(Configurable):
 
         # Call the setup function of the base class
         super(RemoteSynchronizer, self).setup(**kwargs)
+
+        # Check flags
+        if not self.config.retrieve and self.config.analyse: raise ValueError("Cannot analyse when retrieve is disabled")
 
         # Load the remote instances
         if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
@@ -117,6 +131,154 @@ class RemoteSynchronizer(Configurable):
 
                 # Add the remote to the list of remote objects
                 self.remotes.append(remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nsimulations(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return len(self.simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrunning_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.running_simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_running_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrunning_simulations == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_simulation: raise ValueError("Not a single simulation")
+        return self.simulations[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_running_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_running_simulation: raise ValueError("Not a single running simulation")
+        return self.running_simulations[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.tasks)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrunning_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.running_tasks)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_task(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ntasks == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_running_task(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrunning_tasks == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_task(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_task: raise ValueError("Not a single task")
+        return self.tasks[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_running_task(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_running_task: raise ValueError("Not a single running task")
+        return self.running_tasks[0]
 
     # -----------------------------------------------------------------
 
@@ -287,7 +449,9 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        log.info("SKIRT simulations:")
+        #log.info("SKIRT simulations:")
+
+        first = True
 
         # Loop over the different remotes
         for remote in self.remotes:
@@ -304,6 +468,11 @@ class RemoteSynchronizer(Configurable):
 
             # Get the status of the different simulations
             for path, simulation_status in status:
+
+                if first:
+                    # Inform the user
+                    log.info("SKIRT simulations:")
+                    first = False
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
@@ -355,6 +524,9 @@ class RemoteSynchronizer(Configurable):
 
                 # Running simulation
                 elif "running" in simulation_status:
+
+                    # ADD TO RUNNNING SIMULATIONS
+                    self.running_simulations.append(simulation)
 
                     if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "running" in self.config.statuses):
@@ -485,7 +657,9 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        log.info("PTS tasks:")
+        #log.info("PTS tasks:")
+
+        first = True
 
         # Loop over the different remotes
         for remote in self.remotes:
@@ -499,6 +673,11 @@ class RemoteSynchronizer(Configurable):
 
             # Get the status of the different tasks
             for path, task_status in status:
+
+                if first:
+                    # Inform the user
+                    log.info("PTS tasks:")
+                    first = False
 
                 # Open the task file
                 task = Task.from_file(path)
@@ -547,6 +726,9 @@ class RemoteSynchronizer(Configurable):
 
                     formatter = fmt.reset
 
+                    # ADD TO RUNNING TASKS
+                    self.running_tasks.append(task)
+
                 # Cancelled task
                 elif task_status == "cancelled":
 
@@ -568,5 +750,51 @@ class RemoteSynchronizer(Configurable):
                 print(formatter + prefix + tag + " " + task.name + ": " + task_status + fmt.reset)
 
             print()
+
+    # -----------------------------------------------------------------
+
+    def get_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Search in remotes
+        for remote in self.remotes:
+            if remote.host_id == host_id: return remote
+
+        # Create new remote (shouldn't happen)
+        return Remote(host_id=host_id)
+
+    # -----------------------------------------------------------------
+
+    def show_progress(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check
+        if not self.has_single_running_simulation:
+            log.warning("Cannot show the progress when there are multiple simulations still running")
+            return
+
+        # Get the simulation
+        simulation = self.single_running_simulation
+
+        # Inform the user
+        log.info("Show the progress of the simulation '" + simulation.name + "' ...")
+
+        # Create the status object
+        status = LogSimulationStatus(simulation.remote_log_file_path, remote=self.get_remote(simulation.host_id), debug_output=self.config.debug_output)
+
+        # Show the simulation progress
+        with no_debugging(): success = status.show_progress(simulation.handle)
+
+        # Check whether not crashed
+        if not success: raise RuntimeError("The simulation crashed")
 
 # -----------------------------------------------------------------

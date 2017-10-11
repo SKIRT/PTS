@@ -473,8 +473,14 @@ def stringify_not_list(value, **kwargs):
     # Other
     #elif introspection.isinstance(Instrument):
 
+    elif introspection.lazy_isinstance(value, "PixelCoordinate", "pts.magic.basics.coordinate"): return "pixelcoordinate", str_from_pixelcoordinate(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "PhysicalCoordinate", "pts.magic.basics.coordinate"): return "physicalcoordinate", str_from_physicalcoordinate(value, **kwargs)
+
     # Unrecognized
-    else: raise ValueError("Unrecognized type: " + str(type(value)))
+    #else: raise ValueError("Unrecognized type: " + str(type(value)))
+    else:
+        warnings.warn("Unrecognized type: " + str(type(value)))
+        return None, str(value)
 
 # -----------------------------------------------------------------
 
@@ -719,6 +725,38 @@ def str_from_coordinate(coordinate, **kwargs):
 
     # Return
     return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.ra, **kwargs)[1] + delimiter + introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.dec, **kwargs)[1]
+
+# -----------------------------------------------------------------
+
+def str_from_pixelcoordinate(coordinate, **kwargs):
+
+    """
+    This function ...
+    :param coordinate:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return repr(coordinate.x) + delimiter + repr(coordinate.y)
+
+# -----------------------------------------------------------------
+
+def str_from_physicalcoordinate(coordinate, **kwargs):
+
+    """
+    This function ...
+    :param coordinate:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.x, **kwargs)[1] + delimiter + introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.y, **kwargs)[1]
 
 # -----------------------------------------------------------------
 

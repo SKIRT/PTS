@@ -28,6 +28,7 @@ from ...core.units.parsing import parse_unit
 from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.tools import network
+from ..core import fits
 
 # -----------------------------------------------------------------
 
@@ -49,7 +50,7 @@ aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ke
 
 aniano_kernels_highres_link = aniano_kernels_highres_link_2017
 aniano_kernels_lowres_link = aniano_kernels_lowres_link_2017
-aniano_psf_files_link = aniano_psf_files_link_2017
+aniano_psf_files_link = aniano_psf_files_link_2012
 
 # -----------------------------------------------------------------
 
@@ -250,6 +251,21 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
+    def has_psf_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr: 
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # Check whether the filter string is in the Aniano names
+        return str(fltr) in aniano_names
+
+    # -----------------------------------------------------------------
+
     def get_kernel(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None):
 
         """
@@ -263,14 +279,14 @@ class AnianoKernels(Kernels):
         """
 
         # Get the local path to the kernel (will be downloaded if necessary)
-        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
+        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True, check_valid=False)
 
         # Load the kernel frame
         try: kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
-        except IOError:
+        except fits.DamagedFITSFileError:
             log.warning("The kernel image was probably damaged. Removing it and downloading it again ...")
             fs.remove_file(kernel_path)
-            kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
+            kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True, check_valid=False)
             kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
 
         # Get the FWHM of the kernel (should have been done already!)
@@ -288,7 +304,7 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="Gauss"):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="BiGauss", check_valid=True):
 
         """
         This function ...
@@ -300,6 +316,7 @@ class AnianoKernels(Kernels):
         :param return_name:
         :param from_model: BiGauss is for SDSS
         :param to_model: BiGauss is for SDSS
+        :param check_valid:
         :return:
         """
 
@@ -348,12 +365,23 @@ class AnianoKernels(Kernels):
             # Download the kernel
             self.download_kernel(kernel_file_basename)
 
-            # Find the appropriate FWHM
-            fwhm = get_fwhm_for_aniano_name(to_psf_name)
+            # Initialize the kernel file
+            self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
-            # Set the FWHM of the kernel
-            kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm, from_filter=from_filter, to_filter=to_filter)
-            kernel.saveto(kernel_file_path)
+        # CHeck whether the file is OK
+        if check_valid and not fits.is_valid(kernel_file_path):
+
+            # Give warning
+            log.warning("The kernel file is damaged. Removing it and downloading it again ...")
+
+            # Remove damaged file
+            fs.remove_file(kernel_file_path)
+
+            # Download the PSF
+            self.download_kernel(kernel_file_basename)
+
+            # Initialize the kernel file
+            self.initialize_kernel_file(to_psf_name, kernel_file_path, from_filter, to_filter)
 
         # Return
         if return_name: return kernel_file_path, to_psf_name
@@ -361,11 +389,37 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_psf(self, fltr):
+    def initialize_kernel_file(self, to_psf_name, filepath, from_filter, to_filter):
+
+        """
+        This function ...
+        :param kernel_basename:
+        :param to_psf_name:
+        :param filepath:
+        :param from_filter:
+        :param to_filter:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Initializing the kernel file from the '" + str(from_filter) + "' to the '" + str(to_filter) + "' filter to '" + filepath + "' ...")
+
+        # Find the appropriate FWHM
+        fwhm = get_fwhm_for_aniano_name(to_psf_name)
+        if fwhm is None: log.warning("The FWHM of the kernel is undefined")
+
+        # Set the FWHM of the kernel
+        kernel = ConvolutionKernel.from_file(filepath, fwhm=fwhm, from_filter=from_filter, to_filter=to_filter)
+        kernel.saveto(filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_psf(self, fltr, fwhm=None):
 
         """
         This function ...
         :param fltr:
+        :param fwhm:
         :return:
         """
 
@@ -373,13 +427,22 @@ class AnianoKernels(Kernels):
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         # Get the local path to the PSF file (will be downloaded if necessary)
-        psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
+        psf_path, psf_name = self.get_psf_path(fltr, return_name=True, check_valid=False, fwhm=fwhm)
 
         # Load the PSF frame
-        psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
+        try: psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
+        except fits.DamagedFITSFileError:
+            log.warning("The kernel image was probably damaged. Removing it and downloading it again ...")
+            fs.remove_file(psf_path)
+            psf_path, psf_name = self.get_psf_path(fltr, return_name=True, check_valid=False, fwhm=fwhm)
+            psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
 
         # Get the FWHM of the PSF
-        fwhm = get_fwhm_for_aniano_name(psf_name)
+        fwhm_aniano = get_fwhm_for_aniano_name(psf_name)
+        if fwhm is None: fwhm = fwhm_aniano
+        else:
+            rdiff = (fwhm.to("arcsec").value - fwhm_aniano.to("arcsec").value) / fwhm_aniano.to("arcsec").value
+            if rdiff > 0.05: raise ValueError("The specified FWHM is more than 5% off compared to the value corresponding to the PSF '" + psf_name + "'")
 
         # Set the FWHM of the PSF
         psf.fwhm = fwhm
@@ -389,12 +452,14 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_psf_path(self, fltr, return_name=False):
+    def get_psf_path(self, fltr, return_name=False, check_valid=True, fwhm=None):
 
         """
         This function ...
         :param fltr:
         :param return_name:
+        :param check_valid:
+        :param fwhm:
         :return:
         """
 
@@ -408,22 +473,115 @@ class AnianoKernels(Kernels):
         basename = "PSF_Original_" + psf_name
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
 
+        # Determine the (potential) compressed filepath
+        compressed_psf_file_path = fs.join(self.kernels_path, basename + ".fits.gz")
+
         # Download the PSF file if it is not present
         if not fs.is_file(psf_file_path):
+
+            # The compressed file is present
+            if fs.is_file(compressed_psf_file_path):
+
+                # Check whether the file is indeed compressed
+                if archive.is_compressed(compressed_psf_file_path):
+
+                    # Initialize the PSF file
+                    self.initialize_compressed_psf_file(psf_name, compressed_psf_file_path, fltr, fwhm=fwhm)
+
+                # Not actually compressed, just rename
+                else:
+
+                    # Rename
+                    fs.rename_file_path(compressed_psf_file_path, basename + ".fits")
+
+                    # Initialize the file
+                    self.initialize_psf_file(psf_name, psf_file_path, fltr, fwhm=fwhm)
+
+            # No file is present
+            else:
+
+                # Download the PSF
+                self.download_psf(basename)
+
+                # Initialize the PSF file
+                self.initialize_psf_file(psf_name, psf_file_path, fltr, fwhm=fwhm)
+
+        # Check whether maybe the regular FITS file is actually a compressed file
+        elif archive.is_compressed(psf_file_path):
+
+            # Initialize the PSF file
+            self.initialize_compressed_psf_file(psf_name, psf_file_path, fltr, fwhm=fwhm)
+
+        # CHeck whether the file is OK
+        if check_valid and not fits.is_valid(psf_file_path):
+
+            # Give warning
+            log.warning("The PSF file is damaged. Removing it and downloading it again ...")
+
+            # Remove damaged file
+            fs.remove_file(psf_file_path)
 
             # Download the PSF
             self.download_psf(basename)
 
-            # Get the FWHM of the PSF
-            fwhm = get_fwhm_for_aniano_name(psf_name)
-
-            # Set the FWHM of the PSF
-            psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm, to_filter=fltr)
-            psf.saveto(psf_file_path)
+            # Initialize the PSF file
+            self.initialize_psf_file(psf_name, psf_file_path, fltr, fwhm=fwhm)
 
         # Return
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path
+
+    # -----------------------------------------------------------------
+
+    def initialize_compressed_psf_file(self, psf_name, filepath, fltr, fwhm=None):
+
+        """
+        This function ...
+        :param psf_name:
+        :param filepath:
+        :param fltr:
+        :param fwhm:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Decompressing the '" + psf_name + "' PSF file ...")
+
+        # Fix extension
+        filepath = archive.fix_extension(filepath)
+
+        # Unpack
+        fits_path = archive.decompress_file_in_place(filepath, remove=True)
+
+        # Initialize psf file
+        self.initialize_psf_file(psf_name, fits_path, fltr, fwhm=fwhm)
+
+    # -----------------------------------------------------------------
+
+    def initialize_psf_file(self, psf_name, filepath, fltr, fwhm=None):
+
+        """
+        This function ...
+        :param psf_name:
+        :param filepath:
+        :param fltr:
+        :param fwhm:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Initializing the '" + psf_name + "' PSF file to '" + filepath + "' ...")
+
+        # Get the FWHM of the PSF
+        fwhm_aniano = get_fwhm_for_aniano_name(psf_name)
+        if fwhm is None: fwhm = fwhm_aniano
+        else:
+            rdiff = (fwhm.to("arcsec").value - fwhm_aniano.to("arcsec").value) / fwhm_aniano.to("arcsec").value
+            if rdiff > 0.05: raise ValueError("The specified FWHM is more than 5% off compared to the value corresponding to the PSF '" + psf_name + "'")
+
+        # Set the FWHM of the PSF
+        psf = ConvolutionKernel.from_file(filepath, fwhm=fwhm, to_filter=fltr)
+        psf.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -528,7 +686,10 @@ class AnianoKernels(Kernels):
         log.info("Downloading kernel " + kernel_basename + " from " + link + " ...")
 
         # Download the kernel
-        urllib.urlretrieve(kernel_link, gz_path)
+        #urllib.urlretrieve(kernel_link, gz_path)
+
+        # Download the kernel
+        network.download_file(kernel_link, gz_path, progress_bar=log.is_debug())
 
         # Inform the user
         log.info("Decompressing kernel file ...")
@@ -562,7 +723,10 @@ class AnianoKernels(Kernels):
         log.info("Downloading PSF file " + psf_basename + " from " + aniano_psf_files_link + " ...")
 
         # Download the file
-        urllib.urlretrieve(psf_link, gz_path)
+        #urllib.urlretrieve(psf_link, gz_path)
+
+        # Download the file
+        network.download_file(psf_link, gz_path, progress_bar=log.is_debug())
 
         # Inform the user
         log.info("Decompressing PSF file ...")

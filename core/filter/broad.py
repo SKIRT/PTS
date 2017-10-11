@@ -29,6 +29,7 @@ from ..basics.map import Map
 from ..tools import strings
 from ..tools.strings import str_from_real_or_integer
 from .filter import Filter
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -1309,47 +1310,52 @@ def load_svo(filterspec):
     :return:
     """
 
-    for pythondir in sys.path:
-        filterdir = os.path.join(pythondir, "pts", "core", "dat", "filters", "SVO")
-        if os.path.isdir(filterdir):
+    from ..tools import introspection
 
-            filterfiles = filter(lambda fn: fn.endswith(".xml") and filterspec in fn, os.listdir(filterdir))
-            if len(filterfiles) > 1: raise ValueError("filter spec " + filterspec + " is ambiguous")
-            if len(filterfiles) < 1: raise ValueError("no filter found with spec " + filterspec)
+    # Search through the PTS SVO filters directory
+    #for pythondir in sys.path:
+    #filterdir = os.path.join(pythondir, "pts", "core", "dat", "filters", "SVO")
+    #if os.path.isdir(filterdir):
+    filterdir = os.path.join(introspection.pts_dat_dir("core"), "filters", "SVO")
 
-            # load the XML tree
-            with open(os.path.join(filterdir, filterfiles[0]), 'r') as filterfile: tree = etree.parse(filterfile)
+    # Find the file path
+    filterfiles = filter(lambda fn: fn.endswith(".xml") and filterspec in fn, os.listdir(filterdir))
+    if len(filterfiles) > 1: raise ValueError("filter spec " + filterspec + " is ambiguous")
+    if len(filterfiles) < 1: raise ValueError("no filter found with spec " + filterspec)
 
-            # verify the wavelength unit to be Angstrom
-            unit = tree.xpath("//RESOURCE/PARAM[@name='WavelengthUnit'][1]/@value")[0]
-            if unit != 'Angstrom': raise ValueError("VOTable uses unsupported unit: " + unit)
+    # load the XML tree
+    with open(os.path.join(filterdir, filterfiles[0]), 'r') as filterfile: tree = etree.parse(filterfile)
 
-            # load some basic properties (converting from Angstrom to micron)
-            min_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMin'][1]/@value")[0])
-            max_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMax'][1]/@value")[0])
-            center_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthCen'][1]/@value")[0])
-            mean_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMean'][1]/@value")[0])
-            eff_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthEff'][1]/@value")[0])
-            filterid = tree.xpath("//RESOURCE/PARAM[@name='filterID'][1]/@value")[0]
-            description = tree.xpath("//RESOURCE/PARAM[@name='Description'][1]/@value")[0]
-            description = description.replace("&#956;m", "micron")
-            fwhm = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='FWHM'][1]/@value")[0])
-            eff_width = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WidthEff'][1]/@value")[0])
+    # verify the wavelength unit to be Angstrom
+    unit = tree.xpath("//RESOURCE/PARAM[@name='WavelengthUnit'][1]/@value")[0]
+    if unit != 'Angstrom': raise ValueError("VOTable uses unsupported unit: " + unit)
 
-            # load the transmission table (converting wavelengths from Angstrom to micron)
-            values = np.array(tree.xpath("//RESOURCE/TABLE/DATA/TABLEDATA[1]/TR/TD/text()"), dtype=float)
-            if len(values) < 4: raise ValueError("transmission table not found in filter definition")
-            wavelengths, transmissions = np.reshape(values, (-1, 2)).T
-            wavelengths *= 1e-4
+    # load some basic properties (converting from Angstrom to micron)
+    min_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMin'][1]/@value")[0])
+    max_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMax'][1]/@value")[0])
+    center_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthCen'][1]/@value")[0])
+    mean_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMean'][1]/@value")[0])
+    eff_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthEff'][1]/@value")[0])
+    filterid = str(tree.xpath("//RESOURCE/PARAM[@name='filterID'][1]/@value")[0]) # IMPORTANT: CONVERT FROM lxml.etree._ElementStringResult to regular string!
+    description = tree.xpath("//RESOURCE/PARAM[@name='Description'][1]/@value")[0]
+    description = description.replace("&#956;m", "micron")
+    fwhm = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='FWHM'][1]/@value")[0])
+    eff_width = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WidthEff'][1]/@value")[0])
 
-            # determine the filter type (there seems to be no better heuristic than using the instrument name)
-            photon_counter = not any(["/" + x in filterid.lower() for x in ("pacs", "spire")])
+    # load the transmission table (converting wavelengths from Angstrom to micron)
+    values = np.array(tree.xpath("//RESOURCE/TABLE/DATA/TABLEDATA[1]/TR/TD/text()"), dtype=float)
+    if len(values) < 4: raise ValueError("transmission table not found in filter definition")
+    wavelengths, transmissions = np.reshape(values, (-1, 2)).T
+    wavelengths *= 1e-4
 
-            # Return the properties
-            return min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
-                   description, fwhm, eff_width, photon_counter, wavelengths, transmissions
+    #print(filterid, type(filterid))
+    #print(description, type(description))
 
-    # Not recognized
-    raise ValueError("Could not detect the filter")
+    # determine the filter type (there seems to be no better heuristic than using the instrument name)
+    photon_counter = not any(["/" + x in filterid.lower() for x in ("pacs", "spire")])
+
+    # Return the properties
+    return min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
+           description, fwhm, eff_width, photon_counter, wavelengths, transmissions
 
 # -----------------------------------------------------------------

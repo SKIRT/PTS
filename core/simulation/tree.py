@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..tools import tables
 from . import textfile
 from ..basics.range import QuantityRange
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -184,31 +184,23 @@ class DustGridTree(object):
         """
 
         return self.root.z_range
-    
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_table(cls, table, units):
 
         """
         This function ...
-        :param path: 
-        :return: 
+        :param table:
+        :return:
         """
-
-        # Load the table
-        table = tables.from_file(path, format="ascii")
-
-        # Load the descriptions and the units
-        #descriptions, units = textfile.get_descriptions_and_units(path)
-        units = textfile.get_units(path)
 
         # Get the unit of length
         length_unit = units[2]
 
         # Create the tree
         tree = cls()
-        tree.path = path
 
         # column 1: node ID
         # column 2: dust cell index
@@ -272,6 +264,58 @@ class DustGridTree(object):
 
             # Add the node
             tree.nodes.append(node)
+
+        # Return the tree
+        return tree
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the table
+        table = tables.from_file(path, format="ascii")
+
+        # Load the descriptions and the units
+        # descriptions, units = textfile.get_descriptions_and_units(path)
+        units = textfile.get_units(path)
+
+        # Create
+        tree = cls.from_table(table, units)
+
+        # Set path
+        tree.path = path
+
+        # Return the tree
+        return tree
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Load the table
+        table = tables.from_remote_file(path, remote, format="ascii")
+
+        # Load the descriptions and the units
+        # descriptions, units = textfile.get_descriptions_and_units(path)
+        units = textfile.get_units(path)
+
+        # Create
+        tree = cls.from_table(table, units)
 
         # Return the tree
         return tree

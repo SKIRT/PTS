@@ -148,7 +148,7 @@ class ColourMapsMaker(Configurable):
 
             # Check whether a colour map is already present
             if colour in self.maps:
-                log.warning("The " + colour + " colour map is already created: not creating it again")
+                log.success("The " + colour + " colour map is already created: not creating it again")
                 continue
 
             # Create frame list

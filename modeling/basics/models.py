@@ -34,12 +34,24 @@ from ..basics.instruments import FrameInstrument, SEDInstrument, SimpleInstrumen
 from ...magic.basics.pixelscale import Pixelscale
 from ...core.tools import numbers
 from ...magic.basics.vector import PixelShape
+from ...magic.basics.coordinate import PixelCoordinate
 from ...core.basics.range import QuantityRange
 from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
-default_truncation = 3.
+default_truncation = 4.
+
+# -----------------------------------------------------------------
+
+sersic = "sersic"
+exponential = "exponential"
+deprojection = "deprojection"
+
+# -----------------------------------------------------------------
+
+models_2D = [sersic, exponential]
+models_3D = [sersic, exponential, deprojection]
 
 # -----------------------------------------------------------------
 
@@ -237,6 +249,23 @@ def load_3d_model(path):
     elif "ExponentialDiskModel3D" in first_line: return ExponentialDiskModel3D.from_file(path)
     elif "DeprojectionModel3D" in first_line: return DeprojectionModel3D.from_file(path)
     else: raise ValueError("Unrecognized model file")
+
+# -----------------------------------------------------------------
+
+def create_3d_model(model_type, **properties):
+
+    """
+    This function ...
+    :param model_type:
+    :param properties:
+    :return:
+    """
+
+    # Create the appropriate model
+    if model_type == sersic: return SersicModel3D(**properties)
+    elif model_type == exponential: return ExponentialDiskModel3D(**properties)
+    elif model_type == deprojection: return DeprojectionModel3D(**properties)
+    else: raise ValueError("Unrecognized model type: " + model_type)
 
 # -----------------------------------------------------------------
 
@@ -1208,6 +1237,18 @@ class DeprojectionModel3D(Model3D):
 
         # Return the deprojection model
         return deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelCoordinate(x=self.x_center, y=self.y_center)
 
     # -----------------------------------------------------------------
 

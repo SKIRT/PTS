@@ -26,20 +26,18 @@ from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 from astropy.units import UnitConversionError
-from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
 from ..basics.vector import Position
 from ..region.rectangle import SkyRectangleRegion, PixelRectangleRegion
-from ..basics.coordinate import SkyCoordinate
+from ..basics.coordinate import SkyCoordinate, PixelCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
 from ...core.basics.log import log
 from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
-from ..basics.vector import Pixel
 from ...core.units.unit import PhotometricUnit
 from ...core.filter.filter import parse_filter
 from .mask import Mask as newMask
@@ -51,9 +49,26 @@ from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
-from ..dist_ellipse import distance_ellipse
 from ..basics.vector import Pixel
-from ..region.region import PixelRegion
+from ..region.region import PixelRegion, SkyRegion
+
+# -----------------------------------------------------------------
+
+class AllZeroError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message):
+
+        """
+        Thisf unction ...
+        :param message:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(AllZeroError, self).__init__(message)
 
 # -----------------------------------------------------------------
 
@@ -378,6 +393,34 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def is_identical(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if self.wcs != other.wcs: return False
+        return np.all(self.data == other.data)
+
+    # -----------------------------------------------------------------
+
+    def is_close(self, other, rtol=1.e-5, atol=1.e-8, equal_nan=False):
+
+        """
+        This function ...
+        :param other:
+        :param rtol
+        :param atol
+        :param equal_nan:
+        :return:
+        """
+
+        return np.all(np.isclose(self.data, other.data, rtol=rtol, atol=atol, equal_nan=equal_nan))
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """
@@ -481,8 +524,6 @@ class Frame(NDDataArray):
         :param value:
         :return:
         """
-
-        self.__array__
 
         self._data *= value
         return self
@@ -774,7 +815,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None):
+                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None, no_wcs=False):
 
         """
         This function ...
@@ -790,6 +831,7 @@ class Frame(NDDataArray):
         :param extra_meta:
         :param silent:
         :param distance:
+        :param no_wcs:
         :return:
         """
 
@@ -798,7 +840,7 @@ class Frame(NDDataArray):
 
         from ..core.fits import load_frame
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance)
+        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance, no_wcs=no_wcs)
         except TypeError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------
@@ -1369,6 +1411,39 @@ class Frame(NDDataArray):
         """
 
         return np.all(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    def values_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, SkyRegion):
+            if not self.has_wcs: raise ValueError("Cannot specify a sky region when frame has no WCS")
+            mask = region_or_mask.to_pixel(self.wcs).to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be pixel region or mask")
+
+        # Return the values as a Numpy array
+        return self.data[mask.data]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.data.flatten()
 
     # -----------------------------------------------------------------
 
@@ -1973,25 +2048,31 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def sum(self):
+    def sum(self, add_unit=False):
 
         """
         This function ...
+        :param add_unit
         :return:
         """
 
-        return np.nansum(self._data)
+        result = np.nansum(self.data)
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
 
     # -----------------------------------------------------------------
 
-    def quadratic_sum(self):
+    def quadratic_sum(self, add_unit=False):
 
         """
         This function ...
+        :param add_unit:
         :return:
         """
 
-        return np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
+        result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
 
     # -----------------------------------------------------------------
 
@@ -2009,10 +2090,8 @@ class Frame(NDDataArray):
         # Check whether the sum is nonnegative
         if sum < 0: raise RuntimeError("The sum of the frame is negative")
 
-        # Check whether the sum is zero
-        if sum == 0:
-            log.error("The sum of the frame is zero")
-            return
+        # Check if the sum is not zero
+        if sum == 0: raise AllZeroError("The frame cannot be normalized")
 
         # Calculate the conversion factor
         if hasattr(to, "unit"): # quantity
@@ -2299,14 +2378,51 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def center(self):
+    def x_center(self):
 
         """
         This function ...
         :return:
         """
 
-        return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
+        return 0.5 * (self.xsize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (self.ysize - 1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        Thisf unction ....
+        :return:
+        """
+
+        return PixelCoordinate(self.x_center, self.y_center)
+
+    # -----------------------------------------------------------------
+
+    # WHY WAS THIS EVER CALLED CENTER?
+    # @property
+    # def center(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
 
     # -----------------------------------------------------------------
 
@@ -2319,6 +2435,30 @@ class Frame(NDDataArray):
         """
 
         return Pixel.for_coordinate(self.center)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.reference_pixel if self.has_wcs else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_coordinate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.reference_coordinate if self.has_wcs else None
 
     # -----------------------------------------------------------------
 
@@ -2469,7 +2609,7 @@ class Frame(NDDataArray):
         new_xsize = new_data.shape[1]
         new_ysize = new_data.shape[0]
 
-        relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+        relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
 
         new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
@@ -2585,7 +2725,7 @@ class Frame(NDDataArray):
             new_xsize = new_data.shape[1]
             new_ysize = new_data.shape[0]
 
-            relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+            relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
 
             new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 

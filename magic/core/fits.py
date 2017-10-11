@@ -177,7 +177,8 @@ def get_info(path):
 
 # -----------------------------------------------------------------
 
-def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
+def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False,
+                hdulist_index=0, no_filter=False, no_wcs=False):
 
     """
     This function ...
@@ -188,6 +189,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param always_call_first_primary:
     :param rebin_to_wcs:
     :param hdulist_index:
+    :param no_filter:
+    :param no_wcs:
     :return:
     """
 
@@ -224,13 +227,40 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Clean the header
     clean_header(flattened_header)
 
+    # Simplify the header
+    simplify_header(flattened_header)
+
+    # Fix
+    fix_ctypes(flattened_header)
+
+    # If WCS is needed or expected
+    #if not no_wcs:
+
     # Obtain the world coordinate system
     try:
         wcs = CoordinateSystem(flattened_header)
         pixelscale = None
     except ValueError:
         wcs = None
-        pixelscale = headers.get_pixelscale(original_header)
+        #pixelscale = headers.get_pixelscale(original_header)
+        pixelscale = None
+
+    #else: wcs = pixelscale = None
+
+    # Get the pixelscale from the header
+    header_pixelscale = headers.get_pixelscale(original_header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
+
+    # COMPARE PIXELSCALE AND HEADER PIXELSCALE?
+
+    # Set pixelscale from direct header information
+    if wcs is None: pixelscale = header_pixelscale
+
+    # WCS IS DEFINED, SO DON'T SPECIFICALLY ADD PIXELSCALE AS AN ATTRIBUTE TO THE FRAME
+    # UNLESS WCS DOESN'T NEED TO BE SET
+    elif not no_wcs: pixelscale = None
+
+    # IF NO_WCS, SET TO NONE (BUT STILL GET IT FIRST TO GET THE PIXELSCALE)
+    if no_wcs: wcs = None
 
     # Set the filter
     if no_filter: fltr = None
@@ -389,7 +419,7 @@ other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE
 # -----------------------------------------------------------------
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-               fwhm=None, add_meta=True, extra_meta=None, distance=None):
+               fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False):
 
     """
     This function ...
@@ -405,6 +435,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param add_meta:
     :param extra_meta:
     :param distance:
+    :param no_wcs:
     :return:
     """
 
@@ -437,6 +468,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Get the primary HDU
     hdu = hdulist[hdulist_index]
 
+    # Check whether the data can be read
+    try: first_plane = hdu.data[0]
+    except TypeError: raise DamagedFITSFileError("The FITS file is damaged", path=path)
+
     # Get the image header
     header = hdu.header
 
@@ -466,51 +501,42 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Remove references to a potential third axis
     flat_header = headers.flattened(header)
 
-    # Load the frames
+    # Get the pixelscale
     header_pixelscale = headers.get_pixelscale(header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
 
-    # REMOVE ALL KEYWORDS FROM THE FLAT HEADER THAT ARE NOT REQUIRED TO INTERPRET THE COORDINATE SYSTEM
-    if "" in flat_header.keys(): flat_header.remove("", remove_all=True)
-    keys = flat_header.keys()
-    for key in keys:
-        if key in wcs_keywords: pass #log.debug("--WCS-- " + key)
-        else:
-            #log.debug("--REMOVING-- " + key)
-            flat_header.remove(key)
+    # Simplify the header
+    simplify_header(flat_header)
 
-    # Check CTYPE1
-    if "CTYPE1" in flat_header and len(flat_header["CTYPE1"]) != 8:
-        ndashes = strings.noccurences(flat_header["CTYPE1"], "-")
-        to_replace = "-" * ndashes
-        difference = len(flat_header["CTYPE1"]) - 8
-        new_ndashes = ndashes - difference
-        if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
-        replacement = "-" * new_ndashes
-        flat_header["CTYPE1"] = flat_header["CTYPE1"].replace(to_replace, replacement)
+    # Fix
+    fix_ctypes(flat_header)
 
-    # Check CTYPE2
-    if "CTYPE2" in flat_header and len(flat_header["CTYPE2"]) != 8:
-        ndashes = strings.noccurences(flat_header["CTYPE2"], "-")
-        to_replace = "-" * ndashes
-        difference = len(flat_header["CTYPE2"]) - 8
-        new_ndashes = ndashes - difference
-        if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
-        replacement = "-" * new_ndashes
-        flat_header["CTYPE2"] = flat_header["CTYPE2"].replace(to_replace, replacement)
+    #print(flat_header)
+
+    # If the coordinate system is needed or expected
+    #if not no_wcs:
 
     # Obtain the world coordinate system from the 'flattened' header
     try:
         #for key in flat_header: print(key, flat_header[key])
         #for key in flat_header: print(key)
         wcs = CoordinateSystem(flat_header)
+        #print(wcs)
         pixelscale = wcs.pixelscale
+        #print(pixelscale)
     except ValueError as e:
-        log.warning("An error occured while trying to interpret the coordinate system of the image:")
-        for line in e.message.split("\n"):
-            if not line.strip(): continue
-            log.warning("  " + line)
+        if not no_wcs:
+            log.warning("An error occured while trying to interpret the coordinate system of the image:")
+            for line in e.message.split("\n"):
+                 if not line.strip(): continue
+                 log.warning("  " + line)
         wcs = None
         pixelscale = None
+
+    #print(wcs)
+    #print(pixelscale)
+
+    # No WCS information
+    #else: wcs = pixelscale = None
 
     # Check whether pixelscale as defined by header keyword and pixelscale derived from WCS match!
     if header_pixelscale is not None and pixelscale is not None:
@@ -523,8 +549,15 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec")) + ", " + str(header_pixelscale.y.to("arcsec")) + ")")
             log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec")) + ", " + str(pixelscale.y.to("arcsec")) + ")")
 
+    # Set pixelscale from direct header information
     if wcs is None: pixelscale = header_pixelscale
-    else: pixelscale = None
+
+    # WCS IS DEFINED, SO DON'T SPECIFICALLY ADD PIXELSCALE AS AN ATTRIBUTE TO THE FRAME
+    # UNLESS WCS DOESN'T NEED TO BE SET
+    elif not no_wcs: pixelscale = None
+
+    # IF NO_WCS, SET TO NONE (BUT GET IT FIRST TO GET THE PIXELSCALE)
+    if no_wcs: wcs = None
 
     if no_filter: fltr = None
     else:
@@ -832,5 +865,69 @@ def remove_keywords(header, keys):
 
     for key in keys:
         del header[key]
+
+# -----------------------------------------------------------------
+
+def simplify_header(header):
+
+    """
+    Thisnj fnuction ...
+    :param header:
+    :return:
+    """
+
+    # REMOVE ALL KEYWORDS FROM THE FLAT HEADER THAT ARE NOT REQUIRED TO INTERPRET THE COORDINATE SYSTEM
+    if "" in header.keys(): header.remove("", remove_all=True)
+    keys = header.keys()
+
+    # Loop over the keys
+    for key in keys:
+
+        if key in wcs_keywords: pass #log.debug("--WCS-- " + key)
+
+        # log.debug("--REMOVING-- " + key)
+        else: header.remove(key)
+
+# -----------------------------------------------------------------
+
+def fix_ctypes(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    # Check CTYPE1
+    if "CTYPE1" in header and len(header["CTYPE1"]) != 8:
+
+        ndashes = strings.noccurences(header["CTYPE1"], "-")
+        # print(ndashes)
+        if ndashes == 0:
+            pass  # NOT A CTYPE THAT REQUIRES DASHES (e.g. simply a length unit such as 'pc')
+        else:
+
+            to_replace = "-" * ndashes
+            difference = len(header["CTYPE1"]) - 8
+            new_ndashes = ndashes - difference
+            if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
+            replacement = "-" * new_ndashes
+            header["CTYPE1"] = header["CTYPE1"].replace(to_replace, replacement)
+
+    # Check CTYPE2
+    if "CTYPE2" in header and len(header["CTYPE2"]) != 8:
+
+        ndashes = strings.noccurences(header["CTYPE2"], "-")
+        # print(ndashes)
+        if ndashes == 0:
+            pass  # NOT A CTYPE THAT REQUIRES DASHES (e.g. simply a length unit such as 'pc')
+        else:
+
+            to_replace = "-" * ndashes
+            difference = len(header["CTYPE2"]) - 8
+            new_ndashes = ndashes - difference
+            if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
+            replacement = "-" * new_ndashes
+            header["CTYPE2"] = header["CTYPE2"].replace(to_replace, replacement)
 
 # -----------------------------------------------------------------

@@ -700,6 +700,8 @@ class SEDPlotter(Configurable):
             band = bands[k]
             if self.config.ignore_filters is not None:
                 fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                #print(fltr)
+                #print(self.config.ignore_filters)
                 if fltr in self.config.ignore_filters: continue
 
             # Check validity of flux value
@@ -1016,6 +1018,8 @@ class SEDPlotter(Configurable):
                 band = bands[k]
                 if self.config.ignore_filters is not None:
                     fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+                    #print(fltr)
+                    #print(self.config.ignore_filters)
                     if fltr in self.config.ignore_filters: continue
 
                 # Check validity of flux value

@@ -2109,7 +2109,7 @@ def find_real_name(module_name, available_packages, real_names):
 
 def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda",
                               pip_path="pip", python_path="python", easy_install_path="easy_install",
-                              conda_environment=None, remote=None, check_by_importing=True):
+                              conda_environment=None, remote=None, check_by_importing=True, repositories=None):
 
     """
     This function ...
@@ -2124,6 +2124,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     :param conda_environment:
     :param remote:
     :param check_by_importing:
+    :param repositories:
     :return:
     """
 
@@ -2134,7 +2135,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     real_names = introspection.get_package_names()
 
     # Get repositories for import names
-    repositories = introspection.get_package_repositories()
+    if repositories is None: repositories = introspection.get_package_repositories()
 
     installed = []
     not_installed = []

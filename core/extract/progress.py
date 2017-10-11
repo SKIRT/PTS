@@ -76,6 +76,27 @@ class ProgressTable(Table):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Open the contents
+        contents = remote.get_text(path)
+
+        # Open the table
+        table = cls.read(contents, format="ascii.ecsv")
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """

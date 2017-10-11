@@ -39,6 +39,7 @@ from ...magic.core.remote import get_filter_name
 from ...magic.tools import headers
 from ...core.tools.utils import lazyproperty
 from ..basics.projection import get_npixels, get_field, get_center
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -645,6 +646,32 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_pixel_truncation_ellipse(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return self.truncation_ellipse.to_pixel(wcs)
+
+    # -----------------------------------------------------------------
+
+    def get_truncation_mask(self, wcs, invert=True):
+
+        """
+        This function ...
+        :param wcs:
+        :param invert:
+        :return:
+        """
+
+        ellipse = self.get_pixel_truncation_ellipse(wcs)
+        return ellipse.to_mask(wcs.xsize, wcs.ysize, invert=invert)
+
+    # -----------------------------------------------------------------
+
     @property
     def physical_truncation_ellipse(self):
 
@@ -690,6 +717,62 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.significance_levels
+
+    # -----------------------------------------------------------------
+
+    def get_significance_level(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return self.significance_levels[filter_name]
+
+    # -----------------------------------------------------------------
+
+    def get_significance_map(self, observed, errors):
+
+        """
+        This function ...
+        :param observed:
+        :param errors:
+        :return:
+        """
+
+        return observed / errors
+
+    # -----------------------------------------------------------------
+
+    def get_significance_mask(self, observed, errors, invert=True, min_npixels=1, connectivity=4):
+
+        """
+        This function ...
+        :param observed:
+        :param errors:
+        :param invert:
+        :param min_npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Get the level
+        level = self.get_significance_level(observed.filter_name)
+
+        # Create the mask
+        significance = self.get_significance_map(observed, errors)
+        mask = Mask.above(significance, level, wcs=observed.wcs)
+
+        # Only keep largest patch
+        mask = mask.largest(npixels=min_npixels, connectivity=connectivity)
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Return the mask
+        if invert: mask.invert()
+        return mask
 
     # -----------------------------------------------------------------
 
@@ -1279,6 +1362,18 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.analysis_runs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cached_analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.cached_analysis_runs
 
     # -----------------------------------------------------------------
 

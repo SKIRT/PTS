@@ -150,10 +150,11 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grid(self):
+    def create_wavelength_grid(self, check_filters=True):
 
         """
         This function ...
+        :param check_filters:
         :return:
         """
 
@@ -172,9 +173,10 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         max_wavelength = self.config.wg.range.max
 
         # Check the range
-        for fltr in self.observed_filters:
-            if fltr.wavelength < min_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
-            if fltr.wavelength > max_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+        if check_filters:
+            for fltr in self.observed_filters:
+                if fltr.wavelength < min_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+                if fltr.wavelength > max_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
 
         # Create the grid
         # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
@@ -317,12 +319,14 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_projection_systems(self, make_edgeon=True, make_faceon=True):
+    def create_projection_systems(self, make_edgeon=True, make_faceon=True, use_grid=None, reference_name=None):
 
         """
         This function ...
         :param make_edgeon:
         :param make_faceon:
+        :param use_grid:
+        :param reference_name:
         :return:
         """
 
@@ -331,8 +335,11 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
         azimuth = 0.0
 
+        # Use grid resolution?
+        if use_grid is None: use_grid = prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?", default=False)
+
         # Use grid?
-        if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?", default=False):
+        if use_grid:
 
             earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
                                                                       self.galaxy_inclination, azimuth,
@@ -340,9 +347,14 @@ class ModelSimulationInterface(GalaxyModelingComponent):
             deprojection_name = "grid"
 
         # Use deprojections
-        else: earth, faceon, edgeon, deprojection_name = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
+        else:
+
+            # Create projection systems
+            earth, faceon, edgeon, deprojection_name = create_projections_from_deprojections(self.deprojections, self.galaxy_distance,
                                                                                                azimuth, self.config.old_scale_heights,
-                                                                                               return_deprojection_name=True, scale_heights_reference="old")
+                                                                                               return_deprojection_name=True,
+                                                                                               scale_heights_reference="old",
+                                                                                               reference_deprojection_name=reference_name)
 
         # Set the projection systems
         self.projections[earth_name] = earth

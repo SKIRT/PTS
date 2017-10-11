@@ -29,14 +29,74 @@ from ..remote.host import Host, load_host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
-from ..advanced.parallelizationtool import ParallelizationTool
 from ..basics.handle import ExecutionHandle
-from ..tools import parallelization as par
 from ..simulation.execute import SkirtExec
 from ..simulation.input import SimulationInput
 from ..simulation.skifile import SkiFile
 from ..simulation.arguments import SkirtArguments
 from ..tools import formatting as fmt
+from ..simulation.parallelization import Parallelization, get_possible_nprocesses_in_memory
+from ..tools import monitoring
+from ..advanced.memoryestimator import estimate_memory
+from ..tools import sequences
+from ..tools.utils import lazyproperty
+from ..basics.map import Map
+from ..advanced.parallelizationtool import determine_parallelization
+from ..tools import parallelization
+
+# -----------------------------------------------------------------
+
+class DifferentMemoryUsages(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message):
+
+        """
+        Thisf unction ...
+        :param message:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(DifferentMemoryUsages, self).__init__(message)
+
+# -----------------------------------------------------------------
+
+class DifferentNwavelengths(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message):
+
+        """
+        This function ...
+        :param message:
+        """
+
+        # Call the base class constructor
+        super(DifferentNwavelengths, self).__init__(message)
+
+# -----------------------------------------------------------------
+
+class DifferentDustLibDimensions(Exception):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, message):
+
+        """
+        This function ...
+        :param message:
+        """
+
+        # Call the base class constructor
+        super(DifferentDustLibDimensions, self).__init__(message)
 
 # -----------------------------------------------------------------
 
@@ -83,11 +143,27 @@ class BatchLauncher(Configurable):
         # The assignment from items in the queue to the different remote hosts
         self.assignment = None
 
+        # The desired number of processes
+        self.nprocesses_local = None
+
+        # The memory usage (if defined, assumed to be the same for each simulation of the batch)
+        self.memory = None
+
+        # The number of dust cells (if defined, assumed to be the same for each simulation of the batch)
+        self.ncells = None
+
+        # The number of wavelengths (if defined, assumed to be the same for each simulation of the batch)
+        self.nwavelengths = None
+
         # The parallelization scheme for local execution
         self.parallelization_local = None
 
         # The parallelization scheme for the different remote hosts
         self.parallelization_hosts = dict()
+
+        # The number of processes for the different remote hosts
+        self.nprocesses_hosts = dict()
+        self.nprocesses_per_node_hosts = dict()
 
         # THe parallelization scheme for the different simulations
         self.parallelization_simulations = dict()
@@ -196,7 +272,7 @@ class BatchLauncher(Configurable):
         if " " in name: raise ValueError("The simulation name cannot contain spaces")
 
         # Local execution
-        if local or self.nremotes == 0:
+        if local or self.has_no_remotes:
 
             # Add to the local queue
             self.local_queue.append((definition, name, analysis_options))
@@ -229,6 +305,25 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_remote(self, host_id):
+
+        """
+        This function ..
+        :param host_id:
+        :return:
+        """
+
+        if isinstance(host_id, Remote): return host_id
+
+        # Search in remotes
+        for remote in self.remotes:
+            if remote.host_id == host_id: return remote
+
+        # Create new remote (shouldn't happen if the setup has been called)
+        return Remote(host_id=host_id)
+
+    # -----------------------------------------------------------------
+
     def set_cluster_for_host(self, host_id, cluster_name):
 
         """
@@ -239,6 +334,31 @@ class BatchLauncher(Configurable):
         """
 
         self.cluster_names[host_id] = cluster_name
+
+    # -----------------------------------------------------------------
+
+    def get_clustername_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Cluster name is specifically defined
+        if host_id in self.cluster_names and self.cluster_names[host_id] is not None: return self.cluster_names[host_id]
+
+        # The setup has not been called yet
+        elif len(self.remotes) == 0:
+
+            # Get the default cluster name
+            host = load_host(host_id)
+
+            # Return the default cluster name
+            return host.clusters.default
+
+        # The setup has been called
+        else: return self.get_remote(host_id).cluster_name
 
     # -----------------------------------------------------------------
 
@@ -340,7 +460,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        self.in_queue_for_host(host_id)
+        return self.in_queue_for_host(host_id)
 
     # -----------------------------------------------------------------
 
@@ -610,7 +730,34 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return len(self.remotes)
+        #return len(self.remotes)
+        if len(self.remotes) == 0: # perhaps setup not been called
+            return len(self.config.remotes)
+        else: return len(self.remotes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_no_remotes(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.nremotes == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nremotes == 1
 
     # -----------------------------------------------------------------
 
@@ -655,6 +802,34 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_nprocesses_for_host(self, host_id, nprocesses):
+
+        """
+        This function ...
+        :param host_id:
+        :param nprocesses:
+        :return:
+        """
+
+        # Set the number of processes for the specified host
+        self.nprocesses_hosts[host_id] = nprocesses
+
+    # -----------------------------------------------------------------
+
+    def set_nprocesses_per_node_for_host(self, host_id, nprocesses):
+
+        """
+        Thisn function ...
+        :param host_id:
+        :param nprocesses:
+        :return:
+        """
+
+        # Set the number of processes per node for the specified host
+        self.nprocesses_per_node_hosts[host_id] = nprocesses
+
+    # -----------------------------------------------------------------
+
     def parallelization_for_host(self, host_id):
 
         """
@@ -664,6 +839,90 @@ class BatchLauncher(Configurable):
         """
 
         return self.parallelization_hosts[host_id] if host_id in self.parallelization_hosts else None
+
+    # -----------------------------------------------------------------
+
+    def has_paralleliation_for_host(self, host_id):
+
+        """
+        This funtion ...
+        :param host_id:
+        :return:
+        """
+
+        return host_id in self.parallelization_hosts[host_id] and self.parallelization_hosts[host_id] is not None
+
+    # -----------------------------------------------------------------
+
+    def nprocesses_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.nprocesses_hosts[host_id] if host_id in self.nprocesses_hosts else None
+
+    # -----------------------------------------------------------------
+
+    def has_nprocesses_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return host_id in self.nprocesses_hosts and self.nprocesses_hosts[host_id] is not None
+
+    # -----------------------------------------------------------------
+
+    def get_nprocesses_for_host(self, host_id):
+
+        """
+        Thisnfunction ...
+        :param host_id:
+        :return:
+        """
+
+        return self.nprocesses_hosts[host_id]
+
+    # -----------------------------------------------------------------
+
+    def nprocesses_per_node_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.nprocesses_per_node_hosts[host_id] if host_id in self.nprocesses_per_node_hosts else None
+
+    # -----------------------------------------------------------------
+
+    def has_nprocesses_per_node_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return host_id in self.nprocesses_per_node_hosts and self.nprocesses_per_node_hosts[host_id] is not None
+
+    # -----------------------------------------------------------------
+
+    def get_nprocesses_per_node_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.nprocesses_per_node_hosts[host_id]
 
     # -----------------------------------------------------------------
 
@@ -788,6 +1047,23 @@ class BatchLauncher(Configurable):
 
         # If dry mode is enabled, check whether all remotes are non-schedulers
         if self.config.dry and self.uses_schedulers: log.warning("Using dry mode when remotes with scheduling system are used can be impractical, since it requires uploading and submitting each seperate job script")
+
+        # Get input
+
+        ## Get the memory information passed to this instance
+        self.memory = kwargs.pop("memory", None)
+
+        ## Get the number of dust cells if given
+        if "ncells" in kwargs: self.ncells = kwargs.pop("ncells")
+
+        ## Get the number of wavelengths if given
+        if "nwavelengths" in kwargs: self.nwavelengths = kwargs.pop("nwavelengths")
+
+        ## Get the parallelization
+        if "parallelization_local" in kwargs: self.parallelization_local = kwargs.pop("parallelization_local")
+
+        ## Get the number of processes
+        if "nprocesses_local" in kwargs: self.nprocesses_local = kwargs.pop("nprocesses_local")
 
     # -----------------------------------------------------------------
 
@@ -1000,10 +1276,35 @@ class BatchLauncher(Configurable):
         log.info("Setting parallelization schemes ...")
 
         # Set parallelization scheme for local execution
-        if self.parallelization_local is None: self.set_parallelization_local()
+        if self.parallelization_local is None and self.has_queued_local: self.set_parallelization_local()
+        elif self.has_queued_local and self.config.check_paralleliation: self.check_parallelization_local()
 
         # Set parallelization schemes for remote execution
         self.set_parallelization_remote()
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization_local(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the local parallelization scheme ...")
+
+        # Determine the total number of requested threads
+        requested_threads = self.parallelization_local.nthreads
+
+        # Determine the total number of hardware threads that can be used on the remote host
+        hardware_threads = parallelization.ncores()
+        if parallelization.has_hyperthreading(): hardware_threads *= parallelization.nthreads_per_core()
+
+        # If the number of requested threads is greater than the allowed number of hardware threads, raise
+        # an error
+        if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads "
+                                                                    "exceeds the total number of hardware threads")
 
     # -----------------------------------------------------------------
 
@@ -1015,55 +1316,513 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the parallelization scheme for local execution ...")
+        log.info("Determining the optimal parallelization scheme for local execution ...")
 
-        # Get properties of the local machine
-        nnodes = par.nnodes()
-        nsockets = par.sockets_per_node()
-        ncores = par.cores_per_socket()
-        memory = par.virtual_memory().to("Gbyte")
-        threads_per_core = par.nthreads_per_core()
-        hyperthreading = threads_per_core > 1
-        mpi = introspection.has_mpi()
+        # Uniform
+        try: self.set_parallelization_local_uniform()
+
+        # Different
+        except DifferentMemoryUsages: self.set_parallelization_local_different()
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_local_uniform(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the number of processes
+        processes = self.get_nprocesses_local()
+
+        # Calculate the maximum number of threads per process based on the current cpu load of the system
+        free_cpus = monitoring.free_cpus()
+        threads = int(free_cpus / processes)
+
+        # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
+        if threads < 1:
+            log.warning("The number of processes was " + str(processes) + " but the number of free CPU's is only " + str(free_cpus))
+            processes = max(int(free_cpus), 1)
+            log.warning("Adjusting the number of processes to " + str(processes) + " ...")
+            threads = 1
+
+        # Determine number of cores
+        cores = processes * threads
+        threads_per_core = 2
+
+        # Debugging
+        log.debug("The number of cores is " + str(cores))
+        log.debug("The number of thread per core is " + str(threads_per_core))
+        log.debug("The number of processes is " + str(processes))
+
+        # Set the parallelization scheme
+        self.parallelization_local = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
+
+        # Debugging
+        log.debug("The parallelization scheme for local execution is " + str(self.parallelization_local))
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_local_different(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
 
         # Loop over the simulations in the local queue
         for definition, simulation_name, _ in self.local_queue:
 
-            # Create the parallelization tool
-            tool = ParallelizationTool()
+            # NO MPI
+            if not introspection.has_mpi():
 
-            # Set configuration options
-            tool.config.ski = definition.ski_path
-            tool.config.input = definition.input_path
+                # Check nprocesses
+                if self.has_nprocesses_local and self.nprocesses_local > 1: raise ValueError("The number of processes that is specified is not possible: MPI installation not present")
 
-            # Set host properties
-            tool.config.nnodes = nnodes
-            tool.config.nsockets = nsockets
-            tool.config.ncores = ncores
-            tool.config.memory = memory
+                # Set number of processes to 1
+                processes = 1
 
-            # MPI available and used
-            tool.config.mpi = mpi
-            tool.config.hyperthreading = hyperthreading
-            tool.config.threads_per_core = threads_per_core
+            # MPI present and number of processes is defined
+            elif self.has_nprocesses_local: processes = self.nprocesses_local
 
-            # Number of dust cells
-            tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+            # MPI present and number of processes not defined
+            else:
 
-            # Don't show
-            tool.config.show = False
+                # Estimate the memory
+                memory = estimate_memory(definition.ski_path, input_path=definition.input_path, ncells=self.ncells)
 
-            # Run the parallelization tool
-            tool.run()
+                # Determine the number of possible nprocesses
+                processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), memory.serial, memory.parallel, data_parallel=self.config.data_parallel_local)
 
-            # Get the parallelization scheme
-            parallelization = tool.parallelization
+            # Calculate the maximum number of threads per process based on the current cpu load of the system
+            free_cpus = monitoring.free_cpus()
+            threads = int(free_cpus / processes)
+
+            # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
+            if threads < 1:
+                log.warning("The number of processes was " + str(processes) + " but the number of free CPU's is only " + str(free_cpus))
+                processes = max(int(free_cpus), 1)
+                log.warning("Adjusting the number of processes to " + str(processes) + " ...")
+                threads = 1
+
+            # Determine number of cores
+            cores = processes * threads
+            threads_per_core = 2
 
             # Debugging
-            log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
+            log.debug("The number of cores is " + str(cores))
+            log.debug("The number of thread per core is " + str(threads_per_core))
+            log.debug("The number of processes is " + str(processes))
 
-            # Set the parallelization scheme for this host
-            self.set_parallelization_for_simulation(simulation_name, parallelization)
+            # Set the parallelization scheme
+            parallelization_simulation = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
+
+            # Debugging
+            log.debug("The parallelization scheme for the '" + simulation_name + "' simulation in the local queue is " + str(parallelization_simulation))
+
+            # Set the parallelization scheme for this simulation
+            self.set_parallelization_for_simulation(simulation_name, parallelization_simulation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nprocesses_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nprocesses_local is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def local_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for definition, simulation_name, _ in self.local_queue: names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory_for_local_simulations(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        #simulation_names = self.simulations
+
+        memories = dict()
+
+        # If memory requirement is not set
+        if self.memory is None:
+
+            # Estimate the memory usage for each simulation in the local queue
+            for definition, simulation_name, _ in self.local_queue:
+
+                # Estimate the memory
+                memory = estimate_memory(definition.ski_path, input_path=definition.input_path, ncells=self.ncells)
+
+                # Add to list
+                #memories.append(memory)
+                memories[simulation_name] = memory
+
+        # Get the memory usage
+        else:
+            for name in self.local_simulation_names: memories[name] = self.memory
+
+        # Return the memory usages
+        return memories
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def serial_memory_for_local_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        memories = dict()
+        for name in self.memory_for_local_simulations: memories[name] = self.memory_for_local_simulations[name].serial
+        return memories
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parallel_memory_for_local_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        memories = dict()
+        for name in self.memory_for_local_simulations: memories[name] = self.memory_for_local_simulations[name].parallel
+        return memories
+
+    # -----------------------------------------------------------------
+
+    def get_memory_for_local_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Memory usages between simulations in local queue are very similar
+        if sequences.all_close(self.serial_memory_for_local_simulations.values(), rtol=0.1) and sequences.all_close(self.parallel_memory_for_local_simulations.values(), rtol=0.1): return self.memory_for_local_simulations[self.local_simulation_names[0]]
+
+        # Not similar
+        else: raise DifferentMemoryUsages("Different memory usage for simulations in local queue")
+
+    # -----------------------------------------------------------------
+
+    def get_nprocesses_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether MPI is available
+        if not introspection.has_mpi():
+
+            # Check nprocesses
+            if self.has_nprocesses_local and self.nprocesses_local > 1: raise ValueError("The number of processes that is specified is not possible: MPI installation not present")
+
+            # Set number of processes to 1
+            processes = 1
+
+        # MPI present and number of processes is defined
+        elif self.has_nprocesses_local: processes = self.nprocesses_local
+
+        # MPI present and number of processes not defined
+        else:
+
+            # Get the memory
+            memory = self.get_memory_for_local_simulations()
+
+            # Determine the number of possible nprocesses
+            processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), memory.serial, memory.parallel, data_parallel=self.config.data_parallel_local)
+
+        # Return
+        return processes
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_names_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        names = []
+        for definition, simulation_name, _ in self.queues[host_id]: names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    def nwavelengths_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        nwavelengths = dict()
+
+        # If number of wavelengths is not set
+        if self.nwavelengths is None:
+
+            # Get the number of wavelengths for each simulation in the queue
+            for definition, simulation_name, _ in self.queues[host_id]:
+
+                # Get the number of wavelengths
+                nwave = definition.nwavelengths
+
+                # Add to dictionary
+                nwavelengths[simulation_name] = nwave
+
+        # Get the number of wavelengths for each simulation
+        else:
+            for name in self.local_simulation_names: nwavelengths[name] = self.nwavelengths
+
+        # Return the dictionary
+        return nwavelengths
+
+    # -----------------------------------------------------------------
+
+    def get_nwavelengths_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Check whether the number of wavelengths is the same for each simulation in this host's queue
+        nwavelengths = self.nwavelengths_for_host(host_id)
+        simulation_names = nwavelengths.keys()
+        if sequences.all_equal(nwavelengths): return nwavelengths[simulation_names[0]]
+
+        # Not the same
+        else: raise DifferentNwavelengths("Different number of wavelengths for simulations in queue of remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def dustlib_dimensions_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        dimensions = dict()
+
+        # Get the dustlib dimension for each simulation in the queue
+        for definition, simulation_name, _ in self.queues[host_id]:
+
+            # Get the dimension
+            dimension = definition.dustlib_dimension
+
+            # Add to dictionary
+            dimensions[simulation_name] = dimension
+
+        # Return the dictionary
+        return dimensions
+
+    # -----------------------------------------------------------------
+
+    def get_dustlib_dimension_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Check whether dimensions are the same for each simulation in this host's queue
+        dimensions = self.dustlib_dimensions_for_host(host_id)
+        simulation_names = dimensions.keys()
+        if sequences.all_equal(dimensions): return dimensions[simulation_names[0]]
+
+        # Not the same
+        else: raise DifferentDustLibDimensions("Different dustlib dimensions for simulations in queue of remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_nnodes_for_host(self, host_id):
+
+        """
+        THis function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return self.config.nnodes
+
+        # Remote does not use a scheduling system
+        else: return 1
+
+    # -----------------------------------------------------------------
+
+    def get_nsockets_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return remote.host.cluster.sockets_per_node
+
+        # Remote does not use a scheduling system
+        else: return int(math.floor(remote.free_sockets))
+
+    # -----------------------------------------------------------------
+
+    def get_ncores_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return remote.host.cluster.cores_per_socket
+
+        # Remote does not use a scheduling system
+        else: return remote.cores_per_socket
+
+    # -----------------------------------------------------------------
+
+    def get_memory_for_host(self, host_id):
+
+        """
+        Thisn function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return remote.host.cluster.memory
+
+        # Remote does not use a scheduling system
+        else: return remote.free_memory
+
+    # -----------------------------------------------------------------
+
+    def get_mpi_for_host(self, host_id):
+
+        """
+        Thins function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return True
+
+        # Remote does not use a scheduling system
+        else: return remote.has_mpi
+
+    # -----------------------------------------------------------------
+
+    def get_hyperthreading_for_host(self, host_id):
+
+        """
+        Thisn function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return remote.host.use_hyperthreading
+
+        # Remote does not use a scheduling system
+        else: return remote.host.use_hyperthreading
+
+    # -----------------------------------------------------------------
+
+    def get_threads_per_core_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # If the remote uses a scheduling system
+        if remote.scheduler: return remote.host.cluster.threads_per_core
+
+        # Remote does not use a scheduling system
+        else: return remote.threads_per_core
+
+    # -----------------------------------------------------------------
+
+    def get_properties_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # Set properties
+        properties = Map()
+        properties.nnodes = self.get_nnodes_for_host(remote)
+        properties.nsockets = self.get_nsockets_for_host(remote)
+        properties.ncores = self.get_ncores_for_host(remote)
+        properties.memory = self.get_memory_for_host(remote)
+        properties.mpi = self.get_mpi_for_host(remote)
+        properties.hyperthreading = self.get_hyperthreading_for_host(remote)
+        properties.threads_per_core = self.get_threads_per_core_for_host(remote)
+
+        # Return the properties
+        return properties
 
     # -----------------------------------------------------------------
 
@@ -1082,81 +1841,217 @@ class BatchLauncher(Configurable):
         for remote in self.remotes:
 
             # Check whether the parallelization has already been defined by the user for this remote host
-            if remote.host_id in self.parallelization_hosts: continue
+            if remote.host_id in self.parallelization_hosts:
+                # CHECK THE PARALLELIZATION?
+                if self.config.check_parallelization: self.check_parallelization_for_host(remote.host_id)
+                else: continue
+
+            # Number of processes is defined for this host
+            if self.has_nprocesses_for_host(remote.host_id):
+
+                # Try to set one parallelization for the host
+                try: self.set_parallelization_for_remote_from_nprocesses(remote.host_id)
+                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(remote.host_id)
+
+            # The number of processes per node is defined for this host
+            elif self.has_nprocesses_per_node_for_host(remote.host_id):
+
+                # Try to set one parallelization for the host
+                try: self.set_parallelization_for_remote_from_nprocesses_per_node(remote.host_id)
+                except () as e: self.set_parallelization_different_for_remote(remote.host_id)
+
+            # Determine the parallelization scheme with the parallelization tool
+            # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
+            else: self.set_parallelization_different_for_remote(remote.host_id)
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization_for_host(self, host_id):
+
+        """
+        Thisn function ...
+        :param host_id:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the parallelization scheme ...")
+
+        # Get the remote instance
+        remote = self.get_remote(host_id)
+
+        # Get the specified parallelization
+        parallelization = self.parallelization_hosts[host_id]
+
+        # If the remote host uses a scheduling system, check whether the parallelization options are possible
+        # based on the cluster properties defined in the configuration
+        if remote.scheduler:
+
+            # Determine the total number of hardware threads that can be used on the remote cluster
+            hardware_threads_per_node = remote.cores_per_node
+            if remote.use_hyperthreading: hardware_threads_per_node *= remote.threads_per_core
+
+            # Raise an error if the number of requested threads per process exceeds the number of hardware threads
+            # per node
+            if parallelization.threads > hardware_threads_per_node: raise RuntimeError("The number of requested threads per process exceeds the number of allowed threads per node")
+
+            # Determine the number of processes per node (this same calculation is also done in JobScript)
+            # self.remote.cores = cores per node
+            processes_per_node = remote.cores_per_node // parallelization.threads
+
+            # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
+            requested_nodes = math.ceil(parallelization.processes / processes_per_node)
+
+            # Raise an error if the number of requested nodes exceeds the number of nodes of the system
+            if requested_nodes > remote.nodes: raise RuntimeError("The required number of computing nodes for"
+                                                                   "the requested number of processes and threads "
+                                                                   "exceeds the existing number of nodes")
+
+        # No scheduling system
+        else:
+
+            # Determine the total number of requested threads
+            requested_threads = parallelization.processes * parallelization.threads
+
+            # Determine the total number of hardware threads that can be used on the remote host
+            hardware_threads = remote.cores_per_node
+            if remote.use_hyperthreading: hardware_threads *= remote.threads_per_core
+
+            # If the number of requested threads is greater than the allowed number of hardware threads, raise
+            # an error
+            if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads exceeds the total number of hardware threads")
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_for_remote_from_nprocesses(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the number of processes
+        nprocesses = self.get_nprocesses_for_host(host_id)
+
+        # Get host properties
+        prop = self.get_properties_for_host(host_id)
+
+        # Determine cores per node and total number of cores
+        cores_per_node = prop.nsockets * prop.ncores
+        total_ncores = prop.nnodes * cores_per_node
+
+        # Check number of processes
+        if nprocesses > cores_per_node: raise ValueError("The number of processes cannot be larger than the number of cores per node (" + str(cores_per_node) + ")")
+
+        # Determine other parameters
+        ppn = prop.nsockets * prop.ncores
+        nprocesses_per_node = int(nprocesses / prop.nnodes)
+        nprocesses = nprocesses_per_node * prop.nnodes
+        ncores_per_process = ppn / nprocesses_per_node
+        threads_per_core = prop.threads_per_core if prop.hyperthreading else 1
+        threads_per_process = threads_per_core * ncores_per_process
+
+        # Determine data-parallel flag
+        if self.config.data_parallel_remote is None:
+
+            if self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True
+            else: data_parallel = False
+
+        # Up to the user
+        else: data_parallel = self.config.data_parallel_remote
+
+        # Create the parallelization object
+        parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                    threads_per_process=threads_per_process,
+                                                    data_parallel=data_parallel)
+
+        # Set
+        self.set_parallelization_for_host(host_id, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_for_remote_from_nprocesses_per_node(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Get the number of processes per node
+        nprocesses_per_node = self.get_nprocesses_per_node_for_host(host_id)
+
+        # Get host properties
+        prop = self.get_properties_for_host(host_id)
+
+        # Determine other parameters
+        ppn = prop.nsockets * prop.ncores
+        nprocesses = nprocesses_per_node * self.config.nnodes
+        ncores_per_process = ppn / nprocesses_per_node
+        threads_per_core = prop.threads_per_core if prop.hyperthreading else 1
+        threads_per_process = threads_per_core * ncores_per_process
+        total_ncores = prop.nnodes * prop.nsockets * prop.ncores
+
+        # Determine data-parallel flag
+        if self.config.data_parallel_remote is None:
+
+            if self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True
+            else: data_parallel = False
+
+        # Up to the user
+        else: data_parallel = self.config.data_parallel_remote
+
+        # Create the parallelization object
+        parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                         threads_per_process=threads_per_process,
+                                                         data_parallel=data_parallel)
+
+        # Set
+        self.set_parallelization_for_host(host_id, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_different_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")
+
+        # Loop over the simulations in the queue for the current remote host
+        for definition, simulation_name, _ in self.queues[host_id]:
 
             # Debugging
-            log.debug("Getting properties of remote host '" + remote.host_id + "' ...")
+            log.debug("Setting the parallelization scheme for the '" + simulation_name + "' simulation in the queue of remote host '" + host_id + "' ...")
 
-            # If the remote uses a scheduling system
-            if remote.scheduler:
+            # Determine the number of wavelengths
+            if self.nwavelengths is not None: nwavelengths = self.nwavelengths
+            else: nwavelengths = definition.nwavelengths
 
-                # Set host properties
-                nnodes = self.config.nnodes
-                nsockets = remote.host.cluster.sockets_per_node
-                ncores = remote.host.cluster.cores_per_socket
-                memory = remote.host.cluster.memory
+            # Determine the number of dust cells
+            if self.ncells is not None: ncells = self.ncells
+            else: ncells = definition.ndust_cells
+            #if ncells is None: estimate_ncells() # TODO
 
-                mpi = True
-                hyperthreading = remote.host.use_hyperthreading
-                threads_per_core = remote.host.cluster.threads_per_core
+            # Get host properties
+            prop = self.get_properties_for_host(host_id)
 
-            # Remote does not use a scheduling system
-            else:
+            # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
+            parallelization = determine_parallelization(definition.ski_path, definition.input_path,
+                                                        self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
+                                                        prop.hyperthreading, prop.threads_per_core, ncells=ncells,
+                                                        nwavelengths=nwavelengths)
 
-                # Get host properties
-                nnodes = 1
-                nsockets = int(math.floor(remote.free_sockets))
-                ncores = remote.cores_per_socket
-                memory = remote.free_memory
+            # Show
+            log.debug("The parallelization scheme for the '" + simulation_name + "' simulation is " + str(parallelization))
 
-                mpi = True
-                hyperthreading = remote.host.use_hyperthreading
-                threads_per_core = remote.threads_per_core
-
-            # Debugging
-            log.debug("Setting the parallelization schemes for host '" + remote.host_id + "' ...")
-
-            # Loop over the simulations in the queue for the current remote host
-            for definition, simulation_name, _ in self.queues[remote.host_id]:
-
-                # Debugging
-                log.debug("Setting the parallelization scheme for simulation '" + simulation_name + "' ...")
-
-                # Create the parallelization tool
-                tool = ParallelizationTool()
-
-                # Set configuration options
-                tool.config.ski = definition.ski_path
-                tool.config.input = definition.input_path
-
-                # Set host properties
-                tool.config.nnodes = nnodes
-                tool.config.nsockets = nsockets
-                tool.config.ncores = ncores
-                tool.config.memory = memory
-
-                # MPI available and used
-                tool.config.mpi = mpi
-                tool.config.hyperthreading = hyperthreading
-                tool.config.threads_per_core = threads_per_core
-
-                # Number of dust cells
-                tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
-
-                # Don't show
-                tool.config.show = False
-
-                # Run the parallelization tool
-                tool.run()
-
-                # Get the parallelization scheme
-                parallelization = tool.parallelization
-
-                # Debugging
-                log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
-
-                # Set the parallelization scheme for this host
-                self.set_parallelization_for_simulation(simulation_name, parallelization)
+            # Set the parallelization scheme for this simulation
+            self.set_parallelization_for_simulation(simulation_name, parallelization)
 
     # -----------------------------------------------------------------
 

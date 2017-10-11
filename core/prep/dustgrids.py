@@ -488,9 +488,14 @@ def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, d
     :return: 
     """
 
-    # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-    semimajor_angular = sky_ellipse.semimajor  # semimajor axis length of the sky ellipse
-    radius_physical = (semimajor_angular * distance).to("pc", equivalencies=dimensionless_angles())
+    if sky_ellipse is not None:
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        semimajor_angular = sky_ellipse.semimajor  # semimajor axis length of the sky ellipse
+        radius_physical = (semimajor_angular * distance).to("pc", equivalencies=dimensionless_angles())
+    else:
+        x_radius_physical = deprojection.x_range.radius
+        y_radius_physical = deprojection.y_range.radius
+        radius_physical = max(x_radius_physical, y_radius_physical)
 
     # Get properties
     average_pixelscale = deprojection.pixelscale

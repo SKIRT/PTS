@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
-from ...core.list import FrameList
+from ...core.list import FrameList, NamedFrameList
 from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
@@ -168,7 +168,7 @@ class DiskOldStellarMapMaker(Configurable):
 
             # Check if already present
             if name in self.maps:
-                log.warning("The " + name + " old stellar disk map is already created: not creating it again")
+                log.success("The " + name + " old stellar disk map is already created: not creating it again")
                 continue
 
             # Old stars = IRAC3.6 - bulge
@@ -191,8 +191,12 @@ class DiskOldStellarMapMaker(Configurable):
             frame = self.frames[fltr]
             bulge = self.bulges[fltr]
 
+            # REBIN TO THE SAME PIXELSCALE (AND CONVOLVE?)
+            frames = NamedFrameList(observation=frame, bulge=bulge)
+            frames.convolve_and_rebin()
+
             # Subtract bulge from the IRAC I1 image
-            minus_bulge = frame - bulge
+            minus_bulge = frames["observation"] - frames["bulge"]
 
             #bulge_residual = self.images["3.6mu"].frames.primary - self.disk
             #bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")

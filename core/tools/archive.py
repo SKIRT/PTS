@@ -76,6 +76,30 @@ def compression_type(filepath):
 
 # -----------------------------------------------------------------
 
+def fix_extension(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    ct = compression_type(filepath)
+    if ct is None: raise ValueError("Not a compressed file")
+
+    filename = fs.name(filepath)
+
+    # Rename if necessary
+    if not filename.endswith(ct):
+        new_filepath = filepath + "." + ct
+        fs.rename_file_path(filepath, new_filepath)
+    else: new_filepath = filepath
+
+    # Return the filepath
+    return filepath
+
+# -----------------------------------------------------------------
+
 def is_archive(filepath):
 
     """

@@ -415,6 +415,7 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         This function ...
         :param x_size:
         :param y_size:
+        :param invert:
         :return:
         """
 

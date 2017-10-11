@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import re
 import warnings
 from collections import OrderedDict
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 #import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -48,6 +48,32 @@ def integer_or_real_or_string(argument):
         try: return real(argument)
         except ValueError:
             return string(argument)
+
+# -----------------------------------------------------------------
+
+def angle_or_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return angle(argument)
+    except ValueError: return quantity(argument)
+
+# -----------------------------------------------------------------
+
+def angle_or_length_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return angle(argument)
+    except ValueError: return length_quantity(argument)
 
 # -----------------------------------------------------------------
 
@@ -244,7 +270,8 @@ def decimal(argument):
     :return:
     """
 
-    return Decimal(argument)
+    try: return Decimal(argument)
+    except InvalidOperation: raise ValueError("Invalid argument")
 
 # -----------------------------------------------------------------
 
@@ -1905,6 +1932,46 @@ def skycoordinate(argument):
 
 # -----------------------------------------------------------------
 
+def physicalcoordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.coordinate import PhysicalCoordinate
+    x, y = quantity_tuple(argument)
+    return PhysicalCoordinate(x, y)
+
+# -----------------------------------------------------------------
+
+def sky_or_pixel_coordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return skycoordinate(argument)
+    except ValueError: return pixelcoordinate(argument)
+
+# -----------------------------------------------------------------
+
+def physical_or_pixel_coordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return physicalcoordinate(argument)
+    except ValueError: return pixelcoordinate(argument)
+
+# -----------------------------------------------------------------
+
 def sed_entry(argument):
 
     """
@@ -2112,6 +2179,20 @@ def physical_extent(argument):
     x, y = length_quantity_tuple(argument)
     from ...magic.basics.stretch import PhysicalExtent
     return PhysicalExtent(x, y)
+
+# -----------------------------------------------------------------
+
+def pixelshape(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    x, y = integer_tuple(argument)
+    return PixelShape(x=x, y=y)
 
 # -----------------------------------------------------------------
 

@@ -42,3 +42,12 @@ definition.add_optional("analysers", "string_list", "analyser classes for the si
 definition.add_flag("relative_analysis_paths", "treat the analysis paths (extraction, plotting, misc) as bein relative to the respective ski files")
 
 # -----------------------------------------------------------------
+
+# Data parallel flags
+definition.add_flag("data_parallel_local", "enable data parallelization for local execution", False)
+definition.add_flag("data_parallel_remote", "set data parallelization for remote execution (None means automatic)", None)
+
+# Check parallelization? (ADVANCED)
+definition.add_flag("check_parallelization", "check the specified parallelization scheme", True)
+
+# -----------------------------------------------------------------

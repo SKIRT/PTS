@@ -289,16 +289,20 @@ def contains_files(directory, filenames=None):
     :return:
     """
 
+    # Filenames are given
     if filenames is not None:
 
         # Loop over the filenames
         for filename in filenames:
 
+            # Check
             filepath = join(directory, filename)
             if not is_file(filepath): return False
 
+        # All checks passed
         return True
 
+    # No filenames are given
     else: return len(files_in_path(directory)) > 0
 
 # -----------------------------------------------------------------
@@ -808,7 +812,7 @@ def directory_size(path):
             fp = os.path.join(dirpath, f)
             total_size += file_size(fp)
 
-    return total_size
+    return total_size.to("GB")
 
 # -----------------------------------------------------------------
 
@@ -889,6 +893,19 @@ def nfiles_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def has_files_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    return nfiles_in_path(*args, **kwargs) > 0
+
+# -----------------------------------------------------------------
+
 def ndirectories_in_path(*args, **kwargs):
 
     """
@@ -940,6 +957,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param recursive:
     :param ignore_hidden:
     :param extension:
+    :param not_extension:
     :param contains:
     :param not_contains:
     :param extensions:
@@ -1949,10 +1967,36 @@ def creation_date(filepath):
         except AttributeError:
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified.
-            seconds = stat.st_mtime
+            #seconds = stat.st_mtime
+            # NO: Giving an error is clearer!
+            raise NotImplementedError("Getting the creation date is impossible")
 
     # Return datetime object
     return datetime.datetime.fromtimestamp(seconds)
+
+# -----------------------------------------------------------------
+
+def first_created_path(*paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    return min(paths, key=creation_date)
+
+# -----------------------------------------------------------------
+
+def last_created_path(*paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    return max(paths, key=creation_date)
 
 # -----------------------------------------------------------------
 
@@ -2528,5 +2572,49 @@ def read_start(path, ncharacters):
     """
 
     with open(path) as f: return f.read(ncharacters)
+
+# -----------------------------------------------------------------
+
+def get_file_hash(path, blocksize=2**20):
+
+    """
+    This function ...
+    :param path:
+    :param blocksize:
+    :return:
+    """
+
+    import hashlib
+
+    # Open the file
+    f = open(path)
+
+    md5 = hashlib.md5()
+
+    # Read the file
+    while True:
+        data = f.read(blocksize)
+        if not data: break
+        md5.update(data)
+
+    # Close the file
+    f.close()
+
+    # Return the hash
+    #return md5.digest()
+    return md5.hexdigest()
+
+# -----------------------------------------------------------------
+
+def equal_files_hash(filepath_a, filepath_b):
+
+    """
+    This function ...
+    :param filepath_a:
+    :param filepath_b:
+    :return:
+    """
+
+    return get_file_hash(filepath_a) == get_file_hash(filepath_b)
 
 # -----------------------------------------------------------------

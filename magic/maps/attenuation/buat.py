@@ -230,7 +230,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Check whether a map is already present
             if key in self.maps:
-                log.warning("The " + name + " attenuation map is already created: not creating it again")
+                log.success("The " + name + " attenuation map is already created: not creating it again")
                 continue
 
             # Make the TIR to FUV map
@@ -296,7 +296,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Check whether a map is already present
             if key in self.maps:
-                log.warning("The " + name + " attenuation map is already created: not creating it again")
+                log.success("The " + name + " attenuation map is already created: not creating it again")
                 continue
 
             # Calculate map

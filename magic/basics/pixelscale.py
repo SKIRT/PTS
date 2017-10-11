@@ -48,6 +48,21 @@ class Pixelscale(AngleExtent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_physical(cls, pixelscale, distance, unit="arcsec"):
+
+        """
+        This function ...
+        :param pixelscale:
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        return cls(pixelscale.x_angle(distance, unit=unit), pixelscale.y_angle(distance, unit=unit))
+
+    # -----------------------------------------------------------------
+
     @property
     def abs_x(self):
 
@@ -86,11 +101,13 @@ class Pixelscale(AngleExtent):
         # Check if the x pixelscale and y pixelscale are close
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
 
+            from ...core.tools.stringify import tostr
+
             # Warn about the difference in x and y pixelscale
             from ...core.basics.log import log
             log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
-            log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
-            log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))
+            log.warning("  * x pixelscale (absolute value) = " + tostr(x_pixelscale))
+            log.warning("  * y pixelscale (absolute value) = " + tostr(y_pixelscale))
 
         # Return a single value for the pixelscale in arcseconds
         return 0.5 * (x_pixelscale + y_pixelscale)
@@ -175,7 +192,7 @@ class Pixelscale(AngleExtent):
         :return:
         """
 
-        return PhysicalExtent(self.x_extent(distance, unit=unit), self.y_extent(distance, unit=unit))
+        return PhysicalPixelscale.from_angular(self, distance, unit=unit)
 
 # -----------------------------------------------------------------
 
@@ -193,5 +210,156 @@ def only_angle(quantity, unit=None):
     if "pix" in quantity.unit.bases: return quantity * Unit("pix")
     elif len(quantity.unit.bases) == 1: return quantity
     else: raise ValueError("Don't know what to do with " + str(quantity) + " to convert to angular pixelscale")
+
+# -----------------------------------------------------------------
+
+class PhysicalPixelscale(PhysicalExtent):
+
+    """
+    THis class ...
+    """
+
+    def __init__(self, x, y=None, unit=None):
+
+        """
+        The constructor ...
+        """
+
+        # Set y
+        if y is None: y = x
+
+        # Convert to just arcsec or just
+        x = only_angle(x, unit=unit)
+        y = only_angle(y, unit=unit)
+
+        # Call the constructor of the base class
+        super(PhysicalPixelscale, self).__init__(x, y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_angular(cls, pixelscale, distance, unit="pc"):
+
+        """
+        This function ...
+        :param pixelscale:
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        return cls(pixelscale.x_extent(distance, unit=unit), pixelscale.y_extent(distance, unit=unit))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_shape_and_field(cls, shape, field):
+
+        """
+        This function ...
+        :param shape: PixelShape
+        :param field:
+        :return:
+        """
+
+        x = field.x / float(shape.x)
+        y = field.y / float(shape.y)
+        return cls(x=x, y=y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return abs(self.x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return abs(self.y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_pixelscale = abs(self.x.to("pc"))
+        y_pixelscale = abs(self.y.to("pc"))
+
+        # Check if the x pixelscale and y pixelscale are close
+        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
+
+            from ...core.tools.stringify import tostr
+
+            # Warn about the difference in x and y pixelscale
+            from ...core.basics.log import log
+            log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
+            log.warning("  * x pixelscale (absolute value) = " + tostr(x_pixelscale))
+            log.warning("  * y pixelscale (absolute value) = " + tostr(y_pixelscale))
+
+        # Return a single value for the pixelscale in parsec
+        return 0.5 * (x_pixelscale + y_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def x_angle(self, distance, unit="arcsec"):
+
+        """
+        This function ...
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        angular = (self.abs_x / distance).to(unit, equivalencies=dimensionless_angles())
+        return angular
+
+    # -----------------------------------------------------------------
+
+    def y_angle(self, distance, unit="arcsec"):
+
+        """
+        This function ...
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        angular = (self.abs_y / distance).to(unit, equivalencies=dimensionless_angles())
+        return angular
+
+# -----------------------------------------------------------------
+
+def only_physical(quantity, unit=None):
+
+    """
+    This function ...
+    :param quantity:
+    :param unit:
+    :return:
+    """
+
+    if not hasattr(quantity, "unit"): return quantity * Unit(unit)
+
+    if "pix" in quantity.unit.bases: return quantity * Unit("pix")
+    elif len(quantity.unit.bases) == 1: return quantity
+    else: raise ValueError("Don't know what to do with " + str(quantity) + " to convert to physical pixelscale")
 
 # -----------------------------------------------------------------

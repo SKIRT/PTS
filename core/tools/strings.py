@@ -839,6 +839,18 @@ double_quote = '"'
 
 # -----------------------------------------------------------------
 
+def is_quote_character(character):
+
+    """
+    Thisnfunction ...
+    :param character:
+    :return:
+    """
+
+    return character == single_quote or character == double_quote
+
+# -----------------------------------------------------------------
+
 def is_single_quoted(string):
 
     """
@@ -1154,5 +1166,19 @@ def split_cumulative(string, pattern, include_total=True):
 
     if include_total: return result
     else: return result[:-1]
+
+# -----------------------------------------------------------------
+
+def hash_string(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    import hashlib
+    hash_object = hashlib.md5(string)
+    return hash_object.hexdigest()
 
 # -----------------------------------------------------------------

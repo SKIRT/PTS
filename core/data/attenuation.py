@@ -16,10 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy import interpolate
 
-# Import astronomical modules
-from astropy.units import Unit, spectral
-from astropy.table import Table
-
 # Import the relevant PTS classes and modules
 from ...core.tools import tables, introspection, arrays
 from ...core.tools import filesystem as fs

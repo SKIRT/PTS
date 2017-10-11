@@ -300,9 +300,7 @@ class SkirtExec:
         # Show the simulation progress
         if self.using_pexpect: success = status.show_progress(finish_at=finish_at, finish_after=finish_after)
         else:
-            if debug_output: success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
-            else:
-                with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
         # Check whether not crashed
         if not success:

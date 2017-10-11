@@ -128,22 +128,35 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
+        # Get function that obtains name for the dataset from the filename
+        if "get_name" in kwargs: get_name = kwargs.pop("get_name")
+        else: get_name = None
+
+        # Add kwargs
+        kwargs["extension"] = "fits"
+        kwargs["returns"] = ["path", "name"]
+
         # Set the paths
-        paths, names = fs.files_in_path(path, extension="fits", returns=["path", "name"])
+        #paths, names = fs.files_in_path(path, **kwargs)
 
         # Create a new dataset instance
         dataset = cls()
 
         # Add the paths
-        for path, name in zip(paths, names):
+        #for path, name in zip(paths, names):
+        for path, name in fs.files_in_path(path, **kwargs):
+
+            # Get actual name from filename
+            if get_name is not None: name = get_name(name)
 
             # Add the image path
             dataset.add_path(name, path)
@@ -461,6 +474,18 @@ class DataSet(object):
         header = self.get_header(name)
         return headers.get_filter(name, header)
         #return self.get_frame(name).filter
+
+    # -----------------------------------------------------------------
+
+    def get_filter_name(self, name):
+
+        """
+        Thisnf ucntion ...
+        :param name:
+        :return:
+        """
+
+        return str(self.get_filter(name))
 
     # -----------------------------------------------------------------
 
@@ -952,6 +977,9 @@ class DataSet(object):
 
         # FASTER IMPLEMENTATION (NOT USING THE SLOW GET_NAME_FOR_FILTER)
         # ONLY OPENENING EACH IMAGE HEADER ONCE!
+
+        # Make sure that filters are actual filter objects and not filter name
+        filters = [parse_filter(fltr) if types.is_string_type(fltr) else fltr for fltr in filters]
 
         # Initialize
         names = [None] * len(filters)
@@ -1523,6 +1551,20 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_fwhm(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        header = self.get_header(name)
+        header_fwhm = headers.get_fwhm(header)
+        return header_fwhm
+
+    # -----------------------------------------------------------------
+
     @property
     def min_fwhm(self):
 
@@ -1536,8 +1578,7 @@ class DataSet(object):
         for name in self.paths:
 
             # Get the FWHM
-            header = self.get_header(name)
-            header_fwhm = headers.get_fwhm(header)
+            header_fwhm = self.get_fwhm(name)
 
             if fwhm is None or header_fwhm < fwhm: fwhm = header_fwhm
 
@@ -1559,8 +1600,7 @@ class DataSet(object):
         for name in self.paths:
 
             # Get the FWHM
-            header = self.get_header(name)
-            header_fwhm = headers.get_fwhm(header)
+            header_fwhm = self.get_fwhm(name)
 
             if fwhm is None or header_fwhm > fwhm: fwhm = header_fwhm
 

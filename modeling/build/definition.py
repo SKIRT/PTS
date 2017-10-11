@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from .tables import ModelsTable
+from .tables import ModelsTable, ModelMapsTable
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.list import NamedCoordinateSystemList
 from ...core.basics.containers import NamedFileList
@@ -43,7 +43,6 @@ class ModelDefinition(object):
         :param path:
         :param stellar_paths: stellar component paths (dictionary)
         :param dust_paths: dust component paths (dictionary)
-        :param references:
         """
 
         # Set model name and directory path
@@ -284,6 +283,76 @@ class ModelDefinition(object):
         """
 
         return ModelsTable.from_file(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.models_path, "maps.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ModelMapsTable.from_file(self.maps_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def original_old_map_name(self):
+
+        """
+        This property ...
+        """
+
+        return self.maps_table.old_stars_map_name_for_model(self.name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def original_young_map_name(self):
+
+        """
+        This property ...
+        """
+
+        return self.maps_table.young_stars_map_name_for_model(self.name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def original_ionizing_map_name(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.maps_table.ionizing_stars_map_name_for_model(self.name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def original_dust_map_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps_table.dust_map_name_for_model(self.name)
 
     # -----------------------------------------------------------------
 

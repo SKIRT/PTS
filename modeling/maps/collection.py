@@ -25,7 +25,7 @@ from ...core.filter.filter import parse_filter
 from ...core.tools.stringify import tostr
 from ...core.tools import types
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
@@ -85,11 +85,12 @@ class MapsCollection(object):
     This class...
     """
 
-    def __init__(self, maps_path):
+    def __init__(self, maps_path, analysis_run_name=None):
 
         """
         The constructor ...
         :param maps_path:
+        :param analysis_run_name:
         :return:
         """
 
@@ -99,19 +100,53 @@ class MapsCollection(object):
         # Set the maps path
         self.maps_path = maps_path
 
+        # The analysis run
+        self.analysis_run_name = analysis_run_name
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_modeling_path(cls, modeling_path):
+    def from_modeling_path(cls, modeling_path, analysis_run_name=None):
 
         """
         This function ...
         :param modeling_path:
+        :param analysis_run_name:
         :return:
         """
 
-        maps_path = fs.join(modeling_path, "maps", "raw")
-        return cls(maps_path)
+        # Set the path
+        if analysis_run_name is not None: maps_path = fs.join(modeling_path, "analysis", analysis_run_name, "maps")
+        else: maps_path = fs.join(modeling_path, "maps", "raw")
+
+        # Create and return the collection
+        return cls(maps_path, analysis_run_name=analysis_run_name)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_analysis_run(cls, run):
+
+        """
+        This function ...
+        :param run:
+        :return:
+        """
+
+        # Create and return the collection
+        return cls.from_modeling_path(run.modeling_path, analysis_run_name=run.name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_analysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run_name is not None
 
     # -----------------------------------------------------------------
 
@@ -123,7 +158,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return fs.directory_of(fs.directory_of(self.maps_path))
+        if self.from_analysis: return fs.directory_of(fs.directory_of(fs.directory_of(self.maps_path)))
+        else: return fs.directory_of(fs.directory_of(self.maps_path))
 
     # -----------------------------------------------------------------
 
@@ -151,6 +187,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def analysis_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..analysis.run import AnalysisRun
+        return AnalysisRun.from_name(self.modeling_path, self.analysis_run_name)
+
+    # -----------------------------------------------------------------
+
     @property
     def maps_colours_path(self):
 
@@ -159,7 +208,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_colours_path
+        if self.from_analysis: return self.analysis_run.colour_maps_path
+        else: return self.environment.maps_colours_path
 
     # -----------------------------------------------------------------
 
@@ -171,7 +221,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_colours_name
+        if self.from_analysis: return self.analysis_run.colour_maps_name
+        else: return self.environment.maps_colours_name
 
     # -----------------------------------------------------------------
 
@@ -183,7 +234,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_ssfr_path
+        if self.from_analysis: return self.analysis_run.ssfr_maps_path
+        else: return self.environment.maps_ssfr_path
 
     # -----------------------------------------------------------------
 
@@ -195,7 +247,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_ssfr_name
+        if self.from_analysis: return self.analysis_run.ssfr_maps_name
+        else: return self.environment.maps_ssfr_name
 
     # -----------------------------------------------------------------
 
@@ -207,7 +260,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_tir_path
+        if self.from_analysis: return self.analysis_run.tir_maps_path
+        else: return self.environment.maps_tir_path
 
     # -----------------------------------------------------------------
 
@@ -219,7 +273,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_tir_name
+        if self.from_analysis: return self.analysis_run.tir_maps_name
+        else: return self.environment.maps_tir_name
 
     # -----------------------------------------------------------------
 
@@ -231,7 +286,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_attenuation_path
+        if self.from_analysis: return self.analysis_run.attenuation_maps_path
+        else: return self.environment.maps_attenuation_path
 
     # -----------------------------------------------------------------
 
@@ -243,7 +299,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_attenuation_name
+        if self.from_analysis: return self.analysis_run.attenuation_maps_name
+        else: return self.environment.maps_attenuation_name
 
     # -----------------------------------------------------------------
 
@@ -255,7 +312,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_old_path
+        if self.from_analysis: return self.analysis_run.old_maps_path
+        else: return self.environment.maps_old_path
 
     # -----------------------------------------------------------------
 
@@ -267,7 +325,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_old_name
+        if self.from_analysis: return self.analysis_run.old_maps_name
+        else: return self.environment.maps_old_name
 
     # -----------------------------------------------------------------
 
@@ -279,7 +338,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_young_path
+        if self.from_analysis: return self.analysis_run.young_maps_path
+        else: return self.environment.maps_young_path
 
     # -----------------------------------------------------------------
 
@@ -291,7 +351,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_young_name
+        if self.from_analysis: return self.analysis_run.young_maps_name
+        else: return self.environment.maps_young_name
 
     # -----------------------------------------------------------------
 
@@ -303,7 +364,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_ionizing_path
+        if self.from_analysis: return self.analysis_run.ionizing_maps_path
+        else: return self.environment.maps_ionizing_path
 
     # -----------------------------------------------------------------
 
@@ -315,7 +377,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_ionizing_name
+        if self.from_analysis: return self.analysis_run.ionizing_maps_name
+        else: return self.environment.maps_ionizing_name
 
     # -----------------------------------------------------------------
 
@@ -327,7 +390,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_dust_path
+        if self.from_analysis: return self.analysis_run.dust_maps_path
+        else: return self.environment.maps_dust_path
 
     # -----------------------------------------------------------------
 
@@ -339,7 +403,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.maps_dust_name
+        if self.from_analysis: return self.analysis_run.dust_maps_name
+        else: return self.environment.maps_dust_name
 
     # -----------------------------------------------------------------
 
@@ -380,7 +445,8 @@ class MapsCollection(object):
         :return: 
         """
 
-        return get_origins_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_origins_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        else: return get_origins_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -439,7 +505,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return get_methods_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_methods_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        else: return get_methods_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1461,7 +1528,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_map_paths_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        else: return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1478,7 +1546,8 @@ class MapsCollection(object):
         :return:
         """
 
-        return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        else: return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1927,6 +1996,28 @@ StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollecti
 
 # -----------------------------------------------------------------
 
+def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(analysis_run.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Get map paths
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
 def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
@@ -1943,6 +2034,24 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_me
     # Determine path
     sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Get map paths
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
+def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param sub_path:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
     # direct_origins_path = fs.join(sub_path, origins_filename)
     # No subdirectories
     # if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
@@ -2012,6 +2121,28 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_me
 
 # -----------------------------------------------------------------
 
+def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+    # Return the map paths
+    return get_maps_sub_name_from_paths(paths, framelist=framelist)
+
+# -----------------------------------------------------------------
+
 def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
 
     """
@@ -2027,11 +2158,26 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     :return:
     """
 
-    # Initialize the maps dictionary
-    maps = dict()
-
     # Get map paths
     paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+    # Return the map names
+    return get_maps_sub_name_from_paths(paths, history=history, framelist=framelist)
+
+# -----------------------------------------------------------------
+
+def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
+
+    """
+    This function ...
+    :param paths:
+    :param history:
+    :param framelist:
+    :return:
+    """
+
+    # Initialize the maps dictionary
+    maps = dict()
 
     # Loop over the entries
     for method_or_name in paths:
@@ -2077,6 +2223,28 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
 
 # -----------------------------------------------------------------
 
+def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(analysis_run.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Return
+    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
 def get_origins_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
@@ -2093,6 +2261,24 @@ def get_origins_sub_name(environment, name, flatten=False, method=None, not_meth
     # Determine path
     sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Return
+    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
+def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param sub_path:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
     direct_origins_path = fs.join(sub_path, origins_filename)
 
     if not_method is not None:
@@ -2156,6 +2342,28 @@ def get_origins_sub_name(environment, name, flatten=False, method=None, not_meth
 
 # -----------------------------------------------------------------
 
+def get_methods_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(analysis_run.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Return methods from sub path
+    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
 def get_methods_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
@@ -2172,6 +2380,24 @@ def get_methods_sub_name(environment, name, flatten=False, method=None, not_meth
     # Determine path
     sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
+def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param sub_path:
+    :param flatten:
+    :param method:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Determine methods path
     direct_methods_path = fs.join(sub_path, methods_filename)
 
     if not_method is not None:

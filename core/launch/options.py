@@ -99,9 +99,16 @@ memory_name = "memory"
 seds_name = "seds"
 grids_name = "grids"
 rgb_name = "rgb"
-wave_name = "wave"
+#wave_name = "wave"
+animations_name = "animations"
 fluxes_name = "fluxes"
 images_name = "images"
+
+# -----------------------------------------------------------------
+
+extraction_names = [progress_name, timeline_name, memory_name]
+plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
+misc_names = [rgb_name, animations_name, fluxes_name, images_name]
 
 # -----------------------------------------------------------------
 
@@ -122,7 +129,7 @@ class AnalysisOptions(Options):
         super(AnalysisOptions, self).__init__()
 
         # Extraction
-        self.add_section("extraction", "options for extractin data from the simulation's log files")
+        self.add_section("extraction", "options for extracting data from the simulation's log files")
         self.extraction.add_property("path", "string", "extraction directory", None)
         self.extraction.add_property("progress", "boolean", "extract information about the progress in the different simulation phases", False)
         self.extraction.add_property("timeline", "boolean", "extract timeline information for the different simulation phases on the different processes", False)
@@ -149,8 +156,9 @@ class AnalysisOptions(Options):
         ## RGB images
         self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
 
-        ## Wave movies
-        self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
+        ## Animation
+        self.misc.add_property("animations", "boolean", "make an animation of the images of the simulated datacube(s)", False)
+        self.misc.add_property("write_animation_frames", "boolean", "write the frames of the created animations seperately", False)
 
         ## Observed fluxes and images
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
@@ -165,13 +173,18 @@ class AnalysisOptions(Options):
         self.misc.add_property("wcs_instrument", "string", "instrument for which to take the images_wcs as the WCS (if not a dictionary)")
         self.misc.add_property("images_wcs", "filepath_or_string_filepath_dictionary", "path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images (single path or path for each datacube as a dictionary)", None)
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
+        self.misc.add_property("write_intermediate_images", "boolean", "write intermediate results from the observed image making procedure", False)
+        self.misc.add_property("write_convolution_kernels", "boolean", "write the convolution kernels used in the observed image making procedure", False)
+        self.misc.add_property("no_images_filters", "filter_list", "don't create observed images for these filters", [])
 
         ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
         self.misc.add_property("images_psfs_auto", "boolean", "automatically determine the appropriate PSF kernel for each image", False)
+        self.misc.add_property("fwhms_dataset", "file_path", "path to the dataset that should be used to get the target FWHM for the different images", None)
 
         # Remote thresholds
         self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
+        self.misc.add_property("remote_spectral_convolution", "boolean", "perform spectral convolution with the datacube remotely", False)
         self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "2 GB", convert_default=True)
         self.misc.add_property("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
         self.misc.add_property("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
@@ -184,10 +197,11 @@ class AnalysisOptions(Options):
         ## OTHER
         self.misc.add_property("images_nprocesses_local", "positive_integer", "number of parallel processes to use when creating the observed images (local execution)", 2)
         self.misc.add_property("images_nprocesses_remote", "positive_integer", "number of parallel processes to use when creating the observed images (remote execution)", 8)
-        #self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
         self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
         self.misc.add_property("images_spectral_convolution", "boolean", "use spectral convolution to create observed images", True)
         self.misc.add_property("fluxes_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes", True)
+        self.misc.add_property("no_images_spectral_convolution_filters", "filter_list", "don't spectrally convolve to create the observed images for these filters", [])
+        self.misc.add_property("no_fluxes_spectral_convolution_filters", "filter_list", "don't spectrally convolve to calculate the observed fluxes for these filters", [])
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)
@@ -237,7 +251,7 @@ class AnalysisOptions(Options):
         :return:
         """
 
-        return self.misc.rgb or self.misc.wave or self.misc.fluxes or self.misc.images
+        return self.misc.rgb or self.misc.animations or self.misc.fluxes or self.misc.images
 
     # -----------------------------------------------------------------
 
@@ -293,11 +307,15 @@ class AnalysisOptions(Options):
         if retrieve_types is not None:
 
             if self.misc.rgb and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
-                log.warning("Creating RGB images is enabled so total datacube retrieval will also be enabled")
+                log.warning("Making RGB images is enabled so total datacube retrieval will also be enabled")
                 retrieve_types.append(ot.total_images)
 
-            if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
-                log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+            # if self.misc.wave and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+            #     log.warning("Creating wave movies is enabled so total datacube retrieval will also be enabled")
+            #     retrieve_types.append(ot.total_images)
+
+            if self.misc.animations and not (ot.images in retrieve_types or ot.total_images in retrieve_types):
+                log.warning("Making datacube animations is enabled so total datacube retrieval will also be enabled")
                 retrieve_types.append(ot.total_images)
 
             if self.misc.fluxes and ot.seds not in retrieve_types:

@@ -67,13 +67,13 @@ class SSFRMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Load the colour maps
+        # 2. Load the colour maps
         self.load_colours()
 
-        # 2. Make SSFR maps based on colours
+        # 3. Make SSFR maps based on colours
         self.make_ssfr_colours()
 
-        # 3. Writing
+        # 4. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -128,7 +128,7 @@ class SSFRMapMaker(MapsComponent):
         log.info("Making sSFR maps based on colours ...")
 
         # Set the method name
-        method_name = "ssfr"
+        method_name = "colours"
 
         # Get current
         if self.config.remake: current = dict()

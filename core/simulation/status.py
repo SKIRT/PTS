@@ -631,7 +631,8 @@ class LogSimulationStatus(SimulationStatus):
                 if self.ignored_previous and message.startswith("  "): continue # ignore sub-messages
                 if not message.startswith("  "): self.ignored_previous = False
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
-                log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+                #log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+                print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + message + skirt_debug_output_suffix + fmt.reset)
                 previous_message = message
 
         # SET THE LOG LINES
@@ -879,7 +880,8 @@ class SpawnSimulationStatus(SimulationStatus):
                 if not message.startswith("  "): ignored_previous = False
                 #print(list(line))
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
-                log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+                #log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+                print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_suffix + message + skirt_debug_output_suffix + fmt.reset)
 
             # Add the line
             self.log_lines.append(line)
@@ -1024,15 +1026,15 @@ class SpawnSimulationStatus(SimulationStatus):
 
                     if self.stage != last_stage:
                         self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__()
+                        self._bar.__exit__(None, None, None)
 
                     if self.cycle != last_cycle:
                         self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__()
+                        self._bar.__exit__(None, None, None)
 
                     if self.progress is None:
                         self._bar.show(100)
-                        #self._bar.__exit__() # ?
+                        #self._bar.__exit__(None, None, None) # ?
 
                     else: self._bar.show(int(self.progress))
                     #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
@@ -1043,7 +1045,7 @@ class SpawnSimulationStatus(SimulationStatus):
                 else: continue
                 #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
-            # Stellar emission: show progress bar
+            # Stellar emission, dust emission or spectra calculation: show progress bar
             elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
 
                 total_length = 100
@@ -1057,11 +1059,11 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 if self.phase != last_phase:
                     self._bar.show(100)  # make sure it always ends on 100%
-                    self._bar.__exit__()
+                    self._bar.__exit__(None, None, None)
 
                 if self.progress is None:
                     self._bar.show(100)
-                    self._bar.__exit__()
+                    self._bar.__exit__(None, None, None)
 
                 else: self._bar.show(int(self.progress))
                 #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)

@@ -27,16 +27,17 @@ from astropy.coordinates import Angle
 from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
-from .coordinate import PixelCoordinate, SkyCoordinate
+from .coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..region.rectangle import SkyRectangleRegion
 from .stretch import SkyStretch
 from ..tools import coordinates
-from .pixelscale import Pixelscale
+from .pixelscale import Pixelscale, PhysicalPixelscale
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.range import QuantityRange
 from pts.magic.basics.stretch import PixelStretch
 from ...core.basics.log import log
 from ...core.tools import sequences
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -462,6 +463,195 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def ctype(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.ctype
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ctype1(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.ctype[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ctype2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ctype[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs.crval
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crval1(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.crval[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crval2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.crval[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center_pixel
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_coordinate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Celestial
+        if self.is_celestial: return SkyCoordinate(ra=self.crval1 * self.axis1_unit, dec=self.crval2 * self.axis2_unit)
+
+        # Physical
+        elif self.is_physical: return PhysicalCoordinate(self.crval1 * self.axis1_unit, self.crval2 * self.axis2_unit)
+
+        # Unknown
+        else: raise ValueError("Unknown coordinate system type")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_unit(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Try to parse the ctype1 as a unit
+        try: unit1 = u(self.ctype1)
+        except ValueError: unit1 = u("deg")
+
+        # Return the unit
+        return unit1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Try to parse the ctype2 as a unit
+        try: unit2 = u(self.ctype2)
+        except ValueError: unit2 = u("deg")
+
+        # Return the unit
+        return unit2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self.axis1_unit, self.axis2_unit]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_celestial
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Physical
+        if types.is_length_unit(self.axis1_unit):
+
+            # Check
+            if not types.is_length_unit(self.axis2_unit): raise ValueError("Coordinate system is a mix of physical and celestial axis")
+
+            # True
+            return True
+
+        # Not physical
+        else:
+
+            # Check
+            if types.is_length_unit(self.axis2_unit): raise ValueError("Coordinate system is a mix of physical and celestial axis")
+
+            # False
+            return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale(self):
 
         """
@@ -475,11 +665,13 @@ class CoordinateSystem(wcs.WCS):
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
 
-        x_pixelscale = result[0] * u("deg")
-        y_pixelscale = result[1] * u("deg")
+        x_pixelscale = result[0] * self.axis1_unit
+        y_pixelscale = result[1] * self.axis2_unit
 
         # Return the pixel scale as an extent
-        return Pixelscale(x_pixelscale, y_pixelscale)
+        if self.is_celestial: return Pixelscale(x_pixelscale, y_pixelscale)
+        elif self.is_physical: return PhysicalPixelscale(x_pixelscale, y_pixelscale)
+        else: raise ValueError("Unknown coordinate system type")
 
     # -----------------------------------------------------------------
 

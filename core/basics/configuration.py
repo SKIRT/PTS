@@ -260,7 +260,7 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
 
 # -----------------------------------------------------------------
 
-def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True, default_alias=None):
+def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True, default_alias=None, convert_default=False):
 
     """
     This function ....
@@ -269,7 +269,9 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     :param description: 
     :param choices: 
     :param default:
+    :param required:
     :param default_alias:
+    :param convert_default:
     :return: 
     """
 
@@ -277,7 +279,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     definition = ConfigurationDefinition(write_config=False)
 
     # Add setting
-    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default, default_alias=default_alias)
+    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default, default_alias=default_alias, convert_default=convert_default)
     elif required: definition.add_required(name, parsing_type, description, choices=choices)
     else: definition.add_optional(name, parsing_type, description, choices=choices)
 
@@ -358,6 +360,22 @@ def prompt_index(name, description, choices):
     """
 
     return prompt_string(name, description, choices=choices, required=True)
+
+# -----------------------------------------------------------------
+
+def prompt_integer(name, description, choices=None, default=None, required=True):
+
+    """
+    Thisf unction ...
+    :param name:
+    :param description:
+    :param choices:
+    :param default:
+    :param required:
+    :return:
+    """
+
+    return prompt_variable(name, "integer", description, choices=choices, default=default, required=required)
 
 # -----------------------------------------------------------------
 
@@ -1152,6 +1170,7 @@ def write_mapping(mappingfile, mapping, indent=""):
         else:
             ptype, string = stringify.stringify(mapping[name])
             #if string.startswith(" "): print(ptype, string)
+            if ptype is None: ptype = "UNKNOWN"
             print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
@@ -3708,6 +3727,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
                         answer = raw_input("   : ")
+                        #print(answer)
                         if answer == "":
                             value = default
                             break

@@ -288,7 +288,7 @@ class HotDustMapsMaker(Configurable):
 
                 # Check whether a map is already present
                 if name in self.maps:
-                    log.warning("The " + name + " hot dust map is already created: not creating it again")
+                    log.success("The " + name + " hot dust map is already created: not creating it again")
                     continue
 
                 # Calculate the corrected 24 micron image
