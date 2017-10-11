@@ -76,7 +76,8 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0, no_filter=False):
+    def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0, no_filter=False, density=False,
+                  brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -85,6 +86,10 @@ class Image(object):
         :param always_call_first_primary:
         :param hdulist_index:
         :param no_filter:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return:
         """
 
@@ -98,7 +103,9 @@ class Image(object):
         image.path = path
 
         # Load the image frames
-        image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index, no_filter=no_filter)
+        image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index,
+                          no_filter=no_filter, density=density, brightness=brightness, density_strict=density_strict,
+                          brightness_strict=brightness_strict)
 
         # Return the image
         return image
@@ -1626,7 +1633,9 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False, silent=False):
+    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True,
+                    rebin_to_wcs=False, hdulist_index=0, no_filter=False, silent=False, density=False, brightness=False,
+                    density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -1639,6 +1648,10 @@ class Image(object):
         :param hdulist_index:
         :param no_filter:
         :param silent:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return:
         """
 
@@ -1651,7 +1664,8 @@ class Image(object):
         # Load frames
         from . import fits as pts_fits
         frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
-                                                       rebin_to_wcs, hdulist_index, no_filter)
+                                                       rebin_to_wcs, hdulist_index, no_filter, density=density, brightness=brightness,
+                                                       density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Set frames, masks and meta information
         for frame_name in frames: self.add_frame(frames[frame_name], frame_name, silent=True)

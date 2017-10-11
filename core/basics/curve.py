@@ -309,6 +309,10 @@ class WavelengthCurve(Curve):
             # Create conversion info
             if conversion_info is None: conversion_info = dict()
             conversion_info["wavelength"] = self.wavelength_for_index(index)
+            #print(value)
+            #print(type(value))
+            #print(value.unit)
+            #print(type(value.unit))
             value = value.to(unit, **conversion_info)
 
         # Remove unit if requested

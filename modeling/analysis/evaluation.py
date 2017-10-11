@@ -28,6 +28,8 @@ from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
 from ...core.basics.containers import FilterBasedList
 from ...core.data.sed import ObservedSED
+from ...magic.core.frame import Frame
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -65,8 +67,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.errors = FrameList()
 
         # Fluxes calculated based on images
-        self.images_fluxes = ObservedSED() # based on simulated images
-        self.images_sed = ObservedSED() # based on observed images
+        self.images_fluxes = ObservedSED(photometry_unit="Jy") # based on simulated images
+        self.images_sed = ObservedSED(photometry_unit="Jy") # based on observed images
         self.images_differences = FluxDifferencesTable() # differences
 
         # The residual and weighed residual frames
@@ -358,7 +360,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Find the corresponding flux error in the SED derived from observation
             #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
-            observed_fluxdensity_error = self.observed_sed.error_for_filter(fltr, unit="Jy", add_unit=False)
+            observed_fluxdensity_error = self.observed_sed.error_for_filter(fltr, unit="Jy", add_unit=False).average
 
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
@@ -434,7 +436,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
 
             # Create an approximate error frame
-            errors = np.sqrt(frame.data, wcs=frame.wcs, filter=frame.filter)
+            errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter)
 
             # Add the errors frame
             self.errors.append(errors)
@@ -456,6 +458,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Calculate the total flux
             flux = self.images[fltr].sum(add_unit=True)
+
+            print(flux)
+            print(flux.unit)
+            print(type(flux.unit))
+            print(flux.unit.density)
 
             # Add to the SED
             self.images_fluxes.add_point(fltr, flux)
@@ -1019,5 +1026,44 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Save
             distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the seds
+        self.plot_seds()
+
+    # -----------------------------------------------------------------
+
+    def plot_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SEDs ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Add the SEDs
+        plotter.add_sed(self.images_sed, "Observation (from images)")
+        plotter.add_sed(self.simulated_sed, "Simulation")
+
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.images_fluxes_path)
 
 # -----------------------------------------------------------------

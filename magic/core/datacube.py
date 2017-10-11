@@ -38,6 +38,140 @@ parallel_filter_convolution_dirname = "datacube-parallel-filter-convolution"
 
 # -----------------------------------------------------------------
 
+def load_all_skirt_datacube_paths(output_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :return:
+    """
+
+    # Determine output path
+    if output_path is None: output_path = fs.cwd()
+
+    # Get datacube paths
+    datacube_paths = fs.files_in_path(output_path, extension="fits")
+
+    # Determine prefix
+    prefix = None
+    for path in datacube_paths:
+        filename = fs.strip_extension(fs.name(path))
+        if prefix is None: prefix = filename.split("_")[0]
+        elif prefix != filename.split("_")[0]: raise IOError("Not all datacubes have the same simulation prefix")
+    if prefix is None: raise IOError("No datacubes were found")
+
+    # Arrange the datacubes per instrument and per contribution
+    datacube_paths_instruments = defaultdict(dict)
+    for path in datacube_paths:
+        filename = fs.strip_extension(fs.name(path))
+        instrument = filename.split(prefix + "_")[1].split("_")[0]
+        contr = filename.split("_")[-1]
+        datacube_paths_instruments[instrument][contr] = path
+
+    # Return the paths
+    return datacube_paths_instruments
+
+# -----------------------------------------------------------------
+
+def load_skirt_datacube_paths(output_path=None, contribution="total"):
+
+    """
+    This function ...
+    :param output_path:
+    :param contribution:
+    :return:
+    """
+
+    # All contributions
+    all_paths = load_all_skirt_datacube_paths(output_path=output_path)
+
+    # Per instrument, for the specific contribution
+    datacube_paths = dict()
+
+    # Loop over the instruments
+    for instrument_name in all_paths:
+
+        # Get the path
+        path = all_paths[instrument_name][contribution]
+
+        # Add the path to the dictionary
+        datacube_paths[instrument_name] = path
+
+    # Return the paths
+    return datacube_paths
+
+# -----------------------------------------------------------------
+
+def load_skirt_sed_paths(output_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :return:
+    """
+
+    # Determine output path
+    if output_path is None: output_path = fs.cwd()
+
+    # Get SED paths
+    sed_paths = fs.files_in_path(output_path, extension="dat", endswith="_sed")
+
+    # Determine prefix
+    prefix = None
+    for path in sed_paths:
+        filename = fs.strip_extension(fs.name(path))
+        if prefix is None: prefix = filename.split("_")[0]
+        elif prefix != filename.split("_")[0]: raise IOError("Not all SED files have the same simulation prefix")
+    if prefix is None: raise IOError("No SED files were found")
+
+    # Arrange the paths per instrument and per contribution
+    sed_paths_instruments = dict()
+    for path in sed_paths:
+        filename = fs.strip_extension(fs.name(path))
+        instrument = filename.split(prefix + "_")[1].split("_sed")[0]
+        sed_paths_instruments[instrument] = path
+
+    # Return the SED file paths
+    return sed_paths_instruments
+
+# -----------------------------------------------------------------
+
+def load_skirt_datacubes(output_path=None, contribution="total"):
+
+    """
+    This function ...
+    :param output_path:
+    :param contribution:
+    :return:
+    """
+
+    # Load paths
+    datacube_paths_instruments = load_all_skirt_datacube_paths(output_path=output_path)
+    sed_paths_instruments = load_skirt_sed_paths(output_path=output_path)
+
+    # Initialize dictionary to contain the datacubes
+    datacubes = dict()
+
+    # Loop over the instruments
+    for instrument_name in datacube_paths_instruments:
+
+        # Get the datacube path
+        datacube_path = datacube_paths_instruments[instrument_name][contribution]
+
+        # Get the SED path
+        sed_path = sed_paths_instruments[instrument_name]
+
+        # Load datacube
+        datacube = DataCube.from_file_and_sed_file(datacube_path, sed_path)
+
+        # Add to dictionary
+        datacubes[instrument_name] = datacube
+
+    # Return the dictionary of datacubes
+    return datacubes
+
+# -----------------------------------------------------------------
+
 class DataCube(Image):
 
     """
@@ -74,38 +208,9 @@ class DataCube(Image):
         :return:
         """
 
-        # Determine output path
-        if output_path is None: output_path = fs.cwd()
-
-        # Get datacube paths
-        datacube_paths = fs.files_in_path(output_path, extension="fits")
-
-        # Get SED paths
-        sed_paths = fs.files_in_path(output_path, extension="dat", endswith="_sed")
-
-        # Determine prefix
-        prefix = None
-        for path in datacube_paths:
-            filename = fs.strip_extension(fs.name(path))
-            if prefix is None: prefix = filename.split("_")[0]
-            elif prefix != filename.split("_")[0]: raise IOError("Not all datacubes have the same simulation prefix")
-        if prefix is None: raise IOError("No datacubes were found")
-
-        # Arrange the datacubes per instrument and per contribution
-        datacube_paths_instruments = defaultdict(dict)
-        sed_paths_instruments = dict()
-        for path in datacube_paths:
-            filename = fs.strip_extension(fs.name(path))
-            instrument = filename.split(prefix + "_")[1].split("_")[0]
-            contr = filename.split("_")[-1]
-            datacube_paths_instruments[instrument][contr] = path
-        for path in sed_paths:
-            filename = fs.strip_extension(fs.name(path))
-            instrument = filename.split(prefix + "_")[1].split("_sed")[0]
-            sed_paths_instruments[instrument] = path
-
-        #print(datacube_paths_instruments)
-        #print(sed_paths_instruments)
+        # Load paths
+        datacube_paths_instruments = load_all_skirt_datacube_paths(output_path=output_path)
+        sed_paths_instruments = load_skirt_sed_paths(output_path=output_path)
 
         # Get the desired datacube path
         datacube_path = datacube_paths_instruments[instrument_name][contribution]
@@ -185,7 +290,8 @@ class DataCube(Image):
         """
 
         # Call the corresponding base class function
-        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True)
+        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True,
+                                                  density=True, density_strict=True) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
 
         # Check wavelength grid size
         assert len(wavelength_grid) == datacube.nframes

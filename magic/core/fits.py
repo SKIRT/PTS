@@ -178,7 +178,8 @@ def get_info(path):
 # -----------------------------------------------------------------
 
 def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False,
-                hdulist_index=0, no_filter=False, no_wcs=False):
+                hdulist_index=0, no_filter=False, no_wcs=False, density=False, brightness=False, density_strict=False,
+                brightness_strict=False):
 
     """
     This function ...
@@ -191,6 +192,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param hdulist_index:
     :param no_filter:
     :param no_wcs:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
@@ -274,7 +279,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
         else: log.warning("Could not determine the filter for the image '" + filename + "'")
 
     # Obtain the units of this image
-    unit = headers.get_unit(original_header)
+    unit = headers.get_unit(original_header, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
     # Obtain the FWHM of this image
     fwhm = headers.get_fwhm(original_header)
@@ -419,7 +424,8 @@ other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE
 # -----------------------------------------------------------------
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-               fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False):
+               fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False, density=False, brightness=False,
+               density_strict=False, brightness_strict=False):
 
     """
     This function ...
@@ -436,6 +442,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param extra_meta:
     :param distance:
     :param no_wcs:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
@@ -565,7 +575,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         fltr = headers.get_filter(fs.name(path[:-5]), header)
 
     # Obtain the units of this image
-    unit = headers.get_unit(header)
+    unit = headers.get_unit(header, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
     # Obtain the FWHM of this image
     if fwhm is None: fwhm = headers.get_fwhm(header)

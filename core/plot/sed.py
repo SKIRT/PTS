@@ -1454,7 +1454,7 @@ class SEDPlotter(Configurable):
 
         if types.is_string_type(self.out_path):
 
-            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds")
+            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds" + self.format)
             else: path = self.out_path
 
         else: path = self.out_path

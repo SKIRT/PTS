@@ -457,6 +457,9 @@ class SmartTable(Table):
 
         scalar_values = []
 
+        #print(values)
+        #print(self.column_info)
+
         for i, value in enumerate(values):
 
             # If this value has a unit, we have to make sure it is converted into the proper column unit
@@ -1073,6 +1076,9 @@ def initialize_table(table):
 
         # Get unit of the column
         unit = table.column_unit(name)
+
+        # Set this unit object as the actual column unit (so it can be a PhotometricUnit)
+        table[name].unit = unit
 
         # Add column info
         table.add_column_info(name, simple_dtype, unit, None)

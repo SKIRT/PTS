@@ -589,20 +589,46 @@ def get_filter(name, header=None):
 
 # -----------------------------------------------------------------
 
-def get_unit(header):
+def get_unit(header, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
     """
     This function ...
     :param header:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
     # Check whether physical type is defined
     if "PHYSTYPE" in header:
+
         physical_type = header["PHYSTYPE"]
-        density, brightness = interpret_physical_type(physical_type)
+        density_interpreted, brightness_interpreted = interpret_physical_type(physical_type)
+
+        # CHECK DENSITY
+        if density_strict and density_interpreted != density:
+
+            if density: raise ValueError("Density_strict is True and density is True but found density = False from header physical type specification")
+            else: raise ValueError("Density_strict is True and density is False but found density = True from header physical type specification")
+
+        # DENSITY OK
+        density = density_interpreted
+
+        # CHECK BRIGHTNESS
+        if brightness_strict and brightness_interpreted != brightness:
+
+            if brightness: raise ValueError("Brightness_strict is True and brightness is True but found brightness = False from header physical type specification")
+            else: raise ValueError("Brightness_strict is True and brightness is False but found brightness = True from header physical type specification")
+
+        # BRIGHTNESS OK
+        brightness = brightness_interpreted
+
+        # Set strict, because we found specification in header
         density_strict = brightness_strict = True
-    else: density = brightness = density_strict = brightness_strict = False # these are the defaults
+
+    #else: density = brightness = density_strict = brightness_strict = False # these are the defaults
 
     unit = None
 
