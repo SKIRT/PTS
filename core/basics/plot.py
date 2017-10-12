@@ -1130,11 +1130,13 @@ class MPLPlot(Plot):
         This function ...
         :param x:
         :param y:
-        :param *args:
         :param kwargs:
         :return:
         """
 
+        #print(x, y)
+
+        # Plot
         self._plot.plot(x, y, **kwargs)
 
     # -----------------------------------------------------------------
@@ -1148,6 +1150,8 @@ class MPLPlot(Plot):
         :param kwargs:
         :return:
         """
+
+        #print(x, y)
 
         # Plot
         self._plot.errorbar(x, y, **kwargs)

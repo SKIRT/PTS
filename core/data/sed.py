@@ -385,6 +385,20 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Multiply column with value
+        self[self.value_name] *= value
+        return self
+
+    # -----------------------------------------------------------------
+
     def add_point(self, fltr, photometry, error=None):
 
         """

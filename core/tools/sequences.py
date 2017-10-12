@@ -427,6 +427,20 @@ def not_none_indices(lst):
 
 # -----------------------------------------------------------------
 
+def has_not_none(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    for index in range(len(lst)):
+        if lst[index] is not None: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def equal_sizes(*lsts):
 
     """
@@ -1238,5 +1252,17 @@ def is_unique(sequence, value):
 
     if value not in sequence: raise ValueError("The value '" + str(value) + "' is not in the sequence '" + str(sequence) + "'")
     return noccurences(sequence, value) == 1
+
+# -----------------------------------------------------------------
+
+def has_any(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    return len(lst) > 0
 
 # -----------------------------------------------------------------

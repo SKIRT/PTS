@@ -35,6 +35,7 @@ from ..basics.range import RealRange
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools import types
 from ..filter.broad import BroadBandFilter
+from ..basics.errorbar import ErrorBar
 
 # -----------------------------------------------------------------
 
@@ -410,7 +411,18 @@ class SEDPlotter(Configurable):
         #ax_number = add_subplot_axes(ax,rect)
 
         # CREATE MAIN PLOT AND ONE RESIDUAL PLOT
-        self.main_plot, residual_plot = self.figure.create_column(2, share_axis=True, height_ratios=[4,1])
+        #self.main_plot, residual_plot = self.figure.create_column(2, share_axis=True, height_ratios=[4,1])
+        #self.residual_plots.append(residual_plot)
+
+        nplots = 2
+        height_ratios = [4, 1]
+
+        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
+        # self.main_plot, residual_plot = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        # self.residual_plots.append(residual_plot)
+        self.main_plot = plots[0]
+        residual_plot = plots[1]
         self.residual_plots.append(residual_plot)
 
         # Count the number of observed SEDs
@@ -421,8 +433,8 @@ class SEDPlotter(Configurable):
         reference_sed = None
 
         # Make iterable from color map names
-        color_maps = iter(distinguishable_colormaps + other_colormaps)
-        ncolor_maps = len(distinguishable_colormaps + other_colormaps)
+        #color_maps = iter(distinguishable_colormaps + other_colormaps)
+        #ncolor_maps = len(distinguishable_colormaps + other_colormaps)
 
         # Make iterable from distinct colors
         different_colors = iter(pretty_colors)
@@ -442,11 +454,21 @@ class SEDPlotter(Configurable):
         legend_rectangles = []
         rectangle_labels = []
 
+        from ..tools import sequences
+
+        with_errors = []
+
         # Loop over the different observed SEDs
         for label in self.observations:
 
+            # Debugging
+            log.debug("Plotting the data points of the '" + label + "' observed SED ...")
+
             # Get the observed SED
             observation = self.observations[label]
+
+            #print(label)
+            #print(observation)
 
             # Get wavelengths, fluxes, instruments, bands, errors
             wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
@@ -455,6 +477,15 @@ class SEDPlotter(Configurable):
             bands = observation.bands()
             errors = observation.errors(unit=self.config.unit, add_unit=False)
 
+            #print(errors)
+
+            # Check whether has errors
+            has_errors = sequences.has_not_none(errors)
+            if has_errors: with_errors.append(label)
+
+            #print(label)
+            #print(fluxes)
+
             # Create color range
             # if number_of_observations <= 3:
             #     colormap = plt.get_cmap(next(color_maps))
@@ -462,11 +493,18 @@ class SEDPlotter(Configurable):
             # else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
             colors = [color_hex[next(different_colors)]] * len(wavelengths)
 
+            #print(colors)
+
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
 
             # Reference SED for comparison with other observed SEDs
             if first: reference_sed = observation
+
+            #if label == "Observation (SED)": continue
+
+            # TEST
+            #if not first: wavelengths = [wavelength * 1.1 for wavelength in wavelengths]
 
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
@@ -478,6 +516,18 @@ class SEDPlotter(Configurable):
                     fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
                     if fltr in self.config.ignore_filters: continue
 
+                # Get flux
+                #wavelength = wavelengths[k]
+                #flux = fluxes[k]
+                #print(k, wavelength, flux)
+
+                # if first:
+                #     #if k % 2 == 0: continue
+                #     if k % 2 != 0: continue
+                # else:
+                #     #if k % 2 != 0: continue
+                #     if k % 2 == 0: continue
+
                 # Check validity of flux value
                 if fluxes[k] <= 0.0:
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
@@ -486,9 +536,13 @@ class SEDPlotter(Configurable):
                 # Get marker
                 marker = markers[unique_labels.index(labels[k])]
 
+                error = errors[k]
+                if sequences.has_any(with_errors) and error is None:
+                    error = ErrorBar.zero()
+
                 # Plot the flux data point on the main axis with the specified marker and color
                 # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch = False
-                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, colors[k], return_patch=True)
+                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, colors[k], return_patch=True)
 
                 if patch is not None:
                     legend_patches.append(patch)
@@ -508,6 +562,8 @@ class SEDPlotter(Configurable):
 
                     reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k], reference_sed.instruments(), reference_sed.bands(), reference_sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), reference_sed.photometry(unit=self.config.unit, add_unit=False))
 
+                    #print(fluxes[k], reference_flux)
+
                     if reference_flux is None:
 
                         value = None
@@ -519,6 +575,12 @@ class SEDPlotter(Configurable):
 
                             value = (fluxes[k] - reference_flux) / reference_flux * 100.
                             error = errors[k] / reference_flux * 100.0
+
+                        #else: value = error = None
+                        elif fluxes[k] is not None:
+
+                            value = (fluxes[k] - reference_flux) / reference_flux * 100.
+                            error = ErrorBar.zero()
 
                         else: value = error = None
 
@@ -836,7 +898,7 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 log_model = np.log10(sed.photometry(unit=self.config.unit, add_unit=False))
-                self.main_plot.plot(sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), log_model, "-", color="lightgrey")
+                self.main_plot.plot(sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), log_model, ls="-", color="lightgrey")
 
             elif plot_residuals:
 
@@ -954,19 +1016,32 @@ class SEDPlotter(Configurable):
         # Count the number of observed SEDs
         number_of_observations = len(self.observations)
 
-        height_ratios = [4]
-        for _ in range(number_of_observations): height_ratios.append(1)
+        # if self.config.residual_reference == "observations": nplots = 2
+        # elif self.config.residual_reference == "models": nplots = 1 + self.nmodels_for_residuals
+        # else: raise ValueError("")
+
+        #height_ratios = [4]
+        #for _ in range(number_of_observations): height_ratios.append(1)
+
+        nplots = number_of_observations + 1
+        #height_ratios = [4] + [1] * (nplots - 1)
+        height_ratios = [4] + [1] * number_of_observations
 
         # Setup the figure
-        gs = gridspec.GridSpec(1 + number_of_observations, 1, height_ratios=height_ratios)
-        self.main_plot = plt.subplot(gs[0])
-        for i in range(number_of_observations):
-            ax = plt.subplot(gs[1+i], sharex=self.main_plot)
-            self.residual_plots.append(ax)
-        residual_axes = iter(self.residual_plots)
+        #gs = gridspec.GridSpec(1 + number_of_observations, 1, height_ratios=height_ratios)
+        #self.main_plot = plt.subplot(gs[0])
+        #for i in range(number_of_observations):
+        #    ax = plt.subplot(gs[1+i], sharex=self.main_plot)
+        #    self.residual_plots.append(ax)
+        #residual_axes = iter(self.residual_plots)
+
+        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
+        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        self.main_plot = plots[0]
+        self.residual_plots = plots[1:]
 
         # Make iterable from color map names
-        color_maps = iter(distinguishable_colormaps+other_colormaps)
+        #color_maps = iter(distinguishable_colormaps+other_colormaps)
 
         # Make iterable from distinct colors
         colors = iter(pretty_colors)
@@ -984,10 +1059,13 @@ class SEDPlotter(Configurable):
         line_styles_models_no_residuals = ["-"] * len(self.models)
 
         # Loop over the different observed SEDs
+        index = 0
         for label in self.observations:
 
             # Get the axis of the next residual plot
-            ax2 = next(residual_axes)
+            #ax2 = next(self.residual_plots)
+            ax2 = self.residual_plots[index]
+            index += 1
 
             # Get the observed SED
             observation = self.observations[label]
@@ -1002,6 +1080,9 @@ class SEDPlotter(Configurable):
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
 
+            #print(label)
+            #print(fluxes)
+
             # Create color range
             # if number_of_observations <= 3:
             #     # Determine color map class
@@ -1012,6 +1093,8 @@ class SEDPlotter(Configurable):
 
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
+
+                #print(k)
 
                 # Check filter
                 instrument = instruments[k]
@@ -1026,6 +1109,10 @@ class SEDPlotter(Configurable):
                 if fluxes[k] <= 0.0:
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                     continue
+
+                #wavelength = wavelengths[k]
+                #flux = fluxes[k]
+                #print(wavelength, flux)
 
                 # Get next color
                 color = next(color_range)
@@ -1061,9 +1148,9 @@ class SEDPlotter(Configurable):
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                 residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
-                if ghost: ax2.plot(wavelengths_residuals, residuals, "-", color='lightgrey')
+                if ghost: ax2.plot(wavelengths_residuals, residuals, ls="-", color='lightgrey')
                 else:
-                    ax2.plot(wavelengths_residuals, residuals, line_styles[counter], color='black', label=model_label)
+                    ax2.plot(wavelengths_residuals, residuals, ls=line_styles[counter], color='black', label=model_label)
                     counter += 1
 
         # Add model SEDs
@@ -1114,6 +1201,8 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        #print(label, wavelength, flux)
+
         # Keep track of minimum and maximum flux
         if error is not None:
             lower_flux = flux + error.lower
@@ -1131,6 +1220,8 @@ class SEDPlotter(Configurable):
         # If requested, the patch is returned
         patch = None
 
+        #print(label, used_labels)
+
         # Check if a data point of this instrument has already been plotted
         if label not in used_labels:
 
@@ -1143,20 +1234,24 @@ class SEDPlotter(Configurable):
 
                 if lower_flux <= 0:
                     flux_lower_flux = float("-inf")
-                else: flux_lower_flux = flux/lower_flux
+                else: flux_lower_flux = flux / lower_flux
 
-                flux_upper_flux = flux/upper_flux
+                flux_upper_flux = flux / upper_flux
 
                 error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
                 used_labels.append(label)
 
+                #print("a", wavelength, flux)
                 patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
             else:
 
+                #print(type(axis))
+
                 #axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
-                patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+                #print("b", wavelength, flux)
+                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
         # A data point of this instrument has already been plotted
         else:
@@ -1164,10 +1259,13 @@ class SEDPlotter(Configurable):
             if error is not None:
 
                 error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+                #print("c", wavelength, flux)
                 patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else: patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+            else:
+                #print("d", wavelength, flux)
+                patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
         # Return the patch if requested
         if return_patch: return patch
@@ -1268,7 +1366,7 @@ class SEDPlotter(Configurable):
 
         # Plot the data points (as a line) on the axis
         log_model = np.log10(fluxes)
-        axis.plot(wavelengths, log_model, linestyle, color=linecolor, label=label)
+        axis.plot(wavelengths, log_model, ls=linestyle, color=linecolor, label=label)
 
         # Plot errors
         if errors is not None:
@@ -1556,7 +1654,7 @@ def find_reference_flux(instrument, band, wavelength, reference_instruments, ref
     # Loop over the entries in the reference SED
     for i in range(len(reference_wavelengths)):
 
-        if (reference_instruments[i] == instrument and reference_bands == band) or np.isclose(reference_wavelengths[i], wavelength):
+        if (reference_instruments[i] == instrument and reference_bands[i] == band) or np.isclose(reference_wavelengths[i], wavelength):
             return reference_fluxes[i]
 
     # No match

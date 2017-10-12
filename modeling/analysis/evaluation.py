@@ -1792,6 +1792,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Ignore filters
         plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
+        #print(self.observed_sed)
+        #print(self.simulated_sed)
+
         # Add the SEDs
         plotter.add_sed(self.observed_sed, "Observation (SED)")
         plotter.add_sed(self.simulated_sed, "Simulation")
@@ -1845,6 +1848,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Add the SEDs
         plotter.add_sed(self.observed_sed, "Observation (SED)")
         plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)")
+        #plotter.add_sed(test, "test")
         plotter.format = "pdf"
 
         # Plot
@@ -1973,7 +1977,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.has_file(self.seds_images_plot_filepath)
+        return fs.is_file(self.seds_images_plot_filepath)
 
     # -----------------------------------------------------------------
 
