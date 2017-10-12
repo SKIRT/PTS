@@ -860,7 +860,7 @@ class RemotePythonSession(object):
                 new_name = str(index) + "." + extension
 
                 # Upload the file, giving it a new name
-                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, new_name=new_name, show_output=log.is_debug())
+                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, dirpath, new_name=new_name, show_output=log.is_debug())
 
                 # Set the remote path
                 remote_depending_filepaths[name][label] = remote_depending_filepath
