@@ -370,7 +370,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return WeightsTable.from_file(self.weights_filepath)
+        # Give message
+        log.success("Loading the weights ...")
+
+        # Load the weights
+        self.weights = WeightsTable.from_file(self.weights_filepath)
 
     # -----------------------------------------------------------------
 
@@ -434,7 +438,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return FluxDifferencesTable.from_file(self.differences_filepath)
+        # Give message
+        log.success("Loading the differences ...")
+
+        # Load
+        self.differences = FluxDifferencesTable.from_file(self.differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -474,7 +482,21 @@ class AnalysisModelEvaluator(AnalysisComponent):
         for fltr in self.simulated_filters_no_iras_planck:
 
             # Present?
-            if self.has_image_for_filter(fltr): frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
+            if self.has_image_for_filter(fltr):
+
+                # Needed?
+                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_image_fluxes: continue
+
+                # Success
+                log.success("The '" + str(fltr) + "' image is already present: loading ...")
+
+                # Load the frame
+                frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
+
+                # Add the frame
+                self.images.append(frame)
+
+            # Not yet present
             else:
 
                 # Debugging
@@ -486,10 +508,25 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 # Convert to non-brightness
                 frame.convert_to_corresponding_non_brightness_unit()
 
-            # Add the frame
-            self.images.append(frame)
+                # Add the frame
+                self.images.append(frame)
 
-            if self.has_errors_for_filter(fltr): errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
+            # Present?
+            if self.has_errors_for_filter(fltr):
+
+                # Needed?
+                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr): continue
+
+                # Success
+                log.success("The '" + str(fltr) + "' image is already present: loading ...")
+
+                # Load the error frame
+                errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
+
+                # Add the errors frame
+                self.errors.append(errors)
+
+            # Not yet present
             else:
 
                 # Debugging
@@ -498,8 +535,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 # Create an approximate error frame
                 errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter)
 
-            # Add the errors frame
-            self.errors.append(errors)
+                # Add the errors frame
+                self.errors.append(errors)
 
     # -----------------------------------------------------------------
 
@@ -517,6 +554,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         image_names_for_filters = self.dataset.get_names_for_filters(self.simulated_filters_no_iras_planck)
         for fltr, image_name in zip(self.simulated_filters_no_iras_planck, image_names_for_filters):
 
+            # Needs to be loaded?
+            if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed: continue
+
             # # Check if not None (in database)
             # if image_name is None:
             #     log.warning("No observed " + key + " image was found")
@@ -528,13 +568,16 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #     continue
 
             # Debugging
-            log.debug("Loading the observed " + str(fltr) + " image ...")
+            log.debug("Loading the observed '" + str(fltr) + "' image ...")
 
             # Load the frame, not truncated
             frame = self.dataset.get_frame(image_name, masked=False)
 
             # Add the frame
             self.observed_images.append(frame)
+
+            # Debugging
+            log.debug("Loading the observed '" + str(fltr) + "' error map ...")
 
             # Get the error map
             errors = self.dataset.get_errormap(image_name)
@@ -557,6 +600,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
+            # Debugging
+            log.debug("Rebinning the '" + str(fltr) + "' image ...")
+
+            # All already present
+            if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
+
             # Get the frames
             simulated = self.images[fltr]
             simulated_errors = self.images[fltr]
@@ -565,7 +614,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Check coordinate systems
             if simulated.wcs != simulated_errors.wcs: raise ValueError("The coordinate system of the simulated frame and error map are not the same")
-            if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not th same")
+            if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not the same")
 
             # Check whether the coordinate systems of the observed and simulated image match
             if simulated.wcs == observed.wcs:
@@ -575,7 +624,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             elif observed.average_pixelscale < simulated.average_pixelscale:
 
                 # Debugging
-                log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
+                log.debug("The observed '" + str(fltr) + "' image has a better resolution as the simulated image: rebinning the observed image ...")
 
                 # Rebin the observed images
                 observed.rebin(simulated.wcs)
@@ -585,7 +634,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             elif simulated.average_pixelscale < observed.average_pixelscale:
 
                 # Debugging
-                log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
+                log.debug("The simulated '" + str(fltr) + "' image has a better resolution as the observed image: rebinning the simulated image ...")
 
                 # Rebin the simulated images
                 simulated.rebin(observed.wcs)
@@ -624,7 +673,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return ObservedSED.from_file(self.images_fluxes_filepath)
+        # Success
+        log.success("Image fluxes are already present: loading from file ...")
+
+        # Load
+        self.images_fluxes = ObservedSED.from_file(self.images_fluxes_filepath)
 
     # -----------------------------------------------------------------
 
@@ -659,7 +712,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return ObservedSED.from_file(self.images_sed_filepath)
+        # Debugging
+        log.success("Images SED is already present: loading from file ...")
+
+        # Load
+        self.images_sed = ObservedSED.from_file(self.images_sed_filepath)
 
     # -----------------------------------------------------------------
 
@@ -706,7 +763,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return FluxDifferencesTable.from_file(self.images_differences_filepath)
+        # MEssage
+        log.success("Image differences are already present: loading from file ...")
+
+        # Load
+        self.images_differences = FluxDifferencesTable.from_file(self.images_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -718,7 +779,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Calculate the differences between the simulated fluxes and the fluxes from the simulated images")
+        log.info("Calculate the differences between the simulated fluxes and the fluxes from the simulated images ...")
 
         # Loop over the fluxes from mock observed images
         for i in range(len(self.images_fluxes)):
@@ -727,10 +788,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
             fltr = self.images_fluxes.get_filter(i)
 
             # Get the flux density
-            flux = self.images_fluxes.get_photometry(i, unit="J", add_unit=False)
+            flux = self.images_fluxes.get_photometry(i, unit="Jy", add_unit=False)
 
             # Get the calculated mock observed flux
-            observed_flux = self.simulated_fluxes.get_photometry(i, unit="J", add_unit=False)
+            observed_flux = self.simulated_fluxes.get_photometry(i, unit="Jy", add_unit=False)
 
             # Add to table
             self.fluxes_differences.add_from_filter_and_fluxes(fltr, flux, observed_flux)
@@ -744,7 +805,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return FluxDifferencesTable.from_file(self.fluxes_differences_filepath)
+        # Message
+        log.success("Fluxes differences are already present: loading from file ...")
+
+        # Load
+        self.fluxes_differences = FluxDifferencesTable.from_file(self.fluxes_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -756,7 +821,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Calculating the differences between the observed fluxes and the fluxes from the observed images")
+        log.info("Calculating the differences between the observed fluxes and the fluxes from the observed images ...")
 
         # Loop over the fluxes
         for i in range(len(self.images_sed)):
@@ -782,7 +847,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return FluxDifferencesTable.from_file(self.sed_differences_filepath)
+        # Message
+        log.success("SED differences are already present: loading from file ...")
+
+        # Load
+        self.sed_differences = FluxDifferencesTable.from_file(self.sed_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1666,8 +1735,195 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the seds
-        self.plot_seds()
+        # 1. Plot the simulated SED together with the observed SED
+        if not self.has_simulated_sed_plot: self.plot_simulated_sed()
+
+        # 2. Plot the simulated fluxes together with the observed SED
+        if not self.has_simulated_fluxes_plot: self.plot_simulated_fluxes()
+
+        # Plot the comparison between the simulated fluxes (from SED and from images)
+        if not self.has_fluxes_plot: self.plot_fluxes()
+
+        # Plot the comparison between the observed fluxes (from SED and from images)
+        if not self.has_sed_plot: self.plot_seds()
+
+        # Plot the comparison between simulated fluxes and observed fluxes, both from IMAGES, and the simulated SED
+        if not self.has_seds_images_plot: self.plot_seds_images()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_sed_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "simulated_sed.pdf")
+    
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_sed_plot(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        return fs.is_file(self.simulated_sed_plot_filepath)
+    
+    # -----------------------------------------------------------------
+
+    def plot_simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the simulated SED and observed SED ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.simulated_sed, "Simulation")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.simulated_sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_fluxes_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "simulated_fluxes.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulated_fluxes(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the mock observed fluxes and observed SED ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.simulated_fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "fluxes.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the fluxes ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.images_fluxes, "Simulation (from mock observed images)")
+        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)")
+        plotter.add_sed(self.simulated_sed, "Simulation")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_plot_filepath(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.sed_plot_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1684,13 +1940,66 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Initialize the plotter
         plotter = SEDPlotter()
 
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
         # Add the SEDs
         plotter.add_sed(self.images_sed, "Observation (from images)")
-        plotter.add_sed(self.simulated_sed, "Simulation")
-
+        plotter.add_sed(self.observed_sed, "Observation (SED)")
         plotter.format = "pdf"
 
         # Plot
-        plotter.run(output=self.images_fluxes_path)
+        plotter.run(output=self.sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_images_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "images.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds_images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_file(self.seds_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_seds_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SEDs based on images (and with the simulated SED as reference) ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.images_sed, "Observation (from images)")
+        plotter.add_sed(self.images_fluxes, "Simulation (from mock observed images)")
+        plotter.add_sed(self.simulated_sed, "Simulation")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.seds_images_plot_filepath)
 
 # -----------------------------------------------------------------

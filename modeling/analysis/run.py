@@ -1241,7 +1241,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.output_path, self.simulation_prefix + "_M81_earth_sed.dat")
+        return fs.join(self.output_path, self.simulation_prefix + "_earth_sed.dat")
 
     # -----------------------------------------------------------------
 

@@ -1156,7 +1156,7 @@ class SEDPlotter(Configurable):
             else:
 
                 #axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
-                patch = axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+                patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
         # A data point of this instrument has already been plotted
         else:

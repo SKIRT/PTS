@@ -4328,18 +4328,22 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload_file_to(self, filepath, destination, remove=False):
+    def upload_file_to(self, filepath, destination, remove=False, new_name=None):
 
         """
         This function ...
         :param filepath:
         :param destination:
         :param remove:
+        :param new_name:
         :return:
         """
 
-        # Determine remote file path and upload
-        remote_path = fs.join(destination, fs.name(filepath))
+        # Determine the remote file path
+        filename = new_name if new_name is not None else fs.name(filepath)
+        remote_path = fs.join(destination, filename)
+
+        # Upload the file
         self.upload(filepath, remote_path)
 
         # Check whether present

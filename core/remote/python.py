@@ -849,13 +849,24 @@ class RemotePythonSession(object):
             remote_depending_filepaths[name] = dict()
 
             # Upload all depending
+            index = 0
             for label in depending_filepaths[name]:
 
+                # Get the local filepath
                 local_depending_filepath = depending_filepaths[name][label]
-                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, show_output=log.is_debug())
+
+                # Determine new name for the file
+                extension = fs.get_extension(local_depending_filepath)
+                new_name = str(index) + "." + extension
+
+                # Upload the file, giving it a new name
+                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, remote_temp_path, new_name=new_name, show_output=log.is_debug())
 
                 # Set the remote path
                 remote_depending_filepaths[name][label] = remote_depending_filepath
+
+                # Increment the counter
+                index += 1
 
         ### LOAD THE INPUT DICT REMOTELY
 
