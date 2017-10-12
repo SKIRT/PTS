@@ -30,6 +30,7 @@ definition.add_flag("analyse", "analyse retrieved simulations", True)
 # -----------------------------------------------------------------
 
 # Crashed
+definition.add_flag("check_crashed", "check whether crashed simulations have the necessary output, if so, retrieve them")
 definition.add_optional("retrieve_crashed", "string_integer_list_dictionary", "retrieve crashed simulations for these hosts and simulation IDs")
 
 # -----------------------------------------------------------------

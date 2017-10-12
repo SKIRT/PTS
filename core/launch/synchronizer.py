@@ -372,7 +372,7 @@ class RemoteSynchronizer(Configurable):
             log.debug("Retrieving the simulations of remote '" + remote.system_name + "' ...")
 
             # Retrieve simulations
-            self.simulations += remote.retrieve(retrieve_crashed=self.get_retrieve_crashed_ids_for_host(remote.host_id))
+            self.simulations += remote.retrieve(retrieve_crashed=self.get_retrieve_crashed_ids_for_host(remote.host_id), check_crashed=self.config.check_crashed)
 
     # -----------------------------------------------------------------
 

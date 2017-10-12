@@ -1192,11 +1192,12 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def retrieve(self, retrieve_crashed=None):
+    def retrieve(self, retrieve_crashed=None, check_crashed=False):
 
         """
         This function ...
         :param retrieve_crashed:
+        :param check_crashed:
         :return:
         """
 
@@ -1238,18 +1239,31 @@ class SKIRTRemote(Remote):
                 simulations.append(simulation)
 
             # Crashed simulations
-            elif "crashed" in simulation_status and retrieve_crashed is not None:
+            elif "crashed" in simulation_status:
+
+                # Do we need to bother looking?
+                if retrieve_crashed is None and not check_crashed: continue
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
                 # Check the simulation ID
-                if simulation.id not in retrieve_crashed: continue
+                if retrieve_crashed and simulation.id not in retrieve_crashed:
+
+                    # If check crashed for their output
+                    if check_crashed and "writing" in simulation_status: # already in the writing phase
+
+                        # Give message to the user
+                        log.success("Simulation crashed but already in the writing phase. Trying to retrieve the present output and continuing from there")
+
+                    # Don't check crashed simulations
+                    else: continue
                 
                 # Retrieve the simulation
                 self.retrieve_simulation(simulation)
 
                 # Don't remove from the remote
+                log.warning("Because the simulation '" + simulation.name + "' crashed, the remote simulation directories will be kept for manual inspection")
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)
