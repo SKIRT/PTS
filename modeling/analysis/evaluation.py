@@ -105,40 +105,40 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 4. Calculate chi squared
         self.calculate_chi_squared()
 
-        # 6. Make images
+        # 5. Make images
         self.make_images()
 
-        # Load observed images
+        # 6. Load observed images
         self.load_observed_images()
 
-        # Rebin the images to the same pixelscale
+        # 7. Rebin the images to the same pixelscale
         self.rebin_images()
 
-        # 7. Calculate fluxes from the images
+        # 8. Calculate fluxes from the images
         self.calculate_image_fluxes()
 
-        # 8. Calculate SED
+        # 9. Calculate SED
         self.calculate_image_sed()
 
-        # 9. Calcualte differences between fluxes calculated from the images and the observed fluxes
+        # 10. Calcualte differences between fluxes calculated from the images and the observed fluxes
         self.calculate_image_differences()
 
-        # 10. Calculate the residual images
+        # 11. Calculate the residual images
         self.calculate_residuals()
 
-        # 11. Calculate the weighed residual images
+        # 12. Calculate the weighed residual images
         self.calculate_weighed()
 
-        # 12. Create distributions of the residual values
+        # 13. Create distributions of the residual values
         self.create_residuals_distributions()
 
-        # 13. Create distributions of the weighed residual values
+        # 14. Create distributions of the weighed residual values
         self.create_weighed_distributions()
 
-        # 14. Writing
+        # 15. Writing
         self.write()
 
-        # 15. Plotting
+        # 16. Plotting
         self.plot()
 
     # -----------------------------------------------------------------

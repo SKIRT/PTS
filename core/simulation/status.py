@@ -687,6 +687,11 @@ class LogSimulationStatus(SimulationStatus):
             #print("LINES:")
             #for line in lines: print("  " + line)
             self.status = "crashed"
+
+            # Get the info of the phase at which the crash happened
+            self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(self.log_lines)
+
+            # Return
             return
 
         # Running
@@ -948,6 +953,11 @@ class SpawnSimulationStatus(SimulationStatus):
                 #return
                 #break
                 log.error("Simulation crashed")
+
+                # Get the info
+                self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(self.log_lines)
+
+                # Return fail
                 return False
 
             # Running
@@ -965,26 +975,6 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 # Get the info
                 self.phase, self.simulation_phase, self.stage, self.cycle, self.progress, self.extra = get_phase_info(self.log_lines)
-
-            #print(last_phase, self.phase)
-            #print(last_stage, self.stage)
-            #print(last_cycle, self.cycle)
-            #print(last_extra, self.extra)
-
-            # # Finished: break loop
-            # if self.finished:
-            #     log.success("Simulation finished")
-            #     return True
-
-            # # Crashed: break loop
-            # elif self.crashed:
-            #     log.error("Simulation crashed")
-            #     return False
-            #
-            # # Aborted: break loop
-            # elif self.aborted:
-            #     log.error("Simulation has been aborted")
-            #     return False
 
             # New phase
             #elif last_phase is None or self.phase != last_phase:

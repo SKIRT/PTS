@@ -1446,7 +1446,7 @@ class SKIRTRemote(Remote):
 
                         # Interpret the content of the last line
                         if " Finished simulation " + ski_name in last: simulation_status = "finished"
-                        elif " *** Error: " in last: simulation_status = "crashed"
+                        elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(remote_log_file_path)
                         else: simulation_status = self.running_status_from_log_file(remote_log_file_path)
 
                     # The job is running but this simulation does not have a log file yet
@@ -1629,7 +1629,7 @@ class SKIRTRemote(Remote):
 
             # Interpret the content of the last line
             if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
-            elif " *** Error: " in last: simulation_status = "crashed"
+            elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(file_path)
             else:
 
                 # Screen session
@@ -1698,7 +1698,7 @@ class SKIRTRemote(Remote):
 
             # Interpret the content of the last line
             if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
-            elif " *** Error: " in last: simulation_status = "crashed"
+            elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(file_path)
 
             # The simulation cannot be running because we would have seen it in the qstat output
             # So with a partial log file, it must have been aborted
@@ -1713,6 +1713,21 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    def crashed_status_from_log_file(self, file_path):
+
+        """
+        This function ...
+        :param file_path:
+        :return:
+        """
+
+        # Return string from simulation status
+        status_string = str(LogSimulationStatus(file_path, self))
+        if "crashed" not in status_string: raise RuntimeError("Something went wrong")
+        return status_string
+
+    # -----------------------------------------------------------------
+
     def running_status_from_log_file(self, file_path):
 
         """
@@ -1721,7 +1736,9 @@ class SKIRTRemote(Remote):
         """
 
         # Return string from simulation status
-        return str(LogSimulationStatus(file_path, self))
+        status_string = str(LogSimulationStatus(file_path, self))
+        if "running" not in status_string: raise RuntimeError("Something went wrong")
+        return status_string
 
     # -----------------------------------------------------------------
 

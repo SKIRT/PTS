@@ -558,7 +558,7 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.red + fmt.bold
 
                 # Crashed simulation
-                elif simulation_status == "crashed":
+                elif "crashed" in simulation_status:
 
                     if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "crashed" in self.config.statuses):
