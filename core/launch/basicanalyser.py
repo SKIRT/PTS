@@ -128,6 +128,9 @@ class BasicAnalyser(Configurable):
         # Make a local reference to the simulation object
         self.simulation = kwargs.pop("simulation")
 
+        # Update the analysis options for added features
+        self.simulation.update_analysis_options()
+
         # Also make references to the simulation's analysis options for extraction, plotting and misc (for shorter notation)
         self.extraction_options = self.simulation.analysis.extraction
         self.plotting_options = self.simulation.analysis.plotting

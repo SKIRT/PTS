@@ -306,6 +306,34 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_ids_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        if self.config.ids is None: return None
+        elif host_id not in self.config.ids: return None
+        else: return self.config.ids[host_id]
+
+    # -----------------------------------------------------------------
+
+    def get_retrieve_crashed_ids_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        if self.config.retrieve_crashed is None: return None
+        elif host_id not in self.config.retrieve_crashed: return None
+        else: return self.config.retrieve_crashed[host_id]
+
+    # -----------------------------------------------------------------
+
     def retrieve(self):
 
         """
@@ -344,7 +372,7 @@ class RemoteSynchronizer(Configurable):
             log.debug("Retrieving the simulations of remote '" + remote.system_name + "' ...")
 
             # Retrieve simulations
-            self.simulations += remote.retrieve()
+            self.simulations += remote.retrieve(retrieve_crashed=self.get_retrieve_crashed_ids_for_host(remote.host_id))
 
     # -----------------------------------------------------------------
 

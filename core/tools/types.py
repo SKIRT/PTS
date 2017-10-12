@@ -181,6 +181,36 @@ def is_string_sequence(value):
 
 # -----------------------------------------------------------------
 
+def is_integer_sequence(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_sequence(value): return False
+    for element in value:
+        if not is_integer_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_real_sequence(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_sequence(value): return False
+    for element in value:
+        if not is_real_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
 def is_tuple(value):
 
     """

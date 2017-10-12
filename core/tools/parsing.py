@@ -1128,6 +1128,22 @@ def string_integer_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def string_integer_list_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_integer_sequence(value): raise ValueError("All values must be integer sequences")
+    return d
+
+# -----------------------------------------------------------------
+
 def string_real_dictionary(argument):
 
     """
@@ -1140,6 +1156,22 @@ def string_real_dictionary(argument):
     for key, value in d.items():
         if not types.is_string_type(key): raise ValueError("All keys must be strings")
         if not types.is_real_type(value): raise ValueError("All values must be real")
+    return d
+
+# -----------------------------------------------------------------
+
+def string_real_list_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_real_sequence(value): raise ValueError("All values must be real sequences")
     return d
 
 # -----------------------------------------------------------------
