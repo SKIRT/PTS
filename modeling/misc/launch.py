@@ -520,6 +520,34 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @property
+    def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Full instrument
+        if self.instrument_class == FullInstrument:
+
+            properties = dict()
+            properties["scattering_levels"] = self.config.scattering_levels
+            properties["counts"] = self.config.counts
+            return properties
+
+        # Not full instrument
+        else:
+
+            # Check settings
+            if self.config.scattering_levels > 0: raise ValueError("Cannot have more scattering levels when instrument is not FullInstrument")
+            if self.config.counts: raise ValueError("Cannot record photon counts when instrument is not FullInstrument")
+
+            # Return empty settings
+            return dict()
+
+    # -----------------------------------------------------------------
+
     def adapt_ski(self):
 
         """

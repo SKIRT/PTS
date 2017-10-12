@@ -66,6 +66,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.images = FrameList()
         self.errors = FrameList()
 
+        # The observed images and their errors
+        self.observed_images = FrameList()
+        self.observed_errors = FrameList()
+
         # Fluxes calculated based on images
         self.images_fluxes = ObservedSED(photometry_unit="Jy") # based on simulated images
         self.images_sed = ObservedSED(photometry_unit="Jy") # based on observed images
@@ -103,6 +107,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # 6. Make images
         self.make_images()
+
+        # Load observed images
+        self.load_observed_images()
+
+        # Rebin the images to the same pixelscale
+        self.rebin_images()
 
         # 7. Calculate fluxes from the images
         self.calculate_image_fluxes()
@@ -446,6 +456,99 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_observed_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the observed images ...")
+
+        # Loop over the appropriate observed images
+        image_names_for_filters = self.dataset.get_names_for_filters(self.simulated_filters_no_iras_planck)
+        for fltr, image_name in zip(self.simulated_filters_no_iras_planck, image_names_for_filters):
+
+            # # Check if not None (in database)
+            # if image_name is None:
+            #     log.warning("No observed " + key + " image was found")
+            #     continue
+
+            # # Check whether residual frames already created
+            # if self.has_residuals(filter_name) and self.has_weighed_residuals(filter_name):
+            #     log.success("Residual and weighed residual map for the '" + filter_name + "' filter already created")
+            #     continue
+
+            # Debugging
+            log.debug("Loading the observed " + str(fltr) + " image ...")
+
+            # Load the frame, not truncated
+            frame = self.dataset.get_frame(image_name, masked=False)
+
+            # Add the frame
+            self.observed_images.append(frame)
+
+            # Get the error map
+            errors = self.dataset.get_errormap(image_name)
+
+            # Add the error map
+            self.observed_errors.append(errors)
+
+    # -----------------------------------------------------------------
+
+    def rebin_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info('Rebinning the images to the same pixelscale ...')
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Get the frames
+            simulated = self.images[fltr]
+            simulated_errors = self.images[fltr]
+            observed = self.observed_images[fltr]
+            observed_errors = self.observed_errors[fltr]
+
+            # Check coordinate systems
+            if simulated.wcs != simulated_errors.wcs: raise ValueError("The coordinate system of the simulated frame and error map are not the same")
+            if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not th same")
+
+            # Check whether the coordinate systems of the observed and simulated image match
+            if simulated.wcs == observed.wcs:
+                log.debug("The coordinate system of the simulated and observed image for the " + str(fltr) + " filter matches")
+
+            # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
+            elif observed.average_pixelscale < simulated.average_pixelscale:
+
+                # Debugging
+                log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
+
+                # Rebin the observed images
+                observed.rebin(simulated.wcs)
+                observed_errors.rebin(simulated.wcs)
+
+            # The simulated image has a smaller pixelscale as the observed image
+            elif simulated.average_pixelscale < observed.average_pixelscale:
+
+                # Debugging
+                log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
+
+                # Rebin the simulated images
+                simulated.rebin(observed.wcs)
+                simulated_errors.rebin(observed.wcs)
+
+            # Error
+            else: raise RuntimeError("Something unexpected happened")
+
+    # -----------------------------------------------------------------
+
     def calculate_image_fluxes(self):
 
         """
@@ -477,8 +580,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Calculating the fluxes based on the observed images ...")
 
-        # Loop over the observed images
-        for frame in self.frame_list:
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Get the frame
+            frame = self.observed_images[fltr]
 
             # Calculate the total flux
             flux = frame.sum(add_unit=True)
@@ -550,8 +656,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the observed and simulated image
             simulated = self.images[fltr]
-            observed = self.frame_list[fltr]
-            errors = self.errormap_list[fltr]
+            observed = self.observed_images[fltr]
+            errors = self.observed_errors[fltr]
 
             # Calculate the residual image
             residual = (simulated - observed) / observed
@@ -601,8 +707,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the observed and simulated image
             simulated = self.images[fltr]
-            observed = self.frame_list[fltr]
-            errors = self.errormap_list[fltr]
+            observed = self.observed_images[fltr]
+            errors = self.observed_errors[fltr]
 
             # Calculate the weighed residual image
             residual = (simulated - observed) / errors

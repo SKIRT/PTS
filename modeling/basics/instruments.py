@@ -304,18 +304,20 @@ class FullInstrument(Instrument):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_projection(cls, projection):
+    def from_projection(cls, projection, scattering_levels=0, counts=False):
 
         """
         This function ...
         :param projection:
+        :param scattering_levels:
+        :param counts:
         :return:
         """
 
         return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth,
                    position_angle=projection.position_angle, field_x=projection.field_x_physical,
                    field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
-                   center_x=projection.center_x, center_y=projection.center_y)
+                   center_x=projection.center_x, center_y=projection.center_y, scattering_levels=scattering_levels, counts=counts)
 
 # -----------------------------------------------------------------
 

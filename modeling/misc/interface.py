@@ -440,6 +440,18 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @abstractproperty
+    def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def create_instruments(self):
 
         """
@@ -451,7 +463,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Creating the instruments ...")
 
         # Create an earth instrument
-        self.instruments[earth_name] = self.instrument_class.from_projection(self.earth_projection)
+        self.instruments[earth_name] = self.instrument_class.from_projection(self.earth_projection, **self.earth_instrument_properties)
 
         # Create a faceon instrument
         if self.has_faceon_projection: self.instruments[faceon_name] = self.instrument_class.from_projection(self.faceon_projection)

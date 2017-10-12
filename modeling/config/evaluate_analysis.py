@@ -26,3 +26,13 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("nbins", "positive_integer", "number of bins for the distributions", 20)
+
+# -----------------------------------------------------------------
+
+# For clip mask
+definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
+definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
+
+# -----------------------------------------------------------------

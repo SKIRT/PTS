@@ -313,6 +313,21 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @property
+    def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        properties = dict()
+        properties["scattering_levels"] = 0 # no scattering levels
+        properties["counts"] = True # record photon counts (for Poisson noise)
+        return properties
+
+    # -----------------------------------------------------------------
+
     def adapt_ski(self):
 
         """

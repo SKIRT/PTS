@@ -63,6 +63,13 @@ nu_symbol = "ν"
 # FREQUENCY INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / Hz
 # NEUTRAL INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2
 
+# AND::: SAME NAME ??
+
+# INTRINSIC SURFACE BRIGHTNESS: W / kpc2 / m2
+# WAVELENGTH INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / m2 / micron
+# FREQUENCY INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / m2 /hz
+# NEUTRAL INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / m2
+
 # -----------------------------------------------------------------
 
 # SKIRT:
@@ -763,6 +770,144 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_flux_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already a flux
+        if self.is_flux: return self.copy()
+
+        # Intensity
+        elif self.is_intensity:
+
+            new_unit = self * self.solid_angle_unit / "m2"
+            new_unit_string = str(new_unit)
+
+        # Luminosity
+        elif self.is_luminosity:
+
+            new_unit = self / "m2"
+            new_unit_string = str(new_unit)
+
+        # Surface brightness
+        elif self.is_surface_brightness:
+
+            new_unit = self * self.solid_angle_unit
+            new_unit_string = str(new_unit)
+
+        # Intrinsic surface brightness
+        elif self.is_intrinsic_surface_brightness:
+
+            if self.has_distance_unit:
+
+                new_unit = self * self.extent_unit
+                new_unit_string = str(new_unit)
+
+            else:
+
+                new_unit = self * self.extent_unit / "m2"
+                new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_luminosity_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # From bolometric
+        if self.is_bolometric:
+
+            new_unit_string = str(self.base_unit)
+
+        # From neutral density
+        elif self.is_neutral_density:
+
+            new_unit_string = str(self.base_unit)
+
+        # From wavelength density
+        elif self.is_wavelength_density:
+
+            new_unit = self.base_unit / self.wavelength_unit
+            new_unit_string = str(new_unit)
+
+        # From frequency density
+        elif self.is_frequency_density:
+
+            new_unit = self.base_unit / self.frequency_unit
+            new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_intensity_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already intensity
+        if self.is_intensity: return self.copy()
+
+        # From luminosity
+        elif self.is_luminosity:
+
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+
+        # From flux
+        elif self.is_flux:
+
+            new_unit = self * self.distance_unit / "sr"
+            new_unit_string = str(new_unit)
+
+        # From surface brightness
+        elif self.is_surface_brightness:
+
+            new_unit = self * self.distance_unit
+            new_unit_string = str(new_unit)
+
+        # From intrinsic surface brightness
+        elif self.is_intrinsic_surface_brightness:
+
+            if self.has_distance_unit:
+
+                new_unit = self * self.distance_unit * self.extent_unit / "sr"
+                new_unit_string = str(new_unit)
+
+            else:
+
+                new_unit = self * self.extent_unit / "sr"
+                new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_bolometric_unit(self):
 
         """
@@ -1048,6 +1193,42 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def has_extent_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extent_unit != ""
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distance_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.distance_unit != ""
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_solid_angle_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.solid_angle_unit != ""
+
+    # -----------------------------------------------------------------
+
+    @property
     def base_physical_type(self):
 
         """
@@ -1059,19 +1240,19 @@ class PhotometricUnit(CompositeUnit):
         if self.base_unit.physical_type == "power":
 
             # e.g. '/ kpc2' dependence: ALWAYS INTRINSIC SURFACE BRIGHTNESS
-            if self.extent_unit != "": base = "intrinsic surface brightness"
+            if self.has_extent_unit: base = "intrinsic surface brightness"
                 # SHOULD WE HAVE A DIFFERENT NAME DEPENDING ON WETHER ALSO A DISTANCE UNIT IS PRESENT??
 
             # e.g. '/ m2' dependence, no e.g. '/ kpc2' dependence
-            elif self.distance_unit != "":
+            elif self.has_distance_unit:
 
-                if self.solid_angle_unit != "": base = "surface brightness"
+                if self.has_solid_angle_unit: base = "surface brightness"
                 else: base = "flux"
 
             # No length unit
             else:
 
-                if self.solid_angle_unit != "": base = "intensity"
+                if self.has_solid_angle_unit: base = "intensity"
                 else: base = "luminosity"
 
         # The base unit is a frequency

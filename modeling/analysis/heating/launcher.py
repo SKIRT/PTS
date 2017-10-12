@@ -319,6 +319,18 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
+    @property
+    def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return dict()  # no specific properties
+
+    # -----------------------------------------------------------------
+
     def load_ski(self):
 
         """

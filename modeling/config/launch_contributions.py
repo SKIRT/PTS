@@ -61,6 +61,10 @@ definition.add_flag("contributions", "make output for the contributions to the f
 definition.add_flag("faceon", "include face-on maps and SEDs", False)
 definition.add_flag("edgeon", "include edge-on maps and SEDs", False)
 
+# Full instrument properties
+definition.add_flag("scattering_levels", "record scattering levels", 0)
+definition.add_flag("counts", "record photon counts for the earth instrument", False)
+
 # To create the output
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
 
