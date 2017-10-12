@@ -30,6 +30,7 @@ from ...core.basics.containers import FilterBasedList
 from ...core.data.sed import ObservedSED
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
+from ...magic.core.list import convert_to_same_unit
 
 # -----------------------------------------------------------------
 
@@ -75,6 +76,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.images_sed = ObservedSED(photometry_unit="Jy") # based on observed images
         self.images_differences = FluxDifferencesTable() # differences
 
+        # Differences between either direct total fluxes or fluxes from images
+        self.fluxes_differences = FluxDifferencesTable()
+        self.sed_differences = FluxDifferencesTable()
+
         # The residual and weighed residual frames
         self.residuals = FrameList()
         self.weighed = FrameList()
@@ -97,10 +102,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.setup(**kwargs)
 
         # 2. Calculate weight for each band
-        self.calculate_weights()
+        if not self.has_weights: self.calculate_weights()
+        else: self.load_weights()
 
         # 3. Calculate flux differences
-        self.calculate_differences()
+        if not self.has_differences: self.calculate_differences()
+        else: self.load_differences()
 
         # 4. Calculate chi squared
         self.calculate_chi_squared()
@@ -115,13 +122,24 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.rebin_images()
 
         # 8. Calculate fluxes from the images
-        self.calculate_image_fluxes()
+        if not self.has_image_fluxes: self.calculate_image_fluxes()
+        else: self.load_image_fluxes()
 
         # 9. Calculate SED
-        self.calculate_image_sed()
+        if not self.has_images_sed: self.calculate_image_sed()
+        else: self.load_images_sed()
 
         # 10. Calcualte differences between fluxes calculated from the images and the observed fluxes
-        self.calculate_image_differences()
+        if not self.has_images_differences: self.calculate_image_differences()
+        else: self.load_image_differences()
+
+        # Calculate the differences between the simulated fluxes and the fluxes from the observed images
+        if not self.has_fluxes_differences: self.calculate_fluxes_differences()
+        else: self.load_fluxes_differences()
+
+        # Calculate the differences between the observed fluxes and the observed fluxes from the images
+        if not self.has_sed_differences: self.calculate_sed_differences()
+        else: self.load_sed_differences()
 
         # 11. Calculate the residual images
         self.calculate_residuals()
@@ -345,6 +363,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WeightsTable.from_file(self.weights_filepath)
+
+    # -----------------------------------------------------------------
+
     def calculate_differences(self):
 
         """
@@ -398,6 +427,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FluxDifferencesTable.from_file(self.differences_filepath)
+
+    # -----------------------------------------------------------------
+
     def calculate_chi_squared(self):
 
         """
@@ -433,23 +473,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters for which we want to create images
         for fltr in self.simulated_filters_no_iras_planck:
 
-            # Debugging
-            log.debug("Making the mock observed '" + str(fltr) + "' image ...")
+            # Present?
+            if self.has_image_for_filter(fltr): frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
+            else:
 
-            # Get the appropriate simulated frame
-            frame = self.get_frame_for_filter(fltr, convolve=False)
+                # Debugging
+                log.debug("Making the mock observed '" + str(fltr) + "' image ...")
 
-            # Convert to non-brightness
-            frame.convert_to_corresponding_non_brightness_unit()
+                # Get the appropriate simulated frame
+                frame = self.get_frame_for_filter(fltr, convolve=False)
+
+                # Convert to non-brightness
+                frame.convert_to_corresponding_non_brightness_unit()
 
             # Add the frame
             self.images.append(frame)
 
-            # Debugging
-            log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
+            if self.has_errors_for_filter(fltr): errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
+            else:
 
-            # Create an approximate error frame
-            errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter)
+                # Debugging
+                log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
+
+                # Create an approximate error frame
+                errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter)
 
             # Add the errors frame
             self.errors.append(errors)
@@ -570,6 +617,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
     def calculate_image_sed(self):
 
         """
@@ -594,6 +652,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_images_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.images_sed_filepath)
+
+    # -----------------------------------------------------------------
+
     def calculate_image_differences(self):
 
         """
@@ -614,8 +683,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
             fluxdensity = self.images_fluxes.get_photometry(i, unit="Jy", add_unit=False)
 
             # Find the corresponding flux in the SED derived from observation
-            # observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy", add_unit=False)
-            #observed_fluxdensity = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
             observed_fluxdensity = self.images_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
 
             # If no match with (instrument, band) is found in the observed SED
@@ -629,6 +696,93 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Add an entry to the differences table
             self.images_differences.add_entry(fltr.instrument, fltr.band, difference, relative_difference)
+
+    # -----------------------------------------------------------------
+
+    def load_image_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FluxDifferencesTable.from_file(self.images_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    def calculate_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculate the differences between the simulated fluxes and the fluxes from the simulated images")
+
+        # Loop over the fluxes from mock observed images
+        for i in range(len(self.images_fluxes)):
+
+            # Get the filter
+            fltr = self.images_fluxes.get_filter(i)
+
+            # Get the flux density
+            flux = self.images_fluxes.get_photometry(i, unit="J", add_unit=False)
+
+            # Get the calculated mock observed flux
+            observed_flux = self.simulated_fluxes.get_photometry(i, unit="J", add_unit=False)
+
+            # Add to table
+            self.fluxes_differences.add_from_filter_and_fluxes(fltr, flux, observed_flux)
+
+    # -----------------------------------------------------------------
+
+    def load_fluxes_differences(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return FluxDifferencesTable.from_file(self.fluxes_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    def calculate_sed_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the differences between the observed fluxes and the fluxes from the observed images")
+
+        # Loop over the fluxes
+        for i in range(len(self.images_sed)):
+
+            # Get the filter
+            fltr = self.images_sed.get_filter(i)
+
+            # Get the flux density
+            flux = self.images_sed.get_photometry(i, unit="Jy", add_unit=False)
+
+            # Get the observed flux
+            observed_flux = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
+
+            # Add to table
+            self.sed_differences.add_from_filter_and_fluxes(fltr, flux, observed_flux)
+
+    # -----------------------------------------------------------------
+
+    def load_sed_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FluxDifferencesTable.from_file(self.sed_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -651,32 +805,38 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #     self.residuals[filter_name] = self.load_residuals(filter_name)
             #     continue
 
-            # Debugging
-            log.debug("Creating the residual frame for the '" + str(fltr) + "' filter ...")
+            if self.has_residuals_for_filter(fltr): residual = Frame.from_file(self.get_residuals_filepath_for_filter(fltr))
+            else:
 
-            # Get the observed and simulated image
-            simulated = self.images[fltr]
-            observed = self.observed_images[fltr]
-            errors = self.observed_errors[fltr]
+                # Debugging
+                log.debug("Creating the residual frame for the '" + str(fltr) + "' filter ...")
 
-            # Calculate the residual image
-            residual = (simulated - observed) / observed
+                # Get the observed and simulated image
+                #simulated = self.images[fltr]
+                #observed = self.observed_images[fltr]
+                #errors = self.observed_errors[fltr]
 
-            # Set the filter
-            residual.filter = fltr
+                # Get the images in the same units
+                simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
 
-            # Replace infs
-            residual.replace_infs(0.0)
+                # Calculate the residual image
+                residual = (simulated - observed) / observed
 
-            # Get the truncation mask
-            truncation_mask = self.get_truncation_mask(observed.wcs)
+                # Set the filter
+                residual.filter = fltr
 
-            # Get the significance mask
-            significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                # Replace infs
+                residual.replace_infs(0.0)
 
-            # MASK
-            residual[truncation_mask] = 0.0
-            residual[significance_mask] = 0.0
+                # Get the truncation mask
+                truncation_mask = self.get_truncation_mask(observed.wcs)
+
+                # Get the significance mask
+                significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+                # MASK
+                residual[truncation_mask] = 0.0
+                residual[significance_mask] = 0.0
 
             # Add the residual image
             self.residuals.append(residual)
@@ -702,32 +862,38 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #     self.weighed[filter_name] = self.load_weighed_residuals(filter_name)
             #     continue
 
-            # Debugging
-            log.debug("Creating the weighed residual frame for the '" + str(fltr) + "' filter ...")
+            if self.has_weighed_for_filter(fltr): residual = Frame.from_file(self.get_weighed_filepath_for_filter(fltr))
+            else:
 
-            # Get the observed and simulated image
-            simulated = self.images[fltr]
-            observed = self.observed_images[fltr]
-            errors = self.observed_errors[fltr]
+                # Debugging
+                log.debug("Creating the weighed residual frame for the '" + str(fltr) + "' filter ...")
 
-            # Calculate the weighed residual image
-            residual = (simulated - observed) / errors
+                # Get the observed and simulated image
+                #simulated = self.images[fltr]
+                #observed = self.observed_images[fltr]
+                #errors = self.observed_errors[fltr]
 
-            # Set the filter
-            residual.filter = fltr
+                # Get the images in the same units
+                simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
 
-            # Replace infs
-            residual.replace_infs(0.0)
+                # Calculate the weighed residual image
+                residual = (simulated - observed) / errors
 
-            # Get the truncation mask
-            truncation_mask = self.get_truncation_mask(observed.wcs)
+                # Set the filter
+                residual.filter = fltr
 
-            # Get the significance mask
-            significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+                # Replace infs
+                residual.replace_infs(0.0)
 
-            # MASK
-            residual[truncation_mask] = 0.0
-            residual[significance_mask] = 0.0
+                # Get the truncation mask
+                truncation_mask = self.get_truncation_mask(observed.wcs)
+
+                # Get the significance mask
+                significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+                # MASK
+                residual[truncation_mask] = 0.0
+                residual[significance_mask] = 0.0
 
             # Add the weighed residual image
             self.weighed.append(residual)
@@ -753,23 +919,26 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #     self.residual_distributions[filter_name] = self.load_residuals_distribution(filter_name)
             #     continue
 
-            # Debugging
-            log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
+            if self.has_residuals_distribution_for_filter(fltr): distribution = Distribution.from_file(self.get_residuals_distribution_filepath_for_filter(fltr))
+            else:
 
-            # Get the values within the truncation ellipse
-            values = self.residuals[fltr].values_in(self.truncation_ellipse)
+                # Debugging
+                log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
 
-            # REMOVE EXACT ZEROES
-            indices = np.argwhere(values == 0)
-            values = np.delete(values, indices)
+                # Get the values within the truncation ellipse
+                values = self.residuals[fltr].values_in(self.truncation_ellipse)
 
-            # Check
-            if len(values) == 0 or sequences.all_equal(values):
-                log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
-                continue
+                # REMOVE EXACT ZEROES
+                indices = np.argwhere(values == 0)
+                values = np.delete(values, indices)
 
-            # Create distribution
-            distribution = Distribution.from_values(values, bins=self.config.nbins)
+                # Check
+                if len(values) == 0 or sequences.all_equal(values):
+                    log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
+                    continue
+
+                # Create distribution
+                distribution = Distribution.from_values(values, bins=self.config.nbins)
 
             # Add the distribution
             self.residuals_distributions.append(fltr, distribution)
@@ -786,23 +955,26 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
-            # Debugging
-            log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
+            if self.has_weighed_distribution_for_filter(fltr): distribution = Distribution.from_file(self.get_weighed_distribution_filepath_for_filter(fltr))
+            else:
 
-            # Get the values within the truncation ellipse
-            values = self.weighed[fltr].values_in(self.truncation_ellipse)
+                # Debugging
+                log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
 
-            # REMOVE EXACT ZEROES
-            indices = np.argwhere(values == 0)
-            values = np.delete(values, indices)
+                # Get the values within the truncation ellipse
+                values = self.weighed[fltr].values_in(self.truncation_ellipse)
 
-            # Check
-            if len(values) == 0 or sequences.all_equal(values):
-                log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
-                continue
+                # REMOVE EXACT ZEROES
+                indices = np.argwhere(values == 0)
+                values = np.delete(values, indices)
 
-            # Create distribution
-            distribution = Distribution.from_values(values, bins=self.config.nbins)
+                # Check
+                if len(values) == 0 or sequences.all_equal(values):
+                    log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
+                    continue
+
+                # Create distribution
+                distribution = Distribution.from_values(values, bins=self.config.nbins)
 
             # Add the distribution
             self.weighed_distributions.append(fltr, distribution)
@@ -819,34 +991,40 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Infomr the user
         log.info("Writing ...")
 
-        # Write the weights
-        self.write_weights()
+        # 1. Write the weights
+        if not self.has_weights: self.write_weights()
 
-        # Write the flux differences
-        self.write_differences()
+        # 2. Write the flux differences
+        if not self.has_differences: self.write_differences()
 
-        # Write the image fluxes
-        self.write_image_fluxes()
+        # 3. Write the image fluxes
+        if not self.has_image_fluxes: self.write_image_fluxes()
 
-        # Write the image SED
-        self.write_image_sed()
+        # 4. Write the image SED
+        if not self.has_images_sed: self.write_image_sed()
 
-        # Write the image flux differences
-        self.write_image_differences()
+        # 5. Write the image flux differences
+        if not self.has_images_differences: self.write_image_differences()
 
-        # Write the images
+        # 6. Write fluxes differences
+        if not self.has_fluxes_differences: self.write_fluxes_differences()
+
+        # 7. Write SED differences
+        if not self.has_sed_differences: self.write_sed_differences()
+
+        # 8. Write the images
         self.write_images()
 
-        # Write the residual frames
+        # 9. Write the residual frames
         self.write_residuals()
 
-        # Write the weighed residual frames
+        # 10. Write the weighed residual frames
         self.write_weighed()
 
-        # Write the residual distributions
+        # 11. Write the residual distributions
         self.write_residuals_distributions()
 
-        # Write the weighed residual distributions
+        # 12. Write the weighed residual distributions
         self.write_weighed_distributions()
 
     # -----------------------------------------------------------------
@@ -863,6 +1041,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def weights_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "weights.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.weights_filepath)
+
+    # -----------------------------------------------------------------
+
     def write_weights(self):
 
         """
@@ -873,11 +1075,32 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Writing the table with weights ...")
 
-        # Determine the path
-        path = fs.join(self.fluxes_path, "weights.dat")
-
         # Write the table with weights
-        self.weights.saveto(path)
+        self.weights.saveto(self.weights_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def differences_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -891,11 +1114,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Writing the table with the flux density differences ...")
 
-        # Determine the path
-        path = fs.join(self.fluxes_path, "differences.dat")
-
         # Save the differences table
-        self.differences.saveto(path)
+        self.differences.saveto(self.differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -911,6 +1131,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def images_fluxes_filepath(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_image_fluxes(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
     def write_image_fluxes(self):
 
         """
@@ -921,11 +1165,32 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Writing image fluxes ...")
 
-        # Detemrine the path
-        path = fs.join(self.images_fluxes_path, "fluxes.dat")
-
         # Save
-        self.images_fluxes.saveto(path)
+        self.images_fluxes.saveto(self.images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_sed_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "observed_sed.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_sed(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_sed_filepath)
 
     # -----------------------------------------------------------------
 
@@ -939,11 +1204,32 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Writing image SED ...")
 
-        # Determine the path
-        path = fs.join(self.images_fluxes_path, "observed_sed.dat")
-
         # Save
-        self.images_sed.saveto(path)
+        self.images_sed.saveto(self.images_sed_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_differences_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -957,11 +1243,86 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Writing image flux differences ...")
 
-        # Determine the path
-        path = fs.join(self.images_fluxes_path, "differences.dat")
-
         # Save
-        self.images_differences.saveto(path)
+        self.images_differences.saveto(self.images_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_differences_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "simulated_differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_fluxes_differences(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing fluxes differences ...")
+
+        # Write
+        self.fluxes_differences.saveto(self.fluxes_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_differences_filepath(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "observed_differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.sed_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_sed_differences(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing SED differences ...")
+
+        # Write
+        self.sed_differences.saveto(self.sed_differences_filepath)
 
     # -----------------------------------------------------------------
 
@@ -974,6 +1335,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         return fs.create_directory_in(self.analysis_run.evaluation_path, "images")
+
+    # -----------------------------------------------------------------
+
+    def get_image_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.images_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_image_for_filter(self, fltr):
+
+        """
+        This funtion ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_image_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -990,11 +1375,38 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the images
         for frame in self.images:
 
+            # Already present?
+            if self.has_image_for_filter(frame.filter): continue
+
             # Determine the path
-            path = fs.join(self.images_path, frame.filter_name + ".fits")
+            path = self.get_image_filepath_for_filter(frame.filter)
 
             # Save the frame
             frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_errors_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.images_path, str(fltr) + "_errors.fits")
+
+    # -----------------------------------------------------------------
+
+    def has_errors_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_errors_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -1011,8 +1423,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the error maps
         for errors in self.errors:
 
+            # Already present?
+            if self.has_errors_for_filter(errors.filter): continue
+
             # Determine the path
-            path = fs.join(self.images_path, errors.filter_name + "_errors.fits")
+            path = self.get_errors_filepath_for_filter(errors.filter)
 
             # Save the error map
             errors.saveto(path)
@@ -1043,6 +1458,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_residuals_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.residuals_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_residuals_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
     def write_residuals(self):
 
         """
@@ -1056,11 +1495,38 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the residual maps
         for residuals in self.residuals:
 
+            # If already present
+            if self.has_residuals_for_filter(residuals.filter): continue
+
             # Determine the path
-            path = fs.join(self.residuals_path, residuals.filter_name + ".fits")
+            path = self.get_residuals_filepath_for_filter(residuals.filter)
 
             # Save
             residuals.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_filepath_for_filter(self, fltr):
+
+        """
+        Thisn function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.weighed_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_weighed_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -1077,11 +1543,38 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the weighed residuals maps
         for residuals in self.weighed:
 
+            # If already present
+            if self.has_weighed_for_filter(residuals.filter): continue
+
             # Determine the path
-            path = fs.join(self.weighed_path, residuals.filter_name + ".fits")
+            path = self.get_weighed_filepath_for_filter(residuals.filter)
 
             # Save
             residuals.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_distribution_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.residuals_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_residuals_distribution_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -1098,14 +1591,41 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the distributions
         for fltr in self.simulated_filters_no_iras_planck:
 
+            # check if already present
+            if self.has_residuals_distribution_for_filter(fltr): continue
+
             # Get the distribution
             distribution = self.residuals_distributions[fltr]
 
             # Determine the path
-            path = fs.join(self.residuals_path, str(fltr) + "_distribution.dat")
+            path = self.get_residuals_distribution_filepath_for_filter(fltr)
 
             # Save
             distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_distribution_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.weighed_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_weighed_distribution_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -1122,11 +1642,14 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the distributions
         for fltr in self.simulated_filters_no_iras_planck:
 
+            # Check if already present
+            if self.has_weighed_distribution_for_filter(fltr): continue
+
             # Get the distribution
             distribution = self.weighed_distributions[fltr]
 
             # Determine the path
-            path = fs.join(self.weighed_path, str(fltr) + "_distribution.dat")
+            path = self.get_weighed_distribution_filepath_for_filter(fltr)
 
             # Save
             distribution.saveto(path)

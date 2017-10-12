@@ -65,6 +65,25 @@ class FluxDifferencesTable(SmartTable):
 
         self.add_row([instrument, band, difference, relative_difference, chi_squared_term])
 
+    # -----------------------------------------------------------------
+
+    def add_from_filter_and_fluxes(self, fltr, flux, reference_flux):
+
+        """
+        This function ...
+        :param fltr:
+        :param flux:
+        :param reference_flux:
+        :return:
+        """
+
+        # Calculate the difference
+        difference = flux - reference_flux
+        relative_difference = difference / reference_flux
+
+        # Add
+        self.add_entry(fltr.instrument, fltr.band, difference, relative_difference)
+
 # -----------------------------------------------------------------
 
 class SEDFitModelAnalyser(FittingComponent):
