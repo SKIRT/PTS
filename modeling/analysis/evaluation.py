@@ -71,6 +71,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.images = FrameList()
         self.errors = FrameList()
 
+        # Rebinned?
+        self.rebinned_observed = []
+        self.rebinned_simulated = []
+
         # The proper mock observed images
         self.proper_images = FrameList()
 
@@ -570,8 +574,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 rel_difference = (frame._wavelength - fltr.pivot) / fltr.pivot
                 if rel_difference > 0.05: log.warning("Wavelength of filter: " + str(fltr.pivot) + ", wavelength of frame: " + str(frame._wavelength))
 
+                # Print unit BEFORE
+                print("UNIT BEFORE:", frame.unit)
+
                 # Convert to non-brightness
-                frame.convert_to_corresponding_non_brightness_unit()
+                conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
+
+                print("PIXELSCALE:", frame.average_pixelscale)
+                print("CONVERSION FACTOR", conversion_factor)
+
+                # Print unit AFTER
+                print("UNIT AFTER:", frame.unit)
 
                 # Add the frame
                 self.images.append(frame)
@@ -687,7 +700,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         for fltr in self.simulated_filters_no_iras_planck:
 
             # Debugging
-            log.debug("Rebinning the '" + str(fltr) + "' image ...")
+            log.debug("Rebinning the '" + str(fltr) + "' image if necessary ...")
 
             # All already present
             if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
@@ -716,6 +729,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 observed.rebin(simulated.wcs)
                 observed_errors.rebin(simulated.wcs)
 
+                # Add
+                self.rebinned_observed.append(fltr)
+
             # The simulated image has a smaller pixelscale as the observed image
             elif simulated.average_pixelscale < observed.average_pixelscale:
 
@@ -726,8 +742,24 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 simulated.rebin(observed.wcs)
                 simulated_errors.rebin(observed.wcs)
 
+                # Add
+                self.rebinned_simulated.append(fltr)
+
             # Error
             else: raise RuntimeError("Something unexpected happened")
+
+        # DEBUGGING
+        log.debug("")
+        log.debug("The following simulated images (and error maps) have been rebinned:")
+        log.debug("")
+        for fltr in self.rebinned_simulated: log.debug(" - " + str(fltr))
+        log.debug("")
+
+        # DEBUGGING
+        log.debug("The following observed images (and error maps) have been rebinned:")
+        log.debug("")
+        for fltr in self.rebinned_observed: log.debug(" - " + str(fltr))
+        log.debug("")
 
     # -----------------------------------------------------------------
 

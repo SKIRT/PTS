@@ -2074,6 +2074,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def is_bolometric(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_bolometric
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_bolometric_unit(self):
 
         """
@@ -2092,7 +2104,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.convert_to(self.corresponding_bolometric_unit)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_bolometric_unit)
 
     # -----------------------------------------------------------------
 
@@ -2104,6 +2117,54 @@ class Frame(NDDataArray):
         """
 
         return self.converted_to(self.corresponding_bolometric_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_spectral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_spectral_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_wavelength_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_wavelength_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_frequency_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_frequency_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_neutral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_neutral_density
 
     # -----------------------------------------------------------------
 
@@ -2128,7 +2189,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.convert_to(self.corresponding_wavelength_density_unit, distance=distance, wavelength=wavelength)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_wavelength_density_unit, distance=distance, wavelength=wavelength)
 
     # -----------------------------------------------------------------
 
@@ -2162,7 +2224,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.convert_to(self.corresponding_frequency_density_unit)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_frequency_density_unit)
 
     # -----------------------------------------------------------------
 
@@ -2196,7 +2259,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.convert_to(self.corresponding_neutral_density_unit)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_neutral_density_unit)
 
     # -----------------------------------------------------------------
 
@@ -2208,6 +2272,18 @@ class Frame(NDDataArray):
         """
 
         return self.converted_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_brightness
 
     # -----------------------------------------------------------------
 
@@ -2230,7 +2306,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.convert_to(self.corresponding_non_brightness_unit)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_non_brightness_unit)
 
     # -----------------------------------------------------------------
 
@@ -2242,6 +2319,54 @@ class Frame(NDDataArray):
         """
 
         return self.converted_to(self.corresponding_non_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_surface_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_intrinsic_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_intrinsic_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_angular_area
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_intrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_intrinsic_area
 
     # -----------------------------------------------------------------
 
@@ -2266,7 +2391,8 @@ class Frame(NDDataArray):
         """
 
         if distance is None: distance = self.distance
-        self.convert_to(self.corresponding_angular_area_unit, distance=distance)
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_angular_area_unit, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -2304,7 +2430,9 @@ class Frame(NDDataArray):
         """
 
         if distance is None: distance = self.distance
-        self.convert_to(self.corresponding_intrinsic_area_unit, distance=distance)
+
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_intrinsic_area_unit, distance=distance)
 
     # -----------------------------------------------------------------
 
