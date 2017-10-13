@@ -563,6 +563,13 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 # Get the appropriate simulated frame
                 frame = self.get_frame_for_filter(fltr, convolve=False)
 
+                # Print wavelengths to check
+                #print(fltr.wavelength, fltr.center, fltr.pivot, frame._wavelength)
+
+                # Give warning
+                rel_difference = (frame._wavelength - fltr.pivot) / fltr.pivot
+                if rel_difference > 0.05: log.warning("Wavelength of filter: " + str(fltr.pivot) + ", wavelength of frame: " + str(frame._wavelength))
+
                 # Convert to non-brightness
                 frame.convert_to_corresponding_non_brightness_unit()
 
@@ -687,7 +694,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the frames
             simulated = self.images[fltr]
-            simulated_errors = self.images[fltr]
+            simulated_errors = self.errors[fltr]
             observed = self.observed_images[fltr]
             observed_errors = self.observed_errors[fltr]
 
@@ -1222,6 +1229,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # 3. Write the image fluxes
         if not self.has_image_fluxes: self.write_image_fluxes()
+
+        # Write proper image fluxes
+        if not self.has_proper_image_fluxes: self.write_proper_image_fluxes()
 
         # 4. Write the image SED
         if not self.has_images_sed: self.write_image_sed()
@@ -2019,6 +2029,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Plot the SED of the simulated fluxes from images, and the simulated SED
         if not self.has_fluxes_only_images_plot: self.plot_fluxes_only_images()
 
+        # Proper
+        if not self.has_fluxes_proper_plot: self.plot_fluxes_proper()
+
         # Plot differences between simulated fluxes (SED and from images)
         if not self.has_fluxes_differences_plot: self.plot_fluxes_differences()
 
@@ -2268,6 +2281,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_all_image_plots(self):
 
         """
@@ -2275,7 +2289,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
+        #print("FILTERS:", self.simulated_filters_no_iras_planck)
+
         for fltr in self.simulated_filters_no_iras_planck:
+            #print(fltr, self.get_image_plot_filepath_for_filter(fltr), "has image plot:", self.has_image_plot_for_filter(fltr))
             if not self.has_image_plot_for_filter(fltr): return False
         return True
 
@@ -2335,6 +2352,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_all_relative_error_plots(self):
 
         """
@@ -2342,7 +2360,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
+        #print("FILTERS:", self.simulated_filters_no_iras_planck)
+
         for fltr in self.simulated_filters_no_iras_planck:
+            #print(fltr, self.get_relative_errors_plot_filepath_for_filter(fltr), "has relative errors plot:", self.has_relative_errors_plot_for_filter(fltr))
             if not self.has_relative_errors_plot_for_filter(fltr): return False
         return True
 
@@ -2373,7 +2394,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_relative_errors_plot_filepath_for_filter(fltr)
 
             # Plot
-            plotting.plot_box(relerrors, path=path, colorbar=True)
+            plotting.plot_box(relerrors, path=path, colorbar=True, scale="linear")
 
     # -----------------------------------------------------------------
 
@@ -2476,6 +2497,56 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Plot
         plotter.run(output=self.fluxes_only_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_proper_plot_filepath(self):
+
+        """
+        Thisf untion ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_simulated_path, "fluxes_proper.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_proper_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_proper_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_proper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the fluxes based on the proper mock observed images ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.proper_images_fluxes, "Simulation (from proper mock observed images)")  # ObservedSED
+        plotter.add_sed(self.simulated_sed, "Simulation")  # SED
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.fluxes_proper_plot_filepath)
 
     # -----------------------------------------------------------------
 

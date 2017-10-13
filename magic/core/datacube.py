@@ -410,14 +410,15 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def get_frame_index_for_wavelength(self, wavelength):
+    def get_frame_index_for_wavelength(self, wavelength, return_wavelength=False):
 
         """
         This function ...
+        :param return_wavelength:
         :return:
         """
 
-        return self.wavelength_grid.closest_wavelength_index(wavelength)
+        return self.wavelength_grid.closest_wavelength_index(wavelength, return_wavelength=return_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -694,10 +695,13 @@ class DataCube(Image):
             log.debug("Getting the frame for the " + str(fltr) + " filter ...")
 
             # Get the index of the wavelength closest to that of the filter
-            index = self.get_frame_index_for_wavelength(fltr.pivot)
+            index, wavelength = self.get_frame_index_for_wavelength(fltr.pivot, return_wavelength=True)
 
             # Get a copy of the frame
             frame = self.frames[index].copy()
+
+            # Set the wavelength
+            frame.wavelength = wavelength
 
         # Set filter to be sure
         frame.filter = fltr

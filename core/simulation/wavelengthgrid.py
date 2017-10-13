@@ -373,19 +373,22 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return self.table["Wavelength"][self.closest_wavelength_index(wavelength)]
+        return self.table["Wavelength"][self.closest_wavelength_index(wavelength)] * self.table["Wavelength"].unit
 
     # -----------------------------------------------------------------
 
-    def closest_wavelength_index(self, wavelength):
+    def closest_wavelength_index(self, wavelength, return_wavelength=False):
 
         """
         This function ...
         :param wavelength:
+        :param return_wavelength:
         :return:
         """
 
-        return arrays.find_closest_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
+        index = arrays.find_closest_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
+        if return_wavelength: return index, self.table["Wavelength"][index] * self.table["Wavelength"].unit
+        else: return index
 
     # -----------------------------------------------------------------
 
