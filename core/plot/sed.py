@@ -780,6 +780,7 @@ class SEDPlotter(Configurable):
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
+        #print(colormap)
 
         # Create color range
         color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
@@ -810,14 +811,20 @@ class SEDPlotter(Configurable):
                 log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                 continue
 
+            #print(color_range)
+
             # Get next color
             color = next(color_range)
+
+            #print(color)
 
             # Get marker
             marker = markers[unique_labels.index(labels[k])]
 
             # Plot on the main axis with the specified marker and color
             # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
+            #print(labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+            # GALEX [] 0.153507951158 0.0686478012556 None o [ 0.5  0.   1.   1. ]
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
             # Observations as reference: plot at 0.0 (all in one panel)
@@ -1392,7 +1399,7 @@ class SEDPlotter(Configurable):
 
                 #axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
                 #print("b", wavelength, flux)
-                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color) #label=label)
+                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black') #markerfacecolor=color) #label=label)
 
         # A data point of this instrument has already been plotted
         else:

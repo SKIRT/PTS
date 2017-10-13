@@ -768,13 +768,13 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Calculating the fluxes based on the proper mock oberved images ...")
+        log.info("Calculating the fluxes based on the proper mock observed images ...")
 
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
             # Calculate the total flux
-            flux = self.images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
+            flux = self.proper_images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
 
             # Add to the SED
             self.proper_images_fluxes.add_point(fltr, flux)
@@ -2016,11 +2016,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Plot the comparison between the simulated fluxes (from SED and from images)
         if not self.has_fluxes_plot: self.plot_fluxes()
 
+        # Plot the SED of the simulated fluxes from images, and the simulated SED
+        if not self.has_fluxes_only_images_plot: self.plot_fluxes_only_images()
+
         # Plot differences between simulated fluxes (SED and from images)
         if not self.has_fluxes_differences_plot: self.plot_fluxes_differences()
 
         # Plot the comparison between the observed fluxes (from SED and from images)
         if not self.has_sed_plot: self.plot_seds()
+
+        # Plot the SED of the observed fluxes derived from images
+        if not self.has_sed_only_images_plot: self.plot_seds_only_images()
 
         # Plot differences between observed fluxes (SED and from images)
         if not self.has_sed_differences_plot: self.plot_sed_differences()
@@ -2424,6 +2430,56 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def fluxes_only_images_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_simulated_path, "fluxes_only_images.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_only_images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_only_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_only_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the fluxes only from the mock observed images ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.images_fluxes, "Simulation (from mock observed images)")  # ObservedSED
+        plotter.add_sed(self.simulated_sed, "Simulation")  # SED
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.fluxes_only_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
     def fluxes_differences_plot_filepath(self):
 
         """
@@ -2511,6 +2567,55 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Plot
         plotter.run(output=self.sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_only_images_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_observed_path, "seds_only_images.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed_only_images_plot(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.sed_only_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_seds_only_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SED only from images ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.images_sed, "Observation (from images)")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.sed_only_images_plot_filepath)
 
     # -----------------------------------------------------------------
 
