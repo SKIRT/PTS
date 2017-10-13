@@ -2742,16 +2742,16 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
-    def get_simulated_frame_for_filter(self, fltr, convolve=False):
-
-        """
-        This function ...
-        :param fltr:
-        :param convolve:
-        :return:
-        """
-
-        return self.simulated_datacube.frame_for_filter(fltr, convolve=convolve)
+    # def get_simulated_frame_for_filter(self, fltr, convolve=False):
+    #
+    #     """
+    #     This function ...
+    #     :param fltr:
+    #     :param convolve:
+    #     :return:
+    #     """
+    #
+    #     return self.simulated_datacube.frame_for_filter(fltr, convolve=convolve)
 
     # -----------------------------------------------------------------
 

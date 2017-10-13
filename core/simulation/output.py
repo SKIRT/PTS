@@ -30,6 +30,7 @@ output_types.temperature = "temp"
 output_types.seds = "sed"
 output_types.images = "image"
 output_types.total_images = "image-total"
+output_types.count_images = "image-counts"
 output_types.direct_images = "image-direct"
 output_types.transparent_images = "image-transparent"
 output_types.scattered_images = "image-scattered"
@@ -59,6 +60,7 @@ output_type_choices[output_types.temperature] = "temperature"
 output_type_choices[output_types.seds] = "all SEDs"
 output_type_choices[output_types.images] = "all datacubes"
 output_type_choices[output_types.total_images] = "datacubes of total emission"
+output_type_choices[output_types.count_images] = "datacubes of photon counts for total emission"
 output_type_choices[output_types.direct_images] = "datacubes of direct emission"
 output_type_choices[output_types.transparent_images] = "datacubes of transparent emission"
 output_type_choices[output_types.scattered_images] = "datacubes of scattered emission"
@@ -102,6 +104,9 @@ def get_output_type(filename):
 
     ## Total datacubes
     elif filename.endswith("_total.fits"): return output_types.total_images
+
+    ## Counts datacubes
+    elif filename.endswith("_counts.fits"): return output_types.count_images
 
     ## Direct datacubes
     elif filename.endswith("_direct.fits"): return output_types.direct_images
@@ -595,6 +600,43 @@ class SimulationOutput(object):
 
         if not self.has_total_images: return []
         else: return self.paths[output_types.total_images]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ncount_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.count_images])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_count_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.count_images in self.paths and self.ncount_images > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def count_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_count_images: return []
+        else: return self.paths[output_types.count_images]
 
     # -----------------------------------------------------------------
 

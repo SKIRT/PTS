@@ -22,6 +22,7 @@ from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
+from ...core.filter.filter import parse_filter_from_instrument_and_band
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,148 @@ class FluxDifferencesTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, instrument, band, difference, relative_difference, chi_squared_term=None):
+    def instruments(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        return list(self["Instrument"])
+
+    # -----------------------------------------------------------------
+
+    def bands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Band"])
+
+    # -----------------------------------------------------------------
+
+    def filters(self, sort=False):
+
+        """
+        This function ...
+        :param sort:
+        :return:
+        """
+
+        # Get the filter objects
+        filters = [parse_filter_from_instrument_and_band(instrument, band) for instrument, band in zip(self.instruments(), self.bands())]
+
+        # Sort
+        if sort: return list(sorted(filters, key=lambda fltr: fltr.wavelength.to("micron").value))
+        else: return filters
+
+    # -----------------------------------------------------------------
+
+    def wavelengths(self, sort=False, add_unit=True, unit="micron"):
+
+        """
+        This function ...
+        :param sort:
+        :param add_unit:
+        :param unit:
+        :return:
+        """
+
+        # Return
+        if add_unit: return [fltr.wavelength.to(unit) for fltr in self.filters(sort=sort)]
+        else: return [fltr.wavelength.to(unit).value for fltr in self.filters(sort=sort)]
+
+    # -----------------------------------------------------------------
+
+    def index_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return tables.find_index(self, [fltr.instrument, fltr.band], ["Instrument", "Band"])
+
+    # -----------------------------------------------------------------
+
+    def filter_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        instrument = self["Instrument"][index]
+        band = self["Band"][index]
+        return parse_filter_from_instrument_and_band(instrument, band)
+
+    # -----------------------------------------------------------------
+
+    def wavelength_for_index(self, index):
+
+        """
+        This function ....
+        :param index:
+        :return:
+        """
+
+        return self.filter_for_index(index).wavelength
+
+    # -----------------------------------------------------------------
+
+    def difference_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Get the index
+        index = self.index_for_filter(fltr)
+
+        # Return the difference
+        return self["Flux difference"][index]
+
+    # -----------------------------------------------------------------
+
+    def relative_difference_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Get the index
+        index = self.index_for_filter(fltr)
+
+        # Return the difference
+        return self["Relative difference"][index]
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_term_for_filter(self, fltr):
+
+        """
+        Thisn function ...
+        :param fltr:
+        :return:
+        """
+
+        # Get the index
+        index = self.index_for_filter(fltr)
+
+        # Return the chi squared term
+        return self["Chi squared term"] if not self["Chi squared term"].mask[index] else None
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, instrument, band, difference, relative_difference, chi_squared_term=None, sort=False):
 
         """
         This function ...
@@ -60,20 +202,44 @@ class FluxDifferencesTable(SmartTable):
         :param difference:
         :param relative_difference:
         :param chi_squared_term:
+        :param sort:
         :return:
         """
 
         self.add_row([instrument, band, difference, relative_difference, chi_squared_term])
 
+        # Sort the table
+        if sort: self.sort()
+
     # -----------------------------------------------------------------
 
-    def add_from_filter_and_fluxes(self, fltr, flux, reference_flux):
+    def sort(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add a column with the wavelengths
+        self["Wavelength"] = self.wavelengths(add_unit=False)
+        self["Wavelength"].unit = "micron"
+
+        # Sort the table on the wavelength column
+        super(FluxDifferencesTable, self).sort("Wavelength")
+
+        # Delete the wavelength column
+        self.remove_column("Wavelength")
+
+    # -----------------------------------------------------------------
+
+    def add_from_filter_and_fluxes(self, fltr, flux, reference_flux, sort=False):
 
         """
         This function ...
         :param fltr:
         :param flux:
         :param reference_flux:
+        :param sort:
         :return:
         """
 
@@ -82,7 +248,7 @@ class FluxDifferencesTable(SmartTable):
         relative_difference = difference / reference_flux
 
         # Add
-        self.add_entry(fltr.instrument, fltr.band, difference, relative_difference)
+        self.add_entry(fltr.instrument, fltr.band, difference, relative_difference, sort=sort)
 
 # -----------------------------------------------------------------
 

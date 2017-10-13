@@ -399,13 +399,14 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, fltr, photometry, error=None):
+    def add_point(self, fltr, photometry, error=None, sort=True):
 
         """
         This function ...
         :param fltr:
         :param photometry:
         :param error:
+        :param sort:
         :return:
         """
 
@@ -424,6 +425,9 @@ class ObservedSED(FilterCurve):
 
         # Add the row
         self.add_row(values, conversion_info=conversion_info)
+
+        # Sort
+        if sort: self.sort(self.value_name)
 
     # -----------------------------------------------------------------
 

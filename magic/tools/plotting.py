@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 # Import astronomical modules
-from astropy.visualization import SqrtStretch, LogStretch
+from astropy.visualization import SqrtStretch, LogStretch, LinearStretch, HistEqStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import MinMaxInterval, ZScaleInterval
 from photutils import CircularAperture
@@ -238,7 +238,7 @@ def plot_mask(mask, title=None, path=None, format=None):
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis"):
+def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False, around_zero=False):
 
     """
     This function ...
@@ -249,45 +249,83 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param scale:
     :param interval:
     :param cmap:
+    :param colorbar:
+    :param around_zero:
     :return:
     """
 
     # Other new colormaps: plasma, magma, inferno
 
+    # Get the data
+    if isinstance(box, np.ndarray): data = box
+    else: data = box.data
+
     # Normalization
     if scale == "log": norm = ImageNormalize(stretch=LogStretch())
     elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch())
+    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch())
     #elif scale == "skimage": norm = exposure.equalize_hist
     else: raise ValueError("Invalid option for 'scale'")
 
+    # ZSCALE
     if interval == "zscale":
 
-        vmin, vmax = ZScaleInterval().get_limits(box)
+        vmin, vmax = ZScaleInterval().get_limits(data)
 
+    # PTS INTERVAL
     elif interval == "pts":
 
-        # Determine the maximum value in the box and the mimimum value for plotting
-        vmin = max(np.nanmin(box), 0.)
-        vmax = 0.5 * (np.nanmax(box) + vmin)
+        nnegatives = np.sum(data < 0)
+        npositives = np.sum(data > 0)
 
+        normalize_min = np.nanmin(data)
+        normalize_max = np.nanmax(data)
+
+        if around_zero:
+
+            vmin = 0.5 * normalize_min
+            vmax = 0.5 * normalize_max
+
+        elif npositives > nnegatives:
+
+            # Determine the maximum value in the box and the mimimum value for plotting
+            vmin = max(normalize_min, 0.)
+            vmax = 0.5 * (normalize_max + vmin)
+
+        else:
+
+            vmax = min(normalize_max, 0.)
+            vmin = 0.5 * (normalize_min + vmax)
+
+        # Determine the maximum value in the box and the mimimum value for plotting
+        #vmin = max(np.nanmin(box), 0.)
+        #vmax = 0.5 * (np.nanmax(box) + vmin)
+
+    # MINIMAX
     elif interval == "minmax":
 
-        vmin, vmax = MinMaxInterval().get_limits(box)
+        vmin, vmax = MinMaxInterval().get_limits(data)
 
+    # PASSED
     elif isinstance(interval, tuple):
 
         vmin = interval[0]
         vmax = interval[1]
 
+    # INVALID
     else: raise ValueError("Invalid option for 'interval'")
 
     # Make the plot
     plt.figure(figsize=(7,7))
-    plt.imshow(box, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap)
+    plt.imshow(data, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
 
     if title is not None: plt.title(title)
+
+    # Add colorbar?
+    if colorbar: plt.colorbar()
 
     if path is None: plt.show()
     else: plt.savefig(path, format=format)

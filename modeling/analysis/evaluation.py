@@ -27,10 +27,11 @@ from ...magic.core.list import FrameList
 from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
 from ...core.basics.containers import FilterBasedList
-from ...core.data.sed import ObservedSED
+from ...core.data.sed import SED, ObservedSED
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
 from ...magic.core.list import convert_to_same_unit
+from ...magic.tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -63,9 +64,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # The chi squared value
         self.chi_squared = None
 
+        # The simulated SED derived from the datacube
+        self.simulated_datacube_sed = None
+
         # The mock observed images and their errors
         self.images = FrameList()
         self.errors = FrameList()
+
+        # The proper mock observed images
+        self.proper_images = FrameList()
 
         # The observed images and their errors
         self.observed_images = FrameList()
@@ -75,6 +82,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.images_fluxes = ObservedSED(photometry_unit="Jy") # based on simulated images
         self.images_sed = ObservedSED(photometry_unit="Jy") # based on observed images
         self.images_differences = FluxDifferencesTable() # differences
+
+        # Fluxes calculated based on properly made mock observed SEDs
+        self.proper_images_fluxes = ObservedSED(photometry_unit="Jy")
 
         # Differences between either direct total fluxes or fluxes from images
         self.fluxes_differences = FluxDifferencesTable()
@@ -112,8 +122,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 4. Calculate chi squared
         self.calculate_chi_squared()
 
+        # Create simulated SED derived from the datacubes
+        if not self.has_simulated_datacube_sed: self.create_simulated_datacube_sed()
+        else: self.load_simulated_datacube_sed()
+
         # 5. Make images
         self.make_images()
+
+        # Load images created with convolution etc.
+        self.load_proper_images()
 
         # 6. Load observed images
         self.load_observed_images()
@@ -124,6 +141,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 8. Calculate fluxes from the images
         if not self.has_image_fluxes: self.calculate_image_fluxes()
         else: self.load_image_fluxes()
+
+        # Calculate fluxes from the proper images
+        if not self.has_proper_image_fluxes: self.calculate_proper_image_fluxes()
+        else: self.load_proper_image_fluxes()
 
         # 9. Calculate SED
         if not self.has_images_sed: self.calculate_image_sed()
@@ -236,7 +257,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return [fltr for fltr in self.simulated_filters if fltr not in self.iras_and_planck_filters]
+        # Get the filters
+        filters = [fltr for fltr in self.simulated_filters if fltr not in self.iras_and_planck_filters]
+
+        # Sort them
+        return list(sorted(filters, key=lambda fltr: fltr.wavelength.to("micron").value))
 
     # -----------------------------------------------------------------
 
@@ -468,6 +493,39 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def create_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating simulated SED derived from the datacube ...")
+
+        # Get datacube, but not in surface brigthness
+        datacube = self.datacube.converted_to_corresponding_non_brightness_unit()
+
+        # Create global SED from the datacube
+        self.simulated_datacube_sed = datacube.global_sed()
+
+    # -----------------------------------------------------------------
+
+    def load_simulated_datacube_sed(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Inform the user
+        log.success("Simulated SED derived from the datacube is already present: loading from file ...")
+
+        # Load
+        self.simulated_datacube_sed = SED.from_file(self.simulated_datacube_sed_filepath)
+
+    # -----------------------------------------------------------------
+
     def make_images(self):
 
         """
@@ -485,7 +543,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             if self.has_image_for_filter(fltr):
 
                 # Needed?
-                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_image_fluxes: continue
+                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_image_fluxes and self.has_all_image_plots and self.has_all_relative_error_plots: continue
 
                 # Success
                 log.success("The '" + str(fltr) + "' image is already present: loading ...")
@@ -515,7 +573,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             if self.has_errors_for_filter(fltr):
 
                 # Needed?
-                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr): continue
+                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_all_relative_error_plots: continue
 
                 # Success
                 log.success("The '" + str(fltr) + "' image is already present: loading ...")
@@ -537,6 +595,27 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
                 # Add the errors frame
                 self.errors.append(errors)
+
+    # -----------------------------------------------------------------
+
+    def load_proper_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the proper mock observed images ...")
+
+        # Loop over the filters for which we want to create images
+        for fltr in self.simulated_filters_no_iras_planck:
+            
+            # Load the image
+            frame = self.analysis_run.get_simulated_frame_for_filter(fltr)
+
+            # Add the image
+            self.proper_images.append(frame)
 
     # -----------------------------------------------------------------
 
@@ -659,7 +738,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         for fltr in self.simulated_filters_no_iras_planck:
 
             # Calculate the total flux
-            flux = self.images[fltr].sum(add_unit=True)
+            flux = self.images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
 
             # Add to the SED
             self.images_fluxes.add_point(fltr, flux)
@@ -681,6 +760,42 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate_proper_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the fluxes based on the proper mock oberved images ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Calculate the total flux
+            flux = self.images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
+
+            # Add to the SED
+            self.proper_images_fluxes.add_point(fltr, flux)
+
+    # -----------------------------------------------------------------
+
+    def load_proper_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Succes
+        log.success("Proper image fluxes are already presnet: loading from file ...")
+
+        # Load
+        self.proper_images_fluxes = ObservedSED.from_file(self.proper_images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
     def calculate_image_sed(self):
 
         """
@@ -698,7 +813,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             frame = self.observed_images[fltr]
 
             # Calculate the total flux
-            flux = frame.sum(add_unit=True)
+            flux = frame.sum_in(self.truncation_ellipse, add_unit=True)
 
             # Add to the SED
             self.images_sed.add_point(frame.filter, flux)
@@ -969,6 +1084,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def distribution_x_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return -5
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_x_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 5
+
+    # -----------------------------------------------------------------
+
     def create_residuals_distributions(self):
 
         """
@@ -999,6 +1138,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
                 # REMOVE EXACT ZEROES
                 indices = np.argwhere(values == 0)
+                values = np.delete(values, indices)
+
+                # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+                indices = np.argwhere(values < self.distribution_x_min)
+                values = np.delete(values, indices)
+                indices = np.argwhere(values > self.distribution_x_max)
                 values = np.delete(values, indices)
 
                 # Check
@@ -1037,6 +1182,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 indices = np.argwhere(values == 0)
                 values = np.delete(values, indices)
 
+                # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+                indices = np.argwhere(values < self.distribution_x_min)
+                values = np.delete(values, indices)
+                indices = np.argwhere(values > self.distribution_x_max)
+                values = np.delete(values, indices)
+
                 # Check
                 if len(values) == 0 or sequences.all_equal(values):
                     log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
@@ -1065,6 +1216,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # 2. Write the flux differences
         if not self.has_differences: self.write_differences()
+
+        # Write the simulated datacube SED
+        if not self.has_simulated_datacube_sed: self.write_simulated_datacube_sed()
 
         # 3. Write the image fluxes
         if not self.has_image_fluxes: self.write_image_fluxes()
@@ -1188,6 +1342,45 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulated_datacube_sed_filepath(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "simulated_datacube_sed.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_datacube_sed_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the simulated datacube SED ...")
+
+        # Write
+        self.simulated_datacube_sed.saveto(self.simulated_datacube_sed_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def images_fluxes_path(self):
 
@@ -1200,6 +1393,30 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def images_fluxes_simulated_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_fluxes_path, "simulated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_fluxes_observed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.images_fluxes_path, "observed")
+
+    # -----------------------------------------------------------------
+
     @property
     def images_fluxes_filepath(self):
 
@@ -1208,7 +1425,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "fluxes.dat")
+        #return fs.join(self.images_fluxes_path, "fluxes.dat")
+        return fs.join(self.images_fluxes_simulated_path, "fluxes.dat")
 
     # -----------------------------------------------------------------
 
@@ -1240,6 +1458,45 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def proper_images_fluxes_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_simulated_path, "fluxes_proper.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_proper_image_fluxes(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.proper_images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_proper_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing proper image fluxes ...")
+
+        # Save
+        self.proper_images_fluxes.saveto(self.proper_images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
     def images_sed_filepath(self):
 
         """
@@ -1247,7 +1504,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "observed_sed.dat")
+        #return fs.join(self.images_fluxes_path, "observed_sed.dat")
+        return fs.join(self.images_fluxes_observed_path, "observed_sed.dat")
 
     # -----------------------------------------------------------------
 
@@ -1325,7 +1583,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "simulated_differences.dat")
+        #return fs.join(self.images_fluxes_path, "simulated_differences.dat")
+        return fs.join(self.images_fluxes_simulated_path, "differences.dat")
 
     # -----------------------------------------------------------------
 
@@ -1364,7 +1623,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "observed_differences.dat")
+        #return fs.join(self.images_fluxes_path, "observed_differences.dat")
+        return fs.join(self.images_fluxes_observed_path, "differences.dat")
 
     # -----------------------------------------------------------------
 
@@ -1738,17 +1998,50 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 1. Plot the simulated SED together with the observed SED
         if not self.has_simulated_sed_plot: self.plot_simulated_sed()
 
+        # Plot the simulated datacube SED together with the observed SED
+        if not self.has_simulated_datacube_sed_plot: self.plot_simulated_datacube_sed()
+
         # 2. Plot the simulated fluxes together with the observed SED
         if not self.has_simulated_fluxes_plot: self.plot_simulated_fluxes()
+
+        # Plot differences between observed and simulated fluxes
+        if not self.has_differences_plot: self.plot_differences()
+
+        # Plot the images
+        if not self.has_all_image_plots: self.plot_images()
+
+        # Plot the relative error maps
+        if not self.has_all_relative_error_plots: self.plot_relative_errors()
 
         # Plot the comparison between the simulated fluxes (from SED and from images)
         if not self.has_fluxes_plot: self.plot_fluxes()
 
+        # Plot differences between simulated fluxes (SED and from images)
+        if not self.has_fluxes_differences_plot: self.plot_fluxes_differences()
+
         # Plot the comparison between the observed fluxes (from SED and from images)
         if not self.has_sed_plot: self.plot_seds()
 
+        # Plot differences between observed fluxes (SED and from images)
+        if not self.has_sed_differences_plot: self.plot_sed_differences()
+
         # Plot the comparison between simulated fluxes and observed fluxes, both from IMAGES, and the simulated SED
         if not self.has_seds_images_plot: self.plot_seds_images()
+
+        # Plot differences between simulated fluxes and observed fluxes, both from IMAGES
+        if not self.has_images_differences_plot: self.plot_image_differences()
+
+        # Plot residuals distributions
+        self.plot_residuals_distributions()
+
+        # Plot weighed distributions
+        self.plot_weighed_distributions()
+
+        # Plot residual maps
+        self.plot_residuals()
+
+        # Plot weighed residual maps
+        self.plot_weighed_residuals()
 
     # -----------------------------------------------------------------
 
@@ -1806,6 +2099,56 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def simulated_datacube_sed_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "simulated_datacube_sed.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_datacube_sed_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_datacube_sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulated_datacube_sed(self):
+
+        """
+        Thisjfnction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the simulated SED based on the datacube, and the observed SED ...")
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Ignore filters
+        plotter.config.ignore_filters = self.ignore_sed_plot_filters
+
+        # Add the SEDs
+        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.simulated_datacube_sed, "Simulation")
+        plotter.format = "pdf"
+
+        # Plot
+        plotter.run(output=self.simulated_datacube_sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
     def simulated_fluxes_plot_filepath(self):
 
         """
@@ -1846,13 +2189,185 @@ class AnalysisModelEvaluator(AnalysisComponent):
         plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Add the SEDs
-        plotter.add_sed(self.observed_sed, "Observation (SED)")
-        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)")
-        #plotter.add_sed(test, "test")
+        plotter.add_sed(self.observed_sed, "Observation (SED)") # ObservedSED
+        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)") # ObservedSED
+        plotter.add_sed(self.simulated_sed, "Simulation") # SED
         plotter.format = "pdf"
 
         # Plot
         plotter.run(output=self.simulated_fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def differences_plot_filepath(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "differences.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_differences_plot(self):
+
+        """
+        Thisj fucntion ...
+        :return:
+        """
+
+        return fs.is_file(self.differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_differences(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the differences between observed and mock observed fluxes ...")
+
+        # Plot the differences
+        plot_differences(self.differences, self.differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_image_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.images_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_image_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_image_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def has_all_image_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for fltr in self.simulated_filters_no_iras_planck:
+            if not self.has_image_plot_for_filter(fltr): return False
+        return True
+
+    # -----------------------------------------------------------------
+
+    def plot_images(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the mock observed images ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check whether present
+            if self.has_image_plot_for_filter(fltr): continue
+
+            # Get the image
+            frame = self.images[fltr]
+
+            # Determine the path
+            path = self.get_image_plot_filepath_for_filter(fltr)
+
+            # Make plot
+            vmin, vmax = frame.saveto_png(path, colours=self.config.colours,
+                                              interval=self.config.interval,
+                                              scale=self.config.scale, alpha=self.config.alpha_method,
+                                              peak_alpha=self.config.peak_alpha)
+
+    # -----------------------------------------------------------------
+
+    def get_relative_errors_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.images_path, str(fltr) + "_relerrors.png")
+
+    # -----------------------------------------------------------------
+
+    def has_relative_errors_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_relative_errors_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def has_all_relative_error_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for fltr in self.simulated_filters_no_iras_planck:
+            if not self.has_relative_errors_plot_for_filter(fltr): return False
+        return True
+
+    # -----------------------------------------------------------------
+
+    def plot_relative_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the relative error maps of the mock observed images ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check whether present
+            if self.has_relative_errors_plot_for_filter(fltr): continue
+
+            # Get the image and error map
+            frame = self.images[fltr]
+            errors = self.errors[fltr]
+            relerrors = errors / frame
+
+            # Determine the path
+            path = self.get_relative_errors_plot_filepath_for_filter(fltr)
+
+            # Plot
+            plotting.plot_box(relerrors, path=path, colorbar=True)
 
     # -----------------------------------------------------------------
 
@@ -1864,7 +2379,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "fluxes.pdf")
+        #return fs.join(self.images_fluxes_path, "fluxes.pdf")
+        return fs.join(self.images_fluxes_simulated_path, "fluxes.pdf")
 
     # -----------------------------------------------------------------
 
@@ -1897,13 +2413,53 @@ class AnalysisModelEvaluator(AnalysisComponent):
         plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Add the SEDs
-        plotter.add_sed(self.images_fluxes, "Simulation (from mock observed images)")
-        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)")
-        plotter.add_sed(self.simulated_sed, "Simulation")
+        plotter.add_sed(self.images_fluxes, "Simulation (from mock observed images)") # ObservedSED
+        plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)") # ObservedSED
+        plotter.add_sed(self.simulated_sed, "Simulation") # SED
         plotter.format = "pdf"
 
         # Plot
         plotter.run(output=self.fluxes_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_differences_plot_filepath(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        #return fs.join(self.images_fluxes_path, "fluxes_differences.pdf")
+        return fs.join(self.images_fluxes_simulated_path, "differences.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_differences_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the differences between simulated fluxes (from mock observved images and from mock observations) ...")
+
+        # Plot
+        plot_differences(self.fluxes_differences, self.fluxes_differences_plot_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1915,7 +2471,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.images_fluxes_path, "seds.pdf")
+        #return fs.join(self.images_fluxes_path, "seds.pdf")
+        return fs.join(self.images_fluxes_observed_path, "seds.pdf")
 
     # -----------------------------------------------------------------
 
@@ -1954,6 +2511,46 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Plot
         plotter.run(output=self.sed_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_differences_plot_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return fs.join(self.images_fluxes_path, "sed_differences.pdf")
+        return fs.join(self.images_fluxes_observed_path, "differences.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed_differences_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.sed_differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed_differences(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the differences between the observed fluxes (from images and from observed SED) ...")
+
+        # Plot
+        plot_differences(self.sed_differences, self.sed_differences_plot_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2005,5 +2602,342 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Plot
         plotter.run(output=self.seds_images_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_differences_plot_filepath(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.images_fluxes_path, "images_differences.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_differences_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.images_differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def plot_image_differences(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the flux differences based on images ...")
+
+        # Plot
+        plot_differences(self.images_differences, self.images_differences_plot_filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_distribution_plot_filepath_for_filter(self, fltr):
+
+        """
+        Thijs function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.residuals_path, str(fltr) + "_distribution.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_distribution_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_residuals_distribution_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_x_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.distribution_x_min, self.distribution_x_max) # because should be less than an order of magnitude (10)
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the residuals distributions ...")
+
+        # Loop over the distributions
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check if already present
+            if self.has_residuals_distribution_plot_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.residuals_distributions[fltr]
+
+            # Determine the plot path
+            path = self.get_residuals_distribution_plot_filepath_for_filter(fltr)
+
+            # Plot
+            distribution.plot(path=path, x_limits=self.distribution_x_limits)
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_distribution_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.weighed_path, str(fltr) + "_distribution.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_distribution_plot_for_filter(self, fltr):
+
+        """
+        Thisj function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_weighed_distribution_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def weighed_distribution_x_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    def plot_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the weighed residuals distributions ...")
+
+        # Loop over the weighed distributions
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check if already present
+            if self.has_weighed_distribution_plot_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.weighed_distributions[fltr]
+
+            # Determine the plot path
+            path = self.get_weighed_distribution_plot_filepath_for_filter(fltr)
+
+            # Plot
+            distribution.plot(path=path, x_limits=self.weighed_distribution_x_limits)
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.residuals_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_residuals_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the residuals ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check whether present
+            if self.has_residuals_plot_for_filter(fltr): continue
+
+            # Get the residual map
+            residuals = self.residuals[fltr]
+
+            # Determine the path
+            path = self.get_residuals_plot_filepath_for_filter(fltr)
+
+            # # Make plot
+            # vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+            #                                   interval=self.config.interval,
+            #                                   scale=self.config.scale, alpha=self.config.alpha_method,
+            #                                   peak_alpha=self.config.peak_alpha)
+
+            # Plot
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.weighed_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_weighed_plot_for_filter(self, fltr):
+
+        """
+        Thins function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_weighed_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_weighed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the weighed residuals ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Ceck whether present
+            if self.has_weighed_plot_for_filter(fltr): continue
+
+            # Get the weighed residual map
+            residuals = self.weighed[fltr]
+
+            # Determine the path
+            path = self.get_weighed_plot_filepath_for_filter(fltr)
+
+            # # Make plot
+            # vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+            #                                   interval=self.config.interval,
+            #                                   scale=self.config.scale, alpha=self.config.alpha_method,
+            #                                   peak_alpha=self.config.peak_alpha)
+
+            # Plot
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+
+# -----------------------------------------------------------------
+
+def plot_differences(table, path):
+
+    """
+    Thisfunction ...
+    :param table:
+    :param path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Plotting flux differences ...")
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Initialize figure
+    fig, ax1 = plt.subplots()
+
+    # Set logarithmic
+    ax1.set_xscale("log")
+
+    # Set x label
+    ax1.set_xlabel('Wavelength [micron]')
+
+    # Get the filters, sorted on wavelength
+    filters = table.filters(sort=True)
+    wavelengths = [fltr.wavelength.to("micron").value for fltr in filters]
+
+    # Get the arrays of differences and relative differences
+    #differences = [table.difference_for_filter(fltr) for fltr in filters]
+    rel_differences = [table.relative_difference_for_filter(fltr) * 100 for fltr in filters]
+
+    # # Plot
+    # ax1.plot(wavelengths, differences, 'b-')
+    #
+    # # Make the y-axis label, ticks and tick labels match the line color.
+    # ax1.set_ylabel('Differences', color='b')
+    # ax1.tick_params('y', colors='b')
+
+    # Create twin axis
+    #ax2 = ax1.twinx()
+
+    # Plot relative differences
+    ax1.plot(wavelengths, rel_differences, 'b-')
+
+    # Set label
+    ax1.set_ylabel('Relative differences (\%)')
+    #ax1.tick_params('y', colors='r')
+
+    # Save the figure
+    fig.tight_layout()
+    plt.savefig(path)
+
+    # Close
+    plt.close()
 
 # -----------------------------------------------------------------

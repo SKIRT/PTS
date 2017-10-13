@@ -17,6 +17,30 @@ from ..tools import types
 
 # -----------------------------------------------------------------
 
+def parse_filter_from_instrument_and_band(instrument, band):
+
+    """
+    Thisn function ...
+    :param instrument:
+    :param band:
+    :return:
+    """
+
+    # Import subclasses
+    from .narrow import NarrowBandFilter
+    from .broad import BroadBandFilter
+
+    # Parse
+    try: fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+    except ValueError:
+        try: fltr = NarrowBandFilter.from_instrument_and_band(instrument, band)
+        except ValueError: raise ValueError("Could not find a filter for instrument '" + instrument + "' and band '" + band + "'")
+
+    # Return the filter
+    return fltr
+
+# -----------------------------------------------------------------
+
 def parse_filter(argument, name=None):
 
     """
@@ -33,6 +57,7 @@ def parse_filter(argument, name=None):
     # If the argument that is passed is already a Filter instance
     if isinstance(argument, Filter): return argument
 
+    # Parse
     try: fltr = BroadBandFilter(argument, name=name)
     except ValueError:
         try: fltr = NarrowBandFilter(argument, name=name)
@@ -104,6 +129,20 @@ class Filter(object):
         # Set attributes
         self._FilterID = filter_id
         self._Description = description
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_instrument_and_band(cls, instrument, band):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :return:
+        """
+
+        return cls(instrument + "." + band)
 
     # -----------------------------------------------------------------
 

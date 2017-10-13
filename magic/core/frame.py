@@ -1442,6 +1442,56 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def sum_in(self, region_or_mask, add_unit=False):
+
+        """
+        Thisn function ...
+        :param region_or_mask:
+        :param add_unit:
+        :return:
+        """
+
+        # Get the values
+        values = self.values_in(region_or_mask)
+
+        # Return the nansum
+        result = np.nansum(values)
+
+        # Add unit?
+        if add_unit and self.has_unit:
+            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            return result * self.unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def quadratic_sum_in(self, region_or_mask, add_unit=False):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :param add_unit:
+        :return:
+        """
+
+        # Get the values
+        values = self.values_in(region_or_mask)
+
+        # Get non-nans
+        nans = np.isnan(values)
+        not_nans = np.logical_not(nans)
+
+        # Get the quadratic sum
+        result = np.sqrt(np.sum(values[not_nans] ** 2))
+
+        # Add unit?
+        if add_unit and self.has_unit:
+            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            return result * self.unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
     @property
     def values(self):
 
@@ -1958,7 +2008,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, wavelength=None):
 
         """
         This function ...
@@ -1968,6 +2018,7 @@ class Frame(NDDataArray):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param wavelength:
         :return:
         """
 
@@ -1980,8 +2031,11 @@ class Frame(NDDataArray):
         # Set the distance
         if distance is None: distance = self.distance
 
+        # Set the wavelength
+        if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
+
         # Calculate the conversion factor
-        factor = self.unit.conversion_factor(to_unit, wavelength=self.pivot_wavelength_or_wavelength, distance=distance,
+        factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance,
                                              pixelscale=self.pixelscale, density=density, brightness=brightness,
                                              density_strict=density_strict, brightness_strict=brightness_strict)
 
@@ -1999,7 +2053,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, wavelength=None):
 
         """
         This function ...
@@ -2009,11 +2063,12 @@ class Frame(NDDataArray):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param wavelength:
         :return: 
         """
 
         new = self.copy()
-        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
         return new
 
     # -----------------------------------------------------------------
@@ -2064,14 +2119,16 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_wavelength_density_unit(self):
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None, wavelength=None):
 
         """
         This function ...
+        :param distance:
+        :param wavelength:
         :return:
         """
 
-        self.convert_to(self.corresponding_wavelength_density_unit)
+        self.convert_to(self.corresponding_wavelength_density_unit, distance=distance, wavelength=wavelength)
 
     # -----------------------------------------------------------------
 

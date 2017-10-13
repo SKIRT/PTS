@@ -157,13 +157,14 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, x_value, y_value, conversion_info=None):
+    def add_point(self, x_value, y_value, conversion_info=None, sort=True):
 
         """
         This function ...
         :param x_value:
         :param y_value:
         :param conversion_info:
+        :param sort:
         :return:
         """
 
@@ -174,7 +175,7 @@ class Curve(SmartTable):
         self.add_row(values, conversion_info=conversion_info)
 
         # Sort the table by the x values
-        self.sort(self.x_name)
+        if sort: self.sort(self.x_name)
 
     # -----------------------------------------------------------------
 
@@ -233,12 +234,13 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, wavelength, value):
+    def add_point(self, wavelength, value, sort=True):
 
         """
         This function ...
         :param wavelength:
         :param value:
+        :param sort:
         :return:
         """
 
@@ -248,7 +250,7 @@ class WavelengthCurve(Curve):
         conversion_info = {self.value_name: conversion_info_value}
 
         # Add the point, passing the conversion info
-        super(WavelengthCurve, self).add_point(wavelength, value, conversion_info=conversion_info)
+        super(WavelengthCurve, self).add_point(wavelength, value, conversion_info=conversion_info, sort=sort)
 
     # -----------------------------------------------------------------
 

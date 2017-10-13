@@ -1036,35 +1036,499 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def to_wavelength_density(self, new_unit, wavelength_unit):
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
-        :param new_unit:
-        :param wavelength_unit:
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return:
         """
 
-        # Inform the user
-        log.info("Converting the datacube from neutral flux density to flux density per unit of wavelength (in " + wavelength_unit + ")")
+        # Create new
+        new = self.__class__(name=self.name)
 
-        # Get list of wavelengths in desired unit
-        wavelengths = self.wavelength_grid.wavelengths(unit=wavelength_unit, add_unit=False)
+        # Get the wavelengths
+        wavelengths = self.wavelengths(unit="micron", add_unit=True)
 
-        # Convert the frames from neutral surface brightness to wavelength surface brightness
-        for l in range(self.nframes):
+        # Add the frames
+        nframes = 0
+        for index in range(self.nframes):
 
             # Get the wavelength
-            wavelength = wavelengths[l]
+            wavelength = wavelengths[index]
 
-            # Determine the name of the frame in the datacube
-            frame_name = "frame" + str(l)
+            # Create converted frame, passing the wavelength for (potential) use in the conversion
+            frame = self.frames[index].converted_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
 
-            # Divide this frame by the wavelength in micron
-            self.frames[frame_name] /= wavelength
+            # Add the frame
+            frame_name = "frame" + str(nframes)
+            new.add_frame(frame, frame_name)
 
-        # Set the new unit of the datacube
-        self.unit = new_unit
+            # Increment the number of frames
+            nframes += 1
+
+        # Create and set the wavelength grid
+        new.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
+
+        # Return the new datacube
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_surface_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_intrinsic_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_intrinsic_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_angular_area_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_non_brightness_unit(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return self.unit.corresponding_non_brightness_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_angular_area
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already per angular area
+        if self.is_per_angular_area: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding angular area unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_angular_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already per ngular are
+        if self.is_per_angular_area: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding angular area unit ...")
+
+        # Convert
+        self.converted_to(self.corresponding_angular_area_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_intrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_intrinsic_area
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already per intrinsic area
+        if self.is_per_intrinsic_area: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding intrinsic area unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_intrinsic_area_unit(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Already per intrinsic area: return a copy
+        if self.is_per_intrinsic_area: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding intrinsic area unit ...")
+
+        # Create
+        return self.converted_to(self.corresponding_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_non_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already not a brightness
+        if not self.is_brightness: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding non-brightness unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_non_brightness_unit()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_non_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already not a brightness: return a copy
+        if not self.is_brightness: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding non-brightness unit ...")
+
+        # Create
+        return self.converted_to(self.corresponding_non_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_wavelength_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_wavelength_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_wavelength_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already wavelength density
+        if self.is_wavelength_density: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding wavelength density unit ...")
+
+        # Get the list of wavelengths
+        wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Get the wavelength
+            wavelength = wavelengths[i]
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already wavelength density
+        if self.is_wavelength_density: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding wavelength density unit ...")
+
+        # Create
+        return self.converted_to(self.corresponding_wavelength_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_frequency_density(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.unit.is_frequency_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_frequency_density_unit(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.unit.corresponding_frequency_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already frequency density
+        if self.is_frequency_density: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding frequency density unit ...")
+
+        # Get the list of wavelengths
+        wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Get the wavelength
+            wavelength = wavelengths[i]
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already frequency density
+        if self.is_frequency_density: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding frequency density unit ...")
+
+        # Create
+        return self.converted_to(self.corresponding_frequency_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_neutral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_neutral_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_neutral_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_neutral_density_unit(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # ALready neutral density
+        if self.is_neutral_density: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding neutral density unit ...")
+
+        # Get the list of wavelengths
+        wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Get the wavelength
+            wavelength = wavelengths[i]
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_neutral_density_unit(wavelength=wavelength)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_neutral_density_unit(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Already neutral density
+        if self.is_neutral_density: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding neutral density unit ...")
+
+        # Create
+        return self.converted_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    # def to_wavelength_density(self, new_unit, wavelength_unit):
+    #
+    #     """
+    #     This function ...
+    #     :param new_unit:
+    #     :param wavelength_unit:
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Converting the datacube from neutral flux density to flux density per unit of wavelength (in " + wavelength_unit + ")")
+    #
+    #     # Get list of wavelengths in desired unit
+    #     wavelengths = self.wavelength_grid.wavelengths(unit=wavelength_unit, add_unit=False)
+    #
+    #     # Convert the frames from neutral surface brightness to wavelength surface brightness
+    #     for l in range(self.nframes):
+    #
+    #         # Get the wavelength
+    #         wavelength = wavelengths[l]
+    #
+    #         # Determine the name of the frame in the datacube
+    #         frame_name = "frame" + str(l)
+    #
+    #         # Divide this frame by the wavelength in micron
+    #         self.frames[frame_name] /= wavelength
+    #
+    #     # Set the new unit of the datacube
+    #     self.unit = new_unit
 
 # -----------------------------------------------------------------
 

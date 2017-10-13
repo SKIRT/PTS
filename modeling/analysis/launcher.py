@@ -1579,7 +1579,7 @@ class AnalysisLauncher(AnalysisLauncherBase):
         else: local_script_path = None
 
         # Set retrieve types (only relevant for remote execution)
-        self.launcher.config.retrieve_types = [ot.logfiles, ot.seds, ot.total_images]
+        self.launcher.config.retrieve_types = [ot.logfiles, ot.seds, ot.total_images, ot.count_images]
 
         # Add more retrieve types
         if self.config.retrieve_contributions:

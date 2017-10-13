@@ -1146,6 +1146,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :return:
+        """
+
+        new = self.copy()
+        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        return new
+
+    # -----------------------------------------------------------------
+
     def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """

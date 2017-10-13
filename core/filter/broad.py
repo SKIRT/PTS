@@ -750,20 +750,6 @@ class BroadBandFilter(Filter):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_instrument_and_band(cls, instrument, band):
-
-        """
-        This function ...
-        :param instrument:
-        :param band:
-        :return:
-        """
-
-        return cls(instrument + "." + band)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
     def sdss(cls, band):
 
         """
