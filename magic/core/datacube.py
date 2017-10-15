@@ -1097,6 +1097,57 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_brightness_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already brightness
+        if self.is_brightness: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding brightness unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_brightness()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already brightness
+        if self.is_brightness: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding brightness unit ...")
+
+        # Convert
+        return self.converted_to(self.corresponding_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_surface_brightness(self):
 
         """
@@ -1157,6 +1208,69 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @property
+    def is_per_angular_or_intrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_angular_or_intrinsic_area
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_angular_or_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already
+        if self.is_per_angular_or_intrinsic_area: return
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding angular or intrinsic area unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_angular_or_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already
+        if self.is_per_angular_or_intrinsic_area: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding angular or intrinsic area unit ...")
+
+        # Convert
+        return self.converted_to(self.corresponding_angular_or_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_per_angular_area(self):
 
         """
@@ -1203,7 +1317,7 @@ class DataCube(Image):
         log.info("Creating a datacube in the corresponding angular area unit ...")
 
         # Convert
-        self.converted_to(self.corresponding_angular_area_unit)
+        return self.converted_to(self.corresponding_angular_area_unit)
 
     # -----------------------------------------------------------------
 

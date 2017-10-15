@@ -953,16 +953,19 @@ class PhotometricUnit(CompositeUnit):
         # Already wavelength density
         if self.is_wavelength_density: return self.copy()
 
+        # Bolometric unit
         elif self.is_bolometric:
 
             new_unit = self / "micron"
             new_unit_string = str(new_unit)
 
+        # Frequency density unit
         elif self.is_frequency_density:
 
             new_unit = self * self.frequency_unit / "micron"
             new_unit_string = str(new_unit)
 
+        # Neutral density unit
         elif self.is_neutral_density:
 
             new_unit = self / "micron"
@@ -1047,6 +1050,43 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already a brightness
+        if self.is_brightness: return self.copy()
+
+        # From luminosity
+        elif self.is_luminosity:
+
+            new_unit = self / "m2" / "sr"
+            new_unit_string = str(new_unit)
+
+        # From intensity
+        elif self.is_intensity:
+
+            new_unit = self / "m2"
+            new_unit_string = str(new_unit)
+
+        # From flux
+        elif self.is_flux:
+
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+
+        # Invalid
+        else: raise RuntimeError("Invalid state")
+
+        # Create the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=True, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_non_brightness_unit(self):
 
         """
@@ -1077,6 +1117,55 @@ class PhotometricUnit(CompositeUnit):
 
         # Create and return the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_or_instrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_per_angular_area or self.is_per_intrinsic_area
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already:
+        # Should cover intensities, surface and intrinsic surface brightnesses
+        if self.is_per_angular_or_intrinsic_area: return self.copy()
+
+        # From luminosity
+        elif self.is_luminosity:
+
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+            brightness = False # intensity
+
+        # From flux
+        elif self.is_flux:
+
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+            brightness = True
+
+        # Invalid unit
+        else: raise ValueError("Invalid unit")
+
+        # Debugging
+        log.debug("New unit string: '" + new_unit_string + "'")
+
+        # Create and return the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=brightness, brightness_strict=True)
 
     # -----------------------------------------------------------------
 
@@ -1115,7 +1204,9 @@ class PhotometricUnit(CompositeUnit):
             #new_unit_string = str(self * self._extent_unit) + "/sr"
             new_unit = self * self._extent_unit / "sr"
             new_unit_string = str(new_unit)
-            brightness = False # is intensity now
+
+            if self.has_extent_unit: brightness = True # still surface brightness, but now
+            else: brightness = False # is intensity now
             #return PhotometricUnit(str(self * self._extent_unit) + "/sr", density=self.density, brightness=True, density_strict=True, brightness_strict=True)
 
         # Invalid unit

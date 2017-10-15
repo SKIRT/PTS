@@ -2074,6 +2074,30 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def physical_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.physical_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_base_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.physical_base_type
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_bolometric(self):
 
         """
@@ -2288,6 +2312,40 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_brightness_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.convert_to(self.corresponding_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_brightness_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_brightness_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_non_brightness_unit(self):
 
         """
@@ -2343,6 +2401,52 @@ class Frame(NDDataArray):
         """
 
         return self.unit.is_intrinsic_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_or_intrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_per_angular_or_intrinsic_area
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_angular_or_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.convert_to(self.corresponding_angular_or_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_angular_or_intrinsic_area_unit)
 
     # -----------------------------------------------------------------
 
@@ -2646,7 +2750,8 @@ class Frame(NDDataArray):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Check the unit
-        #if self.unit is not None and not self.unit.is_per_pixelsize: raise ValueError("Cannot rebin a frame that is expressed per angular area. First convert the units.")
+        if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that rebinning a frame not in brightness units gives an incorrect result")
+        elif not self.is_brightness: raise RuntimeError("The frame is not in brightness unit. Convert from " + self.physical_type + " to a brightness unit before rebinning")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
