@@ -1173,7 +1173,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return -5
+        return -4
 
     # -----------------------------------------------------------------
 
@@ -1185,7 +1185,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return 5
+        return 4
 
     # -----------------------------------------------------------------
 
@@ -3044,6 +3044,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def residuals_plot_interval(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        return [-100., 100.]
+
+    # -----------------------------------------------------------------
+
     def plot_residuals(self):
 
         """
@@ -3063,6 +3075,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Get the residual map
             residuals = self.residuals[fltr]
 
+            # Get residuals in percentage
+            residuals_percentage = residuals * 100
+
             # Determine the path
             path = self.get_residuals_plot_filepath_for_filter(fltr)
 
@@ -3073,7 +3088,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #                                   peak_alpha=self.config.peak_alpha)
 
             # Plot
-            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear")
 
     # -----------------------------------------------------------------
 
@@ -3119,6 +3134,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the weighed residual map
             residuals = self.weighed[fltr]
+
+            # Get residuals in percentage
+            #residuals_percentage = residuals * 100
 
             # Determine the path
             path = self.get_weighed_plot_filepath_for_filter(fltr)
