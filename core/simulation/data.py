@@ -14,6 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .output import SimulationOutput
+from .table import SkirtTable, is_valid
+from ..tools.utils import lazyproperty, LazyDictionary
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -87,6 +90,18 @@ class SimulationData(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulation_prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.prefix
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """
@@ -98,6 +113,517 @@ class SimulationData(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.has_single_cell_properties
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.single_cell_properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_valid(self.cell_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.cell_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_isrf(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.has_isrf
+
+    # -----------------------------------------------------------------
+
+    @property
+    def isrf_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.single_isrf
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_isrf(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_valid(self.isrf_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def isrf(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.isrf_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.output.has_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_valid(self.absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absorption(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return SkirtTable.from_file(self.absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.has_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.single_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_valid(self.wavelengths_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .wavelengthgrid import WavelengthGrid
+        return WavelengthGrid.from_skirt_output(self.wavelengths[0])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for path in self.sed_paths:
+            if not is_valid(path): return False
+        return True
+
+    # -----------------------------------------------------------------
+
+    def is_valid_sed(self, instrument_name):
+
+        """
+        This function ...
+        :param instrument_name:
+        :return:
+        """
+
+        # Get the SED file path
+        path = self.seds[instrument_name].get_raw("total")
+
+        # Check validity
+        return is_valid(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..data.sed import SED
+        from ..plot.simulationseds import number_of_columns, contributions
+
+        # Initialize dictionary
+        seds_instruments = dict()
+
+        # Loop over the paths
+        for path in self.sed_paths:
+
+            # Get the instrument name
+            instrument_name = get_sed_instrument_name(path, self.simulation_prefix)
+
+            # Check how many columns the SED file contains
+            ncols = number_of_columns(path)
+
+            # Lazy dictionary of SEDs for this instrument
+            seds = LazyDictionary(SED.from_skirt)
+
+            # Check the type of the Instrument / SED
+            if ncols == 2: seds["total"] = path
+
+            # More columns
+            else:
+
+                # Loop over the different contributions
+                for contribution in contributions:
+
+                    # Set
+                    seds.set(contribution, path, contribution=contribution)
+
+            # Set the SEDs for this instrument
+            seds_instruments[instrument_name] = seds
+
+        # Return the SEDs
+        return seds_instruments
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_seds or self.has_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def instrument_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Have SED files
+        if self.has_seds: return self.seds.keys()
+
+        # Have datacubes
+        elif self.has_images: return self.images.keys()
+
+        # Neither SED files or datacubes
+        else: raise ValueError("Cannot determine instrument names")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_wavelength_grid(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return self.has_wavelengths or self.has_seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Wavelength grid file
+        if self.has_wavelengths: return self.wavelength_grid
+
+        # There are SED files
+        elif self.has_seds:
+
+            from .wavelengthgrid import WavelengthGrid
+
+            # Get one sed
+            sed = self.seds[self.instrument_names[0]]["total"]
+
+            # Create wavelength grid
+            wavelength_grid = WavelengthGrid.from_sed(sed)
+
+            # Return the wavelength grid
+            return wavelength_grid
+
+        # No wavelength grid file, no SEDs
+        else: raise ValueError("Cannot get wavelength grid")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.has_images
+
+    # -----------------------------------------------------------------
+
+    @property
+    def image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...magic.core.fits import is_valid as is_valid_fits
+
+        for path in self.image_paths:
+            if not is_valid_fits(path): return False
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    def is_valid_image(self, instrument_name, contribution):
+
+        """
+        This function ...
+        :param instrument_name:
+        :param contribution:
+        :return:
+        """
+
+        # Get the file path
+        path = self.images[instrument_name].get_raw(contribution)
+
+        from ...magic.core.fits import is_valid as is_valid_fits
+
+        # Check validity
+        return is_valid_fits(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..misc.datacubes import get_instrument_name
+        from ...magic.core.datacube import DataCube
+
+        # Initialize dictionary
+        images_instruments = dict()
+
+        # Loop over the paths
+        for path in self.image_paths:
+
+            # Get the instrument name
+            instrument_name = get_instrument_name(path, self.simulation_prefix)
+
+            # Get the contribution
+            filename = fs.strip_extension(fs.name(path))
+            contribution = filename.split("_")[-1]
+
+            # Initialize lazy dictionary for the datacubes of this instrument
+            if instrument_name not in images_instruments:
+                images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid)
+                images_instruments[instrument_name] = images
+
+            # Add to dictionary
+            images_instruments[instrument_name][contribution] = path
+
+        # Return the images
+        return images_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_stellar_density(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return self.output.has_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_density_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output.single_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_valid(self.stellar_density_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.stellar_density_path)
+
+    # -----------------------------------------------------------------
+
     def to_string(self, line_prefix=""):
 
         """
@@ -105,6 +631,102 @@ class SimulationData(object):
         :param line_prefix:
         :return:
         """
+
+        from ..tools import formatting as fmt
+
+        lines = []
+
+        # ISRF
+        if self.has_isrf:
+
+            lines.append(line_prefix)
+
+            # Make line
+            if self.valid_isrf: line = fmt.green + fmt.underlined + "ISRF" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "ISRF: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            lines.append(line_prefix)
+
+        # Absorption
+        if self.has_absorption:
+
+            lines.append(line_prefix)
+
+            # Make line
+            if self.valid_absorption: line = fmt.green + fmt.underlined + "Absorption" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Absorption: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            lines.append(line_prefix)
+
+        # Stellar density
+        if self.has_stellar_density:
+
+            lines.append(line_prefix)
+
+            # Make line
+            if self.valid_stellar_density: line = fmt.green + fmt.underlined + "Stellar density" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Stellar density: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            lines.append(line_prefix)
+
+        # SEDs
+        if self.has_seds:
+
+            lines.append(line_prefix)
+
+            # Make line
+            if self.valid_seds: line = fmt.green + fmt.underlined + "SEDs:" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "SEDs:" + fmt.reset
+
+            lines.append(line_prefix + line)
+            lines.append(line_prefix)
+
+            # Loop over the instruments
+            for instrument_name in self.seds:
+
+                if self.is_valid_sed(instrument_name): line = " - " + fmt.green + instrument_name + fmt.reset
+                else: line = " - " + fmt.red + instrument_name + ": invalid" + fmt.reset
+
+                # Add the line
+                lines.append(line_prefix + line)
+
+        # Images
+        if self.has_images:
+
+            lines.append(line_prefix)
+
+            # Make line
+            if self.valid_images: line = fmt.green + fmt.underlined + "Images:" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Images:" + fmt.reset
+
+            lines.append(line_prefix + line)
+            lines.append(line_prefix)
+
+            # Loop over the instruments
+            for instrument_name in self.images:
+
+                lines.append(line_prefix + " - " + instrument_name + ":")
+                lines.append(line_prefix)
+
+                # Loop over the contributions
+                for contribution in self.images[instrument_name]:
+
+                    if self.is_valid_image(instrument_name, contribution): line = "    * " + fmt.green + contribution + fmt.reset
+                    else: line = "    * " + fmt.red + contribution + ": invalid" + fmt.reset
+
+                    # Add the line
+                    lines.append(line_prefix + line)
+
+                lines.append(line_prefix)
+
+        # Add new line
+        lines.append(line_prefix)
+
+        # Return
+        return "\n".join(lines)
 
     # -----------------------------------------------------------------
 
@@ -117,5 +739,18 @@ class SimulationData(object):
         """
 
         print(self.to_string(line_prefix=line_prefix))
+
+# -----------------------------------------------------------------
+
+def get_sed_instrument_name(sed_path, prefix):
+
+    """
+    This function ...
+    :param sed_path:
+    :param prefix:
+    :return:
+    """
+
+    return fs.name(sed_path).split("_sed.dat")[0].split(prefix + "_")[1]
 
 # -----------------------------------------------------------------

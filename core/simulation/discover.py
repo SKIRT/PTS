@@ -508,12 +508,16 @@ class SimulationDiscoverer(Configurable):
 
                 rel_ski_path = ski_path.split(self.config.path)[1]
                 print(fmt.green + rel_ski_path + fmt.reset + ":")
+
                 input_path = self.simulations_ski[ski_path][0].input_path
                 parameters = comparison_parameters_from_ski(ski_path, input_path)
 
             else:
 
-                print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
+                nsimulations = len(self.simulations_ski[ski_path])
+                if nsimulations == 1: print(fmt.yellow + "ski file not found" + fmt.reset + ":")
+                else: print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
+
                 input_path = self.simulations_ski[ski_path][0].input_path
                 parameters = comparison_parameters_from_ski(ski_path[0], input_path)
 

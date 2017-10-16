@@ -50,13 +50,27 @@ def is_valid(path):
     :return:
     """
 
-    columns = np.loadtxt(path, unpack=True)
+    columns = np.loadtxt(path, unpack=True, ndmin=2)
+
+    #print(columns)
+    #print(len(columns))
 
     number_of_columns = len(columns)
 
-    # Try to interpret the number of rows
-    try: number_of_rows = len(columns[0])
-    except TypeError:  # object of type 'numpy.float64' has no len()
+    # THIS WAS BEFORE I DISCOVERED THE NDMIN PARAMETER
+    # # Try to interpret the number of rows
+    # try: number_of_rows = len(columns[0])
+    # except TypeError:  # object of type 'numpy.float64' has no len()
+    #     #raise TruncatedSKIRTTableError("The file only contains one line", path=path)
+    #     return False
+
+    number_of_rows = len(columns[0])
+
+    #print("Number of columns: " + str(number_of_columns))
+    #print("Number of rows: " + str(number_of_rows))
+
+    # ONLY ONE ROW: NOT NORMAL
+    if number_of_rows == 1:
         #raise TruncatedSKIRTTableError("The file only contains one line", path=path)
         return False
 
@@ -114,13 +128,19 @@ class SkirtTable(object):
         :return:
         """
 
-        columns = np.loadtxt(path, unpack=True)
+        # Get the column data
+        columns = np.loadtxt(path, unpack=True, ndmin=2)
 
+        # Get number of columns and number of rows
         number_of_columns = len(columns)
+        number_of_rows = len(columns[0])
 
-        try: number_of_rows = len(columns[0])
-        except TypeError: # object of type 'numpy.float64' has no len()
-            raise TruncatedSKIRTTableError("The file only contains one line", path=path)
+        # THIS WAS BEFORE I DISCOVERED THE NDMIN PARAMETER
+        # try: number_of_rows = len(columns[0])
+        # except TypeError: # object of type 'numpy.float64' has no len()
+        #     raise TruncatedSKIRTTableError("The file only contains one line", path=path)
+
+        if number_of_rows == 1: raise TruncatedSKIRTTableError("The file only contains one line", path=path)
 
         # Check expected number of rows
         if expected_nrows is not None and number_of_rows != expected_nrows:

@@ -43,6 +43,7 @@ output_types.grid = "grid"
 output_types.gdensity = "grho"
 output_types.tdensity = "trho"
 output_types.cell_properties = "cellprops"
+output_types.stellar_density = "stellar_density"
 output_types.tree = "tree"
 output_types.convergence = "convergence"
 output_types.dust_mass = "mass"
@@ -74,6 +75,7 @@ output_type_choices[output_types.grid] = "grid files"
 output_type_choices[output_types.gdensity] = "grid dust density"
 output_type_choices[output_types.tdensity] = "theoretical dust density"
 output_type_choices[output_types.cell_properties] = "dust cell properties"
+output_type_choices[output_types.stellar_density] = "stellar component density in the dust grid"
 output_type_choices[output_types.tree] = "dust grid tree data file"
 output_type_choices[output_types.convergence] = "convergence file"
 output_type_choices[output_types.dust_mass] = "dust population masses"
@@ -145,6 +147,9 @@ def get_output_type(filename):
 
     ## Dust cell properties
     elif "_ds_cellprops" in filename and filename.endswith(".dat"): return output_types.cell_properties
+
+    ## Stellar density
+    elif "_ds_stellar" in filename and filename.endswith(".dat"): return output_types.stellar_density
 
     ## Dust grid onvergence
     elif filename.endswith("_ds_convergence.dat"): return output_types.convergence
@@ -309,6 +314,7 @@ class SimulationOutput(object):
         for path in self.gdensity: yield path
         for path in self.tdensity: yield path
         for path in self.cell_properties: yield path
+        for path in self.stellar_density: yield path
         for path in self.tree: yield path
         for path in self.convergence: yield path
         for path in self.dust_mass: yield path
@@ -344,6 +350,8 @@ class SimulationOutput(object):
         if self.has_grid: total += self.ngrid
         if self.has_gdensity: total += self.ngdensity
         if self.has_tdensity: total += self.ntdensity
+        if self.has_cell_properties: total += self.ncell_properties
+        if self.has_stellar_density: total += self.nstellar_density
         if self.has_tree: total += self.ntree
         if self.has_convergence: total += self.nconvergence
         if self.has_dust_mass: total += self.ndust_mass
@@ -382,6 +390,18 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def has_single_isrf(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.isrf in self.paths and self.nisrf == 1
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def isrf(self):
@@ -393,6 +413,19 @@ class SimulationOutput(object):
 
         if not self.has_isrf: return []
         return self.paths[output_types.isrf]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_isrf(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        if not self.has_single_isrf: raise IOError("Doesn't have a single ISRF file")
+        else: return self.isrf[0]
 
     # -----------------------------------------------------------------
 
@@ -527,6 +560,18 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_single_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.seds in self.paths and self.nseds == 1
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def seds(self):
@@ -541,6 +586,19 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def single_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_sed: raise IOError("Doesn't have a single SED file")
+        else: return self.seds[0]
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def nimages(self):
@@ -552,6 +610,7 @@ class SimulationOutput(object):
 
         total = 0
         if self.has_total_images: total += self.ntotal_images
+        if self.has_count_images: total += self.ncount_images
         if self.has_direct_images: total += self.ndirect_images
         if self.has_transparent_images: total += self.ntransparent_images
         if self.has_scattered_images: total += self.nscattered_images
@@ -585,6 +644,7 @@ class SimulationOutput(object):
 
         paths = []
         if self.has_total_images: paths.extend(self.total_images)
+        if self.has_count_images: paths.extend(self.count_images)
         if self.has_direct_images: paths.extend(self.direct_images)
         if self.has_transparent_images: paths.extend(self.transparent_images)
         if self.has_scattered_images: paths.extend(self.scattered_images)
@@ -977,6 +1037,18 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def has_single_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.wavelengths in self.paths and self.nwavelengths == 1
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def wavelengths(self):
@@ -988,6 +1060,19 @@ class SimulationOutput(object):
 
         if not self.has_wavelengths: return []
         else: return self.paths[output_types.wavelengths]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_wavelengths: raise IOError("Not a single wavelength grid file")
+        else: return self.wavelengths[0]
 
     # -----------------------------------------------------------------
 
@@ -1170,6 +1255,68 @@ class SimulationOutput(object):
 
         if not self.has_single_cell_properties: raise IOError("Doesn't have single cell properties file")
         else: return self.cell_properties[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.stellar_density])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.stellar_density in self.paths and self.nstellar_density > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_single_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.stellar_density in self.paths and self.nstellar_density == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_density(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if not self.has_stellar_density: return []
+        else: return self.paths[output_types.stellar_density]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_stellar_density(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if not self.has_single_stellar_density: raise IOError("Doesn't have single cell stellar density file")
+        else: return self.stellar_density[0]
 
     # -----------------------------------------------------------------
 
@@ -1502,6 +1649,9 @@ class SimulationOutput(object):
         for filepath in self.total_images:
             if path is None: path = fs.directory_of(filepath)
             elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
+        for filepath in self.count_images:
+            if path is None: path = fs.directory_of(filepath)
+            elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
         for filepath in self.direct_images:
             if path is None: path = fs.directory_of(filepath)
             elif path != fs.directory_of(filepath): raise ValueError("Output files are not in the same directory")
@@ -1660,6 +1810,15 @@ class SimulationOutput(object):
             # Add paths
             for path in self.total_images: lines.append(line_prefix + " - " + self.relative_path(path))
 
+        # Count images
+        if self.has_count_images:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.count_images].capitalize() + fmt.reset + " (" + str(self.count_images) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
         # Direct images
         if self.has_direct_images:
             lines.append(line_prefix)
@@ -1803,6 +1962,18 @@ class SimulationOutput(object):
 
             # Add path
             for path in self.cell_properties: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Stellar density
+        if self.has_stellar_density:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.stellar_density].capitalize() + fmt.reset + " (" + str(self.nstellar_density) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add path
+            for path in self.stellar_density: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Tree
         if self.has_tree:
