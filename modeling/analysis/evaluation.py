@@ -32,6 +32,7 @@ from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
 from ...magic.core.list import convert_to_same_unit
 from ...magic.tools import plotting
+from ...magic.core.list import rebin_to_highest_pixelscale
 
 # -----------------------------------------------------------------
 
@@ -126,62 +127,62 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 4. Calculate chi squared
         self.calculate_chi_squared()
 
-        # Create simulated SED derived from the datacubes
+        # 5. Create simulated SED derived from the datacubes
         if not self.has_simulated_datacube_sed: self.create_simulated_datacube_sed()
         else: self.load_simulated_datacube_sed()
 
-        # 5. Make images
+        # 6. Make images
         self.make_images()
 
-        # Load images created with convolution etc.
+        # 7. Load images created with convolution etc.
         self.load_proper_images()
 
-        # 6. Load observed images
+        # 8. Load observed images
         self.load_observed_images()
 
-        # 7. Rebin the images to the same pixelscale
+        # 9. Rebin the images to the same pixelscale
         self.rebin_images()
 
-        # 8. Calculate fluxes from the images
+        # 10. Calculate fluxes from the images
         if not self.has_image_fluxes: self.calculate_image_fluxes()
         else: self.load_image_fluxes()
 
-        # Calculate fluxes from the proper images
+        # 11. Calculate fluxes from the proper images
         if not self.has_proper_image_fluxes: self.calculate_proper_image_fluxes()
         else: self.load_proper_image_fluxes()
 
-        # 9. Calculate SED
+        # 12. Calculate SED
         if not self.has_images_sed: self.calculate_image_sed()
         else: self.load_images_sed()
 
-        # 10. Calcualte differences between fluxes calculated from the images and the observed fluxes
+        # 13. Calcualte differences between fluxes calculated from the images and the observed fluxes
         if not self.has_images_differences: self.calculate_image_differences()
         else: self.load_image_differences()
 
-        # Calculate the differences between the simulated fluxes and the fluxes from the observed images
+        # 14. Calculate the differences between the simulated fluxes and the fluxes from the observed images
         if not self.has_fluxes_differences: self.calculate_fluxes_differences()
         else: self.load_fluxes_differences()
 
-        # Calculate the differences between the observed fluxes and the observed fluxes from the images
+        # 15. Calculate the differences between the observed fluxes and the observed fluxes from the images
         if not self.has_sed_differences: self.calculate_sed_differences()
         else: self.load_sed_differences()
 
-        # 11. Calculate the residual images
+        # 16. Calculate the residual images
         self.calculate_residuals()
 
-        # 12. Calculate the weighed residual images
+        # 17. Calculate the weighed residual images
         self.calculate_weighed()
 
-        # 13. Create distributions of the residual values
+        # 18. Create distributions of the residual values
         self.create_residuals_distributions()
 
-        # 14. Create distributions of the weighed residual values
+        # 19. Create distributions of the weighed residual values
         self.create_weighed_distributions()
 
-        # 15. Writing
+        # 20. Writing
         self.write()
 
-        # 16. Plotting
+        # 21. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -575,16 +576,16 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 if rel_difference > 0.05: log.warning("Wavelength of filter: " + str(fltr.pivot) + ", wavelength of frame: " + str(frame._wavelength))
 
                 # Print unit BEFORE
-                print("UNIT BEFORE:", frame.unit)
+                #print("UNIT BEFORE:", frame.unit)
 
                 # Convert to non-brightness
                 conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
 
-                print("PIXELSCALE:", frame.average_pixelscale)
-                print("CONVERSION FACTOR", conversion_factor)
+                #print("PIXELSCALE:", frame.average_pixelscale)
+                #print("CONVERSION FACTOR", conversion_factor)
 
                 # Print unit AFTER
-                print("UNIT AFTER:", frame.unit)
+                #print("UNIT AFTER:", frame.unit)
 
                 # Add the frame
                 self.images.append(frame)
@@ -611,7 +612,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
 
                 # Create an approximate error frame
-                errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter)
+                errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter, unit=frame.unit)
 
                 # Add the errors frame
                 self.errors.append(errors)
@@ -694,16 +695,16 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info('Rebinning the images to the same pixelscale ...')
+        log.info("Rebinning the images to the same pixelscale ...")
 
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
-            # Debugging
-            log.debug("Rebinning the '" + str(fltr) + "' image if necessary ...")
-
             # All already present
             if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
+
+            # Debugging
+            log.debug("Rebinning the '" + str(fltr) + "' images if necessary ...")
 
             # Get the frames
             simulated = self.images[fltr]
@@ -711,55 +712,90 @@ class AnalysisModelEvaluator(AnalysisComponent):
             observed = self.observed_images[fltr]
             observed_errors = self.observed_errors[fltr]
 
-            # Check coordinate systems
-            if simulated.wcs != simulated_errors.wcs: raise ValueError("The coordinate system of the simulated frame and error map are not the same")
-            if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not the same")
+            #print(simulated.unit, simulated.unit.density)
+            #print(simulated_errors.unit, simulated_errors.unit.density)
+            #print(observed.unit, observed.unit.density)
+            #print(observed_errors.unit, observed_errors.unit.density)
 
-            # Check whether the coordinate systems of the observed and simulated image match
-            if simulated.wcs == observed.wcs:
-                log.debug("The coordinate system of the simulated and observed image for the " + str(fltr) + " filter matches")
+            # Rebin in-place
+            rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, in_place=True)
 
-            # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
-            elif observed.average_pixelscale < simulated.average_pixelscale:
+    # -----------------------------------------------------------------
 
-                # Debugging
-                log.debug("The observed '" + str(fltr) + "' image has a better resolution as the simulated image: rebinning the observed image ...")
-
-                # Rebin the observed images
-                observed.rebin(simulated.wcs)
-                observed_errors.rebin(simulated.wcs)
-
-                # Add
-                self.rebinned_observed.append(fltr)
-
-            # The simulated image has a smaller pixelscale as the observed image
-            elif simulated.average_pixelscale < observed.average_pixelscale:
-
-                # Debugging
-                log.debug("The simulated '" + str(fltr) + "' image has a better resolution as the observed image: rebinning the simulated image ...")
-
-                # Rebin the simulated images
-                simulated.rebin(observed.wcs)
-                simulated_errors.rebin(observed.wcs)
-
-                # Add
-                self.rebinned_simulated.append(fltr)
-
-            # Error
-            else: raise RuntimeError("Something unexpected happened")
-
-        # DEBUGGING
-        log.debug("")
-        log.debug("The following simulated images (and error maps) have been rebinned:")
-        log.debug("")
-        for fltr in self.rebinned_simulated: log.debug(" - " + str(fltr))
-        log.debug("")
-
-        # DEBUGGING
-        log.debug("The following observed images (and error maps) have been rebinned:")
-        log.debug("")
-        for fltr in self.rebinned_observed: log.debug(" - " + str(fltr))
-        log.debug("")
+    # def rebin_images_old(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info('Rebinning the images to the same pixelscale ...')
+    #
+    #     # Loop over the filters
+    #     for fltr in self.simulated_filters_no_iras_planck:
+    #
+    #         # Debugging
+    #         log.debug("Rebinning the '" + str(fltr) + "' image if necessary ...")
+    #
+    #         # All already present
+    #         if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
+    #
+    #         # Get the frames
+    #         simulated = self.images[fltr]
+    #         simulated_errors = self.errors[fltr]
+    #         observed = self.observed_images[fltr]
+    #         observed_errors = self.observed_errors[fltr]
+    #
+    #         # Check coordinate systems
+    #         if simulated.wcs != simulated_errors.wcs: raise ValueError("The coordinate system of the simulated frame and error map are not the same")
+    #         if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not the same")
+    #
+    #         # Check whether the coordinate systems of the observed and simulated image match
+    #         if simulated.wcs == observed.wcs:
+    #             log.debug("The coordinate system of the simulated and observed image for the " + str(fltr) + " filter matches")
+    #
+    #         # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
+    #         elif observed.average_pixelscale < simulated.average_pixelscale:
+    #
+    #             # Debugging
+    #             log.debug("The observed '" + str(fltr) + "' image has a better resolution as the simulated image: rebinning the observed image ...")
+    #
+    #             # Rebin the observed images
+    #             observed.rebin(simulated.wcs)
+    #             observed_errors.rebin(simulated.wcs)
+    #
+    #             # Add
+    #             self.rebinned_observed.append(fltr)
+    #
+    #         # The simulated image has a smaller pixelscale as the observed image
+    #         elif simulated.average_pixelscale < observed.average_pixelscale:
+    #
+    #             # Debugging
+    #             log.debug("The simulated '" + str(fltr) + "' image has a better resolution as the observed image: rebinning the simulated image ...")
+    #
+    #             # Rebin the simulated images
+    #             simulated.rebin(observed.wcs)
+    #             simulated_errors.rebin(observed.wcs)
+    #
+    #             # Add
+    #             self.rebinned_simulated.append(fltr)
+    #
+    #         # Error
+    #         else: raise RuntimeError("Something unexpected happened")
+    #
+    #     # DEBUGGING
+    #     log.debug("")
+    #     log.debug("The following simulated images (and error maps) have been rebinned:")
+    #     log.debug("")
+    #     for fltr in self.rebinned_simulated: log.debug(" - " + str(fltr))
+    #     log.debug("")
+    #
+    #     # DEBUGGING
+    #     log.debug("The following observed images (and error maps) have been rebinned:")
+    #     log.debug("")
+    #     for fltr in self.rebinned_observed: log.debug(" - " + str(fltr))
+    #     log.debug("")
 
     # -----------------------------------------------------------------
 
@@ -776,8 +812,14 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
+            # Get the image
+            image = self.images[fltr]
+
+            # Convert to non - per angular or intrinsic area
+            image.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
             # Calculate the total flux
-            flux = self.images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
+            flux = image.sum_in(self.truncation_ellipse, add_unit=True)
 
             # Add to the SED
             self.images_fluxes.add_point(fltr, flux)

@@ -25,6 +25,7 @@ from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
 from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
+from ...magic.core.list import rebin_to_highest_pixelscale
 
 # -----------------------------------------------------------------
 
@@ -83,6 +84,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # 2. Load the observed and simulated images
         self.load_images()
+
+        # 3. Rebin the images
+        self.rebin_images()
 
         # 3. Calculate the residual images
         self.calculate_residuals()
@@ -208,40 +212,40 @@ class ResidualAnalyser(AnalysisComponent):
             # Debugging
             log.debug("Loading the simulated " + filter_name + " image ...")
 
-            # Open the image
-            frame = Frame.from_file(path)
-
             # Check whether a simulated image exists for this band
             if filter_name not in self.observed:
                 log.warning("The observed " + filter_name + " image could not be found, skipping simulated " + filter_name + " image ...")
                 continue
 
-            # Get the corresponding observed image
-            observed = self.observed[filter_name]
+            # Open the image
+            frame = Frame.from_file(path)
 
-            # Check whether the coordinate systems of the observed and simulated image match
-            if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
-
-            # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
-            elif observed.average_pixelscale < frame.average_pixelscale:
-
-                # Debugging
-                log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
-
-                # Rebin
-                observed.rebin(frame.wcs)
-
-            # The simulated image has a smaller pixelscale as the observed image
-            elif frame.average_pixelscale < observed.average_pixelscale:
-
-                # Debugging
-                log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
-
-                # Rebin the simulated image to the coordinate system of the observed image
-                frame.rebin(observed.wcs)
-
-            # Error
-            else: raise RuntimeError("Something unexpected happened")
+            # # Get the corresponding observed image
+            # observed = self.observed[filter_name]
+            #
+            # # Check whether the coordinate systems of the observed and simulated image match
+            # if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
+            #
+            # # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
+            # elif observed.average_pixelscale < frame.average_pixelscale:
+            #
+            #     # Debugging
+            #     log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
+            #
+            #     # Rebin
+            #     observed.rebin(frame.wcs)
+            #
+            # # The simulated image has a smaller pixelscale as the observed image
+            # elif frame.average_pixelscale < observed.average_pixelscale:
+            #
+            #     # Debugging
+            #     log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
+            #
+            #     # Rebin the simulated image to the coordinate system of the observed image
+            #     frame.rebin(observed.wcs)
+            #
+            # # Error
+            # else: raise RuntimeError("Something unexpected happened")
 
             # Add the simulated image frame to the dictionary
             self.simulated[filter_name] = frame
@@ -289,6 +293,29 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Add the error map to the dictionary
             self.errors[filter_name] = errors
+
+    # -----------------------------------------------------------------
+
+    def rebin_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Rebinning the images to the same pixelscale ...")
+
+        # Loop over the images
+        for filter_name in self.simulated:
+
+            # Get the images
+            simulated = self.simulated[filter_name]
+            observed = self.observed[filter_name]
+            errors = self.errors[filter_name]
+
+            # Rebin in-place
+            rebin_to_highest_pixelscale(simulated, observed, errors, in_place=True)
 
     # -----------------------------------------------------------------
 

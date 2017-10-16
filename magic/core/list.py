@@ -3002,7 +3002,8 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
     # Convert to the corresponding brightness unit
     #original_unit = frame.convert_to_corresponding_brightness_unit()
-    original_unit = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
+    original_unit = frame.unit
+    conversion_factor = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
 
     # Converted?
     if original_unit != frame.unit: log.debug("Unit has been converted to '" + str(frame.unit) + "' prior to rebinning")

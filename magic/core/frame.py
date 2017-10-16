@@ -1459,7 +1459,11 @@ class Frame(NDDataArray):
 
         # Add unit?
         if add_unit and self.has_unit:
-            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            #if self.is_per_angular_or_intrinsic_area: log.warning("Unit is per angular or intrinsic are")
+            if self.is_per_angular_or_intrinsic_area:
+                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
+                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
             return result * self.unit
         else: return result
 
@@ -1486,7 +1490,10 @@ class Frame(NDDataArray):
 
         # Add unit?
         if add_unit and self.has_unit:
-            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            if self.is_per_angular_or_intrinsic_area:
+                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
+                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
             return result * self.unit
         else: return result
 
@@ -2034,6 +2041,11 @@ class Frame(NDDataArray):
         # Set the wavelength
         if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
 
+        #print(self.unit, self.unit.density)
+        #print(to_unit, to_unit.density)
+
+        #print(self.name)
+
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance,
                                              pixelscale=self.pixelscale, density=density, brightness=brightness,
@@ -2451,6 +2463,40 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_non_angular_or_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.convert_to(self.corresponding_non_angular_or_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_non_angular_or_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_per_angular_area(self):
 
         """
@@ -2563,7 +2609,10 @@ class Frame(NDDataArray):
 
         result = np.nansum(self.data)
         if add_unit and self.has_unit:
-            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            if self.is_per_angular_or_intrinsic_area:
+                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
+                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
             return result * self.unit
         else: return result
 
@@ -2579,7 +2628,10 @@ class Frame(NDDataArray):
 
         result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
         if add_unit and self.has_unit:
-            if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
+            if self.is_per_angular_or_intrinsic_area:
+                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
+                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
             return result * self.unit
         else: return result
 
@@ -2751,7 +2803,8 @@ class Frame(NDDataArray):
 
         # Check the unit
         if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that rebinning a frame not in brightness units gives an incorrect result")
-        elif not self.is_brightness: raise RuntimeError("The frame is not in brightness unit. Convert from " + self.physical_type + " to a brightness unit before rebinning")
+        #elif not self.is_brightness: raise RuntimeError("The frame is not in brightness unit. Convert from " + self.physical_type + " to a brightness unit before rebinning")
+        elif not self.is_per_angular_or_intrinsic_area: raise RuntimeError("The frame is not defined in units per angular or physical area. Convert to a related intensity or brightness unit prior to rebinning")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)

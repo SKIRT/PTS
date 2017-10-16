@@ -1242,7 +1242,7 @@ class DataCube(Image):
         if self.is_per_angular_or_intrinsic_area: return
 
         # Inform the user
-        log.info("Creating a datacube in the corresponding angular or intrinsic area unit ...")
+        log.info("Converting the datacube to the corresponding angular or intrinsic area unit ...")
 
         # Loop over the frames
         for i in range(self.nframes):
@@ -1267,6 +1267,57 @@ class DataCube(Image):
 
         # Convert
         return self.converted_to(self.corresponding_angular_or_intrinsic_area_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.unit.corresponding_non_angular_or_intrinsic_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        # Already
+        if not self.is_per_angular_or_intrinsic_area: return
+
+        # Inform the user
+        log.info("Converting the datacube to the corresponding non- angular or intrinsic area unit ...")
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Convert the frame
+            self.frames[i].convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Already
+        if not self.is_per_angular_or_intrinsic_area: return self.copy()
+
+        # Inform the user
+        log.info("Creating a datacube in the corresponding non- angular or intrinsic area unit ...")
+
+        # Convert
+        return self.converted_to(self.corresponding_non_angular_or_intrinsic_area_unit)
 
     # -----------------------------------------------------------------
 
