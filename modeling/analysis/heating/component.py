@@ -16,6 +16,10 @@ from __future__ import absolute_import, division, print_function
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
+from ....core.tools.utils import lazyproperty
+from ....core.simulation.output import SimulationOutput
+from ....core.simulation.table import SkirtTable
+from ....core.simulation.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -51,6 +55,30 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def heating_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.wavelength_grid_heating
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.heating_wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def cell_heating_path(self):
 
         """
@@ -62,7 +90,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def projected_heating_path(self):
 
         """
@@ -71,6 +99,511 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return fs.create_directory_in(self.analysis_run.heating_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_simulation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_simulation_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_output_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_output_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.total_contribution_output_path, self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_cell_properties_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_output.single_cell_properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the properties table
+        return SkirtTable.from_file(self.total_contribution_cell_properties_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_absorption_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.total_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_logfile(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        return LogFile.from_file(self.total_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_simulation_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_simulation_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_output_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.analysis_run.heating_output_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.old_contribution_output_path, self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_absorption_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.old_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile.from_file(self.old_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_simulation_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_simulation_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_ski_path(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_output_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_output(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.young_contribution_output_path, self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_absorption_filepath(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return self.young_contribution_output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.young_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_logfile(self):
+
+        """
+        Thins ufnction ...
+        :return:
+        """
+
+        return LogFile.from_file(self.young_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_simulation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_simulation_path_for_contribution(ionizing)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(ionizing)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_output_path_for_contribution(ionizing)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.ionizing_contribution_output_path, self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_absorption_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_contribution_output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.ionizing_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_logfile(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return LogFile.from_file(self.ionizing_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_simulation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_simulation_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_output_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.unevolved_contribution_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_absorption_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_output.single_absorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkirtTable.from_file(self.unevolved_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_logfile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_logfile(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return LogFile.from_file(self.unevolved_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 

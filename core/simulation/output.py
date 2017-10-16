@@ -42,6 +42,7 @@ output_types.wavelengths = "wavelengths"
 output_types.grid = "grid"
 output_types.gdensity = "grho"
 output_types.tdensity = "trho"
+output_types.cell_properties = "cellprops"
 output_types.tree = "tree"
 output_types.convergence = "convergence"
 output_types.dust_mass = "mass"
@@ -72,6 +73,7 @@ output_type_choices[output_types.wavelengths] = "wavelength files"
 output_type_choices[output_types.grid] = "grid files"
 output_type_choices[output_types.gdensity] = "grid dust density"
 output_type_choices[output_types.tdensity] = "theoretical dust density"
+output_type_choices[output_types.cell_properties] = "dust cell properties"
 output_type_choices[output_types.tree] = "dust grid tree data file"
 output_type_choices[output_types.convergence] = "convergence file"
 output_type_choices[output_types.dust_mass] = "dust population masses"
@@ -140,6 +142,9 @@ def get_output_type(filename):
 
     ## Theoretical dust density
     elif "_ds_trho" in filename and filename.endswith(".fits"): return output_types.tdensity
+
+    ## Dust cell properties
+    elif "_ds_cellprops" in filename and filename.endswith(".dat"): return output_types.cell_properties
 
     ## Dust grid onvergence
     elif filename.endswith("_ds_convergence.dat"): return output_types.convergence
@@ -303,6 +308,7 @@ class SimulationOutput(object):
         for path in self.grid: yield path
         for path in self.gdensity: yield path
         for path in self.tdensity: yield path
+        for path in self.cell_properties: yield path
         for path in self.tree: yield path
         for path in self.convergence: yield path
         for path in self.dust_mass: yield path
@@ -416,6 +422,18 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def has_single_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.absorption in self.paths and self.nabsorption == 1
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def absorption(self):
@@ -427,6 +445,19 @@ class SimulationOutput(object):
 
         if not self.has_absorption: return []
         return self.paths[output_types.absorption]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_absorption: raise IOError("Doesn't have single absorption file")
+        else: return self.absorption[0]
 
     # -----------------------------------------------------------------
 
@@ -1080,6 +1111,68 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ncell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths[output_types.cell_properties])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.cell_properties in self.paths and self.ncell_properties > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_single_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.cell_properties in self.paths and self.ncell_properties == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_cell_properties: return []
+        else: return self.paths[output_types.cell_properties]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_cell_properties: raise IOError("Doesn't have single cell properties file")
+        else: return self.cell_properties[0]
+
+    # -----------------------------------------------------------------
+
     #@property
     @lazyproperty
     def ntree(self):
@@ -1698,6 +1791,18 @@ class SimulationOutput(object):
 
             # Add path
             for path in self.tdensity: lines.append(line_prefix + " - " + self.relative_path(path))
+
+        # Cell properties
+        if self.has_cell_properties:
+            lines.append(line_prefix)
+
+            # Add title
+            title = fmt.green + fmt.underlined + output_type_choices[output_types.cell_properties].capitalize() + fmt.reset + " (" + str(self.ncell_properties) + "):"
+            lines.append(line_prefix + title)
+            lines.append(line_prefix)
+
+            # Add path
+            for path in self.cell_properties: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Tree
         if self.has_tree:

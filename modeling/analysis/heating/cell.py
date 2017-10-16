@@ -25,7 +25,7 @@ from ....core.basics.log import log
 from ....core.tools import tables, introspection
 from ....core.simulation.table import SkirtTable
 from ....core.basics.distribution import Distribution, Distribution2D
-from ....core.simulation.wavelengthgrid import WavelengthGrid
+from .component import total, old, young, ionizing, unevolved
 
 # -----------------------------------------------------------------
 
@@ -47,17 +47,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         super(CellDustHeatingAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
-
-        self.total_output_path = None
-
-        # The wavelength grid used for the simulations
-        self.wavelength_grid = None
-
-        # The number of wavelengths
-        self.number_of_wavelengths = None
-
-        # The table with the cell properties
-        self.cell_properties = None
 
         # The table with the absorbed luminosities
         self.absorptions = None
@@ -86,28 +75,22 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the wavelength grid
-        self.load_wavelength_grid()
+        # 2. Create the absorption table
+        self.create_absorption_table()
 
-        # 3. Load the cell properties
-        self.load_cell_properties()
-
-        # 4. Load the absorption data
-        self.load_absorption()
-
-        # 5. Calculate the heating fraction of the unevolved stellar population
+        # 3. Calculate the heating fraction of the unevolved stellar population
         self.calculate_heating_unevolved()
 
-        # 6. Calculate the distribution of the heating fraction of the unevolved stellar population
+        # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
         self.calculate_distribution()
 
-        # 7. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
+        # 5. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
         self.calculate_radial_distribution()
 
-        # 8. Writing
+        # 6. Writing
         self.write()
 
-        # 9. Plotting
+        # 7. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -122,12 +105,107 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(CellDustHeatingAnalyser, self).setup(**kwargs)
 
-        # Determine the output path for the 'total' simulation
-        self.total_output_path = self.analysis_run.heating_output_path_for_contribution("total")
+    # -----------------------------------------------------------------
+
+    # def load_absorption(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Loading the absorption data ...")
+    #
+    #     # Header:
+    #     # Bolometric absorbed luminosity for all dust cells
+    #     # column 1: x coordinate of cell center (pc)
+    #     # column 2: y coordinate of cell center (pc)
+    #     # column 3: z coordinate of cell center (pc)
+    #     # column 4: Absorbed bolometric luminosity (W)
+    #
+    #     contribution_tables = dict()
+    #
+    #     # Loop over the different contributions
+    #     for contribution in contributions:
+    #
+    #         # Skip the simulation of the total unevolved (young + ionizing) stellar population
+    #         if contribution == "unevolved": continue
+    #
+    #         # Debugging
+    #         log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
+    #
+    #         # Determine the path to the output directory of the simulation
+    #         output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
+    #
+    #         # Determine the path to the absorption data file
+    #         absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
+    #
+    #         # Load the absorption table for this contribution
+    #         table = SkirtTable.from_file(absorption_path)
+    #
+    #         # Add the table
+    #         contribution_tables[contribution] = table
+    #
+    #     do_checks = False
+    #     if do_checks:
+    #
+    #         # Debugging
+    #         log.debug("Checking whether the tables are consistent ...")
+    #
+    #         # Check whether the table lengths match
+    #         table_lengths = [len(table) for table in contribution_tables.values()]
+    #         if not all(table_lengths[0] == length for length in table_lengths): raise ValueError("Absorption tables have different sizes")
+    #
+    #         # Check whether the X coordinates of the cells match
+    #         if not tables.equal_columns([table["X coordinate of cell center"] for table in contribution_tables.values()]):
+    #             raise ValueError("Columns of X coordinates of cell centers do not match between the different contributions")
+    #
+    #         # Check whether the Y coordinates of the cells match
+    #         if not tables.equal_columns([table["Y coordinate of cell center"] for table in contribution_tables.values()]):
+    #             raise ValueError("Columns of Y coordinates of cell centers do not match between the different contributions")
+    #
+    #         # Check whether the Z coordinates of the cells match
+    #         if not tables.equal_columns([table["Z coordinate of cell center"] for table in contribution_tables.values()]):
+    #             raise ValueError("Columns of Z coordinates of cell centers do not match between the different contributions")
+    #
+    #     # Debugging
+    #     log.debug("Creating the absorption table ...")
+    #
+    #     # Create the columns for the absorption table
+    #     #names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
+    #     #data = []
+    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
+    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
+    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
+    #
+    #     # Loop over the tables of the different contributions, add the absorption luminosity columns
+    #     #for contribution in contribution_tables:
+    #
+    #         #names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
+    #         #data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
+    #
+    #     # Create the absorption table
+    #     #self.absorptions = tables.new(data, names, copy=False)
+    #
+    #     self.absorptions = tables.new()
+    #
+    #     x_coords = contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"]
+    #     y_coords = contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"]
+    #     z_coords = contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"]
+    #     self.absorptions.add_columns([x_coords, y_coords, z_coords], copy=False)
+    #
+    #     for contribution in contribution_tables:
+    #
+    #         self.absorptions.add_columns([contribution_tables[contribution]["Absorbed bolometric luminosity"]], copy=False)
+    #         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + contribution + " stellar population")
+    #
+    #     # Create a mask of cells with zero absorption
+    #     self.zero_absorption = self.absorptions["Absorbed bolometric luminosity of the total stellar population"] == 0.
 
     # -----------------------------------------------------------------
 
-    def load_wavelength_grid(self):
+    def create_absorption_table(self):
 
         """
         This function ...
@@ -135,136 +213,36 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the wavelength grid file produced by SKIRT ...")
+        log.info("Creating the absorption table ...")
 
-        # Determine the path to the wavelength grid file in heating/total
-        wavelengths_path = fs.join(self.total_output_path, self.galaxy_name + "_wavelengths.dat")
-
-        # Load the wavelength grid as a table
-        self.wavelength_grid = WavelengthGrid.from_skirt_output(wavelengths_path)
-
-        # Determine the number of wavelengths
-        self.number_of_wavelengths = len(self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    def load_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the suer
-        log.info("Loading the dust cell properties ...")
-
-        # M81_ds_cellprops.dat
-
-        # column 1: volume (pc3)
-        # column 2: density (Msun/pc3)
-        # column 3: mass fraction
-        # column 4: optical depth
-
-        # Determine the path to the cell properties file in heating/total
-        properties_path = fs.join(self.total_output_path, self.galaxy_name + "_ds_cellprops.dat")
-
-        # Load the properties table
-        self.cell_properties = SkirtTable.from_file(properties_path)
-
-    # -----------------------------------------------------------------
-
-    def load_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the absorption data ...")
-
-        # Header:
-        # Bolometric absorbed luminosity for all dust cells
-        # column 1: x coordinate of cell center (pc)
-        # column 2: y coordinate of cell center (pc)
-        # column 3: z coordinate of cell center (pc)
-        # column 4: Absorbed bolometric luminosity (W)
-
-        contribution_tables = dict()
-
-        # Loop over the different contributions
-        for contribution in contributions:
-
-            # Skip the simulation of the total unevolved (young + ionizing) stellar population
-            if contribution == "unevolved": continue
-
-            # Debugging
-            log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
-
-            # Determine the path to the output directory of the simulation
-            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
-
-            # Determine the path to the absorption data file
-            absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
-
-            # Load the absorption table for this contribution
-            table = SkirtTable.from_file(absorption_path)
-
-            # Add the table
-            contribution_tables[contribution] = table
-
-        do_checks = False
-        if do_checks:
-
-            # Debugging
-            log.debug("Checking whether the tables are consistent ...")
-
-            # Check whether the table lengths match
-            table_lengths = [len(table) for table in contribution_tables.values()]
-            if not all(table_lengths[0] == length for length in table_lengths): raise ValueError("Absorption tables have different sizes")
-
-            # Check whether the X coordinates of the cells match
-            if not tables.equal_columns([table["X coordinate of cell center"] for table in contribution_tables.values()]):
-                raise ValueError("Columns of X coordinates of cell centers do not match between the different contributions")
-
-            # Check whether the Y coordinates of the cells match
-            if not tables.equal_columns([table["Y coordinate of cell center"] for table in contribution_tables.values()]):
-                raise ValueError("Columns of Y coordinates of cell centers do not match between the different contributions")
-
-            # Check whether the Z coordinates of the cells match
-            if not tables.equal_columns([table["Z coordinate of cell center"] for table in contribution_tables.values()]):
-                raise ValueError("Columns of Z coordinates of cell centers do not match between the different contributions")
-
-        # Debugging
-        log.debug("Creating the absorption table ...")
-
-        # Create the columns for the absorption table
-        #names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
-        #data = []
-        #data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
-        #data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
-        #data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
-
-        # Loop over the tables of the different contributions, add the absorption luminosity columns
-        #for contribution in contribution_tables:
-
-            #names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
-            #data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
-
-        # Create the absorption table
-        #self.absorptions = tables.new(data, names, copy=False)
-
+        # Initialize table
         self.absorptions = tables.new()
 
-        x_coords = contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"]
-        y_coords = contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"]
-        z_coords = contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"]
+        # Get cell coordinates
+        x_coords = self.total_contribution_absorption_data["X coordinate of cell center"]
+        y_coords = self.total_contribution_absorption_data["Y coordinate of cell center"]
+        z_coords = self.total_contribution_absorption_data["Z coordinate of cell center"]
+
+        # Add the columns
         self.absorptions.add_columns([x_coords, y_coords, z_coords], copy=False)
 
-        for contribution in contribution_tables:
+        # Add a column for the different contributions
 
-            self.absorptions.add_columns([contribution_tables[contribution]["Absorbed bolometric luminosity"]], copy=False)
-            self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + contribution + " stellar population")
+        ## Add column for total
+        self.absorptions.add_column(self.total_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + total + " stellar population")
+
+        ## Add column for old
+        self.absorptions.add_column(self.old_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + old + " stellar population")
+
+        ## Add column for young
+        self.absorptions.add_column(self.young_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + young + " stellar population")
+
+        ## Add column for ionizing
+        self.absorptions.add_column(self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + ionizing + " stellar population")
 
         # Create a mask of cells with zero absorption
         self.zero_absorption = self.absorptions["Absorbed bolometric luminosity of the total stellar population"] == 0.
@@ -315,8 +293,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Calculate the heating fraction of the unevolved stellar population in each dust cell
         self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
-
-
 
         self.mask = self.heating_fractions.mask  # is basically the same mask as self.zero_absorption because during the division (see calculate_heating_unevolved) Astropy sets invalid values as masked
         # nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions) # no nans or infs because Astropy sets them as MaskedConstants during the division
@@ -724,7 +700,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Determine the indices of the columns that have to be imported
         column_indices = [0,1,2,3]
-        for i in range(4, 4 + self.number_of_wavelengths): column_indices.append(i)
+        for i in range(4, 4 + self.nwavelengths): column_indices.append(i)
 
         # Loop over the different contributions
         for contribution in contributions:
@@ -745,7 +721,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             # columns[4 -> 4 + (nwavelengths - 1)]: J_lambda
 
             # Integrate over the J_lambda values to get the total bolometric absorbed luminosity per cell
-            luminosities = self.integrate_over_wavelengths(columns[4:4+self.number_of_wavelengths])
+            luminosities = self.integrate_over_wavelengths(columns[4:4+self.nwavelengths])
 
             #IDtot, x, y, z, Ltot = np.loadtxt(totISRFfile, usecols=(0, 1, 2, 3, 4,), unpack=True)
             #IDold, Lold = np.loadtxt(oldISRFfile, usecols=(0, 4,), unpack=True)
