@@ -854,8 +854,14 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_filters_no_iras_planck:
 
+            # Get the image
+            image = self.proper_images[fltr]
+
+            # Convert to non - per angular or intrinsic area
+            image.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
             # Calculate the total flux
-            flux = self.proper_images[fltr].sum_in(self.truncation_ellipse, add_unit=True)
+            flux = image.sum_in(self.truncation_ellipse, add_unit=True)
 
             # Add to the SED
             self.proper_images_fluxes.add_point(fltr, flux)
@@ -892,6 +898,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the frame
             frame = self.observed_images[fltr]
+
+            # Convert to non - per angular or intrinsic area unit
+            frame.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
 
             # Calculate the total flux
             flux = frame.sum_in(self.truncation_ellipse, add_unit=True)

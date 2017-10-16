@@ -1668,7 +1668,7 @@ class PhotometricUnit(CompositeUnit):
             elif to_unit.is_frequency_density:
                 if frequency is None: raise ValueError("Frequency should be specified for conversion from neutral density to frequency density")
                 new_unit = photometric_unit_from_divide_unit_and_quantity(self, frequency)
-            elif to_unit.is_neutral_density: new_unit = self
+            elif to_unit.is_neutral_density: new_unit = self.copy()
             else: raise ValueError("Cannot convert from spectral density to integrated quantity") # asked to convert to not a spectral density
 
         # Wavelength density
@@ -1682,7 +1682,7 @@ class PhotometricUnit(CompositeUnit):
                 if wavelength is None: raise ValueError("Wavelength should be specified for conversion from wavelength density to frequency density")
                 if frequency is None: raise ValueError("Frequency should be specified for conversion from wavelength density to frequency density")
                 new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength / frequency)
-            elif to_unit.is_wavelength_density: new_unit = self
+            elif to_unit.is_wavelength_density: new_unit = self.copy()
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
         # Frequency density
@@ -1692,7 +1692,7 @@ class PhotometricUnit(CompositeUnit):
             if to_unit.is_neutral_density:
                 if frequency is None: raise ValueError("Frequency should be specified for conversion from frequency density to neutral density")
                 new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency)
-            elif to_unit.is_frequency_density: new_unit = self
+            elif to_unit.is_frequency_density: new_unit = self.copy()
             elif to_unit.is_wavelength_density:
                 if frequency is None: raise ValueError("Frequency should be specified for conversion from frequency density to wavelength density")
                 if wavelength is None: raise ValueError("Wavelength should be specified for conversion from frequency density to wavelength density")
@@ -1706,9 +1706,10 @@ class PhotometricUnit(CompositeUnit):
             if to_unit.is_neutral_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             elif to_unit.is_frequency_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             elif to_unit.is_wavelength_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
-            else: new_unit = self
+            else: new_unit = self.copy()
 
         #print(self, self.physical_type, self.base_physical_type)
+        #print(new_unit, new_unit.physical_type, new_unit.base_physical_type)
 
         # Same base type
         if self.base_physical_type == to_unit.base_physical_type:
@@ -2347,87 +2348,404 @@ def photometric_unit_from_divide_unit_and_quantity_reverse(unit, quantity):
 
 # -----------------------------------------------------------------
 
-def multiply_units(unit_a, unit_b):
+def multiply_units(unit_a, unit_b, density=None, brightness=None):
 
     """
     This function ...
     :param unit_a:
     :param unit_b:
+    :param density:
+    :param brightness:
     :return:
     """
+
+    # Strict?
+    density_strict = False
+    brightness_strict = False
 
     # If the other unit is dimensionless
     if unit_b == "": return unit_a.copy()
 
     # If the other unit is dimensionless with a certain scale
-    elif unit_b.physical_type == "dimensionless" and unit_b.scale != 1: return PhotometricUnit(CompositeUnit(unit_a.scale * unit_b.scale, unit_a.bases, unit_a.powers), density=unit_a.is_spectral_density)
+    elif unit_b.physical_type == "dimensionless" and unit_b.scale != 1:
 
-    # Spectral density
-    if unit_a.is_spectral_density:
+        #return PhotometricUnit(CompositeUnit(unit_a.scale * unit_b.scale, unit_a.bases, unit_a.powers), density=unit_a.is_spectral_density)
 
-        # If this is a wavelength density
-        if unit_a.is_wavelength_density:
+        # Create composite unit
+        unit = CompositeUnit(unit_a.scale * unit_b.scale, unit_a.bases, unit_a.powers)
 
-            # From wavelength spectral density to neutral spectral density
-            if is_wavelength(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
-            elif contains_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
-            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+        if density is None: density = unit_a.is_spectral_density
+        else: density_strict = True
 
-        # If this is a frequency density
-        elif unit_a.is_frequency_density:
+        if brightness is None: brightness = unit_a.is_brightness
+        else: brightness_strict = True
 
-            # From frequency spectral density to neutral spectral density
-            if is_frequency(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
-            elif contains_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
-            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
-
-        # Neutral density
-        else:
-
-            # From netural
-            if is_inverse_wavelength(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
-            elif is_inverse_frequency(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
-            elif contains_inverse_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
-            elif contains_inverse_frequency(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
-            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
-
-    # Not a spectral density
+    # Make composite unit
     else:
 
-        # If unit b is an inverse wavelength
-        if is_inverse_wavelength(unit_b):
+        # Create composite unit
+        unit = make_composite_multiplication(unit_a, unit_b)
 
-            unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
-            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
-            return unit
+        ## SPECTRAL
 
-        # If unit b is an inverse frequency
-        elif is_inverse_frequency(unit_b):
+        # Spectral density
+        if unit_a.is_spectral_density:
 
-            unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
-            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
-            return unit
+            # If this is a wavelength density
+            if unit_a.is_wavelength_density:
 
-        # Try parsing as spectral photometric quantity (density=True), but possibly no photometric quantity
-        elif contains_inverse_wavelength(unit_b):
+                # From wavelength spectral density to neutral spectral density
+                if is_wavelength(unit_b):
 
-            unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
-            try:
-                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
-            except AttributeError: pass
-            return unit
+                    #return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
 
-        # Try parsing as spectral photometric quantity(density=True), but possibly no photometric quantity
-        elif contains_inverse_frequency(unit_b):
+                    if density is None: density = True # guess to neutral density
+                    else: density_strict = True
 
-            unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
-            try:
-                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
-            except AttributeError: pass
-            return unit
+                    # Warn
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
 
-        # Parse regularly
-        else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+                # Contains wavelength
+                elif contains_wavelength(unit_b):
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is None: density = True # guess to neutral density
+                    else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
+
+                # Doesn't contain wavelength
+                else:
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+                    #if density is None: density = unit_a.density # is True
+                    #else: density_strict = True
+                    #if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
+
+                    # SHOUDL STAY WAVELENGTH DENSITY
+                    if density is False: raise ValueError("Cannot create bolometric unit from " + str(unit_a) + " (wavelength density) by multiplication with " + str(unit_b))
+
+            # If this is a frequency density
+            elif unit_a.is_frequency_density:
+
+                # Multiplication with frequency
+                if is_frequency(unit_b):
+
+                    #return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is None: density = True # guess to neutral density
+                    else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from frequency density unit")
+
+                # Contains frequency
+                elif contains_frequency(unit_b):
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is None: density = True # guess to neutral density
+                    else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
+
+                # Doesn't contain frequency
+                else:
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+                    #if density is None: density = True # guess it stays frequency density
+                    #else: density_strict = True
+                    #if not density:
+
+                    # SHOULD STAY FREQUENCY DENSITY
+                    if density is False: raise ValueError("Cannot create bolometric unit from " + str(unit_a) + " (frequency density) by multiplication with " + str(unit_b))
+                    density = True
+                    density_strict = True
+
+            # Neutral density
+            else:
+
+                # Inverse wavelength
+                if is_inverse_wavelength(unit_b):
+
+                    #return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is False: raise ValueError("Cannot create bolometric unit from " + str(unit_a) + " (neutral density) by multiplication with " + str(unit_b))
+                    density = True
+                    density_strict = True
+
+                # Inverse frequency
+                elif is_inverse_frequency(unit_b):
+
+                    #return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is False: raise ValueError("Cannot create bolometric unit from " + str(unit_a) + " (neutral density) by multiplication with " + str(unit_b))
+                    density = True
+                    density_strict = True
+
+                # Contains inverse wavelength
+                elif contains_inverse_wavelength(unit_b):
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is None: density = True
+                    else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from neutral density unit")
+
+                # Contains inverse frequency
+                elif contains_inverse_frequency(unit_b):
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+
+                    if density is None: density = True
+                    else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from neutral density unit")
+
+                # Doesn't contain inverse frequency or inverse wavelength
+                else:
+
+                    #return parse_unit(make_composite_multiplication(unit_a, unit_b)
+                    #if density is None: density = True
+
+                    # SHOULD STAY NEUTRAL DENSITY
+                    if density is False: raise ValueError("Cannot create bolometric unit from " + str(unit_a) + " (neutral density) by multiplication with " + str(unit_b))
+                    density = True
+                    density_strict = True
+
+        # Not a spectral density
+        else:
+
+            # If unit b is an inverse wavelength
+            if is_inverse_wavelength(unit_b):
+
+                #unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
+                #if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+                #return unit
+
+                if density is None: density = False # or True?
+                else: density_strict = True
+
+                if density: warnings.warn("Attempting creation of wavelength density unit from bolometric unit")
+
+            # If unit b is an inverse frequency
+            elif is_inverse_frequency(unit_b):
+
+                #unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
+                #if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+                #return unit
+
+                if density is None: density = False  #or True?
+                else: density_strict = True
+
+                if density: warnings.warn("Attempting creation of frequency density unit from bolometric unit")
+
+            # Try parsing as spectral photometric quantity (density=True), but possibly no photometric quantity
+            elif contains_inverse_wavelength(unit_b):
+
+                #unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
+                #try:
+                #    if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+                #except AttributeError: pass
+                #return unit
+
+                if density is None: density = False
+                else: density_strict = True
+
+                if density: warnings.warn("Attempting creation of wavelength density unit from bolometric unit")
+
+            # Try parsing as spectral photometric quantity(density=True), but possibly no photometric quantity
+            elif contains_inverse_frequency(unit_b):
+
+                #unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
+                #try:
+                #    if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+                #except AttributeError: pass
+                #return unit
+
+                if density is None: density = False
+                else: density_strict = True
+
+                if density: warnings.warn("Attempting creation of frequency density unit from bolometric unit")
+
+            # Parse regularly
+            else:
+
+                #return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+                ### CANNOT BE SPECTRAL DENSITY
+                # OOOORRRR YESS IT CAN!!!: CAN IMPLY CONVERION TO NEUTRAL DENSITY
+                if density is None: density = False
+                else: density_strict = True
+
+                # Give warning
+                if density: warnings.warn("Attempting creation of neutral spectral density unit from bolometric unit")
+
+        ## PER PIXEL AREA OR NOT
+
+        # Per pixel area
+        if unit_a.is_per_angular_or_intrinsic_area:
+
+            # Per angular area
+            if unit_a.is_per_angular_area:
+
+                # SOlid angle
+                if is_solid_angle(unit_b):
+
+                    # Cannot be brightness
+                    if brightness is True: raise ValueError("Cannot create brightness unit from " + str(unit_a) + " (" + unit_a.physical_type + ") by multiplication with solid angle " + str(unit_b))
+                    brightness = False
+                    brightness_strict = True
+
+                # Contains solid angle
+                elif contains_solid_angle(unit_b):
+
+                    # Can be brightness (e.g. there is also a 1/area in the unit_b), but guess not
+                    if brightness is None: brightness = False
+                    else: brightness_strict = True
+
+                # Doesn't contain solid angle
+                else:
+
+                    # Stays the same
+                    if brightness is None: brightness = unit_a.brightness
+                    else: brightness_strict = True
+
+            # Per intrinsic area
+            elif unit_a.is_per_intrinsic_area:
+
+                # Area
+                if is_area(unit_b):
+
+                    # Intrinsic surface brightness with distance dependence (flux) as well
+                    if unit_a.is_intrinsic_surface_brightness_with_distance:
+
+                        # TODO: lET THIS GUESS DEPEND ON A MATCH BETWEEN THE UNIT_A REPRESENTATION (E.G. W/m2/pc2) AND THE UNIT_B (E.G. pc2) -> result is FLUX, if UNIT_B is e.g. m2 -> result is STILL SURFACE BRIGHTNESS
+                        if brightness is None: brightness = False  # guess result is Flux, not intrinsic surface brightness
+                        else: brightness_strict = True
+
+                    # Multiplication with AREA and no /4pid2: CAN NEVER BE BRIGHTNESS
+                    else:
+
+                        if brightness is True: raise ValueError("Cannot create surface brightness unit")
+                        brightness = False
+                        brightness_strict = True
+
+                # Contains area
+                elif contains_area(unit_b):
+
+                    if unit_a.is_intrinsic_surface_brightness_with_distance:
+
+                        if brightness is None: brightness = False # guess result is Flux
+                        else: brightness_strict = True
+
+                    # CAN NEVER BE BRIGHTNESS? -> NO, because only 'contains': can make anything it wants
+                    else:
+
+                        if brightness is None: brightness = False
+                        else: brightness_strict = True
+
+                # Doesn't contain area
+                else:
+
+                    # GUESS BRIGHTNESS FLAG STAYS THE SAME
+                    if brightness is None: brightness = unit_a.brightness
+                    else: brightness_strict = True
+
+            # Error
+            else: raise RuntimeError("Something went wrong")
+
+        # Not per pixel area
+        else:
+
+            # If unit b is an inverse area
+            if is_inverse_area(unit_b):
+
+                # Already has distance unit (MUST BE FLUX, because not per pixel area)
+                if unit_a.has_distance_unit:
+
+                    # MUST CREATE INTRINSIC SURFACE BRIGHTNESS
+                    if brightness is False: raise ValueError("Cannot create non-brightness unit from " + str(unit_a) + " by multiplication with " + str(unit_b))
+                    brightness = True
+                    brightness_strict = True
+
+                # Doesn't have a distance unit, inverse area unit_b can be for either creating flux or intrinsic surface brightness ..
+                else:
+
+                    # Guess flux
+                    if brightness is None: brightness = False
+                    else: brightness_strict = True
+
+            # Inverse solid angle
+            elif is_inverse_solid_angle(unit_b):
+
+                # unit_a is FLUX (because not per pixel area)
+                if unit_a.has_distance_unit:
+
+                    if brightness is False: raise ValueError("Cannot create non-brightness unit from " + str(unit_a) + " by multiplication with " + str(unit_b))
+                    brightness = True
+                    brightness_strict = True
+
+                # Doesn't have distance unit -> CAN ONLY CREATE INTENSITY
+                else:
+
+                    if brightness is True: raise ValueError("Cannot create brightness unit from " + str(unit_a) + " by multiplication with " + str(unit_b))
+                    brightness = False
+                    brightness_strict = True
+
+            # Contains inverse area
+            elif contains_inverse_area(unit_b):
+
+                if unit_a.has_distance_unit:
+
+                    # Probably now a surface brightness
+                    if brightness is None: brightness = True
+                    else: brightness_strict = True
+
+                else:
+
+                    # EITHER FLUX OR BRIGHTNESS, GUESS FLUX
+                    if brightness is None: brightness = False
+                    else: brightness_strict = True
+
+            # Contains inverse solid angle
+            elif contains_inverse_solid_angle(unit_b):
+
+                if unit_a.has_distance_unit:
+
+                    # Probably now a surface brightness
+                    if brightness is None: brightness = True
+                    else: brightness_strict = True
+
+                else:
+
+                    # Probably now intensity
+                    if brightness is None: brightness = False
+                    else: brightness_strict = True
+
+            # Doesn't contain inverse area or solid angle
+            else:
+
+                # CANNOT CREATE BRIGHTNESS
+                if brightness is True: raise ValueError("Cannot create brightness from " + str(unit_a) + " by multiplication with unit " + str(unit_b))
+                brightness = False
+                brightness_strict = True
+
+    # Create the new unit
+    new_unit = parse_unit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+    # print(new_unit, type(new_unit))
+
+    # Check conversion from bolometric to density or vice versa was made
+    if unit_a.is_bolometric and isinstance(new_unit, PhotometricUnit) and new_unit.is_spectral_density:
+        warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + new_unit.physical_type + " by multiplication with unit '" + str(unit_b) + "'. This may not be the intention.")
+    if unit_a.is_spectral_density and isinstance(new_unit, PhotometricUnit) and new_unit.is_bolometric:
+        warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + new_unit.physical_type + " by multiplication with unit '" + str(unit_b) + "'. This may not be the intention.")
+
+    # Return the new unit
+    return new_unit
 
 # -----------------------------------------------------------------
 
@@ -2479,45 +2797,57 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
         unit = make_composite_division(unit_a, unit_b)
 
+        ## SPECTRAL
+
         # If we have a spectral density
         if unit_a.is_spectral_density:
 
             # If this is a wavelength density
             if unit_a.is_wavelength_density:
 
+                # Inverse wavelength
                 if is_inverse_wavelength(unit_b):
 
                     #return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
                     #unit = make_composite_division(unit_a, unit_b)
 
-                    if density is None: density = True
+                    if density is None: density = True # gues to neutral density
                     else: density_strict = True
 
                     #brightness = unit_a.is_brightness
 
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
+
+                # Contains inverse wavelength
                 elif contains_inverse_wavelength(unit_b):
 
                     #return parse_unit(make_composite_division(unit_a, unit_b), density=True)
                     #unit = make_composite_division(unit_a, unit_b)
 
-                    if density is None: density = True
+                    if density is None: density = True # guess to neutral density
                     else: density_strict = True
 
                     #brightness = unit_a.is_brightness
 
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
+
+                # Doesn't contain inverse wavelength
                 else:
 
                     #return parse_unit(make_composite_division(unit_a, unit_b))
                     #unit = make_composite_division(unit_a, unit_b)
 
-                    if density is None: density = unit_a.density #False # ?
+                    if density is None: density = unit_a.density # is True, stays density
                     else: density_strict = True
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from wavelength density unit")
 
                     #brightness = unit_a.is_brightness
 
             # If this is a frequency density
             if unit_a.is_frequency_density:
 
+                # Inverse frequency
                 if is_inverse_frequency(unit_b):
 
                     #return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
@@ -2528,6 +2858,9 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
                     #brightness = unit_a.is_brightness
 
+                    if not density: warnings.warn("Attempting creation of bolometric unit from frequency density unit")
+
+                # Contains inverse frequency
                 elif contains_inverse_frequency(unit_b):
 
                     #return parse_unit(make_composite_division(unit_a, unit_b), density=True)
@@ -2538,6 +2871,9 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
                     #brightness = unit_a.is_brightness
 
+                    if not density: warnings.warn("Attempting creation of bolometric unit from frequency density unit")
+
+                # Doesn't contain inverse frequency
                 else:
 
                     #return parse_unit(make_composite_division(unit_a, unit_b))
@@ -2547,6 +2883,8 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
                     else: density_strict = True
 
                     #brightness = unit_a.is_brightness
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from frequency density unit")
 
             # If this is a neutral density
             else:
@@ -2589,6 +2927,8 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
                     #brightness = unit_a.is_brightness
 
+                    if density is False: warnings.warn("Attempting creation of bolometric unit from neutral density unit")
+
                 # Divide by unit containing frequency unit
                 elif contains_frequency(unit_b):
 
@@ -2601,15 +2941,19 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
                     #brightness = unit_a.is_brightness
 
+                    if density is False: warnings.warn("Attempting creation of bolometric unit from neutral density unit")
+
                 else:
 
                     #return parse_unit(make_composite_division(unit_a, unit_b))
                     #unit = make_composite_division(unit_a, unit_b)
 
-                    if density is None: density = unit_a.density #False
+                    if density is None: density = unit_a.density # is True
                     else: density_strict = True
 
                     #brightness = unit_a.is_brightness
+
+                    if not density: warnings.warn("Attempting creation of bolometric unit from neutral density unit")
 
         # Not a spectral density
         else:
@@ -2622,7 +2966,7 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
                 #return unit
                 #unit = make_composite_division(unit_a, unit_b)
 
-                if density is None: density = False
+                if density is None: density = False # or True?
                 else: density_strict = True
 
                 #brightness = unit_a.is_brightness
@@ -2638,14 +2982,13 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
                 #return unit
                 #unit = make_composite_division(unit_a, unit_b)
 
-                if density is None: density = False
+                if density is None: density = False # or True?
                 else: density_strict = True
 
                 #brightness = unit_a.is_brightness
 
                 # Give warning
                 if density: warnings.warn("Attempting creation of frequency spectral density unit from bolometric unit")
-
 
             # Unit b contains a wavelength
             elif contains_wavelength(unit_b):
@@ -2693,12 +3036,14 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
                 #brightness = unit_a.is_brightness
 
                 ## CANNOT BE SPECTRAL DENSITY
-                # OOOORRRR: CAN IMPLY CONVERION TO NEUTRAL DENSITY
+                # OOOORRRR YESS IT CAN!!!: CAN IMPLY CONVERION TO NEUTRAL DENSITY
                 if density is None: density = False
                 else: density_strict = True
 
                 # Give warning
                 if density: warnings.warn("Attempting creation of neutral spectral density unit from bolometric unit")
+
+        ## PER PIXEL AREA OR NOT
 
         # Per pixel area
         if unit_a.is_per_angular_or_intrinsic_area:
@@ -2709,6 +3054,7 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
                 # Intrinsic surface brightness with distance dependence (flux) as well
                 if unit_a.is_intrinsic_surface_brightness_with_distance:
 
+                    # TODO: lET THIS GUESS DEPEND ON A MATCH BETWEEN THE UNIT_A REPRESENTATION (E.G. W/m2/pc2) AND THE UNIT_B (E.G. pc2) -> result is FLUX, if UNIT_B is e.g. m2 -> result is STILL SURFACE BRIGHTNESS
                     if brightness is None: brightness = False  # guess result is Flux, not intrinsic surface brightness
                     else: brightness_strict = True
 

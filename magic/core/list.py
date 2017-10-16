@@ -3014,6 +3014,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         # In place is not possible
         if in_place: raise ValueError("Cannot enable 'in_place' when frames are remotely rebinned")
 
+        # Debugging
+        log.debug("Rebinning frame remotely ...")
+
         # Remote rebinning
         from .remote import RemoteFrame
         remoteframe = RemoteFrame.from_local(frame, session)
@@ -3022,10 +3025,17 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
     # REBIN locally
     else:
+
+        # Debugging
+        log.debug("Rebinning frame locally ...")
+
         if in_place:
             frame.rebin(wcs)
             rebinned = None
         else: rebinned = frame.rebinned(wcs)
+
+    # Debugging
+    log.debug("Converting the unit back to the original unit " + tostr(original_unit, add_physical_type=True))
 
     # Convert the original back to the original unit
     frame.convert_to(original_unit)
