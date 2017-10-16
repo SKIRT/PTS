@@ -309,13 +309,17 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the images
         for filter_name in self.simulated:
 
+            # Debugging
+            log.debug("Rebinning the '" + filter_name + "' images ...")
+
             # Get the images
             simulated = self.simulated[filter_name]
             observed = self.observed[filter_name]
             errors = self.errors[filter_name]
 
             # Rebin in-place
-            rebin_to_highest_pixelscale(simulated, observed, errors, in_place=True)
+            names = ["simulated", "observed", "errors"]
+            rebin_to_highest_pixelscale(simulated, observed, errors, names=names, in_place=True)
 
     # -----------------------------------------------------------------
 

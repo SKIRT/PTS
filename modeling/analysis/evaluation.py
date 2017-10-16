@@ -712,13 +712,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             observed = self.observed_images[fltr]
             observed_errors = self.observed_errors[fltr]
 
-            #print(simulated.unit, simulated.unit.density)
-            #print(simulated_errors.unit, simulated_errors.unit.density)
-            #print(observed.unit, observed.unit.density)
-            #print(observed_errors.unit, observed_errors.unit.density)
-
             # Rebin in-place
-            rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, in_place=True)
+            names = ["simulated", "simulated_errors", "observed", "observed_errors"]
+            rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, names=names, in_place=True)
 
     # -----------------------------------------------------------------
 
@@ -1084,11 +1080,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
                 # Debugging
                 log.debug("Creating the residual frame for the '" + str(fltr) + "' filter ...")
-
-                # Get the observed and simulated image
-                #simulated = self.images[fltr]
-                #observed = self.observed_images[fltr]
-                #errors = self.observed_errors[fltr]
 
                 # Get the images in the same units
                 simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])

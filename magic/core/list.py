@@ -1424,18 +1424,25 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None):
+    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False):
 
         """
         This function ...
         :param remote:
         :param rebin_remote_threshold:
+        :param in_place:
         :return: 
         """
 
-        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
-        self.remove_all()
-        for frame in new_frames: self.append(frame)
+        # In place
+        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+
+        # Replace
+        else:
+
+            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            self.remove_all()
+            for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
@@ -1822,6 +1829,7 @@ class NamedFrameList(NamedList):
         """
         This function ...
         :param fltr:
+        :param fwhm:
         :param remote:
         :return:
         """
@@ -1833,12 +1841,14 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_name(self, name, remote=None):
+    def rebin_to_name(self, name, remote=None, rebin_remote_threshold=None, in_place=False):
 
         """
         This function ...
         :param name:
         :param remote:
+        :param rebin_remote_threshold:
+        :param in_place:
         :return:
         """
 
@@ -1846,30 +1856,43 @@ class NamedFrameList(NamedList):
         pixelscale = self[name].average_pixelscale
         wcs = self[name].wcs
 
-        # Rebin and replace
-        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote)
-        self.remove_all()
-        for frame in new_frames: self.append(frame)
+        # Internal frames are not used elsewhere
+        if in_place: rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+
+        # Internal frames can be used elsewhere, and we don't want them rebinned
+        else:
+
+            # Rebin and replace
+            new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            self.remove_all()
+            for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def rebin_to_wcs(self, wcs, remote=None, rebin_remote_threshold=None):
+    def rebin_to_wcs(self, wcs, remote=None, rebin_remote_threshold=None, in_place=False):
 
         """
         This function ...
         :param wcs:
         :param remote:
         :param rebin_remote_threshold:
+        :param in_place:
         :return:
         """
 
         # Get pixelscale
         pixelscale = wcs.average_pixelscale
 
-        # Rebin and replace
-        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
-        self.remove_all()
-        for frame in new_frames: self.append(frame)
+        # In place
+        if in_place: rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+
+        # Replace
+        else:
+
+            # Rebin and replace
+            new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            self.remove_all()
+            for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
@@ -1947,18 +1970,25 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None):
+    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False):
 
         """
         This function ...
         :param remote:
         :param rebin_remote_threshold:
+        :param in_place:
         :return:
         """
 
-        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
-        self.remove_all()
-        for frame in new_frames: self.append(frame)
+        # In place
+        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+
+        # REplace
+        else:
+
+            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            self.remove_all()
+            for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
@@ -2692,6 +2722,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     remote = kwargs.pop("remote", None)
     rebin_remote_threshold = kwargs.pop("rebin_remote_threshold", None)
 
+    # In place?
+    in_place = kwargs.pop("in_place", False)
+
     # Check
     if len(frames) == 1:
 
@@ -2729,9 +2762,10 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     # Debugging
     if names is not None: log.debug("The frame with the highest pixelscale is the '" + names[highest_pixelscale_index] + "' frame ...")
+    log.debug("The highest pixelscale is " + tostr(highest_pixelscale))
 
     # Rebin
-    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=in_place)
 
 # -----------------------------------------------------------------
 
@@ -2749,6 +2783,9 @@ def rebin_to_median_pixelscale(*frames, **kwargs):
 
     # Get the remote
     remote = kwargs.pop("remote", None)
+
+    # In-place
+    in_place = kwargs.pop("in_place", False)
 
     # Check
     if len(frames) == 1:
@@ -2775,7 +2812,7 @@ def rebin_to_median_pixelscale(*frames, **kwargs):
     if names is not None: log.debug("The frame with the median pixelscale is the '" + names[median_index] + "' frame ...")
 
     # Rebin
-    return rebin_to_pixelscale(*frames, names=names, pixelscale=pixelscale, wcs=wcs, remote=remote)
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=pixelscale, wcs=wcs, remote=remote, in_place=in_place)
 
 # -----------------------------------------------------------------
 
