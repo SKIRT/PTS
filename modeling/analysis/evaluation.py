@@ -3052,7 +3052,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return [-100., 100.]
+        return (-100., 100.)
 
     # -----------------------------------------------------------------
 
