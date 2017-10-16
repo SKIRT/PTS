@@ -1024,6 +1024,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame(np.abs(self.data), wcs=self.wcs, unit=self.unit, pixelscale=self.pixelscale, filter=self.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
     def nans(self):
 
         """

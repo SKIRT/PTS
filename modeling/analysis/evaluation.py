@@ -2133,6 +2133,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Plot residual maps
         self.plot_residuals()
 
+        # Plot absolute residual maps
+        self.plot_residuals_absolute()
+
         # Plot weighed residual maps
         self.plot_weighed_residuals()
 
@@ -3056,6 +3059,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def residuals_plot_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "RdBu_r"
+
+    # -----------------------------------------------------------------
+
     def plot_residuals(self):
 
         """
@@ -3088,7 +3103,85 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #                                   peak_alpha=self.config.peak_alpha)
 
             # Plot
-            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear")
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear", cmap=self.residuals_plot_cmap)
+
+    # -----------------------------------------------------------------
+
+    def get_residuals_absolute_plot_filepath_for_filter(self, fltr):
+
+        """
+        Thisn fucntion ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.residuals_path, str(fltr) + "_absolute.png")
+
+    # -----------------------------------------------------------------
+
+    def has_residuals_absolute_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_residuals_absolute_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_absolute_plot_interval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (0, 100.)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_absolute_plot_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals_absolute(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the residuals in absolute values ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_filters_no_iras_planck:
+
+            # Check whether present
+            if self.has_residuals_absolute_plot_for_filter(fltr): continue
+
+            # Get the absolute residual map
+            residuals = self.residuals[fltr].absolute
+
+            # Get residuals in percentage
+            residuals_percentage = residuals * 100
+
+            # Determine the path
+            path = self.get_residuals_absolute_plot_filepath_for_filter(fltr)
+
+            # Plot
+            plotting.plot_box(residuals_percentage, interval=self.residuals_absolute_plot_interval, path=path, colorbar=True, scale="linear", cmap=self.residuals_absolute_plot_cmap)
 
     # -----------------------------------------------------------------
 
