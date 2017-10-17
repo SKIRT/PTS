@@ -1263,11 +1263,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 indices = np.argwhere(values == 0)
                 values = np.delete(values, indices)
 
-                # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
-                indices = np.argwhere(values < self.distribution_x_min)
-                values = np.delete(values, indices)
-                indices = np.argwhere(values > self.distribution_x_max)
-                values = np.delete(values, indices)
+                # # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+                # indices = np.argwhere(values < self.distribution_x_min)
+                # values = np.delete(values, indices)
+                # indices = np.argwhere(values > self.distribution_x_max)
+                # values = np.delete(values, indices)
 
                 # Check
                 if len(values) == 0 or sequences.all_equal(values):

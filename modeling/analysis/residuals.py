@@ -221,33 +221,6 @@ class ResidualAnalyser(AnalysisComponent):
             # Open the image
             frame = Frame.from_file(path)
 
-            # # Get the corresponding observed image
-            # observed = self.observed[filter_name]
-            #
-            # # Check whether the coordinate systems of the observed and simulated image match
-            # if frame.wcs == observed.wcs: log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
-            #
-            # # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
-            # elif observed.average_pixelscale < frame.average_pixelscale:
-            #
-            #     # Debugging
-            #     log.debug("The observed image has a better resolution as the simulated image: rebinning the observed image ...")
-            #
-            #     # Rebin
-            #     observed.rebin(frame.wcs)
-            #
-            # # The simulated image has a smaller pixelscale as the observed image
-            # elif frame.average_pixelscale < observed.average_pixelscale:
-            #
-            #     # Debugging
-            #     log.debug("The simulated image has a better resolution as the observed image: rebinning the simulated image ...")
-            #
-            #     # Rebin the simulated image to the coordinate system of the observed image
-            #     frame.rebin(observed.wcs)
-            #
-            # # Error
-            # else: raise RuntimeError("Something unexpected happened")
-
             # Add the simulated image frame to the dictionary
             self.simulated[filter_name] = frame
 
@@ -371,8 +344,44 @@ class ResidualAnalyser(AnalysisComponent):
             self.residuals[filter_name] = residual
 
             # WRITE THE SIGNIFICANCE MASK
-            mask_path = fs.join(self.analysis_run.residuals_path, filter_name + "_significance.fits")
+            mask_path = self.get_significance_mask_path(filter_name)
             significance_mask.saveto(mask_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def significance_masks_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "significance")
+
+    # -----------------------------------------------------------------
+
+    def get_significance_mask_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.significance_masks_path, filter_name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_significance_mask(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_significance_mask_path(filter_name))
 
     # -----------------------------------------------------------------
 
@@ -469,6 +478,12 @@ class ResidualAnalyser(AnalysisComponent):
 
             # REMOVE EXACT ZEROES
             indices = np.argwhere(values == 0)
+            values = np.delete(values, indices)
+
+            # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+            indices = np.argwhere(values < self.distribution_x_min)
+            values = np.delete(values, indices)
+            indices = np.argwhere(values > self.distribution_x_max)
             values = np.delete(values, indices)
 
             # Check
@@ -594,6 +609,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def residual_maps_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "maps")
+
+    # -----------------------------------------------------------------
+
     def get_residuals_path(self, filter_name):
 
         """
@@ -602,7 +629,7 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine the path for this residual image
-        path = fs.join(self.analysis_run.residuals_path, filter_name + ".fits")
+        path = fs.join(self.residual_maps_path, filter_name + ".fits")
         return path
 
     # -----------------------------------------------------------------
@@ -679,6 +706,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def weighed_residual_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_maps")
+
+    # -----------------------------------------------------------------
+
     def get_weighed_residuals_path(self, filter_name):
 
         """
@@ -688,7 +727,7 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine the path for this residual image
-        path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".fits")
+        path = fs.join(self.weighed_residual_maps_path, filter_name + ".fits")
         return path
 
     # -----------------------------------------------------------------
@@ -779,6 +818,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def distributions_path(self):
+
+        """
+        this function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "distributions")
+
+    # -----------------------------------------------------------------
+
     def get_residuals_distribution_path(self, filter_name):
 
         """
@@ -788,7 +839,7 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine data file path
-        path = fs.join(self.analysis_run.residuals_path, filter_name + ".dat")
+        path = fs.join(self.distributions_path, filter_name + ".dat")
         return path
 
     # -----------------------------------------------------------------
@@ -861,6 +912,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def weighed_distributions_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_distributions")
+
+    # -----------------------------------------------------------------
+
     def get_weighed_residuals_distribution_path(self, filter_name):
 
         """
@@ -870,7 +933,7 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine data file path
-        path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".dat")
+        path = fs.join(self.weighed_distributions_path, filter_name + ".dat")
         return path
 
     # -----------------------------------------------------------------
@@ -974,6 +1037,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def distributions_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "distribution_plots")
+
+    # -----------------------------------------------------------------
+
     def get_residuals_distribution_plot_path(self, filter_name):
 
         """
@@ -983,8 +1058,44 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine plot path
-        path = fs.join(self.analysis_run.residuals_path, filter_name + ".pdf")
+        path = fs.join(self.distributions_plot_path, filter_name + ".pdf")
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_x_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return -4
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_x_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 4
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_x_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.distribution_x_min, self.distribution_x_max)  # because should be less than an order of magnitude (10)
 
     # -----------------------------------------------------------------
 
@@ -1009,7 +1120,7 @@ class ResidualAnalyser(AnalysisComponent):
             log.debug("Plotting the residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
 
             # Plot
-            self.residual_distributions[filter_name].plot(path=path)
+            self.residual_distributions[filter_name].plot(path=path, x_limits=self.distribution_x_limits)
 
     # -----------------------------------------------------------------
 
@@ -1039,6 +1150,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def weighed_distributions_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_distribution_plots")
+
+    # -----------------------------------------------------------------
+
     def get_weighed_residuals_distribution_plot_path(self, filter_name):
 
         """
@@ -1048,8 +1171,20 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Determine plot path
-        path = fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".pdf")
+        path = fs.join(self.weighed_distributions_plot_path, filter_name + ".pdf")
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def weighed_distribution_x_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
 
     # -----------------------------------------------------------------
 
@@ -1074,7 +1209,7 @@ class ResidualAnalyser(AnalysisComponent):
             log.debug("Plotting the weighed residuals distribution for the '" + filter_name + "' band to '" + path + "' ...")
 
             # Plot
-            self.weighed_distributions[filter_name].plot(path=path)
+            self.weighed_distributions[filter_name].plot(path=path, x_limits=self.weighed_distribution_x_limits)
 
     # -----------------------------------------------------------------
 
@@ -1104,6 +1239,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def residuals_plot_path(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return fs.join(self.analysis_run.residuals_path, "plots")
+
+    # -----------------------------------------------------------------
+
     def get_residuals_plot_path(self, filter_name):
 
         """
@@ -1112,7 +1259,7 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.analysis_run.residuals_path, filter_name + ".png")
+        return fs.join(self.residuals_plot_path, filter_name + ".png")
 
     # -----------------------------------------------------------------
 
@@ -1199,6 +1346,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def absolute_residuals_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "absolute_plots")
+
+    # -----------------------------------------------------------------
+
     def get_absolute_residuals_plot_path(self, filter_name):
 
         """
@@ -1207,7 +1366,7 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.analysis_run.residuals_path, filter_name + "_absolute.png")
+        return fs.join(self.absolute_residuals_plot_path, filter_name + "_absolute.png")
 
     # -----------------------------------------------------------------
 
@@ -1288,6 +1447,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def weighed_residuals_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_plots")
+
+    # -----------------------------------------------------------------
+
     def get_weighed_residuals_plot_path(self, filter_name):
 
         """
@@ -1296,7 +1467,7 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.analysis_run.weighed_residuals_path, filter_name + ".png")
+        return fs.join(self.weighed_residuals_plot_path, filter_name + ".png")
 
     # -----------------------------------------------------------------
 
@@ -1409,19 +1580,6 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Run the plotter
         plotter.run(path)
-
-    # -----------------------------------------------------------------
-
-    # @property
-    # def filter_names(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Get the filter names which appear in both the simulated and observed images
-    #     return sequences.intersection(self.simulated.keys(), self.observed.keys())
 
     # -----------------------------------------------------------------
 

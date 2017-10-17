@@ -107,7 +107,6 @@ attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
 maps_name = "maps"
-weighed_residuals_name = "weighed_residuals"
 heating_name = "heating"
 dust_grid_tree_filename = "tree.dat"
 
@@ -583,18 +582,6 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, residuals_name)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def weighed_residuals_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.path, weighed_residuals_name)
 
     # -----------------------------------------------------------------
 
@@ -1346,7 +1333,6 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.attenuation_path): fs.create_directory(self.attenuation_path)
         if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
-        if not fs.is_directory(self.weighed_residuals_path): fs.create_directory(self.weighed_residuals_path)
         if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
 
