@@ -4328,7 +4328,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload_file_to(self, filepath, destination, remove=False, new_name=None):
+    def upload_file_to(self, filepath, destination, remove=False, new_name=None, show_output=False):
 
         """
         This function ...
@@ -4336,6 +4336,7 @@ class Remote(object):
         :param destination:
         :param remove:
         :param new_name:
+        :param show_output:
         :return:
         """
 
@@ -4344,7 +4345,7 @@ class Remote(object):
         remote_path = fs.join(destination, filename)
 
         # Upload the file
-        self.upload(filepath, remote_path)
+        self.upload(filepath, remote_path, show_output=show_output)
 
         # Check whether present
         if not self.is_file(remote_path): raise RuntimeError("Something went wrong uploading the file")
