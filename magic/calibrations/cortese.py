@@ -255,4 +255,23 @@ class CorteseAttenuationCalibration(object):
         for index in range(len(self)):
             yield taus[index], ranges[index], parameters[index]
 
+    # -----------------------------------------------------------------
+
+    def minimum_tau_range_and_parameters(self, ssfr_colour):
+
+        """
+        This function ...
+        :param ssfr_colour:
+        :return:
+        """
+
+        # Get the data and iterate over the entries
+        taus, ranges, parameters = self.get_data(ssfr_colour)
+        # print(taus, len(taus))
+        # print(ranges, len(ranges))
+        # print(parameters, len(parameters))
+        # print(len(self))
+        #for index in range(len(self)):
+        return taus[0], ranges[0], parameters[0]
+
 # -----------------------------------------------------------------
