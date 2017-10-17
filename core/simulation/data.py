@@ -624,6 +624,54 @@ class SimulationData(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def has_any(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check
+        if self.has_isrf: return True
+        elif self.has_absorption: return True
+        elif self.has_stellar_density: return True
+        elif self.has_seds: return True
+        elif self.has_images: return True
+
+        # Nothing
+        return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # ISRF
+        if self.has_isrf and not self.valid_isrf: return False
+
+        # Absorption
+        if self.has_absorption and not self.valid_absorption: return False
+
+        # Stellar density
+        if self.has_stellar_density and not self.valid_stellar_density: return False
+
+        # SEDs
+        if self.has_seds and not self.valid_seds: return False
+
+        # Images
+        if self.has_images and not self.valid_images: return False
+
+        # ALl checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
     def to_string(self, line_prefix=""):
 
         """
@@ -687,11 +735,29 @@ class SimulationData(object):
             # Loop over the instruments
             for instrument_name in self.seds:
 
-                if self.is_valid_sed(instrument_name): line = " - " + fmt.green + instrument_name + fmt.reset
+                # Check whether file is valid
+                is_valid = self.is_valid_sed(instrument_name)
+
+                #
+                if is_valid: line = " - " + fmt.green + instrument_name + fmt.reset
                 else: line = " - " + fmt.red + instrument_name + ": invalid" + fmt.reset
 
                 # Add the line
                 lines.append(line_prefix + line)
+
+                if is_valid:
+
+                    lines.append(line_prefix)
+
+                    # Loop over the contributions
+                    for contribution in self.seds[instrument_name]:
+
+                        line = "    * " + contribution
+
+                        # Add the line
+                        lines.append(line_prefix + line)
+
+                    lines.append(line_prefix)
 
         # Images
         if self.has_images:

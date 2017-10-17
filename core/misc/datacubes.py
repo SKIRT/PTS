@@ -339,6 +339,10 @@ def get_instrument_name(datacube_path, prefix):
     :return:
     """
 
-    return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
+    # ONLY FOR TOTAL
+    #return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
+
+    # For all
+    return fs.name(datacube_path).split(prefix + "_")[1].rsplit("_", 1)[0]
 
 # -----------------------------------------------------------------

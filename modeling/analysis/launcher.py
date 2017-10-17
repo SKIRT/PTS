@@ -1541,6 +1541,36 @@ class AnalysisLauncher(AnalysisLauncherBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def retrieve_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize list
+        types = []
+
+        # Add the types
+        types.append(ot.logfiles)
+        types.append(ot.seds)
+        types.append(ot.total_images)
+        types.append(ot.count_images)
+
+        # Add more retrieve types
+        if self.config.retrieve_contributions:
+            types.extend([ot.direct_images, ot.transparent_images, ot.scattered_images, ot.dust_images, ot.dust_scattered_images])
+
+        # Add temperature file retrieval
+        if self.config.temperatures:
+            types.extend([ot.temperature, ot.cell_temperature])
+
+        # Return the types
+        return types
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -1579,14 +1609,7 @@ class AnalysisLauncher(AnalysisLauncherBase):
         else: local_script_path = None
 
         # Set retrieve types (only relevant for remote execution)
-        self.launcher.config.retrieve_types = [ot.logfiles, ot.seds, ot.total_images, ot.count_images]
-
-        # Add more retrieve types
-        if self.config.retrieve_contributions:
-            self.launcher.config.retrieve_types.extend([ot.direct_images, ot.transparent_images, ot.scattered_images, ot.dust_images, ot.dust_scattered_images])
-
-        # Add temperature file retrieval
-        if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
+        self.launcher.config.retrieve_types = self.retrieve_types
 
         # Other settings
         if log.is_debug(): self.launcher.config.show = True

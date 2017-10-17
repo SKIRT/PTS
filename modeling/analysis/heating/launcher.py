@@ -26,6 +26,7 @@ from ...basics.instruments import SimpleInstrument
 from ..launcher import AnalysisLauncherBase
 from ....core.tools import formatting as fmt
 from ....core.tools.stringify import tostr
+from ....core.simulation.output import output_types as ot
 
 # -----------------------------------------------------------------
 
@@ -171,6 +172,34 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
+    @property
+    def retrieve_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize list
+        types = []
+
+        # Add types
+        types.append(ot.logfiles)
+        types.append(ot.seds)
+        types.append(ot.total_images)
+        types.append(ot.count_images)
+        types.append(ot.cell_properties)
+        types.append(ot.stellar_density)
+        types.append(ot.absorption)
+
+        # Add temperature file retrieval
+        # if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
+
+        # Return the types
+        return types
+
+    # -----------------------------------------------------------------
+
     def set_launcher_options(self):
 
         """
@@ -198,6 +227,9 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # SET THE MODELING PATH
         self.launcher.config.analysis.modeling_path = self.config.path
+
+        # SET RETRIEVE TYPES (ONLY RELEVANT FOR REMOTE EXECUTION)
+        self.launcher.config.retrieve_types = self.retrieve_types
 
     # -----------------------------------------------------------------
 
