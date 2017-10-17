@@ -18,6 +18,7 @@ from .component import MapsComponent
 from ...magic.maps.attenuation.cortese import CorteseAttenuationMapsMaker
 from ...magic.maps.attenuation.buat import BuatAttenuationMapsMaker
 from ...core.basics.configuration import prompt_string_list
+from ...core.basics.containers import create_subdict
 
 # -----------------------------------------------------------------
 
@@ -101,12 +102,6 @@ class AttenuationMapMaker(MapsComponent):
         tirs = self.get_tir_maps(flatten=True)
         ssfrs = self.get_ssfr_maps(flatten=True)
 
-        # Select only certain TIR maps
-        if self.config.select_tir: tirs = select_maps(tirs, "TIR maps")
-
-        # Select only certain sSFR maps
-        if self.config.select_ssfr: ssfrs = select_maps(ssfrs, "sSFR maps")
-
         # Origins
         tirs_origins = self.get_tir_origins(flatten=True)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
@@ -114,6 +109,18 @@ class AttenuationMapMaker(MapsComponent):
         # Methods
         tirs_methods = self.get_tir_methods(flatten=True)
         ssfrs_methods = self.get_ssfr_methods(flatten=True)
+
+        # Select only certain TIR maps
+        if self.config.select_tir:
+            tirs, tir_names = select_maps(tirs, "TIR maps to create Cortese attenuation maps", return_names=True)
+            tirs_origins = create_subdict(tirs_origins, tir_names)
+            tirs_methods = create_subdict(tirs_methods, tir_names)
+
+        # Select only certain sSFR maps
+        if self.config.select_ssfr:
+            ssfrs, ssfr_names = select_maps(ssfrs, "sSFR maps to create Cortese attenuation maps", return_names=True)
+            ssfrs_origins = create_subdict(ssfrs_origins, ssfr_names)
+            ssfrs_methods = create_subdict(ssfrs_methods, ssfr_names)
 
         # Get current maps
         current = self.get_current_maps_method(method_name)
@@ -159,9 +166,10 @@ class AttenuationMapMaker(MapsComponent):
         tirs_methods = self.get_tir_methods(flatten=True)
 
         # Select only certain TIR maps
-        if self.config.select_tir: tirs = select_maps(tirs, "TIR maps")
-
-        #print("TIRS methods", tirs_mesthods)
+        if self.config.select_tir:
+            tirs, tir_names = select_maps(tirs, "TIR maps to create Buat attenuation maps", return_names=True)
+            tirs_origins = create_subdict(tirs_origins, tir_names)
+            tirs_methods = create_subdict(tirs_methods, tir_names)
 
         # Get current maps
         if self.config.remake: current = dict()
@@ -211,12 +219,13 @@ class AttenuationMapMaker(MapsComponent):
 
 # -----------------------------------------------------------------
 
-def select_maps(maps, title):
+def select_maps(maps, title, return_names=False):
 
     """
     This function ...
     :param maps:
     :param title:
+    :param return_names:
     :return:
     """
 
@@ -230,6 +239,7 @@ def select_maps(maps, title):
     for name in names: new_maps[name] = maps[name]
 
     # Return the selected maps
-    return new_maps
+    if return_names: return new_maps, names
+    else: return new_maps
 
 # -----------------------------------------------------------------

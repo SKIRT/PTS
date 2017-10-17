@@ -1153,3 +1153,18 @@ def dicts_differences(dict_a, dict_b):
     return differences
 
 # -----------------------------------------------------------------
+
+def create_subdict(dictionary, keys):
+
+    """
+    This function ...
+    :param dictionary:
+    :param keys:
+    :return:
+    """
+
+    new = dict()
+    for key in keys: new[key] = dictionary[key]
+    return new
+
+# -----------------------------------------------------------------

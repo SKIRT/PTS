@@ -2806,6 +2806,7 @@ class Frame(NDDataArray):
         log.debug("The minimum and maximum value of the frame before convolution is " + tostr(min_value) + " and " + tostr(max_value))
 
         # Do the convolution on this frame
+        log.debug("Convolving ...")
         if fft: new_data = convolve_fft(self._data, kernel.data, boundary='fill', nan_treatment="interpolate", normalize_kernel=False, allow_huge=allow_huge)
         else: new_data = convolve(self._data, kernel.data, boundary='fill', nan_treatment="interpolate", normalize_kernel=False)
 
