@@ -17,3 +17,9 @@ from pts.modeling.config.maps import definition
 definition.add_flag("remake", "remake already existing maps", False)
 
 # -----------------------------------------------------------------
+
+# Select specific input maps
+definition.add_flag("select_ssfr", "select specific sSFR maps", False)
+definition.add_flag("select_tir", "select specific TIR maps", False)
+
+# -----------------------------------------------------------------

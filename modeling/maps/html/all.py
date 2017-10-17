@@ -29,6 +29,7 @@ from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
 from ....core.basics.range import RealRange
 from ....magic.tools.info import get_image_info_strings, get_image_info
+from ....magic.tools.colours import is_fir_colour, is_fir_or_submm_colour
 
 # -----------------------------------------------------------------
 
@@ -740,12 +741,14 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_rgba_plot(self, name, frame, filepath):
+    def make_rgba_plot(self, name, frame, filepath, around_zero=False):
 
         """
         This function ...
+        :param name:
         :param frame:
         :param filepath:
+        :param around_zero:
         :return:
         """
 
@@ -766,8 +769,15 @@ class AllMapsPageGenerator(MapsComponent):
 
         frame[mask] = 0.0
 
+        if around_zero:
+            symmetric = True
+            alpha = None
+        else:
+            symmetric = False
+            alpha = "absolute"
+
         # Make RGBA image
-        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours)
+        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha)
         rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
 
         # Save
@@ -1045,8 +1055,14 @@ class AllMapsPageGenerator(MapsComponent):
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
+            print(name, is_fir_colour(name))
+
+            # Check whether it is a FIR colour
+            if is_fir_colour(name) or is_fir_or_submm_colour(name): around_zero = True
+            else: around_zero = False
+
             # Make the plot
-            self.make_rgba_plot(name, self.colour_maps[name], filepath)
+            self.make_rgba_plot(name, self.colour_maps[name], filepath, around_zero=around_zero)
 
     # -----------------------------------------------------------------
 

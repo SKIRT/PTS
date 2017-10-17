@@ -94,6 +94,97 @@ def regime_for_wavelength(wavelength):
 
 # -----------------------------------------------------------------
 
+def is_optical(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[0] == "Optical"
+
+# -----------------------------------------------------------------
+
+def is_uv(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[0] == "UV"
+
+# -----------------------------------------------------------------
+
+def is_ir(wavelength):
+
+    """
+    Thisj function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[0] == "IR"
+
+# -----------------------------------------------------------------
+
+def is_nir(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[1] == "NIR"
+
+# -----------------------------------------------------------------
+
+def is_mir(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[1] == "MIR"
+
+# -----------------------------------------------------------------
+
+def is_fir(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[1] == "FIR"
+
+# -----------------------------------------------------------------
+
+def is_submm(wavelength):
+
+    """
+    Thisn function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[0] == "Submm"
+
+# -----------------------------------------------------------------
+
 def wavelength_range_for_regime(regime, subregime=None):
 
     """

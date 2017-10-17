@@ -28,7 +28,7 @@ from ...core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
-def make_map(fuv, tir, ssfr, ssfr_colour):
+def make_map(fuv, tir, ssfr, ssfr_colour, return_tir_to_fuv=False):
 
     """
     This function ...
@@ -36,6 +36,7 @@ def make_map(fuv, tir, ssfr, ssfr_colour):
     :param tir:
     :param ssfr:
     :param ssfr_colour:
+    :param return_tir_to_fuv:
     :return: 
     """
 
@@ -50,7 +51,8 @@ def make_map(fuv, tir, ssfr, ssfr_colour):
     maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs)
 
     # Get the map
-    return maker.single_map
+    if return_tir_to_fuv: return maker.single_map, maker.tirtofuvs["standard"]
+    else: return maker.single_map
 
 # -----------------------------------------------------------------
 
@@ -106,6 +108,9 @@ class CorteseAttenuationMapsMaker(Configurable):
 
         # The methods
         self.methods = dict()
+
+        # The TIR to FUV maps
+        self.tirtofuvs = dict()
 
     # -----------------------------------------------------------------
 
@@ -237,6 +242,9 @@ class CorteseAttenuationMapsMaker(Configurable):
             if need_any: tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
             #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
             else: tir_to_fuv = None
+
+            # Add the TIR to FUV map to the dictionary
+            if tir_to_fuv is not None: self.tirtofuvs[name] = tir_to_fuv
 
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:

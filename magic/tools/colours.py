@@ -77,6 +77,96 @@ def get_filters_for_colour(colour, delimiter="auto"):
 
 # -----------------------------------------------------------------
 
+def get_wavelengths_for_colour(colour, delimiter="auto"):
+
+    """
+    This function ...
+    :param colour:
+    :param delimiter:
+    :return:
+    """
+
+    # Get filters
+    fltr_a, fltr_b = get_filters_for_colour(colour, delimiter=delimiter)
+
+    # Return wavelengths
+    return fltr_a.wavelength, fltr_b.wavelength
+
+# -----------------------------------------------------------------
+
+def is_fir_colour(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from .wavelengths import is_fir
+    wav_a, wav_b = get_wavelengths_for_colour(name)
+    return is_fir(wav_a) and is_fir(wav_b)
+
+# -----------------------------------------------------------------
+
+def is_fir_or_submm_colour(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from .wavelengths import is_fir, is_submm
+    wav_a, wav_b = get_wavelengths_for_colour(name)
+
+    if not (is_fir(wav_a) or is_submm(wav_a)): return False
+    if not (is_fir(wav_b) or is_submm(wav_b)): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_optical_colour(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from .wavelengths import is_optical
+    wav_a, wav_b = get_wavelengths_for_colour(name)
+    return is_optical(wav_a) and is_optical(wav_b)
+
+# -----------------------------------------------------------------
+
+def is_uv_optical_colour(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from .wavelengths import is_uv, is_optical
+    wav_a, wav_b = get_wavelengths_for_colour(name)
+    return is_uv(wav_a) and is_optical(wav_b)
+
+# -----------------------------------------------------------------
+
+def is_uv_nir_colour(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from .wavelengths import is_uv, is_nir
+    wav_a, wav_b = get_wavelengths_for_colour(name)
+    return is_uv(wav_a) and is_nir(wav_b)
+
+# -----------------------------------------------------------------
+
 def get_colour_name_for_filters(filter_a, filter_b, delimiter="-", filter_delimiter=" ", short=False):
 
     """

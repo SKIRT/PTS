@@ -78,7 +78,7 @@ class RGBAImage(RGBImage):
 
     @classmethod
     def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red",
-                   normalize_in=None, return_minmax=False):
+                   normalize_in=None, return_minmax=False, around_zero=False, symmetric=False):
 
         """
         This function ...
@@ -90,12 +90,15 @@ class RGBAImage(RGBImage):
         :param colours:
         :param normalize_in:
         :param return_minmax:
+        :param around_zero:
+        :param symmetric:
         :return:
         """
 
+        # Convert to RGBA
         red, green, blue, alpha, vmin, vmax = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha,
                                                       peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in,
-                                                      return_minmax=True)
+                                                      return_minmax=True, around_zero=around_zero, symmetric=symmetric)
 
         if return_minmax: return cls(red, green, blue, alpha), vmin, vmax
         else: return cls(red, green, blue, alpha)
@@ -263,7 +266,7 @@ class RGBAImage(RGBImage):
 # -----------------------------------------------------------------
 
 def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red",
-                        normalize_in=None, return_minmax=False):
+                        normalize_in=None, return_minmax=False, around_zero=False, symmetric=False):
 
     """
     This function ...
@@ -275,6 +278,8 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     :param colours:
     :param normalize_in:
     :param return_minmax:
+    :param around_zero:
+    :param symmetric:
     :return:
     """
 
@@ -286,6 +291,11 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     from astropy.visualization import SqrtStretch, LogStretch
     from astropy.visualization.mpl_normalize import ImageNormalize
     from astropy.visualization import MinMaxInterval, ZScaleInterval
+
+    # -----------------------------------------------------------------
+
+    # IF AROUND ZERO, NO ALPHA
+    if around_zero: alpha = None
 
     # -----------------------------------------------------------------
 
@@ -303,38 +313,64 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
     from ..region.region import SkyRegion, PixelRegion
     if normalize_in is not None:
+
         if isinstance(normalize_in, SkyRegion): normalize_in = normalize_in.to_pixel(frame.wcs)
         if isinstance(normalize_in, PixelRegion): normalize_in = normalize_in.to_mask(frame.xsize, frame.ysize)
         pixels = frame.data[normalize_in]
         normalize_min = np.nanmin(pixels)
         normalize_max = np.nanmax(pixels)
+
     else:
+
         normalize_min = np.nanmin(data)
         normalize_max = np.nanmax(data)
 
-    # INTERVAL
+    # ZSCALE interval
     if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
+
+    # PTS interval
     elif interval == "pts":
 
         nnegatives = np.sum(data < 0)
         npositives = np.sum(data > 0)
 
-        if npositives > nnegatives:
+        if around_zero:
+
+            vmin = 0.5 * normalize_min
+            vmax = 0.5 * normalize_max
+
+            if symmetric:
+
+                vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+                vmin = - vmax
+
+        elif npositives > nnegatives:
+
             # Determine the maximum value in the box and the mimimum value for plotting
             vmin = max(normalize_min, 0.)
             vmax = 0.5 * (normalize_max + vmin)
+
         else:
+
             vmax = min(normalize_max, 0.)
             vmin = 0.5 * (normalize_min + vmax)
 
+    # Min and max
     elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
-    elif isinstance(interval, list): vmin, vmax = interval
-    else:
+
+    # List or tuple of 2 values (min and max)
+    elif isinstance(interval, list) or isinstance(interval, tuple): vmin, vmax = interval
+
+    # String -> parse
+    elif isinstance(interval, basestring):
 
         from ...core.tools import parsing
         try:
             vmin, xmax = parsing.real_tuple(interval)
         except ValueError: raise ValueError("Cannot interpret the interval")
+
+    # Other
+    else: raise ValueError("Invalid option for 'interval'")
 
     # Normalization
     if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)

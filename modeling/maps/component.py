@@ -145,6 +145,9 @@ class MapMakerBase(GalaxyModelingComponent):
         # The methods
         self.methods = dict()
 
+        # Extra maps
+        self.extra_maps = dict()
+
     # -----------------------------------------------------------------
 
     @abstractproperty
@@ -450,6 +453,85 @@ class MapMakerBase(GalaxyModelingComponent):
 
                 # Save
                 self.maps[method].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_extra_map(self, name, method=None, add_extension=True, extension="fits"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create extra path
+            extra_path = fs.create_directory_in(path, "extra")
+
+            # Determine path
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Determine path
+        else:
+
+            extra_path = fs.create_directory_in(self.maps_sub_path, "extra")
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def write_extra_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the extra maps ...")
+
+        # Loop over the methods
+        for method in self.extra_maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.extra_maps[method]):
+
+                # Loop over the maps
+                for name in self.extra_maps[method]:
+
+                    # Determine path
+                    map_path = self.get_path_for_extra_map(name, method)
+
+                    # If map already exists and we don't have to remake
+                    if fs.is_file(map_path) and not self.config.remake: continue
+
+                    # Save
+                    self.extra_maps[method][name].saveto(map_path)
+
+            # No different methods
+            else:
+
+                # Determine path
+                map_path = self.get_path_for_extra_map(method)
+
+                # If map already exists and we don't have to remake
+                if fs.is_file(map_path) and not self.config.remake: continue
+
+                # Save
+                self.extra_maps[method].saveto(map_path)
 
     # -----------------------------------------------------------------
 

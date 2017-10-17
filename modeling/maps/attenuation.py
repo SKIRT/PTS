@@ -17,6 +17,7 @@ from ...core.basics.log import log
 from .component import MapsComponent
 from ...magic.maps.attenuation.cortese import CorteseAttenuationMapsMaker
 from ...magic.maps.attenuation.buat import BuatAttenuationMapsMaker
+from ...core.basics.configuration import prompt_string_list
 
 # -----------------------------------------------------------------
 
@@ -100,6 +101,12 @@ class AttenuationMapMaker(MapsComponent):
         tirs = self.get_tir_maps(flatten=True)
         ssfrs = self.get_ssfr_maps(flatten=True)
 
+        # Select only certain TIR maps
+        if self.config.select_tir: tirs = select_maps(tirs, "TIR maps")
+
+        # Select only certain sSFR maps
+        if self.config.select_ssfr: ssfrs = select_maps(ssfrs, "sSFR maps")
+
         # Origins
         tirs_origins = self.get_tir_origins(flatten=True)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
@@ -122,6 +129,9 @@ class AttenuationMapMaker(MapsComponent):
 
         # Set the methods
         self.methods[method_name] = maker.methods
+
+        # Set the extra maps
+        self.extra_maps[method_name] = maker.tirtofuvs
 
     # -----------------------------------------------------------------
 
@@ -148,7 +158,10 @@ class AttenuationMapMaker(MapsComponent):
         tirs_origins = self.get_tir_origins(flatten=True)
         tirs_methods = self.get_tir_methods(flatten=True)
 
-        #print("TIRS methods", tirs_methods)
+        # Select only certain TIR maps
+        if self.config.select_tir: tirs = select_maps(tirs, "TIR maps")
+
+        #print("TIRS methods", tirs_mesthods)
 
         # Get current maps
         if self.config.remake: current = dict()
@@ -168,6 +181,9 @@ class AttenuationMapMaker(MapsComponent):
 
         # Set the methods
         self.methods[method_name] = maker.methods
+
+        # Set the extra maps
+        #self.extra_maps[method_name] = maker.tirtofuvs
 
     # -----------------------------------------------------------------
 
@@ -189,5 +205,31 @@ class AttenuationMapMaker(MapsComponent):
 
         # Write the methods
         self.write_methods()
+
+        # Write the extra maps
+        self.write_extra_maps()
+
+# -----------------------------------------------------------------
+
+def select_maps(maps, title):
+
+    """
+    This function ...
+    :param maps:
+    :param title:
+    :return:
+    """
+
+    # Select names interactively
+    names = prompt_string_list("names", title, choices=maps.keys())
+
+    # New maps
+    new_maps = dict()
+
+    # Get selection
+    for name in names: new_maps[name] = maps[name]
+
+    # Return the selected maps
+    return new_maps
 
 # -----------------------------------------------------------------
