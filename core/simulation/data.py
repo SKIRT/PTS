@@ -39,6 +39,19 @@ class SimulationData(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_output(cls, output):
+
+        """
+        Thisnfunction ...
+        :param output:
+        :return:
+        """
+
+        return cls(output)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_directory(cls, path, prefix=None):
 
         """

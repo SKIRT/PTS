@@ -70,8 +70,11 @@ definition.add_flag("data_parallel_local", "use data-parallelization", False)
 definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
 
 # Specify parallelization
-definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
-definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution")
+#definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
+#definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution")
+# SET TO FALSE FOR NOW BECAUSE SOMETHING IS BROKEN: SKIRT CRASHES WHEN WRITING ABSORPTION DATA (ONLY IN DATA-PARALLEL MODE)
+definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution", False)
+definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution", False)
 
 # -----------------------------------------------------------------
 

@@ -26,6 +26,7 @@ from ...core.basics.distribution import Distribution
 from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
 from ...magic.core.list import rebin_to_highest_pixelscale
+from ...magic.tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -915,6 +916,9 @@ class ResidualAnalyser(AnalysisComponent):
         # Plot the residuals
         self.plot_residuals()
 
+        # Plot the absolute residual maps
+        self.plot_absolute_residuals()
+
         # Plot the weighed rsiduals
         self.plot_weighed_residuals()
 
@@ -1112,6 +1116,30 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def residuals_plot_interval(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        return (-100., 100.)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_plot_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "RdBu_r"
+
+    # -----------------------------------------------------------------
+
     def plot_residuals(self):
 
         """
@@ -1129,12 +1157,108 @@ class ResidualAnalyser(AnalysisComponent):
             path = self.get_residuals_plot_path(filter_name)
             if fs.is_file(path): continue
 
-            # Save as PNG
+            # Get residuals in percentage
             residuals = self.residuals[filter_name]
-            vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
-                                          interval=self.config.interval,
-                                          scale=self.config.scale, alpha=self.config.alpha_method,
-                                          peak_alpha=self.config.peak_alpha)
+            residuals_percentage = residuals * 100
+
+            # Save as PNG
+            # vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+            #                               interval=self.config.interval,
+            #                               scale=self.config.scale, alpha=self.config.alpha_method,
+            #                               peak_alpha=self.config.peak_alpha)
+
+            # Plot
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True,
+                              around_zero=True, scale="linear", cmap=self.residuals_plot_cmap)
+
+    # -----------------------------------------------------------------
+
+    def has_absolute_residuals_plot(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        # File present?
+        if fs.is_file(self.get_absolute_residuals_plot_path(filter_name)):
+
+            # Replot
+            if self.config.replot_absolute_residuals:
+
+                # Remove file
+                fs.remove_file(self.get_absolute_residuals_plot_path(filter_name))
+                return False
+
+            # Don't replot
+            else: return True
+
+        # No file
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def get_absolute_residuals_plot_path(self, filter_name):
+
+        """
+        This function ...
+        :param filter_name:
+        :return:
+        """
+
+        return fs.join(self.analysis_run.residuals_path, filter_name + "_absolute.png")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_absolute_plot_interval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (0, 100.)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_absolute_plot_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
+    def plot_absolute_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absolute values of the residuals ...")
+
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            # Get the path
+            path = self.get_absolute_residuals_plot_path(filter_name)
+            if fs.is_file(path): continue
+
+            # Get the absolute residual map in percentage
+            residuals = self.residuals[filter_name].absolute
+            residuals_percentage = residuals * 100
+
+            # Plot
+            plotting.plot_box(residuals_percentage, interval=self.residuals_absolute_plot_interval, path=path,
+                              colorbar=True, scale="linear", cmap=self.residuals_absolute_plot_cmap)
 
     # -----------------------------------------------------------------
 
@@ -1176,6 +1300,18 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def weighed_residuals_plot_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "RdBu_r"
+
+    # -----------------------------------------------------------------
+
     def plot_weighed_residuals(self):
 
         """
@@ -1193,12 +1329,17 @@ class ResidualAnalyser(AnalysisComponent):
             path = self.get_weighed_residuals_plot_path(filter_name)
             if fs.is_file(path): continue
 
-            # Save as PNG
+            # Get the map
             residuals = self.weighed[filter_name]
-            vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
-                                              interval=self.config.interval,
-                                              scale=self.config.scale, alpha=self.config.alpha_method,
-                                              peak_alpha=self.config.peak_alpha)
+
+            # Save as PNG
+            # vmin, vmax = residuals.saveto_png(path, colours=self.config.colours,
+            #                                   interval=self.config.interval,
+            #                                   scale=self.config.scale, alpha=self.config.alpha_method,
+            #                                   peak_alpha=self.config.peak_alpha)
+
+            # Plot
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear", symmetric=True, cmap=self.weighed_residuals_plot_cmap)
 
     # -----------------------------------------------------------------
 

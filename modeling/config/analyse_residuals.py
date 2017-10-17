@@ -57,6 +57,7 @@ definition.add_flag("remake_weighed_distributions", "remake the weighed residual
 definition.add_flag("replot_distributions", "replot the residuals distributions")
 definition.add_flag("replot_weighed_distributions", "replot the weighed residuals distributions")
 definition.add_flag("replot_residuals", "replot residual maps")
+definition.add_flag("replot_absolute_residuals", "replot absolute residual maps")
 definition.add_flag("replot_weighed", "replot weighed residual maps")
 
 # -----------------------------------------------------------------

@@ -238,7 +238,8 @@ def plot_mask(mask, title=None, path=None, format=None):
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False, around_zero=False):
+def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
+             around_zero=False, symmetric=False):
 
     """
     This function ...
@@ -251,6 +252,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param cmap:
     :param colorbar:
     :param around_zero:
+    :param symmetric:
     :return:
     """
 
@@ -286,6 +288,11 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
             vmin = 0.5 * normalize_min
             vmax = 0.5 * normalize_max
+
+            if symmetric:
+
+                vmax = 0.5 * sum(abs(vmin), abs(vmax))
+                vmin = - vmax
 
         elif npositives > nnegatives:
 

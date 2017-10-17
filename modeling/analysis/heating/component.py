@@ -18,8 +18,8 @@ from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
 from ....core.simulation.output import SimulationOutput
-from ....core.simulation.table import SkirtTable
 from ....core.simulation.logfile import LogFile
+from ....core.simulation.data import SimulationData
 
 # -----------------------------------------------------------------
 
@@ -150,6 +150,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_contribution_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.total_contribution_output)
+
+    # -----------------------------------------------------------------
+
     @property
     def total_contribution_cell_properties_filepath(self):
 
@@ -158,7 +170,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.total_contribution_output.single_cell_properties
+        return self.total_contribution_data.cell_properties_path
 
     # -----------------------------------------------------------------
 
@@ -170,8 +182,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        # Load the properties table
-        return SkirtTable.from_file(self.total_contribution_cell_properties_filepath)
+        return self.total_contribution_data.cell_properties
 
     # -----------------------------------------------------------------
 
@@ -183,7 +194,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.total_contribution_output.single_absorption
+        return self.total_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
@@ -195,7 +206,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return SkirtTable.from_file(self.total_contribution_absorption_filepath)
+        return self.total_contribution_data.absorption
 
     # -----------------------------------------------------------------
 
@@ -220,6 +231,54 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return LogFile.from_file(self.total_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_total_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_data.images["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_total_faceon_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_data.images["faceon"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_total_sed(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.total_contribution_data.seds["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_total_faceon_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_data.seds["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
@@ -271,6 +330,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_contribution_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.old_contribution_output)
+
+    # -----------------------------------------------------------------
+
     @property
     def old_contribution_absorption_filepath(self):
 
@@ -279,7 +350,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.old_contribution_output.single_absorption
+        return self.old_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
@@ -291,7 +362,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return SkirtTable.from_file(self.old_contribution_absorption_filepath)
+        return self.old_contribution_data.absorption
 
     # -----------------------------------------------------------------
 
@@ -316,6 +387,54 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return LogFile.from_file(self.old_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_total_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_data.images["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_total_faceon_datacube(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.old_contribution_data.images["faceon"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_total_sed(self):
+
+        """
+        Thisfnctin ...
+        :return:
+        """
+
+        return self.old_contribution_data.seds["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_total_faceon_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_data.seds["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
@@ -367,6 +486,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def young_contribution_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.young_contribution_output)
+
+    # -----------------------------------------------------------------
+
     @property
     def young_contribution_absorption_filepath(self):
 
@@ -375,7 +506,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.young_contribution_output.single_absorption
+        return self.young_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
@@ -387,7 +518,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return SkirtTable.from_file(self.young_contribution_absorption_filepath)
+        return self.young_contribution_data.absorption
 
     # -----------------------------------------------------------------
 
@@ -412,6 +543,54 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return LogFile.from_file(self.young_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_total_datacube(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.young_contribution_data.images["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_total_faceon_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_contribution_data.images["faceon"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_total_sed(self):
+
+        """
+        Tihs function ...
+        :return:
+        """
+
+        return self.young_contribution_data.seds["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_total_faceon_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_contribution_data.seds["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
@@ -463,6 +642,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_contribution_data(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.ionizing_contribution_output)
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_contribution_absorption_filepath(self):
 
@@ -471,7 +662,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.ionizing_contribution_output.single_absorption
+        return self.ionizing_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
@@ -483,7 +674,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return SkirtTable.from_file(self.ionizing_contribution_absorption_filepath)
+        return self.ionizing_contribution_data.absorption
 
     # -----------------------------------------------------------------
 
@@ -508,6 +699,54 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return LogFile.from_file(self.ionizing_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_total_datacube(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.ionizing_contribution_data.images["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_total_faceon_datacube(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.ionizing_contribution_data.images["faceon"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_contribution_data.seds["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_total_faceon_sed(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.ionizing_contribution_data.seds["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
@@ -559,6 +798,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unevolved_contribution_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.unevolved_contribution_output)
+
+    # -----------------------------------------------------------------
+
     @property
     def unevolved_contribution_absorption_filepath(self):
 
@@ -567,7 +818,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.unevolved_contribution_output.single_absorption
+        return self.unevolved_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
@@ -579,7 +830,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return SkirtTable.from_file(self.unevolved_contribution_absorption_filepath)
+        return self.unevolved_contribution_data.absorption
 
     # -----------------------------------------------------------------
 
@@ -604,6 +855,54 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return LogFile.from_file(self.unevolved_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_total_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_data.images["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_total_faceon_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_data.images["faceon"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_total_sed(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.unevolved_contribution_data.seds["earth"]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_total_faceon_sed(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.unevolved_contribution_data.seds["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
