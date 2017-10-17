@@ -52,6 +52,20 @@ class SkyExtent(AngleExtent):
 
     # -----------------------------------------------------------------
 
+    @ra.setter
+    def ra(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.x = value
+
+    # -----------------------------------------------------------------
+
     @property
     def dec(self):
 
@@ -61,6 +75,20 @@ class SkyExtent(AngleExtent):
         """
 
         return self.y
+
+    # -----------------------------------------------------------------
+
+    @dec.setter
+    def dec(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.y = value
 
 # -----------------------------------------------------------------
 

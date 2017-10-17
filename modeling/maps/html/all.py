@@ -158,31 +158,31 @@ class AllMapsPageGenerator(MapsComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get image info
+        # 2. Get image info
         if self.config.info: self.get_info()
 
-        # Load the regions
+        # 3. Load the regions
         self.get_regions()
 
-        # Make plots
+        # 4. Make plots
         self.make_plots()
 
-        # Make the views
+        # 5. Make the views
         self.make_views()
 
-        # Make buttons for extra functionality
+        # 6. Make buttons for extra functionality
         self.make_buttons()
 
-        # Make the tables
+        # 7. Make the tables
         self.make_tables()
 
-        # Generate the page
+        # 8. Generate the page
         self.generate_page()
 
-        # 5. Writing
+        # 9. Writing
         self.write()
 
-        # Show
+        # 10. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
