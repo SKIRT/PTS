@@ -28,6 +28,7 @@ from astropy.convolution.kernels import Gaussian2DKernel, AiryDisk2DKernel
 from .frame import Frame
 from ...core.basics.log import log
 from ..tools import statistics
+from ...core.tools import numbers
 from ...core.filter.filter import parse_filter
 from ..tools import fitting
 from .mask import Mask
@@ -179,6 +180,85 @@ class ConvolutionKernel(Frame):
 
         # Create instance of this class
         return cls(kernel.array, fwhm=fwhm, extra_meta=extra_meta, prepared=True)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def gaussian(cls, fwhm, pixelscale, fltr=None, sigma_level=5.0):
+
+        """
+        This function ...
+        :param fwhm:
+        :param pixelscale:
+        :param fltr:
+        :param sigma_level:
+        :return:
+        """
+
+        from ...core.tools.stringify import tostr
+
+        # Debugging
+        log.debug("Creating a Gaussian PSF kernel for a FWHM of " + tostr(fwhm) + " and a pixelscale of " + tostr(pixelscale.average) + ", cut-off at a sigma level of " + tostr(sigma_level) + " ...")
+
+        # Calculate
+        sigma_pix = calculate_sigma_pix(fwhm, pixelscale)
+
+        # Calculate kernel size
+        kernel_size = calculate_kernel_size(sigma_pix, sigma_level)
+
+        # Debugging
+        log.debug("The size for the kernel image is " + str(kernel_size) + " pixels")
+
+        # Create a kernel
+        kernel = Gaussian2DKernel(sigma_pix, x_size=kernel_size, y_size=kernel_size)
+        kernel.normalize()  # to suppress warning
+
+        # Create convolution kernel object
+        kernel = cls(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm, pixelscale=pixelscale)
+
+        # Return the kernel
+        return kernel
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def airy_disk(cls, fwhm, pixelscale, fltr=None, sigma_level=5.0):
+
+        """
+        This function ...
+        :param fwhm:
+        :param pixelscale:
+        :param fltr:
+        :param sigma_level:
+        :return:
+        """
+
+        from ...core.tools.stringify import tostr
+
+        # Debugging
+        log.debug("Creating an Airy Disk PSF kernel for a FWHM of " + tostr(fwhm) + " and a pixelscale of " + tostr(pixelscale.average) + ", cut-off at a sigma level of " + tostr(sigma_level) + " ...")
+
+        # Calculate
+        sigma_pix = calculate_sigma_pix(fwhm, pixelscale)
+
+        # Calculate airy radius
+        radius_pix = fitting.gaussian_sigma_to_airy_radius(sigma_pix)
+
+        # Calculate kernel size
+        kernel_size = calculate_kernel_size(sigma_pix, sigma_level)
+
+        # Debugging
+        log.debug("The size for the kernel image is " + str(kernel_size) + " pixels")
+
+        # Create a kernel
+        kernel = AiryDisk2DKernel(radius_pix, x_size=kernel_size, y_size=kernel_size)
+        kernel.normalize()  # to suppress warning
+
+        # Create convolution kernel object
+        kernel = cls(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm, pixelscale=pixelscale)
+
+        # Return the kernel
+        return kernel
 
     # -----------------------------------------------------------------
 
@@ -911,5 +991,43 @@ def get_fwhm(kernel_path):
     # Get and return the FWHM
     fwhm = headers.get_fwhm(header)
     return fwhm
+
+# -----------------------------------------------------------------
+
+def calculate_sigma_pix(fwhm, pixelscale):
+
+    """
+    This function ...
+    :param fwhm:
+    :param pixelscale:
+    :return:
+    """
+
+    # Get FWHM in pixels
+    fwhm_pix = (fwhm / pixelscale.average).to("").value
+
+    # Get the sigma in pixels
+    sigma_pix = fwhm_pix * statistics.fwhm_to_sigma
+
+    # Return
+    return sigma_pix
+
+# -----------------------------------------------------------------
+
+def calculate_kernel_size(sigma_pix, sigma_level):
+
+    """
+    Thins function ...
+    :param sigma_pix:
+    :param sigma_level:
+    :return:
+    """
+
+    # DETERMINE THE ODD!! KERNEL SIZE
+    kernel_size = int(round(2.0 * sigma_level * sigma_pix))
+    if numbers.is_even(kernel_size): kernel_size += 1
+
+    # Return
+    return kernel_size
 
 # -----------------------------------------------------------------

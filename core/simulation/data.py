@@ -745,6 +745,7 @@ class SimulationData(object):
                 # Add the line
                 lines.append(line_prefix + line)
 
+                # Valid? -> show contributions
                 if is_valid:
 
                     lines.append(line_prefix)

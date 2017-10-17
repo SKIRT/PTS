@@ -1437,7 +1437,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
         if self.has_kernel_path(filter_name): kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name], fwhm=self.get_fwhm(filter_name))
 
         # Get the PSF kernel
-        elif self.has_psf_fwhm(filter_name): kernel = create_psf_kernel(self.psf_fwhms[filter_name], pixelscale)
+        elif self.has_psf_fwhm(filter_name): kernel = ConvolutionKernel.gaussian(self.psf_fwhms[filter_name], pixelscale)
 
         # Error
         else: raise RuntimeError("Something went wrong")
@@ -2082,48 +2082,10 @@ def instrument_name(datacube_path, prefix):
     :return:
     """
 
-    return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
+    # ONLY FOR TOTAL
+    # return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
 
-# -----------------------------------------------------------------
-
-def create_psf_kernel(fwhm, pixelscale, fltr=None, sigma_level=5.0):
-
-    """
-    This function ...
-    :param fwhm:
-    :param pixelscale:
-    :param fltr:
-    :param sigma_level:
-    :return:
-    """
-
-    from astropy.convolution import Gaussian2DKernel
-    from pts.magic.tools import statistics
-
-    # Debugging
-    log.debug("Creating a PSF kernel for a FWHM of " + tostr(fwhm) + " and a pixelscale of " + tostr(pixelscale.average) + ", cut-off at a sigma level of " + tostr(sigma_level) + " ...")
-
-    # Get FWHM in pixels
-    fwhm_pix = (fwhm / pixelscale.average).to("").value
-
-    # Get the sigma in pixels
-    sigma_pix = fwhm_pix * statistics.fwhm_to_sigma
-
-    # DETERMINE THE ODD!! KERNEL SIZE
-    kernel_size = int(round(2.0 * sigma_level))
-    if numbers.is_even(kernel_size): kernel_size += 1
-
-    # Debugging
-    log.debug("The size for the kernel image is " + str(kernel_size) + " pixels")
-
-    # Create a kernel
-    kernel = Gaussian2DKernel(sigma_pix, x_size=kernel_size, y_size=kernel_size)
-    kernel.normalize()  # to suppress warning
-
-    # Create convolution kernel object
-    kernel = ConvolutionKernel(kernel.array, to_filter=fltr, prepared=True, fwhm=fwhm, pixelscale=pixelscale)
-
-    # Return the kernel
-    return kernel
+    # For all
+    return fs.name(datacube_path).split(prefix + "_")[1].rsplit("_", 1)[0]
 
 # -----------------------------------------------------------------

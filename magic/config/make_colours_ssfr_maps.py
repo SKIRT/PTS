@@ -18,3 +18,9 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("colours", "string_list", "colours to use", default=ssfr_colours, choices=ssfr_colours)
 
 # -----------------------------------------------------------------
+
+# Smoothing?
+definition.add_flag("smooth", "smooth the maps by convolving them with a gaussian kernel", False)
+definition.add_optional("smoothing_factor", "positive_real", "factor that determines the smoothing kernel FWHM based on the original FWHMs of the maps", 2.)
+
+# -----------------------------------------------------------------

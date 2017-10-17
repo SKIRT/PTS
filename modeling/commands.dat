@@ -58,6 +58,7 @@ generate_genetic | -- | fitting.modelgenerators.genetic.GeneticModelGenerator | 
 generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments | Generate models on a grid in parameter space
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
+reinitialize_fit | -- | fitting.reinitialization.FittingReinitializer | interactive | Re-initialize a fitting run for a particular model, from a previous fitting run, or from an analysis run
 
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run

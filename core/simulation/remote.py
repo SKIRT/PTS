@@ -32,6 +32,7 @@ from .status import LogSimulationStatus
 from .input import SimulationInput
 from ..tools import types
 from .output import get_output_type, get_parent_type
+from .data import SimulationData
 
 # -----------------------------------------------------------------
 
@@ -1192,12 +1193,13 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def retrieve(self, retrieve_crashed=None, check_crashed=False):
+    def retrieve(self, retrieve_crashed=None, check_crashed=False, check_data=False):
 
         """
         This function ...
         :param retrieve_crashed:
         :param check_crashed:
+        :param check_data:
         :return:
         """
 
@@ -1264,6 +1266,25 @@ class SKIRTRemote(Remote):
 
                 # Don't remove from the remote
                 log.warning("Because the simulation '" + simulation.name + "' crashed, the remote simulation directories will be kept for manual inspection")
+
+                # Check the data of the simulation (whether it is valid)
+                if check_data:
+
+                    # Load the simulation data
+                    data = SimulationData.from_directory(simulation.output_path)
+
+                    # Check whether valid
+                    if not data.valid:
+
+                        # Give error message
+                        log.error("The simulation data has invalid files. Not counting this simulation as succesfully retrieved: analysis will not be performed")
+                        log.error("Summary of the retrieved data at '" + simulation.output_path + "':")
+
+                        # Show a summary of the simulation data
+                        data.show()
+
+                        # Don't add the simulation to the list
+                        continue
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)

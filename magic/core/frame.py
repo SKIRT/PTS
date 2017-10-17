@@ -2784,6 +2784,53 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def smoothed(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        new = self.copy()
+        new.smooth(*args, **kwargs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def smooth(self, factor, allow_huge=True, fft=True, kernel_sigma_level=5.0):
+
+        """
+        This function ...
+        :param factor:
+        :param allow_huge:
+        :param fft:
+        :param kernel_sigma_level:
+        :return:
+        """
+
+        # Check whether the FWHM of the frame is defined
+        if self.fwhm is None: raise ValueError("Cannot smooth if the FWHM of the frame is not defined")
+
+        # Check whether the pixelscale is defined
+        if self.pixelscale is None: raise ValueError("Cannot smooth if the pixelscale of the frame is not defined")
+
+        # Determine the new FWHM
+        new_fwhm = self.fwhm * factor
+
+        # Debugging
+        log.debug("The FWHM after smoothing will be " + tostr(new_fwhm))
+
+        # Create convolution kernel
+        from .kernel import ConvolutionKernel
+        kernel = ConvolutionKernel.gaussian(new_fwhm, self.pixelscale, sigma_level=kernel_sigma_level)
+
+        # Convolve
+        self.convolve(kernel, allow_huge=allow_huge, fft=fft)
+
+    # -----------------------------------------------------------------
+
     def rebinned(self, reference_wcs, exact=False, parallel=True):
 
         """

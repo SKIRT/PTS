@@ -186,6 +186,9 @@ class ColoursSSFRMapsMaker(Configurable):
             # Get the map
             colour_map = self.colours[colour]
 
+            # Smooth?
+            if self.config.smooth: colour_map.smooth(self.config.smoothing_factor)
+
             # Set as sSFR map
             self.maps[colour] = colour_map
 

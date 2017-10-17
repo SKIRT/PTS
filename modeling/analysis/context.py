@@ -233,6 +233,18 @@ class AnalysisContext(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def all_analysis_run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cached_analysis_run_names + self.analysis_run_names
+
+    # -----------------------------------------------------------------
+
     def get_run_path(self, run_name):
 
         """

@@ -272,3 +272,20 @@ def get_parameters(fitting_run, generation_name):
     return simulation_name, parameter_values, chi_squared
 
 # -----------------------------------------------------------------
+
+def select_from_analysis_context(analysis_context):
+
+    """
+    This function ...
+    :param analysis_context:
+    :return:
+    """
+
+    modeling_path = analysis_context.modeling_path
+
+    # Prompt for analysis run
+    analysis_run_name = prompt_string("analysis_run", "name of the analysis run", choices=analysis_context.all_analysis_run_names) # cached and local
+
+    # TODO: this function still has to be further implemented
+
+# -----------------------------------------------------------------
