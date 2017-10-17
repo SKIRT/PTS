@@ -70,3 +70,8 @@ definition.add_optional("alpha_method", "string", "alpha method", default_alpha_
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.5)
 
 # -----------------------------------------------------------------
+
+# CROPPING
+definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
+
+# -----------------------------------------------------------------

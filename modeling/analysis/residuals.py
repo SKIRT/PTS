@@ -89,6 +89,9 @@ class ResidualAnalyser(AnalysisComponent):
         # 3. Rebin the images
         self.rebin_images()
 
+        # 4. Crop the images
+        self.crop_images()
+
         # 3. Calculate the residual images
         self.calculate_residuals()
 
@@ -294,6 +297,34 @@ class ResidualAnalyser(AnalysisComponent):
             # Rebin in-place
             names = ["simulated", "observed", "errors"]
             rebin_to_highest_pixelscale(simulated, observed, errors, names=names, in_place=True)
+
+    # -----------------------------------------------------------------
+
+    def crop_images(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the images to the bounding box of the model ...")
+
+        # Loop over the images
+        for filter_name in self.simulated:
+
+            # Debugging
+            log.debug("Cropping the '" + filter_name + "' images ...")
+
+            # Get the images
+            simulated = self.simulated[filter_name]
+            observed = self.observed[filter_name]
+            errors = self.errors[filter_name]
+
+            # Crop each of them
+            simulated.crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            observed.crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            errors.crop_to(self.truncation_box, factor=self.config.cropping_factor)
 
     # -----------------------------------------------------------------
 
