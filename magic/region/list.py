@@ -1133,7 +1133,7 @@ def make_regular_region(specs):
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
             # Get the center coordinate
-            center = SkyCoordinate.from_astropy(coord_list)
+            center = SkyCoordinate.from_astropy(coord_list[0])
 
             # Get the radius
             radius = SkyStretch(0.5 * coord_list[1], 0.5 * coord_list[2])
