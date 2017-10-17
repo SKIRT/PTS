@@ -1523,6 +1523,30 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def min(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return np.nanmin(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return np.nanmax(self.data)
+
+    # -----------------------------------------------------------------
+
     def nnans_in(self, region_or_mask):
 
         """
@@ -2738,13 +2762,14 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=True, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True, preserve_nans=True):
 
         """
         This function ...
         :param kernel:
         :param allow_huge:
         :param fft:
+        :param preserve_nans:
         :return:
         """
 
@@ -2770,12 +2795,31 @@ class Frame(NDDataArray):
         # Assert that the kernel is normalized
         if not kernel.normalized: raise RuntimeError("The kernel is not properly normalized: sum is " + repr(kernel.sum()) + " , difference from unity is " + repr(kernel.sum() - 1.0))
 
+        # Get the current minimum and maximum of the frame
+        min_value = self.min
+        max_value = self.max
+
+        # Debugging
+        log.debug("The minimum and maximum value of the frame before convolution is " + tostr(min_value) + " and " + tostr(max_value))
+
         # Do the convolution on this frame
-        if fft: new_data = convolve_fft(self._data, kernel.data, boundary='fill', nan_treatment='interpolate', normalize_kernel=False, allow_huge=allow_huge)
-        else: new_data = convolve(self._data, kernel.data, normalize_kernel=False)
+        if fft: new_data = convolve_fft(self._data, kernel.data, boundary='fill', nan_treatment="interpolate", normalize_kernel=False, allow_huge=allow_huge)
+        else: new_data = convolve(self._data, kernel.data, boundary='fill', nan_treatment="interpolate", normalize_kernel=False)
+
+        # Determine new min and max value
+        new_min_value = np.nanmin(self.min)
+        new_max_value = np.nanmax(self.max)
+
+        # Debugging
+        log.debug("The minimum and maximum value of the frame after convolution is " + tostr(new_min_value) + " and " + tostr(new_max_value))
 
         # Put back NaNs
-        new_data[nans_mask] = nan_value
+        if preserve_nans: new_data[nans_mask] = nan_value
+
+        # Set values lower than min to min value
+        # and values above max to max value
+        new_data[new_data < min_value] = min_value
+        new_data[new_data > max_value] = max_value
 
         # Replace the data and FWHM
         self._data = new_data
@@ -2799,13 +2843,14 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def smooth(self, factor, allow_huge=True, fft=True, kernel_sigma_level=5.0):
+    def smooth(self, factor, allow_huge=True, fft=True, preserve_nans=True, kernel_sigma_level=5.0):
 
         """
         This function ...
         :param factor:
         :param allow_huge:
         :param fft:
+        :param preserve_nans:
         :param kernel_sigma_level:
         :return:
         """
@@ -2827,7 +2872,7 @@ class Frame(NDDataArray):
         kernel = ConvolutionKernel.gaussian(new_fwhm, self.pixelscale, sigma_level=kernel_sigma_level)
 
         # Convolve
-        self.convolve(kernel, allow_huge=allow_huge, fft=fft)
+        self.convolve(kernel, allow_huge=allow_huge, fft=fft, preserve_nans=preserve_nans)
 
     # -----------------------------------------------------------------
 

@@ -192,8 +192,11 @@ class ColoursSSFRMapsMaker(Configurable):
             # Get the map
             colour_map = self.colours[colour]
 
+            # Replace infinities by NaN
+            colour_map.replace_infs(float("nan"))
+
             # Smooth?
-            if self.config.smooth: colour_map.smooth(self.config.smoothing_factor)
+            if self.config.smooth: colour_map.smooth(self.config.smoothing_factor, preserve_nans=False)
 
             # Set as sSFR map
             self.maps[colour] = colour_map

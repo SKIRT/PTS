@@ -111,6 +111,12 @@ def is_integer(value):
     :return:
     """
 
+    # Special values
+    if value == float("nan"): return False
+    if value == float("inf"): return False
+    if value == float("-inf"): return False
+
+    # Regular value
     return int(value) == value
 
 # -----------------------------------------------------------------

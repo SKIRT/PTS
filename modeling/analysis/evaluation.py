@@ -1133,11 +1133,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 # Debugging
                 log.debug("Creating the weighed residual frame for the '" + str(fltr) + "' filter ...")
 
-                # Get the observed and simulated image
-                #simulated = self.images[fltr]
-                #observed = self.observed_images[fltr]
-                #errors = self.observed_errors[fltr]
-
                 # Get the images in the same units
                 simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
 
