@@ -658,11 +658,13 @@ class Distribution(object):
         """
 
         # Create a canvas to place the subgraphs
-        canvas = plt.figure()
-        rect = canvas.patch
+        figure = plt.figure()
+        rect = figure.patch
         rect.set_facecolor('white')
 
-        sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = figure.add_subplot(111)
+        sp1 = figure.gca()
 
         # Determine the x limits
         if x_limits is None:
@@ -716,7 +718,7 @@ class Distribution(object):
         plt.grid(alpha=0.8)
 
         if path is None: plt.show()
-        else: canvas.savefig(path)
+        else: figure.savefig(path)
 
     # -----------------------------------------------------------------
 
@@ -734,11 +736,13 @@ class Distribution(object):
         """
 
         # Create a canvas to place the subgraphs
-        canvas = plt.figure()
-        rect = canvas.patch
+        figure = plt.figure()
+        rect = figure.patch
         rect.set_facecolor('white')
 
-        sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(111)
+        sp1 = figure.gca()
 
         # Determine the x limits
         if x_limits is None:
@@ -798,7 +802,7 @@ class Distribution(object):
         plt.grid(alpha=0.8)
 
         if path is None: plt.show()
-        else: canvas.savefig(path)
+        else: figure.savefig(path)
 
     # -----------------------------------------------------------------
 
@@ -820,11 +824,13 @@ class Distribution(object):
         """
 
         # Create a canvas to place the subgraphs
-        canvas = plt.figure()
-        #rect = canvas.patch
-        #rect.set_facecolor('white')
+        figure = plt.figure()
+        rect = figure.patch
+        rect.set_facecolor('white')
 
-        sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(111)
+        sp1 = figure.gca()
 
         #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
 
@@ -897,7 +903,7 @@ class Distribution(object):
         #plt.grid(alpha=0.8)
 
         if path is None: plt.show()
-        else: canvas.savefig(path, format=format)
+        else: figure.savefig(path, format=format)
 
         plt.close()
 

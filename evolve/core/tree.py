@@ -31,9 +31,13 @@ from . import utils
 
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
+from ...core.tools.introspection import get_stdout
 
 try:
-    import pydot
+    from StringIO import StringIO
+    output = StringIO()
+    with get_stdout(output): import pydot
+    for line in output: print(line) # PYDOT WOULD GIVE LINE STATING THAT IT CANNOT FIND SOMETHING
     HAVE_PYDOT = True
 except ImportError:
     HAVE_PYDOT = False

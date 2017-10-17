@@ -1278,7 +1278,7 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.analysis_run.residuals_path, "plots")
+        return fs.create_directory_in(self.analysis_run.residuals_path, "plots")
 
     # -----------------------------------------------------------------
 

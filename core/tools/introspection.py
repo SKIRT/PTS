@@ -408,6 +408,57 @@ def suppress_stdout():
 
 # -----------------------------------------------------------------
 
+class get_stdout(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, output):
+
+        """
+        This function ...
+        :param output:
+        """
+
+        # Create string IO object
+        self.output = output
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set stdout
+        sys.stdout = self.output
+
+        # Return
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+
+        # Reset stdout
+        sys.stdout = sys.__stdout__
+
+        # we're not suppressing exceptions
+        return False
+
+# -----------------------------------------------------------------
+
 def python_version_long():
 
     """

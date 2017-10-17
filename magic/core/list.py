@@ -3576,7 +3576,7 @@ def check_psf_filter(*frames, **kwargs):
     """
     This function ...
     :param frames:
-    :param strict:
+    :param kwargs:
     :return:
     """
 

@@ -327,7 +327,7 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
     """
 
     # Inform the user
-    log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
+    log.info("Creating the FUV attenuation map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
     # Calculate powers of log(tir_to_fuv)
     log_tir_to_fuv2 = np.power(log_tir_to_fuv.data, 2.0)
