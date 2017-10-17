@@ -337,6 +337,7 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
     # Create an empty image
     a_fuv_cortese = Frame.zeros_like(log_tir_to_fuv)
 
+    # Use the parameters for the lowest tau (highest sSFR colour) where the sSFR colour value exceeds this maximum
     tau_min, colour_range, parameters = cortese.minimum_tau_range_and_parameters(ssfr_colour)
     where_above = ssfr > colour_range.max
     a_fuv_cortese[where_above] = parameters[0] + parameters[1] * log_tir_to_fuv[where_above] + parameters[2] * log_tir_to_fuv2[where_above] + \
@@ -355,17 +356,11 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
         a_fuv_cortese[where] = parameters[0] + parameters[1] * log_tir_to_fuv[where] + parameters[2] * log_tir_to_fuv2[where] + \
                                parameters[3] * log_tir_to_fuv3[where] + parameters[4] * log_tir_to_fuv4[where]
 
-    # Get absolute upper limit
-    absolute_upper_limit = cortese.get_upper_limit(ssfr_colour)
-
     # Set attenuation to zero where tir_to_fuv is NaN
     a_fuv_cortese[np.isnan(log_tir_to_fuv)] = 0.0
 
-    # Set attenuation to zero where sSFR is smaller than zero
+    # Set attenuation to zero where sSFR colour is smaller than zero
     a_fuv_cortese[ssfr < 0.0] = 0.0
-
-    # Set attenuation to zero where sSFR is greater than the absolute upper limit for the FUV-IR/optical colour
-    # a_fuv_cortese[ssfr >= absolute_upper_limit] = 0.0
 
     # Return the A(FUV) map
     return a_fuv_cortese
