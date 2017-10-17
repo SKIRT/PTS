@@ -99,6 +99,10 @@ class BuatAttenuationMapsMaker(Configurable):
         # The methods
         self.methods = dict()
 
+        # The TIR to FUV maps
+        self.tirtofuvs = dict()
+        self.tirtonuvs = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -237,6 +241,9 @@ class BuatAttenuationMapsMaker(Configurable):
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
             log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
 
+            # Add the TIR to FUV map to the dictionary
+            if tir_to_fuv is not None: self.tirtofuvs[name] = tir_to_fuv
+
             # Calculate FUV attenuation map
             attenuation = parameters[0] * log_tir_to_fuv**3 + parameters[1] * log_tir_to_fuv**2 + parameters[2] * log_tir_to_fuv + parameters[3]
 
@@ -302,6 +309,9 @@ class BuatAttenuationMapsMaker(Configurable):
             # Calculate map
             tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
             log_tir_to_nuv = Frame(np.log10(tir_to_nuv), wcs=tir_to_nuv.wcs)
+
+            # Add the TIR to NUV map to the dictionary
+            if tir_to_nuv is not None: self.tirtonuvs[name] = tir_to_nuv
 
             # Calculate attenuation map
             attenuation = parameters[0] * log_tir_to_nuv**3 + parameters[1] * log_tir_to_nuv**2 + parameters[2] * log_tir_to_nuv + parameters[3]

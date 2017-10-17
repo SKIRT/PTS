@@ -183,7 +183,7 @@ class AttenuationMapMaker(MapsComponent):
         self.methods[method_name] = maker.methods
 
         # Set the extra maps
-        #self.extra_maps[method_name] = maker.tirtofuvs
+        self.extra_maps[method_name] = maker.tirtofuvs
 
     # -----------------------------------------------------------------
 
