@@ -13,13 +13,23 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from copy import copy
+
+# Import astronomical modules
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 from ...core.list import NamedFrameList
 from ....core.tools import sequences
+from ....core.units.parsing import parse_unit as u
+
+# -----------------------------------------------------------------
+
+speed_of_light = constants.c
+solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
