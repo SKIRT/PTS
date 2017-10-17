@@ -291,7 +291,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
             if symmetric:
 
-                vmax = 0.5 * sum(abs(vmin), abs(vmax))
+                vmax = 0.5 * sum([abs(vmin), abs(vmax)])
                 vmin = - vmax
 
         elif npositives > nnegatives:
