@@ -141,6 +141,10 @@ class SSFRMapMaker(MapsComponent):
         # Create the map maker
         maker = ColoursSSFRMapsMaker()
 
+        # Set smoothing factor
+        maker.config.smooth = self.config.smooth
+        maker.config.smoothing_factor = self.config.smoothing_factor
+
         # Run the maker
         maker.run(colours=self.colours, colours_origins=colours_origins, colours_methods=colours_methods, maps=current, method_name=method_name)
 

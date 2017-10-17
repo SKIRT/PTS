@@ -34,15 +34,21 @@ def make_map(**kwargs):
     :return: 
     """
 
+    # Get smoothing factor
+    smoothing_factor = kwargs.get("smoothing_factor", None)
+
     # Create the sSFR map maker
     maker = ColoursSSFRMapsMaker()
+
+    # Set smoothing factor
+    if smoothing_factor is not None:
+        maker.config.smooth = True
+        maker.config.smoothing_factor = smoothing_factor
 
     # Make
     maker.run(colours=kwargs)
 
-    # Get the maps
-    #maps = maker.maps
-
+    # Return the single colour map based on the input
     return maker.single_map
 
 # -----------------------------------------------------------------
