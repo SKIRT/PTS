@@ -892,7 +892,8 @@ class RemotePythonSession(object):
                 self.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug())  # get the class
 
                 # Open the input file
-                self.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
+                if name in depending_filepaths: self.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "', check=False)", show_output=True)
+                else: self.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
 
                 # Check whether depending paths have to be adjusted
                 if name in depending_filepaths:
@@ -904,7 +905,7 @@ class RemotePythonSession(object):
                         depending_filepath = remote_depending_filepaths[name][label]
 
                         # Set the depending path
-                        self.send_line("input_dict['" + name + "'].set_depending_path('" + label + "', '" + depending_filepath + "')")
+                        self.send_line("input_dict['" + name + "'].set_depending_path('" + label + "', '" + depending_filepath + "')", show_output=True)
 
             # Extension is not defined
             else:
