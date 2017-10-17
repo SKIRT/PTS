@@ -3429,7 +3429,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         else:
 
             # Debugging
-            log.debug("Frame " + name + "is convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
+            log.debug("Frame " + name + "will convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
             if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)

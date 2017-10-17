@@ -158,6 +158,19 @@ def get_psf_filter(header):
 
 # -----------------------------------------------------------------
 
+def get_smoothing_factor(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    if "SMOOTHF" not in header: return 1.
+    else: return float(header["SMOOTHF"])
+
+# -----------------------------------------------------------------
+
 def get_wavelength(header):
 
     """

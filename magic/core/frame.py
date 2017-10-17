@@ -166,6 +166,9 @@ class Frame(NDDataArray):
         # PSF FILTER
         self._psf_filter = kwargs.pop("psf_filter", None)
 
+        # The smoothing factor
+        self.smoothing_factor = kwargs.pop("smoothing_factor", 1.)
+
         # The path
         self.path = kwargs.pop("path", None)
         self._from_multiplane = kwargs.pop("from_multiplane", False)
@@ -2871,8 +2874,19 @@ class Frame(NDDataArray):
         from .kernel import ConvolutionKernel
         kernel = ConvolutionKernel.gaussian(new_fwhm, self.pixelscale, sigma_level=kernel_sigma_level)
 
+        # Get the original PSF filter and FWHM
+        original_fwhm = self.fwhm
+        original_psf_filter = self.psf_filter
+
         # Convolve
         self.convolve(kernel, allow_huge=allow_huge, fft=fft, preserve_nans=preserve_nans)
+
+        # Set the FWHM and PSF filter back to the original
+        self.fwhm = original_fwhm
+        self.psf_filter = original_psf_filter
+
+        # BUT SET THE SMOOTHING FACTOR
+        self.smoothing_factor *= factor
 
     # -----------------------------------------------------------------
 
@@ -3880,6 +3894,9 @@ class Frame(NDDataArray):
 
         # Set PSF FILTER
         if self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")
+
+        # Set smoothing factor
+        if self.smoothing_factor != 1: header.set("SMOOTHF", repr(self.smoothing_factor), "Applied smoothing factor")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin

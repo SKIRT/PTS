@@ -287,6 +287,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Obtain the distance to the object
     distance = headers.get_distance(original_header)
 
+    # Obtain the PSF filter
+    psf_filter = headers.get_psf_filter(original_header)
+
+    # Obtain the smoothing factor
+    smoothing_factor = headers.get_smoothing_factor(original_header)
+
     # Get the magnitude zero-point
     zero_point = headers.get_zero_point(original_header)
 
@@ -338,7 +344,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                               extinction_corrected=corrected,
                               fwhm=fwhm,
                               pixelscale=pixelscale,
-                              distance=distance)
+                              distance=distance,
+                              psf_filter=psf_filter,
+                              smoothing_factor=smoothing_factor)
+
                 frames[name] = frame
 
             elif plane_type == "mask":
@@ -385,7 +394,9 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                           extinction_corrected=extinction_corrected,
                           fwhm=fwhm,
                           pixelscale=pixelscale,
-                          distance=distance)
+                          distance=distance,
+                          psf_filter=psf_filter,
+                          smoothing_factor=smoothing_factor)
 
             # Add the primary image frame
             frames[name] = frame
@@ -586,6 +597,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Obtain the PSF filter of this image
     psf_filter = headers.get_psf_filter(header)
 
+    # Obtain the smoothing factor
+    smoothing_factor = headers.get_smoothing_factor(header)
+
     # Get the magnitude zero-point
     zero_point = headers.get_zero_point(header)
 
@@ -685,6 +699,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    path=path,
                    from_multiplane=True,
                    psf_filter=psf_filter,
+                   smoothing_factor=smoothing_factor,
                    distance=distance)
 
         # Close the FITS file
@@ -718,6 +733,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    path=path,
                    from_multiplane=False,
                    psf_filter=psf_filter,
+                   smoothing_factor=smoothing_factor,
                    distance=distance)
 
         # Close the FITS file
