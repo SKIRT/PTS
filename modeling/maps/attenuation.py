@@ -95,6 +95,9 @@ class AttenuationMapMaker(MapsComponent):
         # Create the map maker
         maker = CorteseAttenuationMapsMaker()
 
+        # Plot
+        maker.config.plot = self.config.plot
+
         # Get the input
         fuv = self.get_frame_for_filter(self.fuv_filter)
 
@@ -157,6 +160,9 @@ class AttenuationMapMaker(MapsComponent):
 
         # Create the map maker
         maker = BuatAttenuationMapsMaker()
+
+        # Plot
+        #maker.config.plot = self.config.plot
 
         # Get the input
         fuv = self.get_frame_for_filter(self.fuv_filter)

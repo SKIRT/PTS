@@ -23,3 +23,7 @@ definition.add_flag("select_ssfr", "select specific sSFR maps", False)
 definition.add_flag("select_tir", "select specific TIR maps", False)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("plot", "plot Cortese sSFR pixel masks", False)
+
+# -----------------------------------------------------------------

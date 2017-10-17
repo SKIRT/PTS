@@ -25,6 +25,7 @@ from .tir_to_uv import make_tir_to_uv
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
 from ...core.list import NamedFrameList
+from ...tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -285,8 +286,11 @@ class CorteseAttenuationMapsMaker(Configurable):
                 # Get frames
                 log_tir_to_fuv = Frame(np.log10(frames["tirtofuv"]), wcs=frames["tirtofuv"].wcs)
 
+                # Plot log TIR to FUV
+                if self.config.plot: plotting.plot_box(log_tir_to_fuv, "log10(TIR/FUV)")
+
                 # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
-                fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, frames["ssfr"])
+                fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, frames["ssfr"], plot=self.config.plot)
 
                 # Set properties
                 fuv_attenuation.unit = None # no unit for attenuation
@@ -323,7 +327,7 @@ class CorteseAttenuationMapsMaker(Configurable):
 
 # -----------------------------------------------------------------
 
-def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
+def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr, plot=False):
 
     """
     This function ...
@@ -331,6 +335,7 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
     :param ssfr_colour:
     :param log_tir_to_fuv:
     :param ssfr:
+    :param plot:
     :return:
     """
 
@@ -346,10 +351,12 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
     a_fuv_cortese = Frame.zeros_like(log_tir_to_fuv)
 
     # Use the parameters for the lowest tau (highest sSFR colour) where the sSFR colour value exceeds this maximum
-    # tau_min, colour_range, parameters = cortese.minimum_tau_range_and_parameters(ssfr_colour)
-    # where_above = ssfr > colour_range.max
-    # a_fuv_cortese[where_above] = parameters[0] + parameters[1] * log_tir_to_fuv[where_above] + parameters[2] * log_tir_to_fuv2[where_above] + \
-    #                                               parameters[3] * log_tir_to_fuv3[where_above] + parameters[4] * log_tir_to_fuv4[where_above]
+    tau_min, colour_range, parameters = cortese.minimum_tau_range_and_parameters(ssfr_colour)
+    where_above = ssfr > colour_range.max
+    # Plot which pixels
+    if plot: plotting.plot_mask(where_above, title="Pixels where sSFR > " + str(colour_range.max) + " (tau < " + str(tau_min) + ")")
+    a_fuv_cortese[where_above] = parameters[0] + parameters[1] * log_tir_to_fuv[where_above] + parameters[2] * log_tir_to_fuv2[where_above] + \
+                                                   parameters[3] * log_tir_to_fuv3[where_above] + parameters[4] * log_tir_to_fuv4[where_above]
 
     # Create the FUV attenuation map
     for tau, colour_range, parameters in cortese.taus_ranges_and_parameters(ssfr_colour):
@@ -360,12 +367,18 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
         # Set mask
         where = (ssfr >= colour_range.min) * (ssfr < colour_range.max)
 
+        # Plot which pixels
+        if plot:
+            if colour_range.min == float("-inf"): title = "Pixels where sSFR < " + str(colour_range.max) + " (tau >= " + str(tau) + ")"
+            else: title = "Pixels where " + str(colour_range.min) + " <= sSFR < " + str(colour_range.max) + " (tau = " + str(tau) + ")"
+            plotting.plot_mask(where, title=title)
+
         # Set the appropriate pixels
         a_fuv_cortese[where] = parameters[0] + parameters[1] * log_tir_to_fuv[where] + parameters[2] * log_tir_to_fuv2[where] + \
                                parameters[3] * log_tir_to_fuv3[where] + parameters[4] * log_tir_to_fuv4[where]
 
     # Set attenuation to zero where tir_to_fuv is NaN
-    #a_fuv_cortese[np.isnan(log_tir_to_fuv)] = 0.0
+    a_fuv_cortese[np.isnan(log_tir_to_fuv)] = 0.0
 
     # Set attenuation to zero where sSFR colour is smaller than zero
     a_fuv_cortese[ssfr < 0.0] = 0.0
