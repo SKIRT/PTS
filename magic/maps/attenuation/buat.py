@@ -22,6 +22,7 @@ from ....core.basics.configurable import Configurable
 from ...calibrations.buat import BuatAttenuationCalibration
 from .tir_to_uv import make_tir_to_uv
 from ...core.frame import Frame
+from ...core.image import Image
 from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
@@ -239,10 +240,23 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Make the TIR to FUV map
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
-            log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
+
+            # Interpolate NaNs in TIR to FUV
+            tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+
+            # Make the log10 of the TIR to FUV map
+            log_tir_to_fuv = Frame(np.log10(tir_to_fuv.data), wcs=tir_to_fuv.wcs)
 
             # Add the TIR to FUV map to the dictionary
-            if tir_to_fuv is not None: self.tirtofuvs[name] = tir_to_fuv
+            if tir_to_fuv is not None:
+
+                # Create image with mask
+                tir_to_fuv_image = Image()
+                tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
+                tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+
+                # Set image
+                self.tirtofuvs[name] = tir_to_fuv_image
 
             # Calculate FUV attenuation map
             attenuation = parameters[0] * log_tir_to_fuv**3 + parameters[1] * log_tir_to_fuv**2 + parameters[2] * log_tir_to_fuv + parameters[3]
@@ -258,11 +272,19 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Make positive: replace NaNs and negative pixels by zeros
             # Set negatives and NaNs to zero
-            attenuation.replace_nans(0.0)
+            #attenuation.replace_nans(0.0)
+            #attenuation.replace_negatives(0.0)
+
+            # Interpolate
+            nans = attenuation.interpolate_nans(max_iterations=None)
             attenuation.replace_negatives(0.0)
+            image = Image()
+            image.add_frame(attenuation, "fuv_attenuation")
+            image.add_mask(nans, "nans")
 
             # Set
-            self.maps[key] = attenuation
+            #self.maps[key] = attenuation
+            self.maps[key] = image
 
     # -----------------------------------------------------------------
 
@@ -306,12 +328,25 @@ class BuatAttenuationMapsMaker(Configurable):
                 log.success("The " + name + " attenuation map is already created: not creating it again")
                 continue
 
-            # Calculate map
+            # Calculate TIR to NUV map
             tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
-            log_tir_to_nuv = Frame(np.log10(tir_to_nuv), wcs=tir_to_nuv.wcs)
+
+            # Interpolate NaNs in TIR to FUV
+            tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
+
+            # Create log10 of TIR to NUV
+            log_tir_to_nuv = Frame(np.log10(tir_to_nuv.data), wcs=tir_to_nuv.wcs)
 
             # Add the TIR to NUV map to the dictionary
-            if tir_to_nuv is not None: self.tirtonuvs[name] = tir_to_nuv
+            if tir_to_nuv is not None:
+
+                # Create image with mask
+                tir_to_nuv_image = Image()
+                tir_to_nuv_image.add_frame(tir_to_nuv, "tir_to_nuv")
+                tir_to_nuv_image.add_mask(tirnuv_nans, "nans")
+
+                # Set image
+                self.tirtonuvs[name] = tir_to_nuv_image
 
             # Calculate attenuation map
             attenuation = parameters[0] * log_tir_to_nuv**3 + parameters[1] * log_tir_to_nuv**2 + parameters[2] * log_tir_to_nuv + parameters[3]
@@ -327,11 +362,19 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Make positive: replace NaNs and negative pixels by zeros
             # Set negatives and NaNs to zero
-            attenuation.replace_nans(0.0)
+            #attenuation.replace_nans(0.0)
+            #attenuation.replace_negatives(0.0)
+
+            # Interpolate
+            nans = attenuation.interpolate_nans(max_iterations=None)
             attenuation.replace_negatives(0.0)
+            image = Image()
+            image.add_frame(attenuation, "nuv_attenuation")
+            image.add_mask(nans, "nans")
 
             # Set
-            self.maps[key] = attenuation
+            #self.maps[key] = attenuation
+            self.maps[key] = image
 
     # -----------------------------------------------------------------
 

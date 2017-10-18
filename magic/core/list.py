@@ -1395,7 +1395,7 @@ class FrameList(FilterBasedList):
         else: unit = self[0].unit
 
         # Debugging
-        log.debug("Converting to unit '" + str(unit) + "' ...")
+        log.debug("Converting to unit " + tostr(unit, add_physical_type=True) + " ...")
 
         # Initialize list for converted frames
         new_frames = FrameList()
@@ -2632,7 +2632,7 @@ def convert_to_same_unit(*frames, **kwargs):
     if "unit" in kwargs: kwargs.pop("unit")
 
     # Debugging
-    log.debug("Converting frames to unit '" + str(unit) + "' ...")
+    log.debug("Converting frames to unit " + tostr(unit, add_physical_type=True) + " ...")
 
     # Initialize list for converted frames
     new_frames = []
@@ -2645,7 +2645,7 @@ def convert_to_same_unit(*frames, **kwargs):
         name = "'" + names[index] + "' " if names is not None else ""
 
         # Debugging
-        log.debug("Converting frame " + name + "with unit '" + str(frame.unit) + "' to '" + str(unit) + "' ...")
+        log.debug("Converting frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
 
         # Create and set name
         converted = frame.converted_to(unit, **kwargs)
@@ -3035,7 +3035,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     """
 
     # Debugging
-    log.debug("Rebinning frame " + name + "with unit '" + str(frame.unit) + "' ...")
+    log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
 
     # Convert to the corresponding brightness unit
     #original_unit = frame.convert_to_corresponding_brightness_unit()
@@ -3043,7 +3043,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     conversion_factor = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
 
     # Converted?
-    if original_unit != frame.unit: log.debug("Unit has been converted to '" + str(frame.unit) + "' prior to rebinning")
+    if original_unit != frame.unit: log.debug("Unit has been converted to " + tostr(frame.unit, add_physical_type=True) + " prior to rebinning")
 
     # REBIN remotely
     if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
@@ -3102,7 +3102,7 @@ def rebin_frame_old(name, frame, wcs, rebin_remote_threshold=None, session=None,
         log.debug("Frame " + name + "is expressed in units per angular or intrinsic area (pixelsize squared)")
 
         # Debugging
-        log.debug("Rebinning frame " + name + "with unit '" + str(frame.unit) + "' ...")
+        log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
 
         # REBIN remotely
         if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
@@ -3134,7 +3134,7 @@ def rebin_frame_old(name, frame, wcs, rebin_remote_threshold=None, session=None,
         log.debug("Frame " + name + "is not expressed in units per angular or intrinsic area (pixelsize squared)")
 
         # Debugging
-        # log.debug("Converting frame " + name + "with unit '" + str(frame.unit) + "' to '" + str(frame.corresponding_angular_area_unit) + "' prior to rebinning ...")
+        # log.debug("Converting frame " + name + "with unit " + str(frame.unit) + " to " + str(frame.corresponding_angular_area_unit) + " prior to rebinning ...")
         # old_unit = frame.unit
         # rebinned = frame.converted_to_corresponding_angular_area_unit(**kwargs)
         # rebinned.rebin(highest_pixelscale_wcs)

@@ -26,6 +26,7 @@ from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
 from ...core.list import NamedFrameList
 from ...tools import plotting
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -244,8 +245,19 @@ class CorteseAttenuationMapsMaker(Configurable):
             #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
             else: tir_to_fuv = None
 
-            # Add the TIR to FUV map to the dictionary
-            if tir_to_fuv is not None: self.tirtofuvs[name] = tir_to_fuv
+            # Replace NaNs and add the TIR to FUV map to the dictionary
+            if tir_to_fuv is not None:
+
+                # Interpolate NaNs in TIR to FUV
+                tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+
+                # Create image with mask
+                tir_to_fuv_image = Image()
+                tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
+                tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+
+                # Add the image
+                self.tirtofuvs[name] = tir_to_fuv_image
 
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:
@@ -283,8 +295,8 @@ class CorteseAttenuationMapsMaker(Configurable):
                 frames = NamedFrameList(fuv=self.fuv, ssfr=ssfr, tirtofuv=tir_to_fuv)
                 frames.convolve_and_rebin()
                 
-                # Get frames
-                log_tir_to_fuv = Frame(np.log10(frames["tirtofuv"]), wcs=frames["tirtofuv"].wcs)
+                # Create log of TIRtoFUV frame
+                log_tir_to_fuv = Frame(np.log10(frames["tirtofuv"].data), wcs=frames["tirtofuv"].wcs)
 
                 # Plot log TIR to FUV
                 if self.config.plot: plotting.plot_box(log_tir_to_fuv, "log10(TIR/FUV)")
@@ -301,16 +313,23 @@ class CorteseAttenuationMapsMaker(Configurable):
                 fuv_attenuation.psf_filter = frames.psf_filter
                 fuv_attenuation.fwhm = frames.fwhm
 
+                # Interpolate
+                nans = fuv_attenuation.interpolate_nans(max_iterations=None)
+                image = Image()
+                image.add_frame(fuv_attenuation, "fuv_attenuation")
+                image.add_mask(nans, "nans")
+
                 # Set attenuation to zero where the original FUV map is smaller than zero
                 fuv_attenuation[frames["fuv"] < 0.0] = 0.0
 
                 # Make positive: replace NaNs and negative pixels by zeros
                 # Set negatives and NaNs to zero
-                fuv_attenuation.replace_nans(0.0)
+                #fuv_attenuation.replace_nans(0.0)
                 fuv_attenuation.replace_negatives(0.0)
 
                 # Add the attenuation map to the dictionary
-                self.maps[key] = fuv_attenuation
+                #self.maps[key] = fuv_attenuation
+                self.maps[key] = image
 
     # -----------------------------------------------------------------
 

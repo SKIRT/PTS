@@ -1790,14 +1790,16 @@ class ObservedImageMaker(DatacubesMiscMaker):
                 converted = False
 
                 # Check if this is a surface brightness or intensity
-                if not (original_unit.is_intensity or original_unit.is_surface_brightness):
+                #if not (original_unit.is_intensity or original_unit.is_surface_brightness):
+                if not original_unit.is_per_angular_or_intrinsic_area:
 
                     # Determine the new (surface brightness or intensity) unit
                     #new_unit = original_unit / u("sr")
-                    new_unit = original_unit.corresponding_angular_area_unit
+                    #new_unit = original_unit.corresponding_angular_area_unit
+                    new_unit = original_unit.corresponding_angular_or_intrinsic_area_unit
 
                     # Debugging
-                    log.debug("Converting the unit from '" + str(original_unit) + "' to '" + str(new_unit) + "' in order to be able to perform rebinning ...")
+                    log.debug("Converting the unit from " + tostr(original_unit, add_physical_type=True) + " to " + tostr(new_unit, add_physical_type=True) + " in order to be able to perform rebinning ...")
 
                     # Convert
                     self.images[instr_name][filter_name].convert_to(new_unit)

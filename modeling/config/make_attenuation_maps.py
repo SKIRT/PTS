@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.modeling.config.maps import definition
+from pts.modeling.maps.attenuation import methods
 
 # -----------------------------------------------------------------
 
@@ -25,5 +26,10 @@ definition.add_flag("select_tir", "select specific TIR maps", False)
 # -----------------------------------------------------------------
 
 definition.add_flag("plot", "plot Cortese sSFR pixel masks", False)
+
+# -----------------------------------------------------------------
+
+# Methods
+definition.add_positional_optional("methods", "string_list", "attenuation map making methods", default=methods, choices=methods)
 
 # -----------------------------------------------------------------

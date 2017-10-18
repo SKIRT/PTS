@@ -1727,7 +1727,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_frame(self, frame, name, overwrite=False, silent=False):
+    def add_frame(self, frame, name, overwrite=False, silent=False, copy=False):
 
         """
         This function ...
@@ -1735,6 +1735,7 @@ class Image(object):
         :param name:
         :param overwrite:
         :param silent:
+        :param copy:
         :return:
         """
 
@@ -1747,6 +1748,9 @@ class Image(object):
         # Check if the shape matches the shape of this image
         if self.shape is not None:
             if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
+
+        # Create copy?
+        if copy: frame = frame.copy()
 
         # Set the WCS
         if self.wcs is not None: frame.wcs = self.wcs
@@ -1954,7 +1958,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_mask(self, mask, name, overwrite=False, silent=False):
+    def add_mask(self, mask, name, overwrite=False, silent=False, copy=False):
 
         """
         This function ...
@@ -1962,6 +1966,7 @@ class Image(object):
         :param name:
         :param overwrite:
         :param silent:
+        :param copy:
         :return:
         """
 
@@ -1974,6 +1979,9 @@ class Image(object):
         # Check if the shape matches the shape of this image
         if self.shape is not None:
             if mask.shape != self.shape: raise ValueError("Mask does not have the correct shape for this image")
+
+        # Copy
+        if copy: mask = mask.copy()
 
         # Add the mask to the set of masks
         self.masks[name] = mask
@@ -2032,7 +2040,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_segments(self, segments, name, overwrite=False, silent=False):
+    def add_segments(self, segments, name, overwrite=False, silent=False, copy=False):
 
         """
         This function ...
@@ -2040,6 +2048,7 @@ class Image(object):
         :param name:
         :param overwrite:
         :param silent:
+        :param copy:
         :return:
         """
 
@@ -2052,6 +2061,9 @@ class Image(object):
         # Check if the shape matches the shape of this image
         if self.shape is not None:
             if segments.shape != self.shape: raise ValueError("Segmentation map does not have the correct shape for this image")
+
+        # Copy
+        if copy: segments = segments.copy()
 
         # Add the segmentation map to the set of segmentation maps
         self.segments[name] = segments

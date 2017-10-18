@@ -148,6 +148,9 @@ class MapMakerBase(GalaxyModelingComponent):
         # Extra maps
         self.extra_maps = dict()
 
+        # Name for extra maps directory
+        self.extra_maps_name = "extra"
+
     # -----------------------------------------------------------------
 
     @abstractproperty
@@ -475,7 +478,7 @@ class MapMakerBase(GalaxyModelingComponent):
             else: path = fs.join(self.maps_sub_path, method)
 
             # Create extra path
-            extra_path = fs.create_directory_in(path, "extra")
+            extra_path = fs.create_directory_in(path, self.extra_maps_name)
 
             # Determine path
             if add_extension: map_path = fs.join(extra_path, name + "." + extension)
@@ -484,7 +487,7 @@ class MapMakerBase(GalaxyModelingComponent):
         # Determine path
         else:
 
-            extra_path = fs.create_directory_in(self.maps_sub_path, "extra")
+            extra_path = fs.create_directory_in(self.maps_sub_path, self.extra_maps_name)
             if add_extension: map_path = fs.join(extra_path, name + "." + extension)
             else: map_path = fs.join(extra_path, name)
 

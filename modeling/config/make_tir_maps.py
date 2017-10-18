@@ -7,10 +7,16 @@
 
 # Import the relevant PTS classes and modules
 from pts.modeling.config.maps import definition
+from pts.modeling.maps.tir import methods
 
 # -----------------------------------------------------------------
 
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
+
+# -----------------------------------------------------------------
+
+# Methods
+definition.add_positional_optional("methods", "string_list", "TIR making methods to perform", default=methods, choices=methods)
 
 # -----------------------------------------------------------------

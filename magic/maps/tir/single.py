@@ -198,11 +198,12 @@ class SingleBandTIRMapMaker(Configurable):
             #log.debug("Conversion factor: " + str(factor))
 
             # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
-            
             logtir = a * np.log10(frame.data) + b
 
+            # Create TIR map in linear units
             tir = Frame(10**logtir)
 
+            # Set the unit and wcs
             tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True) # TIR can only be bolometric, right??
             #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
@@ -212,6 +213,9 @@ class SingleBandTIRMapMaker(Configurable):
             tir.pixelscale = frame.pixelscale
             tir.psf_filter = frame.psf_filter
             tir.fwhm = frame.fwhm
+
+            # Interpolate NaNs
+            tir.interpolate_nans(max_iterations=None)
 
             # Set the TIR map
             self.maps[name] = tir

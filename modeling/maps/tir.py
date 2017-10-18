@@ -63,6 +63,30 @@ class TIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def make_single(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "single" in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def make_multi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "multi" in self.config.methods
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -75,10 +99,10 @@ class TIRMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Make maps based on a single band
-        self.make_maps_single()
+        if self.make_single: self.make_maps_single()
 
         # 3. Make maps based on multiple bands
-        self.make_maps_multi()
+        if self.make_multi: self.make_maps_multi()
 
         # 4. Writing
         self.write()

@@ -2969,6 +2969,9 @@ class Frame(NDDataArray):
         # Set original NaNs back to NaN
         self[original_nans] = nan_value
 
+        # Return the mask
+        return mask
+
     # -----------------------------------------------------------------
 
     def interpolated_nans(self, **kwargs):
@@ -3029,10 +3032,10 @@ class Frame(NDDataArray):
         while np.any(np.isnan(result)):
 
             # Check number of iterations
-            if niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+            if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
 
             # Debugging
-            log.debug("Interpolation iteration 2 ...")
+            log.debug("Interpolation iteration " + str(niterations+1) + " ...")
 
             # Perform next interpolation
             result = interpolate_replace_nans(result, kernel)
@@ -3053,8 +3056,14 @@ class Frame(NDDataArray):
         result[result < min_value] = min_value
         result[result > max_value] = max_value
 
+        # Get the mask of NaNs
+        original_nans = self.nans
+
         # Replace the data
         self._data = result
+
+        # Return the original nans
+        return original_nans
 
     # -----------------------------------------------------------------
 
@@ -3079,7 +3088,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations)
+        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations)
 
     # -----------------------------------------------------------------
 
@@ -3104,7 +3113,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations)
+        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations)
 
     # -----------------------------------------------------------------
 

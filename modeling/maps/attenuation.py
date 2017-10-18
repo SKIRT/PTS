@@ -43,6 +43,9 @@ class AttenuationMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(AttenuationMapMaker, self).__init__(*args, **kwargs)
 
+        # Define name for extra maps
+        self.extra_maps_name = "TIRtoFUV"
+
     # -----------------------------------------------------------------
 
     @property
@@ -54,6 +57,30 @@ class AttenuationMapMaker(MapsComponent):
         """
 
         return self.maps_attenuation_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def make_cortese(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "cortese" in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def make_buat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "buat" in self.config.methods
 
     # -----------------------------------------------------------------
 
@@ -69,10 +96,10 @@ class AttenuationMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Cortese
-        self.make_cortese_attenuation_maps()
+        if self.make_cortese: self.make_cortese_attenuation_maps()
 
         # 3. Buat
-        self.make_buat_attenuation_maps()
+        if self.make_buat: self.make_buat_attenuation_maps()
 
         # 4. Write
         self.write()

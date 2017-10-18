@@ -274,6 +274,9 @@ class MultiBandTIRMapMaker(Configurable):
             # Determine keys
             #combination = tuple([fltr for fltr in filters])
 
+            # Interpolate NaNs (although normally there aren't any)
+            tir.interpolate_nans(max_iterations=None)
+
             # Set the TIR map
             self.maps[key] = tir
 
