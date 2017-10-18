@@ -104,6 +104,9 @@ class BuatAttenuationMapsMaker(Configurable):
         self.tirtofuvs = dict()
         self.tirtonuvs = dict()
 
+        # Region of interest
+        self.region_of_interest = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -153,6 +156,9 @@ class BuatAttenuationMapsMaker(Configurable):
 
         # Create the Cortese instance
         self.buat = BuatAttenuationCalibration()
+
+        # Get region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
     # -----------------------------------------------------------------
 
@@ -245,7 +251,7 @@ class BuatAttenuationMapsMaker(Configurable):
             relnans = tir_to_fuv.relative_nnans
             if relnans < 0.7:
                 log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
-                tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+                tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
             else:
                 log.warning("The number of NaN values in the TIR to FUV map is very high (" + str(relnans*100) + "%)")
                 tirfuv_nans = None
@@ -285,7 +291,7 @@ class BuatAttenuationMapsMaker(Configurable):
             relnans = attenuation.relative_nnans
             if relnans < 0.7:
                 log.debug("The relative number of NaN values in the frame is " + str(relnans*100) + "%")
-                nans = attenuation.interpolate_nans(max_iterations=None)
+                nans = attenuation.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
             else:
                 log.warning("The number of NaN values in the frame is very high (" + str(relnans*100) + "%)")
                 nans = None
@@ -347,7 +353,7 @@ class BuatAttenuationMapsMaker(Configurable):
             relnans = tir_to_nuv.relative_nnans
             if relnans < 0.7:
                 log.debug("The relative number of NaN values in the TIR to NUV map is " + str(relnans*100) + "%")
-                tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
+                tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
             else:
                 log.warning("The number of NaN values in the TIR to NUV map is very high (" + str(relnans*100) + "%)")
                 tirnuv_nans = None
@@ -387,7 +393,7 @@ class BuatAttenuationMapsMaker(Configurable):
             relnans = attenuation.relative_nnans
             if relnans < 0.7:
                 log.debug("The relative number of NaN values in the NUV attenuation map is " + str(relnans*100) + "%")
-                nans = attenuation.interpolate_nans(max_iterations=None)
+                nans = attenuation.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
             else:
                 log.warning("The number of NaN values in the NUV attenuation map is very high (" + str(relnans*100) + "%)")
                 nans = None

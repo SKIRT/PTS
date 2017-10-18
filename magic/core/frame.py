@@ -1564,7 +1564,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def nnans_in(self, region_or_mask):
+    def get_mask(self, region_or_mask):
 
         """
         This function ...
@@ -1574,8 +1574,57 @@ class Frame(NDDataArray):
 
         # Get mask
         if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, SkyRegion): mask = region_or_mask.to_pixel(self.wcs).to_mask(self.xsize, self.ysize)
         elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        else: raise ValueError("Argument must be region or mask")
+
+        # Return
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def min_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return minimum value in the masked values
+        return np.nanmin(self.data[mask])
+
+    # -----------------------------------------------------------------
+
+    def max_in(self, region_or_mask):
+
+        """
+        Thisfunction ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return maximum value in the masked values
+        return np.nanmax(self.data[mask])
+
+    # -----------------------------------------------------------------
+
+    def nnans_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of nan pixels
         #return np.sum(np.equal(self.data[mask], nan_value))
@@ -1597,10 +1646,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Get mask
-        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
-        elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        # get mask
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of nan pixels
         #return np.sum(np.equal(self.data[mask], inf_values[0]) + np.equal(self.data[mask], inf_values[1]))
@@ -1623,9 +1670,7 @@ class Frame(NDDataArray):
         """
 
         # Get mask
-        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
-        elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of zero pixels
         return np.sum(np.equal(self.data[mask], zero_value))
@@ -1641,9 +1686,7 @@ class Frame(NDDataArray):
         """
 
         # Get mask
-        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
-        elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of negative pixels
         return np.sum(np.less(self.data[mask], zero_value))
@@ -1659,9 +1702,7 @@ class Frame(NDDataArray):
         """
 
         # Get mask
-        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
-        elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of positive pixels
         return np.sum(np.greater(self.data[mask], zero_value))
@@ -1689,9 +1730,7 @@ class Frame(NDDataArray):
         """
 
         # Get mask
-        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
-        elif isinstance(region_or_mask, Mask): mask = region_or_mask
-        else: raise ValueError("Argument must be pixel region or mask")
+        mask = self.get_mask(region_or_mask)
 
         # Return the number of pixels
         return np.sum(mask)
@@ -2947,7 +2986,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
+    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """
         Thisfunction ...
@@ -2956,6 +2995,7 @@ class Frame(NDDataArray):
         :param max_iterations:
         :param plot:
         :param not_converge:
+        :param min_max_in:
         :return:
         """
 
@@ -2968,7 +3008,7 @@ class Frame(NDDataArray):
         self[mask] = nan_value
 
         # Interpolate the nans
-        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
+        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
         except RuntimeError as e:
 
             # Reset the original values (e.g. infs)
@@ -3002,7 +3042,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """
         This function ...
@@ -3011,6 +3051,7 @@ class Frame(NDDataArray):
         :param plot:
         :param not_converge: what to do with NaN values when the number of NaN pixels does not converge to zero?
         #                     -> "error', or "keep"
+        :param min_max_in:
         :return:
         """
 
@@ -3034,8 +3075,12 @@ class Frame(NDDataArray):
         kernel = Gaussian2DKernel(stddev=sigma)
 
         # Get the current minimum and maximum of the frame
-        min_value = self.min
-        max_value = self.max
+        if min_max_in is not None:
+            min_value = self.min_in(min_max_in)
+            max_value = self.max_in(min_max_in)
+        else:
+            min_value = self.min
+            max_value = self.max
 
         # Debugging
         log.debug("The minimum and maximum value of the frame before interpolation is " + tostr(min_value) + " and " + tostr(max_value))
@@ -3093,8 +3138,13 @@ class Frame(NDDataArray):
             if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration " + str(niterations))
 
         # Determine new min and max value
-        new_min_value = np.nanmin(self.min)
-        new_max_value = np.nanmax(self.max)
+        if min_max_in is not None:
+            mask = self.get_mask(min_max_in)
+            new_min_value = np.nanmin(result[mask])
+            new_max_value = np.nanmax(result[mask])
+        else:
+            new_min_value = np.nanmin(result)
+            new_max_value = np.nanmax(result)
 
         # Debugging
         log.debug("The minimum and maximum value of the frame after interpolation is " + tostr(new_min_value) + " and " + tostr(new_max_value))
@@ -3128,7 +3178,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_infs(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
+    def interpolate_infs(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """
         This function ...
@@ -3136,10 +3186,11 @@ class Frame(NDDataArray):
         :param max_iterations:
         :param plot:
         :param not_converge:
+        :param min_max_in:
         :return:
         """
 
-        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
+        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
 
     # -----------------------------------------------------------------
 
@@ -3155,7 +3206,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_zeroes(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
+    def interpolate_zeroes(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """
         This function ...
@@ -3163,10 +3214,11 @@ class Frame(NDDataArray):
         :param max_iterations:
         :param plot:
         :param not_converge:
+        :param min_max_in:
         :return:
         """
 
-        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
+        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
 
     # -----------------------------------------------------------------
 

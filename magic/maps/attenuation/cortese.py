@@ -114,6 +114,9 @@ class CorteseAttenuationMapsMaker(Configurable):
         # The TIR to FUV maps
         self.tirtofuvs = dict()
 
+        # The region of interest
+        self.region_of_interest = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -162,6 +165,9 @@ class CorteseAttenuationMapsMaker(Configurable):
 
         # Get already calculated maps
         self.maps = kwargs.pop("maps", dict())
+
+        # The region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
         # Create the Cortese instance
         self.cortese = CorteseAttenuationCalibration()
@@ -252,7 +258,7 @@ class CorteseAttenuationMapsMaker(Configurable):
                 relnans = tir_to_fuv.relative_nnans
                 if relnans < 0.7:
                     log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
-                    tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+                    tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
                 else:
                     log.warning("The number of NaN values in the TIR to FUV map is very high (" + str(relnans*100) + "%)")
                     tirfuv_nans = None
@@ -323,7 +329,7 @@ class CorteseAttenuationMapsMaker(Configurable):
                 relnans = fuv_attenuation.relative_nnans
                 if relnans < 0.7:
                     log.debug("The relative number of NaN values in the FUV attenuation map is " + str(relnans*100) + "%")
-                    nans = fuv_attenuation.interpolate_nans(max_iterations=None)
+                    nans = fuv_attenuation.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
                 else:
                     log.warning("The number of NaN values in the FUV attenuation map is very high (" + str(relnans*100) + "%)")
                     nans = None
