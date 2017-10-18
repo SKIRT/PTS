@@ -2848,6 +2848,7 @@ class Frame(NDDataArray):
         # Put back NaNs
         if preserve_nans: new_data[nans_mask] = nan_value
 
+        # Don't mess up the scale
         # Set values lower than min to min value
         # and values above max to max value
         new_data[new_data < min_value] = min_value
@@ -2934,7 +2935,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask, sigma=None, max_iterations=2):
+    def interpolate(self, mask, sigma=None, max_iterations=10):
 
         """
         Thisfunction ...
@@ -3010,6 +3011,13 @@ class Frame(NDDataArray):
         # Create the kernel
         kernel = Gaussian2DKernel(stddev=sigma)
 
+        # Get the current minimum and maximum of the frame
+        min_value = self.min
+        max_value = self.max
+
+        # Debugging
+        log.debug("The minimum and maximum value of the frame before interpolation is " + tostr(min_value) + " and " + tostr(max_value))
+
         # Debugging
         log.debug("Interpolation iteration 1 ...")
 
@@ -3032,7 +3040,18 @@ class Frame(NDDataArray):
             # Increment the niterations counter
             niterations += 1
 
-            #print(result)
+        # Determine new min and max value
+        new_min_value = np.nanmin(self.min)
+        new_max_value = np.nanmax(self.max)
+
+        # Debugging
+        log.debug("The minimum and maximum value of the frame after interpolation is " + tostr(new_min_value) + " and " + tostr(new_max_value))
+
+        # Don't mess up the scale
+        # Set values lower than min to min value
+        # and values above max to max value
+        result[result < min_value] = min_value
+        result[result > max_value] = max_value
 
         # Replace the data
         self._data = result
@@ -3051,7 +3070,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_infs(self, sigma=None, max_iterations=2):
+    def interpolate_infs(self, sigma=None, max_iterations=10):
 
         """
         This function ...
@@ -3061,6 +3080,31 @@ class Frame(NDDataArray):
         """
 
         self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations)
+
+    # -----------------------------------------------------------------
+
+    def interpolated_zeroes(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.interpolated(self.zeroes, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_zeroes(self, sigma=None, max_iterations=10):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :return:
+        """
+
+        self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations)
 
     # -----------------------------------------------------------------
 
