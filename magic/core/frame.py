@@ -3042,6 +3042,42 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def interpolate_nans_if_below(self, threshold=0.7, sigma=None, max_iterations=None, min_max_in=None):
+
+        """
+        This function ...
+        :param threshold:
+        :param sigma:
+        :param min_max_in:
+        :return:
+        """
+
+        # Get the number of relative nnans
+        relnans = self.relative_nnans
+
+        # UNDER THRESHOLD
+        if relnans < threshold:
+
+            # Debugging
+            log.debug("The relative number of NaN values in the frame is " + str(relnans * 100) + "%")
+
+            # Interpolate, returning the nans
+            nans = self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, min_max_in=min_max_in)
+
+        # ABOVE THRESHOLD
+        else:
+
+            # Give warning
+            log.warning("The number of NaN values in the frame is very high (" + str(relnans * 100) + "%)")
+
+            # Set nans to None
+            nans = None
+
+        # Return the nans, None if nothing is done
+        return nans
+
+    # -----------------------------------------------------------------
+
     def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """

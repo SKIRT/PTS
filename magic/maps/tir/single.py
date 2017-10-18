@@ -23,6 +23,7 @@ from ....magic.core.frame import Frame
 from ....core.basics.configurable import Configurable
 from ....magic.core.list import FrameList
 from ....core.tools.stringify import tostr
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -91,6 +92,9 @@ class SingleBandTIRMapMaker(Configurable):
         # The Galametz TIR calibration object
         self.galametz = GalametzTIRCalibration()
 
+        # Region of interest
+        self.region_of_interest = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -128,6 +132,9 @@ class SingleBandTIRMapMaker(Configurable):
 
         # Get maps that have already been created
         if "maps" in kwargs: self.maps = kwargs.pop("maps")
+
+        # Get region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
     # -----------------------------------------------------------------
 
@@ -215,10 +222,15 @@ class SingleBandTIRMapMaker(Configurable):
             tir.fwhm = frame.fwhm
 
             # Interpolate NaNs
-            tir.interpolate_nans(max_iterations=None)
+            #tir.interpolate_nans(max_iterations=None)
+            nans = tir.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+            tir.replace_negatives(0.0)
+            image = Image()
+            image.add_frame(tir, "tir")
+            if nans is not None: image.add_mask(nans, "nans")
 
             # Set the TIR map
-            self.maps[name] = tir
+            self.maps[name] = image
 
     # -----------------------------------------------------------------
 

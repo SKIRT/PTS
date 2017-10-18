@@ -21,6 +21,7 @@ from ....core.tools import sequences
 from ....core.basics.configurable import Configurable
 from ....magic.core.list import FrameList
 from ....core.tools.stringify import tostr
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -119,6 +120,9 @@ class MultiBandTIRMapMaker(Configurable):
         # Lengths
         self.lengths = None
 
+        # Region of interest
+        self.region_of_interest = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -160,6 +164,9 @@ class MultiBandTIRMapMaker(Configurable):
 
         # Get the method name
         self.method_name = kwargs.pop("method_name", None)
+
+        # Get region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
     # -----------------------------------------------------------------
 
@@ -275,10 +282,15 @@ class MultiBandTIRMapMaker(Configurable):
             #combination = tuple([fltr for fltr in filters])
 
             # Interpolate NaNs (although normally there aren't any)
-            tir.interpolate_nans(max_iterations=None)
+            #tir.interpolate_nans(max_iterations=None)
+            nans = tir.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+            tir.replace_negatives(0.0)
+            image = Image()
+            image.add_frame(tir, "tir")
+            if nans is not None: image.add_mask(nans, "nans")
 
             # Set the TIR map
-            self.maps[key] = tir
+            self.maps[key] = image
 
     # -----------------------------------------------------------------
 

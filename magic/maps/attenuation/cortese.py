@@ -255,13 +255,7 @@ class CorteseAttenuationMapsMaker(Configurable):
             if tir_to_fuv is not None:
 
                 # Interpolate NaNs in TIR to FUV
-                relnans = tir_to_fuv.relative_nnans
-                if relnans < 0.7:
-                    log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
-                    tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
-                else:
-                    log.warning("The number of NaN values in the TIR to FUV map is very high (" + str(relnans*100) + "%)")
-                    tirfuv_nans = None
+                tirfuv_nans = tir_to_fuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
 
                 # Create image with mask
                 tir_to_fuv_image = Image()
@@ -326,13 +320,7 @@ class CorteseAttenuationMapsMaker(Configurable):
                 fuv_attenuation.fwhm = frames.fwhm
 
                 # Interpolate
-                relnans = fuv_attenuation.relative_nnans
-                if relnans < 0.7:
-                    log.debug("The relative number of NaN values in the FUV attenuation map is " + str(relnans*100) + "%")
-                    nans = fuv_attenuation.interpolate_nans(max_iterations=None, min_max_in=self.region_of_interest)
-                else:
-                    log.warning("The number of NaN values in the FUV attenuation map is very high (" + str(relnans*100) + "%)")
-                    nans = None
+                nans = fuv_attenuation.interpolate_nans_if_below(min_max_in=self.region_of_interest)
                 image = Image()
                 image.add_frame(fuv_attenuation, "fuv_attenuation")
                 if nans is not None: image.add_mask(nans, "nans")

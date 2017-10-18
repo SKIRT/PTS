@@ -265,7 +265,7 @@ class TIRMapMaker(MapsComponent):
 
         # Run
         frames, errors = self.load_data_singleband()
-        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
+        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name, region_of_interest=self.truncation_ellipse)
 
         # Set the maps
         self.maps[method_name] = maker.maps
@@ -300,7 +300,7 @@ class TIRMapMaker(MapsComponent):
 
         # Run
         frames, errors = self.load_data_multiband()
-        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
+        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name, region_of_interest=self.truncation_ellipse)
 
         # Set the maps
         self.maps[method_name] = maker.maps
