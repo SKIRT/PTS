@@ -29,33 +29,17 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     :return: 
     """
 
-    # Conversions necessary? -> YES!
-
-    ## Convert the FUV map from Lsun to W/m2
-    #assert self.frames["GALEX FUV"].unit == "Lsun"
-    ## Convert the TIR map from Lsun to W / m2
-    #conversion_factor = 1.0
-    # Conversion from Lsun to W
-    #conversion_factor *= solar_luminosity.to("W").value
-    # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-    #distance = self.galaxy_properties.distance
-    #conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
-    # FUV in W/M2
-    #self.fuv_si = self.frames["GALEX FUV"] * conversion_factor
-    #self.fuv_si.unit = "W/m2"
-
-    ## Convert the TIR map from Lsun to W / m2
-    #conversion_factor = 1.0
-    # Conversion from Lsun to W
-    #conversion_factor *= solar_luminosity.to("W").value
-    # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-    #distance = self.galaxy_properties.distance
-    #conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
-    ## CONVERT AND SET NEW UNIT
-    #self.tir_si = Frame(tir_map * conversion_factor)
-    #self.tir_si.unit = "W/m2"
-
     # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
+
+    # Debugging
+    log.debug("Creating a TIR to UV map ...")
+
+    # Get the distance
+    if "distance" in kwargs: distance = kwargs.pop("distance")
+    else:
+        distance = tir.distance
+        if distance is None: distance = fuv.distance
+        if distance is None: raise ValueError("Distance could not be determined")
 
     ## FUV IN W/M2
 
@@ -67,13 +51,13 @@ def make_tir_to_uv(tir, fuv, **kwargs):
 
     # FIRST CONVERT THEM BOTH (UNITS ARE IN FACT DIFFERENT, ONE IS DENSITY, OTHER IS NOT)
     fuv = fuv.copy()
-    fuv.convert_to("W/m2", density=True, density_strict=True, brightness=False, brightness_strict=True, **kwargs) # here it is a neutral density!
+    fuv.convert_to("W/m2", density=True, density_strict=True, brightness=False, brightness_strict=True, distance=distance) # here it is a neutral density!
 
     # UNIT CONVERSION OF TIR MAP
     tir = tir.copy()
     tir_map_data = tir.data.astype('float64') # Necessary for extreme conversion factors
     #factor = tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
-    factor = tir.unit.conversion_factor("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True, **kwargs) # HERE IT IS BOLOMETRIC, AND NO FLUX!!!!
+    factor = tir.unit.conversion_factor("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True, distance=distance, pixelscale=tir.pixelscale) # HERE IT IS BOLOMETRIC, AND NO FLUX!!!!
     log.debug("Conversion factor for the TIR map from " + tostr(tir.unit, add_physical_type=True) + " to W/m2 is " + str(factor))
     tir._data = tir_map_data * factor
 

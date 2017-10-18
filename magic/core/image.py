@@ -589,6 +589,50 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def psf_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.psf_filter if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        Thisfunction ...
+        :param value:
+        :return:
+        """
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Inform the user
+            log.debug("Setting the PSF filter of the " + frame_name + " frame ...")
+
+            # Set the PSF filter for this frame
+            self.frames[frame_name].psf_filter = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return str(self.psf_filter) if self.psf_filter is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def wcs(self):
 
         """
@@ -911,6 +955,9 @@ class Image(object):
             header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
             header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+
+        # Set PSF FILTER
+        if self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")
 
         # Set filter
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")

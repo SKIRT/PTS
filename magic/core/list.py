@@ -3525,6 +3525,9 @@ def convolve_to_fwhm_local(*frames, **kwargs):
             # Convolve with the kernel
             convolved = frame.convolved(kernel)
 
+            # Set the PSF filter to be sure
+            convolved.psf_filter = highest_fwhm_filter
+
             # Set the name
             if names is not None: convolved.name = names[index]
 
