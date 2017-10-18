@@ -289,6 +289,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
 
     # Import astronomical modules
     from astropy.visualization import SqrtStretch, LogStretch
+    from astropy.visualization import LinearStretch, HistEqStretch
     from astropy.visualization.mpl_normalize import ImageNormalize
     from astropy.visualization import MinMaxInterval, ZScaleInterval
 
@@ -375,6 +376,8 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # Normalization
     if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
     elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
+    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch(), vmin=vmin, vmax=vmax)
+    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data), vmin=vmin, vmax=vmax)
     else: raise ValueError("Invalid option for 'scale'")
 
     # Normalize

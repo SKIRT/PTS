@@ -266,7 +266,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     if scale == "log": norm = ImageNormalize(stretch=LogStretch())
     elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
     elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch())
-    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch())
+    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data))
     #elif scale == "skimage": norm = exposure.equalize_hist
     else: raise ValueError("Invalid option for 'scale'")
 
