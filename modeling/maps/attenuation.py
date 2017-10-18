@@ -231,7 +231,8 @@ class AttenuationMapMaker(MapsComponent):
         else: current = self.get_current_maps_method(method_name)
 
         # Run the map maker
-        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods, method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
+        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods,
+                  method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
 
         #print("Maker methods", maker.methods.keys())
         #print("keys", maker.maps.keys())

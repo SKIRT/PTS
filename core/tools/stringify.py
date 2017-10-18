@@ -205,9 +205,9 @@ def stringify_list(value, **kwargs):
     elif "delimiter" in value_kwargs: del value_kwargs["delimiter"]
 
     # If delimiter is passed for stringifying the keys in the list
-    key_kwargs = copy.copy(kwargs)
-    if "key_delimiter" in key_kwargs: key_kwargs["delimiter"] = key_kwargs.pop("key_delimiter")
-    elif "delimiter" in key_kwargs: del key_kwargs["delimiter"]
+    #key_kwargs = copy.copy(kwargs)
+    #if "key_delimiter" in key_kwargs: key_kwargs["delimiter"] = key_kwargs.pop("key_delimiter")
+    #elif "delimiter" in key_kwargs: del key_kwargs["delimiter"]
 
     # If quotes have to be added
     add_quotes = kwargs.pop("add_quotes", False)
@@ -221,7 +221,7 @@ def stringify_list(value, **kwargs):
         #print("Herekwargs", kwargs)
 
         #parsetype, val = stringify_not_list(entry)
-        parsetype, val = stringify(entry, **key_kwargs)
+        parsetype, val = stringify(entry, **value_kwargs)
 
         #from ..basics.configuration import parent_type
         #if add_quotes and parent_type(parsetype) == "string":
