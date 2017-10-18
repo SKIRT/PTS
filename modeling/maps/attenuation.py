@@ -212,10 +212,6 @@ class AttenuationMapMaker(MapsComponent):
         tirs_origins = self.get_tir_origins(flatten=True, methods=self.config.tir_methods)
         tirs_methods = self.get_tir_methods(flatten=True, methods=self.config.tir_methods)
 
-        print(tirs.keys())
-        print(tirs_origins.keys())
-        print(tirs_methods.keys())
-
         # Get only certain TIR maps
         if self.config.tirs is not None:
             tirs = create_subdict(tirs, self.config.tirs)

@@ -2947,7 +2947,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False):
+    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
 
         """
         Thisfunction ...
@@ -2955,6 +2955,7 @@ class Frame(NDDataArray):
         :param sigma:
         :param max_iterations:
         :param plot:
+        :param not_converge:
         :return:
         """
 
@@ -2967,7 +2968,7 @@ class Frame(NDDataArray):
         self[mask] = nan_value
 
         # Interpolate the nans
-        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot)
+        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
         except RuntimeError as e:
 
             # Reset the original values (e.g. infs)
@@ -3001,13 +3002,15 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False):
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
         :param plot:
+        :param not_converge: what to do with NaN values when the number of NaN pixels does not converge to zero?
+        #                     -> "error', or "keep"
         :return:
         """
 
@@ -3049,6 +3052,7 @@ class Frame(NDDataArray):
         if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration " + str(niterations))
 
         # Get the current number of nans
+        previous_nnans = None # don't get it for performance
         nnans = np.sum(np.isnan(result))
 
         # Debugging
@@ -3070,7 +3074,16 @@ class Frame(NDDataArray):
             niterations += 1
 
             # Get the current number of nans
+            previous_nnans = nnans
             nnans = np.sum(np.isnan(result))
+
+            # Not converging
+            if nnans >= previous_nnans:
+                if not_converge == "keep":
+                    log.warning("The number of NaNs could not converge to zero: some NaN values will remain")
+                    break # break the loop
+                elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero")
+                else: raise ValueError("Invalid option for 'not_converge'")
 
             # Debugging
             log.debug("The number of NaN values after iteration " + str(niterations) + " is " + str(nnans))
@@ -3115,17 +3128,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_infs(self, sigma=None, max_iterations=10, plot=False):
+    def interpolate_infs(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
         :param plot:
+        :param not_converge:
         :return:
         """
 
-        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot)
+        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
 
     # -----------------------------------------------------------------
 
@@ -3141,17 +3155,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_zeroes(self, sigma=None, max_iterations=10, plot=False):
+    def interpolate_zeroes(self, sigma=None, max_iterations=10, plot=False, not_converge="keep"):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
         :param plot:
+        :param not_converge:
         :return:
         """
 
-        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations, plot=plot)
+        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge)
 
     # -----------------------------------------------------------------
 
