@@ -776,6 +776,30 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sigma(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.get_simple_property(self.label, "sigma")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.get_simple_property(self.label, "sigma_pix")
+
+    # -----------------------------------------------------------------
+
     def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """

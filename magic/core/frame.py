@@ -25,6 +25,8 @@ from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 from astropy.units import UnitConversionError
+from astropy.convolution import interpolate_replace_nans
+from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
@@ -1968,6 +1970,32 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def sigma(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        from ..tools import statistics
+        return self.fwhm * statistics.fwhm_to_sigma if self.fwhm is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma_pix(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        from ..tools import statistics
+        return self.fwhm_pix * statistics.fwhm_to_sigma if self.fwhm is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def header(self):
 
         """
@@ -2888,6 +2916,151 @@ class Frame(NDDataArray):
 
         # BUT SET THE SMOOTHING FACTOR
         self.smoothing_factor *= factor
+
+    # -----------------------------------------------------------------
+
+    def interpolated(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        new = self.copy()
+        new.interpolate(*args, **kwargs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def interpolate(self, mask, sigma=None, max_iterations=2):
+
+        """
+        Thisfunction ...
+        :param mask:
+        :param sigma:
+        :param max_iterations:
+        :return:
+        """
+
+        # Get a mask of the original NaN pixels
+        original_nans = self.nans
+        # Set originally NaN pixels to something else? zero?
+
+        # Set nans at masked pixels
+        original_values = self[mask]
+        self[mask] = nan_value
+
+        # Interpolate the nans
+        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations)
+        except RuntimeError as e:
+
+            # Reset the original values (e.g. infs)
+            self[mask] = original_values
+
+            # Set original Nans Back to Nan
+            self[original_nans] = nan_value
+
+            # Reraise the error
+            raise e
+
+        # Set original NaNs back to NaN
+        self[original_nans] = nan_value
+
+    # -----------------------------------------------------------------
+
+    def interpolated_nans(self, **kwargs):
+
+        """
+        Thisfunction ...
+        :param kwargs:
+        :return:
+        """
+
+        new = self.copy()
+        new.interpolate_nans(**kwargs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def interpolate_nans(self, sigma=None, max_iterations=2):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :return:
+        """
+
+        # Determine sigma
+        if sigma is None:
+
+            # Check whether we have the necessary information
+            if self.fwhm is None: raise ValueError("FWHM of the frame should be defined or sigma should be passed")
+            if self.pixelscale is None: raise ValueError("Pixelscale of the frame is not defined")
+
+            # Get the sigma in pixels
+            sigma = self.sigma_pix
+
+        # Debugging
+        log.debug("Creating a kernel with a sigma of " + tostr(sigma) + " pixels ...")
+
+        # We smooth with a Gaussian kernel with stddev passed by the user
+        # Create the kernel
+        kernel = Gaussian2DKernel(stddev=sigma)
+
+        # Debugging
+        log.debug("Interpolation iteration 1 ...")
+
+        # Generate the interpolated result
+        result = interpolate_replace_nans(self.data, kernel)
+        niterations = 1
+
+        # Are there still NaNs?
+        while np.any(np.isnan(result)):
+
+            # Check number of iterations
+            if niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+
+            # Debugging
+            log.debug("Interpolation iteration 2 ...")
+
+            # Perform next interpolation
+            result = interpolate_replace_nans(result, kernel)
+
+            # Increment the niterations counter
+            niterations += 1
+
+            #print(result)
+
+        # Replace the data
+        self._data = result
+
+    # -----------------------------------------------------------------
+
+    def interpolated_infs(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.interpolated(self.infs, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_infs(self, sigma=None, max_iterations=2):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :return:
+        """
+
+        self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations)
 
     # -----------------------------------------------------------------
 

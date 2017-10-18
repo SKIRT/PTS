@@ -741,7 +741,7 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_rgba_plot(self, name, frame, filepath, around_zero=False):
+    def make_rgba_plot(self, name, frame, filepath, around_zero=False, scale=None):
 
         """
         This function ...
@@ -749,6 +749,7 @@ class AllMapsPageGenerator(MapsComponent):
         :param frame:
         :param filepath:
         :param around_zero:
+        :param scale: if None, configured value is used
         :return:
         """
 
@@ -776,8 +777,11 @@ class AllMapsPageGenerator(MapsComponent):
             symmetric = False
             alpha = "absolute"
 
+        # Set scale
+        if scale is None: scale = self.config.scale
+
         # Make RGBA image
-        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha)
+        rgba = frame.to_rgba(scale=scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha)
         rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
 
         # Save
@@ -1055,14 +1059,16 @@ class AllMapsPageGenerator(MapsComponent):
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            print(name, is_fir_colour(name))
-
             # Check whether it is a FIR colour
-            if is_fir_colour(name) or is_fir_or_submm_colour(name): around_zero = True
-            else: around_zero = False
+            if is_fir_colour(name) or is_fir_or_submm_colour(name):
+                around_zero = True
+                scale = "linear"
+            else:
+                around_zero = False
+                scale = None # configured value will be used
 
             # Make the plot
-            self.make_rgba_plot(name, self.colour_maps[name], filepath, around_zero=around_zero)
+            self.make_rgba_plot(name, self.colour_maps[name], filepath, around_zero=around_zero, scale=scale)
 
     # -----------------------------------------------------------------
 

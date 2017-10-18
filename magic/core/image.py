@@ -545,13 +545,46 @@ class Image(object):
         :return:
         """
 
-        if not self.has_frames: return None
+        if self.fwhm is None: return None
+        #if not self.has_frames: return None
 
         # Get the FWHM in sky coordinates
         fwhm = self.fwhm
 
         # Convert into pixels
         return (fwhm / self.average_pixelscale).to("").value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.fwhm is None: return None
+        #if not self.has_frames: return None
+
+        from ..tools import statistics
+        return self.fwhm * statistics.fwhm_to_sigma if self.fwhm is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sigma_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.fwhm is None: return None
+        #if not self.has_frames: return None
+
+        from ..tools import statistics
+        return self.fwhm_pix * statistics.fwhm_to_sigma if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
 
