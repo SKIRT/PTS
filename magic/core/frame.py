@@ -1079,6 +1079,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def relative_nnans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nnans / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_nans(self):
 
         """
@@ -2988,7 +3000,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=2):
+    def interpolate_nans(self, sigma=None, max_iterations=10):
 
         """
         This function ...

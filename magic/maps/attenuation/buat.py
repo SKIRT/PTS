@@ -242,7 +242,10 @@ class BuatAttenuationMapsMaker(Configurable):
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
 
             # Interpolate NaNs in TIR to FUV
-            tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+            if tir_to_fuv.relative_nnans < 0.7: tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+            else:
+                log.warning("The number of NaN values in the TIR to FUV map is very high")
+                tirfuv_nans = None
 
             # Make the log10 of the TIR to FUV map
             log_tir_to_fuv = Frame(np.log10(tir_to_fuv.data), wcs=tir_to_fuv.wcs)
@@ -253,7 +256,7 @@ class BuatAttenuationMapsMaker(Configurable):
                 # Create image with mask
                 tir_to_fuv_image = Image()
                 tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
-                tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+                if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
 
                 # Set image
                 self.tirtofuvs[name] = tir_to_fuv_image
@@ -332,7 +335,10 @@ class BuatAttenuationMapsMaker(Configurable):
             tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
 
             # Interpolate NaNs in TIR to FUV
-            tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
+            if tir_to_nuv.relative_nnans < 0.7: tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
+            else:
+                log.warning("The number of NaN values in the TIR to NUV map is very high")
+                tirnuv_nans = None
 
             # Create log10 of TIR to NUV
             log_tir_to_nuv = Frame(np.log10(tir_to_nuv.data), wcs=tir_to_nuv.wcs)
@@ -343,7 +349,7 @@ class BuatAttenuationMapsMaker(Configurable):
                 # Create image with mask
                 tir_to_nuv_image = Image()
                 tir_to_nuv_image.add_frame(tir_to_nuv, "tir_to_nuv")
-                tir_to_nuv_image.add_mask(tirnuv_nans, "nans")
+                if tirnuv_nans is not None: tir_to_nuv_image.add_mask(tirnuv_nans, "nans")
 
                 # Set image
                 self.tirtonuvs[name] = tir_to_nuv_image

@@ -249,12 +249,15 @@ class CorteseAttenuationMapsMaker(Configurable):
             if tir_to_fuv is not None:
 
                 # Interpolate NaNs in TIR to FUV
-                tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+                if tir_to_fuv.relative_nnans < 0.7: tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+                else:
+                    log.warning("The number of NaN values in the TIR to FUV map is very high")
+                    tirfuv_nans = None
 
                 # Create image with mask
                 tir_to_fuv_image = Image()
                 tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
-                tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+                if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
 
                 # Add the image
                 self.tirtofuvs[name] = tir_to_fuv_image
