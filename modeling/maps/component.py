@@ -33,6 +33,8 @@ from .collection import MapsCollection, StaticMapsCollection
 from .selection import ComponentMapsSelection, StaticComponentMapsSelection
 from pts.core.tools.utils import lazyproperty
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ...core.basics.configuration import prompt_string_list
+from ...core.basics.containers import create_subdict
 
 # -----------------------------------------------------------------
 
@@ -280,6 +282,60 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_colour_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_colour_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def select_ssfr_maps(self, names=None, methods=None, prompt=False, title="sSFR maps"):
+
+        """
+        This function ...
+        :param names:
+        :param methods:
+        :param prompt:
+        :param title:
+        :return:
+        """
+
+        # Get maps
+        ssfrs = self.get_ssfr_maps(flatten=True)
+
+        # Origins
+        ssfrs_origins = self.get_ssfr_origins(flatten=True)
+
+        # Methods
+        ssfrs_methods = self.get_ssfr_methods(flatten=True)
+
+        # Nans
+        ssfrs_nans = self.get_ssfr_nans(flatten=True)
+
+        # Get only certain sSFR maps
+        if names is not None:
+            ssfrs = create_subdict(ssfrs, names)
+            ssfrs_origins = create_subdict(ssfrs_origins, names)
+            ssfrs_methods = create_subdict(ssfrs_methods, names)
+            ssfrs_nans = create_subdict(ssfrs_nans, names)
+
+        # Select interactively
+        if prompt:
+            ssfrs, ssfr_names = select_maps(ssfrs, title, return_names=True)
+            ssfrs_origins = create_subdict(ssfrs_origins, ssfr_names)
+            ssfrs_methods = create_subdict(ssfrs_methods, ssfr_names)
+
+        # Return
+        return ssfrs, ssfrs_origins, ssfrs_methods, ssfrs_nans
+
+    # -----------------------------------------------------------------
+
     def get_ssfr_maps(self, flatten=False, framelist=False):
 
         """
@@ -290,6 +346,60 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_ssfr_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_nans(self, flatten=False, framelist=False):
+
+        """
+        Thisfunction ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_ssfr_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def select_tir_maps(self, names=None, methods=None, prompt=False, title="TIR maps"):
+
+        """
+        This function ...
+        :param names:
+        :param methods:
+        :param prompt:
+        :param title:
+        :return:
+        """
+
+        # Get maps
+        tirs = self.get_tir_maps(flatten=True, methods=methods)
+
+        # Origins
+        tirs_origins = self.get_tir_origins(flatten=True, methods=methods)
+
+        # Methods
+        tirs_methods = self.get_tir_methods(flatten=True, methods=methods)
+
+        # Nans
+        tirs_nans = self.get_tir_nans(flatten=True, methods=methods)
+
+        # Get only certain TIR maps
+        if names is not None:
+            tirs = create_subdict(tirs, names)
+            tirs_origins = create_subdict(tirs_origins, names)
+            tirs_methods = create_subdict(tirs_methods, names)
+            tirs_nans = create_subdict(tirs_nans, names)
+
+        # Select interactively
+        if prompt:
+            tirs, tir_names = select_maps(tirs, title, return_names=True)
+            tirs_origins = create_subdict(tirs_origins, tir_names)
+            tirs_methods = create_subdict(tirs_methods, tir_names)
+
+        # Return
+        return tirs, tirs_origins, tirs_methods, tirs_nans
 
     # -----------------------------------------------------------------
 
@@ -334,6 +444,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_attenuation_nans(self, flatten=False, framelist=False):
+
+        """
+        Thisfunction ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_attenuation_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_old_maps(self, flatten=False, framelist=False):
 
         """
@@ -344,6 +467,19 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_old_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_old_nans(self, flatten=False, framelist=False):
+
+        """
+        Thisnfunction ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_old_nans(flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -360,6 +496,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_young_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_young_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_ionizing_maps(self, flatten=False, framelist=False):
 
         """
@@ -373,6 +522,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_ionizing_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_ionizing_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_dust_maps(self, flatten=False, framelist=False):
 
         """
@@ -383,6 +545,19 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_dust_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_dust_nans(flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -2438,5 +2613,30 @@ class MapsComponent(MapMakerBase):
 
                 # Save the map
                 #self.maps[method][name].saveto(map_path)
+
+# -----------------------------------------------------------------
+
+def select_maps(maps, title, return_names=False):
+
+    """
+    This function ...
+    :param maps:
+    :param title:
+    :param return_names:
+    :return:
+    """
+
+    # Select names interactively
+    names = prompt_string_list("names", title, choices=maps.keys())
+
+    # New maps
+    new_maps = dict()
+
+    # Get selection
+    for name in names: new_maps[name] = maps[name]
+
+    # Return the selected maps
+    if return_names: return new_maps, names
+    else: return new_maps
 
 # -----------------------------------------------------------------

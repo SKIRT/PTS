@@ -275,6 +275,9 @@ class BuatAttenuationMapsMaker(Configurable):
                 log.success("The " + name + " attenuation map is already created: not creating it again")
                 continue
 
+            # Debugging
+            log.debug("Creating the '" + key + "' attenuation map ...")
+
             # Make the TIR to FUV map
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
 
@@ -317,10 +320,14 @@ class BuatAttenuationMapsMaker(Configurable):
             attenuation.replace_negatives(0.0)
             image = Image()
             image.add_frame(attenuation, "fuv_attenuation")
-            if nans is not None: image.add_mask(nans, "nans")
+            nan_masks = []
+            if nans is not None: nan_masks.append(nans)
+            if self.has_nans_for_name(name): nan_masks.append(self.tirs_nans[name])
+            if len(nan_masks) > 0:
+                nans = union(*nan_masks, rebin=True)
+                image.add_mask(nans, "nans")
 
-            # Set
-            #self.maps[key] = attenuation
+            # Set image
             self.maps[key] = image
 
     # -----------------------------------------------------------------
@@ -362,8 +369,11 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Check whether a map is already present
             if key in self.maps:
-                log.success("The " + name + " attenuation map is already created: not creating it again")
+                log.success("The '" + key + "' attenuation map is already created: not creating it again")
                 continue
+
+            # Debugging
+            log.debug("Creating the '" + key + "' attenuation map ...")
 
             # Calculate TIR to NUV map
             tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
@@ -407,13 +417,14 @@ class BuatAttenuationMapsMaker(Configurable):
             attenuation.replace_negatives(0.0)
             image = Image()
             image.add_frame(attenuation, "nuv_attenuation")
-            if nans is not None:
-                if self.has_nans_for_name(name): image.add_mask(union(nans, self.tirs_nans[name]), "nans")
-                else: image.add_mask(nans, "nans")
-            elif self.has_nans_for_name(name): image.add_mask(self.tirs_nans[name], "nans")
+            nan_masks = []
+            if nans is not None: nan_masks.append(nans)
+            if self.has_nans_for_name(name): nan_masks.append(self.tirs_nans[name])
+            if len(nan_masks) > 0:
+                nans = union(*nan_masks, rebin=True)
+                image.add_mask(nans, "nans")
 
-            # Set
-            #self.maps[key] = attenuation
+            # Set image
             self.maps[key] = image
 
     # -----------------------------------------------------------------

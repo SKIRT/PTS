@@ -843,6 +843,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_colour_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_colours_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_ssfr_map_paths(self, flatten=False):
 
         """
@@ -865,6 +878,19 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -933,6 +959,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_attenuation_nans(self, flatten=False, framelist=False):
+
+        """
+        Thisfunction ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_attenuation_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_old_map_paths(self, flatten=False):
 
         """
@@ -955,6 +994,19 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_old_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_old_nans(self, flatten=False, framelist=False):
+
+        """
+        Thisn function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_old_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -983,6 +1035,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_young_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_young_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_ionizing_map_paths(self, flatten=False):
 
         """
@@ -1008,6 +1073,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_ionizing_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_ionizing_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_dust_map_paths(self, flatten=False):
 
         """
@@ -1030,6 +1108,19 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_dust_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_nans(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_dust_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 

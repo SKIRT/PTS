@@ -27,6 +27,7 @@ from ....core.tools import sequences
 from ...core.list import NamedFrameList
 from ...tools import plotting
 from ....magic.core.image import Image
+from ....magic.core.mask import union
 
 # -----------------------------------------------------------------
 
@@ -94,6 +95,10 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_methods = None
         self.ssfrs_methods = None
 
+        # NaNs
+        self.tirs_nans = None
+        self.ssfrs_nans = None
+
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
         # FUV − NIR/optical colours.
@@ -110,6 +115,9 @@ class CorteseAttenuationMapsMaker(Configurable):
 
         # The methods
         self.methods = dict()
+
+        # Method name
+        self.method_name = None
 
         # The TIR to FUV maps
         self.tirtofuvs = dict()
@@ -159,6 +167,10 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_methods = kwargs.pop("tirs_methods", None)
         self.ssfrs_methods = kwargs.pop("ssfrs_methods", None)
 
+        # Get NaN maps
+        self.tirs_nans = kwargs.pop("tirs_nans", None)
+        self.ssfrs_nans = kwargs.pop("ssfrs_nans", None)
+
         # Get method name
         self.method_name = kwargs.pop("method_name", None)
         if self.has_methods and self.method_name is None: raise ValueError("Method name should be specified when methods are given")
@@ -195,6 +207,66 @@ class CorteseAttenuationMapsMaker(Configurable):
         """
 
         return self.tirs_methods is not None and self.ssfrs_methods is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tirs_nans(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.tirs_nans is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfrs_nans(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.ssfrs_nans is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tirs_nans is not None and self.ssfrs_nans is not None
+
+    # -----------------------------------------------------------------
+
+    def has_nans_for_tir(self, tir_name):
+
+        """
+        This function ...
+        :param tir_name:
+        :return:
+        """
+
+        return self.has_tirs_nans and tir_name in self.tirs_nans
+
+    # -----------------------------------------------------------------
+
+    def has_nans_for_ssfr(self, ssfr_name):
+
+        """
+        Thisnfunction ...
+        :param ssfr_name:
+        :return:
+        """
+
+        return self.has_ssfrs_nans and ssfr_name in self.ssfrs_nans
 
     # -----------------------------------------------------------------
 
@@ -244,7 +316,8 @@ class CorteseAttenuationMapsMaker(Configurable):
         # Loop over the different TIR maps
         for name in self.tirs:
 
-            #print(name, self.tirs[name])
+            # Debugging
+            log.debug("Creating attenuation maps with the '" + name + "' TIR map ...")
 
             # Make the TIR to FUV map
             if need_any: tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
@@ -291,8 +364,11 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Check whether a map is already present
                 if key in self.maps:
-                    log.success("The " + name + " attenuation map is already created: not creating it again")
+                    log.success("The '" + key + "' attenuation map is already created: not creating it again")
                     continue
+
+                # Debugging
+                log.debug("Creating the '" + key + "' attenuation map ...")
 
                 # Get the ssfr map
                 ssfr = self.ssfrs[ssfr_colour]
@@ -323,7 +399,14 @@ class CorteseAttenuationMapsMaker(Configurable):
                 nans = fuv_attenuation.interpolate_nans_if_below(min_max_in=self.region_of_interest)
                 image = Image()
                 image.add_frame(fuv_attenuation, "fuv_attenuation")
-                if nans is not None: image.add_mask(nans, "nans")
+
+                nan_masks = []
+                if nans is not None: nan_masks.append(nans)
+                if self.has_nans_for_ssfr(ssfr_colour): nan_masks.append(self.ssfrs_nans[ssfr_colour])
+                if self.has_nans_for_tir(name): nan_masks.append(self.tirs_nans[name])
+                if len(nan_masks) > 0:
+                    nans = union(*nan_masks, rebin=True)
+                    image.add_mask(nans, "nans")
 
                 # Set attenuation to zero where the original FUV map is smaller than zero
                 fuv_attenuation[frames["fuv"] < 0.0] = 0.0
