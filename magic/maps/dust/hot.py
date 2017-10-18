@@ -263,7 +263,10 @@ class HotDustMapsMaker(Configurable):
             frames.convolve_and_rebin()
 
             # CHECK IF OLD IS STILL NORMALIZED
-            if not normalized_old.is_normalized(): raise RuntimeError("Normalization of old stellar map failed")
+            if not normalized_old.is_normalized():
+                #raise RuntimeError("Normalization of old stellar map failed")
+                log.warning("Need to re-normalize the old stellar map")
+                normalized_old.normalize()
 
             # Loop over the different factors
             for factor in self.factors:

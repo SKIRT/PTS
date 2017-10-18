@@ -250,7 +250,7 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Interpolate NaNs in TIR to FUV
                 relnans = tir_to_fuv.relative_nnans
-                if relnans < 0.2:
+                if relnans < 0.7:
                     log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
                     tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
                 else:
@@ -321,7 +321,7 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Interpolate
                 relnans = fuv_attenuation.relative_nnans
-                if relnans < 0.2:
+                if relnans < 0.7:
                     log.debug("The relative number of NaN values in the FUV attenuation map is " + str(relnans*100) + "%")
                     nans = fuv_attenuation.interpolate_nans(max_iterations=None)
                 else:

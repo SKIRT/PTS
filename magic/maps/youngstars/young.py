@@ -386,6 +386,11 @@ def make_corrected_fuv_map(fuv, old, factor):
     fuv = frames["fuv"]
     old = frames["old"]
 
+    # Need to re-normalize the old stellar map
+    if not old.is_normalized():
+        log.warning("Need to re-normalize the old stellar map")
+        old.normalize()
+
     flux_fuv = fuv.sum()
 
     # typisch 20% en 35% respectievelijk

@@ -3101,13 +3101,21 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     # Debugging
     log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
 
-    # Convert to the corresponding brightness unit
-    #original_unit = frame.convert_to_corresponding_brightness_unit()
-    original_unit = frame.unit
-    conversion_factor = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
+    # CONVERT TO PER ANGULAR OR INTRINSIC AREA, IF UNIT IS DEFINED
+    if frame.unit is not None:
 
-    # Converted?
-    if original_unit != frame.unit: log.debug("Unit has been converted to " + tostr(frame.unit, add_physical_type=True) + " prior to rebinning")
+        # Convert to the corresponding brightness unit
+        #original_unit = frame.convert_to_corresponding_brightness_unit()
+        original_unit = frame.unit
+        conversion_factor = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
+
+        # Converted?
+        if original_unit != frame.unit: log.debug("Unit has been converted to " + tostr(frame.unit, add_physical_type=True) + " prior to rebinning (conversion factor of " + str(conversion_factor) + ")")
+
+    # UNIT IS NOT DEFINED
+    else:
+        log.warning("The unit of the '" + name + "' frame is not defined: make sure it is per unit of angular or intrinsic area (or only the relative variation is important)")
+        original_unit = None
 
     # REBIN remotely
     if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
@@ -3135,144 +3143,147 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
             rebinned = None
         else: rebinned = frame.rebinned(wcs)
 
-    # Debugging
-    log.debug("Converting the unit back to the original unit " + tostr(original_unit, add_physical_type=True))
+    # IF THERE WAS AN ORIGINAL UNIT
+    if original_unit is not None:
 
-    # Convert the original back to the original unit
-    frame.convert_to(original_unit)
+        # Debugging
+        log.debug("Converting the unit back to the original unit " + tostr(original_unit, add_physical_type=True))
+
+        # Convert the original back to the original unit
+        frame.convert_to(original_unit)
 
     # Return rebinned frame
     if not in_place: return rebinned
 
 # -----------------------------------------------------------------
 
-def rebin_frame_old(name, frame, wcs, rebin_remote_threshold=None, session=None, in_place=False):
-
-    """
-    THis function ...
-    :param name:
-    :param frame:
-    :param wcs:
-    :param rebin_remote_threshold:
-    :param session:
-    :param in_place:
-    :return:
-    """
-
-    # Is per pixelsize
-    if frame.unit is not None and frame.unit.is_per_pixelsize:
-
-        # Debugging
-        log.debug("Frame " + name + "is expressed in units per angular or intrinsic area (pixelsize squared)")
-
-        # Debugging
-        log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
-
-        # REBIN remotely
-        if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
-
-            # In place is not possible
-            if in_place: raise ValueError("Cannot enable 'in_place' when frames are remotely rebinned")
-
-            from .remote import RemoteFrame
-            remoteframe = RemoteFrame.from_local(frame, session)
-            remoteframe.rebin(wcs)
-            rebinned = remoteframe.to_local()
-
-        # REBIN locally
-        else:
-
-            # IN PLACE
-            if in_place:
-
-                frame.rebin(wcs)
-                rebinned = None
-
-            # NOT IN PLACE
-            else: rebinned = frame.rebinned(wcs)
-
-    # Not per pixelsize
-    else:
-
-        # Debugging
-        log.debug("Frame " + name + "is not expressed in units per angular or intrinsic area (pixelsize squared)")
-
-        # Debugging
-        # log.debug("Converting frame " + name + "with unit " + str(frame.unit) + " to " + str(frame.corresponding_angular_area_unit) + " prior to rebinning ...")
-        # old_unit = frame.unit
-        # rebinned = frame.converted_to_corresponding_angular_area_unit(**kwargs)
-        # rebinned.rebin(highest_pixelscale_wcs)
-        # Convert back to old unit
-        # rebinned.convert_to(old_unit)
-
-        # print(rebinned)
-
-        # NEW WAY:
-
-        # Converting unit is not necessary if we calculate the ratio of both pixel areas
-        ratio = wcs.pixelarea / frame.wcs.pixelarea
-
-        # Debugging
-        log.debug("Rebinning frame " + name + "and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
-
-        # REBIN
-        # print("threshold", rebin_remote_threshold)
-        # print("FILESIZE", frame.file_size)
-        # print("DATASIZE", frame.data_size)
-        # if rebin_remote_threshold is not None and frame.file_size > rebin_remote_threshold:
-        if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
-
-            # In place is not possible
-            if in_place: raise ValueError("Cannot enable 'in_place' when frames are remotely rebinned")
-
-            from .remote import RemoteFrame
-            remoteframe = RemoteFrame.from_local(frame, session)
-            remoteframe.rebin(wcs)
-            rebinned = remoteframe.to_local()
-
-            # Multiply with ratio
-            if ratio != 1.0: rebinned *= float(ratio)
-
-        # LOCAL
-        else:
-
-            # Rebin and multiply
-            try:
-
-                # IN PLACE
-                if in_place:
-
-                    # Rebin in place
-                    frame.rebin(wcs)
-                    rebinned = None
-
-                    # Multiply with ratio
-                    if ratio != 1.0: frame *= float(ratio)
-
-                # NOT IN PLACE
-                else:
-
-                    # Create rebinned frame
-                    rebinned = frame.rebinned(wcs)
-
-                    # Multiply with ratio
-                    if ratio != 1.0: rebinned *= float(ratio)
-
-            # Something went wrong
-            except ValueError as e:
-
-                print("")
-                print("INPUT WCS:", frame.wcs)
-                print("")
-                print("OUTPUT WCS:", wcs)
-                print("")
-                raise RuntimeError("Rebinning the " + name + " image failed: " + str(e))
-
-        # Multiply with ratio
-        #if ratio != 1.0: rebinned *= float(ratio)
-
-    # Return the rebinned frame
-    if not in_place: return rebinned
+# def rebin_frame_old(name, frame, wcs, rebin_remote_threshold=None, session=None, in_place=False):
+#
+#     """
+#     THis function ...
+#     :param name:
+#     :param frame:
+#     :param wcs:
+#     :param rebin_remote_threshold:
+#     :param session:
+#     :param in_place:
+#     :return:
+#     """
+#
+#     # Is per pixelsize
+#     if frame.unit is not None and frame.unit.is_per_pixelsize:
+#
+#         # Debugging
+#         log.debug("Frame " + name + "is expressed in units per angular or intrinsic area (pixelsize squared)")
+#
+#         # Debugging
+#         log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
+#
+#         # REBIN remotely
+#         if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
+#
+#             # In place is not possible
+#             if in_place: raise ValueError("Cannot enable 'in_place' when frames are remotely rebinned")
+#
+#             from .remote import RemoteFrame
+#             remoteframe = RemoteFrame.from_local(frame, session)
+#             remoteframe.rebin(wcs)
+#             rebinned = remoteframe.to_local()
+#
+#         # REBIN locally
+#         else:
+#
+#             # IN PLACE
+#             if in_place:
+#
+#                 frame.rebin(wcs)
+#                 rebinned = None
+#
+#             # NOT IN PLACE
+#             else: rebinned = frame.rebinned(wcs)
+#
+#     # Not per pixelsize
+#     else:
+#
+#         # Debugging
+#         log.debug("Frame " + name + "is not expressed in units per angular or intrinsic area (pixelsize squared)")
+#
+#         # Debugging
+#         # log.debug("Converting frame " + name + "with unit " + str(frame.unit) + " to " + str(frame.corresponding_angular_area_unit) + " prior to rebinning ...")
+#         # old_unit = frame.unit
+#         # rebinned = frame.converted_to_corresponding_angular_area_unit(**kwargs)
+#         # rebinned.rebin(highest_pixelscale_wcs)
+#         # Convert back to old unit
+#         # rebinned.convert_to(old_unit)
+#
+#         # print(rebinned)
+#
+#         # NEW WAY:
+#
+#         # Converting unit is not necessary if we calculate the ratio of both pixel areas
+#         ratio = wcs.pixelarea / frame.wcs.pixelarea
+#
+#         # Debugging
+#         log.debug("Rebinning frame " + name + "and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
+#
+#         # REBIN
+#         # print("threshold", rebin_remote_threshold)
+#         # print("FILESIZE", frame.file_size)
+#         # print("DATASIZE", frame.data_size)
+#         # if rebin_remote_threshold is not None and frame.file_size > rebin_remote_threshold:
+#         if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
+#
+#             # In place is not possible
+#             if in_place: raise ValueError("Cannot enable 'in_place' when frames are remotely rebinned")
+#
+#             from .remote import RemoteFrame
+#             remoteframe = RemoteFrame.from_local(frame, session)
+#             remoteframe.rebin(wcs)
+#             rebinned = remoteframe.to_local()
+#
+#             # Multiply with ratio
+#             if ratio != 1.0: rebinned *= float(ratio)
+#
+#         # LOCAL
+#         else:
+#
+#             # Rebin and multiply
+#             try:
+#
+#                 # IN PLACE
+#                 if in_place:
+#
+#                     # Rebin in place
+#                     frame.rebin(wcs)
+#                     rebinned = None
+#
+#                     # Multiply with ratio
+#                     if ratio != 1.0: frame *= float(ratio)
+#
+#                 # NOT IN PLACE
+#                 else:
+#
+#                     # Create rebinned frame
+#                     rebinned = frame.rebinned(wcs)
+#
+#                     # Multiply with ratio
+#                     if ratio != 1.0: rebinned *= float(ratio)
+#
+#             # Something went wrong
+#             except ValueError as e:
+#
+#                 print("")
+#                 print("INPUT WCS:", frame.wcs)
+#                 print("")
+#                 print("OUTPUT WCS:", wcs)
+#                 print("")
+#                 raise RuntimeError("Rebinning the " + name + " image failed: " + str(e))
+#
+#         # Multiply with ratio
+#         #if ratio != 1.0: rebinned *= float(ratio)
+#
+#     # Return the rebinned frame
+#     if not in_place: return rebinned
 
 # -----------------------------------------------------------------
 

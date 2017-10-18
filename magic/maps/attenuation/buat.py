@@ -243,7 +243,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Interpolate NaNs in TIR to FUV
             relnans = tir_to_fuv.relative_nnans
-            if relnans < 0.2:
+            if relnans < 0.7:
                 log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
                 tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
             else:
@@ -283,7 +283,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Interpolate
             relnans = attenuation.relative_nnans
-            if relnans < 0.2:
+            if relnans < 0.7:
                 log.debug("The relative number of NaN values in the frame is " + str(relnans*100) + "%")
                 nans = attenuation.interpolate_nans(max_iterations=None)
             else:
@@ -345,7 +345,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Interpolate NaNs in TIR to FUV
             relnans = tir_to_nuv.relative_nnans
-            if relnans < 0.2:
+            if relnans < 0.7:
                 log.debug("The relative number of NaN values in the TIR to NUV map is " + str(relnans*100) + "%")
                 tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
             else:
@@ -385,7 +385,7 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Interpolate
             relnans = attenuation.relative_nnans
-            if relnans < 0.2:
+            if relnans < 0.7:
                 log.debug("The relative number of NaN values in the NUV attenuation map is " + str(relnans*100) + "%")
                 nans = attenuation.interpolate_nans(max_iterations=None)
             else:
