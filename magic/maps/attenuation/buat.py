@@ -24,6 +24,7 @@ from .tir_to_uv import make_tir_to_uv
 from ...core.frame import Frame
 from ...core.image import Image
 from ....core.filter.filter import parse_filter
+from ...core.mask import union
 
 # -----------------------------------------------------------------
 
@@ -84,6 +85,9 @@ class BuatAttenuationMapsMaker(Configurable):
 
         # Tirs methods
         self.tirs_methods = None
+
+        # Tirs nans
+        self.tirs_nans = None
 
         # The method name for this class
         self.method_name = None
@@ -147,6 +151,9 @@ class BuatAttenuationMapsMaker(Configurable):
         # Methods
         self.tirs_methods = kwargs.pop("tirs_methods", None)
 
+        # Nans
+        self.tirs_nans = kwargs.pop("tirs_nans", None)
+
         # Get the method name for this class
         self.method_name = kwargs.pop("method_name", None)
         if self.has_methods and self.method_name is None: raise ValueError("When methods are specified, method for this class has to be given")
@@ -183,6 +190,30 @@ class BuatAttenuationMapsMaker(Configurable):
         """
 
         return self.tirs_methods is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tirs_nans is not None
+
+    # -----------------------------------------------------------------
+
+    def has_nans_for_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_nans and name in self.tirs_nans
 
     # -----------------------------------------------------------------
 
@@ -376,7 +407,10 @@ class BuatAttenuationMapsMaker(Configurable):
             attenuation.replace_negatives(0.0)
             image = Image()
             image.add_frame(attenuation, "nuv_attenuation")
-            if nans is not None: image.add_mask(nans, "nans")
+            if nans is not None:
+                if self.has_nans_for_name(name): image.add_mask(union(nans, self.tirs_nans[name]), "nans")
+                else: image.add_mask(nans, "nans")
+            elif self.has_nans_for_name(name): image.add_mask(self.tirs_nans[name], "nans")
 
             # Set
             #self.maps[key] = attenuation

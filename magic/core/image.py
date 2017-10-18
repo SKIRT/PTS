@@ -1762,9 +1762,11 @@ class Image(object):
 
         # Load frames
         from . import fits as pts_fits
-        frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
-                                                       rebin_to_wcs, hdulist_index, no_filter, density=density, brightness=brightness,
-                                                       density_strict=density_strict, brightness_strict=brightness_strict)
+        try:
+            frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
+                                                           rebin_to_wcs, hdulist_index, no_filter, density=density, brightness=brightness,
+                                                           density_strict=density_strict, brightness_strict=brightness_strict)
+        except pts_fits.DamagedFITSFileError: raise IOError("File is possibly damaged")
 
         # Set frames, masks and meta information
         for frame_name in frames: self.add_frame(frames[frame_name], frame_name, silent=True)

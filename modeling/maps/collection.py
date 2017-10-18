@@ -27,6 +27,8 @@ from ...core.tools import types
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ...core.tools.utils import lazyproperty
 from ...core.tools.utils import create_lazified_class
+from ...magic.core.fits import get_mask_names
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -892,6 +894,20 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_tir_nans(self, flatten=False, framelist=False, methods=None):
+
+        """
+        Thisfunction ...
+        :param flatten:
+        :param framelist:
+        :param methods:
+        :return:
+        """
+
+        return self.get_nans_sub_name(self.maps_tir_name, flatten=flatten, framelist=framelist, methods=methods)
+
+    # -----------------------------------------------------------------
+
     def get_attenuation_map_paths(self, flatten=False):
 
         """
@@ -1557,6 +1573,25 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_nans_sub_name(self, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+        """
+        This function ...
+        :param name:
+        :param flatten:
+        :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
+        :return:
+        """
+
+        if self.from_analysis: return get_nans_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        else: return get_nans_sub_name(self.environment, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # -----------------------------------------------------------------
+
     def get_maps_sub_names(self, flatten=False):
 
         """
@@ -2159,6 +2194,29 @@ def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=Fals
 
 # -----------------------------------------------------------------
 
+def get_nans_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # Return the map paths
+    return get_nans_sub_name_from_paths(paths, framelist=framelist)
+
+# -----------------------------------------------------------------
+
 def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
@@ -2180,6 +2238,29 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
 
     # Return the map names
     return get_maps_sub_name_from_paths(paths, history=history, framelist=framelist)
+
+# -----------------------------------------------------------------
+
+def get_nans_sub_name(environment, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param environment:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # Return the nans maps
+    return get_nans_sub_name_from_paths(paths, framelist=framelist)
 
 # -----------------------------------------------------------------
 
@@ -2208,7 +2289,10 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
             # Loop over the paths, load the maps and add to dictionary
             for name in paths[method_or_name]:
 
+                # Get the path
                 map_path = paths[method_or_name][name]
+
+                # Try to load
                 try: maps[method_name][name] = Frame.from_file(map_path)
                 except IOError:
                     command = command_for_sub_name(name)
@@ -2221,9 +2305,12 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
         elif types.is_string_type(paths[method_or_name]):
 
             name = method_or_name
+
+            # Get the path
             map_path = paths[method_or_name]
-            try:
-                maps[name] = Frame.from_file(map_path)
+
+            # Try to load
+            try: maps[name] = Frame.from_file(map_path)
             except IOError:
                 command = command_for_sub_name(name)
                 log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
@@ -2237,6 +2324,57 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
     # Return the maps
     if framelist: return NamedFrameList(**maps)
     else: return maps
+
+# -----------------------------------------------------------------
+
+def get_nans_sub_name_from_paths(paths, framelist=False):
+
+    """
+    This function ...
+    :param paths:
+    :param framelist:
+    :return:
+    """
+
+    # Initialize the NaN maps dictionary
+    nans = dict()
+
+    # Loop over the entries
+    for method_or_name in paths:
+
+        # Methods
+        if types.is_dictionary(paths[method_or_name]):
+
+            method_name = method_or_name
+            nans[method_name] = dict()
+
+            # Loop over the paths, load the maps and add to dictionary
+            for name in paths[method_or_name]:
+
+                # Get the path
+                map_path = paths[method_or_name][name]
+
+                # Check mask planes
+                if "nans" in get_mask_names(map_path): nans[method_name][name] = Mask.from_file(map_path, plane="nans")
+                else: nans[method_name][name] = None
+
+        # Just maps
+        elif types.is_string_type(paths[method_or_name]):
+
+            name = method_or_name
+
+            # Get the path
+            map_path = paths[method_or_name]
+
+            # Check mask planes
+            if "nans" in get_mask_names(map_path): nans[name] = Mask.from_file(map_path, plane="nans")
+            else: nans[name] = None
+
+    # Return the masks
+    if framelist:
+        #return NamedFrameList(**maps)
+        raise NotImplementedError("Not implemented yet")
+    else: return nans
 
 # -----------------------------------------------------------------
 

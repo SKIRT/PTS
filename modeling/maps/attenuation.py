@@ -213,18 +213,21 @@ class AttenuationMapMaker(MapsComponent):
         tirs = self.get_tir_maps(flatten=True, methods=self.config.tir_methods)
         tirs_origins = self.get_tir_origins(flatten=True, methods=self.config.tir_methods)
         tirs_methods = self.get_tir_methods(flatten=True, methods=self.config.tir_methods)
+        tirs_nans = self.get_tir_nans(flatten=True, methods=self.config.tir_methods)
 
         # Get only certain TIR maps
         if self.config.tirs is not None:
             tirs = create_subdict(tirs, self.config.tirs)
             tirs_origins = create_subdict(tirs_origins, self.config.tirs)
             tirs_methods = create_subdict(tirs_methods, self.config.tirs)
+            tirs_nans = create_subdict(tirs_nans, self.config.tirs)
 
         # Select only certain TIR maps
         if self.config.select_tir:
             tirs, tir_names = select_maps(tirs, "TIR maps to create Buat attenuation maps", return_names=True)
             tirs_origins = create_subdict(tirs_origins, tir_names)
             tirs_methods = create_subdict(tirs_methods, tir_names)
+            tirs_nans = create_subdict(tirs_nans, tir_names)
 
         # Get current maps
         if self.config.remake: current = dict()
@@ -232,7 +235,7 @@ class AttenuationMapMaker(MapsComponent):
 
         # Run the map maker
         maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods,
-                  method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
+                  tirs_nans=tirs_nans, method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
 
         #print("Maker methods", maker.methods.keys())
         #print("keys", maker.maps.keys())

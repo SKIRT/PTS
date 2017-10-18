@@ -847,13 +847,13 @@ class Frame(NDDataArray):
         # Show which image we are importing
         if not silent: log.info("Reading in file '" + path + "' ...")
 
-        from ..core.fits import load_frame
+        from ..core.fits import load_frame, DamagedFITSFileError
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
         try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm,
                                add_meta=add_meta, extra_meta=extra_meta, distance=distance, no_wcs=no_wcs,
                                density=density, brightness=brightness, density_strict=density_strict,
                                brightness_strict=brightness_strict)
-        except TypeError: raise IOError("File is possibly damaged")
+        except DamagedFITSFileError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------
 

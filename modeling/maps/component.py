@@ -307,6 +307,20 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_tir_nans(self, flatten=False, framelist=False, methods=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :param methods:
+        :return:
+        """
+
+        return self.collection.get_tir_nans(flatten=flatten, framelist=framelist, methods=methods)
+
+    # -----------------------------------------------------------------
+
     def get_attenuation_maps(self, flatten=False, framelist=False):
 
         """
