@@ -21,6 +21,7 @@ from collections import OrderedDict, Callable
 from ..tools import types
 from ..filter.filter import parse_filter, Filter
 from ..tools import filesystem as fs
+from ..tools.utils import OrderedLazyDictionary
 
 # -----------------------------------------------------------------
 
@@ -219,13 +220,24 @@ class KeyList(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, lazy=False, lazy_evaluator=None, lazy_kwargs=None):
 
         """
         The constructor ...
+        :param lazy:
+        :param lazy_evaluator:
+        :param lazy_kwargs:
         """
 
-        self.contents = OrderedDict()
+        # Initialize the contents
+        if lazy:
+            if lazy_evaluator is None: raise ValueError("Lazy evaluator has to be specified")
+            if lazy_kwargs is None: lazy_kwargs = {}
+            self.contents = OrderedLazyDictionary(lazy_evaluator, **lazy_kwargs)
+        else: self.contents = OrderedDict()
+
+        # Set lazy flag
+        self.lazy = lazy
 
     # -----------------------------------------------------------------
 

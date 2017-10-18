@@ -293,16 +293,17 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_tir_maps(self, flatten=False, framelist=False):
+    def get_tir_maps(self, flatten=False, framelist=False, methods=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param methods:
         :return:
         """
 
-        return self.collection.get_tir_maps(flatten=flatten, framelist=framelist)
+        return self.collection.get_tir_maps(flatten=flatten, framelist=framelist, methods=methods)
 
     # -----------------------------------------------------------------
 
@@ -776,15 +777,16 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_tir_origins(self, flatten=False):
+    def get_tir_origins(self, flatten=False, methods=None):
 
         """
         This function ...
         :param flatten:
+        :param methods:
         :return:
         """
 
-        return self.collection.get_tir_origins(flatten=flatten)
+        return self.collection.get_tir_origins(flatten=flatten, methods=methods)
 
     # -----------------------------------------------------------------
 
@@ -964,15 +966,16 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_tir_methods(self, flatten=False):
+    def get_tir_methods(self, flatten=False, methods=None):
 
         """
         This function ...
         :param flatten:
+        :param methods:
         :return:
         """
 
-        return self.collection.get_tir_methods(flatten=flatten)
+        return self.collection.get_tir_methods(flatten=flatten, methods=methods)
 
     # -----------------------------------------------------------------
 

@@ -25,6 +25,15 @@ definition.add_flag("select_tir", "select specific TIR maps", False)
 
 # -----------------------------------------------------------------
 
+# Sepcific input maps
+definition.add_optional("ssfrs", "string_list", "names of the sSFR maps to use")
+definition.add_optional("tirs", "string_list", "names of the TIR maps to use")
+
+# Methods
+definition.add_optional("tir_methods", "string_list", "only use TIR maps created with these methods")
+
+# -----------------------------------------------------------------
+
 definition.add_flag("plot", "plot Cortese sSFR pixel masks", False)
 
 # -----------------------------------------------------------------

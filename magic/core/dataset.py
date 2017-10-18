@@ -655,6 +655,7 @@ class DataSet(object):
             # Set the key
             if keys == "name": key = name
             elif keys == "filter": key = frame.filter
+            elif keys == "filter_name": key = frame.filter_name
             elif keys == "wavelength": key = frame.wavelength
             else: raise ValueError("Invalid value for 'keys'")
 
@@ -705,6 +706,7 @@ class DataSet(object):
             # Set the key
             if keys == "name": key = name
             elif keys == "filter": key = self.get_filter(name)
+            elif keys == "filter_name": key = self.get_filter_name(name)
             elif keys == "wavelength": key = wavelength if wavelength is not None else self.get_wavelength(name)
             else: raise ValueError("Invalid value for 'keys'")
 
@@ -825,7 +827,7 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
+    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True, lazy=True):
 
         """
         This function ...
@@ -835,11 +837,28 @@ class DataSet(object):
         :param max_wavelength:
         :param exclude:
         :param named:
+        :param lazy:
         :return: 
         """
 
-        if named: return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
-        else: return FrameList(*self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
+        # Lazy frame list
+        if lazy:
+
+            log.warning("Applying the masks is not supported (yet) for lazy frame lists")
+            if named:
+                arguments = self.get_frame_paths(min_wavelength, max_wavelength, exclude, keys="name", returns="dict")
+                arguments["lazy"] = True
+                return NamedFrameList.from_paths(**arguments)
+            else:
+                arguments = self.get_frame_paths(min_wavelength, max_wavelength, exclude, keys="filter_name", returns="dict")
+                arguments["lazy"] = True
+                return FrameList.from_paths(**arguments)
+
+        # Not lazy
+        else:
+
+            if named: return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
+            else: return FrameList(*self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
 
     # -----------------------------------------------------------------
 

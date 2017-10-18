@@ -2947,13 +2947,14 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask, sigma=None, max_iterations=10):
+    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False):
 
         """
         Thisfunction ...
         :param mask:
         :param sigma:
         :param max_iterations:
+        :param plot:
         :return:
         """
 
@@ -2966,7 +2967,7 @@ class Frame(NDDataArray):
         self[mask] = nan_value
 
         # Interpolate the nans
-        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations)
+        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot)
         except RuntimeError as e:
 
             # Reset the original values (e.g. infs)
@@ -3000,14 +3001,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=10):
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
+        :param plot:
         :return:
         """
+
+        from ..tools import plotting
 
         # Determine sigma
         if sigma is None:
@@ -3040,8 +3044,18 @@ class Frame(NDDataArray):
         result = interpolate_replace_nans(self.data, kernel)
         niterations = 1
 
+        # Plot
+        if plot: plotting.plot_box(result, title="Result after iteration " + str(niterations))
+        if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration " + str(niterations))
+
+        # Get the current number of nans
+        nnans = np.sum(np.isnan(result))
+
+        # Debugging
+        log.debug("The number of NaN values after iteration 1 is " + str(nnans))
+
         # Are there still NaNs?
-        while np.any(np.isnan(result)):
+        while nnans > 0:
 
             # Check number of iterations
             if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
@@ -3054,6 +3068,16 @@ class Frame(NDDataArray):
 
             # Increment the niterations counter
             niterations += 1
+
+            # Get the current number of nans
+            nnans = np.sum(np.isnan(result))
+
+            # Debugging
+            log.debug("The number of NaN values after iteration " + str(niterations) + " is " + str(nnans))
+
+            # Plot
+            if plot: plotting.plot_box(result, title="Result after iteration " + str(niterations))
+            if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration " + str(niterations))
 
         # Determine new min and max value
         new_min_value = np.nanmin(self.min)
@@ -3091,16 +3115,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_infs(self, sigma=None, max_iterations=10):
+    def interpolate_infs(self, sigma=None, max_iterations=10, plot=False):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
+        :param plot:
         :return:
         """
 
-        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations)
+        return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot)
 
     # -----------------------------------------------------------------
 
@@ -3116,16 +3141,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_zeroes(self, sigma=None, max_iterations=10):
+    def interpolate_zeroes(self, sigma=None, max_iterations=10, plot=False):
 
         """
         This function ...
         :param sigma:
         :param max_iterations:
+        :param plot:
         :return:
         """
 
-        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations)
+        return self.interpolate(self.zeroes, sigma=sigma, max_iterations=max_iterations, plot=plot)
 
     # -----------------------------------------------------------------
 

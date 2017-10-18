@@ -14,7 +14,154 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+from collections import OrderedDict
 from functools import wraps, partial
+
+# -----------------------------------------------------------------
+
+class OrderedLazyDictionary(OrderedDict):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, evaluator, **kwargs):
+
+        """
+        Thisf unction ...
+        :param evaluator:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(OrderedLazyDictionary, self).__init__()
+
+        # The evaluator function
+        self.evaluator = evaluator
+
+        # The general evaluator kwargs
+        self.general_kwargs = kwargs
+
+        # Keyword arguments for different elements
+        self.kwargs = dict()
+
+        # Names of elements that are already evaluated
+        self.evaluated = dict()
+
+    # -----------------------------------------------------------------
+
+    def get_kwargs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Specific kwargs
+        if name in self.kwargs:
+
+            # Merge general with unique kwargs
+            kwargs = self.general_kwargs.copy()
+            for key in self.kwargs[name]: kwargs[key] = self.kwargs[name][key]
+            return kwargs
+
+        # Only the general kwargs
+        else: return self.general_kwargs
+
+    # -----------------------------------------------------------------
+
+    def get_raw(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return super(OrderedLazyDictionary, self).__getitem__(name)
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Evaluated?
+        if self.evaluated[name]: return super(OrderedLazyDictionary, self).__getitem__(name)
+
+        # Not yet evaluated
+        else:
+
+            # Get value
+            value = super(OrderedLazyDictionary, self).__getitem__(name)
+            kwargs = self.get_kwargs(name)
+            value = self.evaluator(value, **kwargs)
+
+            # Set evaluated value
+            self[name] = value
+
+            # Set evaluated flag
+            self.evaluated[name] = True
+
+            # Return the value
+            return value
+
+    # -----------------------------------------------------------------
+
+    def set(self, name, value, **kwargs):
+
+        """
+        Thisj function ...
+        :param name:
+        :param value:
+        :param kwargs:
+        :return:
+        """
+
+        # Set
+        self[name] = value
+
+        # Set kwargs
+        if len(kwargs) > 0: self.kwargs[name] = kwargs
+
+    # -----------------------------------------------------------------
+
+    def set_value(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Base class implementation
+        super(OrderedLazyDictionary, self).__setitem__(name, value)
+
+        # Set evaluated flag to TRUE
+        self.evaluated[name] = True
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Base class implementation
+        super(OrderedLazyDictionary, self).__setitem__(name, value)
+
+        # Set evaluated flag
+        self.evaluated[name] = False
 
 # -----------------------------------------------------------------
 
@@ -29,6 +176,7 @@ class LazyDictionary(dict):
         """
         This function ...
         :param evaluator:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
@@ -126,6 +274,23 @@ class LazyDictionary(dict):
 
         # Set kwargs
         if len(kwargs) > 0: self.kwargs[name] = kwargs
+
+    # -----------------------------------------------------------------
+
+    def set_value(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Base class implementation
+        super(LazyDictionary, self).__setitem__(name, value)
+
+        # Set evaluated flag to TRUE
+        self.evaluated[name] = True
 
     # -----------------------------------------------------------------
 

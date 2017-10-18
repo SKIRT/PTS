@@ -242,9 +242,12 @@ class BuatAttenuationMapsMaker(Configurable):
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
 
             # Interpolate NaNs in TIR to FUV
-            if tir_to_fuv.relative_nnans < 0.7: tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
+            relnans = tir_to_fuv.relative_nnans
+            if relnans < 0.2:
+                log.debug("The relative number of NaN values in the TIR to FUV map is " + str(relnans*100) + "%")
+                tirfuv_nans = tir_to_fuv.interpolate_nans(max_iterations=None)
             else:
-                log.warning("The number of NaN values in the TIR to FUV map is very high")
+                log.warning("The number of NaN values in the TIR to FUV map is very high (" + str(relnans*100) + "%)")
                 tirfuv_nans = None
 
             # Make the log10 of the TIR to FUV map
@@ -279,11 +282,17 @@ class BuatAttenuationMapsMaker(Configurable):
             #attenuation.replace_negatives(0.0)
 
             # Interpolate
-            nans = attenuation.interpolate_nans(max_iterations=None)
+            relnans = attenuation.relative_nnans
+            if relnans < 0.2:
+                log.debug("The relative number of NaN values in the frame is " + str(relnans*100) + "%")
+                nans = attenuation.interpolate_nans(max_iterations=None)
+            else:
+                log.warning("The number of NaN values in the frame is very high (" + str(relnans*100) + "%)")
+                nans = None
             attenuation.replace_negatives(0.0)
             image = Image()
             image.add_frame(attenuation, "fuv_attenuation")
-            image.add_mask(nans, "nans")
+            if nans is not None: image.add_mask(nans, "nans")
 
             # Set
             #self.maps[key] = attenuation
@@ -335,9 +344,12 @@ class BuatAttenuationMapsMaker(Configurable):
             tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
 
             # Interpolate NaNs in TIR to FUV
-            if tir_to_nuv.relative_nnans < 0.7: tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
+            relnans = tir_to_nuv.relative_nnans
+            if relnans < 0.2:
+                log.debug("The relative number of NaN values in the TIR to NUV map is " + str(relnans*100) + "%")
+                tirnuv_nans = tir_to_nuv.interpolate_nans(max_iterations=None)
             else:
-                log.warning("The number of NaN values in the TIR to NUV map is very high")
+                log.warning("The number of NaN values in the TIR to NUV map is very high (" + str(relnans*100) + "%)")
                 tirnuv_nans = None
 
             # Create log10 of TIR to NUV
@@ -372,11 +384,17 @@ class BuatAttenuationMapsMaker(Configurable):
             #attenuation.replace_negatives(0.0)
 
             # Interpolate
-            nans = attenuation.interpolate_nans(max_iterations=None)
+            relnans = attenuation.relative_nnans
+            if relnans < 0.2:
+                log.debug("The relative number of NaN values in the NUV attenuation map is " + str(relnans*100) + "%")
+                nans = attenuation.interpolate_nans(max_iterations=None)
+            else:
+                log.warning("The number of NaN values in the NUV attenuation map is very high (" + str(relnans*100) + "%)")
+                nans = None
             attenuation.replace_negatives(0.0)
             image = Image()
             image.add_frame(attenuation, "nuv_attenuation")
-            image.add_mask(nans, "nans")
+            if nans is not None: image.add_mask(nans, "nans")
 
             # Set
             #self.maps[key] = attenuation

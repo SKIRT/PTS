@@ -433,20 +433,21 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_origins_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None):
+    def get_origins_sub_name(self, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param name:
         :param flatten:
         :param method:
+        :param methods:
         :param not_method:
         :param not_methods:
         :return: 
         """
 
-        if self.from_analysis: return get_origins_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
-        else: return get_origins_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_origins_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        else: return get_origins_sub_name(self.environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -493,20 +494,21 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_methods_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None):
+    def get_methods_sub_name(self, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param name:
         :param flatten:
         :param method:
+        :param methods:
         :param not_method:
         :param not_methods:
         :return:
         """
 
-        if self.from_analysis: return get_methods_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
-        else: return get_methods_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_methods_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        else: return get_methods_sub_name(self.environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -550,11 +552,12 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_tir_origins(self, flatten=False):
+    def get_tir_origins(self, flatten=False, methods=None):
 
         """
         This function ...
         :param flatten:
+        :param methods:
         :return:
         """
 
@@ -738,15 +741,16 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_tir_methods(self, flatten=False):
+    def get_tir_methods(self, flatten=False, methods=None):
 
         """
         This function ...
         :param flatten:
+        :param methods:
         :return:
         """
 
-        return self.get_methods_sub_name(self.maps_tir_name, flatten=flatten)
+        return self.get_methods_sub_name(self.maps_tir_name, flatten=flatten, methods=methods)
 
     # -----------------------------------------------------------------
 
@@ -874,16 +878,17 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_tir_maps(self, flatten=False, framelist=False):
+    def get_tir_maps(self, flatten=False, framelist=False, methods=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param methods:
         :return:
         """
 
-        return self.get_maps_sub_name(self.maps_tir_name, flatten=flatten, framelist=framelist)
+        return self.get_maps_sub_name(self.maps_tir_name, flatten=flatten, framelist=framelist, methods=methods)
 
     # -----------------------------------------------------------------
 
@@ -1533,7 +1538,7 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
@@ -1541,13 +1546,14 @@ class MapsCollection(object):
         :param flatten:
         :param framelist:
         :param method:
+        :param methods:
         :param not_method:
         :param not_methods:
         :return:
         """
 
-        if self.from_analysis: return get_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
-        else: return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        else: return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1996,7 +2002,7 @@ StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollecti
 
 # -----------------------------------------------------------------
 
-def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2004,6 +2010,7 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2014,11 +2021,11 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Get map paths
-    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_map_paths_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2026,6 +2033,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_me
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2036,17 +2044,18 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_me
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Get map paths
-    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
     :param sub_path:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2088,6 +2097,9 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, not_method=N
                 # Skip other method if method is defined
                 if method is not None and method_name != method: continue
 
+                # Skip method if not in list
+                if methods is not None and method_name not in methods: continue
+
                 # Skip methods in not_method
                 if not_methods is not None and method_name in not_methods: continue
 
@@ -2110,6 +2122,9 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, not_method=N
         # Method cannot be defined
         if method is not None: raise ValueError("Specified method '" + method + "', but all maps are in one directory")
 
+        # Methods cannot be defined
+        if methods is not None: raise ValueError("Specified methods '" + str(methods) + "', but all maps are in one directory")
+
         # Not method cannot be defined
         if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
 
@@ -2121,7 +2136,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, not_method=N
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
+def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2130,20 +2145,21 @@ def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=Fals
     :param flatten:
     :param framelist:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
     """
 
     # Get map paths
-    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # Return the map paths
     return get_maps_sub_name_from_paths(paths, framelist=framelist)
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
+def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2153,13 +2169,14 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     :param flatten:
     :param framelist:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
     """
 
     # Get map paths
-    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # Return the map names
     return get_maps_sub_name_from_paths(paths, history=history, framelist=framelist)
@@ -2223,7 +2240,7 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
 
 # -----------------------------------------------------------------
 
-def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2231,6 +2248,7 @@ def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2241,11 +2259,11 @@ def get_origins_sub_name_analysis(analysis_run, name, flatten=False, method=None
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Return
-    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_origins_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_origins_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2253,6 +2271,7 @@ def get_origins_sub_name(environment, name, flatten=False, method=None, not_meth
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2263,17 +2282,18 @@ def get_origins_sub_name(environment, name, flatten=False, method=None, not_meth
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Return
-    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_origins_sub_name_from_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
     :param sub_path:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2290,6 +2310,7 @@ def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, not_met
     if fs.is_file(direct_origins_path):
 
         if method is not None: raise ValueError("No different methods")
+        if methods is not None: raise ValueError("No different methods")
         if not_methods is not None: raise ValueError("No different methods")
 
         origins = load_dict(direct_origins_path)
@@ -2324,6 +2345,9 @@ def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, not_met
                 # Determine method
                 method_name = fs.name(method_path)
 
+                # SKip if not in methods
+                if methods is not None and method_name not in methods: continue
+
                 # Skip methods
                 if not_methods is not None and method_name in not_methods: continue
 
@@ -2342,7 +2366,7 @@ def get_origins_sub_name_from_path(sub_path, flatten=False, method=None, not_met
 
 # -----------------------------------------------------------------
 
-def get_methods_sub_name_analysis(analysis_run, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_methods_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2350,6 +2374,7 @@ def get_methods_sub_name_analysis(analysis_run, name, flatten=False, method=None
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2360,11 +2385,11 @@ def get_methods_sub_name_analysis(analysis_run, name, flatten=False, method=None
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Return methods from sub path
-    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_methods_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
+def get_methods_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2372,6 +2397,7 @@ def get_methods_sub_name(environment, name, flatten=False, method=None, not_meth
     :param name:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2381,17 +2407,18 @@ def get_methods_sub_name(environment, name, flatten=False, method=None, not_meth
     sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
-    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+    return get_methods_sub_name_from_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
 # -----------------------------------------------------------------
 
-def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_method=None, not_methods=None):
+def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
     This function ...
     :param sub_path:
     :param flatten:
     :param method:
+    :param methods:
     :param not_method:
     :param not_methods:
     :return:
@@ -2410,8 +2437,9 @@ def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_met
 
         if method is not None: raise ValueError("No different methods")
         if not_methods is not None: raise ValueError("No different methods")
+        if methods is not None: raise ValueError("No different methods")
 
-        methods = load_dict(direct_methods_path)
+        the_methods = load_dict(direct_methods_path)
 
     # Subdirectories
     else:
@@ -2428,12 +2456,12 @@ def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_met
             if not fs.is_file(methods_filepath): raise ValueError("File '" + methods_filepath + "' is missing")
 
             # Load the origins
-            methods = load_dict(methods_filepath)
+            the_methods = load_dict(methods_filepath)
 
         else:
 
             # Initialize
-            methods = dict()
+            the_methods = dict()
 
             # Loop over subdirectories
             for method_path in fs.directories_in_path(sub_path):
@@ -2444,6 +2472,9 @@ def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_met
                 # Determine method
                 method_name = fs.name(method_path)
 
+                # Skip if not in methods
+                if methods is not None and method_name not in methods: continue
+
                 # Skip methods
                 if not_methods is not None and method_name in not_methods: continue
 
@@ -2452,12 +2483,12 @@ def get_methods_sub_name_from_path(sub_path, flatten=False, method=None, not_met
 
                 # Flatten into a one-level dict
                 if flatten:
-                    for map_name in methods_method: methods[method_name + "_" + map_name] = methods_method[map_name]
+                    for map_name in methods_method: the_methods[method_name + "_" + map_name] = methods_method[map_name]
 
                 # Don't flatten: get nested dict
-                else: methods[method_name] = methods_method
+                else: the_methods[method_name] = methods_method
 
     # Return the methods
-    return methods
+    return the_methods
 
 # -----------------------------------------------------------------

@@ -129,16 +129,28 @@ class AttenuationMapMaker(MapsComponent):
         fuv = self.get_frame_for_filter(self.fuv_filter)
 
         # Get maps and origins
-        tirs = self.get_tir_maps(flatten=True)
+        tirs = self.get_tir_maps(flatten=True, methods=self.config.tir_methods)
         ssfrs = self.get_ssfr_maps(flatten=True)
 
         # Origins
-        tirs_origins = self.get_tir_origins(flatten=True)
+        tirs_origins = self.get_tir_origins(flatten=True, methods=self.config.tir_methods)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
 
         # Methods
-        tirs_methods = self.get_tir_methods(flatten=True)
+        tirs_methods = self.get_tir_methods(flatten=True, methods=self.config.tir_methods)
         ssfrs_methods = self.get_ssfr_methods(flatten=True)
+
+        # Get only certain TIR maps
+        if self.config.tirs is not None:
+            tirs = create_subdict(tirs, self.config.tirs)
+            tirs_origins = create_subdict(tirs_origins, self.config.tirs)
+            tirs_methods = create_subdict(tirs_methods, self.config.tirs)
+
+        # Get only certain sSFR maps
+        if self.config.ssfrs is not None:
+            ssfrs = create_subdict(ssfrs, self.config.ssfrs)
+            ssfrs_origins = create_subdict(ssfrs_origins, self.config.ssfrs)
+            ssfrs_methods = create_subdict(ssfrs_methods, self.config.ssfrs)
 
         # Select only certain TIR maps
         if self.config.select_tir:
@@ -191,12 +203,24 @@ class AttenuationMapMaker(MapsComponent):
         # Plot
         #maker.config.plot = self.config.plot
 
-        # Get the input
+        # Get FUV and NUV maps
         fuv = self.get_frame_for_filter(self.fuv_filter)
         nuv = self.get_frame_for_filter(self.nuv_filter)
-        tirs = self.get_tir_maps(flatten=True)
-        tirs_origins = self.get_tir_origins(flatten=True)
-        tirs_methods = self.get_tir_methods(flatten=True)
+
+        # Get TIR maps, origins and methods
+        tirs = self.get_tir_maps(flatten=True, methods=self.config.tir_methods)
+        tirs_origins = self.get_tir_origins(flatten=True, methods=self.config.tir_methods)
+        tirs_methods = self.get_tir_methods(flatten=True, methods=self.config.tir_methods)
+
+        print(tirs.keys())
+        print(tirs_origins.keys())
+        print(tirs_methods.keys())
+
+        # Get only certain TIR maps
+        if self.config.tirs is not None:
+            tirs = create_subdict(tirs, self.config.tirs)
+            tirs_origins = create_subdict(tirs_origins, self.config.tirs)
+            tirs_methods = create_subdict(tirs_methods, self.config.tirs)
 
         # Select only certain TIR maps
         if self.config.select_tir:

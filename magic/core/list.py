@@ -845,8 +845,13 @@ class FrameList(FilterBasedList):
         :param kwargs:
         """
 
+        # LAZY?
+        lazy = kwargs.pop("lazy", False)
+        if lazy: lazy_evaluator = Frame.from_file
+        else: lazy_evaluator = None
+
         # Call the constructor of the base class
-        super(FrameList, self).__init__()
+        super(FrameList, self).__init__(lazy=lazy, lazy_evaluator=lazy_evaluator)
 
         # Add frames
         for frame in args: self.append(frame)
@@ -868,6 +873,33 @@ class FrameList(FilterBasedList):
 
         new = cls()
         for path in fs.files_in_path(path, extension="fits", recursive=recursive, contains=contains, not_contains=not_contains): new.append(Frame.from_file(path))
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_paths(cls, *paths, **kwargs):
+
+        """
+        This function ...
+        :param paths:
+        :param kwargs::
+        :return:
+        """
+
+        # Initialize
+        lazy = kwargs.pop("lazy", False)
+        new = cls(lazy=lazy)
+
+        if lazy and len(paths) > 0: raise ValueError("Cannot give positional arguments when lazy is True")
+
+        # Add args
+        if not lazy:
+            for path in paths: new.append_from_file(path)
+
+        # Add kwargs
+        for filter_name in kwargs: new.append(kwargs[filter_name], fltr=filter_name)
+
         return new
 
     # -----------------------------------------------------------------
@@ -935,7 +967,10 @@ class FrameList(FilterBasedList):
         :return: 
         """
 
-        if fltr is None: fltr = frame.filter
+        # Get filter
+        if fltr is None:
+            if self.lazy: raise ValueError("This is a lazy frame list. The filter has to be passed explicitely")
+            else: fltr = frame.filter
 
         # Check if not None
         if fltr is None: raise ValueError("Filter cannot be determined")
@@ -960,7 +995,8 @@ class FrameList(FilterBasedList):
         :return:
         """
 
-        self.append(Frame.from_file(path), fltr=fltr)
+        if self.lazy: self.append(path, fltr=fltr)
+        else: self.append(Frame.from_file(path), fltr=fltr)
 
     # -----------------------------------------------------------------
 
@@ -1691,8 +1727,13 @@ class NamedFrameList(NamedList):
         :param kwargs:
         """
 
+        # Lazy?
+        lazy = kwargs.pop("lazy", False)
+        if lazy: lazy_evaluator = Frame.from_file
+        else: lazy_evaluator = None
+
         # Call the constructor of the base class
-        super(NamedFrameList, self).__init__()
+        super(NamedFrameList, self).__init__(lazy=lazy, lazy_evaluator=lazy_evaluator)
 
         # Add
         for name in kwargs: self.append(kwargs[name], name)
@@ -1766,8 +1807,14 @@ class NamedFrameList(NamedList):
         :return: 
         """
 
-        new = cls()
-        for name in paths: new.append(Frame.from_file(paths[name]), name)
+        # Initialize
+        lazy = paths.pop("lazy", False)
+        new = cls(lazy=paths.pop("lazy", False))
+
+        # Add
+        for name in paths: new.append_from_file(paths[name], name)
+
+        # Return the frame list
         return new
 
     # -----------------------------------------------------------------
@@ -1777,7 +1824,8 @@ class NamedFrameList(NamedList):
 
         """
         This function ...
-        :param dictionary: 
+        :param dictionary:
+        :param lazy:
         :return: 
         """
 
@@ -1796,11 +1844,27 @@ class NamedFrameList(NamedList):
         :return: 
         """
 
-        if name is None: name = frame.name
+        if name is None:
+            if self.lazy: raise ValueError("This is a lazy frame list, the name should be specified")
+            else: name = frame.name
         if name is None: raise ValueError("Frame does not have a name")
 
         # Call the append function of the base class
         super(NamedFrameList, self).append(name, frame)
+
+    # -----------------------------------------------------------------
+
+    def append_from_file(self, path, name=None):
+
+        """
+        This function ...
+        :param path:
+        :param name:
+        :return:
+        """
+
+        if self.lazy: self.append(path, name=name)
+        else: self.append(Frame.from_file(path), name=name)
 
     # -----------------------------------------------------------------
 
@@ -2000,7 +2064,7 @@ class NamedFrameList(NamedList):
         :return:
         """
 
-        new_frames = convolve_and_rebin(*self.values, names=self.names)
+        new_frames = convolve_and_rebin(*self.values, names=self.names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
