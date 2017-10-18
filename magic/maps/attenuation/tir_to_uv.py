@@ -13,8 +13,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....magic.core.frame import Frame
 from ....magic.core.list import NamedFrameList
+from ....core.tools.stringify import tostr
+from ....core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -67,13 +68,14 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     # FIRST CONVERT THEM BOTH (UNITS ARE IN FACT DIFFERENT, ONE IS DENSITY, OTHER IS NOT)
     fuv = fuv.copy()
     fuv.convert_to("W/m2", density=True, density_strict=True, **kwargs) # here it is a neutral density!
-    
+
+    # UNIT CONVERSION OF TIR MAP
     tir = tir.copy()
-    tir_mapData = tir.data.astype('float64') # Necessary for extreme conversion factors
-
-    factor = tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
-
-    tir._data = tir_mapData * factor
+    tir_map_data = tir.data.astype('float64') # Necessary for extreme conversion factors
+    #factor = tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
+    factor = tir.unit.conversion_factor("W/m2", density=False, density_strict=True, **kwargs) # HERE IT IS BOLOMETRIC
+    log.debug("Conversion factor for the TIR map from " + tostr(tir.unit, add_physical_type=True) + " to W/m2 is " + str(factor))
+    tir._data = tir_map_data * factor
 
     #frames.convert_to_same_unit("W/m2", density=True)
 
