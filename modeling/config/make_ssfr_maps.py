@@ -23,3 +23,8 @@ definition.add_flag("smooth", "smooth the maps by convolving them with a gaussia
 definition.add_optional("smoothing_factor", "positive_real", "factor that determines the smoothing kernel FWHM based on the original FWHMs of the maps", 2.)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plotting", False)
+
+# -----------------------------------------------------------------

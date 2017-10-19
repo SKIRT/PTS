@@ -17,3 +17,8 @@ definition.add_flag("remake", "remake already existing maps", False)
 definition.add_flag("replot", "replot already existing plots", False)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plotting", False)
+
+# -----------------------------------------------------------------

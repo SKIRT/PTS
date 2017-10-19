@@ -76,6 +76,9 @@ class SSFRMapMaker(MapsComponent):
         # 4. Writing
         self.write()
 
+        # 5. Plotting
+        if self.config.plot: self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -177,5 +180,26 @@ class SSFRMapMaker(MapsComponent):
 
         # Write the methods
         self.write_methods()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps(scale="linear")
+
+        # Plot the contours
+        self.plot_contours()
+
+        # Plot the radial profiles
+        self.plot_profiles()
 
 # -----------------------------------------------------------------

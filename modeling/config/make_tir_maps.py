@@ -23,3 +23,8 @@ definition.add_flag("replot", "replot already existing plots", False)
 definition.add_positional_optional("methods", "string_list", "TIR making methods to perform", default=methods, choices=methods)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plotting", False)
+
+# -----------------------------------------------------------------
