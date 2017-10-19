@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....magic.core.list import NamedFrameList
 from ....core.tools.stringify import tostr
 from ....core.basics.log import log
+from ....core.units.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -60,6 +61,7 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     factor = tir.unit.conversion_factor("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True, distance=distance, pixelscale=tir.pixelscale) # HERE IT IS BOLOMETRIC, AND NO FLUX!!!!
     log.debug("Conversion factor for the TIR map from " + tostr(tir.unit, add_physical_type=True) + " to W/m2 is " + str(factor))
     tir._data = tir_map_data * factor
+    tir.unit = PhotometricUnit("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True)
 
     #frames.convert_to_same_unit("W/m2", density=True)
 

@@ -460,7 +460,17 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr, plot=Fa
 
     # Use the parameters for the lowest tau (highest sSFR colour) where the sSFR colour value exceeds this maximum
     tau_min, colour_range, parameters = cortese.minimum_tau_range_and_parameters(ssfr_colour)
+
+    # Debugging
+    log.debug("Setting FUV attenuation values for tau < " + str(tau_min) + " ...")
+    log.debug("This corresponds to sSFR colour values above " + str(colour_range.max))
+
+    # Where?
     where_above = ssfr > colour_range.max
+
+    # Show the number of pixels with this value
+    log.debug("There are " + str(np.sum(where_above)) + " pixels of the sSFR map above this value")
+
     # Plot which pixels
     if plot: plotting.plot_mask(where_above, title="Pixels where sSFR > " + str(colour_range.max) + " (tau < " + str(tau_min) + ")")
     a_fuv_cortese[where_above] = parameters[0] + parameters[1] * log_tir_to_fuv[where_above] + parameters[2] * log_tir_to_fuv2[where_above] + \
@@ -472,8 +482,15 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr, plot=Fa
         # Debugging
         log.debug("Setting FUV attenuation values for tau = " + str(tau) + " ...")
 
+        # Debugging
+        if colour_range.min == float("-inf"): log.debug("This corresponds to sSFR colour values below " + str(colour_range.max))
+        else: log.debug("This corresponds to a sSFR colour range between " + str(colour_range.min) + " and " + str(colour_range.max))
+
         # Set mask
         where = (ssfr >= colour_range.min) * (ssfr < colour_range.max)
+
+        # Show the number of pixels with this value
+        log.debug("There are " + str(np.sum(where)) + " pixels of the sSFR map within this range")
 
         # Plot which pixels
         if plot:
