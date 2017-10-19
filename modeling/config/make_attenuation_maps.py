@@ -42,3 +42,8 @@ definition.add_flag("plot", "plot Cortese sSFR pixel masks", False)
 definition.add_positional_optional("methods", "string_list", "attenuation map making methods", default=methods, choices=methods)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plotting", False)
+
+# -----------------------------------------------------------------

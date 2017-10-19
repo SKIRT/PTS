@@ -3152,6 +3152,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         # Convert the original back to the original unit
         frame.convert_to(original_unit)
 
+        # CONVERT THE RESULT AS WELL IF NOT 'IN PLACE'
+        if not in_place: rebinned.convert_to(original_unit)
+
     # Return rebinned frame
     if not in_place: return rebinned
 

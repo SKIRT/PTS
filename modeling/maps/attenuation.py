@@ -102,6 +102,9 @@ class AttenuationMapMaker(MapsComponent):
         # 4. Write
         self.write()
 
+        # 5. Plot
+        if self.config.plot: self.plot()
+
     # -----------------------------------------------------------------
 
     def make_cortese_attenuation_maps(self):
@@ -227,5 +230,20 @@ class AttenuationMapMaker(MapsComponent):
 
         # Write the extra maps
         self.write_extra_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps()
 
 # -----------------------------------------------------------------

@@ -834,6 +834,50 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    # PLOTTING
+
+    def plot_maps(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Determine path
+                    map_plot_path = self.get_path_for_map(name, method, extension="pdf")
+
+                    # If map already exists and we don't have to remake
+                    if fs.is_file(map_path) and not self.config.remake: continue
+
+                    # Save
+                    self.maps[method][name].saveto(map_path)
+
+            # No different methods
+            else:
+
+                # Determine path
+                map_plot_path = self.get_path_for_map(method, extension="pdf")
+
+                # If map already exists and we don't have to remake
+                if fs.is_file(map_path) and not self.config.remake: continue
+
+                # Save
+                self.maps[method].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
     def check_origins(self):
 
         """
