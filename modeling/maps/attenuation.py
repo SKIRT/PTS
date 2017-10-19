@@ -244,6 +244,12 @@ class AttenuationMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps()
+        self.plot_maps(scale="linear")
+
+        # Plot the contours
+        self.plot_contours()
+
+        # Plot the radial profiles
+        self.plot_profiles()
 
 # -----------------------------------------------------------------

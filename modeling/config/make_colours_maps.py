@@ -13,4 +13,7 @@ from pts.modeling.config.maps import definition
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Replot?
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------

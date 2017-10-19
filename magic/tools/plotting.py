@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch, LinearStretch, HistEqStretch
@@ -52,13 +54,15 @@ line_styles = ['-', '--', '-.', ':']
 
 def color_dict(gradient):
 
-  """
-  Takes in a list of RGB sub-lists and returns dictionary of
+    """
+    Takes in a list of RGB sub-lists and returns dictionary of
     colors in RGB and hex form for use in a graphing function
     defined later on
     """
 
-  return {"hex":[RGB_to_hex(RGB) for RGB in gradient],
+    from ...core.basics.colour import rgb_to_hex
+
+    return {"hex":[rgb_to_hex(RGB) for RGB in gradient],
       "r":[RGB[0] for RGB in gradient],
       "g":[RGB[1] for RGB in gradient],
       "b":[RGB[2] for RGB in gradient]}
@@ -73,10 +77,12 @@ def linear_gradient(start_hex, finish_hex="#FFFFFF", n=307):
         should be the full six-digit color string,
         inlcuding the number sign ("#FFFFFF")
     """
-    
+
+    from ...core.basics.colour import hex_to_rgb
+
     # Starting and ending colors in RGB form
-    s = hex_to_RGB(start_hex)
-    f = hex_to_RGB(finish_hex)
+    s = hex_to_rgb(start_hex)
+    f = hex_to_rgb(finish_hex)
 
     # Initilize a list of the output colors with the starting color
     RGB_list = [s]
@@ -238,8 +244,57 @@ def plot_mask(mask, title=None, path=None, format=None):
 
 # -----------------------------------------------------------------
 
+def create_prepared_frame(frame, **kwargs):
+
+    """
+    This function ...
+    :param frame:
+    :param kwargs:
+    :return:
+    """
+
+    # Crop?
+    crop_to = kwargs.pop("crop_to", None)
+    cropping_factor = kwargs.pop("cropping_factor", 1.)
+
+    # Crop the frame
+    if crop_to is not None: frame = frame.cropped_to(crop_to, factor=cropping_factor, out_of_bounds="expand")
+    else: frame = frame.copy()
+
+    # Truncate?
+    truncate_outside = kwargs.pop("truncate_outside", None)
+    if truncate_outside is not None:
+        from ..region.region import SkyRegion, PixelRegion
+        if isinstance(truncate_outside, PixelRegion): truncate_outside = truncate_outside.to_mask(frame.xsize, frame.ysize)
+        elif isinstance(truncate_outside, SkyRegion): truncate_outside = truncate_outside.to_pixel(frame.wcs).to_mask(frame.xsize, frame.ysize)
+        mask = truncate_outside.inverse()
+        # Mask
+        frame[mask] = float("nan")
+
+    # Return the new frame
+    return frame, kwargs
+
+# -----------------------------------------------------------------
+
+def plot_frame(frame, **kwargs):
+
+    """
+    This function ...
+    :param frame:
+    :param kwargs:
+    :return:
+    """
+
+    # Create prepared frame
+    frame, kwargs = create_prepared_frame(frame, **kwargs)
+
+    # Plot
+    return plot_box(frame, **kwargs)
+
+# -----------------------------------------------------------------
+
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
-             around_zero=False, symmetric=False):
+             around_zero=False, symmetric=False, normalize_in=None):
 
     """
     This function ...
@@ -253,6 +308,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param colorbar:
     :param around_zero:
     :param symmetric:
+    :param normalize_in:
+    :param truncate:
     :return:
     """
 
@@ -262,27 +319,39 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     if isinstance(box, np.ndarray): data = box
     else: data = box.data
 
-    # Normalization
-    if scale == "log": norm = ImageNormalize(stretch=LogStretch())
-    elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
-    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch())
-    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data))
-    #elif scale == "skimage": norm = exposure.equalize_hist
-    else: raise ValueError("Invalid option for 'scale'")
+    # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
+    from ..region.region import SkyRegion, PixelRegion
+
+    # Normalize_in is passed
+    if normalize_in is not None:
+        if isinstance(normalize_in, SkyRegion):
+            if not hasattr(box, "wcs"): raise ValueError("Cannot give sky region when the passed data doesn't have a coordinate system")
+            normalize_in = normalize_in.to_pixel(box.wcs)
+        if isinstance(normalize_in, PixelRegion): normalize_in = normalize_in.to_mask(data.shape[1], data.shape[0])
+
+        # Get the mask data
+        if isinstance(normalize_in, np.ndarray): mask_data = normalize_in
+        else: mask_data = normalize_in.data
+
+        pixels = data[mask_data]
+        normalize_min = np.nanmin(pixels)
+        normalize_max = np.nanmax(pixels)
+
+    # Normalize over the entire image
+    else:
+
+        pixels = data.flatten()
+        normalize_min = np.nanmin(data)
+        normalize_max = np.nanmax(data)
 
     # ZSCALE
-    if interval == "zscale":
-
-        vmin, vmax = ZScaleInterval().get_limits(data)
+    if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(pixels)
 
     # PTS INTERVAL
     elif interval == "pts":
 
         nnegatives = np.sum(data < 0)
         npositives = np.sum(data > 0)
-
-        normalize_min = np.nanmin(data)
-        normalize_max = np.nanmax(data)
 
         if around_zero:
 
@@ -310,18 +379,28 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         #vmax = 0.5 * (np.nanmax(box) + vmin)
 
     # MINIMAX
-    elif interval == "minmax":
+    elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(pixels)
 
-        vmin, vmax = MinMaxInterval().get_limits(data)
+    # List or tuple of 2 values (min and max)
+    elif isinstance(interval, list) or isinstance(interval, tuple): vmin, vmax = interval
 
-    # PASSED
-    elif isinstance(interval, tuple):
+    # String -> parse
+    elif isinstance(interval, basestring):
 
-        vmin = interval[0]
-        vmax = interval[1]
+        from ...core.tools import parsing
+        try: vmin, vmax = parsing.real_tuple(interval)
+        except ValueError: raise ValueError("Cannot interpret the interval")
 
-    # INVALID
-    else: raise ValueError("Invalid option for 'interval'")
+    # Other
+    else: raise ValueError("Invalid option for 'interval'")  # INVALID
+
+    # Normalization
+    # DIFFERENCE OF DOING IT HERE AND PASSING VMIN AND VMAX?
+    if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
+    elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
+    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch(), vmin=vmin, vmax=vmax)
+    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data), vmin=vmin, vmax=vmax)
+    else: raise ValueError("Invalid option for 'scale'")
 
     # Make the plot
     plt.figure(figsize=(7,7))
@@ -341,6 +420,287 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
     # Return vmin and vmax
     return vmin, vmax
+
+# -----------------------------------------------------------------
+
+def plot_frame_contours(frame, **kwargs):
+
+    """
+    This function ...
+    :param frame:
+    :param kwargs:
+    :return:
+    """
+
+    # Create prepared frame
+    frame, kwargs = create_prepared_frame(frame, **kwargs)
+
+    # Plot
+    plot_contours(frame, **kwargs)
+
+# -----------------------------------------------------------------
+
+def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None, format=None, cmap="jet", single_colour=None, labels=False):
+
+    """
+    This function ...
+    :param box:
+    :param nlevels:
+    :param path:
+    :param x_label:
+    :param y_label:
+    :param line_width:
+    :param font_size:
+    :param title:
+    :param format:
+    :param cmap:
+    :param labels:
+    :return:
+    """
+
+    # Get the data
+    if isinstance(box, np.ndarray): data = box
+    else: data = box.data
+
+    # Define X and Y labels
+    x = np.arange(data.shape[1])
+    y = np.arange(data.shape[0])
+
+    # Square figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+
+    # Contour and labels
+    if single_colour is not None:
+        colors = single_colour
+        cmap = None
+    else: colors = None
+    cs = ax.contour(x, y, data, nlevels, colors=colors, cmap=cmap, linewidths=line_width)
+    if labels: plt.clabel(cs, fontsize=font_size)
+
+    # Axes labels
+    ax.set_xlabel(x_label, fontsize=font_size)
+    ax.set_ylabel(y_label, fontsize=font_size)
+
+    # Make tick lines thicker
+    for l in ax.get_xticklines(): l.set_markeredgewidth(line_width)
+    for l in ax.get_yticklines(): l.set_markeredgewidth(line_width)
+
+    # Make axis label larger
+    for tick in ax.xaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
+    for tick in ax.yaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
+
+    # Make figure box thicker
+    for s in ax.spines.values(): s.set_linewidth(line_width)
+
+    if title is not None: plt.title(title)
+
+    # Show or save
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format)
+
+    # Close
+    plt.close()
+
+# -----------------------------------------------------------------
+
+def plot_filled_frame_contours(frame, **kwargs):
+
+    """
+    This function ...
+    :param frame:
+    :param kwargs:
+    :return:
+    """
+
+    # Create prepared frame
+    frame, kwargs = create_prepared_frame(frame, **kwargs)
+
+    # Plot
+    plot_filled_contours(frame, **kwargs)
+
+# -----------------------------------------------------------------
+
+def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cmap="jet", x_label="x", y_label="y"):
+
+    """
+    This function ...
+    :param box:
+    :param nlevels:
+    :param title:
+    :param path:
+    :param format:
+    :param cmap:
+    :param x_label:
+    :param y_label:
+    :return:
+    """
+
+    # Get the data
+    if isinstance(box, np.ndarray): data = box
+    else: data = box.data
+    z = data
+
+    # Define x and y labels
+    x = np.arange(data.shape[1])
+    y = np.arange(data.shape[0])
+
+    # Setup contour levels
+    #levels = np.arange(13)
+
+    # Setup figure and colorbar
+    fig = plt.figure(figsize=(6, 6.5))
+
+    # Define custom grid for image
+    grid = ImageGrid(fig, 111,  # similar to subplot(111)
+                     nrows_ncols=(1, 1),
+                     label_mode='L',
+                     cbar_pad=0.05,
+                     cbar_mode='single',
+                     cbar_location='top')
+
+    # Set axis labels
+    grid[0].set_xlabel(x_label)
+    grid[0].set_ylabel(y_label)
+
+    # Display image contours and colorbar
+    #im = grid[0].contourf(x, y, z, levels=levels, antialiased=False, cmap=cmap)
+    im = grid[0].contourf(x, y, z, nlevels, antialiased=False, cmap=cmap)
+    cbar = grid.cbar_axes[0].colorbar(im)
+
+    # Set tick labels to colorbar (even numbers)
+    #cbar.ax.set_xticks(levels[::2])
+
+    # Add title
+    if title is not None: plt.title(title)
+
+    # Show or save
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format)
+
+    # Close
+    plt.close()
+
+# -----------------------------------------------------------------
+
+def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=None, measure="mean", max_radius=None, format=None):
+
+    """
+    This function ...
+    :param box:
+    :param center:
+    :param angle:
+    :param ratio:
+    :param nbins:
+    :param path:
+    :param title:
+    :param measure: sum, min, max, mean, median
+    :param max_radius:
+    :param format:
+    :return:
+    """
+
+    # Get the data
+    if isinstance(box, np.ndarray): data = box
+    else: data = box.data
+
+    from ..dist_ellipse import distance_ellipse
+    from ...core.basics.range import RealRange
+    from ..basics.coordinate import PixelCoordinate, SkyCoordinate
+    from ..core.mask import intersection
+    from ...core.basics.log import log
+
+    # Convert center to pixel coordinates
+    if isinstance(center, PixelCoordinate): center_pix = center
+    elif isinstance(center, SkyCoordinate):
+        if not hasattr(box, "wcs"): raise ValueError("Passed data must have a coordinate system if center is given as sky coordinate")
+        center_pix = center.to_pixel(box.wcs)
+    else: raise ValueError("center must be pixel or sky coordinate")
+
+    # Create distance ellipse frame
+    distance_frame = distance_ellipse(data.shape, center_pix, ratio, angle)
+
+    radius_list = []
+    value_list = []
+    #nmasked_list = []
+
+    # Determine minimum distance
+    min_distance = np.min(distance_frame)
+
+    # Determine maximum distance
+    if max_radius is not None:
+        from astropy.units import Quantity
+        if isinstance(max_radius, Quantity):
+            if max_radius.unit.physical_type != "angle": raise ValueError("Unknown max radius unit")
+            if not (hasattr(box, "pixelscale") and box.pixelscale is not None): raise ValueError("Passed data must have its pixelscale defined")
+            max_radius = (max_radius / box.average_pixelscale).to("").value
+        max_distance = max_radius
+    else: max_distance = np.max(distance_frame)
+
+    # Determine the step size
+    step = (max_distance - min_distance) / float(nbins)
+
+    # Debugging
+    log.debug("Step size for plotting the radial profile is " + str(step) + " pixels")
+
+    # Set the first range
+    radius_range = RealRange(min_distance, min_distance + step)
+
+    # Loop, shifting ranges of radius
+    while True:
+
+        # Check the range
+        if radius_range.min > max_distance: break
+
+        # Get the average radius
+        radius_center = radius_range.center
+
+        above_min_mask = distance_frame >= radius_range.min
+        below_max_mask = distance_frame < radius_range.max
+
+        # Create mask of pixels that are in the range
+        range_mask = intersection(above_min_mask, below_max_mask)
+
+        # Calculate the mean value in the range
+        values = data[range_mask]
+        if measure == "mean": value = np.nanmean(values)
+        elif measure == "median": value = np.nanmedian(values)
+        elif measure == "sum": value = np.nansum(values)
+        elif measure == "min": value = np.nanmin(values)
+        elif measure == "max": value = np.nanmax(values)
+        else: raise ValueError("Invalid value for 'measure': " + measure)
+
+        # Make a mask of all the pixels below the center radius
+        #below_mask = distance_frame < radius_center
+
+        # Add point
+        radius_list.append(radius_center)
+        value_list.append(value)
+
+        # Shift the range
+        radius_range += step
+
+    # Create the plot
+
+    # Create plot
+    plt.figure()
+    plt.plot(radius_list, value_list)
+
+    # Add vertical lines
+    # for factor in self.ellipses[name]:
+    #     radius = self.ellipses[name][factor].major
+    #     plt.axvline(x=radius)
+
+    # Add title
+    if title is not None: plt.title(title)
+
+    # Show or save
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format)
+
+    # Close
+    plt.close()
 
 # -----------------------------------------------------------------
 

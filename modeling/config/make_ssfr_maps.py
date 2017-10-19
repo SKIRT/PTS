@@ -13,6 +13,9 @@ from pts.modeling.config.maps import definition
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# REplot?
+definition.add_flag("replot", "remake already existing plots", False)
+
 # -----------------------------------------------------------------
 
 # Smoothing

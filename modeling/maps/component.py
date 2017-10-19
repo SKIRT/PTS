@@ -35,6 +35,7 @@ from pts.core.tools.utils import lazyproperty
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
+from ...magic.tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -836,15 +837,171 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # PLOTTING
 
-    def plot_maps(self):
+    # -----------------------------------------------------------------
+
+    @property
+    def map_plots_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "plots"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def contour_plots_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "contours"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def profile_plots_name(self):
 
         """
         Thisfunction ...
         :return:
         """
 
+        return "profiles"
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_map_plot(self, name, method=None, add_extension=True, extension="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create extra path
+            extra_path = fs.create_directory_in(path, self.map_plots_name)
+
+            # Determine path
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Determine path
+        else:
+
+            extra_path = fs.create_directory_in(self.maps_sub_path, self.map_plots_name)
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_contour_plot(self, name, method=None, add_extension=True, extension="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create extra path
+            extra_path = fs.create_directory_in(path, self.contour_plots_name)
+
+            # Determine path
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Determine path
+        else:
+
+            extra_path = fs.create_directory_in(self.maps_sub_path, self.contour_plots_name)
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_profile_plot(self, name, method=None, add_extension=True, extension="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create extra path
+            extra_path = fs.create_directory_in(path, self.profile_plots_name)
+
+            # Determine path
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Determine path
+        else:
+
+            extra_path = fs.create_directory_in(self.maps_sub_path, self.profile_plots_name)
+            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
+            else: map_path = fs.join(extra_path, name)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3):
+
+        """
+        Thisfunction ...
+        :param cmap:
+        :param scale:
+        :param format:
+        :param cropping_factor:
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the maps ...")
+
+        # The vmin and vmax
+        vmin = vmax = None
 
         # Loop over the methods
         for method in self.maps:
@@ -852,34 +1009,171 @@ class MapMakerBase(GalaxyModelingComponent):
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
 
+                # Debugging
+                log.debug("Plotting maps for the '" + method + "' method ...")
+
                 # Loop over the maps
                 for name in self.maps[method]:
 
+                    # Debugging
+                    log.debug("Plotting maps for the '" + name + "' map ...")
+
                     # Determine path
-                    map_plot_path = self.get_path_for_map(name, method, extension="pdf")
+                    plot_path = self.get_path_for_map_plot(name, method, extension=format)
 
-                    # If map already exists and we don't have to remake
-                    if fs.is_file(map_plot_path) and not self.config.remake: continue
-
-                    # Save
-                    #self.maps[method][name].saveto(map_path)
+                    # If the plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
 
                     # Plot
+                    if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                    else: interval = "pts"
+                    vmin, vmax = plotting.plot_frame(self.maps[method][name], crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                     truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
+                                                     scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+
+                # End of method: reset vmin and vmax
+                vmin = vmax = None
 
             # No different methods
             else:
 
+                # Debugging
+                log.debug("Plotting the '" + method + "' map ...")
+
                 # Determine path
-                map_plot_path = self.get_path_for_map(method, extension="pdf")
+                plot_path = self.get_path_for_map_plot(method, extension=format)
 
-                # If map already exists and we don't have to remake
-                if fs.is_file(map_path) and not self.config.remake: continue
-
-                # Save
-                #self.maps[method].saveto(map_path)
+                # If the plot already exists and we don't have to replot
+                if fs.is_file(plot_path) and not self.config.replot: continue
 
                 # Plot
-                
+                if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                else: interval = "pts"
+                vmin, vmax = plotting.plot_frame(self.maps[method], crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                 truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
+                                                 interval=interval, scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3):
+
+        """
+        This function ...
+        :param filled:
+        :param nlevels:
+        :param format:
+        :param cropping_factor:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the contours of the maps ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Debugging
+                log.debug("Plotting contours for the '" + method + "' method ...")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Debugging
+                    log.debug("Plotting contours for the '" + name + "' map ...")
+
+                    # Determine the path
+                    plot_path = self.get_path_for_contour_plot(name, method, extension=format)
+
+                    # If plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    # Plot
+                    if filled: plotting.plot_filled_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
+                                                                   crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                                   truncate_outside=self.truncation_ellipse)
+                    else: plotting.plot_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
+                                                       crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                       truncate_outside=self.truncation_ellipse)
+
+            # No different methods
+            else:
+
+                # Debugging
+                log.debug("Plotting maps for the '" + method + "' map ...")
+
+                # Determine the path
+                plot_path = self.get_path_for_contour_plot(method, extension=format)
+
+                # If plot already exists and we don't have to remake
+                if fs.is_file(plot_path) and not self.config.replot: continue
+
+                # Plot
+                if filled: plotting.plot_filled_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
+                                                               crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                               truncate_outside=self.truncation_ellipse)
+                else: plotting.plot_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
+                                                   crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                   truncate_outside=self.truncation_ellipse)
+
+    # -----------------------------------------------------------------
+
+    def plot_profiles(self, nbins=20, format="pdf"):
+
+        """
+        Thisn function ...
+        :param nbins:
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the radial profiles of the maps ...")
+
+        # Get properties
+        angle = self.disk_ellipse.angle # or truncation ellipse
+        ratio = self.disk_ellipse.semiminor / self.disk_ellipse.semimajor
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Debugging
+                log.debug("Plotting radial profiles for the '" + method + "' method ...")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Debugging
+                    log.debug("Plotting radial profiles for the '" + name + "' map ...")
+
+                    # Determine the path
+                    plot_path = self.get_path_for_profile_plot(name, method, extension=format)
+
+                    # If plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    # Plot
+                    plotting.plot_radial_profile(self.maps[method][name], self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
+
+            # No different methods
+            else:
+
+                # Debugging
+                log.debug("Plotting radial profiles for the '" + method + "' map ...")
+
+                # Determine the path
+                plot_path = self.get_path_for_profile_plot(method, extension=format)
+
+                # If plot already exist and we don't have to remake
+                if fs.is_file(plot_path) and not self.config.replot: continue
+
+                # Plot
+                plotting.plot_radial_profile(self.maps[method], self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
 
     # -----------------------------------------------------------------
 

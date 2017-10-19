@@ -317,17 +317,19 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
 
         if isinstance(normalize_in, SkyRegion): normalize_in = normalize_in.to_pixel(frame.wcs)
         if isinstance(normalize_in, PixelRegion): normalize_in = normalize_in.to_mask(frame.xsize, frame.ysize)
+
         pixels = frame.data[normalize_in]
         normalize_min = np.nanmin(pixels)
         normalize_max = np.nanmax(pixels)
 
     else:
 
+        pixels = frame.data.flatten()
         normalize_min = np.nanmin(data)
         normalize_max = np.nanmax(data)
 
     # ZSCALE interval
-    if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
+    if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(pixels)
 
     # PTS interval
     elif interval == "pts":
@@ -357,7 +359,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
             vmin = 0.5 * (normalize_min + vmax)
 
     # Min and max
-    elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
+    elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(pixels)
 
     # List or tuple of 2 values (min and max)
     elif isinstance(interval, list) or isinstance(interval, tuple): vmin, vmax = interval
@@ -367,7 +369,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
 
         from ...core.tools import parsing
         try:
-            vmin, xmax = parsing.real_tuple(interval)
+            vmin, vmax = parsing.real_tuple(interval)
         except ValueError: raise ValueError("Cannot interpret the interval")
 
     # Other

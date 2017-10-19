@@ -41,4 +41,7 @@ definition.add_optional("factor_nvalues", "positive_integer", "number of factors
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Replot
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------

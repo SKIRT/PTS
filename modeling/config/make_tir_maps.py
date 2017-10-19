@@ -14,6 +14,9 @@ from pts.modeling.maps.tir import methods
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Replot?
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------
 
 # Methods

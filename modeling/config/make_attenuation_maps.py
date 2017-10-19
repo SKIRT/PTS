@@ -17,6 +17,9 @@ from pts.modeling.maps.attenuation import methods
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Remake?
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------
 
 # Select specific input maps

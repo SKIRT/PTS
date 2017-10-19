@@ -22,4 +22,7 @@ definition.add_flag("write", "write out the maps", True)
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Replot?
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------

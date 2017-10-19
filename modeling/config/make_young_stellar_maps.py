@@ -35,6 +35,9 @@ definition.add_optional("fuv_significance", "real", "the significance level of t
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
+# Replot?
+definition.add_flag("replot", "replot already existing plots", False)
+
 # -----------------------------------------------------------------
 
 old_filters = collection.old_stellar_disk_filters
