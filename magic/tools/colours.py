@@ -210,11 +210,17 @@ def make_colour_map(frame_a, frame_b):
     :return:
     """
 
+    from ...core.basics.log import log
+    from ...core.tools.stringify import tostr
+
     # Check uniformity
     unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(frame_a, frame_b)
 
+    # Debugging
+    log.debug("Both frames have a unit of " + tostr(unit, add_physical_type=True))
+
     # Make the colour map and return it
-    colour = Frame(-2.5 * np.log10(frame_a / frame_b), unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
+    colour = Frame(-2.5 * np.log10(frame_a / frame_b), unit=None, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
 
     # Set infinity values to Nan
     colour.replace_infs(float("nan"))
