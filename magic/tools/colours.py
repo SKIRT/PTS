@@ -205,21 +205,22 @@ def make_colour_map(frame_a, frame_b):
 
     """
     This function ...
-    :param frame_a: HAS TO BE IN JANSKY
-    :param frame_b: HAS TO BE IN JANSKY
+    :param frame_a:
+    :param frame_b:
     :return:
     """
 
     from ...core.basics.log import log
     from ...core.tools.stringify import tostr
 
-    # Check uniformity
+    # Check uniformity, THE UNIT HAS TO BE THE SAME OBVIOUSLY
     unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(frame_a, frame_b)
 
     # Debugging
     log.debug("Both frames have a unit of " + tostr(unit, add_physical_type=True))
 
     # Make the colour map and return it
+    # UNIT SHOULD BE NONE
     colour = Frame(-2.5 * np.log10(frame_a / frame_b), unit=None, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
 
     # Set infinity values to Nan
