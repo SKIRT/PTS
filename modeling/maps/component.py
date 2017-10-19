@@ -859,10 +859,12 @@ class MapMakerBase(GalaxyModelingComponent):
                     map_plot_path = self.get_path_for_map(name, method, extension="pdf")
 
                     # If map already exists and we don't have to remake
-                    if fs.is_file(map_path) and not self.config.remake: continue
+                    if fs.is_file(map_plot_path) and not self.config.remake: continue
 
                     # Save
-                    self.maps[method][name].saveto(map_path)
+                    #self.maps[method][name].saveto(map_path)
+
+                    # Plot
 
             # No different methods
             else:
@@ -874,7 +876,10 @@ class MapMakerBase(GalaxyModelingComponent):
                 if fs.is_file(map_path) and not self.config.remake: continue
 
                 # Save
-                self.maps[method].saveto(map_path)
+                #self.maps[method].saveto(map_path)
+
+                # Plot
+                
 
     # -----------------------------------------------------------------
 
