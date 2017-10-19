@@ -254,7 +254,7 @@ class CorteseAttenuationMapsMaker(Configurable):
         :return:
         """
 
-        return self.has_tirs_nans and tir_name in self.tirs_nans
+        return self.has_tirs_nans and tir_name in self.tirs_nans and self.tirs_nans[tir_name] is not None
 
     # -----------------------------------------------------------------
 
@@ -266,7 +266,7 @@ class CorteseAttenuationMapsMaker(Configurable):
         :return:
         """
 
-        return self.has_ssfrs_nans and ssfr_name in self.ssfrs_nans
+        return self.has_ssfrs_nans and ssfr_name in self.ssfrs_nans and self.ssfrs_nans[ssfr_name] is not None
 
     # -----------------------------------------------------------------
 

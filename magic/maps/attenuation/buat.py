@@ -213,7 +213,7 @@ class BuatAttenuationMapsMaker(Configurable):
         :return:
         """
 
-        return self.has_nans and name in self.tirs_nans
+        return self.has_nans and name in self.tirs_nans and self.tirs_nans[name] is not None
 
     # -----------------------------------------------------------------
 
