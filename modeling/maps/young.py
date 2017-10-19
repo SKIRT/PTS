@@ -167,23 +167,21 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
-        if "IRAC I1" in self.frame_list:
+        # if "IRAC I1" in self.frame_list:
+        #     # Get the map
+        #     self.old = self.get_old_stellar_disk_map(self.i1_filter)
+        #     # Set the old origin
+        #     self.old_origin = self.i1_filter
+        # elif "IRAC I2" in self.frame_list:
+        #     # Get the map
+        #     self.old = self.get_old_stellar_disk_map(self.i2_filter)
+        #     # Set the old origin
+        #     self.old_origin = self.i2_filter
+        # else: raise ValueError("Cannot get old stellar map")
 
-            # Get the map
-            self.old = self.get_old_stellar_disk_map(self.i1_filter)
-
-            # Set the old origin
-            self.old_origin = self.i1_filter
-
-        elif "IRAC I2" in self.frame_list:
-
-            # Get the map
-            self.old = self.get_old_stellar_disk_map(self.i2_filter)
-
-            # Set the old origin
-            self.old_origin = self.i2_filter
-
-        else: raise ValueError("Cannot get old stellar map")
+        # Load map and set origin
+        self.old = self.get_old_stellar_disk_map(self.config.old)
+        self.old_origin = self.config.old
 
         # Set the old method
         self.old_method = "disk" #self.get_old_stellar_disk_methods()

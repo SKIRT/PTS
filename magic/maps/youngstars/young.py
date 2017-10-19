@@ -151,7 +151,6 @@ class YoungStellarMapsMaker(Configurable):
 
         # Get input
         self.fuv = kwargs.pop("fuv")
-        #self.fuv_errors = kwargs.pop("fuv_errors", None)
         self.old = kwargs.pop("old")
         self.fuv_attenuations = kwargs.pop("fuv_attenuations")
 

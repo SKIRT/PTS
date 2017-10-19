@@ -1445,6 +1445,68 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_stellar_total_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_old_path, "total")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_total_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in fs.files_in_path(self.old_stellar_total_maps_path, extension="fits", returns="name")]
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_total_map(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        path = fs.join(self.old_stellar_total_maps_path, tostr(fltr, delimiter="_") + ".fits")
+        return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_bulge_maps_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.maps_old_path, "bulge")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_bulge_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in fs.files_in_path(self.old_stellar_bulge_maps_path, extension="fits", returns="name")]
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_bulge_map(self, fltr):
 
         """
@@ -1454,8 +1516,7 @@ class MapsCollection(object):
         """
 
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
-
-        path = fs.join(self.maps_old_path, "bulge", tostr(fltr, delimiter="_") + ".fits")
+        path = fs.join(self.old_stellar_bulge_maps_path, tostr(fltr, delimiter="_") + ".fits")
         return Frame.from_file(path)
 
     # -----------------------------------------------------------------
@@ -1472,6 +1533,30 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_stellar_disk_maps_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.maps_old_path, "disk")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_disk_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in fs.files_in_path(self.old_stellar_disk_maps_path, extension="fits", returns="name")]
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_map(self, fltr):
 
         """
@@ -1481,8 +1566,7 @@ class MapsCollection(object):
         """
 
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
-
-        path = fs.join(self.maps_old_path, "disk", tostr(fltr, delimiter="_") + ".fits")
+        path = fs.join(self.old_stellar_disk_maps_path, tostr(fltr, delimiter="_") + ".fits")
         return Frame.from_file(path)
 
     # -----------------------------------------------------------------
