@@ -63,7 +63,7 @@ definition.add_flag("use_buat", "use Buat FUV attenuation maps", True)
 # -----------------------------------------------------------------
 
 # Select specific input maps
-definition.add_optional("attenuation_maps", )
+definition.add_optional("attenuation_maps", "string_list", "names of FUV attenuation maps to use")
 definition.add_flag("select_attenuation", "select specific FUV attenuation maps", False)
 
 # -----------------------------------------------------------------
