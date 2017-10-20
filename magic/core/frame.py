@@ -1164,6 +1164,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def relative_ninfs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.ninfs) / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_infs(self):
 
         """
@@ -1220,6 +1232,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.zeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nzeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nzeroes) / self.npixels
 
     # -----------------------------------------------------------------
 
@@ -1304,6 +1328,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.nonzeroes.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nnonzeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nnonzeroes) / self.npixels
 
     # -----------------------------------------------------------------
 
@@ -1435,6 +1471,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.positives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_npositives(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return float(self.npositives) / self.npixels
 
     # -----------------------------------------------------------------
 
@@ -1650,6 +1698,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def relative_nnans_in(self, region_or_mask):
+
+        """
+        Thisf function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return
+        return float(self.nnans_in(mask)) / np.sum(mask)
+
+    # -----------------------------------------------------------------
+
     def ninfs_in(self, region_or_mask):
 
         """
@@ -1673,6 +1737,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def relative_ninfs_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return
+        return float(self.ninfs_in(mask)) / np.sum(mask)
+
+    # -----------------------------------------------------------------
+
     def nzeroes_in(self, region_or_mask):
 
         """
@@ -1686,6 +1766,22 @@ class Frame(NDDataArray):
 
         # Return the number of zero pixels
         return np.sum(np.equal(self.data[mask], zero_value))
+
+    # -----------------------------------------------------------------
+
+    def relative_nzeroes_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return
+        return float(self.nzeroes_in(mask)) / np.sum(mask)
 
     # -----------------------------------------------------------------
 
@@ -1705,6 +1801,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def relative_nnegatives_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return
+        return float(self.nnegatives_in(mask)) / np.sum(mask)
+
+    # -----------------------------------------------------------------
+
     def npositives_in(self, region_or_mask):
 
         """
@@ -1718,6 +1830,22 @@ class Frame(NDDataArray):
 
         # Return the number of positive pixels
         return np.sum(np.greater(self.data[mask], zero_value))
+
+    # -----------------------------------------------------------------
+
+    def relative_npositives_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return
+        return float(self.npositives_in(region_or_mask)) / np.sum(mask)
 
     # -----------------------------------------------------------------
 

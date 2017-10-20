@@ -377,6 +377,7 @@ class MapMakerBase(GalaxyModelingComponent):
             ssfrs, ssfr_names = select_maps(ssfrs, title, return_names=True)
             ssfrs_origins = create_subdict(ssfrs_origins, ssfr_names)
             ssfrs_methods = create_subdict(ssfrs_methods, ssfr_names)
+            ssfrs_nans = create_subdict(ssfrs_nans, ssfr_names)
 
         # Return
         return ssfrs, ssfrs_origins, ssfrs_methods, ssfrs_nans
@@ -444,6 +445,7 @@ class MapMakerBase(GalaxyModelingComponent):
             tirs, tir_names = select_maps(tirs, title, return_names=True)
             tirs_origins = create_subdict(tirs_origins, tir_names)
             tirs_methods = create_subdict(tirs_methods, tir_names)
+            tirs_nans = create_subdict(tirs_nans, tir_names)
 
         # Return
         return tirs, tirs_origins, tirs_methods, tirs_nans
@@ -620,6 +622,17 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_total_origins(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_total_origins()
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_origins(self):
 
         """
@@ -631,6 +644,28 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_bulge_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_bulge_origins()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_total_methods(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_total_methods()
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_methods(self):
 
         """
@@ -639,6 +674,29 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_old_stellar_disk_methods()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_bulge_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_bulge_methods()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_total_map(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.collection.get_old_stellar_total_map(fltr)
 
     # -----------------------------------------------------------------
 

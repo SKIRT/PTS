@@ -375,18 +375,20 @@ class YoungStellarMapsMaker(Configurable):
                 # Interpolate negatives
                 negatives = young_stars.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
                 young_stars.replace_negatives(0.0) # if any left
+
+                # Normalize
+                try: young_stars.normalize()
+                # young_stars.unit = None # not necessary
+                except RuntimeError: log.warning("The young '" + key + "' young stellar map could not be normalized")
+
+                # Create image
                 image = Image()
                 image.add_frame(young_stars, "young")
                 if negatives is not None: image.add_mask(negatives, "negatives")
                 if self.has_nans_for_name(name): image.add_mask(self.fuv_attenuations_nans[name], "nans")
 
-                # Normalize
-                try: young_stars.normalize()
-                #young_stars.unit = None # not necessary
-                except RuntimeError: log.warning("The young '" + key + "' young stellar map could not be normalized")
-
-                # Add the attenuation map to the dictionary
-                self.maps[key] = young_stars
+                # Add the young stellar image
+                self.maps[key] = image
 
     # -----------------------------------------------------------------
 

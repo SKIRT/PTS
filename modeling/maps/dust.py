@@ -19,6 +19,8 @@ from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
 from ...magic.maps.dust.emission import EmissionDustMapsMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker
 from ...magic.maps.dust.hot import HotDustMapsMaker
+from ...core.tools.utils import lazyproperty
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -205,6 +207,90 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def use_old_bulge(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.old_component == "bulge"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_old_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.old_component == "total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_old_disk(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.old_component == "disk"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load map
+        if self.use_old_total: return self.get_old_stellar_total_map(self.config.old)
+        elif self.use_old_disk: return self.get_old_stellar_disk_map(self.config.old)
+        elif self.use_old_bulge: return self.get_old_stellar_bulge_map(self.config.old)
+        else: raise ValueError("Invalid option for 'old_component'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load origins
+        if self.use_old_total: return self.get_old_stellar_total_origins()
+        elif self.use_old_disk: return self.get_old_stellar_disk_origins()
+        elif self.use_old_bulge: return self.get_old_stellar_bulge_origins()
+        else: raise ValueError("Invalid option for 'old_component'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_methods(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Load methods
+        if self.use_old_total: return self.get_old_stellar_total_methods()
+        elif self.use_old_disk: return self.get_old_stellar_disk_methods()
+        elif self.use_old_bulge: return self.get_old_stellar_bulge_methods()
+        else: raise ValueError("Invalid option for 'old_component'")
+
+    # -----------------------------------------------------------------
+
     def make_hot(self):
 
         """
@@ -218,35 +304,24 @@ class DustMapMaker(MapsComponent):
         # Set the method name
         method_name = "hot"
 
-        # Get MIPS 24 micron frame and error map
-        #mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
-        #mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
+        # Get MIPS 24 micron frame
         mips24 = self.get_frame("MIPS 24mu")
-
-        # Get the map of old stars
-        #old = self.get_old_stellar_disk_map(self.i1_filter)
-
-        # Get maps of old stars
-        old = self.get_old_stellar_disk_maps()
-        old_origins = self.get_old_stellar_disk_origins()
-        old_methods = self.get_old_stellar_disk_methods()
 
         # Create the hot dust map maker
         maker = HotDustMapsMaker()
 
         # Set the factors
-        # from 0.2 to 0.7
         factors = self.config.hot_factor_range.linear(self.config.factor_nvalues, as_list=True)
 
-        #print(factors)
+        # Debugging
+        log.debug("Using the following factors for subtracting diffuse emission: " + tostr(factors, delimiter=", "))
 
         # Get already created maps
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
-        #maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)
-        maker.run(mips24=mips24, old=old, old_origins=old_origins, old_methods=old_methods, method_name=method_name, factors=factors, maps=current)
+        maker.run(mips24=mips24, old=self.old, old_origins=self.old_origins, old_methods=self.old_methods, method_name=method_name, factors=factors, maps=current)
 
         # Add the dust maps
         self.maps[method_name] = maker.maps

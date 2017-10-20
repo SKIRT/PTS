@@ -10,27 +10,15 @@ from pts.modeling.config.maps import definition
 
 # -----------------------------------------------------------------
 
-# The significance level
-#definition.add_optional("fuv_significance", "real", "significance level of the FUV image below which to cut-off the dust map", 2.5)
-#definition.add_optional("mips24_significance", "real", "significance level of the MIPS 24 micron image below which to cut-off the dust map", 2.0)
-#definition.add_optional("pacs70_significance", "real", "significance level of the Pacs 70 micron image below which to cut-off the dust map", 1.0)
-#definition.add_optional("pacs160_significance", "real", "significance level of the Pacs 160 micron image below which to cut-off the dust map", 2.0)
-#definition.add_optional("h_significance", "real", "significance level of the 2MASS H image below which to cut-off the dust map", 0.0) # used for SSFR
-
-# Remove holes from the cutoff mask
-#definition.add_flag("remove_holes", "remove holes from the total cutoff mask", True)
-
 # Flags for enabling/disabling different methods
 definition.add_flag("make_black_body", "make dust map based on black-body fitting", False)
 definition.add_flag("make_emission", "make dust map based on emission", False)
 definition.add_flag("make_attenuation", "make dust map based on attenuation", True)
 definition.add_flag("make_hot", "make map of hot dust", True)
 
+# Old stellar contribution subtraction factor
 definition.add_optional("hot_factor_range", "real_range", "range of factor to create the hot dust maps", "0.2>0.7", convert_default=True)
 definition.add_optional("factor_nvalues", "positive_integer", "number of factors", 8)
-
-# Best method
-#definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")
 
 # Sections: different dust map makers
 #definition.import_section("cortese", "options for Cortese dust map maker", cortese_definition)
@@ -48,5 +36,11 @@ definition.add_flag("replot", "replot already existing plots", False)
 
 # Plot
 definition.add_flag("plot", "plotting", False)
+
+# -----------------------------------------------------------------
+
+# Old stars component
+old_components = ["bulge", "disk", "total"]
+definition.add_optional("old_component", "string", "old stellar component to use to subtract diffuse emission by evolved stars", "disk")
 
 # -----------------------------------------------------------------

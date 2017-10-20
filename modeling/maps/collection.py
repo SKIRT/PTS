@@ -1666,7 +1666,7 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.get_maps_sub_name(self.maps_old_name, )
+        return self.get_maps_sub_name(self.maps_old_name, framelist=framelist, method="bulge")
 
     # -----------------------------------------------------------------
 
@@ -1731,6 +1731,17 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_total_origins(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name(self.maps_old_name, method="total")
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_origins(self):
 
         """
@@ -1742,6 +1753,28 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_bulge_origins(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name(self.maps_old_name, method="bulge")
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_total_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_old_name, method="total")
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_methods(self):
 
         """
@@ -1750,6 +1783,17 @@ class MapsCollection(object):
         """
 
         return self.get_methods_sub_name(self.maps_old_name, method="disk")
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_bulge_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_old_name, method="bulge")
 
     # -----------------------------------------------------------------
 

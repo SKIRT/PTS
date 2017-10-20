@@ -17,6 +17,9 @@ from ...core.basics.log import log
 from .component import MapsComponent
 from ...magic.maps.youngstars.young import YoungStellarMapsMaker
 from ...core.tools import filesystem as fs
+from ...core.tools.stringify import tostr
+from ...core.basics.containers import create_subdict
+from .component import select_maps
 
 # -----------------------------------------------------------------
 
@@ -62,7 +65,7 @@ class YoungStellarMapMaker(MapsComponent):
         self.fuv_attenuations_methods = None
 
         # Nans
-        self.fuv_attenuation_nans = None
+        self.fuv_attenuations_nans = None
 
     # -----------------------------------------------------------------
 
@@ -163,9 +166,71 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading the maps of the FUV attenuation ...")
 
         # Get the FUV attenuation maps
-        #self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
-        #self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
-        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods, self.fuv_attenuation_nans = self.get_fuv_attenuation_maps_origins_methods_and_nans(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
+        fuv_attenuations, fuv_attenuations_origins, fuv_attenuations_methods, fuv_attenuations_nans = self.get_fuv_attenuation_maps_origins_methods_and_nans(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
+
+        # Debugging
+        log.debug("Making selection ...")
+
+        # Set things
+        names = self.config.attenuation_maps
+        prompt = self.config.select_attenuation
+        title = "FUV attenuation maps to correct FUV emission"
+
+        # Get only certain FUV attenuation maps
+        if names is not None:
+            fuv_attenuations = create_subdict(fuv_attenuations, names)
+            fuv_attenuations_origins = create_subdict(fuv_attenuations_origins, names)
+            fuv_attenuations_methods = create_subdict(fuv_attenuations_methods, names)
+            fuv_attenuations_nans = create_subdict(fuv_attenuations_nans, names)
+
+        # Select interactively
+        if prompt:
+            fuv_attenuations, attenuation_names = select_maps(fuv_attenuations, title, return_names=True)
+            fuv_attenuations_origins = create_subdict(fuv_attenuations_origins, attenuation_names)
+            fuv_attenuations_methods = create_subdict(fuv_attenuations_methods, attenuation_names)
+            fuv_attenuations_nans = create_subdict(fuv_attenuations_nans, attenuation_names)
+
+        # Set
+        self.fuv_attenuations = fuv_attenuations
+        self.fuv_attenuations_origins = fuv_attenuations_origins
+        self.fuv_attenuations_methods = fuv_attenuations_methods
+        self.fuv_attenuations_nans = fuv_attenuations_nans
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_old_bulge(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.old_component == "bulge"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_old_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.old_component == "total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_old_disk(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.old_component == "disk"
 
     # -----------------------------------------------------------------
 
@@ -178,24 +243,17 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
-        # if "IRAC I1" in self.frame_list:
-        #     # Get the map
-        #     self.old = self.get_old_stellar_disk_map(self.i1_filter)
-        #     # Set the old origin
-        #     self.old_origin = self.i1_filter
-        # elif "IRAC I2" in self.frame_list:
-        #     # Get the map
-        #     self.old = self.get_old_stellar_disk_map(self.i2_filter)
-        #     # Set the old origin
-        #     self.old_origin = self.i2_filter
-        # else: raise ValueError("Cannot get old stellar map")
+        # Load map
+        if self.use_old_total: self.old = self.get_old_stellar_total_map(self.config.old)
+        elif self.use_old_disk: self.old = self.get_old_stellar_disk_map(self.config.old)
+        elif self.use_old_bulge: self.old = self.get_old_stellar_bulge_map(self.config.old)
+        else: raise ValueError("Invalid option for 'old_component'")
 
-        # Load map and set origin
-        self.old = self.get_old_stellar_disk_map(self.config.old)
+        # Set origin
         self.old_origin = self.config.old
 
         # Set the old method
-        self.old_method = "disk" #self.get_old_stellar_disk_methods()
+        self.old_method = self.config.old_component
 
     # -----------------------------------------------------------------
 
@@ -219,11 +277,14 @@ class YoungStellarMapMaker(MapsComponent):
         # Set the factors
         factors = self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
 
+        # Debugging
+        log.debug("Using the following factors for subtracting diffuse emission: " + tostr(factors, delimiter=", "))
+
         # Run the map maker
         maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations,
                   factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
                   old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_methods, maps=current,
-                  region_of_interest=self.truncation_ellipse, fuv_attenuations_nans=self.fuv_attenuation_nans)
+                  region_of_interest=self.truncation_ellipse, fuv_attenuations_nans=self.fuv_attenuations_nans)
 
         # Set the maps
         self.maps = maker.maps
@@ -252,7 +313,7 @@ class YoungStellarMapMaker(MapsComponent):
         # 2. Write origins
         self.write_origins()
 
-        # Write the methods
+        # 3. Write the methods
         self.write_methods()
 
     # -----------------------------------------------------------------
