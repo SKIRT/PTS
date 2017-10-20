@@ -1764,7 +1764,7 @@ class MapsCollection(object):
         :return:
         """
 
-        if self.from_analysis: return get_extra_maps_sub_name_analysis()
+        if self.from_analysis: return get_extra_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
         else: return get_extra_maps_sub_name(self.environment, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
@@ -2256,6 +2256,29 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
 
 # -----------------------------------------------------------------
 
+def get_extra_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(analysis_run.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+
+    # Get map paths
+    return get_extra_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+# -----------------------------------------------------------------
+
 def get_map_paths_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
@@ -2422,7 +2445,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
             if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
 
             # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plot", "contours", "profiles"], returns="name")
+            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "contours", "profiles"], returns="name")
 
             # No extra maps
             if len(subdirectory_names) == 0: return dict()
@@ -2465,7 +2488,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
                 if not_methods is not None and method_name in not_methods: continue
 
                 # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plot", "contours", "profiles"], returns="name")
+                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "contours", "profiles"], returns="name")
 
                 # No extra maps
                 if len(subdirectory_names) == 0: files = dict()
@@ -2561,8 +2584,31 @@ def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=Fals
     # Get map paths
     paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
-    # Return the map paths
+    # Return the maps
     return get_maps_sub_name_from_paths(paths, framelist=framelist)
+
+# -----------------------------------------------------------------
+
+def get_extra_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    Thisnf unction ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_extra_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # Return the maps
+    return get_extra_maps_sub_name_from_paths(paths, framelist=framelist)
 
 # -----------------------------------------------------------------
 
@@ -2688,7 +2734,7 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
                 map_path = paths[method_or_name][name]
 
                 # Try to load
-                try: maps[method_name][name] = Frame.from_file(map_path)
+                try: maps[method_name][name] = Frame.from_file(map_path, no_filter=True)
                 except IOError:
                     command = command_for_sub_name(name)
                     log.warning("The " + method_name + "/" + name + " map is probably damaged. Run the '" + command + "' command again.")
@@ -2705,7 +2751,7 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
             map_path = paths[method_or_name]
 
             # Try to load
-            try: maps[name] = Frame.from_file(map_path)
+            try: maps[name] = Frame.from_file(map_path, no_filter=True)
             except IOError:
                 command = command_for_sub_name(name)
                 log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
@@ -2751,8 +2797,8 @@ def get_extra_maps_sub_name_from_paths(paths, framelist=False, images=True):
                 map_path = paths[method_or_name][name]
 
                 # Get the map
-                if images: maps[method_name][name] = Image.from_file(map_path)
-                else: maps[method_name][name] = Frame.from_file(map_path)
+                if images: maps[method_name][name] = Image.from_file(map_path, no_filter=True)
+                else: maps[method_name][name] = Frame.from_file(map_path, no_filter=True)
 
         # Just maps
         elif types.is_string_type(paths[method_or_name]):
@@ -2763,8 +2809,8 @@ def get_extra_maps_sub_name_from_paths(paths, framelist=False, images=True):
             map_path = paths[method_or_name]
 
             # Get the map
-            if images: maps[name] = Image.from_file(map_path)
-            else: maps[name] = Frame.from_file(map_path)
+            if images: maps[name] = Image.from_file(map_path, no_filter=True)
+            else: maps[name] = Frame.from_file(map_path, no_filter=True)
 
         # Something wrong
         else: raise RuntimeError("Something went wrong")

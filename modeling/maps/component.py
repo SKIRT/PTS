@@ -958,7 +958,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_path_for_contour_plot(self, name, method=None, add_extension=True, extension="pdf"):
+    def get_path_for_contour_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
 
         """
         This function ...
@@ -966,6 +966,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param method:
         :param add_extension:
         :param extension:
+        :param suffix:
         :return:
         """
 
@@ -980,15 +981,15 @@ class MapMakerBase(GalaxyModelingComponent):
             extra_path = fs.create_directory_in(path, self.contour_plots_name)
 
             # Determine path
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            if add_extension: map_path = fs.join(extra_path, name + suffix + "." + extension)
+            else: map_path = fs.join(extra_path, name + suffix)
 
         # Determine path
         else:
 
             extra_path = fs.create_directory_in(self.maps_sub_path, self.contour_plots_name)
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            if add_extension: map_path = fs.join(extra_path, name + suffix + "." + extension)
+            else: map_path = fs.join(extra_path, name + suffix)
 
         # Return the map path
         return map_path
@@ -1127,7 +1128,7 @@ class MapMakerBase(GalaxyModelingComponent):
             extra_path = fs.create_directory_in(path, self.extra_maps_name)
 
             # Create plot path
-            extra_plot_path = fs.create_directory_in(extra_path, "plot")
+            extra_plot_path = fs.create_directory_in(extra_path, "plots")
 
             # Determine path
             if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
@@ -1138,7 +1139,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Get paths
             extra_path = fs.create_directory_in(self.maps_sub_path, self.extra_maps_name)
-            extra_plot_path = fs.create_directory_in(extra_path, "plot")
+            extra_plot_path = fs.create_directory_in(extra_path, "plots")
 
             # Determine plot file path
             if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
@@ -1176,7 +1177,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting extra maps for the '" + method + "' method ...")
 
                 # Loop over the maps
-                for name in self.maps[method]:
+                for name in self.extra_maps[method]:
 
                     # Debugging
                     log.debug("Plotting the '" + name + "' extra map ...")
@@ -1190,7 +1191,9 @@ class MapMakerBase(GalaxyModelingComponent):
                     # Plot
                     if vmin is not None and vmax is not None: interval = [vmin, vmax]
                     else: interval = "pts"
-                    vmin, vmax = plotting.plot_frame(self.extra_maps[method][name], crop_to=self.truncation_box,
+                    frame = self.extra_maps[method][name]
+                    if isinstance(frame, Image): frame = frame.primary
+                    vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box,
                                                      cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path,
                                                      format=format, interval=interval,
@@ -1215,7 +1218,9 @@ class MapMakerBase(GalaxyModelingComponent):
                 # Plot
                 if vmin is not None and vmax is not None: interval = [vmin, vmax]
                 else: interval = "pts"
-                vmin, vmax = plotting.plot_frame(self.extra_maps[method], crop_to=self.truncation_box,
+                frame = self.extra_maps[method]
+                if isinstance(frame, Image): frame = frame.primary
+                vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box,
                                                  cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path,
                                                  format=format,
@@ -1257,15 +1262,32 @@ class MapMakerBase(GalaxyModelingComponent):
                     plot_path = self.get_path_for_contour_plot(name, method, extension=format)
 
                     # If plot already exists and we don't have to replot
-                    if fs.is_file(plot_path) and not self.config.replot: continue
+                    #if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    frame = self.maps[method][name]
+                    if isinstance(frame, Image): frame = frame.primary
 
                     # Plot
-                    if filled: plotting.plot_filled_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
-                                                                   crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                                   truncate_outside=self.truncation_ellipse)
-                    else: plotting.plot_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
-                                                       crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                       truncate_outside=self.truncation_ellipse)
+                    # if filled: plotting.plot_filled_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
+                    #                                                crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                    #                                                truncate_outside=self.truncation_ellipse)
+                    # else: plotting.plot_frame_contours(self.maps[method][name], path=plot_path, nlevels=nlevels,
+                    #                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                    #                                    truncate_outside=self.truncation_ellipse)
+
+                    if not fs.is_file(plot_path) or self.config.replot:
+
+                        plotting.plot_frame_contours(frame, path=plot_path, nlevels=nlevels,
+                                                            crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                            truncate_outside=self.truncation_ellipse)
+
+                    if not filled: continue
+                    filled_plot_path = self.get_path_for_contour_plot(name, method, extension=format, suffix="_filled")
+                    if not fs.is_file(filled_plot_path) or self.config.replot:
+
+                        plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,
+                                                                        crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                                        truncate_outside=self.truncation_ellipse)
 
             # No different methods
             else:
@@ -1277,15 +1299,32 @@ class MapMakerBase(GalaxyModelingComponent):
                 plot_path = self.get_path_for_contour_plot(method, extension=format)
 
                 # If plot already exists and we don't have to remake
-                if fs.is_file(plot_path) and not self.config.replot: continue
+                #if fs.is_file(plot_path) and not self.config.replot: continue
+
+                frame = self.maps[method]
+                if isinstance(frame, Image): frame = frame.primary
 
                 # Plot
-                if filled: plotting.plot_filled_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
-                                                               crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                               truncate_outside=self.truncation_ellipse)
-                else: plotting.plot_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
-                                                   crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                   truncate_outside=self.truncation_ellipse)
+                # if filled: plotting.plot_filled_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
+                #                                                crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                #                                                truncate_outside=self.truncation_ellipse)
+                # else: plotting.plot_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
+                #                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                #                                    truncate_outside=self.truncation_ellipse)
+
+                if not fs.is_file(plot_path) or self.config.replot:
+
+                    plotting.plot_frame_contours(frame, path=plot_path, nlevels=nlevels,
+                                                       crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                        truncate_outside=self.truncation_ellipse)
+
+                if not filled: continue
+                filled_plot_path = self.get_path_for_contour_plot(method, extension=format, suffix="_filled")
+                if not fs.is_file(filled_plot_path) or self.config.replot:
+
+                    plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,
+                                                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                                    truncate_outside=self.truncation_ellipse)
 
     # -----------------------------------------------------------------
 
@@ -1326,8 +1365,11 @@ class MapMakerBase(GalaxyModelingComponent):
                     # If plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
 
+                    frame = self.maps[method][name]
+                    if isinstance(frame, Image): frame = frame.primary
+
                     # Plot
-                    plotting.plot_radial_profile(self.maps[method][name], self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
+                    plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
 
             # No different methods
             else:
@@ -1341,8 +1383,11 @@ class MapMakerBase(GalaxyModelingComponent):
                 # If plot already exist and we don't have to remake
                 if fs.is_file(plot_path) and not self.config.replot: continue
 
+                frame = self.maps[method]
+                if isinstance(frame, Image): frame = frame.primary
+
                 # Plot
-                plotting.plot_radial_profile(self.maps[method], self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
+                plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
 
     # -----------------------------------------------------------------
 
