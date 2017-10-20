@@ -1313,7 +1313,7 @@ class MapMakerBase(GalaxyModelingComponent):
             else:
 
                 # Debugging
-                log.debug("Plotting maps for the '" + method + "' map ...")
+                log.debug("Plotting contours for the '" + method + "' map ...")
 
                 # Determine the path
                 plot_path = self.get_path_for_contour_plot(method, extension=format)

@@ -94,6 +94,9 @@ class YoungStellarMapMaker(MapsComponent):
         # 5. Writing
         self.write()
 
+        # 6. Plotting
+        if self.config.plot: self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -242,5 +245,26 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Write the methods
         self.write_methods()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps(scale="linear")
+
+        # Plot the contours
+        self.plot_contours(filled=True)
+
+        # Plot the radial profiles
+        self.plot_profiles()
 
 # -----------------------------------------------------------------

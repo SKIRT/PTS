@@ -21,8 +21,8 @@ from pts.modeling.config.maps import definition
 #definition.add_flag("remove_holes", "remove holes from the total cutoff mask", True)
 
 # Flags for enabling/disabling different methods
-definition.add_flag("make_black_body", "make dust map based on black-body fitting", True)
-definition.add_flag("make_emission", "make dust map based on emission", True)
+definition.add_flag("make_black_body", "make dust map based on black-body fitting", False)
+definition.add_flag("make_emission", "make dust map based on emission", False)
 definition.add_flag("make_attenuation", "make dust map based on attenuation", True)
 definition.add_flag("make_hot", "make map of hot dust", True)
 
@@ -43,5 +43,10 @@ definition.add_flag("remake", "remake already existing maps", False)
 
 # Replot
 definition.add_flag("replot", "replot already existing plots", False)
+
+# -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plotting", False)
 
 # -----------------------------------------------------------------

@@ -506,7 +506,8 @@ def plot_frame_contours(frame, **kwargs):
 
 # -----------------------------------------------------------------
 
-def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None, format=None, cmap="jet", single_colour=None, labels=False):
+def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None,
+                  format=None, cmap="jet", single_colour=None, labels=False):
 
     """
     This function ...
@@ -603,6 +604,8 @@ def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cm
     :return:
     """
 
+    #from matplotlib.colors import LogNorm
+
     # Get the data
     if isinstance(box, np.ndarray): data = box
     else: data = box.data
@@ -611,9 +614,6 @@ def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cm
     # Define x and y labels
     x = np.arange(data.shape[1])
     y = np.arange(data.shape[0])
-
-    # Setup contour levels
-    #levels = np.arange(13)
 
     # Setup figure and colorbar
     fig = plt.figure(figsize=(6, 6.5))

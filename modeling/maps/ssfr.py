@@ -184,33 +184,14 @@ class SSFRMapMaker(MapsComponent):
     # -----------------------------------------------------------------
 
     @property
-    def scales(self):
+    def scale(self):
 
         """
         This function ...
         :return:
         """
 
-        scales = dict()
-
-        from ...magic.tools.colours import is_fir_colour, is_fir_or_submm_colour
-
-        # Loop over the colours
-        for colour_name in self.maps:
-
-            # Check whether it is a FIR colour
-            if is_fir_colour(colour_name) or is_fir_or_submm_colour(colour_name):
-                # around_zero = True
-                scale = "linear"
-            else:
-                # around_zero = False
-                scale = "log"
-
-            # Set the scale
-            scales[colour_name] = scale
-
-        # Return the scales
-        return scales
+        return "squared"
 
     # -----------------------------------------------------------------
 
@@ -225,7 +206,7 @@ class SSFRMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps(scales=self.scales, share_limits=False)
+        self.plot_maps(scale=self.scale, share_limits=False)
 
         # Plot the contours
         self.plot_contours(filled=True)
