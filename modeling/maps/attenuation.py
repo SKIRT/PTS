@@ -138,15 +138,17 @@ class AttenuationMapMaker(MapsComponent):
                                                                                 title="sSFR maps to create Cortese attenuation maps")
 
         # Get current maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Get current extra maps
-        current_extra = self.get_current_extra_maps_method(method_name)
+        if self.config.remake : current_extra = dict()
+        else: current_extra = self.get_current_extra_maps_method(method_name)
 
         # Run the map maker
         maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins,
                   tirs_methods=tirs_methods, tirs_nans=tirs_nans, ssfrs_methods=ssfrs_methods, ssfrs_nans=ssfrs_nans,
-                  method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
+                  method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse, tir_to_fuvs=current_extra)
 
         # Set the maps
         self.maps[method_name] = maker.maps
@@ -194,9 +196,14 @@ class AttenuationMapMaker(MapsComponent):
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
 
+        # Get current maps
+        if self.config.remake: current_extra = dict()
+        else: current_extra = self.get_current_extra_maps_method(method_name)
+
         # Run the map maker
         maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods,
-                  tirs_nans=tirs_nans, method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse)
+                  tirs_nans=tirs_nans, method_name=method_name, maps=current, region_of_interest=self.truncation_ellipse,
+                  tir_to_fuvs=current_extra)
 
         # Set the maps
         self.maps[method_name] = maker.maps

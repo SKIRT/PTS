@@ -161,6 +161,10 @@ class BuatAttenuationMapsMaker(Configurable):
         # Get already created maps
         self.maps = kwargs.pop("maps", dict())
 
+        # Get already created TIR to UV maps
+        self.tirtofuvs = kwargs.pop("tir_to_fuvs", dict())
+        self.tirtonuvs = kwargs.pop("tir_to_nuvs", dict())
+
         # Create the Cortese instance
         self.buat = BuatAttenuationCalibration()
 
@@ -278,25 +282,40 @@ class BuatAttenuationMapsMaker(Configurable):
             # Debugging
             log.debug("Creating the '" + key + "' attenuation map ...")
 
-            # Make the TIR to FUV map
-            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+            # Has already TIR to FUV map
+            if name in self.tirtofuvs:
 
-            # Interpolate NaNs in TIR to FUV
-            tirfuv_nans = tir_to_fuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+                log.success("The '" + name + "' TIR to FUV map is already created: not creating it again")
+                tir_to_fuv = self.tirtofuvs[name]
+                if isinstance(tir_to_fuv, Image):
+                    if tir_to_fuv.has_mask("nans"): tirfuv_nans = tir_to_fuv.masks["nans"]
+                    else: tirfuv_nans = None
+                    tir_to_fuv = tir_to_fuv.primary
+
+            # Not yet created
+            else:
+
+                # Debugging
+                log.debug("Creating the '" + name + "' TIR to FUV map ...")
+
+                # Make the TIR to FUV map
+                tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+
+                # Interpolate NaNs in TIR to FUV
+                tirfuv_nans = tir_to_fuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
 
             # Make the log10 of the TIR to FUV map
             log_tir_to_fuv = Frame(np.log10(tir_to_fuv.data), wcs=tir_to_fuv.wcs)
 
             # Add the TIR to FUV map to the dictionary
-            if tir_to_fuv is not None:
+            #if tir_to_fuv is not None:
+            # Create image with mask
+            tir_to_fuv_image = Image()
+            tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
+            if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
 
-                # Create image with mask
-                tir_to_fuv_image = Image()
-                tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
-                if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
-
-                # Set image
-                self.tirtofuvs[name] = tir_to_fuv_image
+            # Set image
+            self.tirtofuvs[name] = tir_to_fuv_image
 
             # Calculate FUV attenuation map
             attenuation = parameters[0] * log_tir_to_fuv**3 + parameters[1] * log_tir_to_fuv**2 + parameters[2] * log_tir_to_fuv + parameters[3]
@@ -375,11 +394,27 @@ class BuatAttenuationMapsMaker(Configurable):
             # Debugging
             log.debug("Creating the '" + key + "' attenuation map ...")
 
-            # Calculate TIR to NUV map
-            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
+            # Has already TIR to NUV map
+            if name in self.tirtonuvs:
 
-            # Interpolate NaNs in TIR to FUV
-            tirnuv_nans = tir_to_nuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+                log.success("The '" + name + "' TIR to NUV map is already created: not creating it again")
+                tir_to_nuv = self.tirtonuvs[name]
+                if isinstance(tir_to_nuv, Image):
+                    if tir_to_nuv.has_mask("nans"): tirnuv_nans = tir_to_nuv.masks["nans"]
+                    else: tirnuv_nans = None
+                    tir_to_nuv = tir_to_nuv.primary
+
+            # Not yet created
+            else:
+
+                # Debugging
+                log.debug("Creating the '" + name + "' TIR to NUV map ...")
+
+                # Calculate TIR to NUV map
+                tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
+
+                # Interpolate NaNs in TIR to FUV
+                tirnuv_nans = tir_to_nuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
 
             # Create log10 of TIR to NUV
             log_tir_to_nuv = Frame(np.log10(tir_to_nuv.data), wcs=tir_to_nuv.wcs)

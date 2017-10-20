@@ -178,6 +178,9 @@ class CorteseAttenuationMapsMaker(Configurable):
         # Get already calculated maps
         self.maps = kwargs.pop("maps", dict())
 
+        # Get already calculated TIR to FUV maps
+        self.tirtofuvs = kwargs.pop("tir_to_fuvs", dict())
+
         # The region of interest
         self.region_of_interest = kwargs.pop("region_of_interest", None)
 
@@ -319,24 +322,37 @@ class CorteseAttenuationMapsMaker(Configurable):
             # Debugging
             log.debug("Creating attenuation maps with the '" + name + "' TIR map ...")
 
-            # Make the TIR to FUV map
-            if need_any: tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
-            #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
-            else: tir_to_fuv = None
+            # Already calcualted TIR to FUV map
+            if name in self.tirtofuvs:
 
-            # Replace NaNs and add the TIR to FUV map to the dictionary
-            if tir_to_fuv is not None:
+                log.success("The '" + name + "' TIR to FUV map is already created: not creating it again")
+                tir_to_fuv = self.tirtofuvs[name]
+                if isinstance(tir_to_fuv, Image): tir_to_fuv = tir_to_fuv.primary
 
-                # Interpolate NaNs in TIR to FUV
-                tirfuv_nans = tir_to_fuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+            # Not yet created
+            else:
 
-                # Create image with mask
-                tir_to_fuv_image = Image()
-                tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
-                if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+                # Debugging
+                log.debug("Creating the '" + name + "' TIR to FUV map ...")
 
-                # Add the image
-                self.tirtofuvs[name] = tir_to_fuv_image
+                # Make the TIR to FUV map
+                if need_any: tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+                #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
+                else: tir_to_fuv = None
+
+                # Replace NaNs and add the TIR to FUV map to the dictionary
+                if tir_to_fuv is not None:
+
+                    # Interpolate NaNs in TIR to FUV
+                    tirfuv_nans = tir_to_fuv.interpolate_nans_if_below(min_max_in=self.region_of_interest)
+
+                    # Create image with mask
+                    tir_to_fuv_image = Image()
+                    tir_to_fuv_image.add_frame(tir_to_fuv, "tir_to_fuv")
+                    if tirfuv_nans is not None: tir_to_fuv_image.add_mask(tirfuv_nans, "nans")
+
+                    # Add the image
+                    self.tirtofuvs[name] = tir_to_fuv_image
 
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:

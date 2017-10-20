@@ -226,6 +226,18 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def has_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.frame_names
+
+    # -----------------------------------------------------------------
+
     @property
     def mask_names(self):
 
@@ -235,6 +247,18 @@ class Image(object):
         """
 
         return self.masks.keys()
+
+    # -----------------------------------------------------------------
+
+    def has_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.mask_names
 
     # -----------------------------------------------------------------
 
@@ -250,6 +274,18 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def has_region_list(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.regions_names
+
+    # -----------------------------------------------------------------
+
     @property
     def segments_names(self):
 
@@ -259,6 +295,18 @@ class Image(object):
         """
 
         return self.segments.keys()
+
+    # -----------------------------------------------------------------
+
+    def has_segmentation_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.segments_names
 
     # -----------------------------------------------------------------
 

@@ -239,6 +239,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_extra_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param flatten:
+        :param framelist:
+        :param method:
+        :return:
+        """
+
+        return self.collection.get_extra_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method)
+
+    # -----------------------------------------------------------------
+
     def get_current_maps(self, flatten=False, framelist=False, method=None):
 
         """
@@ -262,6 +277,10 @@ class MapMakerBase(GalaxyModelingComponent):
         :param method:
         :return:
         """
+
+        return self.get_extra_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method)
+
+    # -----------------------------------------------------------------
 
     def get_path_for_map(self, name, method=None, add_extension=True, extension="fits"):
 
