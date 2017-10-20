@@ -1086,7 +1086,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.nnans / self.npixels
+        return float(self.nnans) / self.npixels
 
     # -----------------------------------------------------------------
 
@@ -1364,6 +1364,18 @@ class Frame(NDDataArray):
         """
 
         return np.sum(self.negatives.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nnegatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nnegatives) / self.npixels
 
     # -----------------------------------------------------------------
 
@@ -3091,7 +3103,7 @@ class Frame(NDDataArray):
         """
 
         # Get the number of relative negatives
-        relnegatives = self.relative_negatives
+        relnegatives = self.relative_nnegatives
 
         # UNDER THRESHOLD
         if relnegatives < threshold:

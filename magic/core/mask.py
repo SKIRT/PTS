@@ -501,12 +501,13 @@ def rebin_to_pixelscale(*masks, **kwargs):
     for mask in masks:
 
         # Determine mask name
-        name = "'" + names[index] + "' " if names is not None else ""
+        name = names[index] if names is not None else ""
+        print_name = "'" + names[index] + "' " if names is not None else ""
 
         # If the current mask is the frame with the highest pixelscale
         if mask.wcs == highest_pixelscale_wcs:
 
-            if names is not None: log.debug("Mask " + name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
+            if names is not None: log.debug("Mask " + print_name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
 
             # Not in place, create copy
             if not in_place:
