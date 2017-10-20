@@ -64,6 +64,7 @@ from ...core.basics.configuration import save_mapping
 from ...core.basics.distribution import Distribution
 from ...core.plot.distribution import DistributionPlotter
 from pts.core.tools.utils import lazyproperty
+from ..region.list import load_as_pixel_region_list
 
 # -----------------------------------------------------------------
 
@@ -271,10 +272,14 @@ class SkySubtractor(Configurable):
         else: raise ValueError("Frame must be given as input or image path should be set in configuration")
 
         # Get other required
-        self.sources_mask = kwargs.pop("sources_mask")
+        if "sources_mask" in kwargs: self.sources_mask = kwargs.pop("sources_mask")
+        elif self.config.sources_mask_plane is not None:
+            if self.config.image is None: raise ValueError("The image path has to be specified")
+            self.sources_mask = Mask.from_file(self.config.image, plane=self.config.sources_mask_plane)
 
-        # NOT REQUIRED ANYMORE
+        # NOT REQUIRED ANYMORE?
         if "principal_shape" in kwargs: self.principal_shape = kwargs.pop("principal_shape")
+        elif self.config.principal_shape_region is not None: self.principal_shape = load_as_pixel_region_list(self.config.principal_shape_region, self.frame.wcs)[0]
 
         # Get optional input
         self.extra_mask = kwargs.pop("extra_mask", None)

@@ -140,6 +140,9 @@ class AttenuationMapMaker(MapsComponent):
         # Get current maps
         current = self.get_current_maps_method(method_name)
 
+        # Get current extra maps
+        current_extra = self.get_current_extra_maps_method(method_name)
+
         # Run the map maker
         maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins,
                   tirs_methods=tirs_methods, tirs_nans=tirs_nans, ssfrs_methods=ssfrs_methods, ssfrs_nans=ssfrs_nans,

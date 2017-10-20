@@ -15,7 +15,9 @@ from pts.magic.sky.skysubtractor import estimation_methods, finishing_steps, int
 definition = ConfigurationDefinition()
 
 # Image path
-definition.add_optional("image", "file_path", "name/path of the input image")
+definition.add_positional_optional("image", "file_path", "name/path of the input image")
+definition.add_optional("sources_mask_plane", "string", "name of the plane in the input image which contains masks of the sources")
+definition.add_optional("principal_shape_region", "file_path", "region file with one shape that indicates the contour of the principal galaxy")
 
 # The path of a region file for the sky estimation
 definition.add_optional("sky_region", "file_path", "region file for the sky estimation")
