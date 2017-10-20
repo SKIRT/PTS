@@ -22,6 +22,7 @@ from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
 from ...core.frame import Frame
 from ...core.list import NamedFrameList
+from ...core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -93,7 +94,6 @@ class YoungStellarMapsMaker(Configurable):
 
         # The input FUV and FUV error maps
         self.fuv = None
-        #self.fuv_errors = None
 
         # Other input
         self.old = None
@@ -106,7 +106,13 @@ class YoungStellarMapsMaker(Configurable):
 
         # Methods
         self.old_method = None
-        self.fuv_attenuation_methods = None
+        self.fuv_attenuations_methods = None
+
+        # Nans
+        self.fuv_attenuations_nans = None
+
+        # Region of interest
+        self.region_of_interest = None
 
         # The transparent FUV maps
         self.transparent = dict()
@@ -162,11 +168,17 @@ class YoungStellarMapsMaker(Configurable):
         self.old_method = kwargs.pop("old_method", None)
         self.fuv_attenuations_methods = kwargs.pop("fuv_attenuations_methods", None)
 
+        # Get nans
+        self.fuv_attenuations_nans = kwargs.pop("fuv_attenuations_nans", None)
+
         # Get already calculated maps
         self.maps = kwargs.pop("maps", dict())
 
         # Set factors
         self.factors = kwargs.pop("factors")
+
+        # Get region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
     # -----------------------------------------------------------------
 
@@ -191,6 +203,30 @@ class YoungStellarMapsMaker(Configurable):
         """
 
         return self.old_method is not None and self.fuv_attenuations_methods is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fuv_attenuations_nans is not None
+
+    # -----------------------------------------------------------------
+
+    def has_nans_for_name(self, name):
+
+        """
+        Thisfunction ...
+        :param name:
+        :return:
+        """
+
+        return self.has_nans and name in self.fuv_attenuations_nans
 
     # -----------------------------------------------------------------
 
@@ -335,6 +371,14 @@ class YoungStellarMapsMaker(Configurable):
 
                 # Calculate the non ionizing young stars map from the FUV data
                 young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
+
+                # Interpolate negatives
+                negatives = young_stars.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
+                young_stars.replace_negatives(0.0) # if any left
+                image = Image()
+                image.add_frame(young_stars, "young")
+                if negatives is not None: image.add_mask(negatives, "negatives")
+                if self.has_nans_for_name(name): image.add_mask(self.fuv_attenuations_nans[name], "nans")
 
                 # Normalize
                 try: young_stars.normalize()

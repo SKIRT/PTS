@@ -196,7 +196,7 @@ class AttenuationMapMaker(MapsComponent):
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
 
-        # Get current maps
+        # Get current extra maps
         if self.config.remake: current_extra = dict()
         else: current_extra = self.get_current_extra_maps_method(method_name)
 

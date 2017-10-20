@@ -61,6 +61,9 @@ class YoungStellarMapMaker(MapsComponent):
         self.old_method = None
         self.fuv_attenuations_methods = None
 
+        # Nans
+        self.fuv_attenuation_nans = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -161,7 +164,8 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Get the FUV attenuation maps
         #self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
-        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
+        #self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
+        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods, self.fuv_attenuation_nans = self.get_fuv_attenuation_maps_origins_methods_and_nans(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
 
     # -----------------------------------------------------------------
 
@@ -218,7 +222,8 @@ class YoungStellarMapMaker(MapsComponent):
         # Run the map maker
         maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations,
                   factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
-                  old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_methods, maps=current)
+                  old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_methods, maps=current,
+                  region_of_interest=self.truncation_ellipse, fuv_attenuations_nans=self.fuv_attenuation_nans)
 
         # Set the maps
         self.maps = maker.maps

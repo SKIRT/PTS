@@ -1869,6 +1869,20 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_fuv_attenuation_maps_origins_methods_and_nans(self, flatten=False, cortese=True, buat=True):
+
+        """
+        This function ...
+        :param flatten:
+        :param cortese:
+        :param buat:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_maps_origins_methods_and_nans(flatten=flatten, cortese=cortese, buat=buat)
+
+    # -----------------------------------------------------------------
+
     def get_colour_map(self, colour):
 
         """

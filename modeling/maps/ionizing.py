@@ -225,6 +225,18 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -236,7 +248,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps(scale="linear")
+        self.plot_maps(scale=self.scale)
 
         # Plot the contours
         self.plot_contours(filled=True)

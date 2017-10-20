@@ -1267,6 +1267,37 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_fuv_attenuation_nans(self, flatten=False, cortese=True, buat=True):
+
+        """
+        This function ...
+        :param flatten:
+        :param cortese:
+        :param buat:
+        :return:
+        """
+
+        if cortese: cortese = self.get_cortese_fuv_attenuation_nans()
+        else: cortese = dict()
+        if buat: buat = self.get_buat_fuv_attenuation_nans()
+        else: buat = dict()
+
+        if flatten:
+
+            nans = dict()
+            for name in cortese: nans["cortese__" + name] = cortese[name]
+            for name in buat: nans["buat__" + name] = buat[name]
+            return nans
+
+        else:
+
+            nans = dict()
+            nans["cortese"] = cortese
+            nans["buat"] = buat
+            return nans
+
+    # -----------------------------------------------------------------
+
     def get_fuv_attenuation_maps_and_origins(self, flatten=False, cortese=True, buat=True):
 
         """
@@ -1350,6 +1381,49 @@ class MapsCollection(object):
 
         # Return
         return maps, origins, methods
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps_origins_methods_and_nans(self, flatten=False, cortese=False, buat=True):
+
+        """
+        Thisn function ...
+        :param flatten:
+        :param cortese:
+        :param buat:
+        :return:
+        """
+
+        # Already checked: maps, origins and methods
+        maps, origins, methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten, cortese=cortese, buat=buat)
+
+        # Get nans
+        nans = self.get_fuv_attenuation_nans(flatten=flatten, cortese=cortese, buat=buat)
+
+        # Check
+        if not sequences.same_contents(maps.keys(), nans.keys()):
+
+            log.error("Mismatch between FUV attenuation maps and their nans:")
+
+            sorted_keys_maps = sorted(maps.keys())
+            sorted_keys_nans = sorted(nans.keys())
+
+            if len(sorted_keys_maps) != len(sorted_keys_nans): log.error("Number of maps: " + str(len(sorted_keys_maps)) + " vs Number of nans: " + str(len(sorted_keys_nans)))
+
+            indices = sequences.find_differences(sorted_keys_maps, sorted_keys_nans)
+
+            log.error("Number of mismatches: " + str(len(indices)))
+
+            for index in range(min(len(sorted_keys_maps), len(sorted_keys_nans))):
+
+                if sorted_keys_maps[index] == sorted_keys_nans[index]: log.success(" - " + sorted_keys_maps[index] + " = " + sorted_keys_nans[index])
+                else: log.error(" - " + sorted_keys_maps[index] + " != " + sorted_keys_nans[index])
+
+            # QUIT
+            exit()
+
+        # Return
+        return maps, origins, methods, nans
 
     # -----------------------------------------------------------------
 
@@ -1443,6 +1517,28 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_cortese_fuv_attenuation_nans(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        cortese_path = fs.join(self.maps_attenuation_path, "cortese")
+
+        nans = dict()
+
+        for path, name in fs.files_in_path(cortese_path, returns=["path", "name"], extension="fits"):
+
+            # Mask or None
+            if "nans" in get_mask_names(path): nans[name] = Mask.from_file(path, plane="nans")
+            else: nans[name] = None
+
+        # Return the dictionary
+        return nans
+
+    # -----------------------------------------------------------------
+
     def get_buat_fuv_attenuation_methods(self):
 
         """
@@ -1460,6 +1556,29 @@ class MapsCollection(object):
 
         # Return the methods
         return methods
+
+    # -----------------------------------------------------------------
+
+    def get_buat_fuv_attenuation_nans(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        buat_path = fs.join(self.maps_attenuation_path, "buat")
+
+        # Initialize
+        nans = dict()
+
+        for path, name in fs.files_in_path(buat_path, returns=["path", "name"], extension="fits", contains="FUV"):
+
+            # Mask or None
+            if "nans" in get_mask_names(path): nans[name] = Mask.from_file(path, plane="nans")
+            else: nans[name] = None
+
+        # Return the dictionary
+        return nans
 
     # -----------------------------------------------------------------
 

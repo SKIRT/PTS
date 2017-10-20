@@ -270,6 +270,18 @@ class OldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -281,7 +293,7 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps(scale="linear")
+        self.plot_maps(scale=self.scale)
 
         # Plot the contours
         self.plot_contours(filled=True)

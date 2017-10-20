@@ -1753,17 +1753,20 @@ class NamedFrameList(NamedList):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path, contains=None):
+    def from_directory(cls, path, contains=None, plane=None):
 
         """
         This function ...
         :param path: 
         :param contains:
+        :param plane:
         :return: 
         """
 
         new = cls()
-        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits", contains=contains): new.append(Frame.from_file(path), name=name)
+        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits", contains=contains):
+            frame = Frame.from_file(path, plane=plane)
+            new.append(frame, name=name)
         return new
 
     # -----------------------------------------------------------------

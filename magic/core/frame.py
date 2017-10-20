@@ -3048,6 +3048,7 @@ class Frame(NDDataArray):
         This function ...
         :param threshold:
         :param sigma:
+        :param max_iterations:
         :param min_max_in:
         :return:
         """
@@ -3075,6 +3076,43 @@ class Frame(NDDataArray):
 
         # Return the nans, None if nothing is done
         return nans
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_if_below(self, threshold=0.7, sigma=None, max_iterations=None, min_max_in=None):
+
+        """
+        This function ...
+        :param threshold:
+        :param sigma:
+        :param max_iterations:
+        :param min_max_in:
+        :return:
+        """
+
+        # Get the number of relative negatives
+        relnegatives = self.relative_negatives
+
+        # UNDER THRESHOLD
+        if relnegatives < threshold:
+
+            # Debugging
+            log.debug("The relative number of negative values in the frame is " + str(relnegatives * 100) + "%")
+
+            # Interpolate, returning the negatives
+            negatives = self.interpolate_negatives(sigma=sigma, max_iterations=max_iterations, min_max_in=min_max_in)
+
+        # ABOVE THRESHOLD
+        else:
+
+            # Give warning
+            log.warning("The number of negative values in the frame is very high (" + str(relnegatives * 100) + "%)")
+
+            # Set negatives to None
+            negatives = None
+
+        # Return the negatives, None if nothing is done
+        return negatives
 
     # -----------------------------------------------------------------
 
@@ -3227,6 +3265,34 @@ class Frame(NDDataArray):
         """
 
         return self.interpolate(self.infs, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
+
+    # -----------------------------------------------------------------
+
+    def interpolated_negatives(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.interpolated(self.negatives, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
+
+        """
+        Thisf unction ...
+        :param sigma:
+        :param max_iterations:
+        :param plot:
+        :param not_converge:
+        :param min_max_in:
+        :return:
+        """
+
+        return self.interpolate(self.negatives, sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
 
     # -----------------------------------------------------------------
 
