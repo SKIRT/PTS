@@ -1074,7 +1074,11 @@ class MapMakerBase(GalaxyModelingComponent):
                     if fs.is_file(plot_path) and not self.config.replot: continue
 
                     # Determine scale for this image
-                    if scales is not None and method in scales and name in scales[method]: frame_scale = scales[method][name]
+                    if scales is not None and method in scales:
+                        if isinstance(scales[method], dict):
+                            if name in scales[method]: frame_scale = scales[method][name]
+                            else: frame_scale = scale
+                        else: frame_scale = scales[method]
                     else: frame_scale = scale
 
                     # Plot
@@ -1201,7 +1205,11 @@ class MapMakerBase(GalaxyModelingComponent):
                     if fs.is_file(plot_path) and not self.config.replot: continue
 
                     # Determine scale for this image
-                    if scales is not None and method in scales and name in scales[method]: frame_scale = scales[method][name]
+                    if scales is not None and method in scales:
+                        if isinstance(scales[method], dict):
+                            if name in scales[method]: frame_scale = scales[method][name]
+                            else: frame_scale = scale
+                        else: frame_scale = scales[method]
                     else: frame_scale = scale
 
                     # Plot

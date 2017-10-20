@@ -22,7 +22,11 @@ from ...magic.maps.dust.hot import HotDustMapsMaker
 
 # -----------------------------------------------------------------
 
-methods = ["black-body", "emission", "attenuation", "hot"]
+blackbody = "black-body"
+emission = "emission"
+attenuation = "attenuation"
+hot = "hot"
+methods = [blackbody, emission, attenuation, hot]
 
 # -----------------------------------------------------------------
 
@@ -68,22 +72,22 @@ class DustMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 3.. Make a dust map based on black body pixel fitting
+        # 2. Make a dust map based on black body pixel fitting
         if self.config.make_black_body: self.make_black_body()
 
-        # 4. Make a dust map simply based on FIR / submm emission in a certain band
+        # 3. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
 
-        # 6. Make a dust map based on UV attenuation
+        # 4. Make a dust map based on UV attenuation
         if self.config.make_attenuation: self.make_attenuation()
 
-        # Make a map of the hot dust
+        # 5. Make a map of the hot dust
         if self.config.make_hot: self.make_hot()
 
-        # 7. Writing
+        # 6. Writing
         self.write()
 
-        # 8. Plot
+        # 7. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -265,8 +269,6 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
-        #print(self.maps)
-
         # Write the maps
         self.write_maps()
 
@@ -275,6 +277,23 @@ class DustMapMaker(MapsComponent):
 
         # Write the methods
         self.write_methods()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scales(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scales = dict()
+        scales[blackbody] = "linear"
+        scales[emission] = "linear"
+        scales[attenuation] = "linear"
+        scales[hot] = "log"
+        return scales
 
     # -----------------------------------------------------------------
 
@@ -289,7 +308,7 @@ class DustMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps(scale="linear")
+        self.plot_maps(scales=self.scales)
 
         # Plot the contours
         self.plot_contours(filled=True)
