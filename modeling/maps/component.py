@@ -1016,7 +1016,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 for name in self.maps[method]:
 
                     # Debugging
-                    log.debug("Plotting maps for the '" + name + "' map ...")
+                    log.debug("Plotting the '" + name + "' map ...")
 
                     # Determine path
                     plot_path = self.get_path_for_map_plot(name, method, extension=format)
@@ -1052,6 +1052,125 @@ class MapMakerBase(GalaxyModelingComponent):
                 vmin, vmax = plotting.plot_frame(self.maps[method], crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
                                                  interval=interval, scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_extra_map_plot(self, name, method=None, add_extension=True, extension="fits"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create extra path
+            extra_path = fs.create_directory_in(path, self.extra_maps_name)
+
+            # Create plot path
+            extra_plot_path = fs.create_directory_in(extra_path, "plot")
+
+            # Determine path
+            if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
+            else: plot_path = fs.join(extra_plot_path, name)
+
+        # Determine path
+        else:
+
+            # Get paths
+            extra_path = fs.create_directory_in(self.maps_sub_path, self.extra_maps_name)
+            extra_plot_path = fs.create_directory_in(extra_path, "plot")
+
+            # Determine plot file path
+            if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
+            else: plot_path = fs.join(extra_plot_path, name)
+
+        # Return the plot file path
+        return plot_path
+
+    # -----------------------------------------------------------------
+
+    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3):
+
+        """
+        This function ...
+        :param cmap:
+        :param scale:
+        :param format:
+        :param cropping_factor:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the extra maps ...")
+
+        # The vmin and vmax
+        vmin = vmax = None
+
+        # Loop over the methods
+        for method in self.extra_maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.extra_maps[method]):
+
+                # Debugging
+                log.debug("Plotting extra maps for the '" + method + "' method ...")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Debugging
+                    log.debug("Plotting the '" + name + "' extra map ...")
+
+                    # Determine path
+                    plot_path = self.get_path_for_extra_map_plot(name, method, extension=format)
+
+                    # If the plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    # Plot
+                    if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                    else: interval = "pts"
+                    vmin, vmax = plotting.plot_frame(self.extra_maps[method][name], crop_to=self.truncation_box,
+                                                     cropping_factor=cropping_factor,
+                                                     truncate_outside=self.truncation_ellipse, path=plot_path,
+                                                     format=format, interval=interval,
+                                                     scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse,
+                                                     colorbar=True)
+
+                # End of method: reset vmin and vmax
+                vmin = vmax = None
+
+            # No different methods
+            else:
+
+                # Debugging
+                log.debug("Plotting the '" + method + "' extra map ...")
+
+                # Determine path
+                plot_path = self.get_path_for_extra_map_plot(method, extension=format)
+
+                # If the plot already exists and we don't have to replot
+                if fs.is_file(plot_path) and not self.config.replot: continue
+
+                # Plot
+                if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                else: interval = "pts"
+                vmin, vmax = plotting.plot_frame(self.extra_maps[method], crop_to=self.truncation_box,
+                                                 cropping_factor=cropping_factor,
+                                                 truncate_outside=self.truncation_ellipse, path=plot_path,
+                                                 format=format,
+                                                 interval=interval, scale=scale, cmap=cmap,
+                                                 normalize_in=self.truncation_ellipse, colorbar=True)
 
     # -----------------------------------------------------------------
 

@@ -124,7 +124,7 @@ class AttenuationMapMaker(MapsComponent):
         maker = CorteseAttenuationMapsMaker()
 
         # Plot
-        maker.config.plot = self.config.plot
+        maker.config.plot = self.config.debug_plots
 
         # Get the input
         fuv = self.get_frame_for_filter(self.fuv_filter)
@@ -176,7 +176,7 @@ class AttenuationMapMaker(MapsComponent):
         maker = BuatAttenuationMapsMaker()
 
         # Plot
-        #maker.config.plot = self.config.plot
+        #maker.config.plot = self.config.debug_plots
 
         # Get FUV and NUV maps
         fuv = self.get_frame_for_filter(self.fuv_filter)
@@ -251,5 +251,8 @@ class AttenuationMapMaker(MapsComponent):
 
         # Plot the radial profiles
         self.plot_profiles()
+
+        # Plot the extra maps
+        self.plot_extra_maps(scale="sqrt")
 
 # -----------------------------------------------------------------

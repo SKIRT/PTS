@@ -16,11 +16,12 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 # Import astronomical modules
-from astropy.visualization import SqrtStretch, LogStretch, LinearStretch, HistEqStretch
+from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
+from astropy.visualization.stretch import SinhStretch, PowerStretch, PowerDistStretch, InvertedPowerDistStretch
+from astropy.visualization.stretch import SquaredStretch, InvertedLogStretch, InvertedHistEqStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import MinMaxInterval, ZScaleInterval
 from photutils import CircularAperture
@@ -49,6 +50,76 @@ pretty_colours = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yello
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
 
 line_styles = ['-', '--', '-.', ':']
+
+# -----------------------------------------------------------------
+
+def get_stretch(name, data=None, parameter=None):
+
+    """
+    This function ...
+    :param name:
+    :param data:
+    :param parameter:
+    :return:
+    """
+
+    if name == "log":
+        if parameter is not None: stretch = LogStretch(a=parameter)
+        else: stretch = LogStretch() # default
+    elif name == "sqrt": stretch = SqrtStretch()
+    elif name == "linear": stretch = LinearStretch()
+    elif name == "histeq":
+        if data is None: raise ValueError("Data has to be passed for histogram equalization scale")
+        stretch = HistEqStretch(data)
+    elif name == "asinh":
+        if parameter is not None: stretch = AsinhStretch(parameter)
+        else: stretch = AsinhStretch() # default
+    elif name == "sinh":
+        if parameter is not None: stretch = SinhStretch(parameter)
+        else: stretch = SinhStretch() # default
+    elif name == "power":
+        if parameter is None: raise ValueError("Parameter has to be passed for power stretch")
+        stretch = PowerStretch(a=parameter)
+    elif name == "powerdist":
+        if parameter is not None: stretch = PowerDistStretch(a=parameter)
+        else: stretch = PowerDistStretch() # default
+    elif name == "invpowerdist":
+        if parameter is not None: stretch = InvertedPowerDistStretch(a=parameter)
+        else: stretch = InvertedPowerDistStretch() # default
+    elif name == "squared": stretch = SquaredStretch()
+    elif name == "invlog":
+        if parameter is None: raise ValueError("Parameter has to be passed for inverted log stretch")
+        stretch = InvertedLogStretch(parameter)
+    elif name == "invhisteq":
+        if data is None: raise ValueError("Data has to be passed for inverted hist equalization scale")
+        stretch = InvertedHistEqStretch(data)
+    else: raise ValueError("Invalid scale '" + name + "'")
+
+    # Return
+    return stretch
+
+# -----------------------------------------------------------------
+
+def get_normalization(scale_name, vmin, vmax, data=None, scale_parameter=None):
+
+    """
+    Thins function ...
+    :param scale_name:
+    :param vmin:
+    :param vmax:
+    :param data:
+    :param scale_parameter:
+    :return:
+    """
+
+    # Get stretch
+    stretch = get_stretch(scale_name, data=data, parameter=scale_parameter)
+
+    # Create normalization
+    norm = ImageNormalize(stretch=stretch, vmin=vmin, vmax=vmax)
+
+    # Return the normalization
+    return norm
 
 # -----------------------------------------------------------------
 
@@ -294,7 +365,7 @@ def plot_frame(frame, **kwargs):
 # -----------------------------------------------------------------
 
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
-             around_zero=False, symmetric=False, normalize_in=None):
+             around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None):
 
     """
     This function ...
@@ -309,7 +380,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param around_zero:
     :param symmetric:
     :param normalize_in:
-    :param truncate:
+    :param scale_parameter:
     :return:
     """
 
@@ -394,13 +465,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Other
     else: raise ValueError("Invalid option for 'interval'")  # INVALID
 
-    # Normalization
-    # DIFFERENCE OF DOING IT HERE AND PASSING VMIN AND VMAX?
-    if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data), vmin=vmin, vmax=vmax)
-    else: raise ValueError("Invalid option for 'scale'")
+    # Get the normalization
+    norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
     # Make the plot
     plt.figure(figsize=(7,7))

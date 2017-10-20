@@ -266,7 +266,7 @@ class RGBAImage(RGBImage):
 # -----------------------------------------------------------------
 
 def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red",
-                        normalize_in=None, return_minmax=False, around_zero=False, symmetric=False):
+                        normalize_in=None, return_minmax=False, around_zero=False, symmetric=False, scale_parameter=None):
 
     """
     This function ...
@@ -280,6 +280,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     :param return_minmax:
     :param around_zero:
     :param symmetric:
+    :param scale_parameter:
     :return:
     """
 
@@ -288,9 +289,6 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     from matplotlib.cm import get_cmap
 
     # Import astronomical modules
-    from astropy.visualization import SqrtStretch, LogStretch
-    from astropy.visualization import LinearStretch, HistEqStretch
-    from astropy.visualization.mpl_normalize import ImageNormalize
     from astropy.visualization import MinMaxInterval, ZScaleInterval
 
     # -----------------------------------------------------------------
@@ -375,12 +373,16 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # Other
     else: raise ValueError("Invalid option for 'interval'")
 
-    # Normalization
-    if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch(), vmin=vmin, vmax=vmax)
-    elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data), vmin=vmin, vmax=vmax)
-    else: raise ValueError("Invalid option for 'scale'")
+    # # Normalization
+    # if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
+    # elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
+    # elif scale == "linear": norm = ImageNormalize(stretch=LinearStretch(), vmin=vmin, vmax=vmax)
+    # elif scale == "histeq": norm = ImageNormalize(stretch=HistEqStretch(data), vmin=vmin, vmax=vmax)
+    # else: raise ValueError("Invalid option for 'scale'")
+
+    # GET NORMALIZATION
+    from ..tools.plotting import get_normalization
+    norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
     # Normalize
     normalized = norm(data)

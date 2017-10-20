@@ -37,7 +37,7 @@ definition.add_optional("tir_methods", "string_list", "only use TIR maps created
 
 # -----------------------------------------------------------------
 
-definition.add_flag("plot", "plot Cortese sSFR pixel masks", False)
+definition.add_flag("debug_plots", "plot Cortese sSFR pixel masks", False)
 
 # -----------------------------------------------------------------
 
