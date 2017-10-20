@@ -1033,7 +1033,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3):
+    def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True):
 
         """
         Thisfunction ...
@@ -1041,6 +1041,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param scale:
         :param format:
         :param cropping_factor:
+        :param scales:
+        :param share_limits:
         :return:
         """
 
@@ -1071,14 +1073,18 @@ class MapMakerBase(GalaxyModelingComponent):
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
 
+                    # Determine scale for this image
+                    if scales is not None and method in scales and name in scales[method]: frame_scale = scales[method][name]
+                    else: frame_scale = scale
+
                     # Plot
-                    if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                    if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
                     else: interval = "pts"
                     frame = self.maps[method][name]
                     if isinstance(frame, Image): frame = frame.primary
                     vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
-                                                     scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+                                                     scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
 
                 # End of method: reset vmin and vmax
                 vmin = vmax = None
@@ -1095,14 +1101,18 @@ class MapMakerBase(GalaxyModelingComponent):
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
 
+                # Determine scale for this image
+                if scales is not None and method in scales: frame_scale = scales[method]
+                else: frame_scale = scale
+
                 # Plot
-                if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
                 else: interval = "pts"
                 frame = self.maps[method]
                 if isinstance(frame, Image): frame = frame.primary
                 vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
-                                                 interval=interval, scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+                                                 interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
 
     # -----------------------------------------------------------------
 
@@ -1150,7 +1160,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3):
+    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True):
 
         """
         This function ...
@@ -1158,6 +1168,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param scale:
         :param format:
         :param cropping_factor:
+        :param scales:
+        :param share_limits:
         :return:
         """
 
@@ -1188,8 +1200,12 @@ class MapMakerBase(GalaxyModelingComponent):
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
 
+                    # Determine scale for this image
+                    if scales is not None and method in scales and name in scales[method]: frame_scale = scales[method][name]
+                    else: frame_scale = scale
+
                     # Plot
-                    if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                    if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
                     else: interval = "pts"
                     frame = self.extra_maps[method][name]
                     if isinstance(frame, Image): frame = frame.primary
@@ -1197,7 +1213,7 @@ class MapMakerBase(GalaxyModelingComponent):
                                                      cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path,
                                                      format=format, interval=interval,
-                                                     scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse,
+                                                     scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
                                                      colorbar=True)
 
                 # End of method: reset vmin and vmax
@@ -1215,8 +1231,12 @@ class MapMakerBase(GalaxyModelingComponent):
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
 
+                # Determine scale for this image
+                if scales is not None and method in scales: frame_scale = scales[method]
+                else: frame_scale = scale
+
                 # Plot
-                if vmin is not None and vmax is not None: interval = [vmin, vmax]
+                if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
                 else: interval = "pts"
                 frame = self.extra_maps[method]
                 if isinstance(frame, Image): frame = frame.primary
@@ -1224,7 +1244,7 @@ class MapMakerBase(GalaxyModelingComponent):
                                                  cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path,
                                                  format=format,
-                                                 interval=interval, scale=scale, cmap=cmap,
+                                                 interval=interval, scale=frame_scale, cmap=cmap,
                                                  normalize_in=self.truncation_ellipse, colorbar=True)
 
     # -----------------------------------------------------------------
