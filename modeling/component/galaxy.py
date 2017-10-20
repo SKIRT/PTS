@@ -476,6 +476,31 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_names_for_filters(self, filters):
+
+        """
+        Thisf unction ...
+        :param filters:
+        :return:
+        """
+
+        return self.environment.get_names_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    def get_frames_for_filters(self, filters, framelist=False):
+
+        """
+        Thisf unction ...
+        :param filters:
+        :param framelist:
+        :return:
+        """
+
+        return self.environment.get_frames_for_filters(filters, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     @property
     def named_frame_list(self):
 

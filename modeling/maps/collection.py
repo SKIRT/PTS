@@ -2348,7 +2348,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path):
+    if fs.contains_directories(sub_path, exact_not_name=["plots", "contours", "profiles"]):
 
         # One method is specified
         if method is not None:
@@ -2432,7 +2432,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path):
+    if fs.contains_directories(sub_path, exact_not_name=["plots", "contours", "profiles"]):
 
         # One method is specified
         if method is not None:
@@ -2461,6 +2461,9 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
 
             # More?
             else:
+
+                # GIVE WARNING
+                log.warning("Please remove directories other than 'plots', 'contours', and 'profiles'")
 
                 # Get the name and path
                 extra_maps_name = prompt_string("extra_directory_name", "directory with the extra maps in '" + fs.name(sub_path) + "/" + method, choices=subdirectory_names, required=False)
@@ -2504,6 +2507,9 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
 
                 # More?
                 else:
+
+                    # GIVE WARNING
+                    log.warning("Please remove directories other than 'plots', 'contours', and 'profiles'")
 
                     # Get the name and path
                     extra_maps_name = prompt_string("extra_directory_name", "directory with the extra maps in '" + fs.name(sub_path) + "/" + method_name, choices=subdirectory_names, required=False)
@@ -2552,6 +2558,9 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
 
         # More?
         else:
+
+            # GIVE WARNING
+            log.warning("Please remove directories other than 'plots', 'contours', and 'profiles'")
 
             # Get the name and path
             extra_maps_name = prompt_string("extra_directory_name", "directory with the extra maps in '" + fs.name(sub_path), choices=subdirectory_names, required=False)

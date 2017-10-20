@@ -98,6 +98,24 @@ class ColoursMapMaker(MapsComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def all_colour_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+
+        # Loop over the colours
+        for colour in colour_strings: filters.extend(get_filters_for_colour(colour))
+
+        # Return
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def available_colours(self):
 
         """
@@ -107,6 +125,9 @@ class ColoursMapMaker(MapsComponent):
 
         colours = []
 
+        # Get names
+        names = self.dataset.get_names_for_filters(self.all_colour_filters, as_dict=True)
+
         # Loop over the colours
         for colour in colour_strings:
 
@@ -114,7 +135,8 @@ class ColoursMapMaker(MapsComponent):
             for fltr in get_filters_for_colour(colour):
 
                 # If either one of the two images is not available, we can not calculate the colour
-                if not self.dataset.has_frame_for_filter(fltr): break
+                #if not self.dataset.has_frame_for_filter(fltr): break
+                if fltr not in names: break
 
             # Break not encountered
             else: colours.append(colour)
@@ -134,8 +156,8 @@ class ColoursMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the data ...")
 
-        # Create frame list
-        self.frames = FrameList()
+        # List of filters for which we need to load the data
+        filters = []
 
         # Loop over the colours
         for colour in self.available_colours:
@@ -147,14 +169,14 @@ class ColoursMapMaker(MapsComponent):
             for fltr in get_filters_for_colour(colour):
 
                 # Already loaded
-                if fltr in self.frames: continue
+                #if fltr in self.frames: continue
+                if fltr in filters: continue
 
-                # Debugging
-                log.debug("Loading the '" + str(fltr) + "' frame ...")
+                # Add the filter
+                filters.append(fltr)
 
-                # Load
-                frame = self.get_frame_for_filter(fltr)
-                self.frames.append(frame, fltr)
+        # Get frames
+        self.frames = self.get_frames_for_filters(filters, framelist=True)
 
     # -----------------------------------------------------------------
 

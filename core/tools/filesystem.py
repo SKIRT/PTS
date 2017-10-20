@@ -307,16 +307,19 @@ def contains_files(directory, filenames=None):
 
 # -----------------------------------------------------------------
 
-def contains_directories(directory, dirnames=None):
+def contains_directories(directory, **kwargs):
 
     """
     This function ...
     :param directory:
-    :param dirnames:
+    :param kwargs:
     :return:
     """
 
-    if dirnames is not None:
+    # Dirnames are given
+    if kwargs.get("dirnames", None) is not None:
+
+        dirnames = kwargs.pop("dirnames")
 
         # Loop over the dirnames
         for dirname in dirnames:
@@ -326,7 +329,8 @@ def contains_directories(directory, dirnames=None):
 
         return True
 
-    else: return len(directories_in_path(directory)) > 0
+    # No names are given
+    else: return len(directories_in_path(directory, **kwargs)) > 0
 
 # -----------------------------------------------------------------
 

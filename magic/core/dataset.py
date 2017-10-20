@@ -934,6 +934,9 @@ class DataSet(object):
         :return:
         """
 
+        # Give warning
+        log.warning("The 'get_name_for_filter' function is very slow, so its use is discouraged")
+
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         filter_string = str(fltr)
@@ -982,11 +985,12 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_names_for_filters(self, filters):
+    def get_names_for_filters(self, filters, as_dict=False):
 
         """
         This function ...
-        :param filters: 
+        :param filters:
+        :param as_dict:
         :return: 
         """
 
@@ -1001,7 +1005,8 @@ class DataSet(object):
         filters = [parse_filter(fltr) if types.is_string_type(fltr) else fltr for fltr in filters]
 
         # Initialize
-        names = [None] * len(filters)
+        if as_dict: names = dict()
+        else: names = [None] * len(filters)
 
         # Loop over the names
         for name in self.paths:
@@ -1009,15 +1014,38 @@ class DataSet(object):
             # Get the filter
             frame_filter = self.get_filter(name)
 
-            # Determine the index for this filter
-            index = sequences.find_index(filters, frame_filter)
-            if index is None: continue
+            if as_dict:
 
-            # Set the element
-            names[index] = name
+                if frame_filter not in filters: continue
+                names[frame_filter] = name
+
+            else:
+
+                # Determine the index for this filter
+                index = sequences.find_index(filters, frame_filter)
+                if index is None: continue
+
+                # Set the element
+                names[index] = name
 
         # Return the names
         return names
+
+    # -----------------------------------------------------------------
+
+    def get_frames_for_filters(self, filters):
+
+        """
+        Thisf unction ...
+        :param filters:
+        :return:
+        """
+
+        frames = []
+        names = self.get_names_for_filters(filters)
+        for name in names:
+            frames.append(self.get_frame(name))
+        return frames
 
     # -----------------------------------------------------------------
 
@@ -1043,9 +1071,14 @@ class DataSet(object):
         :return: 
         """
 
+        names = self.get_names_for_filters(filters, as_dict=True)
+
         result = OrderedDict()
         for fltr in filters:
-            result[self.get_name_for_filter(fltr)] = self.get_frame_path_for_filter(fltr)
+
+            name = names[fltr]
+            result[name] = self.get_frame_path(name) #self.get_frame_path_for_filter(fltr)
+
         return result
 
     # -----------------------------------------------------------------
