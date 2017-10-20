@@ -36,6 +36,7 @@ from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_na
 from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
 from ...magic.tools import plotting
+from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -1072,7 +1073,9 @@ class MapMakerBase(GalaxyModelingComponent):
                     # Plot
                     if vmin is not None and vmax is not None: interval = [vmin, vmax]
                     else: interval = "pts"
-                    vmin, vmax = plotting.plot_frame(self.maps[method][name], crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                    frame = self.maps[method][name]
+                    if isinstance(frame, Image): frame = frame.primary
+                    vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
                                                      scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
 
@@ -1094,7 +1097,9 @@ class MapMakerBase(GalaxyModelingComponent):
                 # Plot
                 if vmin is not None and vmax is not None: interval = [vmin, vmax]
                 else: interval = "pts"
-                vmin, vmax = plotting.plot_frame(self.maps[method], crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                frame = self.maps[method]
+                if isinstance(frame, Image): frame = frame.primary
+                vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
                                                  interval=interval, scale=scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
 
