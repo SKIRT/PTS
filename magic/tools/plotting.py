@@ -342,6 +342,10 @@ def create_prepared_frame(frame, **kwargs):
         # Mask
         frame[mask] = float("nan")
 
+    # Mask negatives
+    if kwargs.pop("mask_negatives", False):
+        frame[frame < 0] = float("nan")
+
     # Return the new frame
     return frame, kwargs
 

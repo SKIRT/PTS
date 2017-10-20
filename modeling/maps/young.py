@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.log import log
 from .component import MapsComponent
 from ...magic.maps.youngstars.young import YoungStellarMapsMaker
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -109,6 +110,9 @@ class YoungStellarMapMaker(MapsComponent):
         # Call the setup function of the base class
         super(YoungStellarMapMaker, self).setup(**kwargs)
 
+        # Set the number of allowed open file handles
+        fs.set_nallowed_open_files(self.config.nopen_files)
+
     # -----------------------------------------------------------------
 
     def load_input(self):
@@ -157,7 +161,7 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Get the FUV attenuation maps
         #self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
-        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True)
+        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True, cortese=self.config.use_cortese, buat=self.config.use_buat)
 
     # -----------------------------------------------------------------
 
@@ -248,6 +252,18 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scale(self):
+
+        """
+        Thif unction ...
+        :return:
+        """
+
+        return "sqrt"
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -259,7 +275,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Plotting ...")
 
         # Plot the maps
-        self.plot_maps(scale="linear")
+        self.plot_maps(scale=self.scale, mask_negatives=True)
 
         # Plot the contours
         self.plot_contours(filled=True)

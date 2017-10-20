@@ -51,3 +51,12 @@ else: definition.add_required("old", "filter", "filter for the old stellar disk 
 definition.add_flag("plot", "plotting", False)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("use_cortese", "use Cortese FUV attenuation maps", True)
+definition.add_flag("use_buat", "use Buat FUV attenuation maps", True)
+
+# -----------------------------------------------------------------

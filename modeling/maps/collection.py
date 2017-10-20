@@ -1174,16 +1174,20 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_maps(self, flatten=False):
+    def get_fuv_attenuation_maps(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
-        cortese = self.get_cortese_fuv_attenuation_maps()
-        buat = self.get_buat_fuv_attenuation_maps()
+        if cortese: cortese = self.get_cortese_fuv_attenuation_maps()
+        else: cortese = dict()
+        if buat: buat = self.get_buat_fuv_attenuation_maps()
+        else: buat = dict()
 
         if flatten:
 
@@ -1201,16 +1205,20 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_origins(self, flatten=False):
+    def get_fuv_attenuation_origins(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
-        cortese = self.get_cortese_fuv_attenuation_origins()
-        buat = self.get_buat_fuv_attenuation_origins()
+        if cortese: cortese = self.get_cortese_fuv_attenuation_origins()
+        else: cortese = dict()
+        if buat: buat = self.get_buat_fuv_attenuation_origins()
+        else: buat = dict()
 
         if flatten:
 
@@ -1228,16 +1236,20 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_methods(self, flatten=False):
+    def get_fuv_attenuation_methods(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
-        cortese = self.get_cortese_fuv_attenuation_methods()
-        buat = self.get_buat_fuv_attenuation_methods()
+        if cortese: cortese = self.get_cortese_fuv_attenuation_methods()
+        else: cortese = dict()
+        if buat: buat = self.get_buat_fuv_attenuation_methods()
+        else: buat = dict()
 
         if flatten:
 
@@ -1255,16 +1267,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_maps_and_origins(self, flatten=False):
+    def get_fuv_attenuation_maps_and_origins(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
-        maps = self.get_fuv_attenuation_maps(flatten=flatten)
-        origins = self.get_fuv_attenuation_origins(flatten=flatten)
+        maps = self.get_fuv_attenuation_maps(flatten=flatten, cortese=cortese, buat=buat)
+        origins = self.get_fuv_attenuation_origins(flatten=flatten, cortese=cortese, buat=buat)
 
         # Check
         if not sequences.same_contents(maps.keys(), origins.keys()):
@@ -1298,17 +1312,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
+    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
         # Already checked: maps vs. origins
-        maps, origins = self.get_fuv_attenuation_maps_and_origins(flatten=flatten)
-        methods = self.get_fuv_attenuation_methods(flatten=flatten)
+        maps, origins = self.get_fuv_attenuation_maps_and_origins(flatten=flatten, cortese=cortese, buat=buat)
+        methods = self.get_fuv_attenuation_methods(flatten=flatten, cortese=cortese, buat=buat)
 
         # Check
         if not sequences.same_contents(maps.keys(), methods.keys()):

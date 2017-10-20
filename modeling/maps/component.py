@@ -1033,7 +1033,8 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True):
+    def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
+                  mask_negatives=False):
 
         """
         Thisfunction ...
@@ -1043,6 +1044,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param cropping_factor:
         :param scales:
         :param share_limits:
+        :param mask_negatives:
         :return:
         """
 
@@ -1088,7 +1090,8 @@ class MapMakerBase(GalaxyModelingComponent):
                     if isinstance(frame, Image): frame = frame.primary
                     vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
-                                                     scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+                                                     scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True,
+                                                     mask_negatives=mask_negatives)
 
                 # End of method: reset vmin and vmax
                 vmin = vmax = None
@@ -1116,7 +1119,8 @@ class MapMakerBase(GalaxyModelingComponent):
                 if isinstance(frame, Image): frame = frame.primary
                 vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
-                                                 interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True)
+                                                 interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
+                                                 colorbar=True, mask_negatives=mask_negatives)
 
     # -----------------------------------------------------------------
 
@@ -1164,7 +1168,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True):
+    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True, mask_negatives=False):
 
         """
         This function ...
@@ -1174,6 +1178,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param cropping_factor:
         :param scales:
         :param share_limits:
+        :param mask_negatives:
         :return:
         """
 
@@ -1222,7 +1227,7 @@ class MapMakerBase(GalaxyModelingComponent):
                                                      truncate_outside=self.truncation_ellipse, path=plot_path,
                                                      format=format, interval=interval,
                                                      scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
-                                                     colorbar=True)
+                                                     colorbar=True, mask_negatives=mask_negatives)
 
                 # End of method: reset vmin and vmax
                 vmin = vmax = None
@@ -1253,7 +1258,8 @@ class MapMakerBase(GalaxyModelingComponent):
                                                  truncate_outside=self.truncation_ellipse, path=plot_path,
                                                  format=format,
                                                  interval=interval, scale=frame_scale, cmap=cmap,
-                                                 normalize_in=self.truncation_ellipse, colorbar=True)
+                                                 normalize_in=self.truncation_ellipse, colorbar=True,
+                                                 mask_negatives=mask_negatives)
 
     # -----------------------------------------------------------------
 
@@ -1849,15 +1855,17 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
+    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False, cortese=True, buat=True):
 
         """
         This function ...
         :param flatten:
+        :param cortese:
+        :param buat:
         :return:
         """
 
-        return self.collection.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten)
+        return self.collection.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten, cortese=cortese, buat=buat)
 
     # -----------------------------------------------------------------
 
