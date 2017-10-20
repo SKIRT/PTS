@@ -285,24 +285,30 @@ class NED(Configurable):
                     name = fs.name(url)
 
                     results = ads.ADS.query_simple(bibcode)
-                    authors = results["authors"][0]
+                    if len(results) == 0:
+                        log.warning("Getting the info for BIBCODE " + str(bibcode) + " failed")
+                        authorstring = None
+                        title = None
+                        journal = None
+                        citations = None
+                    else:
+                        authors = results["authors"][0]
+                        if len(authors) == 1: authorstring = authors[0]
+                        elif len(authors) == 2: authorstring = "and".join(authors)
+                        else: authorstring = authors[0] + " et al."
 
-                    if len(authors) == 1: authorstring = authors[0]
-                    elif len(authors) == 2: authorstring = "and".join(authors)
-                    else: authorstring = authors[0] + " et al."
-
-                    title = results["title"][0][0]
-                    journal = results["journal"][0][0].split(",")[0]
-                    try: citations = results["citations"][0][0]
-                    except IndexError: citations = None
+                        title = results["title"][0][0]
+                        journal = results["journal"][0][0].split(",")[0]
+                        try: citations = results["citations"][0][0]
+                        except IndexError: citations = None
 
                     print(fmt.underlined + name + fmt.reset)
                     print("")
                     if year is not None: print(" * year:", year)
-                    print(" * title:", title)
-                    print(" * journal:", journal)
+                    if title is not None: print(" * title:", title)
+                    if journal is not None: print(" * journal:", journal)
                     if citations is not None: print(" * citations:", citations)
-                    print(" * authors:", authorstring)
+                    if authorstring is not None: print(" * authors:", authorstring)
                     print(" * url:", url)
                     print("")
 
@@ -334,24 +340,30 @@ class NED(Configurable):
                 name = fs.name(url)
 
                 results = ads.ADS.query_simple(bibcode)
-                authors = results["authors"][0]
+                if len(results) == 0:
+                    log.warning("Getting the info for BIBCODE " + str(bibcode) + " failed")
+                    authorstring = None
+                    title = None
+                    journal = None
+                    citations = None
+                else:
+                    authors = results["authors"][0]
+                    if len(authors) == 1: authorstring = authors[0]
+                    elif len(authors) == 2: authorstring = "and".join(authors)
+                    else: authorstring = authors[0] + " et al."
 
-                if len(authors) == 1: authorstring = authors[0]
-                elif len(authors) == 2: authorstring = "and".join(authors)
-                else: authorstring = authors[0] + " et al."
-
-                title = results["title"][0][0]
-                journal = results["journal"][0][0].split(",")[0]
-                try: citations = results["citations"][0][0]
-                except IndexError: citations = None
+                    title = results["title"][0][0]
+                    journal = results["journal"][0][0].split(",")[0]
+                    try: citations = results["citations"][0][0]
+                    except IndexError: citations = None
 
                 print(fmt.underlined + name + fmt.reset)
                 print("")
                 if year is not None: print(" * year:", year)
-                print(" * title:", title)
-                print(" * journal:", journal)
+                if title is not None: print(" * title:", title)
+                if journal is not None: print(" * journal:", journal)
                 if citations is not None: print(" * citations:", citations)
-                print(" * authors:", authorstring)
+                if authorstring is not None: print(" * authors:", authorstring)
                 print(" * url:", url)
                 print("")
 
