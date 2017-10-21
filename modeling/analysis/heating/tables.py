@@ -60,6 +60,76 @@ class AbsorptionTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_columns(cls, x, y, z, total, old, young, ionizing):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param z:
+        :param total:
+        :param old:
+        :param young:
+        :param ionizing:
+        :return:
+        """
+
+        new = cls()
+        new.setup()
+
+        new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing"])
+
+        new.add_columns([x, y, z], copy=False)
+        new.rename_column("X coordinate of cell center", "x")
+        new.rename_column("Y coordinate of cell center", "y")
+        new.rename_column("Z coordinate of cell center", "z")
+        new["x"].unit = "pc"
+        new["y"].unit = "pc"
+        new["z"].unit = "pc"
+
+        new.add_column(total)
+        new.rename_column("Absorbed bolometric luminosity", "total")
+        new["total"].unit = "W"
+
+        new.add_column(old)
+        new.rename_column("Absorbed bolometric luminosity", "old")
+        new["old"].unit = "W"
+
+        new.add_column(young)
+        new.rename_column("Absorbed bolometric luminosity", "young")
+        new["young"].unit = "W"
+
+        new.add_column(ionizing)
+        new.rename_column("Absorbed bolometric luminosity", "ionizing")
+        new["ionizing"].unit = "W"
+
+        #new["x"] = x
+        #new["x"].unit = "pc"
+
+        #new["y"] = y
+        #new["y"].unit = "pc"
+
+        #new["z"] = z
+        #new["z"].unit = "pc"
+
+        #new["total"] = total
+        #new["total"].unit = "W"
+
+        #new["old"] = old
+        #new["old"].unit = "W"
+
+        #new["young"] = young
+        #new["young"].unit = "W"
+
+        #new["ionizing"] = ionizing
+        #new["ionizing"].unit = "W"
+
+        # Return the new table
+        return new
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, x, y, z, total, old, young, ionizing):
 
         """

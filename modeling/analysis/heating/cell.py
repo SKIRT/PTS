@@ -263,41 +263,73 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    # def create_absorption_table(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Creating the absorption table ...")
+    #
+    #     # Initialize table
+    #     self.absorptions = AbsorptionTable()
+    #
+    #     # Add the rows
+    #     for i in range(self.ncells):
+    #
+    #         # Get the coordinates
+    #         x = self.total_contribution_absorption_data["X coordinate of cell center"][i]
+    #         y = self.total_contribution_absorption_data["Y coordinate of cell center"][i]
+    #         z = self.total_contribution_absorption_data["Z coordinate of cell center"][i]
+    #
+    #         # Get luminosity for total stellar population
+    #         total_absorption = self.total_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+    #
+    #         # Get luminosity for old stellar population
+    #         old_absorption = self.old_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+    #
+    #         # Get luminosity for young stellar population
+    #         young_absorption = self.young_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+    #
+    #         # Get luminosity for ionizing stellar population
+    #         ionizing_absorption = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+    #
+    #         # Add row to the table
+    #         self.absorptions.add_entry(x, y, z, total_absorption, old_absorption, young_absorption, ionizing_absorption)
+
+    # -----------------------------------------------------------------
+
     def create_absorption_table(self):
 
         """
-        This function ...
+        Thisn function ...
         :return:
         """
 
         # Inform the user
         log.info("Creating the absorption table ...")
 
-        # Initialize table
-        self.absorptions = AbsorptionTable()
+        # Get the coordinates
+        x = self.total_contribution_absorption_data["X coordinate of cell center"]
+        y = self.total_contribution_absorption_data["Y coordinate of cell center"]
+        z = self.total_contribution_absorption_data["Z coordinate of cell center"]
 
-        # Add the rows
-        for i in range(self.ncells):
+        # Get luminosity for total stellar population
+        total_absorptions = self.total_contribution_absorption_data["Absorbed bolometric luminosity"]
 
-            # Get the coordinates
-            x = self.total_contribution_absorption_data["X coordinate of cell center"][i]
-            y = self.total_contribution_absorption_data["Y coordinate of cell center"][i]
-            z = self.total_contribution_absorption_data["Z coordinate of cell center"][i]
+        # Get luminosity for old stellar population
+        old_absorptions = self.old_contribution_absorption_data["Absorbed bolometric luminosity"]
 
-            # Get luminosity for total stellar population
-            total = self.total_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+        # Get luminosity for young stellar population
+        young_absorptions = self.young_contribution_absorption_data["Absorbed bolometric luminosity"]
 
-            # Get luminosity for old stellar population
-            old = self.old_contribution_absorption_data["Absorbed bolometric luminosity"][i]
+        # Get luminosity for ionizing stellar population
+        ionizing_absorptions = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]
 
-            # Get luminosity for young stellar population
-            young = self.young_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-
-            # Get luminosity for ionizing stellar population
-            ionizing = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-
-            # Add row to the table
-            self.absorptions.add_entry(x, y, z, total, old, young, ionizing)
+        # Create the table
+        self.absorptions = AbsorptionTable.from_columns(x, y, z, total_absorptions, old_absorptions, young_absorptions, ionizing_absorptions)
 
     # -----------------------------------------------------------------
 
