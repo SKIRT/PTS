@@ -265,4 +265,7 @@ class AttenuationMapMaker(MapsComponent):
         # Plot the extra maps
         self.plot_extra_maps(scale="sqrt")
 
+        # Plot the NaNs masks
+        self.plot_nans()
+
 # -----------------------------------------------------------------

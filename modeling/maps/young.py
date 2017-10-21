@@ -20,6 +20,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.stringify import tostr
 from ...core.basics.containers import create_subdict
 from .component import select_maps
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -257,6 +258,18 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def factors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -269,20 +282,17 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Get the current maps
         if self.config.remake: current = dict()
-        else: current = self.current_maps
+        else: current = self.get_current_maps(factors=self.factors)
 
         # Create the map maker
         maker = YoungStellarMapsMaker()
 
-        # Set the factors
-        factors = self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
-
         # Debugging
-        log.debug("Using the following factors for subtracting diffuse emission: " + tostr(factors, delimiter=", "))
+        log.debug("Using the following factors for subtracting diffuse emission: " + tostr(self.factors, delimiter=", "))
 
         # Run the map maker
         maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations,
-                  factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
+                  factors=self.factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
                   old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_methods, maps=current,
                   region_of_interest=self.truncation_ellipse, fuv_attenuations_nans=self.fuv_attenuations_nans)
 
@@ -348,5 +358,11 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Plot the radial profiles
         self.plot_profiles()
+
+        # Plot the negative pixel masks
+        self.plot_negatives()
+
+        # Plot the NaN pixel masks
+        self.plot_nans()
 
 # -----------------------------------------------------------------

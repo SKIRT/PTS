@@ -3519,6 +3519,7 @@ class Frame(NDDataArray):
         :param x_max:
         :param y_min:
         :param y_max:
+        :param out_of_bounds:
         :return:
         """
 
@@ -3580,6 +3581,7 @@ class Frame(NDDataArray):
         Ths function ...
         :param region:
         :param factor:
+        :param out_of_bounds:
         :return:
         """
 

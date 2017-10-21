@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
-import rpy2.robjects as ro
 
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent, contributions
@@ -229,19 +228,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Add a column for the different contributions
 
         ## Add column for total
-        self.absorptions.add_column(self.total_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.add_column(self.total_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + total + " stellar population")
 
         ## Add column for old
-        self.absorptions.add_column(self.old_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.add_column(self.old_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + old + " stellar population")
 
         ## Add column for young
-        self.absorptions.add_column(self.young_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.add_column(self.young_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + young + " stellar population")
 
         ## Add column for ionizing
-        self.absorptions.add_column(self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"], copy=False)
+        self.absorptions.add_column(self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + ionizing + " stellar population")
 
         # Create a mask of cells with zero absorption
@@ -623,6 +622,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
+
+        import rpy2.robjects as ro
 
         temp_path = fs.join(self.cell_heating_path, "abs_temp.dat")
 

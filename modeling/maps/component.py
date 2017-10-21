@@ -225,7 +225,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, factors=None):
 
         """
         This function ...
@@ -233,10 +233,11 @@ class MapMakerBase(GalaxyModelingComponent):
         :param flatten:
         :param framelist:
         :param method:
+        :param factors:
         :return:
         """
 
-        return self.collection.get_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method)
+        return self.collection.get_maps_sub_name(name, flatten=flatten, framelist=framelist, method=method, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -255,17 +256,18 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_current_maps(self, flatten=False, framelist=False, method=None):
+    def get_current_maps(self, flatten=False, framelist=False, method=None, factors=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
         :param method:
+        :param factors:
         :return:
         """
 
-        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method)
+        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -956,6 +958,30 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def negatives_plots_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "negatives"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nans_plots_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "nans"
+
+    # -----------------------------------------------------------------
+
+    @property
     def contour_plots_name(self):
 
         """
@@ -1010,6 +1036,82 @@ class MapMakerBase(GalaxyModelingComponent):
             extra_path = fs.create_directory_in(self.maps_sub_path, self.map_plots_name)
             if add_extension: map_path = fs.join(extra_path, name + "." + extension)
             else: map_path = fs.join(extra_path, name)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_negatives_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :param suffix:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create plot path
+            plot_path = fs.create_directory_in(path, self.negatives_plots_name)
+
+            # Determine path
+            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
+            else: map_path = fs.join(plot_path, name + suffix)
+
+        # Determine path
+        else:
+
+            plot_path = fs.create_directory_in(self.maps_sub_path, self.negatives_plots_name)
+            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
+            else: map_path = fs.join(plot_path, name + suffix)
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_nans_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param add_extension:
+        :param extension:
+        :param suffix:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create plot path
+            plot_path = fs.create_directory_in(path, self.nans_plots_name)
+
+            # Determine path
+            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
+            else: map_path = fs.join(plot_path, name + suffix)
+
+        # Determine path
+        else:
+
+            plot_path = fs.create_directory_in(self.maps_sub_path, self.nans_plots_name)
+            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
+            else: map_path = fs.join(plot_path, name + suffix)
 
         # Return the map path
         return map_path
@@ -1179,6 +1281,162 @@ class MapMakerBase(GalaxyModelingComponent):
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
                                                  interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
                                                  colorbar=True, mask_negatives=mask_negatives)
+
+    # -----------------------------------------------------------------
+
+    def plot_negatives(self, format="pdf", cropping_factor=1.3):
+
+        """
+        This function ...
+        :param format:
+        :param cropping_factor:
+        :return:
+        """
+
+        from ...magic.core.mask import Mask
+        from ...magic.basics.mask import Mask as oldMask
+
+        # Inform the user
+        log.info("Plotting the negative pixel masks ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Debugging
+                log.debug("Plotting negative pixel masks for the '" + method + "' method ...")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Is there a mask?
+                    if not (isinstance(self.maps[method][name], Image) and self.maps[method][name].has_mask("negatives")): continue
+                    mask = self.maps[method][name].masks["negatives"]
+
+                    # Make sure it's a new mask object
+                    if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method][name].wcs)
+                    elif mask.wcs is None: mask.wcs = self.maps[method][name].wcs
+
+                    # Debugging
+                    log.debug("Plotting the negative pixel mask of the '" + name + "' map ...")
+
+                    # Determine path
+                    plot_path = self.get_path_for_negatives_plot(name, method, extension=format)
+
+                    # If the plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    # Plot the mask
+                    plotting.plot_mask(mask, crop_to=self.truncation_box,
+                                     cropping_factor=cropping_factor,
+                                     truncate_outside=self.truncation_ellipse, path=plot_path,
+                                     format=format)
+
+            # No different methods
+            else:
+
+                # Is there a mask?
+                if not (isinstance(self.maps[method], Image) and self.maps[method].has_mask("negatives")): continue
+                mask = self.maps[method].masks["negatives"]
+
+                # Make sure it's a new mask object
+                if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method].wcs)
+                elif mask.wcs is None: mask.wcs = self.maps[method].wcs
+
+                # Debugging
+                log.debug("Plotting the negative pixel mask of the '" + method + "' map ...")
+
+                # Determine path
+                plot_path = self.get_path_for_negatives_plot(method, extension=format)
+
+                # If the plot already exists and we don't have to replot
+                if fs.is_file(plot_path) and not self.config.replot: continue
+
+                # Plot the mask
+                plotting.plot_mask(mask, crop_to=self.truncation_box,
+                                   cropping_factor=cropping_factor,
+                                   truncate_outside=self.truncation_ellipse, path=plot_path,
+                                   format=format)
+
+    # -----------------------------------------------------------------
+
+    def plot_nans(self, format="pdf", cropping_factor=1.3):
+
+        """
+        This finction ...
+        :param format:
+        :param cropping_factor:
+        :return:
+        """
+
+        from ...magic.core.mask import Mask
+        from ...magic.basics.mask import Mask as oldMask
+
+        # Inform the user
+        log.info("Plotting the NaN pixel masks ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                # Debugging
+                log.debug("Plotting NaN pixel masks for the '" + method + "' method ...")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Is there a mask?
+                    if not (isinstance(self.maps[method][name], Image) and self.maps[method][name].has_mask("nans")): continue
+                    mask = self.maps[method][name].masks["nans"]
+
+                    # Make sure it's a new mask object
+                    if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method][name].wcs)
+                    elif mask.wcs is None: mask.wcs = self.maps[method][name].wcs
+
+                    # Debugging
+                    log.debug("Plotting the NaN pixel mask of the '" + name + "' map ...")
+
+                    # Determine path
+                    plot_path = self.get_path_for_nans_plot(name, method, extension=format)
+
+                    # If the plot already exists and we don't have to replot
+                    if fs.is_file(plot_path) and not self.config.replot: continue
+
+                    # Plot the mask
+                    plotting.plot_mask(mask, crop_to=self.truncation_box,
+                                       cropping_factor=cropping_factor,
+                                       truncate_outside=self.truncation_ellipse, path=plot_path,
+                                       format=format)
+
+            # No different methods
+            else:
+
+                # Is there a mask?
+                if not (isinstance(self.maps[method], Image) and self.maps[method].has_mask("nans")): continue
+                mask = self.maps[method].masks["nans"]
+
+                # Make sure it's a new mask object
+                if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method].wcs)
+                elif mask.wcs is None: mask.wcs = self.maps[method].wcs
+
+                # Debugging
+                log.debug("Plotting the NaN pixel mask of the '" + method + "' map ...")
+
+                # Determine path
+                plot_path = self.get_path_for_nans_plot(method, extension=format)
+
+                # If the plot already exists and we don't have to replot
+                if fs.is_file(plot_path) and not self.config.replot: continue
+
+                # Plot the mask
+                plotting.plot_mask(mask, crop_to=self.truncation_box,
+                                   cropping_factor=cropping_factor,
+                                   truncate_outside=self.truncation_ellipse, path=plot_path,
+                                   format=format)
 
     # -----------------------------------------------------------------
 

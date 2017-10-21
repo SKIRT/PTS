@@ -281,16 +281,22 @@ def plot_mask_on_image(image, mask, title=None, path=None, format=None):
 
 # -----------------------------------------------------------------
 
-def plot_mask(mask, title=None, path=None, format=None):
+def plot_mask(mask, **kwargs):
 
     """
     This function ...
     :param mask:
-    :param title:
-    :param path:
-    :param format:
+    :param kwargs:
     :return:
     """
+
+    # Create prepared mask
+    mask, kwargs = create_prepared_mask(mask, **kwargs)
+
+    # Get properties
+    title = kwargs.pop("title", None)
+    path = kwargs.pop("path", None)
+    format = kwargs.pop("format", None)
 
     # Get raw data of mask as a numpy array
     #if hasattr(mask, "data"): maskdata = mask.data
@@ -308,9 +314,11 @@ def plot_mask(mask, title=None, path=None, format=None):
     if title is not None: plt.title(title)
     else: plt.title("Black means True")
 
+    # Show or save
     if path is None: plt.show()
     else: plt.savefig(path, format=format)
 
+    # Close the figure
     plt.close()
 
 # -----------------------------------------------------------------
@@ -348,6 +356,47 @@ def create_prepared_frame(frame, **kwargs):
 
     # Return the new frame
     return frame, kwargs
+
+# -----------------------------------------------------------------
+
+def create_prepared_mask(mask, **kwargs):
+
+    """
+    This function ...
+    :param mask:
+    :param kwargs:
+    :return:
+    """
+
+    from ..core.mask import Mask
+    from ..basics.mask import Mask as oldMask
+
+    # Crop?
+    crop_to = kwargs.pop("crop_to", None)
+    cropping_factor = kwargs.pop("cropping_factor", 1.)
+
+    # Crop the frame
+    if crop_to is not None:
+        if isinstance(mask, oldMask):
+            mask = Mask(mask)
+            mask.crop_to(crop_to, factor=cropping_factor, out_of_bounds="expand") # don't make copy again
+        else: mask = mask.cropped_to(crop_to, factor=cropping_factor, out_of_bounds="expand")
+    else:
+        if isinstance(mask, oldMask): mask = Mask(mask)
+        else: mask = mask.copy()
+
+    # Truncate?
+    truncate_outside = kwargs.pop("truncate_outside", None)
+    if truncate_outside is not None:
+        from ..region.region import SkyRegion, PixelRegion
+        if isinstance(truncate_outside, PixelRegion): truncate_outside = truncate_outside.to_mask(mask.xsize, mask.ysize)
+        elif isinstance(truncate_outside, SkyRegion): truncate_outside = truncate_outside.to_pixel(mask.wcs).to_mask(mask.xsize, mask.ysize)
+        truncate_mask = truncate_outside.inverse()
+        # Mask the mask
+        mask[truncate_mask] = False
+
+    # Return the new mask
+    return mask, kwargs
 
 # -----------------------------------------------------------------
 

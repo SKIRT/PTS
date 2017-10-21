@@ -23,6 +23,7 @@ from reproject import reproject_exact, reproject_interp
 from ...core.basics.log import log
 from ..basics.mask import MaskBase
 from ..basics.mask import Mask as oldMask
+from ..tools import cropping
 
 # -----------------------------------------------------------------
 
@@ -142,6 +143,111 @@ class Mask(MaskBase):
 
         # Return the header
         return header
+
+    # -----------------------------------------------------------------
+
+    def cropped(self, x_min, x_max, y_min, y_max, out_of_bounds="error"):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :param out_of_bounds:
+        :return:
+        """
+
+        new = self.copy()
+        new.crop(x_min, x_max, y_min, y_max, out_of_bounds=out_of_bounds)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def crop(self, x_min, x_max, y_min, y_max, out_of_bounds="error"):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :param out_of_bounds:
+        :return:
+        """
+
+        # Crop the frame
+        if out_of_bounds == "error": new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "adjust": new_data, x_min, x_max, y_min, y_max = cropping.crop_direct(self._data, x_min, x_max, y_min, y_max)
+        elif out_of_bounds == "expand": new_data = cropping.crop_absolute(self._data, x_min, x_max, y_min, y_max)
+        else: raise ValueError("Invalid option for 'out_of_bounds'")
+
+        # Adapt the WCS
+        if self.wcs is not None:
+
+            # Copy the current WCS
+            new_wcs = self.wcs.copy()
+
+            # Change the center pixel position
+            new_wcs.wcs.crpix[0] -= x_min
+            new_wcs.wcs.crpix[1] -= y_min
+
+            # Change the number of pixels
+            new_wcs.naxis1 = x_max - x_min
+            new_wcs.naxis2 = y_max - y_min
+
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+        else: new_wcs = None
+
+        # Check shape of data
+        assert new_data.shape[1] == (x_max - x_min) and new_data.shape[0] == (y_max - y_min)
+
+        # Replace the data and WCS
+        self._data = new_data
+        self._wcs = new_wcs
+
+    # -----------------------------------------------------------------
+
+    def cropped_to(self, region, factor=1, out_of_bounds="error"):
+
+        """
+        Ths function ...
+        :param region:
+        :param factor:
+        :param out_of_bounds:
+        :return:
+        """
+
+        new = self.copy()
+        new.crop_to(region, factor=factor, out_of_bounds=out_of_bounds)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def crop_to(self, region, factor=1., out_of_bounds="error"):
+
+        """
+        This function ...
+        :param region:
+        :param factor:
+        :param out_of_bounds:
+        :return:
+        """
+
+        from ..region.rectangle import PixelRectangleRegion, SkyRectangleRegion
+
+        # Pixel rectangle
+        if isinstance(region, PixelRectangleRegion):
+            if factor != 1: region = region * factor
+            self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel, out_of_bounds=out_of_bounds)
+
+        # Sky rectangle: to pixel rectangle
+        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs), factor=factor, out_of_bounds=out_of_bounds)
+
+        # Other kind of shape
+        else: self.crop_to(region.bounding_box, factor=factor, out_of_bounds=out_of_bounds)
 
     # -----------------------------------------------------------------
 

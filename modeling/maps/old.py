@@ -301,4 +301,7 @@ class OldStellarMapMaker(MapsComponent):
         # Plot the radial profiles
         self.plot_profiles()
 
+        # Plot the NaNs masks
+        self.plot_nans()
+
 # -----------------------------------------------------------------

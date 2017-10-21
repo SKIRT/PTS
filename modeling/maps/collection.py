@@ -1910,7 +1910,8 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, methods=None, not_method=None,
+                          not_methods=None, factors=None):
 
         """
         This function ...
@@ -1921,11 +1922,14 @@ class MapsCollection(object):
         :param methods:
         :param not_method:
         :param not_methods:
+        :param factors:
         :return:
         """
 
-        if self.from_analysis: return get_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
-        else: return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods,
+                                                                 not_method=not_method, not_methods=not_methods, factors=factors)
+        else: return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method,
+                                       methods=methods, not_method=not_method, not_methods=not_methods, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -2412,7 +2416,8 @@ StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollecti
 
 # -----------------------------------------------------------------
 
-def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
+def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None,
+                                    not_methods=None, factors=None):
 
     """
     This function ...
@@ -2423,6 +2428,7 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
     :param methods:
     :param not_method:
     :param not_methods:
+    :param factors:
     :return:
     """
 
@@ -2431,7 +2437,8 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Get map paths
-    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method,
+                                     not_methods=not_methods, factors=factors)
 
 # -----------------------------------------------------------------
 
@@ -2458,7 +2465,8 @@ def get_extra_map_paths_sub_name_analysis(analysis_run, name, flatten=False, met
 
 # -----------------------------------------------------------------
 
-def get_map_paths_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
+def get_map_paths_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None,
+                           not_methods=None, factors=None):
 
     """
     This function ...
@@ -2469,6 +2477,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, method
     :param methods:
     :param not_method:
     :param not_methods:
+    :param factors:
     :return:
     """
 
@@ -2477,7 +2486,8 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, method
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
 
     # Get map paths
-    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+    return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method,
+                                     not_methods=not_methods, factors=factors)
 
 # -----------------------------------------------------------------
 
@@ -2504,7 +2514,7 @@ def get_extra_map_paths_sub_name(environment, name, flatten=False, method=None, 
 
 # -----------------------------------------------------------------
 
-def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
+def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None, factors=None):
 
     """
     This function ...
@@ -2514,8 +2524,12 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
     :param methods:
     :param not_method:
     :param not_methods:
+    :param factors:
     :return:
     """
+
+    if factors is not None: factor_strings = ["__" + repr(factor) for factor in factors]
+    else: factor_strings = None
 
     # direct_origins_path = fs.join(sub_path, origins_filename)
     # No subdirectories
@@ -2527,7 +2541,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path, exact_not_name=["plots", "contours", "profiles"]):
+    if fs.contains_directories(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"]):
 
         # One method is specified
         if method is not None:
@@ -2540,7 +2554,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
             if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
 
             # Return the file paths
-            return fs.files_in_path(method_path, returns="dict", extension="fits")
+            return fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings)
 
         # Method not specified
         else:
@@ -2560,7 +2574,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
                 if not_methods is not None and method_name in not_methods: continue
 
                 # Get dictionary of file paths, but only FITS files
-                files = fs.files_in_path(method_path, returns="dict", extension="fits")
+                files = fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings)
 
                 # Flatten into a one-level dict
                 if flatten:
@@ -2585,7 +2599,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
         if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
 
         # Return the file paths
-        return fs.files_in_path(sub_path, returns="dict", extension="fits")
+        return fs.files_in_path(sub_path, returns="dict", extension="fits", endswith=factor_strings)
 
     # Nothing present
     else: return dict()
@@ -2611,7 +2625,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path, exact_not_name=["plots", "contours", "profiles"]):
+    if fs.contains_directories(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"]):
 
         # One method is specified
         if method is not None:
@@ -2624,7 +2638,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
             if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
 
             # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "contours", "profiles"], returns="name")
+            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
 
             # No extra maps
             if len(subdirectory_names) == 0: return dict()
@@ -2670,7 +2684,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
                 if not_methods is not None and method_name in not_methods: continue
 
                 # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "contours", "profiles"], returns="name")
+                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
 
                 # No extra maps
                 if len(subdirectory_names) == 0: files = dict()
@@ -2721,7 +2735,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
         if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
 
         # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-        subdirectory_names = fs.directories_in_path(sub_path, exact_not_name=["plot", "contours", "profiles"], returns="name")
+        subdirectory_names = fs.directories_in_path(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
 
         # No extra maps
         if len(subdirectory_names) == 0: return dict()
@@ -2754,7 +2768,8 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None,
+                               not_method=None, not_methods=None, factors=None):
 
     """
     This function ...
@@ -2766,11 +2781,13 @@ def get_maps_sub_name_analysis(analysis_run, name, flatten=False, framelist=Fals
     :param methods:
     :param not_method:
     :param not_methods:
+    :param factors:
     :return:
     """
 
     # Get map paths
-    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods,
+                                            not_method=not_method, not_methods=not_methods, factors=factors)
 
     # Return the maps
     return get_maps_sub_name_from_paths(paths, framelist=framelist)
@@ -2823,7 +2840,8 @@ def get_nans_sub_name_analysis(analysis_run, name, flatten=False, framelist=Fals
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, methods=None,
+                      not_method=None, not_methods=None, factors=None):
 
     """
     This function ...
@@ -2836,11 +2854,13 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     :param methods:
     :param not_method:
     :param not_methods:
+    :param factors:
     :return:
     """
 
     # Get map paths
-    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods,
+                                   not_method=not_method, not_methods=not_methods, factors=factors)
 
     # Return the maps
     return get_maps_sub_name_from_paths(paths, history=history, framelist=framelist)
@@ -2893,13 +2913,14 @@ def get_nans_sub_name(environment, name, flatten=False, framelist=False, method=
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
+def get_maps_sub_name_from_paths(paths, history=None, framelist=False, images=True):
 
     """
     This function ...
     :param paths:
     :param history:
     :param framelist:
+    :param images:
     :return:
     """
 
@@ -2922,7 +2943,9 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
                 map_path = paths[method_or_name][name]
 
                 # Try to load
-                try: maps[method_name][name] = Frame.from_file(map_path, no_filter=True)
+                try:
+                    if images: maps[method_name][name] = Image.from_file(map_path, no_filter=True)
+                    else: maps[method_name][name] = Frame.from_file(map_path, no_filter=True)
                 except IOError:
                     command = command_for_sub_name(name)
                     log.warning("The " + method_name + "/" + name + " map is probably damaged. Run the '" + command + "' command again.")
@@ -2939,7 +2962,9 @@ def get_maps_sub_name_from_paths(paths, history=None, framelist=False):
             map_path = paths[method_or_name]
 
             # Try to load
-            try: maps[name] = Frame.from_file(map_path, no_filter=True)
+            try:
+                if images: maps[name] = Image.from_file(map_path, no_filter=True)
+                else: maps[name] = Frame.from_file(map_path, no_filter=True)
             except IOError:
                 command = command_for_sub_name(name)
                 log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
