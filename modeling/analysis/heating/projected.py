@@ -47,24 +47,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # -- Attributes --
 
-        self.total_output_path = None
-
-        # The wavelength grid used for the simulations
-        self.wavelength_grid = None
-
-        # The number of wavelengths
-        self.number_of_wavelengths = None
-
-        # The SEDs
-        self.total_sed = None
-        self.evolved_sed = None
-        self.unevolved_sed = None
-
-        # The datacubes
-        self.total_datacube = None
-        self.evolved_datacube = None
-        self.unevolved_datacube = None
-
         # The flux fractions
         self.fractions = None
         self.fraction_maps = dict()
@@ -87,26 +69,41 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the wavelength grid
-        self.load_wavelength_grid()
-
-        # 3. Load the simulated SEDs
-        self.load_seds()
-
-        # 4. Load the simulated data cubes
-        self.load_datacubes()
-
-        # 5. Calculate the heating fractions
+        # 2. Calculate the heating fractions
         self.calculate_heating_fractions()
 
-        # 6. Calculate maps of the TIR luminosity
+        # 3. Calculate maps of the TIR luminosity
         self.calculate_tir_maps()
 
-        # 6. Writing
+        # 4. Writing
         self.write()
 
-        # 7. Plotting
+        # 5. Plotting
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.heating_wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.heating_nwavelengths
 
     # -----------------------------------------------------------------
 
@@ -120,180 +117,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Call the setup function of the base class
         super(ProjectedDustHeatingAnalyser, self).setup()
-
-        # Determine the output path for the 'total' simulation
-        self.total_output_path = self.analysis_run.heating_output_path_for_contribution("total")
-
-    # -----------------------------------------------------------------
-
-    def load_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the wavelength grid file produced by SKIRT ...")
-
-        # Determine the path to the wavelength grid file in heating/total
-        wavelengths_path = fs.join(self.total_output_path, self.galaxy_name + "_wavelengths.dat")
-
-        # Load the wavelength grid as a table
-        self.wavelength_grid = WavelengthGrid.from_skirt_output(wavelengths_path)
-
-        # Determine the number of wavelengths
-        self.number_of_wavelengths = len(self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    def load_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the simulated SEDs ...")
-
-        # Load the SED of the simulation with the total stellar population
-        self.load_total_sed()
-
-        # Load the SED of the simulation with the evolved stellar population
-        self.load_evolved_sed()
-
-        # Load the SED of the simulation with the unevolved stellar populations
-        self.load_unevolved_sed()
-
-    # -----------------------------------------------------------------
-
-    def load_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the SED of the simulation with the total stellar population ...")
-
-        # Determine the path to the SED file
-        path = fs.join(self.total_output_path, self.galaxy_name + "_earth_sed.dat")
-
-        # Load the SED
-        self.total_sed = SED.from_skirt(path)
-
-    # -----------------------------------------------------------------
-
-    def load_evolved_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the SED of the simulation with the evolved stellar population ...")
-
-        # Determine the path to the SED file
-        path = fs.join(self.analysis_run.heating_output_path_for_contribution("old"), self.galaxy_name + "_earth_sed.dat")
-
-        # Load the SED
-        self.evolved_sed = SED.from_skirt(path)
-
-    # -----------------------------------------------------------------
-
-    def load_unevolved_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the SED of the simulation with the unevolved stellar populations ...")
-
-        # Determine the path to the SED file
-        path = fs.join(self.analysis_run.heating_output_path_for_contribution("unevolved"), self.galaxy_name + "_earth_sed.dat")
-
-        # Load the SED
-        self.unevolved_sed = SED.from_skirt(path)
-
-    # -----------------------------------------------------------------
-
-    def load_datacubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the simulated datacubes ...")
-
-        # Load total datacube
-        self.load_total_datacube()
-
-        # Load evolved datacube
-        self.load_evolved_datacube()
-
-        # Load unevolved datacube
-        self.load_unevolved_datacube()
-
-    # -----------------------------------------------------------------
-
-    def load_total_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the datacube of the simulation with the total stellar population ...")
-
-        # Determine the path to the datacube
-        path = fs.join(self.total_output_path, self.galaxy_name + "_earth_total.fits")
-
-        # Load the datacube
-        self.total_datacube = DataCube.from_file(path, self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    def load_evolved_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the datacube of the simulation with the evolved stellar population ...")
-
-        # Determine the path to the datacube
-        path = fs.join(self.analysis_run.heating_output_path_for_contribution("evolved"), self.galaxy_name + "_earth_total.fits")
-
-        # Load the datacube
-        self.evolved_datacube = DataCube.from_file(path, self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    def load_unevolved_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the datacube of the simulation with the unevolved stellar populations ...")
-
-        # Determine the path to the datacube
-        path = fs.join(self.analysis_run.heating_output_path_for_contribution("unevolved"), self.galaxy_name + "_earth_total.fits")
-
-        # Load the datacube
-        self.unevolved_datacube = DataCube.from_file(path, self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -315,6 +138,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_total_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_total_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_total_sed
+
+    # -----------------------------------------------------------------
+
     def calculate_sed_heating_fractions(self):
 
         """
@@ -330,7 +189,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         dust_wavelengths = all_wavelengths > 10.
 
         total_fluxes = self.total_sed.photometry(asarray=True)
-        evolved_fluxes = self.evolved_sed.photometry(asarray=True)
+        evolved_fluxes = self.old_sed.photometry(asarray=True)
         unevolved_fluxes = self.unevolved_sed.photometry(asarray=True)
 
         # Calculate the heating fractions
@@ -343,6 +202,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         data = [all_wavelengths[dust_wavelengths], unevolved_fractions[dust_wavelengths],
                 evolved_fractions[dust_wavelengths]]
         self.fractions = tables.new(data, names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_total_datacube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_total_datacube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_total_datacube
 
     # -----------------------------------------------------------------
 
@@ -370,7 +265,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
             frame_name = "frame" + str(index)
 
             total_fluxes = self.total_datacube.frames[frame_name]
-            evolved_fluxes = self.evolved_datacube.frames[frame_name]
+            evolved_fluxes = self.old_datacube.frames[frame_name]
             unevolved_fluxes = self.unevolved_datacube.frames[frame_name]
 
             # Calculate the heating fractions
@@ -447,7 +342,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the evolved TIR luminosity in each pixel ...")
 
-        cube = self.evolved_datacube.asarray()
+        cube = self.old_datacube.asarray()
         wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
         deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
 
