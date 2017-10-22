@@ -340,6 +340,78 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def x_coordinates(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.absorptions["x"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_x_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.absorptions["x"], mask=self.heating_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_coordinates(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.absorptions["y"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_y_coordinates(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.absorptions["y"], mask=self.heating_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_coordinates(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.absorptions["z"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_z_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.absorptions["z"], mask=self.heating_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
     def calculate_distribution(self):
 
         """
@@ -430,6 +502,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def distribution_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the distribution file
+        return fs.join(self.cell_heating_path, "distribution.dat")
+
+    # -----------------------------------------------------------------
+
     def write_distribution(self):
 
         """
@@ -440,11 +525,21 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing the distribution of heating fractions of the unevolved stellar population ...")
 
-        # Determine the path to the distribution file
-        path = fs.join(self.cell_heating_path, "distribution.dat")
-
         # Save the distribution
-        self.distribution.saveto(path)
+        self.distribution.saveto(self.distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the radial distribution file
+        return fs.join(self.cell_heating_path, "radial_distribution.dat")
 
     # -----------------------------------------------------------------
 
@@ -458,11 +553,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing the radial distribution of heating fractions of the unevolved stellar population ...")
 
-        # Determine the path to the radial distribution file
-        path = fs.join(self.cell_heating_path, "radial_distribution.dat")
-
         # Save the radial distribution
-        self.radial_distribution.saveto(path)
+        self.radial_distribution.saveto(self.radial_distribution_path)
 
     # -----------------------------------------------------------------
 
@@ -523,6 +615,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def heating_map_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the plot file
+        return fs.join(self.cell_heating_path, "map.pdf")
+
+    # -----------------------------------------------------------------
+
     def plot_map(self):
 
         """
@@ -533,14 +638,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
 
-        # Determine the path to the plot file
-        path = fs.join(self.cell_heating_path, "map.pdf")
-
+        # Create figure
         plt.figure()
 
-        x = np.ma.MaskedArray(self.absorptions["X coordinate of cell center"], mask=self.mask).compressed()
-        y = np.ma.MaskedArray(self.absorptions["Y coordinate of cell center"], mask=self.mask).compressed()
-        z = self.heating_fractions_compressed
+        x = self.valid_x_coordinates
+        y = self.valid_y_coordinates
+        z = self.valid_heating_fractions
 
         #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
 
@@ -566,7 +669,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         cmap = cm.get_cmap("hot")  # get the "hot" color map
         contourset = ax.contourf(x_ticks, y_ticks, z_grid, 10, cmap=cmap)
 
-        plt.savefig(path)
+        # Plot
+        plt.savefig(self.heating_map_plot_path)
         plt.close()
 
 # -----------------------------------------------------------------

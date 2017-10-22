@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from ....core.basics.table import SmartTable
 from ....core.tools import arrays
 from ....core.units.unit import PhotometricUnit
+from ....magic.basics.coordinate import PhysicalCoordinate, PhysicalCoordinate3D
+from ....magic.basics.vector import Position, Position3D
 
 # -----------------------------------------------------------------
 
@@ -81,49 +83,35 @@ class AbsorptionTable(SmartTable):
         new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing"])
 
         new.add_columns([x, y, z], copy=False)
-        new.rename_column("X coordinate of cell center", "x")
-        new.rename_column("Y coordinate of cell center", "y")
-        new.rename_column("Z coordinate of cell center", "z")
+        #new.rename_column("X coordinate of cell center", "x")
+        #new.rename_column("Y coordinate of cell center", "y")
+        #new.rename_column("Z coordinate of cell center", "z")
+        new.rename_column(x.name, "x")
+        new.rename_column(y.name, "y")
+        new.rename_column(z.name, "z")
         new["x"].unit = "pc"
         new["y"].unit = "pc"
         new["z"].unit = "pc"
 
         new.add_column(total)
-        new.rename_column("Absorbed bolometric luminosity", "total")
+        #new.rename_column("Absorbed bolometric luminosity", "total")
+        new.rename_column(total.name, "total")
         new["total"].unit = "W"
 
         new.add_column(old)
-        new.rename_column("Absorbed bolometric luminosity", "old")
+        #new.rename_column("Absorbed bolometric luminosity", "old")
+        new.rename_column(old.name, "old")
         new["old"].unit = "W"
 
         new.add_column(young)
-        new.rename_column("Absorbed bolometric luminosity", "young")
+        #new.rename_column("Absorbed bolometric luminosity", "young")
+        new.rename_column(young.name, "young")
         new["young"].unit = "W"
 
         new.add_column(ionizing)
-        new.rename_column("Absorbed bolometric luminosity", "ionizing")
+        #new.rename_column("Absorbed bolometric luminosity", "ionizing")
+        new.rename_column(ionizing.name, "ionizing")
         new["ionizing"].unit = "W"
-
-        #new["x"] = x
-        #new["x"].unit = "pc"
-
-        #new["y"] = y
-        #new["y"].unit = "pc"
-
-        #new["z"] = z
-        #new["z"].unit = "pc"
-
-        #new["total"] = total
-        #new["total"].unit = "W"
-
-        #new["old"] = old
-        #new["old"].unit = "W"
-
-        #new["young"] = young
-        #new["young"].unit = "W"
-
-        #new["ionizing"] = ionizing
-        #new["ionizing"].unit = "W"
 
         # Return the new table
         return new
@@ -146,6 +134,92 @@ class AbsorptionTable(SmartTable):
 
         values = [x, y, z, total, old, young, ionizing]
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self)
+
+    # -----------------------------------------------------------------
+
+    def planar_coordinates(self, unit="pc", add_unit=True):
+
+        """
+        Thisf unction ...
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        coordinates = []
+
+        # Loop over the cells
+        for index in range(self.ncells):
+
+            # Get x and y
+            x = self["x"][index] * self["x"].unit
+            y = self["y"][index] * self["y"].unit
+
+            # Convert
+            x = x.to(unit)
+            y = y.to(unit)
+
+            # With unit
+            if add_unit: coordinate = PhysicalCoordinate(x, y)
+
+            # Without unit
+            else: coordinate = Position(x, y)
+
+            # Add the coordinate
+            coordinates.append(coordinate)
+
+        # Return
+        return coordinates
+
+    # -----------------------------------------------------------------
+
+    def coordinates(self, unit="pc", add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        coordinates = []
+
+        # Loop over the cells
+        for index in range(self.ncells):
+
+            # Get x and y
+            x = self["x"][index] * self["x"].unit
+            y = self["y"][index] * self["y"].unit
+            z = self["z"][index] * self["z"].unit
+
+            # Convert
+            x = x.to(unit)
+            y = y.to(unit)
+            z = z.to(unit)
+
+            # With unit
+            if add_unit: coordinate = PhysicalCoordinate3D(x, y, z)
+
+            # Without unit
+            else: coordinate = Position3D(x, y, z)
+
+            # Add the coordinate
+            coordinates.append(coordinate)
+
+        # Return
+        return coordinates
 
     # -----------------------------------------------------------------
 

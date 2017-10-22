@@ -17,7 +17,7 @@ from astropy.coordinates import SkyCoord
 from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
-from .vector import Position, Extent
+from .vector import Position, Position3D
 
 # -----------------------------------------------------------------
 
@@ -380,5 +380,34 @@ class PhysicalCoordinate(Position, Coordinate):
         """
 
         return self.y
+
+# -----------------------------------------------------------------
+
+class PhysicalCoordinate3D(Position3D, Coordinate):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, axis1, axis2, axis3, **kwargs):
+
+        """
+        The constructor ...
+        :param axis1:
+        :param axis2:
+        :param axis3:
+        :param kwargs:
+        :return:
+        """
+
+        # Call the constructor of the base classes
+        Position3D.__init__(self, axis1, axis2, axis3)
+        Coordinate.__init__(self, **kwargs)
+
+        # Check whether of right type
+        from ...core.tools import types
+        if not types.is_length_quantity(self.x): raise ValueError("Arguments must be length quantities")
+        if not types.is_length_quantity(self.y): raise ValueError("Arguments must be length quantities")
+        if not types.is_length_quantity(self.z): raise ValueError("Arguments must be length quantities")
 
 # -----------------------------------------------------------------

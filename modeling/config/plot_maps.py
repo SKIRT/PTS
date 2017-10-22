@@ -7,14 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.plotting.maps import MapsPlotter
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
-
-# Add settings
-definition.add_positional_optional("features", "string_list", "features to be plotted", choices=MapsPlotter.features())
 
 # -----------------------------------------------------------------

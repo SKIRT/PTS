@@ -34,6 +34,7 @@ make_young_stellar_maps | -- | maps.young.YoungStellarMapMaker | arguments | Mak
 make_ionizing_stellar_maps | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
 make_component_maps | -- | maps.components.ComponentMapsMaker | arguments | Make maps for the different model components
+plot_maps | -- | maps.plotter.MapsPlotter | arguments | Make plots of the maps
 
 # PHOTOMETRY
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
@@ -95,7 +96,6 @@ plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | 
 plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPlotter | interactive | Make plots of the decomposition step
 plot_truncation | plot_truncation | plotting.truncation.TruncationPlotter | interactive | Make plots of the truncation step
 plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | interactive | Make plots of the photometry step
-plot_maps | plot_maps | plotting.maps.MapsPlotter | interactive | Make plots of the map making step
 plot_fitting | plot_fitting | plotting.fitting.plotter.FittingPlotter | interactive | Make plots of the fitting step
 plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | interactive | Make plots of the analysis step
 

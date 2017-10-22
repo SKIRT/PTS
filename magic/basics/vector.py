@@ -116,6 +116,39 @@ class Vector(object):
 
 # -----------------------------------------------------------------
 
+class Vector3D(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, x, y, z):
+
+        """
+        The constructor ...
+        :param x:
+        :param y:
+        :param z:
+        """
+
+        # Set the attributes
+        self.x = x
+        self.y = y
+        self.z = z
+
+    # -----------------------------------------------------------------
+
+    @property
+    def norm(self):
+
+        """
+        This function ...
+        """
+
+        return math.sqrt(self.x ** 2 + self.y ** 2)
+
+# -----------------------------------------------------------------
+
 class Position(Vector):
 
     """
@@ -140,6 +173,28 @@ class Position(Vector):
         """
 
         return Extent(self.x - position.x, self.y - position.y)
+
+# -----------------------------------------------------------------
+
+class Position3D(Vector3D):
+
+    """
+    This classs ...
+    """
+
+    def __init__(self, x, y, z):
+
+        """
+        This function ...
+        :param self:
+        :param x:
+        :param y:
+        :param z:
+        :return:
+        """
+
+        # Call the constructor of the Vector3D base class
+        super(Position3D, self).__init__(x, y, z)
 
 # -----------------------------------------------------------------
 
