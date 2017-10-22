@@ -13,18 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from .component import DustHeatingAnalysisComponent, contributions
+from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
-from ....core.tools import tables, introspection
-from ....core.simulation.table import SkirtTable
 from ....core.basics.distribution import Distribution, Distribution2D
-from .component import total, old, young, ionizing, unevolved
 from .tables import AbsorptionTable
 from ....core.tools.utils import lazyproperty
 
@@ -52,9 +48,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # The table with the absorbed luminosities
         self.absorptions = None
 
-        # The mask of cells for which the total absorbed luminosity is zero
-        #self.zero_absorption = None
-
         # The heating fraction of the unevolved stellar population for each dust cell
         self.heating_fractions = None
 
@@ -77,7 +70,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.setup(**kwargs)
 
         # 2. Create the absorption table
-        self.create_absorption_table()
+        if not self.has_absorptions: self.create_absorption_table()
+        else: self.load_absorption_table()
 
         # 3. Calculate the heating fraction of the unevolved stellar population
         self.calculate_heating_unevolved()
@@ -108,149 +102,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    # def load_absorption(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Loading the absorption data ...")
-    #
-    #     # Header:
-    #     # Bolometric absorbed luminosity for all dust cells
-    #     # column 1: x coordinate of cell center (pc)
-    #     # column 2: y coordinate of cell center (pc)
-    #     # column 3: z coordinate of cell center (pc)
-    #     # column 4: Absorbed bolometric luminosity (W)
-    #
-    #     contribution_tables = dict()
-    #
-    #     # Loop over the different contributions
-    #     for contribution in contributions:
-    #
-    #         # Skip the simulation of the total unevolved (young + ionizing) stellar population
-    #         if contribution == "unevolved": continue
-    #
-    #         # Debugging
-    #         log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
-    #
-    #         # Determine the path to the output directory of the simulation
-    #         output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
-    #
-    #         # Determine the path to the absorption data file
-    #         absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
-    #
-    #         # Load the absorption table for this contribution
-    #         table = SkirtTable.from_file(absorption_path)
-    #
-    #         # Add the table
-    #         contribution_tables[contribution] = table
-    #
-    #     do_checks = False
-    #     if do_checks:
-    #
-    #         # Debugging
-    #         log.debug("Checking whether the tables are consistent ...")
-    #
-    #         # Check whether the table lengths match
-    #         table_lengths = [len(table) for table in contribution_tables.values()]
-    #         if not all(table_lengths[0] == length for length in table_lengths): raise ValueError("Absorption tables have different sizes")
-    #
-    #         # Check whether the X coordinates of the cells match
-    #         if not tables.equal_columns([table["X coordinate of cell center"] for table in contribution_tables.values()]):
-    #             raise ValueError("Columns of X coordinates of cell centers do not match between the different contributions")
-    #
-    #         # Check whether the Y coordinates of the cells match
-    #         if not tables.equal_columns([table["Y coordinate of cell center"] for table in contribution_tables.values()]):
-    #             raise ValueError("Columns of Y coordinates of cell centers do not match between the different contributions")
-    #
-    #         # Check whether the Z coordinates of the cells match
-    #         if not tables.equal_columns([table["Z coordinate of cell center"] for table in contribution_tables.values()]):
-    #             raise ValueError("Columns of Z coordinates of cell centers do not match between the different contributions")
-    #
-    #     # Debugging
-    #     log.debug("Creating the absorption table ...")
-    #
-    #     # Create the columns for the absorption table
-    #     #names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
-    #     #data = []
-    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
-    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
-    #     #data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
-    #
-    #     # Loop over the tables of the different contributions, add the absorption luminosity columns
-    #     #for contribution in contribution_tables:
-    #
-    #         #names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
-    #         #data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
-    #
-    #     # Create the absorption table
-    #     #self.absorptions = tables.new(data, names, copy=False)
-    #
-    #     self.absorptions = tables.new()
-    #
-    #     x_coords = contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"]
-    #     y_coords = contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"]
-    #     z_coords = contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"]
-    #     self.absorptions.add_columns([x_coords, y_coords, z_coords], copy=False)
-    #
-    #     for contribution in contribution_tables:
-    #
-    #         self.absorptions.add_columns([contribution_tables[contribution]["Absorbed bolometric luminosity"]], copy=False)
-    #         self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + contribution + " stellar population")
-    #
-    #     # Create a mask of cells with zero absorption
-    #     self.zero_absorption = self.absorptions["Absorbed bolometric luminosity of the total stellar population"] == 0.
-
-    # -----------------------------------------------------------------
-
-    # def create_absorption_table(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Creating the absorption table ...")
-    #
-    #     # Initialize table
-    #     #self.absorptions = tables.new()
-    #     self.absorptions = AbsorptionTable()
-    #
-    #     # Get cell coordinates
-    #     x_coords = self.total_contribution_absorption_data["X coordinate of cell center"]
-    #     y_coords = self.total_contribution_absorption_data["Y coordinate of cell center"]
-    #     z_coords = self.total_contribution_absorption_data["Z coordinate of cell center"]
-    #
-    #     # Add the columns
-    #     self.absorptions.add_columns([x_coords, y_coords, z_coords], copy=False)
-    #
-    #     # Add a column for the different contributions
-    #
-    #     ## Add column for total
-    #     self.absorptions.add_column(self.total_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
-    #     self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + total + " stellar population")
-    #
-    #     ## Add column for old
-    #     self.absorptions.add_column(self.old_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
-    #     self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + old + " stellar population")
-    #
-    #     ## Add column for young
-    #     self.absorptions.add_column(self.young_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
-    #     self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + young + " stellar population")
-    #
-    #     ## Add column for ionizing
-    #     self.absorptions.add_column(self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]) #copy=False)
-    #     self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + ionizing + " stellar population")
-    #
-    #     # Create a mask of cells with zero absorption
-    #     self.zero_absorption = self.absorptions["Absorbed bolometric luminosity of the total stellar population"] == 0.
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def ncells(self):
 
@@ -260,44 +111,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return len(self.total_contribution_absorption_data)
-
-    # -----------------------------------------------------------------
-
-    # def create_absorption_table(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Creating the absorption table ...")
-    #
-    #     # Initialize table
-    #     self.absorptions = AbsorptionTable()
-    #
-    #     # Add the rows
-    #     for i in range(self.ncells):
-    #
-    #         # Get the coordinates
-    #         x = self.total_contribution_absorption_data["X coordinate of cell center"][i]
-    #         y = self.total_contribution_absorption_data["Y coordinate of cell center"][i]
-    #         z = self.total_contribution_absorption_data["Z coordinate of cell center"][i]
-    #
-    #         # Get luminosity for total stellar population
-    #         total_absorption = self.total_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-    #
-    #         # Get luminosity for old stellar population
-    #         old_absorption = self.old_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-    #
-    #         # Get luminosity for young stellar population
-    #         young_absorption = self.young_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-    #
-    #         # Get luminosity for ionizing stellar population
-    #         ionizing_absorption = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"][i]
-    #
-    #         # Add row to the table
-    #         self.absorptions.add_entry(x, y, z, total_absorption, old_absorption, young_absorption, ionizing_absorption)
 
     # -----------------------------------------------------------------
 
@@ -333,6 +146,21 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def load_absorption_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Success
+        log.success("Absorption table has already been created: loading from file ...")
+
+        # Load
+        self.absorptions = AbsorptionTable.from_file(self.absorption_table_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def zero_absorption_mask(self):
 
@@ -356,9 +184,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the heating fraction of the unevolved stellar population ...")
 
         # SEBA:
-
-        #totISRFfile = "total212Labs.dat"
-        #Lsun = 3.846e26  # Watts
 
         ## Total energy absorbed in the new component
         ## Derived from ../../SKIRTrun/models/testHeating/MappingsHeating/plotSEDs.py
@@ -395,22 +220,123 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Calculate the heating fraction of the unevolved stellar population in each dust cell
         self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
 
-        #self.mask = self.heating_fractions.mask  # is basically the same mask as self.zero_absorption because during the division (see calculate_heating_unevolved) Astropy sets invalid values as masked
-        # nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions) # no nans or infs because Astropy sets them as MaskedConstants during the division
+    # -----------------------------------------------------------------
 
-        self.mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions)
+    @lazyproperty
+    def heating_fraction_nans(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return np.isnan(self.heating_fractions)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fraction_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.isinf(self.heating_fractions)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fraction_unphysical(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
 
         greater_than_one_mask = self.heating_fractions > 1.0
         ngreater_than_one = np.sum(greater_than_one_mask)
         relative_ngreater_than_one = float(ngreater_than_one) / len(self.heating_fractions)
 
         # Debugging
-        log.debug(str(ngreater_than_one) + " pixels have a heating fraction greater than unity (" + str(relative_ngreater_than_one*100) + "%)")
+        log.debug(str(ngreater_than_one) + " pixels have a heating fraction greater than unity (" + str(relative_ngreater_than_one * 100) + "%)")
 
-        self.mask += greater_than_one_mask
+        # Return
+        return greater_than_one_mask
 
-        self.heating_fractions_compressed = np.ma.MaskedArray(self.heating_fractions, self.mask).compressed()
-        self.weights_compressed = np.ma.MaskedArray(self.cell_properties["Mass fraction"], self.mask).compressed()
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fractions_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.heating_fraction_nans + self.heating_fraction_infs + self.heating_fraction_unphysical
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_heating_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.heating_fractions, self.heating_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties["Mass fraction"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.cell_weights, self.heating_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radii(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_coords = self.absorptions["x"]
+        y_coords = self.absorptions["y"]
+        return np.sqrt(x_coords**2 + y_coords**2)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_radii(self):
+
+        """
+        This fuction ...
+        :return:
+        """
+
+        return np.ma.MaskedArray(self.radii, self.heating_fractions_mask).compressed()
 
     # -----------------------------------------------------------------
 
@@ -425,7 +351,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the distribution
-        self.distribution = Distribution.from_values(self.heating_fractions_compressed, bins=20, weights=self.weights_compressed)
+        self.distribution = Distribution.from_values(self.valid_heating_fractions, bins=20, weights=self.valid_cell_weights)
 
     # -----------------------------------------------------------------
 
@@ -439,15 +365,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
 
-        # Calculate the radius for each dust cell
-        x_coords = self.absorptions["X coordinate of cell center"]
-        y_coords = self.absorptions["Y coordinate of cell center"]
-        radii = np.sqrt(x_coords**2 + y_coords**2)
-
-        radii_compressed = np.ma.MaskedArray(radii, self.mask).compressed()
-
         # Generate the radial distribution
-        self.radial_distribution = Distribution2D.from_values(radii_compressed, self.heating_fractions_compressed, weights=self.weights_compressed, x_name="radius (pc)", y_name="Heating fraction of unevolved stars")
+        self.radial_distribution = Distribution2D.from_values(self.valid_radii, self.valid_heating_fractions, weights=self.valid_cell_weights, x_name="radius (pc)", y_name="Heating fraction of unevolved stars")
 
     # -----------------------------------------------------------------
 
@@ -462,7 +381,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing ...")
 
         # Write the absorption table
-        self.write_absorption()
+        self.write_absorptions()
 
         # Write the distribution of heating fractions
         self.write_distribution()
@@ -484,7 +403,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_absorption(self):
+    @property
+    def has_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.absorption_table_path)
+
+    # -----------------------------------------------------------------
+
+    def write_absorptions(self):
 
         """
         This function ...
@@ -637,274 +568,5 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         plt.savefig(path)
         plt.close()
-
-    # -----------------------------------------------------------------
-
-    def load_absorption_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the absorption data ...")
-
-        # Bolometric absorbed luminosituy for all dust cells with nonzero absorption
-        # column 1: dust cell index
-        # column 2: x coordinate of cell center (pc)
-        # column 3: y coordinate of cell center (pc)
-        # column 4: z coordinate of cell center (pc)
-        # column 5: L_abs (W)
-
-        data = dict()
-
-        # Loop over the different contributions
-        for contribution in contributions:
-
-            # Debugging
-            log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
-
-            # Determine the path to the output directory of the simulation
-            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
-
-            # Determine the path to the absorption data file
-            absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
-
-            # Load the absorption table for this contribution
-            table = SkirtTable.from_file(absorption_path)
-
-            # Add the table
-            data[contribution] = table
-
-        # Create the absorption table which contains the information for the different contributions
-
-        # Debugging
-        log.info("Merging the individual absorption tables into one (this can take a while) ...")
-
-        current_rows = dict()
-        for contribution in contributions: current_rows[contribution] = 0
-
-        x_column = []
-        y_column = []
-        z_column = []
-        abs_columns = defaultdict(list)
-
-        # Loop over the cells
-        number_of_cells = len(self.cell_properties)
-        for index in range(number_of_cells):
-
-            # Debugging
-            log.debug("Cell " + str(index+1) + " of " + str(number_of_cells) + " (" + str((index+1)/number_of_cells*100.) + "%) ...")
-
-            x = None
-            y = None
-            z = None
-            abs = dict()
-
-            # Loop over the absorption tables of the different contributions, find the cell index
-            for contribution in contributions:
-
-                table = data[contribution]
-                current_row = current_rows[contribution]
-
-                if table["Dust cell index"][current_row] == index:
-
-                    x = table["X coordinate of cell center"][current_row]
-                    y = table["Y coordinate of cell center"][current_row]
-                    z = table["Z coordinate of cell center"][current_row]
-                    labs = table["L_abs"][current_row]
-                    abs[contribution] = labs
-
-                    # Use the next row to test against the next cell index
-                    current_rows[contribution] += 1
-
-            x_column.append(x)
-            y_column.append(y)
-            z_column.append(z)
-
-            for contribution in contributions:
-                abs_columns[contribution].append(abs[contribution] if contribution in abs else None)
-
-        # Initialize the column data and names
-        data = [x_column, y_column, z_column]
-        names = ["X coordinate", "Y coordinate", "Z coordinate"]
-        for contribution in contributions:
-            data.append(abs_columns[contribution])
-            names.append("Absorption for " + contribution + " stellar population")
-
-        # Create the final absorption table
-        self.absorptions = tables.new(data, names)
-
-    # -----------------------------------------------------------------
-
-    def load_absorption_in_r(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        properties_path = fs.join(self.analysis_run.heating_output_path_for_contribution("total"), self.galaxy_name + "_ds_cellprops.dat")
-        tot_path = fs.join(self.analysis_run.heating_output_path_for_contribution("total"), self.galaxy_name + "_ds_abs.dat")
-        old_path = fs.join(self.analysis_run.heating_output_path_for_contribution("old"), self.galaxy_name + "_ds_abs.dat")
-        young_path = fs.join(self.analysis_run.heating_output_path_for_contribution("young"), self.galaxy_name + "_ds_abs.dat")
-        ionizing_path = fs.join(self.analysis_run.heating_output_path_for_contribution("ionizing"), self.galaxy_name + "_ds_abs.dat")
-        self.merge_in_r(properties_path, tot_path, old_path, young_path, ionizing_path)
-
-    # -----------------------------------------------------------------
-
-    def merge_in_r(self, properties_path, tot_path, old_path, young_path, ionizing_path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        import rpy2.robjects as ro
-
-        temp_path = fs.join(self.cell_heating_path, "abs_temp.dat")
-
-        # Define the lines that have to be executed by R to merge the absorption data
-        lines = []
-        lines.append("library('dplyr')")
-        lines.append("props <- read.table('" + properties_path + "')")
-        lines.append("IDs <- c(0:(length(props[[1]]) - 1))")
-        lines.append("props <- mutate(props, ID=IDs)")
-
-        lines.append("tot <- read.table('" + tot_path + "')")
-        lines.append("old <- read.table('" + old_path + "')")
-        lines.append("yng <- read.table('" + young_path + "')")
-        lines.append("new <- read.table('" + ionizing_path + "')")
-
-        lines.append("propstot <- merge(props, tot, by.x = 'ID', by.y = 'V1')")
-        lines.append("print('Merged total properties...')")
-
-        lines.append("oldyng <- merge(old, yng, by.x = 'V1', by.y = 'V1')")
-        lines.append("oldyngnew <- merge(oldyng, new, by.x = 'V1', by.y = 'V1')")
-        lines.append("print('Merged component properties...')")
-
-        lines.append("final <- merge(propstot, oldyngnew, by.x = 'ID', by.y = 'V1')")
-        lines.append("names(final) <- c('ID', 'volume', 'density', 'massFraction', 'odepth', 'density_new', 'x', 'y', 'z', 'Ltot', 'Lold', 'Lyng', 'Lnew')")
-        lines.append("print('Final set created...')")
-
-        lines.append("write.table(final, '" + temp_path + "', row.names = F)")
-
-        # Execute all lines consecutively in R
-        for line in lines:
-            #print(line)
-            ro.r(line)
-
-    # -----------------------------------------------------------------
-
-    def load_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # M81_ds_isrf.dat
-
-        # Mean field intensities for all dust cells with nonzero absorption
-        # column 1: dust cell index
-        # column 2: x coordinate of cell center (pc)
-        # column 3: y coordinate of cell center (pc)
-        # column 4: z coordinate of cell center (pc)
-        # column 5: J_lambda (W/m3/sr) for lambda = 0.1 micron
-        # column 6: J_lambda (W/m3/sr) for lambda = 0.121153 micron
-        # column 7: J_lambda (W/m3/sr) for lambda = 0.14678 micron
-        # column 8: J_lambda (W/m3/sr) for lambda = 0.177828 micron
-        # column 9: J_lambda (W/m3/sr) for lambda = 0.215443 micron
-        # column 10: J_lambda (W/m3/sr) for lambda = 0.261016 micron
-        # column 11: J_lambda (W/m3/sr) for lambda = 0.316228 micron
-        # column 12: J_lambda (W/m3/sr) for lambda = 0.383119 micron
-        # column 13: J_lambda (W/m3/sr) for lambda = 0.464159 micron
-        # column 14: J_lambda (W/m3/sr) for lambda = 0.562341 micron
-        # column 15: J_lambda (W/m3/sr) for lambda = 0.681292 micron
-        # column 16: J_lambda (W/m3/sr) for lambda = 0.825404 micron
-        # column 17: J_lambda (W/m3/sr) for lambda = 1 micron
-        # column 18: J_lambda (W/m3/sr) for lambda = 1.21153 micron
-        # column 19: J_lambda (W/m3/sr) for lambda = 1.4678 micron
-        # column 20: J_lambda (W/m3/sr) for lambda = 1.77828 micron
-        # column 21: J_lambda (W/m3/sr) for lambda = 2.15443 micron
-        # column 22: J_lambda (W/m3/sr) for lambda = 2.61016 micron
-        # column 23: J_lambda (W/m3/sr) for lambda = 3.16228 micron
-        # column 24: J_lambda (W/m3/sr) for lambda = 3.83119 micron
-        # column 25: J_lambda (W/m3/sr) for lambda = 4.64159 micron
-        # column 26: J_lambda (W/m3/sr) for lambda = 5.62341 micron
-        # column 27: J_lambda (W/m3/sr) for lambda = 6.81292 micron
-        # column 28: J_lambda (W/m3/sr) for lambda = 8.25404 micron
-        # column 29: J_lambda (W/m3/sr) for lambda = 10 micron
-
-        # Determine the indices of the columns that have to be imported
-        column_indices = [0,1,2,3]
-        for i in range(4, 4 + self.nwavelengths): column_indices.append(i)
-
-        # Loop over the different contributions
-        for contribution in contributions:
-
-            # Determine the path to the output directory of the simulation
-            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
-
-            # Determine the path to the ISFR data file
-            isrf_path = fs.join(output_path, self.galaxy_name + "_ds_isrf.dat")
-
-            # Load the ISRF file
-            columns = np.loadtxt(isrf_path, usecols=column_indices, unpack=True)
-
-            # columns[0]: dust cell index
-            # columns[1]: x coordinate of cell center
-            # columns[2]: y coordinate of cell center
-            # columns[3]: z coordinate of cell center
-            # columns[4 -> 4 + (nwavelengths - 1)]: J_lambda
-
-            # Integrate over the J_lambda values to get the total bolometric absorbed luminosity per cell
-            luminosities = self.integrate_over_wavelengths(columns[4:4+self.nwavelengths])
-
-            #IDtot, x, y, z, Ltot = np.loadtxt(totISRFfile, usecols=(0, 1, 2, 3, 4,), unpack=True)
-            #IDold, Lold = np.loadtxt(oldISRFfile, usecols=(0, 4,), unpack=True)
-            #IDyng, Lyng = np.loadtxt(yngISRFfile, usecols=(0, 4,), unpack=True)
-            #IDnew, Lnew = np.loadtxt(newISRFfile, usecols=(0, 4,), unpack=True)
-
-            # write out
-            #writeLabsTot('Labs_tot.dat', IDtot, x, y, z, Ltot)
-            #writeLabs('Labs_old.dat', IDold, Lold)
-            #writeLabs('Labs_yng.dat', IDyng, Lyng)
-            #writeLabs('Labs_new.dat', IDnew, Lnew)
-
-    # -----------------------------------------------------------------
-
-    def integrate_over_wavelengths(self, jlambdas):
-
-        """
-        This function ...
-        :param jlambdas:
-        :return:
-        """
-
-        lum_cells = []
-
-        # L = sum_lambda (j_lambda * d_lambda)
-
-        # Get the wavelength deltas
-        deltas = self.wavelength_grid.deltas(asarray=True, unit="m") # deltas in meter
-
-        # Loop over all dust cells
-        for i in range(jlambdas[0].size):
-
-            # Put the Jlambda values for this cell in an array
-            jlambdas_cell = np.array([jlambdas[k][i] for k in range(len(jlambdas))])
-
-            # Calculate the luminosity
-            #lum = np.sum(jlambdas_cell * MjySr_to_LsunMicron * deltas)
-            lum = np.sum(jlambdas_cell * deltas) # if deltas are in meter, this is in W/m3/sr * m -> W/m2/sr
-            #lum = np.sum(jlambdas_cell * deltas * ...)
-
-            # Add the luminosity to the list
-            lum_cells.append(lum)
-
-        # Return the list of luminosities
-        return lum_cells
 
 # -----------------------------------------------------------------

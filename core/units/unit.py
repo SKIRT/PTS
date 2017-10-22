@@ -113,7 +113,7 @@ wavelength_times_frequency = speed_of_light
 class PhotometricUnit(CompositeUnit):
 
     """
-    This function ...
+    This class ...
     """
 
     __slots__ = [] # make the class objects immutable
@@ -3232,5 +3232,47 @@ def same_physical_type(unit_a, unit_b):
     """
 
     return unit_a.physical_type == unit_b.physical_type
+
+# -----------------------------------------------------------------
+
+# Radiant energy density	we	joule per cubic metre	J/m3	M⋅L−1⋅T−2	Radiant energy per unit volume.
+# emissivity?
+
+# -----------------------------------------------------------------
+
+class EnergyDensityUnit(CompositeUnit):
+
+    """
+    This class ...
+    """
+
+    __slots__ = []  # make the class objects immutable
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, unit, density=False, density_strict=False):
+
+        """
+        The constructor ...
+        :param unit:
+        :param density:
+        :param density_strict:
+        """
+
+        # Unit attributes
+        self._base_unit = Unit("")
+        self._wavelength_unit = Unit("")
+        self._frequency_unit = Unit("")
+        self._volume_unit = Unit("")
+        self._solid_angle_unit = Unit("")
+
+        # Already a energy density unit
+        if isinstance(unit, EnergyDensityUnit): pass
+
+        # Regular unit
+        else: pass
+
+        # Call the constructor of the base class
+        super(EnergyDensityUnit, self).__init__(unit.scale, unit.bases, unit.powers)
 
 # -----------------------------------------------------------------
