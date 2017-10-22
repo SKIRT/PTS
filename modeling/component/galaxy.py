@@ -488,16 +488,17 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_frames_for_filters(self, filters, framelist=False):
+    def get_frames_for_filters(self, filters, framelist=False, named=True):
 
         """
         Thisf unction ...
         :param filters:
         :param framelist:
+        :param named:
         :return:
         """
 
-        return self.environment.get_frames_for_filters(filters, framelist=framelist)
+        return self.environment.get_frames_for_filters(filters, framelist=framelist, named=named)
 
     # -----------------------------------------------------------------
 

@@ -1129,16 +1129,17 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
-    def get_frames_for_filters(self, filters, framelist=False):
+    def get_frames_for_filters(self, filters, framelist=False, named=True):
 
         """
         Thisf unction ...
         :param filters:
         :param framelist:
+        :param named:
         :return:
         """
 
-        if framelist: return self.dataset.get_framelist_for_filters(filters)
+        if framelist: return self.dataset.get_framelist_for_filters(filters, named=named)
         else: return self.dataset.get_frames_for_filters(filters)
 
     # -----------------------------------------------------------------

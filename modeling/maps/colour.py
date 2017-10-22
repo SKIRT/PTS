@@ -175,7 +175,7 @@ class ColoursMapMaker(MapsComponent):
                 filters.append(fltr)
 
         # Get frames
-        self.frames = self.get_frames_for_filters(filters, framelist=True)
+        self.frames = self.get_frames_for_filters(filters, framelist=True, named=False)
 
     # -----------------------------------------------------------------
 

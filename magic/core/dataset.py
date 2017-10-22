@@ -1058,7 +1058,9 @@ class DataSet(object):
         """
 
         paths = []
-        for fltr in filters: paths.append(self.get_frame_path_for_filter(fltr))
+        names = self.get_names_for_filters(filters)
+        #for fltr in filters: paths.append(self.get_frame_path_for_filter(fltr))
+        for name in names: paths.append(self.get_frame_path(name))
         return paths
 
     # -----------------------------------------------------------------
@@ -1083,15 +1085,17 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_framelist_for_filters(self, filters):
+    def get_framelist_for_filters(self, filters, named=True):
 
         """
         This function ...
-        :param filters: 
+        :param filters:
+        :param named:
         :return: 
         """
 
-        return NamedFrameList.from_paths(**self.get_frame_names_and_paths_for_filters(filters))
+        if named: return NamedFrameList.from_paths(**self.get_frame_names_and_paths_for_filters(filters))
+        else: return FrameList.from_paths(*self.get_frame_paths_for_filters(filters))
 
     # -----------------------------------------------------------------
 
