@@ -21,8 +21,14 @@ from ...tools import colours
 
 # -----------------------------------------------------------------
 
-colour_strings = ["FUV__NUV", "FUV__H", "FUV__u", "FUV__g", "FUV__r", "FUV__i", "FUV__z", "Pacs_70__Pacs_100", "Pacs_100__Pacs_160",
-                  "Pacs_160__SPIRE_250", "SPIRE_250__SPIRE_350", "SPIRE_350__SPIRE_500"]
+uv_colour_strings = ["FUV__NUV"]
+fuv_optical_colour_strings = ["FUV__H", "FUV__u", "FUV__g", "FUV__r", "FUV__i", "FUV__z"]
+nuv_optical_colour_strings = ["NUV__u", "NUV__g", "NUV__r", "NUV__i", "NUV__z"]
+infrared_colour_strings = ["Pacs_70__Pacs_100", "Pacs_100__Pacs_160", "Pacs_160__SPIRE_250", "SPIRE_250__SPIRE_350", "SPIRE_350__SPIRE_500"]
+
+# -----------------------------------------------------------------
+
+colour_strings = uv_colour_strings + fuv_optical_colour_strings + nuv_optical_colour_strings + infrared_colour_strings
 
 # -----------------------------------------------------------------
 
