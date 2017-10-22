@@ -37,6 +37,7 @@ from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
 from ...magic.tools import plotting
 from ...magic.core.image import Image
+from ...core.tools.sequences import all_except_one
 
 # -----------------------------------------------------------------
 
@@ -1005,7 +1006,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_path_for_map_plot(self, name, method=None, add_extension=True, extension="pdf"):
+    def get_path_for_map_plot(self, name, method=None, add_extension=True, extension="pdf", clear_other_formats=False):
 
         """
         This function ...
@@ -1013,6 +1014,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param method:
         :param add_extension:
         :param extension:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1023,26 +1025,37 @@ class MapMakerBase(GalaxyModelingComponent):
             if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
             else: path = fs.join(self.maps_sub_path, method)
 
-            # Create extra path
-            extra_path = fs.create_directory_in(path, self.map_plots_name)
+            # Create path
+            plots_path = fs.create_directory_in(path, self.map_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(plots_path, name)
 
             # Determine path
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plots_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Determine path
         else:
 
-            extra_path = fs.create_directory_in(self.maps_sub_path, self.map_plots_name)
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            plots_path = fs.create_directory_in(self.maps_sub_path, self.map_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(plots_path, name)
+
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plots_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Return the map path
         return map_path
 
     # -----------------------------------------------------------------
 
-    def get_path_for_negatives_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
+    def get_path_for_negatives_plot(self, name, method=None, add_extension=True, extension="pdf", suffix="", clear_other_formats=False):
 
         """
         This function ...
@@ -1051,6 +1064,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param add_extension:
         :param extension:
         :param suffix:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1064,23 +1078,34 @@ class MapMakerBase(GalaxyModelingComponent):
             # Create plot path
             plot_path = fs.create_directory_in(path, self.negatives_plots_name)
 
+            # Set base path
+            map_base_path = fs.join(plot_path, name + suffix)
+
             # Determine path
-            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
-            else: map_path = fs.join(plot_path, name + suffix)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plot_path, exact_name=name+suffix, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Determine path
         else:
 
             plot_path = fs.create_directory_in(self.maps_sub_path, self.negatives_plots_name)
-            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
-            else: map_path = fs.join(plot_path, name + suffix)
+
+            # Set base path
+            map_base_path = fs.join(plot_path, name + suffix)
+
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plot_path, exact_name=name+suffix, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Return the map path
         return map_path
 
     # -----------------------------------------------------------------
 
-    def get_path_for_nans_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
+    def get_path_for_nans_plot(self, name, method=None, add_extension=True, extension="pdf", suffix="", clear_other_formats=False):
 
         """
         This function ...
@@ -1089,6 +1114,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param add_extension:
         :param extension:
         :param suffix:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1102,23 +1128,34 @@ class MapMakerBase(GalaxyModelingComponent):
             # Create plot path
             plot_path = fs.create_directory_in(path, self.nans_plots_name)
 
+            # Set base path
+            map_base_path = fs.join(plot_path, name + suffix)
+
             # Determine path
-            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
-            else: map_path = fs.join(plot_path, name + suffix)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plot_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Determine path
         else:
 
             plot_path = fs.create_directory_in(self.maps_sub_path, self.nans_plots_name)
-            if add_extension: map_path = fs.join(plot_path, name + suffix + "." + extension)
-            else: map_path = fs.join(plot_path, name + suffix)
+
+            # Set base path
+            map_base_path = fs.join(plot_path, name + suffix)
+
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(plot_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Return the map path
         return map_path
 
     # -----------------------------------------------------------------
 
-    def get_path_for_contour_plot(self, name, method=None, add_extension=True, extension="pdf", suffix=""):
+    def get_path_for_contour_plot(self, name, method=None, add_extension=True, extension="pdf", suffix="", clear_other_formats=False):
 
         """
         This function ...
@@ -1127,6 +1164,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param add_extension:
         :param extension:
         :param suffix:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1137,26 +1175,37 @@ class MapMakerBase(GalaxyModelingComponent):
             if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
             else: path = fs.join(self.maps_sub_path, method)
 
-            # Create extra path
-            extra_path = fs.create_directory_in(path, self.contour_plots_name)
+            # Create path
+            contours_path = fs.create_directory_in(path, self.contour_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(contours_path, name + suffix)
 
             # Determine path
-            if add_extension: map_path = fs.join(extra_path, name + suffix + "." + extension)
-            else: map_path = fs.join(extra_path, name + suffix)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(contours_path, exact_name=name+suffix, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Determine path
         else:
 
-            extra_path = fs.create_directory_in(self.maps_sub_path, self.contour_plots_name)
-            if add_extension: map_path = fs.join(extra_path, name + suffix + "." + extension)
-            else: map_path = fs.join(extra_path, name + suffix)
+            contours_path = fs.create_directory_in(self.maps_sub_path, self.contour_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(contours_path, name + suffix)
+
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(contours_path, exact_name=name+suffix, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Return the map path
         return map_path
 
     # -----------------------------------------------------------------
 
-    def get_path_for_profile_plot(self, name, method=None, add_extension=True, extension="pdf"):
+    def get_path_for_profile_plot(self, name, method=None, add_extension=True, extension="pdf", clear_other_formats=False):
 
         """
         This function ...
@@ -1164,6 +1213,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param method:
         :param add_extension:
         :param extension:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1174,19 +1224,30 @@ class MapMakerBase(GalaxyModelingComponent):
             if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
             else: path = fs.join(self.maps_sub_path, method)
 
-            # Create extra path
-            extra_path = fs.create_directory_in(path, self.profile_plots_name)
+            # Create path
+            profiles_path = fs.create_directory_in(path, self.profile_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(profiles_path, name)
 
             # Determine path
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(profiles_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Determine path
         else:
 
-            extra_path = fs.create_directory_in(self.maps_sub_path, self.profile_plots_name)
-            if add_extension: map_path = fs.join(extra_path, name + "." + extension)
-            else: map_path = fs.join(extra_path, name)
+            profiles_path = fs.create_directory_in(self.maps_sub_path, self.profile_plots_name)
+
+            # Set base path
+            map_base_path = fs.join(profiles_path, name)
+
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(profiles_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                map_path = map_base_path + "." + extension
+            else: map_path = map_base_path
 
         # Return the map path
         return map_path
@@ -1194,7 +1255,7 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
-                  mask_negatives=False):
+                  mask_negatives=False, clear_other_formats=True):
 
         """
         Thisfunction ...
@@ -1205,6 +1266,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param scales:
         :param share_limits:
         :param mask_negatives:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1230,7 +1292,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting the '" + name + "' map ...")
 
                     # Determine path
-                    plot_path = self.get_path_for_map_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_map_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1263,7 +1325,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting the '" + method + "' map ...")
 
                 # Determine path
-                plot_path = self.get_path_for_map_plot(method, extension=format)
+                plot_path = self.get_path_for_map_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1284,12 +1346,13 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_negatives(self, format="pdf", cropping_factor=1.3):
+    def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True):
 
         """
         This function ...
         :param format:
         :param cropping_factor:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1323,7 +1386,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting the negative pixel mask of the '" + name + "' map ...")
 
                     # Determine path
-                    plot_path = self.get_path_for_negatives_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_negatives_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1349,7 +1412,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting the negative pixel mask of the '" + method + "' map ...")
 
                 # Determine path
-                plot_path = self.get_path_for_negatives_plot(method, extension=format)
+                plot_path = self.get_path_for_negatives_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1362,12 +1425,13 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_nans(self, format="pdf", cropping_factor=1.3):
+    def plot_nans(self, format="pdf", cropping_factor=1.3, clear_other_formats=True):
 
         """
         This finction ...
         :param format:
         :param cropping_factor:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1401,7 +1465,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting the NaN pixel mask of the '" + name + "' map ...")
 
                     # Determine path
-                    plot_path = self.get_path_for_nans_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_nans_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1427,7 +1491,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting the NaN pixel mask of the '" + method + "' map ...")
 
                 # Determine path
-                plot_path = self.get_path_for_nans_plot(method, extension=format)
+                plot_path = self.get_path_for_nans_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1440,7 +1504,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_path_for_extra_map_plot(self, name, method=None, add_extension=True, extension="fits"):
+    def get_path_for_extra_map_plot(self, name, method=None, add_extension=True, extension="pdf", clear_other_formats=False):
 
         """
         This function ...
@@ -1448,6 +1512,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param method:
         :param add_extension:
         :param extension:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1464,9 +1529,14 @@ class MapMakerBase(GalaxyModelingComponent):
             # Create plot path
             extra_plot_path = fs.create_directory_in(extra_path, "plots")
 
+            # Set base path
+            base_path = fs.join(extra_plot_path, name)
+
             # Determine path
-            if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
-            else: plot_path = fs.join(extra_plot_path, name)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(extra_plot_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                plot_path = base_path + "." + extension
+            else: plot_path = base_path
 
         # Determine path
         else:
@@ -1475,16 +1545,22 @@ class MapMakerBase(GalaxyModelingComponent):
             extra_path = fs.create_directory_in(self.maps_sub_path, self.extra_maps_name)
             extra_plot_path = fs.create_directory_in(extra_path, "plots")
 
+            # Set base path
+            base_path = fs.join(extra_plot_path, name)
+
             # Determine plot file path
-            if add_extension: plot_path = fs.join(extra_plot_path, name + "." + extension)
-            else: plot_path = fs.join(extra_plot_path, name)
+            if add_extension:
+                if clear_other_formats: fs.remove_files_in_path(extra_plot_path, exact_name=name, extension=sequences.all_except_one(["pdf", "png"], extension))
+                plot_path = base_path + "." + extension
+            else: plot_path = base_path
 
         # Return the plot file path
         return plot_path
 
     # -----------------------------------------------------------------
 
-    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True, mask_negatives=False):
+    def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None,
+                        share_limits=True, mask_negatives=False, clear_other_formats=True):
 
         """
         This function ...
@@ -1495,6 +1571,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param scales:
         :param share_limits:
         :param mask_negatives:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1520,7 +1597,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting the '" + name + "' extra map ...")
 
                     # Determine path
-                    plot_path = self.get_path_for_extra_map_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_extra_map_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If the plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1555,7 +1632,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting the '" + method + "' extra map ...")
 
                 # Determine path
-                plot_path = self.get_path_for_extra_map_plot(method, extension=format)
+                plot_path = self.get_path_for_extra_map_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If the plot already exists and we don't have to replot
                 if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1579,7 +1656,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3):
+    def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3, clear_other_formats=True):
 
         """
         This function ...
@@ -1587,6 +1664,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :param nlevels:
         :param format:
         :param cropping_factor:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1609,7 +1687,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting contours for the '" + name + "' map ...")
 
                     # Determine the path
-                    plot_path = self.get_path_for_contour_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_contour_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If plot already exists and we don't have to replot
                     #if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1646,7 +1724,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting contours for the '" + method + "' map ...")
 
                 # Determine the path
-                plot_path = self.get_path_for_contour_plot(method, extension=format)
+                plot_path = self.get_path_for_contour_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If plot already exists and we don't have to remake
                 #if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1678,12 +1756,13 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_profiles(self, nbins=20, format="pdf"):
+    def plot_profiles(self, nbins=20, format="pdf", clear_other_formats=True):
 
         """
         Thisn function ...
         :param nbins:
         :param format:
+        :param clear_other_formats:
         :return:
         """
 
@@ -1710,7 +1789,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     log.debug("Plotting radial profiles for the '" + name + "' map ...")
 
                     # Determine the path
-                    plot_path = self.get_path_for_profile_plot(name, method, extension=format)
+                    plot_path = self.get_path_for_profile_plot(name, method, extension=format, clear_other_formats=clear_other_formats)
 
                     # If plot already exists and we don't have to replot
                     if fs.is_file(plot_path) and not self.config.replot: continue
@@ -1728,7 +1807,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 log.debug("Plotting radial profiles for the '" + method + "' map ...")
 
                 # Determine the path
-                plot_path = self.get_path_for_profile_plot(method, extension=format)
+                plot_path = self.get_path_for_profile_plot(method, extension=format, clear_other_formats=clear_other_formats)
 
                 # If plot already exist and we don't have to remake
                 if fs.is_file(plot_path) and not self.config.replot: continue

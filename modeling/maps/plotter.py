@@ -247,13 +247,13 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the colour maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.colours_scale, share_limits=False)
+        self.plot_maps(scale=self.colours_scale, share_limits=False, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -304,13 +304,13 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the sSFR maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.ssfr_scale, share_limits=False)
+        self.plot_maps(scale=self.ssfr_scale, share_limits=False, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -361,16 +361,16 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the TIR maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.tir_scale)
+        self.plot_maps(scale=self.tir_scale, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -421,19 +421,19 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the attenuation maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.attenuation_scale)
+        self.plot_maps(scale=self.attenuation_scale, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the extra maps
-        self.plot_extra_maps(scale="sqrt")
+        self.plot_extra_maps(scale="sqrt", format=self.config.format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -484,16 +484,16 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the old stellar maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.old_scale)
+        self.plot_maps(scale=self.old_scale, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -550,16 +550,16 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the dust maps ...")
 
         # Plot the maps
-        self.plot_maps(scales=self.dust_scales)
+        self.plot_maps(scales=self.dust_scales, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -610,19 +610,19 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the young stellar maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.young_scale, mask_negatives=True)
+        self.plot_maps(scale=self.young_scale, mask_negatives=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the negative pixel masks
-        self.plot_negatives()
+        self.plot_negatives(format=self.config.format, clear_other_formats=True)
 
         # Plot the NaN pixel masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()
@@ -673,16 +673,16 @@ class MapsPlotter(MapsComponent):
         log.info("Plotting the ionizing stellar maps ...")
 
         # Plot the maps
-        self.plot_maps(scale=self.ionizing_scale)
+        self.plot_maps(scale=self.ionizing_scale, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
-        self.plot_contours(filled=True)
+        self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
 
         # Plot the radial profiles
-        self.plot_profiles()
+        self.plot_profiles(format=self.config.format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        self.plot_nans()
+        self.plot_nans(format=self.config.format, clear_other_formats=True)
 
         # Clear the maps
         self.clear()

@@ -10,7 +10,16 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
+formats = ["pdf", "png"]
+default_format = "pdf"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("format", "string", "plotting format", default=default_format, choices=formats)
 
 # -----------------------------------------------------------------

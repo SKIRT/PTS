@@ -1101,6 +1101,23 @@ def all_except(sequence, ignore):
 
 # -----------------------------------------------------------------
 
+def all_except_one(sequence, ignore):
+
+    """
+    Thisf ucntion ...
+    :param sequence:
+    :param ignore:
+    :return:
+    """
+
+    new = []
+    for item in sequence:
+        if item == ignore: continue
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
+
 def make_selection(sequence, selected, not_selected, nrandom=None, all=False, none=False, indices=None, not_indices=None):
 
     """
