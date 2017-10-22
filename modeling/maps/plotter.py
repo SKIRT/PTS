@@ -49,6 +49,102 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "colours" in self.config.types and self.has_colour_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr(self):
+
+        """
+        Thinsfunction ...
+        :return:
+        """
+
+        return "ssfr" in self.config.types and self.has_ssfr_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "tir" in self.config.types and self.has_tir_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "attenuation" in self.config.types and self.has_attenuation_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        return "old" in self.config.types and self.has_old_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "dust" in self.config.dust and self.has_dust_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "young" in self.config.types and self.has_young_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing(self):
+
+        """
+        Thisfunctio n...
+        :return:
+        """
+
+        return "ionizing" in self.config.types and self.has_ionizing_maps
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -60,36 +156,28 @@ class MapsPlotter(MapsComponent):
         self.setup()
 
         # 2. Colour maps
-        if self.has_colour_maps: self.load_colours()
-        if self.has_colour_maps: self.plot_colours()
+        if self.colours: self.process_colours()
 
         # 3. sSFR maps
-        if self.has_ssfr_maps: self.load_ssfr()
-        if self.has_ssfr_maps: self.plot_ssfr()
+        if self.ssfr: self.process_ssfr()
 
         # 4. TIR maps
-        if self.has_tir_maps: self.load_tir()
-        if self.has_tir_maps: self.plot_tir()
+        if self.tir: self.process_tir()
 
         # 5. Attenuation maps
-        if self.has_attenuation_maps: self.load_attenuation()
-        if self.has_attenuation_maps: self.plot_attenuation()
+        if self.attenuation: self.process_attenuation()
 
         # 6. Old stellar maps
-        if self.has_old_maps: self.load_old()
-        if self.has_old_maps: self.plot_old()
+        if self.old: self.process_old()
 
         # 7. Dust maps
-        if self.has_dust_maps: self.load_dust()
-        if self.has_dust_maps: self.plot_dust()
+        if self.dust: self.process_dust()
 
         # 8. Young stellar maps
-        if self.has_young_maps: self.load_young()
-        if self.has_young_maps: self.plot_young()
+        if self.young: self.process_young()
 
         # 9. Ionizing stellar maps
-        if self.has_ionizing_maps: self.load_ionizing()
-        if self.has_ionizing_maps: self.plot_ionizing()
+        if self.ionizing: self.process_ionizing()
 
     # -----------------------------------------------------------------
 
@@ -203,6 +291,27 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def process_colours(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing colour maps ...")
+
+        # Load the maps
+        self.load_colours()
+
+        # Plot the maps
+        self.plot_colours()
+
+        # Clear the maps
+        self.clear()
+
+    # -----------------------------------------------------------------
+
     def load_colours(self):
 
         """
@@ -254,6 +363,24 @@ class MapsPlotter(MapsComponent):
 
         # Plot the radial profiles
         self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    def process_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing sSFR maps ...")
+
+        # Load maps
+        self.load_ssfr()
+
+        # Plot the maps
+        self.plot_ssfr()
 
         # Clear the maps
         self.clear()
@@ -311,6 +438,24 @@ class MapsPlotter(MapsComponent):
 
         # Plot the radial profiles
         self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    def process_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing TIR maps ...")
+
+        # Load the TIR maps
+        self.load_tir()
+
+        # Plot the TIR maps
+        self.plot_tir()
 
         # Clear the maps
         self.clear()
@@ -371,6 +516,24 @@ class MapsPlotter(MapsComponent):
 
         # Plot the NaNs masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    def process_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing the attenuation maps ...")
+
+        # Load maps
+        self.load_attenuation()
+
+        # Plot maps
+        self.plot_attenuation()
 
         # Clear the maps
         self.clear()
@@ -435,6 +598,24 @@ class MapsPlotter(MapsComponent):
         # Plot the NaNs masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
 
+    # -----------------------------------------------------------------
+
+    def process_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing old stellar maps ...")
+
+        # Load
+        self.load_old()
+
+        # Plot
+        self.plot_old()
+
         # Clear the maps
         self.clear()
 
@@ -494,6 +675,24 @@ class MapsPlotter(MapsComponent):
 
         # Plot the NaNs masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    def process_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inorm the user
+        log.info("Processing dust maps ...")
+
+        # Load dust maps
+        self.load_dust()
+
+        # Plot dust maps
+        self.plot_dust()
 
         # Clear the maps
         self.clear()
@@ -561,6 +760,24 @@ class MapsPlotter(MapsComponent):
         # Plot the NaNs masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
 
+    # -----------------------------------------------------------------
+
+    def process_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the suer
+        log.info("Processing young stellar maps ...")
+
+        # Load
+        self.load_young()
+
+        # Plot
+        self.plot_young()
+
         # Clear the maps
         self.clear()
 
@@ -624,6 +841,24 @@ class MapsPlotter(MapsComponent):
         # Plot the NaN pixel masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
 
+    # -----------------------------------------------------------------
+
+    def process_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing ionizing stellar maps ...")
+
+        # Load
+        self.load_ionizing()
+
+        # Plot
+        self.plot_ionizing()
+
         # Clear the maps
         self.clear()
 
@@ -683,8 +918,5 @@ class MapsPlotter(MapsComponent):
 
         # Plot the NaNs masks
         self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-        # Clear the maps
-        self.clear()
 
 # -----------------------------------------------------------------

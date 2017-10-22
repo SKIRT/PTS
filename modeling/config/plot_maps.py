@@ -15,8 +15,15 @@ default_format = "pdf"
 
 # -----------------------------------------------------------------
 
+types = ["colours", "ssfr", "tir", "attenuation", "old", "dust", "young", "ionizing"]
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# Types
+definition.add_positional_optional("types", "string_list", "types of maps to be plotted", default=types, choices=types)
 
 # -----------------------------------------------------------------
 

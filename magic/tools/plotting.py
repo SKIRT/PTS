@@ -297,6 +297,8 @@ def plot_mask(mask, **kwargs):
     title = kwargs.pop("title", None)
     path = kwargs.pop("path", None)
     format = kwargs.pop("format", None)
+    show_axes = kwargs.pop("show_axes", True)
+    transparent = kwargs.pop("transparent", False)
 
     # Get raw data of mask as a numpy array
     #if hasattr(mask, "data"): maskdata = mask.data
@@ -311,12 +313,15 @@ def plot_mask(mask, **kwargs):
     plt.xlim(0, maskdata.shape[1] - 1)
     plt.ylim(0, maskdata.shape[0] - 1)
 
+    # Show axes?
+    if not show_axes: plt.axes("off")
+
     if title is not None: plt.title(title)
     else: plt.title("Black means True")
 
     # Show or save
     if path is None: plt.show()
-    else: plt.savefig(path, format=format)
+    else: plt.savefig(path, format=format, transparent=transparent)
 
     # Close the figure
     plt.close()
@@ -418,7 +423,7 @@ def plot_frame(frame, **kwargs):
 # -----------------------------------------------------------------
 
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
-             around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None):
+             around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True, transparent=False):
 
     """
     This function ...
@@ -434,6 +439,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param symmetric:
     :param normalize_in:
     :param scale_parameter:
+    :param show_axes:
+    :param transparent:
     :return:
     """
 
@@ -527,13 +534,16 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
 
+    # Show axis?
+    if not show_axes: plt.axis('off')
+
     if title is not None: plt.title(title)
 
     # Add colorbar?
     if colorbar: plt.colorbar()
 
     if path is None: plt.show()
-    else: plt.savefig(path, format=format)
+    else: plt.savefig(path, format=format, transparent=transparent)
 
     plt.close()
 
@@ -560,7 +570,7 @@ def plot_frame_contours(frame, **kwargs):
 # -----------------------------------------------------------------
 
 def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None,
-                  format=None, cmap="jet", single_colour=None, labels=False):
+                  format=None, cmap="jet", single_colour=None, labels=False, show_axes=True, transparent=False):
 
     """
     This function ...
@@ -574,7 +584,10 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param title:
     :param format:
     :param cmap:
+    :param single_colour:
     :param labels:
+    :param show_axes:
+    :param transparent:
     :return:
     """
 
@@ -614,11 +627,14 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     # Make figure box thicker
     for s in ax.spines.values(): s.set_linewidth(line_width)
 
+    # Show axes?
+    if not show_axes: plt.axes("off")
+
     if title is not None: plt.title(title)
 
     # Show or save
     if path is None: plt.show()
-    else: plt.savefig(path, format=format)
+    else: plt.savefig(path, format=format, transparent=transparent)
 
     # Close
     plt.close()
@@ -642,7 +658,8 @@ def plot_filled_frame_contours(frame, **kwargs):
 
 # -----------------------------------------------------------------
 
-def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cmap="jet", x_label="x", y_label="y"):
+def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cmap="jet", x_label="x", y_label="y",
+                         show_axes=True, transparent=False):
 
     """
     This function ...
@@ -654,6 +671,8 @@ def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cm
     :param cmap:
     :param x_label:
     :param y_label:
+    :param show_axes:
+    :param transparent:
     :return:
     """
 
@@ -691,19 +710,23 @@ def plot_filled_contours(box, nlevels=20, title=None, path=None, format=None, cm
     # Set tick labels to colorbar (even numbers)
     #cbar.ax.set_xticks(levels[::2])
 
+    # Show axes?
+    if not show_axes: plt.axes("off")
+
     # Add title
     if title is not None: plt.title(title)
 
     # Show or save
     if path is None: plt.show()
-    else: plt.savefig(path, format=format)
+    else: plt.savefig(path, format=format, transparent=transparent)
 
     # Close
     plt.close()
 
 # -----------------------------------------------------------------
 
-def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=None, measure="mean", max_radius=None, format=None):
+def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=None, measure="mean", max_radius=None,
+                        format=None, transparent=False):
 
     """
     This function ...
@@ -717,6 +740,7 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
     :param measure: sum, min, max, mean, median
     :param max_radius:
     :param format:
+    :param transparent:
     :return:
     """
 
@@ -816,7 +840,7 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 
     # Show or save
     if path is None: plt.show()
-    else: plt.savefig(path, format=format)
+    else: plt.savefig(path, format=format, transparent=transparent)
 
     # Close
     plt.close()
@@ -831,6 +855,9 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None, vmin=None, vmax=None
     :param x_peak:
     :param y_peak:
     :param model:
+    :param title:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -880,6 +907,8 @@ def plot_star(box, peak, model, title=None, vmin=None, vmax=None):
     :param peak:
     :param model:
     :param title:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -942,6 +971,10 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None, vmin=None, vmax=N
     :param box:
     :param x_peaks:
     :param y_peaks:
+    :param radius:
+    :param title:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -977,8 +1010,10 @@ def plot_peak(box, x_peak, y_peak, radius=None, title=None):
     """
     This function plots the data with peaks marked ...
     :param box:
-    :param x_peaks:
-    :param y_peaks:
+    :param x_peak:
+    :param y_peak:
+    :param radius:
+    :param title:
     :return:
     """
 
@@ -994,6 +1029,8 @@ def plot_peaks_models(box, x_peaks, y_peaks, models, vmin=None, vmax=None):
     :param x_peaks:
     :param y_peaks:
     :param models:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -1032,10 +1069,12 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     This function ...
     :param background:
     :param background_clipped:
-    :param interpolated_background:
+    :param est_background:
     :param star:
-    :param interpolated_background_star:
+    :param est_background_star:
     :param fitted_star:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -1102,6 +1141,8 @@ def plot_removal(cutout, mask, background, removed, title=None, vmin=None, vmax=
     :param background:
     :param removed:
     :param title:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -1153,7 +1194,16 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
 
     """
     This function ...
+    :param cutout:
+    :param mask:
     :param background:
+    :param peaks:
+    :param title:
+    :param show:
+    :param scale:
+    :param frame:
+    :param vmin:
+    :param vmax:
     :return:
     """
 
@@ -1249,7 +1299,6 @@ def plot_background_subtraction(background, background_clipped, est_background, 
     :param est_background:
     :param star:
     :param est_background_star:
-    :param peaks:
     :return:
     """
 
@@ -1356,6 +1405,7 @@ def plot_difference(box_a, box_b, share_colorscale=False, title=None):
     :param box_a:
     :param box_b:
     :param share_colorscale:
+    :param title:
     :return:
     """
 

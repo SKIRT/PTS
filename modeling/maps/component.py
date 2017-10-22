@@ -1255,7 +1255,7 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
-                  mask_negatives=False, clear_other_formats=True):
+                  mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True):
 
         """
         Thisfunction ...
@@ -1267,6 +1267,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param share_limits:
         :param mask_negatives:
         :param clear_other_formats:
+        :param show_axes:
+        :param transparent:
         :return:
         """
 
@@ -1313,7 +1315,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
                                                      scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True,
-                                                     mask_negatives=mask_negatives)
+                                                     mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
 
                 # End of method: reset vmin and vmax
                 vmin = vmax = None
@@ -1342,17 +1344,19 @@ class MapMakerBase(GalaxyModelingComponent):
                 vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
                                                  interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
-                                                 colorbar=True, mask_negatives=mask_negatives)
+                                                 colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
 
     # -----------------------------------------------------------------
 
-    def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True):
+    def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False, transparent=True):
 
         """
         This function ...
         :param format:
         :param cropping_factor:
         :param clear_other_formats:
+        :param show_axes:
+        :param transparent:
         :return:
         """
 
@@ -1395,7 +1399,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     plotting.plot_mask(mask, crop_to=self.truncation_box,
                                      cropping_factor=cropping_factor,
                                      truncate_outside=self.truncation_ellipse, path=plot_path,
-                                     format=format)
+                                     format=format, show_axes=show_axes, transparent=transparent)
 
             # No different methods
             else:
@@ -1421,17 +1425,19 @@ class MapMakerBase(GalaxyModelingComponent):
                 plotting.plot_mask(mask, crop_to=self.truncation_box,
                                    cropping_factor=cropping_factor,
                                    truncate_outside=self.truncation_ellipse, path=plot_path,
-                                   format=format)
+                                   format=format, show_axes=show_axes, transparent=transparent)
 
     # -----------------------------------------------------------------
 
-    def plot_nans(self, format="pdf", cropping_factor=1.3, clear_other_formats=True):
+    def plot_nans(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False, transparent=True):
 
         """
         This finction ...
         :param format:
         :param cropping_factor:
         :param clear_other_formats:
+        :param show_axes:
+        :param transparent:
         :return:
         """
 
@@ -1474,7 +1480,7 @@ class MapMakerBase(GalaxyModelingComponent):
                     plotting.plot_mask(mask, crop_to=self.truncation_box,
                                        cropping_factor=cropping_factor,
                                        truncate_outside=self.truncation_ellipse, path=plot_path,
-                                       format=format)
+                                       format=format, show_axes=show_axes, transparent=transparent)
 
             # No different methods
             else:
@@ -1500,7 +1506,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 plotting.plot_mask(mask, crop_to=self.truncation_box,
                                    cropping_factor=cropping_factor,
                                    truncate_outside=self.truncation_ellipse, path=plot_path,
-                                   format=format)
+                                   format=format, show_axes=show_axes, transparent=transparent)
 
     # -----------------------------------------------------------------
 
@@ -1560,7 +1566,7 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None,
-                        share_limits=True, mask_negatives=False, clear_other_formats=True):
+                        share_limits=True, mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True):
 
         """
         This function ...
@@ -1572,6 +1578,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param share_limits:
         :param mask_negatives:
         :param clear_other_formats:
+        :param show_axes:
+        :param transparent
         :return:
         """
 
@@ -1620,7 +1628,8 @@ class MapMakerBase(GalaxyModelingComponent):
                                                      truncate_outside=self.truncation_ellipse, path=plot_path,
                                                      format=format, interval=interval,
                                                      scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
-                                                     colorbar=True, mask_negatives=mask_negatives)
+                                                     colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes,
+                                                     transparent=transparent)
 
                 # End of method: reset vmin and vmax
                 vmin = vmax = None
@@ -1652,11 +1661,12 @@ class MapMakerBase(GalaxyModelingComponent):
                                                  format=format,
                                                  interval=interval, scale=frame_scale, cmap=cmap,
                                                  normalize_in=self.truncation_ellipse, colorbar=True,
-                                                 mask_negatives=mask_negatives)
+                                                 mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
 
     # -----------------------------------------------------------------
 
-    def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3, clear_other_formats=True):
+    def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3, clear_other_formats=True,
+                      show_axes=False, transparent=True):
 
         """
         This function ...
@@ -1665,6 +1675,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param format:
         :param cropping_factor:
         :param clear_other_formats:
+        :param show_axes:
+        :param transparent:
         :return:
         """
 
@@ -1706,16 +1718,18 @@ class MapMakerBase(GalaxyModelingComponent):
                     if not fs.is_file(plot_path) or self.config.replot:
 
                         plotting.plot_frame_contours(frame, path=plot_path, nlevels=nlevels,
-                                                            crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                            truncate_outside=self.truncation_ellipse)
+                                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                    truncate_outside=self.truncation_ellipse, show_axes=show_axes,
+                                                    transparent=transparent)
 
                     if not filled: continue
                     filled_plot_path = self.get_path_for_contour_plot(name, method, extension=format, suffix="_filled")
                     if not fs.is_file(filled_plot_path) or self.config.replot:
 
                         plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,
-                                                                        crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                                        truncate_outside=self.truncation_ellipse)
+                                                            crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                            truncate_outside=self.truncation_ellipse, show_axes=show_axes,
+                                                            transparent=transparent)
 
             # No different methods
             else:
@@ -1732,37 +1746,32 @@ class MapMakerBase(GalaxyModelingComponent):
                 frame = self.maps[method]
                 if isinstance(frame, Image): frame = frame.primary
 
-                # Plot
-                # if filled: plotting.plot_filled_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
-                #                                                crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                #                                                truncate_outside=self.truncation_ellipse)
-                # else: plotting.plot_frame_contours(self.maps[method], path=plot_path, nlevels=nlevels,
-                #                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                #                                    truncate_outside=self.truncation_ellipse)
-
                 if not fs.is_file(plot_path) or self.config.replot:
 
                     plotting.plot_frame_contours(frame, path=plot_path, nlevels=nlevels,
-                                                       crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                        truncate_outside=self.truncation_ellipse)
+                                                 crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                 truncate_outside=self.truncation_ellipse, show_axes=show_axes,
+                                                 transparent=transparent)
 
                 if not filled: continue
                 filled_plot_path = self.get_path_for_contour_plot(method, extension=format, suffix="_filled")
                 if not fs.is_file(filled_plot_path) or self.config.replot:
 
                     plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,
-                                                                    crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                                    truncate_outside=self.truncation_ellipse)
+                                                        crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                        truncate_outside=self.truncation_ellipse, show_axes=show_axes,
+                                                        transparent=transparent)
 
     # -----------------------------------------------------------------
 
-    def plot_profiles(self, nbins=20, format="pdf", clear_other_formats=True):
+    def plot_profiles(self, nbins=20, format="pdf", clear_other_formats=True, transparent=True):
 
         """
         Thisn function ...
         :param nbins:
         :param format:
         :param clear_other_formats:
+        :param transparent:
         :return:
         """
 
@@ -1798,7 +1807,8 @@ class MapMakerBase(GalaxyModelingComponent):
                     if isinstance(frame, Image): frame = frame.primary
 
                     # Plot
-                    plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
+                    plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path,
+                                                 max_radius=self.truncation_ellipse.semimajor, transparent=transparent)
 
             # No different methods
             else:
@@ -1816,7 +1826,8 @@ class MapMakerBase(GalaxyModelingComponent):
                 if isinstance(frame, Image): frame = frame.primary
 
                 # Plot
-                plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path, max_radius=self.truncation_ellipse.semimajor)
+                plotting.plot_radial_profile(frame, self.galaxy_center, angle, ratio, nbins=nbins, path=plot_path,
+                                             max_radius=self.truncation_ellipse.semimajor, transparent=transparent)
 
     # -----------------------------------------------------------------
 
