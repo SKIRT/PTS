@@ -16,6 +16,7 @@ default_format = "pdf"
 # -----------------------------------------------------------------
 
 types = ["colours", "ssfr", "tir", "attenuation", "old", "dust", "young", "ionizing"]
+features = ["maps", "contours", "profiles", "extra", "negatives", "nans"]
 
 # -----------------------------------------------------------------
 
@@ -24,9 +25,14 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Types
 definition.add_positional_optional("types", "string_list", "types of maps to be plotted", default=types, choices=types)
+definition.add_positional_optional("features", "string_list", "features of the maps to plot", default=features, choices=features)
 
 # -----------------------------------------------------------------
 
 definition.add_optional("format", "string", "plotting format", default=default_format, choices=formats)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("replot", "replot existing plots", False)
 
 # -----------------------------------------------------------------

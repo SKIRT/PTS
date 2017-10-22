@@ -22,7 +22,7 @@ from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"]
+ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B", "NUV-i", "NUV-r", "NUV-g", "NUV-B"]
 
 # -----------------------------------------------------------------
 

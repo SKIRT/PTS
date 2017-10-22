@@ -496,6 +496,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_attenuation_extra_maps(self, flatten=False, framelist=False):
+
+        """
+        Thisf ucntion ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.collection.get_attenuation_extra_maps(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_attenuation_nans(self, flatten=False, framelist=False):
 
         """
@@ -1255,7 +1268,8 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
-                  mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True):
+                  mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True, interval=None,
+                  strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, cmaps=None):
 
         """
         Thisfunction ...
@@ -1269,14 +1283,48 @@ class MapMakerBase(GalaxyModelingComponent):
         :param clear_other_formats:
         :param show_axes:
         :param transparent:
+        :param interval:
+        :param strict_vmin:
+        :param strict_vmax:
+        :param soft_vmin:
+        :param soft_vmax:
+        :param cmaps:
         :return:
         """
 
         # Inform the user
         log.info("Plotting the maps ...")
 
+        passed_min = False
+        passed_max = False
+        soft_min = False
+        soft_max = False
+
         # The vmin and vmax
-        vmin = vmax = None
+        if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
+            if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
+            vmin, vmax = interval
+            passed_min = True
+            passed_max = True
+        else:
+
+            if strict_vmin is not None:
+                vmin = strict_vmin
+                passed_min = True
+            elif soft_vmin is not None:
+                vmin = soft_vmin
+                soft_min = True
+                passed_min = True
+            else: vmin = None
+
+            if strict_vmax is not None:
+                vmax = strict_vmax
+                passed_max = True
+            elif soft_vmax is not None:
+                vmax = soft_vmax
+                soft_max = True
+                passed_max = True
+            else: vmax = None
 
         # Loop over the methods
         for method in self.maps:
@@ -1307,18 +1355,45 @@ class MapMakerBase(GalaxyModelingComponent):
                         else: frame_scale = scales[method]
                     else: frame_scale = scale
 
+                    # Determine color map for this image
+                    if cmaps is not None and method in cmaps:
+                        if isinstance(cmaps[method], dict):
+                            if name in cmaps[method]: frame_cmap = cmaps[method][name]
+                            else: frame_cmap = cmap
+                        else: frame_cmap = cmaps[method]
+                    else: frame_cmap = cmap
+
                     # Plot
-                    if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
-                    else: interval = "pts"
+                    if share_limits and vmin is not None and vmax is not None: minmax = [vmin, vmax]
+                    elif passed_min and passed_max: minmax = [vmin, vmax]
+                    elif interval is not None: minmax = interval
+                    else: minmax = "pts"
                     frame = self.maps[method][name]
                     if isinstance(frame, Image): frame = frame.primary
-                    vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
-                                                     truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=interval,
-                                                     scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse, colorbar=True,
-                                                     mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
+                    vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                                                     truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=minmax,
+                                                     scale=frame_scale, cmap=frame_cmap, normalize_in=self.truncation_ellipse, colorbar=True,
+                                                     mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent,
+                                                     soft_min=soft_min, soft_max=soft_max, soft_max_scaling=1.5)
+                    if share_limits: vmin, vmax = vmini, vmaxi
 
                 # End of method: reset vmin and vmax
-                vmin = vmax = None
+                if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
+                    if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
+                    vmin, vmax = interval
+                else:
+
+                    if strict_vmin is not None: vmin = strict_vmin
+                    elif soft_vmin is not None:
+                        vmin = soft_vmin
+                        soft_min = True
+                    else: vmin = None
+
+                    if strict_vmax is not None: vmax = strict_vmax
+                    elif soft_vmax is not None:
+                        vmax = soft_vmax
+                        soft_max = True
+                    else: vmax = None
 
             # No different methods
             else:
@@ -1336,15 +1411,23 @@ class MapMakerBase(GalaxyModelingComponent):
                 if scales is not None and method in scales: frame_scale = scales[method]
                 else: frame_scale = scale
 
+                # Determine cmap for this image
+                if cmaps is not None and method in cmaps: frame_cmap = cmaps[method]
+                else: frame_cmap = cmap
+
                 # Plot
-                if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
-                else: interval = "pts"
+                if share_limits and vmin is not None and vmax is not None: minmax = [vmin, vmax]
+                elif passed_min and passed_max: minmax = [vmin, vmax]
+                elif interval is not None: minmax = interval
+                else: minmax = "pts"
                 frame = self.maps[method]
                 if isinstance(frame, Image): frame = frame.primary
-                vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
+                vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
-                                                 interval=interval, scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
-                                                 colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
+                                                 interval=minmax, scale=frame_scale, cmap=frame_cmap, normalize_in=self.truncation_ellipse,
+                                                 colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes,
+                                                 transparent=transparent, soft_min=soft_min, soft_max=soft_max, soft_max_scaling=1.5)
+                if share_limits: vmin, vmax = vmini, vmaxi
 
     # -----------------------------------------------------------------
 
@@ -1723,7 +1806,7 @@ class MapMakerBase(GalaxyModelingComponent):
                                                     transparent=transparent)
 
                     if not filled: continue
-                    filled_plot_path = self.get_path_for_contour_plot(name, method, extension=format, suffix="_filled")
+                    filled_plot_path = self.get_path_for_contour_plot(name, method, extension=format, suffix="_filled", clear_other_formats=clear_other_formats)
                     if not fs.is_file(filled_plot_path) or self.config.replot:
 
                         plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,
@@ -1754,7 +1837,7 @@ class MapMakerBase(GalaxyModelingComponent):
                                                  transparent=transparent)
 
                 if not filled: continue
-                filled_plot_path = self.get_path_for_contour_plot(method, extension=format, suffix="_filled")
+                filled_plot_path = self.get_path_for_contour_plot(method, extension=format, suffix="_filled", clear_other_formats=clear_other_formats)
                 if not fs.is_file(filled_plot_path) or self.config.replot:
 
                     plotting.plot_filled_frame_contours(frame, path=filled_plot_path, nlevels=nlevels,

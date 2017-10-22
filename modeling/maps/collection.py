@@ -961,6 +961,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_attenuation_extra_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_extra_maps_sub_name(self.maps_attenuation_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_attenuation_nans(self, flatten=False, framelist=False):
 
         """

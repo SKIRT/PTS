@@ -21,25 +21,33 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 
 # Create the definition
 definition = ConfigurationDefinition()
-definition.add_required("filename", "file_path", "name of the input image file")
+definition.add_positional_optional("filenames", "filepath_list", "names of the input image file")
 
 # Parse the command line arguments
 config = parse_arguments("invert", definition)
 
 # -----------------------------------------------------------------
 
-# Open the original image
-image = imageio.imread(config.filename)
+if config.filenames is None: filenames = fs.files_in_cwd(extension="png")
+else: filenames = config.filenames
 
-# Invert the colours
-invert_colors(image)
+# -----------------------------------------------------------------
 
-# Determine output name
-name = fs.strip_extension(fs.name(config.filename))
-extension = fs.get_extension(config.filename)
-newname = name + "_inverted." + extension
+# Loop over the image files
+for filename in filenames:
 
-# Write the inverted image
-imageio.imwrite(newname, image)
+    # Open the original image
+    image = imageio.imread(filename)
+
+    # Invert the colours
+    invert_colors(image)
+
+    # Determine output name
+    name = fs.strip_extension(fs.name(filename))
+    extension = fs.get_extension(filename)
+    newname = name + "_inverted." + extension
+
+    # Write the inverted image
+    imageio.imwrite(newname, image)
 
 # -----------------------------------------------------------------
