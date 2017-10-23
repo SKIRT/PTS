@@ -183,18 +183,6 @@ class SSFRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "squared"
-
-    # -----------------------------------------------------------------
-
     def plot(self):
 
         """
@@ -205,13 +193,7 @@ class SSFRMapMaker(MapsComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the maps
-        self.plot_maps(scale=self.scale, share_limits=False)
-
-        # Plot the contours
-        self.plot_contours(filled=True)
-
-        # Plot the radial profiles
-        self.plot_profiles()
+        # Plot
+        self.plot_ssfr()
 
 # -----------------------------------------------------------------

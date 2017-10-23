@@ -355,23 +355,6 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def scales(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        scales = dict()
-        scales[blackbody] = "linear"
-        scales[emission] = "linear"
-        scales[attenuation] = "linear"
-        scales[hot] = "log"
-        return scales
-
-    # -----------------------------------------------------------------
-
     def plot(self):
 
         """
@@ -382,16 +365,7 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the maps
-        self.plot_maps(scales=self.scales)
-
-        # Plot the contours
-        self.plot_contours(filled=True)
-
-        # Plot the radial profiles
-        self.plot_profiles()
-
-        # Plot the NaNs masks
-        self.plot_nans()
+        # Plot
+        self.plot_dust()
 
 # -----------------------------------------------------------------

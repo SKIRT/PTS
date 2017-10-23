@@ -328,18 +328,6 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def scale(self):
-
-        """
-        Thif unction ...
-        :return:
-        """
-
-        return "sqrt"
-
-    # -----------------------------------------------------------------
-
     def plot(self):
 
         """
@@ -350,19 +338,7 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the maps
-        self.plot_maps(scale=self.scale, mask_negatives=True)
-
-        # Plot the contours
-        self.plot_contours(filled=True)
-
-        # Plot the radial profiles
-        self.plot_profiles()
-
-        # Plot the negative pixel masks
-        self.plot_negatives()
-
-        # Plot the NaN pixel masks
-        self.plot_nans()
+        # Plot
+        self.plot_young()
 
 # -----------------------------------------------------------------

@@ -347,16 +347,7 @@ class TIRMapMaker(MapsComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the maps
-        self.plot_maps(scale="log")
-
-        # Plot the contours
-        self.plot_contours(filled=True)
-
-        # Plot the radial profiles
-        self.plot_profiles()
-
-        # Plot the NaNs masks
-        self.plot_nans()
+        # Plot
+        self.plot_tir()
 
 # -----------------------------------------------------------------

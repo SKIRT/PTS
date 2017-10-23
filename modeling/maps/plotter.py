@@ -381,11 +381,14 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing colour maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_colours_path
+
         # Load the maps
         self.load_colours()
 
         # Plot the maps
-        self.plot_colours()
+        self.plot_colours(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting)
 
         # Clear the maps
         self.clear()
@@ -413,42 +416,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def colours_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "squared"
-
-    # -----------------------------------------------------------------
-
-    def plot_colours(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the colour maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_colours_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.colours_scale, share_limits=False, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_ssfr(self):
 
         """
@@ -459,11 +426,14 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing sSFR maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_ssfr_path
+
         # Load maps
         self.load_ssfr()
 
         # Plot the maps
-        self.plot_ssfr()
+        self.plot_ssfr(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting)
 
         # Clear the maps
         self.clear()
@@ -491,90 +461,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def ssfr_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "squared"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_cmap(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return "jet"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_interval(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [0, 10]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 0
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_soft_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 10
-
-    # -----------------------------------------------------------------
-
-    def plot_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the sSFR maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_ssfr_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.ssfr_scale, cmap=self.ssfr_cmap, strict_vmin=self.ssfr_min, soft_vmax=self.ssfr_soft_max, share_limits=False, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_tir(self):
 
         """
@@ -585,11 +471,14 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing TIR maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_tir_path
+
         # Load the TIR maps
         self.load_tir()
 
         # Plot the TIR maps
-        self.plot_tir()
+        self.plot_tir(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -617,57 +506,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def tir_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "log"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def tir_cmap(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
-        return "viridis"
-
-    # -----------------------------------------------------------------
-
-    def plot_tir(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the TIR maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_tir_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.tir_scale, cmap=self.tir_cmap, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the NaNs masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_attenuation(self):
 
         """
@@ -678,11 +516,17 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing the attenuation maps ...")
 
+        # Set sub path
+        self._maps_sub_path = self.maps_attenuation_path
+
+        # Define name for extra maps
+        self.extra_maps_name = "TIRtoFUV"
+
         # Load maps
         self.load_attenuation()
 
         # Plot maps
-        self.plot_attenuation()
+        self.plot_attenuation(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, extra=self.extra_maps_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -713,75 +557,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def attenuation_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "linear"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def attenuation_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "cool"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def tir_to_fuv_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "ds9heat"
-
-    # -----------------------------------------------------------------
-
-    def plot_attenuation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the attenuation maps ...")
-
-        # Set sub path
-        self._maps_sub_path = self.maps_attenuation_path
-
-        # Define name for extra maps
-        self.extra_maps_name = "TIRtoFUV"
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.attenuation_scale, cmap=self.attenuation_cmap, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the extra maps
-        if self.extra_maps_plotting: self.plot_extra_maps(scale="sqrt", format=self.config.format, clear_other_formats=True, cmap=self.tir_to_fuv_cmap)
-
-        # Plot the NaNs masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_old(self):
 
         """
@@ -792,11 +567,14 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing old stellar maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_old_path
+
         # Load
         self.load_old()
 
         # Plot
-        self.plot_old()
+        self.plot_old(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -824,58 +602,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_scale(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return "log"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return "Wistia"
-        return "afmhot"
-
-    # -----------------------------------------------------------------
-
-    def plot_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the old stellar maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_old_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.old_scale, cmap=self.old_cmap, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the NaNs masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_dust(self):
 
         """
@@ -886,11 +612,14 @@ class MapsPlotter(MapsComponent):
         # Inorm the user
         log.info("Processing dust maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_dust_path
+
         # Load dust maps
         self.load_dust()
 
         # Plot dust maps
-        self.plot_dust()
+        self.plot_dust(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -918,69 +647,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_scales(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        from .dust import blackbody, emission, attenuation, hot
-        scales = dict()
-        scales[blackbody] = "linear"
-        scales[emission] = "linear"
-        scales[attenuation] = "linear"
-        scales[hot] = "log"
-        return scales
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust_cmaps(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        from .dust import blackbody, emission, attenuation, hot
-        cmaps = dict()
-        cmaps[blackbody] = "jet"
-        cmaps[emission] = "jet"
-        cmaps[attenuation] = "gist_ncar"
-        cmaps[hot] = "jet"
-        return cmaps
-
-    # -----------------------------------------------------------------
-
-    def plot_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the dust maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_dust_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scales=self.dust_scales, cmaps=self.dust_cmaps, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the NaNs masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_young(self):
 
         """
@@ -991,11 +657,14 @@ class MapsPlotter(MapsComponent):
         # Inform the suer
         log.info("Processing young stellar maps ...")
 
+        # Set path
+        self._maps_sub_path = self.maps_young_path
+
         # Load
         self.load_young()
 
         # Plot
-        self.plot_young()
+        self.plot_young(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -1023,60 +692,6 @@ class MapsPlotter(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "sqrt"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "plasma"
-
-    # -----------------------------------------------------------------
-
-    def plot_young(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the young stellar maps ...")
-
-        # Set path
-        self._maps_sub_path = self.maps_young_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.young_scale, cmap=self.young_cmap, mask_negatives=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the negative pixel masks
-        if self.negatives_plotting: self.plot_negatives(format=self.config.format, clear_other_formats=True)
-
-        # Plot the NaN pixel masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
-
-    # -----------------------------------------------------------------
-
     def process_ionizing(self):
 
         """
@@ -1087,11 +702,14 @@ class MapsPlotter(MapsComponent):
         # Inform the user
         log.info("Processing ionizing stellar maps ...")
 
+        # Set sub path
+        self._maps_sub_path = self.maps_ionizing_path
+
         # Load
         self.load_ionizing()
 
         # Plot
-        self.plot_ionizing()
+        self.plot_ionizing(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()
@@ -1116,57 +734,5 @@ class MapsPlotter(MapsComponent):
 
         # Load the methods
         self.origins = self.get_ionizing_methods()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_scale(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
-        return "log"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return "ds9he"
-        return "summer"
-
-    # -----------------------------------------------------------------
-
-    def plot_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the ionizing stellar maps ...")
-
-        # Set sub path
-        self._maps_sub_path = self.maps_ionizing_path
-
-        # Plot the maps
-        if self.maps_plotting: self.plot_maps(scale=self.ionizing_scale, cmap=self.ionizing_cmap, format=self.config.format, clear_other_formats=True)
-
-        # Plot the contours
-        if self.contours_plotting: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
-
-        # Plot the radial profiles
-        if self.profiles_plotting: self.plot_profiles(format=self.config.format, clear_other_formats=True)
-
-        # Plot the NaNs masks
-        if self.nans_plotting: self.plot_nans(format=self.config.format, clear_other_formats=True)
 
 # -----------------------------------------------------------------

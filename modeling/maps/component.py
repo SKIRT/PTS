@@ -37,7 +37,6 @@ from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
 from ...magic.tools import plotting
 from ...magic.core.image import Image
-from ...core.tools.sequences import all_except_one
 
 # -----------------------------------------------------------------
 
@@ -3709,6 +3708,484 @@ class MapsComponent(MapMakerBase):
 
                 # Save the map
                 #self.maps[method][name].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "squared"
+
+    # -----------------------------------------------------------------
+
+    # @property
+    # def scales(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     scales = dict()
+    #
+    #     from ...magic.tools.colours import is_fir_colour, is_fir_or_submm_colour
+    #
+    #     # Loop over the colours
+    #     for colour_name in self.maps:
+    #
+    #         # Check whether it is a FIR colour
+    #         if is_fir_colour(colour_name) or is_fir_or_submm_colour(colour_name):
+    #             #around_zero = True
+    #             scale = "linear"
+    #         else:
+    #             #around_zero = False
+    #             scale = "log"
+    #
+    #         # Set the scale
+    #         scales[colour_name] = scale
+    #
+    #     # Return the scales
+    #     return scales
+
+    # -----------------------------------------------------------------
+
+    def plot_colours(self, maps=True, contours=True, profiles=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the colour maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.colours_scale, share_limits=False, format=self.config.format, clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "squared"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_cmap(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return "jet"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_interval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [0, 10]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_soft_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 10
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr(self, maps=True, contours=True, profiles=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the sSFR maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.ssfr_scale, cmap=self.ssfr_cmap, strict_vmin=self.ssfr_min,
+                                              soft_vmax=self.ssfr_soft_max, share_limits=False,
+                                              format=self.config.format, clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_cmap(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
+    def plot_tir(self, maps=True, contours=True, profiles=True, nans=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the TIR maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.tir_scale, cmap=self.tir_cmap, format=self.config.format,
+                                              clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the NaNs masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "linear"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "cool"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_to_fuv_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "ds9heat"
+
+    # -----------------------------------------------------------------
+
+    def plot_attenuation(self, maps=True, contours=True, profiles=True, extra=True, nans=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the attenuation maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.attenuation_scale, cmap=self.attenuation_cmap,
+                                              format=self.config.format, clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the extra maps
+        if extra: self.plot_extra_maps(scale="sqrt", format=self.config.format,
+                                                          clear_other_formats=True, cmap=self.tir_to_fuv_cmap)
+
+        # Plot the NaNs masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_scale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # return "Wistia"
+        return "afmhot"
+
+    # -----------------------------------------------------------------
+
+    def plot_old(self, maps=True, contours=True, profiles=True, nans=True):
+
+        """
+        This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param nans:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the old stellar maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.old_scale, cmap=self.old_cmap, format=self.config.format,
+                                              clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the NaNs masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_scales(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .dust import blackbody, emission, attenuation, hot
+        scales = dict()
+        scales[blackbody] = "linear"
+        scales[emission] = "linear"
+        scales[attenuation] = "linear"
+        scales[hot] = "log"
+        return scales
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_cmaps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .dust import blackbody, emission, attenuation, hot
+        cmaps = dict()
+        cmaps[blackbody] = "jet"
+        cmaps[emission] = "jet"
+        cmaps[attenuation] = "gist_ncar"
+        cmaps[hot] = "jet"
+        return cmaps
+
+    # -----------------------------------------------------------------
+
+    def plot_dust(self, maps=True, contours=True, profiles=True, nans=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the dust maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scales=self.dust_scales, cmaps=self.dust_cmaps, format=self.config.format,
+                                              clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the NaNs masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "sqrt"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "plasma"
+
+    # -----------------------------------------------------------------
+
+    def plot_young(self, maps=True, contours=True, profiles=True, negatives=True, nans=True):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the young stellar maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.young_scale, cmap=self.young_cmap, mask_negatives=True,
+                                              format=self.config.format, clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the negative pixel masks
+        if negatives: self.plot_negatives(format=self.config.format, clear_other_formats=True)
+
+        # Plot the NaN pixel masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_scale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # return "ds9he"
+        return "summer"
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing(self, maps=True, contours=True, profiles=True, nans=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the ionizing stellar maps ...")
+
+        # Plot the maps
+        if maps: self.plot_maps(scale=self.ionizing_scale, cmap=self.ionizing_cmap,
+                                              format=self.config.format, clear_other_formats=True)
+
+        # Plot the contours
+        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+
+        # Plot the radial profiles
+        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the NaNs masks
+        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
 
 # -----------------------------------------------------------------
 
