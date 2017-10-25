@@ -1326,6 +1326,8 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
     code += 'function ' + function_name + '(im, xreg)\n'
     code += "{\n"
 
+    code += "    console.log('Synchronizing the regions ...');\n"
+
     code += "    lastim = im;\n"
     code += "    lastreg = xreg;\n"
 
@@ -1419,7 +1421,7 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
     #code += "        if(displayid == lastim.display.id)\n"
     #code += "        if(displayid != lastim.display.id)\n"
     code += "        var exists = isExistingDisplayWithImage(displayid);\n"
-    code += "        window.alert('Display ' + displayid + ': ' + String(exists));\n"
+    #code += "        window.alert('Display ' + displayid + ': ' + String(exists));\n"
     code += "        if(displayid != lastim.display.id && exists)\n"
     #code += "        {\n"
     #code += "            window.alert(displayIds[i] + ' = current');\n"
