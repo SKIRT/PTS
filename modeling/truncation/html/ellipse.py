@@ -124,31 +124,31 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the masks
+        # 2. Load the masks
         if self.config.mask: self.load_masks()
 
-        # Make the eindicator
+        # 3. Make the eindicator
         self.make_indicator()
 
-        # Make info
+        # 4. Make info
         if self.config.info: self.get_info()
 
-        # Make plots
+        # 5. Make plots
         self.make_plots()
 
-        # Make the views
+        # 6. Make the views
         self.make_views()
 
-        # Make table
+        # 7. Make table
         self.make_table()
 
-        # Generate the page
+        # 8. Generate the page
         self.generate_page()
 
-        # 6. Writing
+        # 9. Writing
         self.write()
 
-        # 7. Showing
+        # 10. Showing
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -233,7 +233,8 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         :return:
         """
 
-        return [self.dataset.get_name_for_filter(fltr) for fltr in self.filters]
+        #return [self.dataset.get_name_for_filter(fltr) for fltr in self.filters]
+        return self.dataset.get_names_for_filters(self.filters)
 
     # -----------------------------------------------------------------
 
@@ -423,12 +424,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Inform the user
         log.info("Making views ...")
 
-        # Get the frames
-        #self.frames = self.dataset.get_framelist()
-
-        # Get the error maps
-        #self.errormaps = self.dataset.get_errormaplist()
-
         load_info = dict()
         images = dict()
         region_loads = dict()
@@ -436,8 +431,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         views = dict()
 
         # Loop over all prepared images, get the images
-        #self.masks = dict()
-        #for name in self.dataset.names:
         for name, fltr in zip(self.names, self.filters):
 
             # Get the mask

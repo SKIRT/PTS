@@ -232,7 +232,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         if self.config.default_old_bulge_template is None: raise ValueError("Default old stellar bulge template cannot be undefined")
         if self.config.default_old_bulge_age is None: raise ValueError("Default bulge age cannot be undefined")
         if self.config.default_old_bulge_metallicity is None: raise ValueError("Default bulge metallicity cannot be undefined")
-        if self.config.bulge_fluxdensity is None: raise ValueError("Default bulge flux density cannot be undefined")
 
         # Create definition
         definition = ConfigurationDefinition()
