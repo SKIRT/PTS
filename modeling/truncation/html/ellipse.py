@@ -28,6 +28,8 @@ from ..analytics import mask_names
 from ....core.tools import browser
 from ....magic.core.frame import Frame
 from ....magic.tools.info import get_image_info_from_header
+from ....magic.region.ellipse import PixelEllipseRegion
+from ....magic.region.list import PixelRegionList
 
 # -----------------------------------------------------------------
 
@@ -144,6 +146,7 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
         # Create the regions, for the coordinate systems
         if not self.has_ellipses: self.create_ellipses()
+        else: self.load_ellipses()
 
         # 7. Make the views
         self.make_views()
@@ -470,6 +473,7 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_ellipses(self):
 
         """
@@ -529,6 +533,25 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
             # Add the region
             self.ellipses[name] = region
+
+    # -----------------------------------------------------------------
+
+    def load_ellipses(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ellipses ...")
+
+        # Loop over the names
+        for name in self.names:
+
+            path = self.ellipse_path_for_name(name)
+            #self.ellipses[name] = PixelEllipseRegion.from_file(path)
+            self.ellipses[name] = PixelRegionList.from_file(path)[0]
 
     # -----------------------------------------------------------------
 
