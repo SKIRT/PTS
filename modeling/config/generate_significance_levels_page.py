@@ -17,6 +17,7 @@ default_sigma_level = 1.
 
 default_color = "jet"
 default_mask_color = "black"
+default_dark_mask_color = "white"
 
 scales = ["log", "sqrt"]
 default_colour = "jet"
@@ -58,9 +59,12 @@ definition.add_optional("peak_alpha", "real", "alpha of peak value", 2.)
 
 # For masks
 definition.add_optional("mask_colour", "string", "colour for the mask", default=default_mask_color)
+definition.add_optional("dark_mask_colour", "string", "colour for the dark mask", default=default_dark_mask_color)
 definition.add_flag("mask_alpha", "use alpha for the mask", True)
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
+definition.add_flag("dark_masks", "plot masks for dark theme", False)
+definition.add_flag("remove_dark_masks", "remove the dark mask files", False)
 
 definition.add_optional("normalization_ellipse_factor", "real", "normalize the image within the truncation ellipse scaled with this factor", 0.7)
 

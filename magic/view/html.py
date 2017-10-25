@@ -1291,8 +1291,10 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
         x_radii[display_id] = ellipses[display_id].radius.x
         y_radii[display_id] = ellipses[display_id].radius.y
 
-    code += "var x_radii = {" + stringify_dict(x_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
-    code += "var y_radii = {" + stringify_dict(y_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
+    #code += "var x_radii = {" + stringify_dict(x_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
+    #code += "var y_radii = {" + stringify_dict(y_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
+    code += "var x_radii = {" + stringify_dict(x_radii, quote_key=True, quote_value=False, identity_symbol=":")[1] + "};\n"
+    code += "var y_radii = {" + stringify_dict(y_radii, quote_key=True, quote_value=False, identity_symbol=":")[1] + "};\n"
 
     code += 'JS9.Regions.opts.onchange = "' + function_name + '";'
     code += "\n"

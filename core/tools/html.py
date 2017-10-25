@@ -387,7 +387,7 @@ def dictionary(dct, css_class=None, key_color=None, value_color=None, bold_keys=
 
 # -----------------------------------------------------------------
 
-def image(url, alttext=None, height=None, width=None, hover=None):
+def image(url, alttext=None, height=None, width=None, hover=None, class_name=None):
 
     """
     This function ...
@@ -396,10 +396,12 @@ def image(url, alttext=None, height=None, width=None, hover=None):
     :param height:
     :param width:
     :param hover:
+    :param class_name:
     :return:
     """
 
     code = '<img src="' + url + '"'
+    if class_name is not None: code += ' class="' + class_name + '"'
     if alttext is not None: code += ' alt="' + alttext + '"'
     if height is not None: code += " height=" + str(height) + "px"
     if width is not None: code += " width=" + str(width) + "px"
@@ -581,21 +583,20 @@ function imageExists_callback(url, allImages, i, dark_path, callback)
 def make_change_theme_function_template(button_id):
 
     return """
-    function change()
+function change()
+{
+    var elem = document.getElementById('""" + button_id +  """');
+    if (elem.value=="Light theme")
     {
-        var elem = document.getElementById('""" + button_id +  """');
-        if (elem.value=="Light theme")
-        {
-            lightTheme();
-            elem.value = "Dark theme";
-        }   
-        else
-        { 
-            darkTheme();
-            elem.value = "Light theme";
-        }
+        lightTheme();
+        elem.value = "Dark theme";
+    }   
+    else
+    { 
+        darkTheme();
+        elem.value = "Light theme";
     }
-    """
+}"""
 
 # -----------------------------------------------------------------
 
@@ -734,9 +735,21 @@ function darkImages()
         
         var dark_path = filename + "_dark." + extension;
         
-        imageExists_callback(dark_path, allImages, i, dark_path, function(existing, allImages, i, dark_path){
-            if(existing == true) { allImages[i].src = dark_path; }
-            });
+        //window.alert(String(allImages[i].classList));
+        //window.alert(String(allImages[i].classList.contains('invertable')));
+        
+        imageExists_callback(dark_path, allImages, i, dark_path, function(existing, allImages, i, dark_path)
+        {    
+            if(existing == true) { allImages[i].src = dark_path;}
+        });
+        
+        if (!allImages[i].src.includes("dark") && allImages[i].classList.contains('invertable'))
+        {    
+            allImages[i].classList.remove('invertable');
+            allImages[i].classList.add('inverted');
+             
+            //window.alert(String(allImages[i].classList));
+        }
                                 
         // didn't work, something I tried myself
         //allImages[i].onerror = function(){
@@ -762,6 +775,15 @@ function lightImages()
         
         var default_path = filename.split("_dark")[0] + "." + extension;   
         allImages[i].src = default_path;
+        
+        //window.alert(String(allImages[i].classList))
+        //window.alert(String(allImages[i].classList.contains('inverted')));
+        
+        if (allImages[i].classList.contains('inverted'))
+        {
+            allImages[i].classList.remove('inverted');
+            allImages[i].classList.add('invertable');
+        }
     }
 }
 """
@@ -1166,7 +1188,7 @@ def make_custom_slider(id, options, default=None, action_function=None, pass_val
 
 # -----------------------------------------------------------------
 
-def make_image_slider(image_id, urls, labels, default, width=None, height=None, basic=True, img_class=None, extra_urls=None):
+def make_image_slider(image_id, urls, labels, default, width=None, height=None, basic=True, extra_urls=None, img_class=None, extra_img_class=None):
 
     """
     This function ...
@@ -1177,8 +1199,9 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
     :param width:
     :param height:
     :param basic:
-    :param img_class:
     :param extra_urls:
+    :param img_class:
+    :param extra_img_class:
     :return:
     """
 
@@ -1223,7 +1246,7 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
 
         extra_image_id = image_id + "_extra"
         code += '<img id="' + extra_image_id + '"'
-        if img_class is not None: code += ' class="' + img_class + '"'
+        if extra_img_class is not None: code += ' class="' + img_class + '"'
         if width is not None: code += ' width="' + str(width) + 'px"'
         if height is not None: code += ' height="' + str(height) + 'px"'
         code += '>'

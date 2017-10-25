@@ -303,7 +303,7 @@ class DatacubesPageGenerator(HTMLPageComponent):
             # Create the slider
             slider = html.make_image_slider(instr_name, self.plot_paths[instr_name], self.wavelength_strings, self.first_wavelength_string,
                                             width=self.image_width, height=self.image_height, basic=True,
-                                            img_class="pixelated")
+                                            img_class="pixelated", extra_img_class="pixelated")
 
             # Set the slider
             self.sliders[instr_name] = slider

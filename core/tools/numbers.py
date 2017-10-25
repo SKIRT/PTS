@@ -1153,6 +1153,74 @@ def nearest_even_integer(number):
 
 # -----------------------------------------------------------------
 
+def nearest_odd_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    new = nearest_integer(number)
+    if is_odd(new): return new
+    elif new < number: return new + 1
+    elif new > number: return new - 1
+    else: raise RuntimeError("We shouldn't get here")
+
+# -----------------------------------------------------------------
+
+def nearest_integer_below(number, below, including=False):
+
+    """
+    This function ...
+    :param number:
+    :param below:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_integer(number)
+
+    if not is_integer(below):
+        below = int(below)
+        including = True
+
+    if integer > below:
+
+        if including: integer = below
+        else: integer = below - 1
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------
+
+def nearest_integer_above(number, above, including=False):
+
+    """
+    This function ...
+    :param number:
+    :param above:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_integer(number)
+
+    if not is_integer(above):
+        above = int(ceil(above))
+        including = True
+
+    if integer < above:
+
+        if including: integer = above
+        else: integer = above + 1
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------
+
 def nearest_even_integer_below(number, below, including=False):
 
     """
@@ -1175,6 +1243,90 @@ def nearest_even_integer_below(number, below, including=False):
         if is_odd(below): integer = below - 1
         elif including: integer = below
         else: integer = below - 2
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------
+
+def nearest_even_integer_above(number, above, including=False):
+
+    """
+    This function ...
+    :param number:
+    :param above:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_even_integer(number)
+
+    # Convert float to integer if necessary
+    if not is_integer(above):
+        above = int(ceil(above))
+        including = True
+
+    if integer < above:
+
+        if is_odd(above): integer = above + 1
+        elif including: integer = above
+        else: integer = above + 2
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------
+
+def nearest_odd_integer_below(number, below, including=False):
+
+    """
+    This function ....
+    :param number:
+    :param below:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_odd_integer(number)
+
+    # Convert float to integer if necessary
+    if not is_integer(below):
+        below = int(below)
+        including = True
+
+    if integer > below:
+
+        if is_even(below): integer = below - 1
+        elif including: integer = below
+        else: integer = below - 2
+
+    # Return the integer
+    return integer
+
+# -----------------------------------------------------------------
+
+def nearest_odd_integer_above(number, above, including=False):
+
+    """
+    This function ...
+    :param number:
+    :param above:
+    :param including:
+    :return:
+    """
+
+    integer = nearest_odd_integer(number)
+
+    # Convert float to integer if necessary
+    if not is_integer(above):
+        above = int(ceil(above))
+        including = True
+
+    if integer < above:
+
+        if is_even(above): integer = above + 1
+        elif including: integer = above
+        else: integer = above + 2
 
     # Return the integer
     return integer

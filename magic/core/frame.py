@@ -1955,6 +1955,68 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_pixelscale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.pixelscale is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_angle(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_length_quantity(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
     def average_pixelscale(self):
 
         """
@@ -1975,15 +2037,25 @@ class Frame(NDDataArray):
         :return:
         """
 
+        if not self.has_pixelscale: return None
+
         try:
-            solid = (self.pixelscale.x * self.pixelscale.y).to("sr")
-            return solid
+
+            if self.has_angular_pixelscale:
+                solid = (self.pixelscale.x * self.pixelscale.y).to("sr")
+                return solid
+            elif self.has_physical_pixelscale:
+                area = (self.pixelscale.x * self.pixelscale.y).to("pc2")
+                return area
+            else: raise RuntimeError("Something went wrong")
+
         except UnitConversionError:
-            log.warning("UNIT CONVERSION ERROR: " + str(self.pixelscale.x) + ", " + str(self.pixelscale.y))
+
+            log.warning("Unit conversion error: " + str(self.pixelscale.x) + ", " + str(self.pixelscale.y))
+
+            # NO UNITS? ASSUME IT'S IN DEGREES? IS THIS ANY GOOD? WHY WAS THIS DONE?
             deg = (self.pixelscale.x * self.pixelscale.y).value
             return (deg * u("deg")).to("sr")
-
-        #return (self.pixelscale.x * self.pixelscale.y).to("sr")
 
     # -----------------------------------------------------------------
 
@@ -3480,23 +3552,32 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True):
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=False):
 
         """
         This function ...
         :param reference_wcs:
         :param exact:
         :param parallel:
+        :param convert:
         :return:
         """
 
         # Check whether the frame has a WCS
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
+        # Check whether the WCS is the same
+        if self.wcs == reference_wcs: return Frame.ones_like(self)
+
         # Check the unit
+        original_unit = None
         if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that rebinning a frame not in brightness units gives an incorrect result")
-        #elif not self.is_brightness: raise RuntimeError("The frame is not in brightness unit. Convert from " + self.physical_type + " to a brightness unit before rebinning")
-        elif not self.is_per_angular_or_intrinsic_area: raise RuntimeError("The frame is not defined in units per angular or physical area. Convert to a related intensity or brightness unit prior to rebinning")
+        elif not self.is_per_angular_or_intrinsic_area:
+            if not self.has_pixelscale: raise RuntimeError("The pixelscale of the frame is not defined")
+            if convert:
+                original_unit = self.unit
+                self.convert_to_corresponding_angular_or_intrinsic_area_unit()
+            else: raise RuntimeError("The frame is not defined in units per angular or physical area. Convert to a related intensity or brightness unit prior to rebinning")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
@@ -3505,6 +3586,9 @@ class Frame(NDDataArray):
         # Replace the data and WCS
         self._data = new_data
         self._wcs = reference_wcs.copy()
+
+        # Convert back?
+        if original_unit is not None: self.convert_to(original_unit)
 
         # Return the footprint
         return Frame(footprint, wcs=reference_wcs.copy())
@@ -3948,6 +4032,121 @@ class Frame(NDDataArray):
         # Set the new data and wcs
         self._data = new_data
         self._wcs = new_wcs
+
+    # -----------------------------------------------------------------
+
+    def downsample_to_ratio(self, ratio, order=3, integer=True, above_or_below=None, even_or_odd=None):
+
+        """
+        This function ...
+        :param ratio:
+        :param order:
+        :param integer:
+        :param above_or_below:
+        :param even_or_odd:
+        :return:
+        """
+
+        from ...core.tools import numbers
+
+        # Integer downsampling factors
+        if integer:
+
+            # Not necessarily above or below
+            if above_or_below is None:
+
+                if even_or_odd is None: downsample_factor = numbers.nearest_integer(ratio)
+                elif even_or_odd == "even": downsample_factor = numbers.nearest_even_integer(ratio)
+                elif even_or_odd == "odd": downsample_factor = numbers.nearest_odd_integer(ratio)
+                else: raise ValueError("Invalid value for 'even_or_odd'")
+
+            # Always above
+            elif above_or_below == "above":
+
+                if even_or_odd is None: downsample_factor = numbers.nearest_integer_below(ratio, below=ratio)
+                elif even_or_odd == "even": downsample_factor = numbers.nearest_even_integer_below(ratio, below=ratio)
+                elif even_or_odd == "odd": downsample_factor = numbers.nearest_odd_integer_below(ratio, below=ratio)
+                else: raise ValueError("Invalid value for 'even_or_odd'")
+
+            # Always below
+            elif above_or_below == "below":
+
+                if even_or_odd is None: downsample_factor = numbers.nearest_integer_above(ratio, above=ratio)
+                elif even_or_odd == "even": downsample_factor = numbers.nearest_even_integer_above(ratio, above=ratio)
+                elif even_or_odd == "odd": downsample_factor = numbers.nearest_odd_integer_above(ratio, above=ratio)
+                else: raise ValueError("Invalid value for 'even_or_odd'")
+
+            # Invalid
+            else: raise ValueError("Invalid value for 'above_or_below'")
+
+        # Not necessarily integer
+        else: downsample_factor = ratio
+
+        # Debugging
+        log.debug("Downsampling with a factor of " + str(downsample_factor) + " ...")
+
+        # Downsample
+        self.downsample(downsample_factor, order=order)
+
+        # Return the downsample factor
+        return downsample_factor
+
+    # -----------------------------------------------------------------
+
+    def downsample_to_npixels(self, npixels, order=3, integer=True, above_or_below=None, even_or_odd=None):
+
+        """
+        This function ...
+        :param npixels:
+        :param order:
+        :param integer:
+        :param above_or_below:
+        :param even_or_odd:
+        :return:
+        """
+
+        # Check
+        if self.xsize <= npixels and self.ysize <= npixels:
+            log.warning("Downsampling is not necessary: xsize = " + str(self.xsize) + " and ysize = " + str(self.ysize) + " below " + str(npixels))
+            return 1
+
+        # Determine the ratio
+        ratio = max(self.xsize, self.ysize) / float(npixels) # scale so that the longest axis falls below the target number of pixels
+
+        # Debugging
+        log.debug("The ratio between the number of pixels along longest axis and the maximum number of pixels is " + str(ratio))
+
+        # Downsample
+        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below, even_or_odd=even_or_odd)
+
+    # -----------------------------------------------------------------
+
+    def downsample_to_pixelscale(self, pixelscale, order=3, integer=True, above_or_below=None, even_or_odd=None):
+
+        """
+        This function ...
+        :param pixelscale:
+        :param order:
+        :param integer:
+        :param above_or_below: None, 'above', or 'below'
+        :param even_or_odd:
+        :return:
+        """
+
+        # Check
+        if not self.has_pixelscale: raise ValueError("Pixelscale of the frame is undefined")
+
+        # Check
+        if pixelscale < self.pixelscale.average: raise ValueError("Pixelscale of the frame is greater than the target pixelscale")
+
+        # Determine the downsample factor
+        ratio = (pixelscale / self.pixelscale.average).to("").value
+
+        # Debugging
+        log.debug("The ratio between the target pixelscale and the original pixelscale is " + str(ratio))
+
+        # Downsample
+        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below, even_or_odd=even_or_odd)
 
     # -----------------------------------------------------------------
 

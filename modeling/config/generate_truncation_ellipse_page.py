@@ -12,7 +12,8 @@ from pts.magic.view.html import scales, colormaps, zooms
 # -----------------------------------------------------------------
 
 default_scale = "log"
-default_colormap = "viridis"
+#default_colormap = "viridis"
+default_colormap = "sls"
 default_zoom = "toFit"
 
 # -----------------------------------------------------------------
@@ -42,12 +43,17 @@ definition.add_flag("resize", "allow resize", False)
 definition.add_flag("load_regions", "load regions with images (does not work yet)", False)
 definition.add_flag("mask", "add masks", False)
 definition.add_flag("reproject", "reproject to the same WCS", False)
+definition.add_flag("downsample", "downsample the images", False)
 definition.add_flag("info", "add info about the images", False)
-definition.add_flag("replot", "replot", True)
+definition.add_flag("replot", "replot", False) # because normally the data doesn't change
 
+# Reprojection (rebinning)
 default_reprojection_method = "closest_pixelscale"
 reproject_methods = ["max", "median", "largest", "largest_from_median", "closest_pixelscale"]
 definition.add_optional("reproject_method", "string", "reprojection method", default_reprojection_method, choices=reproject_methods)
-definition.add_optional("reproject_pixelscale", "quantity", "pixelscale for when reproject_method = 'closest_pixelscale'", "2. arcsec", convert_default=True)
+definition.add_optional("reproject_pixelscale", "quantity", "pixelscale for when reproject_method = 'closest_pixelscale'", "5 arcsec", convert_default=True)
+
+# Downsampling
+definition.add_optional("downsample_npixels_threshold", "positive_integer", "number of pixels (x or y) beyond which downsampling will be performed", 500)
 
 # -----------------------------------------------------------------

@@ -19,12 +19,9 @@ import gc
 from ....core.basics.log import log
 from ..component import TruncationComponent
 from ...html.component import stylesheet_url, page_style
-from ...html.component import slider_stylesheet_url, slider_url
-from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
+from ....core.tools.html import HTMLPage, updated_footing
 from ....core.tools import html
-from ....magic.view.html import javascripts, css_scripts
 from ....core.tools import browser
-from ....core.tools.stringify import tostr
 from ....core.tools.utils import lazyproperty
 from ....core.tools import filesystem as fs
 from ....magic.core.mask import Mask
@@ -79,19 +76,19 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make plots
+        # 2. Make plots
         self.make_plots()
 
-        # Make the sliders
+        # 3. Make the sliders
         self.make_sliders()
 
-        # Generate the page
+        # 4. Generate the page
         self.generate_page()
 
         # 5. Writing
         self.write()
 
-        # Show
+        # 6. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -121,6 +118,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         # Set the default sigma level
         self.config.default_level = sequences.find_closest_value(self.config.sigma_levels, self.config.default_level)
+
+        # Check
+        if self.config.remove_dark_masks and self.config.dark_masks: raise ValueError("Cannot ask to create dark masks and to remove dark masks")
 
     # -----------------------------------------------------------------
 
@@ -235,10 +235,16 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             # Determine mask path
             mask_path = fs.join(plot_path, str(level) + "_mask.png")
 
+            # Determine dark mask path
+            dark_mask_path = fs.join(plot_path, str(level) + "_mask_dark.png")
+
+            # Remove dark masks
+            if self.config.remove_dark_masks and fs.is_file(dark_mask_path): fs.remove_file(dark_mask_path)
+
             # Check
             #if fs.is_file(path) and fs.is_file(mask_path): pass
             #else: has_all = False
-            if not fs.is_file(path) or not fs.is_file(mask_path): return False
+            if not fs.is_file(path) or not fs.is_file(mask_path) or (self.config.dark_masks and not fs.is_file(dark_mask_path)): return False
 
         # Return
         #return has_all
@@ -327,8 +333,11 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Determine path for the mask
         mask_path = fs.join(plot_path, str(level) + "_mask.png")
 
+        # Determine path for the dark mask
+        mask_dark_path = fs.join(plot_path, str(level) + "_mask_dark.png")
+
         # Check
-        if fs.is_file(path) and fs.is_file(mask_path):
+        if fs.is_file(path) and fs.is_file(mask_path) and (not self.config.dark_masks or fs.is_file(mask_dark_path)):
             log.success("The plots for the '" + name + "' image at a sigma level of '" + str(level) + "' are already present")
             return
 
@@ -350,6 +359,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         # Save the mask
         mask.saveto_png(mask_path, colour=self.config.mask_colour, alpha=self.config.mask_alpha)
+
+        # Save the dark mask
+        if self.config.dark_masks: mask.saveto_png(mask_dark_path, colour=self.config.dark_mask_colour, alpha=True) # background has to be transparent
 
     # -----------------------------------------------------------------
 
@@ -381,7 +393,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
             # Get error map and crop as well
             errormap = self.dataset.get_errormap(name)
-            errormap.rebin(frame.wcs)
+            errormap.rebin(frame.wcs, convert=True)
 
             # Create the significance map
             significance = frame / errormap
@@ -418,7 +430,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             # Create the slider
             slider = html.make_image_slider(image_id, mask_paths, labels, self.config.default_level,
                                             width=self.image_width, height=self.image_height, basic=True,
-                                            img_class="pixelated", extra_urls=paths)
+                                            img_class="pixelated invertable", extra_urls=paths, extra_img_class="pixelated")
 
             # Set the slider
             self.sliders[name] = slider
