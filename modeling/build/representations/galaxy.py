@@ -156,7 +156,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
         log.info("Loading the dust deprojections ...")
 
         # Loop over the dust components
-        for name in self.suite.get_dust_component_names(self.config.path, self.model_name):
+        for name in self.suite.get_dust_component_names(self.model_name):
 
             # Load the deprojection of the component, if applicable
             title, deprojection = self.suite.load_dust_component_deprojection(self.model_name, name)
