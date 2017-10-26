@@ -195,10 +195,10 @@ class DustPediaSample(object):
         table = result[0]
 
         if len(table) > 1: raise ValueError("Ambiguous result")
+        if len(table) == 0: raise ValueError("No result")
 
-        # Get RA and DEC
-        ra = table["RAJ2000"][0]
-        dec = table["DEJ2000"][0]
+        # Get coordinate
+        ra, dec = catalogs.get_ra_dec_degrees_from_table(table, 0)
 
         # Create sky coordinate and return it
         return SkyCoordinate(ra=ra, dec=dec, unit="deg")
