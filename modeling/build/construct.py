@@ -427,8 +427,7 @@ def add_new_dust_component(ski, name, component, title=None):
 
     # For THEMIS mix
     hydrocarbon_pops = None
-    enstatite_pops = None
-    forsterite_pops = None
+    silicate_pops = None
 
     # For Zubko mix
     graphite_populations = None
@@ -467,10 +466,7 @@ def add_new_dust_component(ski, name, component, title=None):
             # Get parameters
             mass = component.parameters.mass
             hydrocarbon_pops = component.parameters.hydrocarbon_pops
-            enstatite_pops = component.parameters.enstatite_pops
-            forsterite_pops = component.parameters.forsterite_pops
-
-            #print(component.parameters)
+            silicate_pops = component.parameters.silicate_pops
 
         # Existing component (geometry defined above), Zubko dust mix
         elif "graphite_populations" in component.parameters:
@@ -496,8 +492,8 @@ def add_new_dust_component(ski, name, component, title=None):
                                      mix_type=mix_type, mix_properties=mix_properties,
                                      normalization_type=normalization_type,
                                      normalization_properties=normalization_properties, mix=mix, mass=mass,
-                                     hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops,
-                                     forsterite_pops=forsterite_pops, graphite_populations=graphite_populations,
+                                     hydrocarbon_pops=hydrocarbon_pops, silicate_pops=silicate_pops,
+                                     graphite_populations=graphite_populations,
                                      silicate_populations=silicate_populations, pah_populations=pah_populations)
 
 # -----------------------------------------------------------------
@@ -658,11 +654,10 @@ def set_dust_component_themis_mix(ski, component):
     # Get parameters
     mass = component.parameters.mass
     hydrocarbon_pops = component.parameters.hydrocarbon_pops
-    enstatite_pops = component.parameters.enstatite_pops
-    forsterite_pops = component.parameters.forsterite_pops
+    silicate_pops = component.parameters.silicate_pops
 
     # Set the dust mix
-    ski.set_dust_component_themis_mix(title, hydrocarbon_pops, enstatite_pops, forsterite_pops)  # dust mix
+    ski.set_dust_component_themis_mix(title, hydrocarbon_pops, silicate_pops)  # dust mix
 
     # Set the dust mass (keeps label)
     ski.set_dust_component_mass(title, mass)

@@ -1685,6 +1685,46 @@ function replaceInfsByNans(oraw, nraw, opts)
 
 # -----------------------------------------------------------------
 
+replace_negatives_by_zero_function = """
+function replaceNegativesByZero(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (oraw.data[i] < 0)
+        {
+            nraw.data[i] = 0.0;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+replace_negatives_by_nans_function = """
+function replaceNegativesByNans(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (oraw.data[i] < 0)
+        {
+            nraw.data[i] = NaN;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
 def make_replace_nans_infs(display=None, quote_character='"'):
 
     """
@@ -1734,6 +1774,118 @@ def make_replace_infs_by_nans(display=None, quote_character='"'):
         else: raise ValueError("Invalid quote character: " + quote_character)
     string += ');'
     string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_replace_infs_by_nans_multiple(display_ids, quote_character='"'):
+
+    """
+    This function ...
+    :param display_ids:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_infs_by_nans_function
+    string += "\n"
+
+    for display_id in display_ids:
+
+        string += "JS9.RawDataLayer({}, replaceInfsByNans"
+
+        if quote_character == '"': string += ', {display:"' + display_id + '"}'
+        elif quote_character == "'": string += ", {display:'" + display_id + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+
+        string += ');'
+        string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_replace_negatives_by_zero(display=None, quote_character='"'):
+
+    """
+    This function ...
+    :param display:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_negatives_by_zero_function
+    string += "\n"
+
+    string += "JS9.RawDataLayer({}, replaceNegativesByZero"
+
+    if display is not None:
+        if quote_character == '"': string += ', {display:"' + display + '"}'
+        elif quote_character == "'": string += ", {display:'" + display + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+    string += ');'
+    string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_replace_negatives_by_nans(display=None, quote_character='"'):
+
+    """
+    This function ...
+    :param display:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_negatives_by_nans_function
+    string += "\n"
+
+    string += "JS9.RawDataLayer({}, replaceNegativesByNans"
+
+    if display is not None:
+        if quote_character == '"': string += ', {display:"' + display + '"}'
+        elif quote_character == "'": string += ", {display:'" + display + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+    string += ');'
+    string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_replace_negatives_by_nans_multiple(display_ids, quote_character='"'):
+
+    """
+    This fucntion ...
+    :param display_ids:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_negatives_by_nans_function
+    string += "\n"
+
+    for display_id in display_ids:
+
+        string += "JS9.RawDataLayer({}, replaceNegativesByNans"
+
+        if quote_character == '"': string += ', {display:"' + display_id + '"}'
+        elif quote_character == "'": string += ", {display:'" + display_id + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+
+        string += ');'
+        string += "\n"
 
     return string
 

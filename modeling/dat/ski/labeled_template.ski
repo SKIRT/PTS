@@ -93,7 +93,7 @@
                   <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[dust_scaleheight:260.5 pc]"/>
                 </geometry>
                 <mix type="DustMix">
-                  <ThemisDustMix enstatitePops="25" forsteritePops="25" hydrocarbonPops="25" writeMeanMix="false" writeMix="false" writeSize="false"/>
+                  <ThemisDustMix silicatePops="25" hydrocarbonPops="25" writeMeanMix="false" writeMix="false" writeSize="false"/>
                 </mix>
                 <normalization type="DustCompNormalization">
                   <DustMassDustCompNormalization dustMass="[dust_mass:1 Msun]"/>

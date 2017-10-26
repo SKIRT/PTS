@@ -12,7 +12,6 @@ from pts.magic.view.html import scales, colormaps, zooms
 # -----------------------------------------------------------------
 
 default_scale = "log"
-#default_colormap = "viridis"
 default_colormap = "sls"
 default_zoom = "toFit"
 
@@ -35,7 +34,7 @@ definition.add_optional("colormap", "string", "color map", default_colormap, cho
 definition.add_optional("zoom", "string", "zoom function", default_zoom, choices=zooms)
 
 # Other plot settings
-definition.add_flag("png", "convert to png", False)
+definition.add_flag("png", "convert to png", True) # was False
 definition.add_flag("dynamic", "create the viewers dynamically", False)
 definition.add_flag("menubar", "add menubars", True)
 definition.add_flag("colorbar", "add colorbars", False)

@@ -75,9 +75,30 @@ def load_as_pixel_region_list(path, wcs, **kwargs):
     :return: 
     """
 
+    from astropy.io.fits import Header
+    from ..basics.coordinatesystem import CoordinateSystem
+
     region_list = load_region_list(path, **kwargs)
+
+    # Already pixel region list
     if isinstance(region_list, PixelRegionList): return region_list
-    elif isinstance(region_list, SkyRegionList): return region_list.to_pixel(wcs)
+
+    # From sky region list
+    elif isinstance(region_list, SkyRegionList):
+
+        # Check if WCS is passed
+        if wcs is None: raise ValueError("Coordinate system cannot be undefined")
+
+        # Check WCS
+        if isinstance(wcs, CoordinateSystem): pass
+        elif isinstance(wcs, Header): wcs = CoordinateSystem(wcs)
+        elif types.is_string_type(wcs): wcs = CoordinateSystem.from_file(wcs)
+        else: raise ValueError("Don't know what to do with '" + str(wcs) + "'")
+
+        # Convert to pixel region list
+        return region_list.to_pixel(wcs)
+
+    # Invalid
     else: raise RuntimeError("An error occured")
 
 # -----------------------------------------------------------------
@@ -92,9 +113,30 @@ def load_as_sky_region_list(path, wcs, **kwargs):
     :return: 
     """
 
+    from astropy.io.fits import Header
+    from ..basics.coordinatesystem import CoordinateSystem
+
     region_list = load_region_list(path, **kwargs)
-    if isinstance(region_list, PixelRegionList): return region_list.to_sky(wcs)
+
+    # From pixel region list
+    if isinstance(region_list, PixelRegionList):
+
+        # Check if WCS is passed
+        if wcs is None: raise ValueError("Coordinate system cannot be undefined")
+
+        # Check WCS
+        if isinstance(wcs, CoordinateSystem): pass
+        elif isinstance(wcs, Header): wcs = CoordinateSystem(wcs)
+        elif types.is_string_type(wcs): wcs = CoordinateSystem.from_file(wcs)
+        else: raise ValueError("Don't know what to do with '" + str(wcs) + "'")
+
+        # Convert to sky region list
+        return region_list.to_sky(wcs)
+
+    # Already sky region list
     elif isinstance(region_list, SkyRegionList): return region_list
+
+    # Invalid
     else: raise RuntimeError("An error occured")
 
 # -----------------------------------------------------------------

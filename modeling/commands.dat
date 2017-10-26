@@ -35,6 +35,7 @@ make_ionizing_stellar_maps | -- | maps.ionizing.IonizingStellarMapMaker | argume
 make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
 make_component_maps | -- | maps.components.ComponentMapsMaker | arguments | Make maps for the different model components
 plot_maps | -- | maps.plotter.MapsPlotter | arguments | Make plots of the maps
+view_maps | -- | maps.viewer.MapsViewer | arguments | View a page where maps can be viewed and inspected
 
 # PHOTOMETRY
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images

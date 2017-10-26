@@ -149,8 +149,7 @@ dust_scale_height = 0.25 * old_scale_height
 #dust_mass = 1.5e7 * u("Msun")
 
 hydrocarbon_pops = 25
-enstatite_pops = 25
-forsterite_pops = 25
+silicate_pops = 25
 
 # -----------------------------------------------------------------
 
@@ -853,8 +852,7 @@ class M81TestBase(TestImplementation):
         self.ski.set_dust_component_geometry(title, self.deprojections["dust"])
 
         # Set the mix
-        # component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True
-        self.ski.set_dust_component_themis_mix(title, hydrocarbon_pops, enstatite_pops, forsterite_pops, write_mix=False, write_mean_mix=False, write_size=False)
+        self.ski.set_dust_component_themis_mix(title, hydrocarbon_pops, silicate_pops, write_mix=False, write_mean_mix=False, write_size=False)
 
         # Set the normalization
         self.ski.set_dust_component_normalization(title, dust_mass)

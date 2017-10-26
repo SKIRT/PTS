@@ -33,7 +33,7 @@ bulge_default_parameters = ["default_old_bulge_template", "default_old_bulge_met
 old_default_parameters = ["default_old_disk_template", "default_old_disk_metallicity", "default_old_disk_age"]
 young_default_parameters = ["default_young_template", "default_young_metallicity", "default_young_age", "young_scaleheight_ratio"]
 ionizing_default_parameters = ["default_ionizing_metallicity", "ionizing_scaleheight_ratio", "default_sfr", "default_ionizing_compactness", "default_ionizing_pressure", "default_covering_factor", "fuv_ionizing_contribution"]
-dust_default_parameters = ["default_hydrocarbon_pops", "default_enstatite_pops", "default_forsterite_pops", "default_dust_mass", "dust_scaleheight_ratio"]
+dust_default_parameters = ["default_hydrocarbon_pops", "default_silicate_pops", "default_dust_mass", "dust_scaleheight_ratio"]
 
 # -----------------------------------------------------------------
 

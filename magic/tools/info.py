@@ -195,7 +195,7 @@ def get_image_info_from_header_file(image_name, frame_path, **kwargs):
     """
     This function ...
     :param image_name:
-    :param path:
+    :param frame_path:
     :param kwargs:
     :return:
     """

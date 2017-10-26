@@ -28,7 +28,6 @@ from ..analytics import mask_names
 from ....core.tools import browser
 from ....magic.core.frame import Frame
 from ....magic.tools.info import get_image_info_from_header
-from ....magic.region.ellipse import PixelEllipseRegion
 from ....magic.region.list import PixelRegionList
 
 # -----------------------------------------------------------------
@@ -115,6 +114,9 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
         # All images loader
         self.all_loader = None
+
+        # The table
+        self.table = None
 
     # -----------------------------------------------------------------
 

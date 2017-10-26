@@ -593,9 +593,8 @@ class SkiFile:
             elif dustmix.tag == "ConfigurableDustMix":
                 npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
             elif dustmix.tag == "ThemisDustMix":
-                npops += int(dustmix.attrib["enstatitePops"])
-                npops += int(dustmix.attrib["forsteritePops"])
                 npops += int(dustmix.attrib["hydrocarbonPops"])
+                npops += int(dustmix.attrib["silicatePops"])
             elif dustmix.tag == "ZubkoDustMix":
                 npops += int(dustmix.attrib["graphitePops"])
                 npops += int(dustmix.attrib["silicatePops"])
@@ -1655,7 +1654,7 @@ class SkiFile:
     def create_new_dust_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
                                   mix=None, mix_type=None, mix_properties=None, normalization_type=None,
                                   normalization_value=None, normalization_properties=None, mass=None,
-                                  hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, # for THEMIS
+                                  hydrocarbon_pops=25, silicate_pops=25, # for THEMIS
                                   graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, # for Zubko
                                   write_mean_mix=True, write_size=True):
 
@@ -1718,7 +1717,7 @@ class SkiFile:
 
         # Set mix
         if mix is not None:
-            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops, forsterite_pops=forsterite_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
+            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, silicate_pops=silicate_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             elif mix == "zubko": self.set_dust_component_zubko_mix(component_id, graphite_populations=graphite_populations, silicate_populations=silicate_populations, pah_populations=pah_populations, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             else: raise ValueError("Invalid mix: '" + str(mix) + "': must be 'themis' or 'zubko' (for now)")
 
@@ -1942,7 +1941,7 @@ class SkiFile:
         return parent
 
     ## This functions sets a THEMIS dust mix model for the dust component with the specified id
-    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, silicate_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
 
         # Remove current mix, return the parent
         parent = self.remove_dust_component_mix(component_id)
@@ -1950,7 +1949,7 @@ class SkiFile:
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
                  "writeSize": str_from_bool(write_size, lower=True), "hydrocarbonPops": str(hydrocarbon_pops),
-                 "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
+                 "silicatePops": str(silicate_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id

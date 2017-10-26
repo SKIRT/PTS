@@ -10,6 +10,10 @@ list_ned | -- | services.ned.NED | arguments | List images found on NED
 get_s4g | -- | services.s4g.S4G | arguments | Get galaxy components from S4G study
 get_seds | -- | services.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
 
+# VIEW
+view_image | -- | view.single.SingleImageViewer | arguments | View an image with JS9
+multiview | -- | view.multi.MultiImageViewer | arguments | View multiple images with JS9
+
 # MISC
 summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
 find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry

@@ -40,8 +40,7 @@ definition.add_optional("output", "directory_path", "output directory")
 
 # Dust mix settings
 definition.add_optional("default_hydrocarbon_pops", "positive_integer",  "default number of hydrocarbon populations", 25)
-definition.add_optional("default_enstatite_pops", "positive_integer", "default number of enstatite populations", 25)
-definition.add_optional("default_forsterite_pops", "positive_integer", "default number of forsterite populations", 25)
+definition.add_optional("default_silicate_pops", "positive_integer", "default number of silicate populations", 25)
 
 ## OTHER
 definition.add_optional("default_dust_mass", "quantity", "default value for the dust disk mass", default_dust_mass)

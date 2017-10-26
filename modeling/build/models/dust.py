@@ -185,16 +185,14 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Check defaults
         if self.config.default_dust_mass is None: raise ValueError("Default dust mass cannot be undefined")
         if self.config.default_hydrocarbon_pops is None: raise ValueError("Default number of hydrocarbon populations cannot be undefined")
-        if self.config.default_enstatite_pops is None: raise ValueError("Default number of enstatite populations cannot be undefined")
-        if self.config.default_forsterite_pops is None: raise ValueError("Default number of forsterite populations cannot be undefined")
+        if self.config.default_silicate_pops is None: raise ValueError("Default number of silciate populations cannot be undefined")
 
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("scale_height", "quantity", "scale height", default=self.dust_scaleheight)
         definition.add_optional("mass", "quantity", "dust mass", default=self.config.default_dust_mass)
         definition.add_optional("hydrocarbon_pops", "positive_integer", "number of hydrocarbon populations", default=self.config.default_hydrocarbon_pops)
-        definition.add_optional("enstatite_pops", "positive_integer", "number of enstatite populations", default=self.config.default_enstatite_pops)
-        definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=self.config.default_forsterite_pops)
+        definition.add_optional("silicate_pops", "positive_integer", "number of silicate populations", default=self.config.default_silicate_pops)
 
         # Use default settings
         if self.config.use_defaults:

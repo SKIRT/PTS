@@ -106,8 +106,7 @@ dust_mass = parse_quantity("1.5e7 Msun")
 #dust_mass = 1.5e7 * u("Msun")
 
 hydrocarbon_pops = 25
-enstatite_pops = 25
-forsterite_pops = 25
+silicate_pops = 25
 
 # -----------------------------------------------------------------
 
