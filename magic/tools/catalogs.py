@@ -830,12 +830,15 @@ def get_ra_dec_degrees_from_table(table, index):
     :return: 
     """
 
-    ra_unit = table["RAJ2000"]
-    dec_unit = table["DEJ2000"]
+    # Get units
+    ra_unit = table["RAJ2000"].unit
+    dec_unit = table["DEJ2000"].unit
 
+    # Get values
     ra_value = table["RAJ2000"][index]
     dec_value = table["DEJ2000"][index]
 
+    # Combine
     return get_ra_dec_degrees_from_values(ra_value, dec_value, ra_unit, dec_unit)
 
 # -----------------------------------------------------------------
