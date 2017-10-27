@@ -1492,6 +1492,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_significance_levels(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.significance_levels_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def significance_levels(self):
 

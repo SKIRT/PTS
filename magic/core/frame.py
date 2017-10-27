@@ -4556,6 +4556,7 @@ class Frame(NDDataArray):
         :param return_minmax:
         :param around_zero:
         :param symmetric:
+        :param interval:
         :return:
         """
 

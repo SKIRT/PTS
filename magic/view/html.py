@@ -739,17 +739,21 @@ class JS9Viewer(object):
 
     # -----------------------------------------------------------------
 
-    def __str__(self):
+    def to_string(self, newlines=True):
 
         """
         This function ...
+        :param newlines:
         :return:
         """
 
         string = ""
 
+        if newlines: nl = "\n"
+        else: nl = ""
+
         # CENTER THE DIV ON THE PAGE
-        if self.center: string += "<center>\n"
+        if self.center: string += "<center>" + nl
 
         string += '<div class="JS9" id="' + self.id + '"'
 
@@ -763,10 +767,21 @@ class JS9Viewer(object):
         string += '></div>'
 
         # CENTER THE DIV ON THE PAGE
-        if self.center: string += "\n</center>"
+        if self.center: string += nl + "</center>"
 
         # Return the html
         return string
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.to_string()
 
 # -----------------------------------------------------------------
 
@@ -793,17 +808,21 @@ class JS9Menubar(object):
 
     # -----------------------------------------------------------------
 
-    def __str__(self):
+    def to_string(self, newlines=True):
 
         """
         This function ...
+        :param newlines:
         :return:
         """
 
         string = ""
 
+        if newlines: nl = "\n"
+        else: nl = ""
+
         # CENTER ON THE PAGE
-        if self.center: string += "<center>\n"
+        if self.center: string += "<center>" + nl
 
         string += '<div class="JS9Menubar" id="' + self.id + '"'
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
@@ -814,10 +833,21 @@ class JS9Menubar(object):
         string += "></div>"
 
         # CENTER ON THE PAGE
-        if self.center: string += "\n</center>"
+        if self.center: string += nl + "</center>"
 
         # Return the HTML
         return string
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.to_string()
 
 # -----------------------------------------------------------------
 
@@ -873,17 +903,21 @@ class JS9Magnifier(object):
 
     # -----------------------------------------------------------------
 
-    def __str__(self):
+    def to_string(self, newlines=True):
 
         """
         This function ...
+        :param newlines:
         :return:
         """
 
         string = ""
 
+        if newlines: nl = "\n"
+        else: nl = ""
+
         # CENTER ON THE PAGE
-        if self.center: string += "<center>\n"
+        if self.center: string += "<center>" + nl
 
         string += '<div class="JS9Magnifier" id="' + self.id + '"'
 
@@ -894,10 +928,21 @@ class JS9Magnifier(object):
         string += "></div>"
 
         # CENTER ON THE PAGE
-        if self.center: string += "\n</center>"
+        if self.center: string += nl + "</center>"
 
         # Return the HTML
         return string
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.to_string()
 
 # -----------------------------------------------------------------
 
@@ -923,17 +968,21 @@ class JS9Colorbar(object):
 
     # -----------------------------------------------------------------
 
-    def __str__(self):
+    def to_string(self, newlines=True):
 
         """
         This function ...
+        :param newlines:
         :return:
         """
 
         string = ""
 
+        if newlines: nl = "\n"
+        else: nl = ""
+
         # CENTER ON THE PAGE
-        if self.center: string += "<center>\n"
+        if self.center: string += "<center>" + nl
 
         string += '<div class="JS9Colorbar" id="' + self.id + '"'
 
@@ -944,10 +993,21 @@ class JS9Colorbar(object):
         string += "></div>"
 
         # CENTER ON THE PAGE
-        if self.center: string += "\n</center>"
+        if self.center: string += nl + "</center>"
 
         # Return the HTML
         return string
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.to_string()
 
 # -----------------------------------------------------------------
 
@@ -1328,51 +1388,6 @@ def make_load_regions_function(name, regions, display=None):
 
 # -----------------------------------------------------------------
 
-# def make_load_regions(regions, display=None):
-#
-#     """
-#     This function ...
-#     :param regions:
-#     :param display:
-#     :return:
-#     """
-#
-#     string = ""
-#
-#     for region in regions:
-#
-#         string += "JS9.AddRegions('" + str(region) + "'"
-#         if display is not None: string += ', {display:"' + display + '"}'
-#         string += ');'
-#         string += "\n"
-#
-#     return string
-
-# -----------------------------------------------------------------
-
-def make_load_regions_function(name, regions, display=None):
-
-    """
-    This function ...
-    :param name:
-    :param regions:
-    :param display:
-    :return:
-    """
-
-    if " " in name: raise ValueError("Name cannot contain spaces")
-    string = "function " + name + "()"
-    string += "\n"
-    string += "{"
-
-    for line in make_load_regions(regions, display=display).split("\n"):
-        string += "    " + line + "\n"
-
-    string += "}"
-    return string
-
-# -----------------------------------------------------------------
-
 # Start for run analysis on change
 """
 <script type="text/javascript">
@@ -1615,19 +1630,22 @@ def make_spawn_code(view, image, menubar=True, colorbar=False, width=None, backg
 
         menubar = JS9Menubar(menubar_id, width=width, background_color=background_color)
         # spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
-        spawn_code += str(menubar)
+        #spawn_code += str(menubar)
+        spawn_code += menubar.to_string(newlines=False)
         spawn_code += html.newline
 
     if colorbar:
 
         colorbar = JS9Colorbar(colorbar_id, width=width)
         # spawn_code += "<div class='JS9Colorbar' id = '" + colorbar_id + "'></div>"
-        spawn_code += str(colorbar)
+        #spawn_code += str(colorbar)
+        spawn_code += colorbar.to_string(newlines=False)
         spawn_code += html.newline
 
     #spawn_code += '<div class="JS9" id="' + image.display + '"></div>'
 
-    spawn_code += str(view)
+    #spawn_code += str(view)
+    spawn_code += view.to_string(newlines=False)
 
     # Return
     return spawn_code

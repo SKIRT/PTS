@@ -63,6 +63,12 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # The sliders
         self.sliders = dict()
 
+        # The plots path
+        self.plots_path = None
+
+        # The page
+        self.page = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -111,13 +117,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         # Create directories for each filter
         for name in self.names:
-        #for fltr in self.filters:
             image_path = fs.join(self.plots_path, name)
             self.image_plot_paths[name] = image_path
             if not fs.is_directory(image_path): fs.create_directory(image_path)
-
-        # Set the default sigma level
-        self.config.default_level = sequences.find_closest_value(self.config.sigma_levels, self.config.default_level)
 
         # Check
         if self.config.remove_dark_masks and self.config.dark_masks: raise ValueError("Cannot ask to create dark masks and to remove dark masks")
@@ -365,6 +367,50 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Levels have already been set
+        if self.has_significance_levels:
+
+            # Get configured levels
+            levels = set(self.config.sigma_levels)
+
+            # Loop over the image names
+            for name in self.names:
+
+                # Get the level
+                level = self.significance_levels[name]
+
+                # Add
+                levels.add(level)
+
+            # Return the levels, sorted
+            return list(sorted(levels))
+
+        # Levels are not yet defined
+        else: return self.config.sigma_levels
+
+    # -----------------------------------------------------------------
+
+    def get_default_level(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_significance_levels: return self.significance_levels[name]
+        else: return sequences.find_closest_value(self.levels, self.config.default_level)
+
+    # -----------------------------------------------------------------
+
     def make_plots(self):
 
         """
@@ -379,7 +425,6 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         for name in self.names:
 
             # Check whether not all plots are already present
-            # if self.has_all_plots(name): continue
             if self.check_plots(name): continue
 
             # Get plot path
@@ -399,7 +444,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             significance = frame / errormap
 
             # Create the plots
-            for level in self.config.sigma_levels: self.make_plots_for_level(name, frame, significance, plot_path, level)
+            for level in self.levels: self.make_plots_for_level(name, frame, significance, plot_path, level)
 
             # Clean
             gc.collect()
@@ -427,8 +472,11 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             # Create image ID
             image_id = name.replace("_", "").replace(" ", "")
 
+            # Get the default level
+            default_level = self.get_default_level(name)
+
             # Create the slider
-            slider = html.make_image_slider(image_id, mask_paths, labels, self.config.default_level,
+            slider = html.make_image_slider(image_id, mask_paths, labels, default_level,
                                             width=self.image_width, height=self.image_height, basic=True,
                                             img_class="pixelated invertable", extra_urls=paths, extra_img_class="pixelated")
 
@@ -448,32 +496,15 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         log.info("Generating the page ...")
 
         # Create list of css scripts
-        #css_paths = css_scripts[:]
-        css_paths = []
-        css_paths.append(stylesheet_url)
-
-        # LATEST ATTEMPT
-        #css_url = "https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
-        #css_paths.append(css_url)
-        #css_paths.append(slider_stylesheet_url)
+        css_paths = [stylesheet_url]
 
         # Create CSS for the page width
         css = html.make_page_width(page_width)
 
         # Make javascripts urls
-        #javascript_paths = javascripts[:]
         javascript_paths = []
-        #javascript_paths.append(sortable_url)
-        #javascript_paths.append(preview_url)
-        #javascript_paths.append(slider_url)
-
-        # Download
-        #filepath = network.download_file(slider_url, introspection.pts_temp_dir)
-        #javascript = fs.get_text(filepath)
 
         # LATEST ATTEMPT
-        #jquery_url = "http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"
-        #javascript_paths_body = [jquery_url, slider_url]
         javascript_paths_body = None
 
         # Create the page

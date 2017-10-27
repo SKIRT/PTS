@@ -18,7 +18,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import MapsComponent
-from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
+from ...html.component import stylesheet_url, page_style
 from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
@@ -29,13 +29,13 @@ from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
 from ....core.basics.range import RealRange
 from ....magic.tools.info import get_image_info_strings, get_image_info
-from ....magic.tools.colours import is_fir_colour, is_fir_or_submm_colour
+from ....magic.core.frame import Frame
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
 plots_name = "plots"
 ncolumns = 2
-colour_map = "jet"
 background_color = "white"
 key_color = "#4180d3"
 
@@ -641,11 +641,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.young_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.young_maps[name])
             info = get_image_info(name, self.young_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -667,11 +665,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.ionizing_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.ionizing_maps[name])
             info = get_image_info(name, self.ionizing_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -693,11 +689,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.dust_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.dust_maps[name])
             info = get_image_info(name, self.dust_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -741,7 +735,7 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_rgba_plot(self, name, frame, filepath, around_zero=False, scale=None):
+    def make_rgba_plot(self, name, frame, filepath, around_zero=False, scale=None, interval="pts", colours="jet"):
 
         """
         This function ...
@@ -750,11 +744,18 @@ class AllMapsPageGenerator(MapsComponent):
         :param filepath:
         :param around_zero:
         :param scale: if None, configured value is used
+        :param interval:
+        :param colours:
         :return:
         """
 
         # Debugging
         log.debug("Making an RGBA plot from the '" + name + "' map at '" + filepath + "' ...")
+
+        # Get primary frame
+        if isinstance(frame, Image): frame = frame.primary
+        elif isinstance(frame, Frame): pass
+        else: raise ValueError("Invalid argument of type '" + str(type(frame)) + "'")
 
         # Crop the frame
         frame = frame.cropped_to(self.truncation_box, factor=self.config.cropping_factor, out_of_bounds="expand")
@@ -777,11 +778,9 @@ class AllMapsPageGenerator(MapsComponent):
             symmetric = False
             alpha = "absolute"
 
-        # Set scale
-        if scale is None: scale = self.config.scale
-
         # Make RGBA image
-        rgba = frame.to_rgba(scale=scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha)
+        #rgba = frame.to_rgba(scale=scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha, interval=interval)
+        rgba = frame.to_rgba(scale=scale, colours=colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha, interval=interval)
         rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
 
         # Save
@@ -1059,16 +1058,8 @@ class AllMapsPageGenerator(MapsComponent):
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Check whether it is a FIR colour
-            if is_fir_colour(name) or is_fir_or_submm_colour(name):
-                around_zero = True
-                scale = "linear"
-            else:
-                around_zero = False
-                scale = None # configured value will be used
-
             # Make the plot
-            self.make_rgba_plot(name, self.colour_maps[name], filepath, around_zero=around_zero, scale=scale)
+            self.make_rgba_plot(name, self.colour_maps[name], filepath, colours=self.colours_cmap, scale=self.colours_scale)
 
     # -----------------------------------------------------------------
 
@@ -1103,7 +1094,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.ssfr_maps[name], filepath)
+            self.make_rgba_plot(name, self.ssfr_maps[name], filepath, colours=self.ssfr_cmap, scale=self.ssfr_scale, interval=self.ssfr_interval)
 
     # -----------------------------------------------------------------
 
@@ -1138,7 +1129,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.tir_maps[name], filepath)
+            self.make_rgba_plot(name, self.tir_maps[name], filepath, colours=self.tir_cmap, scale=self.tir_scale)
 
     # -----------------------------------------------------------------
 
@@ -1173,7 +1164,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.attenuation_maps[name], filepath)
+            self.make_rgba_plot(name, self.attenuation_maps[name], filepath, colours=self.attenuation_cmap, scale=self.attenuation_scale)
 
     # -----------------------------------------------------------------
 
@@ -1208,7 +1199,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.old_maps[name], filepath)
+            self.make_rgba_plot(name, self.old_maps[name], filepath, colours=self.old_cmap, scale=self.old_scale)
 
     # -----------------------------------------------------------------
 
@@ -1243,7 +1234,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.young_maps[name], filepath)
+            self.make_rgba_plot(name, self.young_maps[name], filepath, colours=self.young_cmap, scale=self.young_scale)
 
     # -----------------------------------------------------------------
 
@@ -1278,7 +1269,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.ionizing_maps[name], filepath)
+            self.make_rgba_plot(name, self.ionizing_maps[name], filepath, colours=self.ionizing_cmap, scale=self.ionizing_scale)
 
     # -----------------------------------------------------------------
 
@@ -1313,7 +1304,7 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.dust_maps[name], filepath)
+            self.make_rgba_plot(name, self.dust_maps[name], filepath, colours=self.dust_cmaps["attenuation"], scale=self.dust_scales["attenuation"])
 
     # -----------------------------------------------------------------
 
@@ -1329,7 +1320,7 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_view(self, name, filepath, plot, scale, colormap, zoom):
+    def make_view(self, name, filepath, plot, scale, colormap, zoom, next_zoom=None, interval=None):
 
         """
         This function ...
@@ -1338,7 +1329,9 @@ class AllMapsPageGenerator(MapsComponent):
         :param plot:
         :param scale:
         :param colormap:
-        :param zoom
+        :param zoom:
+        :param next_zoom:
+        :param interval:
         :return:
         """
 
@@ -1367,7 +1360,8 @@ class AllMapsPageGenerator(MapsComponent):
                                       menubar=self.config.menubar, colorbar=self.config.colorbar,
                                       regions=regions_for_loader, background_color=background_color,
                                       replace=True, width=self.view_height, height=self.view_height,
-                                      center=True, replace_nans=True, replace_infs=True)
+                                      center=True, replace_nans=True, replace_infs=True, zoom=next_zoom,
+                                      interval=interval)
 
         #display_id = self.loaders[name].display_id
         #self.windows[name] = self.loaders[name].placeholder
@@ -1447,8 +1441,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.colour_plots_paths[name])
             else: path = self.colour_maps[name].path
 
+            # Determine image name
+            image_name = "colours___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.colour_plots[name], self.config.colour_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.colour_plots[name], self.colours_scale, self.colours_js9_cmap, self.config.zoom)
 
             # Add
             self.colour_views[name] = view
@@ -1472,8 +1469,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.ssfr_plots_paths[name])
             else: path = self.ssfr_maps[name].path
 
+            # Determine image name
+            image_name = "ssfr___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.ssfr_plots[name], self.config.ssfr_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.ssfr_plots[name], self.ssfr_scale, self.ssfr_js9_cmap, self.config.zoom)
 
             # Add
             self.ssfr_views[name] = view
@@ -1497,8 +1497,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.tir_plots_paths[name])
             else: path = self.tir_maps[name].path
 
+            # Determine image name
+            image_name = "tir___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.tir_plots[name], self.config.tir_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.tir_plots[name], self.tir_scale, self.tir_js9_cmap, self.config.zoom)
 
             # Add
             self.tir_views[name] = view
@@ -1522,8 +1525,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.attenuation_plots_paths[name])
             else: path = self.attenuation_maps[name].path
 
+            # Determine image name
+            image_name = "attenuation___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.attenuation_plots[name], self.config.attenuation_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.attenuation_plots[name], self.attenuation_scale, self.attenuation_js9_cmap, self.config.zoom)
 
             # Add
             self.attenuation_views[name] = view
@@ -1547,8 +1553,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.old_plots_paths[name])
             else: path = self.old_maps[name].path
 
+            # Determine image name
+            image_name = "old___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.old_plots[name], self.config.old_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.old_plots[name], self.old_scale, self.old_js9_cmap, self.config.zoom)
 
             # Add
             self.old_views[name] = view
@@ -1572,8 +1581,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.young_plots_paths[name])
             else: path = self.young_maps[name].path
 
+            # Determine image name
+            image_name = "young___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.young_plots[name], self.config.young_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.young_plots[name], self.young_scale, self.young_js9_cmap, self.config.zoom)
 
             # Add
             self.young_views[name] = view
@@ -1597,8 +1609,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.ionizing_plots_paths[name])
             else: path = self.ionizing_maps[name].path
 
+            # Determine image name
+            image_name = "ionizing___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.ionizing_plots[name], self.config.ionizing_scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.ionizing_plots[name], self.ionizing_scale, self.ionizing_js9_cmap, self.config.zoom)
 
             # Add
             self.ionizing_views[name] = view
@@ -1622,8 +1637,11 @@ class AllMapsPageGenerator(MapsComponent):
             if self.config.view_png: path = self.relative_path(self.dust_plots_paths[name])
             else: path = self.dust_maps[name].path
 
+            # Determine image name
+            image_name = "dust___" + name
+
             # Make the view
-            view = self.make_view(name, path, self.dust_plots[name], self.config.scale, self.config.colormap, self.config.zoom)
+            view = self.make_view(image_name, path, self.dust_plots[name], self.dust_scales["attenuation"], self.dust_js9_cmap, self.config.zoom)
 
             # Add
             self.dust_views[name] = view
@@ -2031,9 +2049,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-            #cell += image
 
             # Add buttons
             for button in self.colour_buttons[name]: cell += html.center(str(button))
@@ -2070,8 +2085,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.ssfr_buttons[name]: cell += html.center(str(button))
@@ -2108,8 +2121,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.tir_buttons[name]: cell += html.center(str(button))
@@ -2146,8 +2157,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.attenuation_buttons[name]: cell += html.center(str(button))
@@ -2184,9 +2193,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-            #cell += image
 
             # Add buttons
             for button in self.old_buttons[name]: cell += html.center(str(button))
@@ -2223,8 +2229,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.young_buttons[name]: cell += html.center(str(button))
@@ -2261,8 +2265,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.ionizing_buttons[name]: cell += html.center(str(button))
@@ -2299,8 +2301,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
 
             # Add buttons
             for button in self.dust_buttons[name]: cell += html.center(str(button))

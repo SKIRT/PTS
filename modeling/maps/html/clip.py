@@ -132,28 +132,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 3. Set the paths
         self.set_paths()
 
-        # 4. Check present maps
+        # 5. Check present maps
         if not self.config.replot: self.check_present()
 
-        # 4. Process the maps
+        # 6. Process the maps
         self.process_maps()
 
-        # 5. Make plots
+        # 7. Make plots
         self.make_plots()
 
-        # Make image mask plots
+        # 8. Make image mask plots
         self.plot_image_masks()
 
-        # 6. Make sliders
+        # 9. Make sliders
         self.make_sliders()
 
-        # 7. Generate the page
+        # 10. Generate the page
         self.generate_page()
 
-        # 8. Writing
+        # 11. Writing
         self.write()
 
-        # 9. Show
+        # 12. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------

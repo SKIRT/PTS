@@ -121,31 +121,31 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Filter the images
+        # 2. Filter the images
         if self.config.filter: self.filter_maps()
 
-        # Get the image info
+        # 3. Get the image info
         self.get_info()
 
-        # Categorize
+        # 4. Categorize
         self.categorize()
 
-        # Make the thumbnails
+        # 5. Make the thumbnails
         if self.config.thumbnails: self.make_thumbnails()
 
-        # Make the previews
+        # 6. Make the previews
         if self.config.previews: self.make_previews()
 
-        # Make the tables
+        # 7. Make the tables
         self.make_tables()
 
-        # Generate the page
+        # 8. Generate the page
         self.generate_page()
 
-        # 5. Writing
+        # 9. Writing
         self.write()
 
-        # Show
+        # 10. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------

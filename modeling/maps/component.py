@@ -4045,7 +4045,7 @@ class MapsComponent(MapMakerBase):
         :return:
         """
 
-        return "jet"
+        return "rainbow"
 
     # -----------------------------------------------------------------
 
@@ -4393,7 +4393,8 @@ class MapsComponent(MapMakerBase):
         :return:
         """
 
-        return "sqrt"
+        #return "sqrt"
+        return "log"
 
     # -----------------------------------------------------------------
 

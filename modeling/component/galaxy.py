@@ -759,6 +759,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_significance_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.has_significance_levels
+
+    # -----------------------------------------------------------------
+
+    @property
     def significance_levels(self):
 
         """
