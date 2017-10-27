@@ -820,15 +820,18 @@ class MapsCollection(object):
 
     # MAPS
 
-    def get_colour_map_paths(self, flatten=False):
+    def get_colour_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_colours_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_colours_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -858,15 +861,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_map_paths(self, flatten=False):
+    def get_ssfr_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_ssfr_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_ssfr_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -896,15 +902,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_tir_map_paths(self, flatten=False):
+    def get_tir_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_tir_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_tir_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -936,15 +945,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_attenuation_map_paths(self, flatten=False):
+    def get_attenuation_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_attenuation_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_attenuation_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -987,15 +999,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_old_map_paths(self, flatten=False):
+    def get_old_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_old_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_old_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -1025,15 +1040,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_young_map_paths(self, flatten=False):
+    def get_young_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_young_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_young_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -1063,15 +1081,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_ionizing_map_paths(self, flatten=False):
+    def get_ionizing_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_ionizing_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_ionizing_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -1101,15 +1122,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_dust_map_paths(self, flatten=False):
+    def get_dust_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_dust_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_dust_name, flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -1906,7 +1930,7 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_map_paths_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None):
+    def get_map_paths_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None, startswith=None, factors=None):
 
         """
         This function ...
@@ -1915,11 +1939,13 @@ class MapsCollection(object):
         :param method:
         :param not_method:
         :param not_methods:
+        :param startswith:
+        :param factors:
         :return:
         """
 
-        if self.from_analysis: return get_map_paths_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
-        else: return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
+        if self.from_analysis: return get_map_paths_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods, startswith=startswith, factors=factors)
+        else: return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -2430,7 +2456,7 @@ StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollecti
 # -----------------------------------------------------------------
 
 def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=None, methods=None, not_method=None,
-                                    not_methods=None, factors=None):
+                                    not_methods=None, factors=None, startswith=None):
 
     """
     This function ...
@@ -2442,6 +2468,7 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
     :param not_method:
     :param not_methods:
     :param factors:
+    :param startswith:
     :return:
     """
 
@@ -2451,7 +2478,7 @@ def get_map_paths_sub_name_analysis(analysis_run, name, flatten=False, method=No
 
     # Get map paths
     return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method,
-                                     not_methods=not_methods, factors=factors)
+                                     not_methods=not_methods, factors=factors, startswith=startswith)
 
 # -----------------------------------------------------------------
 
@@ -2479,7 +2506,7 @@ def get_extra_map_paths_sub_name_analysis(analysis_run, name, flatten=False, met
 # -----------------------------------------------------------------
 
 def get_map_paths_sub_name(environment, name, flatten=False, method=None, methods=None, not_method=None,
-                           not_methods=None, factors=None):
+                           not_methods=None, factors=None, startswith=None):
 
     """
     This function ...
@@ -2491,6 +2518,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, method
     :param not_method:
     :param not_methods:
     :param factors:
+    :param startswith:
     :return:
     """
 
@@ -2500,7 +2528,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, method
 
     # Get map paths
     return get_map_paths_in_sub_path(sub_path, flatten=flatten, method=method, methods=methods, not_method=not_method,
-                                     not_methods=not_methods, factors=factors)
+                                     not_methods=not_methods, factors=factors, startswith=startswith)
 
 # -----------------------------------------------------------------
 
@@ -2527,7 +2555,7 @@ def get_extra_map_paths_sub_name(environment, name, flatten=False, method=None, 
 
 # -----------------------------------------------------------------
 
-def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None, factors=None):
+def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None, not_method=None, not_methods=None, factors=None, startswith=None):
 
     """
     This function ...
@@ -2538,6 +2566,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
     :param not_method:
     :param not_methods:
     :param factors:
+    :param startswith:
     :return:
     """
 
@@ -2567,7 +2596,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
             if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
 
             # Return the file paths
-            return fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings)
+            return fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings, startswith=startswith)
 
         # Method not specified
         else:
@@ -2587,7 +2616,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
                 if not_methods is not None and method_name in not_methods: continue
 
                 # Get dictionary of file paths, but only FITS files
-                files = fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings)
+                files = fs.files_in_path(method_path, returns="dict", extension="fits", endswith=factor_strings, startswith=startswith)
 
                 # Flatten into a one-level dict
                 if flatten:
@@ -2612,7 +2641,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
         if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
 
         # Return the file paths
-        return fs.files_in_path(sub_path, returns="dict", extension="fits", endswith=factor_strings)
+        return fs.files_in_path(sub_path, returns="dict", extension="fits", endswith=factor_strings, startswith=startswith)
 
     # Nothing present
     else: return dict()

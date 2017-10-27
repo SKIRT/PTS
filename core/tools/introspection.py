@@ -2304,14 +2304,17 @@ def is_existing_pts_module(module_path):
 
 # -----------------------------------------------------------------
 
-def get_class(module_path, class_name):
+def get_class(module_path, class_name, real_path=False):
 
     """
     This function ...
     :param module_path
     :param class_name:
+    :param real_path:
     :return:
     """
+
+    if real_path: module_path = "pts." + module_path.split(pts_package_dir)[1][1:-3].replace("/", ".")
 
     #print(module_path)
     #module = import_module(module_path)
@@ -2583,5 +2586,116 @@ def execute_lines(lines, namespace):
     """
 
     for line in lines: exec(line, namespace)
+
+# -----------------------------------------------------------------
+
+def get_module_paths_in_subproject(subproject):
+
+    """
+    This function ...
+    :param subproject:
+    :return:
+    """
+
+    # Determine subproject path
+    subproject_path = pts_subproject_dir(subproject)
+
+    # Loop over the module files
+    return fs.files_in_path(subproject_path, extension="py", recursive=True)
+
+# -----------------------------------------------------------------
+
+def find_class(class_name, subproject=None):
+
+    """
+    This fucntion ...
+    :param class_name:
+    :param subproject:
+    :return:
+    """
+
+    from . import strings
+
+    if subproject is not None: subproject_list = [subproject]
+    else: subproject_list = subprojects
+
+    # All module paths
+    module_paths = []
+
+    # Loop over the PTS subprojects
+    for subproject in subproject_list: module_paths.extend(get_module_paths_in_subproject(subproject))
+
+    # Alphabetize
+    alphabetized = strings.alphabetize(module_paths, split_at="/", splitted_index=-1, include_all=True)
+
+    # Start searching at letter of the class name
+    class_name_letter = class_name.lower()[0]
+    for path in alphabetized[class_name_letter]:
+
+        # Read lines
+        for line in fs.read_lines(path):
+
+            if not line.startswith("class " + class_name + "("): continue
+            else: return path
+
+    # Loop over the other letters
+    for letter in alphabetized:
+
+        # Already had this one
+        if letter == class_name_letter: continue
+
+        # Loop over the paths
+        for path in alphabetized[letter]:
+
+            # Read lines
+            for line in fs.read_lines(path):
+
+                #
+                if not line.startswith("class " + class_name + "("): continue
+                else: return path
+
+    # Not found
+    return None
+
+# -----------------------------------------------------------------
+
+def load_class(class_name, subproject=None):
+
+    """
+    This function ...
+    :param class_name:
+    :param subproject:
+    :return:
+    """
+
+    # Find module
+    module_path = find_class(class_name, subproject=subproject)
+    if module_path is None: raise ValueError("Class '" + class_name + "' not found")
+
+    # Get the class
+    return get_class(module_path, class_name, real_path=True)
+
+# -----------------------------------------------------------------
+
+def load_object(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    class_name = args[0]
+    subproject = kwargs.pop("subproject", None)
+
+    # Get the class
+    cls = load_class(class_name, subproject=subproject)
+
+    # Create object
+    obj = cls(*args[1:], **kwargs)
+
+    # Return the object
+    return obj
 
 # -----------------------------------------------------------------

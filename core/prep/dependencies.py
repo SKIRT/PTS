@@ -40,10 +40,12 @@ class DependenciesChecker(Configurable):
         # Call the constructor of the base class
         super(DependenciesChecker, self).__init__(*args, **kwargs)
 
+        # Dependencies
         self.dependencies = None
         self.dependencies_for_subproject = dict()
         self.data = dict()
 
+        # Present / not present
         self.present_dependencies = []
         self.not_present_dependencies = []
 
@@ -60,16 +62,16 @@ class DependenciesChecker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get
+        # 2. Get the dependencies
         self.get_dependencies()
 
-        # Check
+        # 3. Check with installed packages
         self.check_dependencies()
 
-        # Show
+        # 4. Show
         if self.config.show: self.show()
 
-        # Write
+        # 5. Write
         if self.config.write: self.write()
 
     # -----------------------------------------------------------------

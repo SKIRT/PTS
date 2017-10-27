@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import re
 import difflib
+from collections import defaultdict
 from textwrap import wrap
 from string import ascii_lowercase
 import itertools
@@ -524,6 +525,7 @@ def split_in_lines(string, length=60, as_list=False):
 
     """
     This function ...
+    :param string:
     :param length:
     :param as_list:
     :return:
@@ -1180,5 +1182,46 @@ def hash_string(string):
     import hashlib
     hash_object = hashlib.md5(string)
     return hash_object.hexdigest()
+
+# -----------------------------------------------------------------
+
+def alphabetize(strings, index=0, splitted_index=None, split_at=" ", include_all=False):
+
+    """
+    Thisn function ...
+    :param strings:
+    :param index:
+    :param splitted_index:
+    :param split_at:
+    :param include_all:
+    :return:
+    """
+
+    # Initialize dictionary
+    result = defaultdict(list)
+
+    # Include all letters?
+    if include_all:
+        for letter in alphabet: result[letter] = []
+
+    # Loop over the strings
+    for string in strings:
+
+        if splitted_index is not None:
+
+            splitted = string.split(split_at)
+            original_string = string
+            string = splitted[splitted_index]
+
+        else: original_string = string
+
+        # Get the character
+        character = string[index]
+
+        # Add string to the dictionary
+        result[character].append(original_string)
+
+    # Return the resulting dictionary
+    return result
 
 # -----------------------------------------------------------------

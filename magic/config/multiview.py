@@ -13,13 +13,6 @@ from pts.magic.config.view import definition
 
 # -----------------------------------------------------------------
 
-default_scale = "log"
-#default_colormap = "viridis"
-default_colormap = "sls"
-default_zoom = "toFit"
-
-# -----------------------------------------------------------------
-
 default_extensions = ["fits"]
 
 # -----------------------------------------------------------------
@@ -54,5 +47,9 @@ definition.add_flag("dynamic", "create the viewers dynamically", False)
 # -----------------------------------------------------------------
 
 definition.add_flag("info", "add info about the images", False)
+
+# -----------------------------------------------------------------
+
+definition.add_optional("max_ncharacters_title", "positive_integer", "maximum number of characters in the titles before breaking line", 45)
 
 # -----------------------------------------------------------------

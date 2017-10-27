@@ -60,6 +60,9 @@ user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 # print preview
 print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
 
+# Account page
+account_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
+
 # -----------------------------------------------------------------
 
 # http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv

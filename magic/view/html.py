@@ -85,7 +85,7 @@ js9_elements = """
 
 scales = ["log", "linear", "histeq", "power", "sqrt", "squared", "asinh", "sinh"]
 colormaps = ["grey", "heat", "cool", "viridis", "magma", "sls", "a", "b", "red", "green", "blue", "inferno", "plasma", "i8", "aips0", "bb", "he", "hsv", "rainbow", "standard", "staircase", "color"]
-zooms = ["toFit", "in", "out"]
+zooms = ["toFit", "in", "out", "x2", "/2", "x4", "/4", "toFit;in", "toFit;out", "toFit;x2", "toFit;/2", "toFit;x4", "toFit;/4"]
 
 # -----------------------------------------------------------------
 
@@ -117,11 +117,17 @@ class JS9Image(object):
 
     # -----------------------------------------------------------------
 
-    def load(self, regions=None):
+    def load(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None):
 
         """
         This function ...
         :param regions:
+        :param zoom:
+        :param pan:
+        :param scale:
+        :param interval:
+        :param colormap:
+        :param contrast_bias:
         :return:
         """
 
@@ -134,22 +140,73 @@ class JS9Image(object):
 
         # Add regions
         if regions is not None:
+
+            from ..region.region import Region
+            from ..region.list import RegionList
+
+            if isinstance(regions, Region):
+                load_region = make_load_region(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
+            elif isinstance(regions, RegionList):
+                load_region = make_load_regions(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
+            else: raise ValueError("Invalid region or region list")
+
             string += "\n"
-            #string += 'function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}'
-            #string += "\n"
-            #string += "sleep(5000);"
-            string += "var region_id = JS9.AddRegions('" + regions + "'"
-            #string += "setTimeout(JS9.AddRegions, 5000, '" + regions + "'"
-            #if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += load_region
+
+        # Color map
+        if colormap is not None:
+
+            string += "\n"
+            string += 'JS9.SetColormap("' + colormap + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
             string += ');'
-            #string += "window.alert(region_id);"
+
+        # Contrast and bias
+        if contrast_bias is not None:
+
+            string += "\n"
+            string += 'JS9.SetColormap("' + str(contrast_bias[0]) + "," + str(contrast_bias[1]) + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+
+        # Scale
+        if scale is not None:
+
+            string += "\n"
+            string += 'JS9.SetScale("' + scale + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+
+        # Interval
+        if interval is not None:
+
+            string += "\n"
+            string += 'JS9.SetScale("' + str(interval[0]) + "," + str(interval[1]) + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+
+        # Zoom factor
+        if zoom is not None:
+
+            string += "\n"
+            string += 'JS9.SetZoom("' + zoom + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+
+        # Pan position
+        if pan is not None:
+
+            string += "\n"
+            string += 'JS9.SetPan("' + str(pan[0]) + "," + str(pan[1]) + '"'
+            if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
 
         # Return
         return string
 
     # -----------------------------------------------------------------
 
-    def preload(self, regions=None):
+    def preload(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None):
 
         """
         This function ...
@@ -166,15 +223,18 @@ class JS9Image(object):
 
         # Add regions
         if regions is not None:
+
+            from ..region.region import Region
+            from ..region.list import RegionList
+
+            if isinstance(regions, Region):
+                load_region = make_load_region(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
+            elif isinstance(regions, RegionList):
+                load_region = make_load_regions(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
+            else: raise ValueError("Invalid region or region list")
+
             string += "\n"
-           # string += 'function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}'
-           # string += "\n"
-            #string += "sleep(5000);"
-            string += "var region_id = JS9.AddRegions('" + regions + "'"
-            #string += "setTimeout(JS9.AddRegions, 5000, '" + regions + "'"
-            #if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
-            #string += "window.alert(region_id);"
+            string += load_region
 
         # Return
         return string
@@ -187,7 +247,7 @@ class JS9Loader(object):
     This function ...
     """
 
-    def __init__(self, text, image, button=False, regions=None):
+    def __init__(self, text, image, button=False, regions=None, colormap=None, contrast_bias=None, scale=None, interval=None, zoom=None, pan=None):
 
         """
         This function ...
@@ -195,6 +255,11 @@ class JS9Loader(object):
         :param image:
         :param button:
         :param regions:
+        :param colormap:
+        :param contrast_bias:
+        :param scale:
+        :param zoom:
+        :param pan:
         """
 
         # The text for the link
@@ -209,10 +274,18 @@ class JS9Loader(object):
         # Regions
         self.regions = regions
 
+        # To be set during load
+        self.colormap = colormap
+        self.contrast_bias = contrast_bias
+        self.scale = scale
+        self.interval = interval
+        self.zoom = zoom
+        self.pan = pan
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_path(cls, text, name, path, settings=None, display=None, button=False, regions=None):
+    def from_path(cls, text, name, path, settings=None, display=None, button=False, regions=None, colormap=None, contrast_bias=None, scale=None, interval=None, zoom=None, pan=None):
 
         """
         This function ...
@@ -223,6 +296,12 @@ class JS9Loader(object):
         :param button:
         :param name:
         :param regions:
+        :param colormap:
+        :param contrast_bias:
+        :param scale:
+        :param interval:
+        :param zoom:
+        :param pan:
         :return:
         """
 
@@ -230,7 +309,7 @@ class JS9Loader(object):
         image = JS9Image(name, path, settings, display)
 
         # Return
-        return cls(text, image, button=button, regions=regions)
+        return cls(text, image, button=button, regions=regions, colormap=colormap, contrast_bias=contrast_bias, scale=scale, interval=interval, zoom=zoom, pan=pan)
 
     # -----------------------------------------------------------------
 
@@ -242,10 +321,12 @@ class JS9Loader(object):
         """
 
         if self.button:
+
             buttonid = self.image.name + "Loader"
-            load_html = self.image.load(regions=self.regions)
+            load_html = self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan)
             return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
-        else: return "<a href='javascript:" + self.image.load(regions=self.regions) + "'>" + self.text + "</a>"
+
+        else: return "<a href='javascript:" + self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan) + "'>" + self.text + "</a>"
 
 # -----------------------------------------------------------------
 
@@ -264,19 +345,40 @@ class JS9Preloader(object):
         self.images = []
         self.regions = []
 
+        # For during load
+        self.colormaps = []
+        self.contrast_biases = []
+        self.scales = []
+        self.intervals = []
+        self.zooms = []
+        self.pans = []
+
     # -----------------------------------------------------------------
 
-    def add_image(self, image, regions=None):
+    def add_image(self, image, regions=None, colormap=None, contrast_bias=None, scale=None, interval=None, zoom=None, pan=None):
 
         """
         This function ...
         :param image:
         :param regions:
+        :param colormap:
+        :param contrast_bias:
+        :param scale:
+        :param interval:
+        :param zoom:
+        :param pan:
         :return:
         """
 
         self.images.append(image)
         self.regions.append(regions)
+
+        self.colormaps.append(colormap)
+        self.contrast_biases.append(contrast_bias)
+        self.scales.append(scale)
+        self.intervals.append(interval)
+        self.zooms.append(zoom)
+        self.pans.append(pan)
 
     # -----------------------------------------------------------------
 
@@ -292,19 +394,26 @@ class JS9Preloader(object):
 
     # -----------------------------------------------------------------
 
-    def add_path(self, name, path, settings=None, display=None, regions=None):
+    def add_path(self, name, path, settings=None, display=None, regions=None, colormap=None, contrast_bias=None, scale=None, interval=None, zoom=None, pan=None):
 
         """
         This function ...
+        :param name:
         :param path:
-        :param kwargs:
+        :param settings:
         :param display:
         :param regions:
+        :param colormap:
+        :param contrast_bias:
+        :param scale:
+        :param interval:
+        :param zoom:
+        :param pan:
         :return:
         """
 
         image = JS9Image(name, path, settings, display)
-        self.add_image(image, regions=regions)
+        self.add_image(image, regions=regions, colormap=colormap, contrast_bias=contrast_bias, scale=scale, interval=interval, zoom=zoom, pan=pan)
         return image
 
     # -----------------------------------------------------------------
@@ -321,7 +430,10 @@ class JS9Preloader(object):
         string += '{\n'
 
         # Preload all images
-        for image, regions in zip(self.images, self.regions): string += "    " + image.preload(regions=regions) + "\n"
+        for image, regions, colormap, contrast_bias, scale, interval, zoom, pan in zip(self.images, self.regions, self.colormaps, self.contrast_biases, self.scales, self.intervals, self.zooms, self.pans):
+
+            # Add line to load
+            string += "    " + image.preload(regions=regions, colormap=colormap, contrast_bias=contrast_bias, scale=scale, interval=interval, zoom=zoom, pan=pan) + "\n"
 
         string += "}\n"
         string += "</script>\n"
@@ -337,7 +449,8 @@ class JS9Spawner(object):
 
     def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None,
                  add_placeholder=True, background_color="white", replace=False, resize=True, scrolling=True,
-                 center=True, replace_nans=False, replace_infs=False):
+                 center=True, replace_nans=False, replace_infs=False, colormap=None, contrast_bias=None, scale=None,
+                 interval=None, zoom=None, pan=None):
 
         """
         This function ...
@@ -366,6 +479,14 @@ class JS9Spawner(object):
         self.replace_nans = replace_nans
         self.replace_infs = replace_infs
 
+        # For during load
+        self.colormap = colormap
+        self.contrast_bias = contrast_bias
+        self.scale = scale
+        self.interval = interval
+        self.zoom = zoom
+        self.pan = pan
+
         # Create view
         self.view = JS9Viewer(self.image.display, width=width, height=height, resize=resize, scrolling=scrolling, center=center)
 
@@ -374,7 +495,8 @@ class JS9Spawner(object):
     @classmethod
     def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None,
                   height=None, regions=None, add_placeholder=True, background_color="white", replace=False,
-                  resize=True, scrolling=True, center=True, replace_nans=False, replace_infs=False):
+                  resize=True, scrolling=True, center=True, replace_nans=False, replace_infs=False,
+                  colormap=None, contrast_bias=None, scale=None, interval=None, zoom=None, pan=None):
 
         """
         This function ...
@@ -396,6 +518,12 @@ class JS9Spawner(object):
         :param center:
         :param replace_nans:
         :param replace_infs:
+        :param colormap:
+        :param contrast_bias:
+        :param scale:
+        :param interval:
+        :param zoom:
+        :param pan:
         :return:
         """
 
@@ -408,7 +536,8 @@ class JS9Spawner(object):
         # Create
         return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height,
                    regions=regions, add_placeholder=add_placeholder, background_color=background_color, replace=replace,
-                   resize=resize, scrolling=scrolling, center=center, replace_nans=replace_nans, replace_infs=replace_infs)
+                   resize=resize, scrolling=scrolling, center=center, replace_nans=replace_nans, replace_infs=replace_infs,
+                   colormap=colormap, contrast_bias=contrast_bias, scale=scale, interval=interval, zoom=zoom, pan=pan)
 
     # -----------------------------------------------------------------
 
@@ -547,7 +676,7 @@ class JS9Spawner(object):
         code += "\n"
 
         # Add load image code
-        code += self.image.load(regions=self.regions)
+        code += self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan)
         #code += self.image.load()
         code += "\n"
 
@@ -1018,6 +1147,16 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
     This function ...
     :param region:
     :param display:
+    :param changeable:
+    :param movable:
+    :param resizable:
+    :param rotatable:
+    :param removable:
+    :param zoomable:
+    :param lock_x:
+    :param lock_y:
+    :param lock_rotation:
+    :param quote_character:
     :return:
     """
 
@@ -1251,7 +1390,7 @@ def make_load_regions_function(name, regions, display=None):
 
 # -----------------------------------------------------------------
 
-def make_synchronize_regions_script(indicator_id, display_ids, ellipses, ndecimals=3):
+def make_synchronize_regions_script(indicator_id, display_ids, ellipses, ndecimals=3, start_factor=1.):
 
     """
     This function ...
@@ -1259,14 +1398,15 @@ def make_synchronize_regions_script(indicator_id, display_ids, ellipses, ndecima
     :param display_ids:
     :param ellipses:
     :param ndecimals:
+    :param start_factor:
     :return:
     """
 
-    return "<script>\n" + make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=ndecimals) + "</script>"
+    return "<script>\n" + make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=ndecimals, start_factor=start_factor) + "</script>"
 
 # -----------------------------------------------------------------
 
-def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
+def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, start_factor=1.):
 
     """
     This function ...
@@ -1274,6 +1414,7 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
     :param display_ids:
     :param ellipses: default, original ellipses:
     :param ndecimals:
+    :param start_factor:
     :return:
     """
 
@@ -1341,8 +1482,8 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
 
     #new_factor = 2.0
 
-    code += "    var x_factor = x_radius / x_radii[lastim.display.id];\n"
-    code += "    var y_factor = y_radius / y_radii[lastim.display.id];\n"
+    code += "    var x_factor = x_radius / x_radii[lastim.display.id] * " + str(start_factor) + ";\n"
+    code += "    var y_factor = y_radius / y_radii[lastim.display.id] * " + str(start_factor) + ";\n"
 
     #code += "   window.alert('factor = ' + String(x_factor));\n"
     #code += "   window.alert('factor = ' + String(y_factor));\n"

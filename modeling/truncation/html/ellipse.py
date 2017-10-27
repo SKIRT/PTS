@@ -146,23 +146,23 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # 6. Make plots
         self.make_plots()
 
-        # Create the regions, for the coordinate systems
+        # 7. Create the regions, for the coordinate systems
         if not self.has_ellipses: self.create_ellipses()
         else: self.load_ellipses()
 
-        # 7. Make the views
+        # 8. Make the views
         self.make_views()
 
-        # 8. Make table
+        # 9. Make table
         self.make_table()
 
-        # 9. Generate the page
+        # 10. Generate the page
         self.generate_page()
 
-        # 10. Writing
+        # 11. Writing
         self.write()
 
-        # 11. Showing
+        # 12. Showing
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -310,6 +310,22 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def default_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # There is already a truncation ellipse
+        if self.has_truncation_ellipse: return self.truncation_factor
+
+        # There is not yet a truncation ellipse
+        else: return 1.0
+
+    # -----------------------------------------------------------------
+
     def make_indicator(self):
 
         """
@@ -320,9 +336,9 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Inform the user
         log.info("Making the truncation factor indicator ...")
 
-        #
+        # Display factor
         self.indicator = "<div id='" + self.indicator_id + "'>\n"
-        self.indicator += "Factor: 1.0\n"
+        self.indicator += "Factor: " + str(self.default_factor) + "\n"
         self.indicator += "</div>"
 
     # -----------------------------------------------------------------
@@ -338,22 +354,16 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         log.info("Getting info for the images ...")
 
         # Loop over the images
-        # for name in self.dataset.names:
         for name, fltr in zip(self.names, self.filters):
 
-            # Get frame
-            #frame = self.dataset.get_frame(name)
-
-            # Get header -> FASTER (?)
+            # Get header
             header = self.dataset.get_header(name)
 
             # Get the image info
             path = self.dataset.get_frame_path(name)
-            #info = get_image_info_strings_from_header(name, header, path=False, image_path=path, name=False)
             info = get_image_info_from_header(name, header, image_path=path, path=False, name=False)
 
             # Make list
-            #code = unordered_list(info)
             code = dictionary(info, key_color=key_color)
 
             # Add
@@ -476,6 +486,44 @@ class TruncationEllipsePageGenerator(TruncationComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_all_plots(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        for name in self.names:
+
+            # Determine path
+            filepath = fs.join(self.plots_path, name + ".png")
+
+            if not fs.is_file(filepath): return False
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_some_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+
+            # Determine path
+            filepath = fs.join(self.plots_path, name + ".png")
+
+            if fs.is_file(filepath): return True
+
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ellipses(self):
 
         """
@@ -483,9 +531,17 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         :return:
         """
 
+        # Regenerate?
+        if self.config.regenerate_ellipses:
+            fs.clear_directory(self.ellipses_path)
+            return False
+
         # Loop over all prepared images, get the images
         for name in self.names:
             if not self.has_ellipse_for_name(name): return False
+
+        if self.has_truncation_ellipse: log.warning("Ellipses present from previous run in ellipses/ directory are used but truncation factor is already determined: make sure the regions correspond to the truncation radius (add --regenerate_ellipses if necessary)")
+
         return True
 
     # -----------------------------------------------------------------
@@ -524,6 +580,9 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Inform the user
         log.info("Creating the ellipses ...")
 
+        # Warning
+        if self.has_some_plots: log.warning("Ellipses are created but some plots are already made: coordinate systems may deviate. Run with --replot to solve issues.")
+
         # Loop over all prepared images, get the images
         for name, fltr in zip(self.names, self.filters):
 
@@ -552,7 +611,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         for name in self.names:
 
             path = self.ellipse_path_for_name(name)
-            #self.ellipses[name] = PixelEllipseRegion.from_file(path)
             self.ellipses[name] = PixelRegionList.from_file(path)[0]
 
     # -----------------------------------------------------------------
@@ -714,9 +772,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
             load_script += load_region
             load_script += "\n\n"
 
-        # Make all loader button
-        #self.all_loader = button(all_loader_name, all_loader_text, load_html, quote_character=strings.other_quote_character(all_loader_text, load_html))
-
         function_name = "loadAllImages"
         self.all_loader = make_script_button(all_loader_name, all_loader_text, load_script, function_name)
 
@@ -762,12 +817,7 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         cells = []
 
         # Loop over the images
-        #for name in self.dataset:
-        #for fltr in self.filters:
         for name, fltr in zip(self.names, self.filters):
-
-            # Get name
-            #name = self.dataset.get_name_for_filter(fltr)
 
             # Add name of the image
             string = center(name + newline)
@@ -806,8 +856,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Inform the user
         log.info("Generating the page ...")
 
-        #settings_body = body_settings if self.config.preload else None
-        #settings_body = body_settings
         settings_body = body_settings if self.preloader.has_images else None
 
         css_paths = css_scripts[:]
@@ -819,34 +867,27 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
 
-        #self.page += "<script>" + other_sleep_function + "</script>"
-
         ellipses = dict()
         for name in self.ellipses:
             display_id = self.display_ids[name]
             ellipses[display_id] = self.ellipses[name]
 
         #ellipse = self.ellipses[name]
-        self.page += make_synchronize_regions_script(self.indicator_id, self.display_ids.values(), ellipses) + "\n"
+        self.page += make_synchronize_regions_script(self.indicator_id, self.display_ids.values(), ellipses, start_factor=self.default_factor) + "\n"
 
-        self.page += center(make_theme_button(classes=classes))
-
-        self.page += newline
+        # Add theme button
+        self.page += center(make_theme_button(classes=classes)) + newline
 
         # Add the indicator
-        self.page += center(self.indicator)
+        self.page += center(self.indicator) + newline
 
-        self.page += newline
-
-        if self.all_loader is not None:
-            self.page += center(str(self.all_loader))
-            self.page += newline
+        # Add all images loader
+        if self.all_loader is not None: self.page += center(str(self.all_loader)) + newline
 
         # Add the table
         self.page += self.table
 
         # Add preloader
-        #if self.config.preload: self.page += self.preloader
         if self.preloader.has_images: self.page += self.preloader
 
     # -----------------------------------------------------------------

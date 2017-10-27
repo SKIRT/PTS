@@ -1683,7 +1683,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nan/infs replacer button
             button_id = self.colour_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.colour_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.colour_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.colour_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.colour_views[name].display_id)
 
@@ -1695,7 +1695,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.colour_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.colour_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.colour_views[name].image_name)
             load_region = make_load_region(self.colour_regions[name], display=self.colour_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1722,7 +1722,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nan/infs replacer button
             button_id = self.ssfr_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.ssfr_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.ssfr_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.ssfr_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.ssfr_views[name].display_id)
 
@@ -1734,7 +1734,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.ssfr_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.ssfr_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.ssfr_views[name].image_name)
             load_region = make_load_region(self.ssfr_regions[name], display=self.ssfr_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1761,7 +1761,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.tir_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.tir_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.tir_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.tir_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.tir_views[name].display_id)
 
@@ -1773,7 +1773,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.tir_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.tir_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.tir_views[name].image_name)
             load_region = make_load_region(self.tir_regions[name], display=self.tir_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1800,7 +1800,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.attenuation_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.attenuation_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.attenuation_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.attenuation_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.attenuation_views[name].display_id)
 
@@ -1812,7 +1812,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.attenuation_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.attenuation_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.attenuation_views[name].image_name)
             load_region = make_load_region(self.attenuation_regions[name], display=self.attenuation_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1839,7 +1839,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.old_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.old_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.old_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.old_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.old_views[name].display_id)
 
@@ -1851,7 +1851,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.old_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.old_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.old_views[name].image_name)
             load_region = make_load_region(self.old_regions[name], display=self.old_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1878,7 +1878,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.young_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.young_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.young_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.young_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.young_views[name].display_id)
 
@@ -1890,7 +1890,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.young_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.young_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.young_views[name].image_name)
             load_region = make_load_region(self.young_regions[name], display=self.young_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1917,7 +1917,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.ionizing_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.ionizing_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.ionizing_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.ionizing_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.ionizing_views[name].display_id)
 
@@ -1929,7 +1929,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.ionizing_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.ionizing_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.ionizing_views[name].image_name)
             load_region = make_load_region(self.ionizing_regions[name], display=self.ionizing_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 
@@ -1956,7 +1956,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create nans/infs replacer button
             button_id = self.dust_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.dust_views[name].image_name
+            replace_function_name = "replace_infs_nans_" + html.make_usable(self.dust_views[name].image_name)
             if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.dust_views[name].display_id)
             else: replace_nans_infs = make_replace_infs_by_nans(self.dust_views[name].display_id)
 
@@ -1968,7 +1968,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Regions button
             region_button_id = self.dust_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.dust_views[name].image_name
+            load_region_function_name = "load_regions_" + html.make_usable(self.dust_views[name].image_name)
             load_region = make_load_region(self.dust_regions[name], display=self.dust_views[name].display_id, movable=False,
                                            rotatable=False, removable=False, resizable=False, quote_character="'")
 

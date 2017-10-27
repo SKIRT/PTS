@@ -661,6 +661,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_truncation_ellipse(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.environment.has_truncation_ellipse
+
+    # -----------------------------------------------------------------
+
+    @property
     def truncation_ellipse(self):
 
         """
@@ -669,6 +681,18 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.truncation_ellipse
+
+    # -----------------------------------------------------------------
+
+    @property
+    def truncation_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.truncation_factor
 
     # -----------------------------------------------------------------
 

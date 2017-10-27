@@ -1398,6 +1398,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.truncation_ellipse_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def truncation_ellipse(self):
 
@@ -1412,6 +1424,25 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # Return the (sky) ellipse
         return ellipse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_factor(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        major_factor = self.truncation_ellipse.major / self.disk_ellipse.major
+        minor_factor = self.truncation_ellipse.minor / self.disk_ellipse.minor
+
+        # Check
+        if not np.isclose(major_factor, minor_factor): raise ValueError("Inconsistent major and minor axes truncation factor")
+
+        # Return the factor
+        return major_factor
 
     # -----------------------------------------------------------------
 

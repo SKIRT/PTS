@@ -9,7 +9,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
+from pts.core.basics.configuration import ConfigurationDefinition
 from pts.magic.view.html import scales, colormaps, zooms
 
 # -----------------------------------------------------------------

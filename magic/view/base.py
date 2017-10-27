@@ -100,7 +100,7 @@ class ImageViewer(Configurable):
 
         # Create nan/infs replacer button
         button_id = image_name + "nansinfs"
-        replace_function_name = "replace_infs_nans_" + image_name
+        replace_function_name = "replace_infs_nans_" + html.make_usable(image_name)
         replace_nans_infs = make_replace_infs_by_nans(display_name)
 
         # Create the button
@@ -119,7 +119,7 @@ class ImageViewer(Configurable):
 
         # Create nan/infs replacer button
         button_id = image_name + "negatives"
-        replace_function_name = "replace_negatives_nans_" + image_name
+        replace_function_name = "replace_negatives_nans_" + html.make_usable(image_name)
         replace_nans_negatives = make_replace_negatives_by_nans(display_name)
 
         # Create the button

@@ -16,13 +16,17 @@ from __future__ import absolute_import, division, print_function
 from .base import ImageViewer
 from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, make_script_button, dictionary, make_usable
 from ...core.basics.log import log
-from .html import body_settings, javascripts, css_scripts, JS9Loader, JS9Spawner, JS9Window, make_load_region
+from .html import body_settings, javascripts, css_scripts, JS9Loader, JS9Spawner, JS9Window, make_load_region, make_load_regions, JS9Preloader
 from .html import make_replace_infs_by_nans_multiple, make_replace_negatives_by_nans_multiple
 from .html import make_spawn_code, add_to_div
 from ...core.tools import filesystem as fs
 from ..tools.info import get_image_info_from_header_file
 from ...core.tools import browser
-from ..region.list import load_as_pixel_region_list
+from ..region.list import load_as_pixel_region_list, RegionList, PixelRegionList, SkyRegionList
+from ..region.region import PixelRegion, SkyRegion, Region
+from ...core.tools import types
+from ..basics.coordinatesystem import CoordinateSystem
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -131,17 +135,33 @@ class MultiImageViewer(ImageViewer):
         super(MultiImageViewer, self).setup(**kwargs)
 
         # Get paths
-        if "paths" in kwargs: self.paths = kwargs.pop("kwargs")
-        elif self.config.image_paths is not None: self.paths = self.set_paths()
+        if kwargs.get("paths", None) is not None: self.paths = kwargs.pop("paths")
+        elif self.config.image_paths is not None: self.set_paths(self.config.image_paths)
         else: self.load_paths()
 
+        # Check: are there images?
+        if not self.has_names: raise ValueError("There are no images")
+
         # Get regions
-        if "regions" in kwargs: self.regions = kwargs.pop("regions")
+        if kwargs.get("regions", None) is not None:
+
+            regions = kwargs.pop("regions")
+            if isinstance(regions, RegionList): self.set_regions(regions)
+            elif types.is_dictionary(regions): self.regions = regions
+            else: raise ValueError("Invalid type for 'regions': must be region list or dictionary of region lists")
+
+        # Single region is passed
+        elif kwargs.get("region", None) is not None: self.set_region(kwargs.pop("region"))
+
+        # Load regions from file
         else: self.load_regions()
+
+        # Initialize preloader if necessary
+        if self.preload_any: self.preloader = JS9Preloader()
 
     # -----------------------------------------------------------------
 
-    def set_paths(self):
+    def set_paths(self, image_paths):
 
         """
         THis function ...
@@ -155,10 +175,13 @@ class MultiImageViewer(ImageViewer):
         self.paths = dict()
 
         # Loop over the paths
-        for path in self.config.image_paths:
+        for path in image_paths:
 
             # Get name
             name = fs.strip_extension(fs.name(path))
+
+            # Debugging
+            log.debug("Processing '" + name + "' image ...")
 
             # Set
             self.paths[name] = path
@@ -180,6 +203,73 @@ class MultiImageViewer(ImageViewer):
                                           contains=self.config.contains, not_contains=self.config.not_contains,
                                           exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
                                           returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def set_regions(self, region_list):
+
+        """
+        This function ...
+        :param region_list:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the regions ...")
+
+        # Initialize
+        self.regions = dict()
+
+        # Loop over the images
+        for name in self.names:
+
+            # Debugging
+            log.debug("Processing '" + name + "' image regions ...")
+
+            # Check type
+            if isinstance(region_list, PixelRegionList): regions = region_list
+            elif isinstance(region_list, SkyRegionList):
+                wcs = self.get_coordinate_system(name)
+                regions = region_list.to_pixel(wcs)
+            else: raise ValueError("Invalid argument")
+
+            # Set the regions
+            self.regions[name] = regions
+
+    # -----------------------------------------------------------------
+
+    def set_region(self, region):
+
+        """
+        This function ...
+        :param region:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the region ...")
+
+        # Initialize
+        self.regions = dict()
+
+        # Loop over the images
+        for name in self.names:
+
+            # Debugging
+            log.debug("Processing '" + name + "' image region ...")
+
+            # Check type
+            if isinstance(region, PixelRegion): pixel_region = region
+            elif isinstance(region, SkyRegion):
+                wcs = self.get_coordinate_system(name)
+                pixel_region = region.to_pixel(wcs)
+            else: raise ValueError("Invalid argument")
+
+            # Create pixel region list
+            regions = PixelRegionList.single(pixel_region)
+
+            # Set
+            self.regions[name] = regions
 
     # -----------------------------------------------------------------
 
@@ -224,6 +314,21 @@ class MultiImageViewer(ImageViewer):
             # Set
             self.regions[name] = regions
 
+        # Reset to None
+        if len(self.regions) == 0: self.regions = None
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.paths[name])
+
     # -----------------------------------------------------------------
 
     @property
@@ -247,6 +352,30 @@ class MultiImageViewer(ImageViewer):
         """
 
         return self.paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nnames > 0
 
     # -----------------------------------------------------------------
 
@@ -277,6 +406,47 @@ class MultiImageViewer(ImageViewer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def base_zoom(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.zoom.split(";")[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def next_zoom(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if ";" in self.config.zoom: return self.config.zoom.split(";")[1]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preload_any(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.config.preload_all: return True
+        else:
+            for name in self.names:
+                if self.config.preload is not None and name in self.config.preload: return True
+            return False
+
+    # -----------------------------------------------------------------
+
     def make_views(self):
 
         """
@@ -302,7 +472,7 @@ class MultiImageViewer(ImageViewer):
             settings = dict()
             settings["scale"] = self.config.scale
             settings["colormap"] = self.config.colormap
-            settings["zoom"] = self.config.zoom
+            settings["zoom"] = self.base_zoom
             # settings["fits2png"] = "true"
 
             # Get regions
@@ -314,7 +484,7 @@ class MultiImageViewer(ImageViewer):
 
                 # Add to preloader
                 image = self.preloader.add_path(name, path, settings=settings, display=display_name,
-                                                regions=regions_for_loader)
+                                                regions=regions_for_loader, zoom=self.next_zoom)
 
                 # Create window
                 self.windows[name] = JS9Window(display_name, width=self.config.width, height=self.config.height,
@@ -334,7 +504,7 @@ class MultiImageViewer(ImageViewer):
                 self.loaders[name] = JS9Spawner.from_path("Load image", name, path, settings=settings, button=True,
                                                           menubar=self.config.menubar, colorbar=self.config.colorbar,
                                                           regions=regions_for_loader, add_placeholder=False,
-                                                          background_color=background_color)
+                                                          background_color=background_color, zoom=self.next_zoom)
                 display_id = self.loaders[name].display_id
 
                 self.windows[name] = self.loaders[name].placeholder
@@ -350,7 +520,8 @@ class MultiImageViewer(ImageViewer):
 
                 # Create loader
                 self.loaders[name] = JS9Loader.from_path("Load image", name, path, display=display_name,
-                                                         settings=settings, button=True, regions=regions_for_loader)
+                                                         settings=settings, button=True, regions=regions_for_loader,
+                                                         zoom=self.next_zoom)
 
                 # Create window
                 self.windows[name] = JS9Window(display_name, width=self.config.width, height=self.config.height,
@@ -367,14 +538,20 @@ class MultiImageViewer(ImageViewer):
             # Set display ID
             self.display_ids[name] = display_id
 
+            # Add region
             if region is not None:
 
                 # Regions button
                 region_button_id = display_name + "regionsbutton"
                 load_region_function_name = "load_regions_" + display_name
-                # load_region = make_load_region_function(load_region_function_name, regions, display=None)
-                load_region = make_load_region(region, display=display_id, movable=False, rotatable=False,
-                                               removable=False, resizable=True, quote_character="'")
+
+                if isinstance(region, Region):
+                    load_region = make_load_region(region, display=display_id, movable=False, rotatable=False,
+                                                   removable=False, resizable=True, quote_character="'")
+                elif isinstance(region, RegionList):
+                    load_region = make_load_regions(region, display=display_id, movable=False, rotatable=False,
+                                                    removable=False, resizable=True, quote_character="'")
+                else: raise ValueError("Invalid region or region list")
 
                 region_loads[display_id] = load_region
 
@@ -382,10 +559,6 @@ class MultiImageViewer(ImageViewer):
                 self.region_loaders[name] = make_script_button(region_button_id, "Load regions", load_region,
                                                                load_region_function_name)
 
-            # CREATE ALL IMAGES LOADER
-            # buttonid = self.image.name + "Loader"
-            # load_html = self.image.load(regions=self.regions)
-            # return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
 
         all_loader_name = "allimagesloaderbutton"
         all_loader_text = "Load all images"
@@ -415,7 +588,6 @@ class MultiImageViewer(ImageViewer):
                 load_script += add_to_div(spawn_div_name, spawn_code)
 
                 # Add DIV to JS9
-                # load_script += "\n"
                 load_script += "JS9.AddDivs('" + display_id + "');\n"
 
             # Load image and region code
@@ -488,8 +660,17 @@ class MultiImageViewer(ImageViewer):
         # Loop over the images
         for name in self.names:
 
+            string = ""
+
+            # Split the name of the image over multiple lines
+            if len(name) > self.config.max_ncharacters_title:
+
+                lines = strings.split_in_lines(name, length=self.config.max_ncharacters_title, as_list=True)
+                for line in lines: string += center(line)
+                string += newline
+
             # Add name of the image
-            string = center(name + newline)
+            else: string += center(name) + newline
 
             # Add loader if necessary
             if name in self.loaders:

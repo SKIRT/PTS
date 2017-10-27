@@ -1721,6 +1721,21 @@ class PixelRegionList(RegionList):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def single(cls, region):
+
+        """
+        Thisfunction ...
+        :param region:
+        :return:
+        """
+
+        new = cls()
+        new.append(region)
+        return new
+
+    # -----------------------------------------------------------------
+
     def append(self, region):
 
         """

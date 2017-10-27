@@ -318,6 +318,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_colour_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        Thisf unction ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_colour_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
+
+    # -----------------------------------------------------------------
+
     def get_colour_maps(self, flatten=False, framelist=False):
 
         """
@@ -383,6 +398,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
         # Return
         return ssfrs, ssfrs_origins, ssfrs_methods, ssfrs_nans
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_ssfr_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -454,6 +484,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_tir_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_tir_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
+
+    # -----------------------------------------------------------------
+
     def get_tir_maps(self, flatten=False, framelist=False, methods=None):
 
         """
@@ -479,6 +524,21 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_tir_nans(flatten=flatten, framelist=framelist, methods=methods)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_attenuation_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -521,6 +581,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_old_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        Thisf unction ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_old_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
+
+    # -----------------------------------------------------------------
+
     def get_old_maps(self, flatten=False, framelist=False):
 
         """
@@ -544,6 +619,21 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_old_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_young_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -573,6 +663,21 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_ionizing_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_ionizing_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
+
+    # -----------------------------------------------------------------
+
     def get_ionizing_maps(self, flatten=False, framelist=False):
 
         """
@@ -596,6 +701,21 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         return self.collection.get_ionizing_nans(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_paths(self, flatten=False, method=None, startswith=None, factors=None):
+
+        """
+        Thisf ucntion ...
+        :param flatten:
+        :param method:
+        :param startswith:
+        :param factors:
+        :return:
+        """
+
+        return self.collection.get_dust_map_paths(flatten=flatten, method=method, startswith=startswith, factors=factors)
 
     # -----------------------------------------------------------------
 
@@ -3191,6 +3311,100 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def get_component_old_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        paths = dict()
+
+        # Flattened?
+        if flatten:
+
+            # Add old
+            old_paths = self.get_component_old_map_paths()
+            for name in old_paths:
+                new_name = "old_" + name
+                paths[new_name] = old_paths[name]
+
+            # Add young
+            young_paths = self.get_component_young_map_paths()
+            for name in young_paths:
+                new_name = "young_" + name
+                paths[new_name] = young_paths[name]
+
+            # Add ionizing
+            ionizing_paths = self.get_component_ionizing_map_paths()
+            for name in ionizing_paths:
+                new_name = "ionizing_" + name
+                paths[new_name] = ionizing_paths[name]
+
+            # Add dust
+            dust_paths = self.get_component_dust_map_paths()
+            for name in dust_paths:
+                new_name = "dust_" + name
+                paths[new_name] = dust_paths[name]
+
+        # Not flattened
+        else:
+
+            paths["old"] = self.get_component_old_map_paths()
+            paths["young"] = self.get_component_young_map_paths()
+            paths["ionizing"] = self.get_component_ionizing_map_paths()
+            paths["dust"] = self.get_component_dust_map_paths()
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
     @property
     def old_component_maps_path(self):
 
@@ -3723,6 +3937,30 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colours_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_js9_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
     # @property
     # def scales(self):
     #
@@ -3765,7 +4003,7 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the colour maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.colours_scale, share_limits=False, format=self.config.format, clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.colours_scale, cmap=self.colours_cmap, share_limits=False, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
         if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
@@ -3792,6 +4030,18 @@ class MapsComponent(MapMakerBase):
 
         """
         Thisn function ...
+        :return:
+        """
+
+        return "jet"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_js9_cmap(self):
+
+        """
+        This function ...
         :return:
         """
 
@@ -3882,6 +4132,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def tir_js9_cmap(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "viridis"
+
+    # -----------------------------------------------------------------
+
     def plot_tir(self, maps=True, contours=True, profiles=True, nans=True):
 
         """
@@ -3924,6 +4186,18 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
+        :return:
+        """
+
+        return "cool"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_js9_cmap(self):
+
+        """
+        Thisj function ...
         :return:
         """
 
@@ -3997,6 +4271,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_js9_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "heat"
+
+    # -----------------------------------------------------------------
+
     def plot_old(self, maps=True, contours=True, profiles=True, nans=True):
 
         """
@@ -4062,6 +4348,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def dust_js9_cmap(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "a"
+
+    # -----------------------------------------------------------------
+
     def plot_dust(self, maps=True, contours=True, profiles=True, nans=True):
 
         """
@@ -4101,6 +4399,18 @@ class MapsComponent(MapMakerBase):
 
     @property
     def young_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "plasma"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_js9_cmap(self):
 
         """
         This function ...
@@ -4161,6 +4471,18 @@ class MapsComponent(MapMakerBase):
 
         # return "ds9he"
         return "summer"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_js9_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "cool"
 
     # -----------------------------------------------------------------
 

@@ -56,3 +56,7 @@ definition.add_optional("reproject_pixelscale", "quantity", "pixelscale for when
 definition.add_optional("downsample_npixels_threshold", "positive_integer", "number of pixels (x or y) beyond which downsampling will be performed", 500)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("regenerate_ellipses", "regenerate the ellipses", False)
+
+# -----------------------------------------------------------------
