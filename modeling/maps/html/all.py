@@ -31,6 +31,7 @@ from ....core.basics.range import RealRange
 from ....magic.tools.info import get_image_info_strings, get_image_info
 from ....magic.core.frame import Frame
 from ....magic.core.image import Image
+from ....core.tools.serialization import load_dict, write_dict
 
 # -----------------------------------------------------------------
 
@@ -42,6 +43,10 @@ key_color = "#4180d3"
 # -----------------------------------------------------------------
 
 page_width = 600
+
+# -----------------------------------------------------------------
+
+intervals_filename = "intervals.dat"
 
 # -----------------------------------------------------------------
 
@@ -146,6 +151,16 @@ class AllMapsPageGenerator(MapsComponent):
         # The page
         self.page = None
 
+        # The intervals
+        self.colour_plot_intervals = dict()
+        self.ssfr_plot_intervals = dict()
+        self.tir_plot_intervals = dict()
+        self.attenuation_plot_intervals = dict()
+        self.old_plot_intervals = dict()
+        self.young_plot_intervals = dict()
+        self.ionizing_plot_intervals = dict()
+        self.dust_plot_intervals = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -165,25 +180,28 @@ class AllMapsPageGenerator(MapsComponent):
         # 3. Load the regions
         self.get_regions()
 
-        # 4. Make plots
+        # 4. Load the intervals
+        self.get_intervals()
+
+        # 5. Make plots
         self.make_plots()
 
-        # 5. Make the views
+        # 6. Make the views
         self.make_views()
 
-        # 6. Make buttons for extra functionality
+        # 7. Make buttons for extra functionality
         self.make_buttons()
 
-        # 7. Make the tables
+        # 8. Make the tables
         self.make_tables()
 
-        # 8. Generate the page
+        # 9. Generate the page
         self.generate_page()
 
-        # 9. Writing
+        # 10. Writing
         self.write()
 
-        # 10. Show
+        # 11. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -511,11 +529,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.colour_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.colour_maps[name])
             info = get_image_info(name, self.colour_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -537,11 +553,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.ssfr_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.ssfr_maps[name])
             info = get_image_info(name, self.ssfr_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -563,11 +577,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.tir_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.tir_maps[name])
             info = get_image_info(name, self.tir_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -589,11 +601,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.attenuation_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.attenuation_maps[name])
             info = get_image_info(name, self.attenuation_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -615,11 +625,9 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.old_maps:
 
             # Get info
-            #info = get_image_info_strings(name, self.old_maps[name])
             info = get_image_info(name, self.old_maps[name], path=False)
 
             # Make list
-            #code = html.unordered_list(info)
             code = html.dictionary(info, key_color=key_color)
 
             # Add info
@@ -735,7 +743,33 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_rgba_plot(self, name, frame, filepath, around_zero=False, scale=None, interval="pts", colours="jet"):
+    @property
+    def alpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.alpha: return "combined"
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def peak_alpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 2.5
+
+    # -----------------------------------------------------------------
+
+    def make_rgba_plot(self, name, frame, filepath, around_zero=False, scale=None, interval="pts", colours="jet",
+                       alpha="absolute", peak_alpha=1.):
 
         """
         This function ...
@@ -746,6 +780,8 @@ class AllMapsPageGenerator(MapsComponent):
         :param scale: if None, configured value is used
         :param interval:
         :param colours:
+        :param alpha:
+        :param peak_alpha:
         :return:
         """
 
@@ -764,27 +800,21 @@ class AllMapsPageGenerator(MapsComponent):
         wcs, xsize, ysize = frame.wcs, frame.xsize, frame.ysize
         ellipse = self.truncation_ellipse.to_pixel(wcs)
         mask = ellipse.to_mask(xsize, ysize).inverse()
-
-        #from ....magic.tools import plotting
-        #plotting.plot_mask(mask)
-        #plotting.plot_mask(self.truncation_box.to_pixel(wcs).to_mask(xsize, ysize).inverse())
-
         frame[mask] = 0.0
 
-        if around_zero:
-            symmetric = True
-            alpha = None
-        else:
-            symmetric = False
-            alpha = "absolute"
+        # Around zero?
+        if around_zero: symmetric = True
+        else: symmetric = False
 
         # Make RGBA image
-        #rgba = frame.to_rgba(scale=scale, colours=self.config.colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha, interval=interval)
-        rgba = frame.to_rgba(scale=scale, colours=colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha, interval=interval)
+        rgba, vmin, vmax = frame.to_rgba(scale=scale, colours=colours, around_zero=around_zero, symmetric=symmetric, alpha=alpha, interval=interval, return_minmax=True, peak_alpha=peak_alpha)
         rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
 
         # Save
         rgba.saveto(filepath)
+
+        # Return vmin and vmax
+        return vmin, vmax
 
     # -----------------------------------------------------------------
 
@@ -992,6 +1022,322 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def get_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the uer
+        log.info("Loading the intervals ...")
+
+        # Colours
+        if self.has_colour_maps and self.has_colour_intervals: self.load_colour_intervals()
+
+        # sSFR
+        if self.has_ssfr_maps and self.has_ssfr_intervals: self.load_ssfr_intervals()
+
+        # TIR
+        if self.has_tir_maps and self.has_tir_intervals: self.load_tir_intervals()
+
+        # Attenuation
+        if self.has_attenuation_maps and self.has_attenuation_intervals: self.load_attenuation_intervals()
+
+        # Old
+        if self.has_old_maps and self.has_old_intervals: self.load_old_intervals()
+
+        # Young
+        if self.has_young_maps and self.has_young_intervals: self.load_young_intervals()
+
+        # Ionizing
+        if self.has_ionizing_maps and self.has_ionizing_intervals: self.load_ionizing_intervals()
+
+        # Dust
+        if self.has_dust_maps and self.has_dust_intervals: self.load_dust_intervals()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.colour_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.colour_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_colour_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.colour_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.ssfr_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_intervals(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.ssfr_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_ssfr_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.ssfr_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.tir_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.tir_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_tir_intervals(self):
+
+        """
+        This ufnciton ..
+        :return:
+        """
+
+        return load_dict(self.tir_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.attenuation_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_intervals(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.attenuation_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_attenuation_intervals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return load_dict(self.attenuation_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_old_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.old_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.young_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_young_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.young_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.ionizing_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ionizing_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_intervals(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return load_dict(self.ionizing_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_intervals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.dust_plots_path, intervals_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_intervals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_intervals_path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_intervals(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return load_dict(self.dust_intervals_path)
+
+    # -----------------------------------------------------------------
+
     def make_plots(self):
 
         """
@@ -1059,7 +1405,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.colour_maps[name], filepath, colours=self.colours_cmap, scale=self.colours_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.colour_maps[name], filepath, colours=self.colours_cmap,
+                                             scale=self.colours_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.colour_plot_intervals[name] = (vmin, vmax)
+
+        # Save the intervals
+        write_dict(self.colour_plot_intervals, self.colour_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1094,7 +1447,15 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.ssfr_maps[name], filepath, colours=self.ssfr_cmap, scale=self.ssfr_scale, interval=self.ssfr_interval)
+            vmin, vmax = self.make_rgba_plot(name, self.ssfr_maps[name], filepath, colours=self.ssfr_cmap,
+                                             scale=self.ssfr_scale, interval=self.ssfr_interval, alpha=self.alpha,
+                                             peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.ssfr_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.ssfr_plot_intervals, self.ssfr_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1129,7 +1490,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.tir_maps[name], filepath, colours=self.tir_cmap, scale=self.tir_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.tir_maps[name], filepath, colours=self.tir_cmap,
+                                             scale=self.tir_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.tir_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.tir_plot_intervals, self.tir_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1164,7 +1532,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.attenuation_maps[name], filepath, colours=self.attenuation_cmap, scale=self.attenuation_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.attenuation_maps[name], filepath, colours=self.attenuation_cmap,
+                                             scale=self.attenuation_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.attenuation_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.attenuation_plot_intervals, self.attenuation_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1195,11 +1570,18 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Check if plot is already made
             if fs.is_file(filepath):
-                if self.config.replot: fs.remove_file(filepath)
+                if self.config.replot or name not in self.old_plot_intervals: fs.remove_file(filepath)
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.old_maps[name], filepath, colours=self.old_cmap, scale=self.old_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.old_maps[name], filepath, colours=self.old_cmap,
+                                             scale=self.old_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.old_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.old_plot_intervals, self.old_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1234,7 +1616,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.young_maps[name], filepath, colours=self.young_cmap, scale=self.young_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.young_maps[name], filepath, colours=self.young_cmap,
+                                             scale=self.young_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.young_plot_intervals[name] = (vmin, vmax)
+
+        # Write the interrvals
+        write_dict(self.young_plot_intervals, self.young_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1269,7 +1658,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.ionizing_maps[name], filepath, colours=self.ionizing_cmap, scale=self.ionizing_scale)
+            vmin, vmax = self.make_rgba_plot(name, self.ionizing_maps[name], filepath, colours=self.ionizing_cmap,
+                                             scale=self.ionizing_scale, alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.ionizing_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.ionizing_plot_intervals, self.ionizing_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1304,7 +1700,14 @@ class AllMapsPageGenerator(MapsComponent):
                 else: continue
 
             # Make the plot
-            self.make_rgba_plot(name, self.dust_maps[name], filepath, colours=self.dust_cmaps["attenuation"], scale=self.dust_scales["attenuation"])
+            vmin, vmax = self.make_rgba_plot(name, self.dust_maps[name], filepath, colours=self.dust_cmaps["attenuation"],
+                                             scale=self.dust_scales["attenuation"], alpha=self.alpha, peak_alpha=self.peak_alpha)
+
+            # Set the interval
+            self.dust_plot_intervals[name] = (vmin, vmax)
+
+        # Write the intervals
+        write_dict(self.dust_plot_intervals, self.dust_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1444,8 +1847,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "colours___" + name
 
+            # Get the interval
+            interval = self.colour_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.colour_plots[name], self.colours_scale, self.colours_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.colour_plots[name], self.colours_scale,
+                                  self.colours_js9_cmap, self.config.zoom, interval=interval)
 
             # Add
             self.colour_views[name] = view
@@ -1472,8 +1879,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "ssfr___" + name
 
+            # Get the interval
+            interval = self.ssfr_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.ssfr_plots[name], self.ssfr_scale, self.ssfr_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.ssfr_plots[name], self.ssfr_scale, self.ssfr_js9_cmap,
+                                  self.config.zoom, interval=interval)
 
             # Add
             self.ssfr_views[name] = view
@@ -1500,8 +1911,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "tir___" + name
 
+            # Get the interval
+            interval = self.tir_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.tir_plots[name], self.tir_scale, self.tir_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.tir_plots[name], self.tir_scale, self.tir_js9_cmap,
+                                  self.config.zoom, interval=interval)
 
             # Add
             self.tir_views[name] = view
@@ -1528,8 +1943,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "attenuation___" + name
 
+            # Get the interval
+            interval = self.attenuation_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.attenuation_plots[name], self.attenuation_scale, self.attenuation_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.attenuation_plots[name], self.attenuation_scale,
+                                  self.attenuation_js9_cmap, self.config.zoom, interval=interval)
 
             # Add
             self.attenuation_views[name] = view
@@ -1556,8 +1975,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "old___" + name
 
+            # Get the interval
+            interval = self.old_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.old_plots[name], self.old_scale, self.old_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.old_plots[name], self.old_scale, self.old_js9_cmap,
+                                  self.config.zoom, interval=interval)
 
             # Add
             self.old_views[name] = view
@@ -1584,8 +2007,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "young___" + name
 
+            # Get the interval
+            interval = self.young_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.young_plots[name], self.young_scale, self.young_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.young_plots[name], self.young_scale, self.young_js9_cmap,
+                                  self.config.zoom, interval=interval)
 
             # Add
             self.young_views[name] = view
@@ -1612,8 +2039,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "ionizing___" + name
 
+            # Get the interval
+            interval = self.ionizing_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.ionizing_plots[name], self.ionizing_scale, self.ionizing_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.ionizing_plots[name], self.ionizing_scale,
+                                  self.ionizing_js9_cmap, self.config.zoom, interval=interval)
 
             # Add
             self.ionizing_views[name] = view
@@ -1640,8 +2071,12 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine image name
             image_name = "dust___" + name
 
+            # Get the interval
+            interval = self.dust_plot_intervals[name]
+
             # Make the view
-            view = self.make_view(image_name, path, self.dust_plots[name], self.dust_scales["attenuation"], self.dust_js9_cmap, self.config.zoom)
+            view = self.make_view(image_name, path, self.dust_plots[name], self.dust_scales["attenuation"],
+                                  self.dust_js9_cmap, self.config.zoom, interval=interval)
 
             # Add
             self.dust_views[name] = view

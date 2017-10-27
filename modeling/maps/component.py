@@ -3992,6 +3992,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colours_share_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return False
+
+    # -----------------------------------------------------------------
+
     def plot_colours(self, maps=True, contours=True, profiles=True):
 
         """
@@ -4003,7 +4015,7 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the colour maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.colours_scale, cmap=self.colours_cmap, share_limits=False, format=self.config.format, clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.colours_scale, cmap=self.colours_cmap, share_limits=self.colours_share_limits, format=self.config.format, clear_other_formats=True)
 
         # Plot the contours
         if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)

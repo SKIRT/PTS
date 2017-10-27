@@ -43,3 +43,8 @@ definition.add_optional("nopen_files", "positive_integer", "number of open files
 definition.add_flag("replace_nans", "replace NaNs (and Infs) by zero (Infs are converted to NaN by default)", False)
 
 # -----------------------------------------------------------------
+
+# apply alpha?
+definition.add_flag("alpha", "apply alpha", False)
+
+# -----------------------------------------------------------------
