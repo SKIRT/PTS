@@ -4340,6 +4340,19 @@ class SkiFile:
         # Set the property value
         self.set_value(last, property_name, value)
 
+    # Upgrade the ski file to the latest SKIRT version
+    def upgrade(self):
+
+        from ..prep.upgradeskifile import _get_upgrade_definitions
+
+        # Get the upgrade conditions and transforms
+        upgrades = _get_upgrade_definitions()
+
+        # Apply the upgrades if needed
+        changed = False
+        for condition, templates in upgrades:
+            changed |= self.transformif(condition, templates)
+
 # -----------------------------------------------------------------
 
 class LabeledSkiFile(SkiFile):
