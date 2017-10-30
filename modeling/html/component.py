@@ -271,6 +271,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def index_page_path(self):
+
         """
         This function ...
         :return:
@@ -282,6 +283,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def status_page_path(self):
+
         """
         This function ...
         :return:
@@ -293,6 +295,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_index_page(self):
+
         """
         This function ...
         :return:
@@ -304,6 +307,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_status_page(self):
+
         """
         This function ...
         :return:
@@ -315,6 +319,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def status_page_name(self):
+
         """
         This function ...
         :return:
@@ -326,6 +331,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def data_page_path(self):
+
         """
         This function ...
         :return:
@@ -337,6 +343,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_data_page(self):
+
         """
         This function ...
         :return:
@@ -348,6 +355,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def data_page_name(self):
+
         """
         THisn function ...
         :return:
@@ -359,6 +367,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def photometry_page_path(self):
+
         """
         This function ...
         :return:
@@ -370,6 +379,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_photometry_page(self):
+
         """
         This function ...
         :return:
@@ -381,6 +391,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def photometry_page_name(self):
+
         """
         This function ...
         :return:
@@ -392,6 +403,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def components_page_path(self):
+
         """
         This function ...
         :return:
@@ -403,6 +415,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_components_page(self):
+
         """
         This function ...
         :return:
@@ -414,6 +427,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def components_page_name(self):
+
         """
         This function ...
         :return:
@@ -425,6 +439,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def preparation_page_path(self):
+
         """
         This function ...
         :return:
@@ -436,6 +451,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_preparation_page(self):
+
         """
         Thisfunction ...
         :return:
@@ -447,6 +463,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def preparation_page_name(self):
+
         """
         This function ...
         :return:
@@ -458,6 +475,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def model_page_path(self):
+
         """
         This function ...
         :return:
@@ -469,6 +487,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_model_page(self):
+
         """
         This function ...
         :return:
@@ -480,6 +499,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def model_page_name(self):
+
         """
         This function ...
         :return:
@@ -491,6 +511,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def maps_page_path(self):
+
         """
         This function ...
         :return:
@@ -502,6 +523,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_maps_page(self):
+
         """
         This function ...
         :return:
@@ -513,6 +535,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def maps_page_name(self):
+
         """
         This function ...
         :return:
@@ -524,6 +547,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def fitting_page_path(self):
+
         """
         This function ...
         :return:
@@ -535,6 +559,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_fitting_page(self):
+
         """
         This function ...
         :return:
@@ -546,6 +571,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def fitting_page_name(self):
+
         """
         This function ...
         :return:
@@ -605,6 +631,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_datacubes_page(self):
+
         """
         Thisfunction ...
         :return:
@@ -616,6 +643,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def datacubes_page_name(self):
+
         """
         This function ...
         :return:
@@ -627,6 +655,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def fluxes_page_path(self):
+
         """
         This function ...
         :return:
@@ -638,6 +667,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_fluxes_page(self):
+
         """
         This function ...
         :return:
@@ -649,6 +679,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def fluxes_page_name(self):
+
         """
         This fnc
         :return:
@@ -660,6 +691,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def images_page_path(self):
+
         """
         This function ...
         :return:
@@ -671,6 +703,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_images_page(self):
+
         """
         This function ...
         :return:
@@ -682,6 +715,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def images_page_name(self):
+
         """
         This function ...
         :return:
@@ -693,6 +727,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def heating_page_path(self):
+
         """
         This function ...
         :return:
@@ -704,6 +739,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_heating_page(self):
+
         """
         This function ...
         :return:
@@ -715,6 +751,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def heating_page_name(self):
+
         """
         This function ...
         :return:
@@ -726,6 +763,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def colours_page_path(self):
+
         """
         This function ...
         :return:
@@ -737,6 +775,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_colours_page(self):
+
         """
         This function ...
         :return:
@@ -748,6 +787,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def colours_page_name(self):
+
         """
         This function ...
         :return:
@@ -771,6 +811,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def has_attenuation_page(self):
+
         """
         This function ...
         :return:
@@ -782,6 +823,7 @@ class HTMLComponent(GalaxyModelingComponent):
 
     @property
     def attenuation_page_name(self):
+
         """
         This function ...
         :return:

@@ -82,6 +82,7 @@ analyse_young_maps | -- | analysis.maps.young.YoungMapsAnalyser | arguments | An
 analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | arguments | Analyse ionizing stellar maps derived from the simulated images
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
+analyse_heating_correlations | -- | analysis.heating.correlations.HeatingCorrelationsAnalyser | arguments | Analyse heating correlations
 
 cache_analysis_run | -- | analysis.cache.AnalysisRunCacher | arguments | Cache a certain analysis run to a remote host
 

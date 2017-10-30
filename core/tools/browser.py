@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import webbrowser
 webbrowser._tryorder = ["safari"]
+import threading
+from SimpleHTTPServer import SimpleHTTPRequestHandler, BaseHTTPServer
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
@@ -42,7 +44,7 @@ def open_path(path):
     :return:
     """
 
-    return webbrowser.open(path, new=2)
+    return webbrowser.open(path, new=1)
 
 # -----------------------------------------------------------------
 
@@ -70,5 +72,89 @@ def open_page(page):
 
     html = str(page)
     return open_html(html)
+
+# -----------------------------------------------------------------
+
+class serve_local_host():
+
+    """
+    This class ...
+    """
+
+    def __init__(self, port=8000, protocol="HTTP/1.0"):
+
+        """
+        The constructor ...
+        :param port:
+        """
+
+        # Set properties
+        self.port = port
+        self.protocol = protocol
+
+        # The server
+        self.httpd = None
+
+        # Thread
+        self.thread = None
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        server_address = ('', self.port)
+        SimpleHTTPRequestHandler.protocol_version = self.protocol
+        self.httpd = BaseHTTPServer.HTTPServer(server_address, SimpleHTTPRequestHandler)
+
+        # Serve from other thread
+        #self.httpd.serve_forever()
+        self.thread = threading.Thread(target=self.httpd.serve_forever, args=[])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sa(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.httpd.socket.getsockname()
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print("Serving HTTP on", self.sa[0], "port", self.sa[1], "...")
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        #print("Stopping ...")
+
+        # Stop serving
+        # SHOULD WORK ...?
+        #self.httpd.shutdown()
+
+        finish = raw_input("Press ENTER to finish ...")
+        exit()
 
 # -----------------------------------------------------------------

@@ -569,6 +569,7 @@ old_maps_filename = "old.html"
 young_maps_filename = "young.html"
 ionizing_maps_filename = "ionizing.html"
 dust_maps_filename = "dust.html"
+maps_selection_filename = "selection.html"
 
 # -----------------------------------------------------------------
 
@@ -662,6 +663,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.young_maps_html_page_path = fs.join(self.maps_html_path, young_maps_filename)
         self.ionizing_maps_html_page_path = fs.join(self.maps_html_path, ionizing_maps_filename)
         self.dust_maps_html_page_path = fs.join(self.maps_html_path, dust_maps_filename)
+        self.maps_selection_html_page_path = fs.join(self.maps_html_path, maps_selection_filename)
 
         # NEW: Set the path to the maps/components directory
         self.maps_components_path = fs.create_directory_in(self.maps_path, maps_components_name)
