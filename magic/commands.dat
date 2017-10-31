@@ -40,7 +40,6 @@ make_colour_maps | -- | maps.colour.colour.ColourMapsMaker | arguments | Make co
 # DUST MAPS
 make_cortese_attenuation_maps | -- | maps.attenuation.cortese.CorteseDustMapsMaker | arguments | Make FUV attenuation maps based on Cortese calibrations
 make_buat_attenuation_maps | -- | maps.attenuation.buat.BuatAttenuationMapsMaker | arguments | Make UV attenuation maps based on Buat calibrations
-make_emission_dust_maps | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
 make_blackbody_dust_maps | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
 make_hot_dust_maps | -- | maps.dust.hot.HotDustMapsMaker | arguments | Make map of hot dust
 

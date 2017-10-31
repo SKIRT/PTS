@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from .component import MapsComponent
 from ...core.basics.log import log
 from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
-from ...magic.maps.dust.emission import EmissionDustMapsMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker
 from ...magic.maps.dust.hot import HotDustMapsMaker
 from ...core.tools.utils import lazyproperty
