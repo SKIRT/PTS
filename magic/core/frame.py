@@ -4485,8 +4485,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Set all NaN pixels to the specified value
-        self._data[self.nans] = value
+        nans = self.nans
+        self._data[nans] = value
+        return nans
 
     # -----------------------------------------------------------------
 
@@ -4498,8 +4499,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Set all inf pixels to the specified value
-        self._data[self.infs] = value
+        infs = self.infs
+        self._data[infs] = value
+        return infs
 
     # -----------------------------------------------------------------
 
@@ -4511,9 +4513,11 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data[self.zeroes] = value
+        zeroes = self.zeroes
+        self._data[zeroes] = value
+        return zeroes
 
-    #
+    # -----------------------------------------------------------------
 
     def replace_negatives(self, value):
 
@@ -4523,7 +4527,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data[self._data < 0] = value
+        negatives = self.negatives
+        self._data[negatives] = value
+        return negatives
 
     # -----------------------------------------------------------------
 

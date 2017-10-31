@@ -17,6 +17,7 @@ from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 from ...core.list import FrameList, NamedFrameList
 from ....core.tools.stringify import tostr
+from ...core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -153,8 +154,7 @@ class DiskOldStellarMapMaker(Configurable):
         # Inform the user
         log.info("Making the maps of old stars ...")
 
-        # Loop over the frames
-        #for name in self.frames:
+        # Loop over the filters for which we have a bulge and a total image
         for fltr in self.filters:
 
             # Set name
@@ -171,54 +171,30 @@ class DiskOldStellarMapMaker(Configurable):
                 log.success("The " + name + " old stellar disk map is already created: not creating it again")
                 continue
 
-            # Old stars = IRAC3.6 - bulge
-            # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
-
-            # The relative contribution of the bulge to the 3.6mu emission
-            #bulge_rel_contribution = self.parameters.bulge.f
-
-            # Total flux of the IRAC 3.6mu image
-            #total_flux = np.sum(self.images["3.6mu"].frames.primary)
-
-            # Calculate factor
-            #factor = bulge_rel_contribution * total_flux / np.sum(self.bulge)
-
-            # Create the old stars map
-            #old_stars = self.images["3.6mu"].frames.primary - factor * self.bulge
-
-            #assert str(self.masked_bulge_frame.unit) == "Jy"
-
+            # Get the observed frame and the bulge
             frame = self.frames[fltr]
             bulge = self.bulges[fltr]
 
-            # REBIN TO THE SAME PIXELSCALE (AND CONVOLVE?)
+            # REBIN TO THE SAME PIXELSCALE AND CONVOLVE TO SAME RESOLUTION
             frames = NamedFrameList(observation=frame, bulge=bulge)
             frames.convolve_and_rebin()
 
             # Subtract bulge from the IRAC I1 image
             minus_bulge = frames["observation"] - frames["bulge"]
 
-            #bulge_residual = self.images["3.6mu"].frames.primary - self.disk
-            #bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")
-            #bulge_residual.save(bulge_residual_path)
-
-            # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
-            #old_stars[self.irac < self.config.old_stars.irac_snr_level*self.irac_errors] = 0.0
-
-            # Create copy
-            #map = self.i1_jy_minus_bulge.copy()
-
-            # Make sure all pixel values are larger than or equal to zero
-            minus_bulge[minus_bulge < 0.0] = 0.0
+            # Remove negatives, replace by zero
+            negatives = minus_bulge.replace_negatives(0.0)
 
             # Normalize the old stellar map
             minus_bulge.normalize()
 
+            # Create image
+            image = Image()
+            image.add_frame(minus_bulge, "disk")
+            image.add_mask(negatives, "negatives")
+
             # Add
             self.maps[name] = minus_bulge
-
-            # Mask pixels outside of the low signal-to-noise contour
-            #old_stars[self.mask] = 0.0
 
     # -----------------------------------------------------------------
 

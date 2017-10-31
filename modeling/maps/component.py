@@ -4498,13 +4498,14 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_old(self, maps=True, contours=True, profiles=True, nans=True, format="pdf"):
+    def plot_old(self, maps=True, contours=True, profiles=True, negatives=True, nans=True, format="pdf"):
 
         """
         This function ...
         :param maps:
         :param contours:
         :param profiles:
+        :param negatives:
         :param nans:
         :param format:
         :return:
@@ -4521,6 +4522,9 @@ class MapsComponent(MapMakerBase):
 
         # Plot the radial profiles
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
+
+        # Plot the negatives
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["disk"])
 
         # Plot the NaNs masks
         if nans: self.plot_nans(format=format, clear_other_formats=True)
