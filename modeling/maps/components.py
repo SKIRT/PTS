@@ -602,7 +602,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Automatically making maps selections ...")
 
-        
+        # Select
+        self.has_ssfr_maps
+
+        print(self.old_selection)
+        print(self.young_selection)
+        print(self.ionizing_selection)
+        print(self.dust_selection)
 
     # -----------------------------------------------------------------
 

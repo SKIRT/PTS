@@ -118,26 +118,14 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = DiskOldStellarMapMaker()
 
+        # Get the frame
+        nuv = self.get_frame_for_filter(self.decomposition_filter)
+        frames = FrameList(nuv)
 
-        if "IRAC I1" in self.frame_list:
-
-            # Get the I1 frame
-            i1 = self.get_frame_for_filter(self.i1_filter)
-            frames = FrameList(i1)
-
-            # Get the bulge frame
-            bulge = self.bulge_frame
-            bulges = FrameList(i1=bulge)
-
-        else:
-
-            # Get the I2 frame
-            i2 = self.get_frame_for_filter(self.i2_filter)
-            frames = FrameList(i2)
-
-            # Get the bulge frame
-            bulge = self.bulge_frame
-            bulges = FrameList(i2=bulge)
+        # Get the bulge frame
+        bulge = self.bulge_frame
+        bulges = FrameList()
+        bulges.append(bulge, self.decomposition_filter)
 
         # Run
         maker.run(frames=frames, bulges=bulges, method_name=method_name, maps=current)
@@ -173,17 +161,9 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = TotalOldStellarMapMaker()
 
-        if "IRAC I1" in self.frame_list:
-
-            # Get the I1 frame
-            i1 = self.get_frame_for_filter(self.i1_filter)
-            frames = FrameList(i1)
-
-        else:
-
-            # Get the I2 frame
-            i2 = self.get_frame_for_filter(self.i2_filter)
-            frames = FrameList(i2)
+        # Get the I1 frame
+        nuv = self.get_frame_for_filter(self.decomposition_filter)
+        frames = FrameList(nuv)
 
         # Run
         maker.run(frames=frames, method_name=method_name, maps=current)
@@ -219,21 +199,11 @@ class OldStellarMapMaker(MapsComponent):
         # Create the maker
         maker = BulgeOldStellarMapMaker()
 
-        if "IRAC I1" in self.frame_list:
-
-            # Get the bulge frame
-            bulge = self.bulge_frame
-            bulge.wcs = self.get_frame_for_filter(self.i1_filter).wcs
-            # bulge.filter = self.i1_filter
-            bulges = FrameList(i1=bulge)
-
-        else:
-
-            # Get the bulge frame
-            bulge = self.bulge_frame
-            bulge.wcs = self.get_frame_for_filter(self.i2_filter).wcs
-            # bulge.filter = self.i2_filter
-            bulges = FrameList(i2=bulge)
+        # Get the bulge frame
+        bulge = self.bulge_frame
+        bulge.wcs = self.get_frame_for_filter(self.decomposition_filter).wcs
+        bulges = FrameList()
+        bulges.append(bulge, self.decomposition_filter)
 
         # Run
         maker.run(bulges=bulges, method_name=method_name, maps=current)

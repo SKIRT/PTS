@@ -185,6 +185,19 @@ def is_submm(wavelength):
 
 # -----------------------------------------------------------------
 
+def is_fir_or_submm(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[1] == "FIR" or regime[0] == "Submm"
+
+# -----------------------------------------------------------------
+
 def wavelength_range_for_regime(regime, subregime=None):
 
     """

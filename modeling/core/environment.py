@@ -38,6 +38,7 @@ from ...core.tools import tables
 from ..basics.properties import GalaxyProperties
 from ...core.tools.serialization import load_dict
 from .steps import galaxy_modeling, sed_modeling, images_modeling
+from ...core.filter.filter import is_uv, is_optical, is_ir, is_nir, is_mir, is_fir, is_submm, is_fir_or_submm
 
 # -----------------------------------------------------------------
 
@@ -927,6 +928,102 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def uv_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_uv(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def optical_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_optical(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ir_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_ir(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nir_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_nir(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mir_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_mir(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fir_filters(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_fir(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def submm_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_submm(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fir_submm_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.filters if is_fir_or_submm(fltr)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def filter_names(self):
 
         """
@@ -935,6 +1032,90 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return [str(fltr) for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uv_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.uv_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def optical_filter_names(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.optical_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ir_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.ir_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nir_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.nir_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mir_filter_names(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.mir_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fir_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.fir_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def submm_filter_names(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.submm_filters]
 
     # -----------------------------------------------------------------
 

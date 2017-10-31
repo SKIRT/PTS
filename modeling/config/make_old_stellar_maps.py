@@ -10,9 +10,6 @@ from pts.modeling.config.maps import definition
 
 # -----------------------------------------------------------------
 
-# The significance level
-definition.add_optional("i1_significance", "real", "the significance level of the IRAC I1 image below which to cut-off the stellar map", 3.0)
-
 # Remove holes from the cutoff mask
 definition.add_flag("remove_holes", "remove holes from the total cutoff mask")
 

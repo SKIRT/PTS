@@ -7,15 +7,23 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.core.environment import load_modeling_environment_cwd
+
+# -----------------------------------------------------------------
+
+# Load the modeling environment
+environment = load_modeling_environment_cwd()
+
+# Set the default filter
+default_filter_name = "IRAC I1" if "IRAC I1" in environment.nir_filter_names else None
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# The filter for decomposition
-# TODO: let the choices be the filters for which there is data !!
-definition.add_optional("filter", "filter", "filter for which to use the data for decomposition", default="IRAC I1", convert_default=True)
+# The filter for decomposition: choose from NIR filters
+definition.add_optional("filter", "filter", "filter for which to use the data for decomposition", default=default_filter_name, convert_default=True, choices=environment.nir_filters)
 
 # The method
 definition.add_optional("method", "string", "method for decomposition", default="s4g", choices=["s4g", "fit", "imfit"])

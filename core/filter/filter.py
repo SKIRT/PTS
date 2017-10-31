@@ -347,3 +347,107 @@ class Filter(object):
         return hash(str(self))
 
 # -----------------------------------------------------------------
+
+def is_uv(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_uv(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_optical(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_optical(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_ir(fltr):
+
+    """
+    Thisj function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_ir(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_nir(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_nir(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_mir(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_mir(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_fir(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_fir(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_submm(fltr):
+
+    """
+    Thisn function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_submm(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_fir_or_submm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...magic.tools import wavelengths
+    return wavelengths.is_fir_or_submm(fltr.wavelength)
+
+# -----------------------------------------------------------------

@@ -18,7 +18,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy import coordinates
-from astropy.units import CompositeUnit
+from astropy.io.fits import getheader
 
 # Import the relevant PTS classes and modules
 from ...core.filter.filter import parse_filter
@@ -29,6 +29,18 @@ from ...core.units.unit import PhotometricUnit
 from ...core.units.parsing import parse_unit as u
 from ...core.units.utils import interpret_physical_type
 from ...core.tools import types
+
+# -----------------------------------------------------------------
+
+def get_header(path):
+
+    """
+    Thisf unction ...
+    :param path:
+    :return:
+    """
+
+    return getheader(path)
 
 # -----------------------------------------------------------------
 

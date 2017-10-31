@@ -40,6 +40,7 @@ from ...magic.tools import headers
 from ...core.tools.utils import lazyproperty
 from ..basics.projection import get_npixels, get_field, get_center
 from ...magic.core.mask import Mask
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -559,6 +560,78 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.named_frame_path_list
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check wether the file is present
+        if not fs.is_file(self.disk_image_path): raise IOError("The disk image is not present. Run the 'decompose' step to create it")
+
+        # Get the header
+        return headers.get_header(self.disk_image_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the file is present
+        if not fs.is_file(self.bulge_image_path): raise IOError("The bulge image is not present. Run the 'decompose' step to create it")
+
+        # Get the header
+        return headers.get_header(self.bulge_image_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def decomposition_filter(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Obtain the PSF filter of this image
+        psf_filter = headers.get_psf_filter(self.disk_header)
+
+        # Return the filter
+        return psf_filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def decomposition_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return str(self.decomposition_filter)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def decomposition_filter_no_spaces(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return tostr(self.decomposition_filter, delimiter="_")
 
     # -----------------------------------------------------------------
 
@@ -2251,8 +2324,6 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
 
         # Get filter name
         if lazy:
-            #name = str(parse_filter(image_name))
-            #name = str(headers.get_filter(image_name))
             fltr = headers.get_filter(image_name)
             if fltr is None:
                 log.warning("Could not determine the filter of the '" + image_name + "' image: skipping ...")
