@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from collections import defaultdict
 from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -37,6 +38,12 @@ from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
 from ...magic.tools import plotting
 from ...magic.core.image import Image
+from ...core.tools import strings
+
+# -----------------------------------------------------------------
+
+# For counting the number of negative pixels
+default_central_ellipse_factor = 0.4
 
 # -----------------------------------------------------------------
 
@@ -1222,6 +1229,7 @@ class MapMakerBase(GalaxyModelingComponent):
         # Determine path
         else:
 
+            # Create plot path
             plot_path = fs.create_directory_in(self.maps_sub_path, self.negatives_plots_name)
 
             # Set base path
@@ -1234,6 +1242,45 @@ class MapMakerBase(GalaxyModelingComponent):
 
         # Return the map path
         return map_path
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_nnegatives_curves_plot(self, name, method=None, extension="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :param extension:
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Create plot path
+            plot_path = fs.create_directory_in(path, self.negatives_plots_name)
+
+            # Set path
+            map_base_path = fs.join(plot_path, name + "_counts")
+            filepath = map_base_path + "." + extension
+
+        # Determine path
+        else:
+
+            # Create plot path
+            plot_path = fs.create_directory_in(self.maps_sub_path, self.negatives_plots_name)
+
+            # Set path
+            map_base_path = fs.join(plot_path, name + "_counts")
+            filepath = map_base_path + "." + extension
+
+        # Return the path
+        return filepath
 
     # -----------------------------------------------------------------
 
@@ -1556,8 +1603,20 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def central_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * default_central_ellipse_factor
+
+    # -----------------------------------------------------------------
+
     def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False,
-                       transparent=True, methods=None, not_methods=None):
+                       transparent=True, methods=None, not_methods=None, curves=True, count_within=None):
 
         """
         This function ...
@@ -1568,6 +1627,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param transparent:
         :param methods:
         :param not_methods:
+        :param curves:
+        :param count_within:
         :return:
         """
 
@@ -1576,6 +1637,9 @@ class MapMakerBase(GalaxyModelingComponent):
 
         # Inform the user
         log.info("Plotting the negative pixel masks ...")
+
+        # Initialize dictionary
+        nnegatives = dict()
 
         # Loop over the methods
         for method in self.maps:
@@ -1590,6 +1654,9 @@ class MapMakerBase(GalaxyModelingComponent):
                 # Debugging
                 log.debug("Plotting negative pixel masks for the '" + method + "' method ...")
 
+                # Initialize dictionary
+                nnegatives_method = dict()
+
                 # Loop over the maps
                 for name in self.maps[method]:
 
@@ -1600,6 +1667,12 @@ class MapMakerBase(GalaxyModelingComponent):
                     # Make sure it's a new mask object
                     if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method][name].wcs)
                     elif mask.wcs is None: mask.wcs = self.maps[method][name].wcs
+
+                    # Count the number of negatives
+                    if count_within is not None: relative_nnegatives = mask.relative_nmasked_in(count_within)
+                    else: relative_nnegatives = mask.relative_nmasked
+                    if relative_nnegatives > 0.2: log.warning("The number of negative values in the '" + name + "' map is higher than 20%")
+                    nnegatives_method[name] = relative_nnegatives
 
                     # Debugging
                     log.debug("Plotting the negative pixel mask of the '" + name + "' map ...")
@@ -1616,6 +1689,9 @@ class MapMakerBase(GalaxyModelingComponent):
                                      truncate_outside=self.truncation_ellipse, path=plot_path,
                                      format=format, show_axes=show_axes, transparent=transparent)
 
+                # Set the nnegatives dictionary for this method
+                nnegatives[method] = nnegatives_method
+
             # No different methods
             else:
 
@@ -1626,6 +1702,12 @@ class MapMakerBase(GalaxyModelingComponent):
                 # Make sure it's a new mask object
                 if isinstance(mask, oldMask): mask = Mask(mask, wcs=self.maps[method].wcs)
                 elif mask.wcs is None: mask.wcs = self.maps[method].wcs
+
+                # Count the number of negatives
+                if count_within is not None: relative_nnegatives = mask.relative_nmasked_in(count_within)
+                else: relative_nnegatives = mask.relative_nmasked
+                if relative_nnegatives > 0.2: log.warning("The number of negative values in the '" + method + "' map is higher than 20%")
+                nnegatives[method] = relative_nnegatives
 
                 # Debugging
                 log.debug("Plotting the negative pixel mask of the '" + method + "' map ...")
@@ -1641,6 +1723,77 @@ class MapMakerBase(GalaxyModelingComponent):
                                    cropping_factor=cropping_factor,
                                    truncate_outside=self.truncation_ellipse, path=plot_path,
                                    format=format, show_axes=show_axes, transparent=transparent)
+
+        from ...core.tools import numbers
+        from ...core.basics import containers
+        from ...core.tools.parsing import real
+
+        # Subdictionaries for different methods
+        if types.is_dictionary_of_dictionaries(nnegatives):
+
+            # Loop over the methods
+            for method in nnegatives:
+
+                # Initialize
+                grouped = defaultdict(dict)
+
+                # Loop over the maps
+                for name in nnegatives[method]:
+
+                    # Split
+                    if "__" not in name: continue
+                    base_name, last_part = strings.split_at_last(name, "__")
+
+                    # Get factor
+                    if not numbers.is_number(last_part): continue
+                    factor = real(last_part)
+
+                    # Add
+                    grouped[base_name][factor] = nnegatives[method][name]
+
+                # Sort for each base name based on the factors values
+                for base_name in grouped: grouped[base_name] = containers.ordered_by_key(grouped[base_name])
+
+                # Loop over the base names
+                for base_name in grouped:
+
+                    # Determine plot path
+                    plot_path = self.get_path_for_nnegatives_curves_plot(base_name, method, extension=format)
+
+                    # Plot
+                    plotting.plot_xy(grouped[base_name].keys(), grouped[base_name].values(), path=plot_path)
+
+        # No subdictionaries
+        else:
+
+            # Initialize
+            grouped = defaultdict(dict)
+
+            # Loop over the maps
+            for name in nnegatives:
+
+                # Split
+                if "__" not in name: continue
+                base_name, last_part = strings.split_at_last(name, "__")
+
+                # Get factor
+                if not numbers.is_number(last_part): continue
+                factor = real(last_part)
+
+                # Add
+                grouped[base_name][factor] = nnegatives[name]
+
+            # Sort for each base name based on the factors values
+            for base_name in grouped: grouped[base_name] = containers.ordered_by_key(grouped[base_name])
+
+            # Loop over the base names
+            for base_name in grouped:
+
+                # Determine plot path
+                plot_path = self.get_path_for_nnegatives_curves_plot(base_name, extension=format)
+
+                # Plot
+                plotting.plot_xy(grouped[base_name].keys(), grouped[base_name].values(), path=plot_path)
 
     # -----------------------------------------------------------------
 
@@ -4524,7 +4677,7 @@ class MapsComponent(MapMakerBase):
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the negatives
-        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["disk"])
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["disk"], count_within=self.central_ellipse)
 
         # Plot the NaNs masks
         if nans: self.plot_nans(format=format, clear_other_formats=True)
@@ -4603,7 +4756,7 @@ class MapsComponent(MapMakerBase):
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the negative pixel masks
-        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["hot"])
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["hot"], count_within=self.central_ellipse)
 
         # Plot the NaNs masks
         if nans: self.plot_nans(format=format, clear_other_formats=True)
@@ -4674,7 +4827,7 @@ class MapsComponent(MapMakerBase):
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the negative pixel masks
-        if negatives: self.plot_negatives(format=format, clear_other_formats=True)
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, count_within=self.central_ellipse)
 
         # Plot the NaN pixel masks
         if nans: self.plot_nans(format=format, clear_other_formats=True)

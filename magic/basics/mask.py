@@ -279,17 +279,6 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def array(self):
-
-        #"""
-        #The underlying array
-        #"""
-
-        #return self._data
-
-    # -----------------------------------------------------------------
-
     def __array__(self):
 
         """
@@ -822,6 +811,18 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xsize * self.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
     def nmasked(self):
 
         """
@@ -834,6 +835,18 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def relative_nmasked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nmasked) / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
     def nunmasked(self):
 
         """
@@ -842,6 +855,65 @@ class MaskBase(object):
         """
 
         return np.sum(np.logical_not(self.data))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nunmasked(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return float(self.nunmasked) / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_masked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_masked(self):
+
+        """
+        This function ...
+        """
+
+        return np.all(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unmasked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.any(np.logical_not(self.data))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_unmasked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.all(np.logical_not(self.data))
 
     # -----------------------------------------------------------------
 

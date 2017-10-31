@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.modeling.config.maps import definition
+from pts.modeling.maps.component import default_central_ellipse_factor
 
 # -----------------------------------------------------------------
 
@@ -24,7 +25,7 @@ definition.add_flag("methods", "make a separate table for each method", True)
 
 # Filtering maps
 definition.add_flag("filter", "filter the maps", True)
-definition.add_optional("central_ellipse_factor", "real", "central ellipse factor for filtering", 0.5)
+definition.add_optional("central_ellipse_factor", "real", "central ellipse factor for filtering", default_central_ellipse_factor)
 definition.add_optional("ninvalid_pixels_tolerance", "percentage", "number of invalid pixels tolerated within central ellipse", 10)
 definition.add_optional("nzero_pixels_tolerance", "percentage", "number of zero pixels tolerated within central ellipse", 40)
 definition.add_optional("nnegative_pixels_tolerance", "percentage", "number of negative pixels tolerated within central ellipse", 20)
@@ -34,7 +35,8 @@ definition.add_flag("hide_zero", "hide maps with too many zeros", False)
 definition.add_flag("hide_constant", "hide constant maps", False)
 definition.add_flag("hide_negative", "hide maps with too many negative values", False)
 
-definition.add_flag("group_factors", "group maps that only differ by a factor in their name")
+# Group maps with different factors but same origins
+definition.add_flag("group_factors", "group maps that only differ by a factor in their name", True)
 
 # Resolution
 definition.add_optional("max_pixelscale", "angle", "maximum pixelscale")

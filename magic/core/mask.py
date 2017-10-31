@@ -303,6 +303,91 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
+    def get_mask(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        from ..region.region import PixelRegion, SkyRegion
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, SkyRegion): mask = region_or_mask.to_pixel(self.wcs).to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be region or mask")
+
+        # Return
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def nmasked_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return the number of masked pixels
+        return np.sum(self.data[mask])
+
+    # -----------------------------------------------------------------
+
+    def relative_nmasked_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return the relative number of masked pixels
+        return float(np.sum(self.data[mask])) / np.sum(mask)
+
+    # -----------------------------------------------------------------
+
+    def nunmasked_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return the number of unmasked pixels
+        return np.sum(np.logical_not(self.data[mask]))
+
+    # -----------------------------------------------------------------
+
+    def relative_nunmasked_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Return the relative number of unmasked pixels
+        return float(np.sum(np.logical_not(self.data[mask]))) / np.sum(mask)
+
+    # -----------------------------------------------------------------
+
     def to_rgb(self, colour="black", background_color="white"):
 
         """

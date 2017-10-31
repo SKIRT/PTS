@@ -29,10 +29,10 @@ from ....core.tools.utils import lazyproperty
 from ....core.tools import types
 from ...html.component import stylesheet_url, page_style, sortable_url, preview_url
 from ....magic.view.html import javascripts, css_scripts
-from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
+from ....core.tools.html import HTMLPage, updated_footing, make_page_width
 from ....core.tools import browser
 from ....core.tools.stringify import tostr
-from ....magic.core.frame import Frame
+from ....magic.core.image import Image
 from ....core.tools import strings
 from ....core.tools import numbers
 from ....core.tools.parsing import real
@@ -260,7 +260,7 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Filter invalid maps ...")
+        log.info("Filtering invalid maps ...")
 
         # Loop over the maps
         for name in self.map_names:
@@ -269,7 +269,11 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
             path = self.map_paths[name]
 
             # Load the map
-            the_map = Frame.from_file(path)
+            #the_map = Frame.from_file(path)
+            image = Image.from_file(path)
+            the_map = image.primary
+            nans = image.masks["nans"] if "nans" in image.masks else None
+            negatives = image.masks["negatives"] if "negatives" in image.masks else None
 
             # Get the FWHM and pixelscale
             fwhm = the_map.fwhm
@@ -280,31 +284,29 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
             self.pixelscales[name] = pixelscale
 
             # Check complete map for NaNS
-            if the_map.all_nans:
+            if the_map.all_nans or (nans is not None and nans.all_masked): # Old, new way
                 log.warning("The '" + name + "' map contains only NaN values")
                 self.invalid.add(name)
 
-            # Check complete map for infs
-            if the_map.all_infs:
-                log.warning("The '" + name + "' map contains only infinities")
-                self.invalid.add(name)
+            # INFS SHOULDN'T HAPPEN
+            # # Check complete map for infs
+            # if the_map.all_infs:
+            #     log.warning("The '" + name + "' map contains only infinities")
+            #     self.invalid.add(name)
 
             # Check complete map for zeros
             if the_map.all_zeroes:
                 log.warning("The '" + name + "' map contains only zeros")
-                #self.invalid.add(name)
                 self.zero.add(name)
 
             # Check whether complete map is constant
             if the_map.is_constant:
                 log.warning("The '" + name + "' map is constant everywhere")
-                #self.invalid.add(name)
                 self.constant.add(name)
 
             # Check whether complete map is negative
-            if the_map.all_negatives:
+            if the_map.all_negatives or (negatives is not None and negatives.all_masked): # Old, new way
                 log.warning("The '" + name + "' map contains only negative values")
-                #self.invalid.add(name)
                 self.negative.add(name)
 
             # Get center ellipse in pixel coordinates
@@ -312,46 +314,47 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
             npixels_in_ellipse = the_map.npixels_in(center_ellipse)
 
             # Check NaNs within center ellipse
-            if the_map.nnans_in(center_ellipse) / npixels_in_ellipse > self.config.ninvalid_pixels_tolerance:
+            #if the_map.nnans_in(center_ellipse) / npixels_in_ellipse > self.config.ninvalid_pixels_tolerance: # old
+            if nans is not None and nans.nmasked_in(center_ellipse) / npixels_in_ellipse > self.config.ninvalid_pixels_tolerance:
                 log.warning("The '" + name + "' map contains too many NaN values within the central ellipse")
                 self.invalid.add(name)
 
+            # INFS SHOULDN'T HAPPEN
             # Check infinities within center ellipse
-            if the_map.ninfs_in(center_ellipse) / npixels_in_ellipse > self.config.ninvalid_pixels_tolerance:
-                log.warning("The '" + name + "' map contains too many infinities within the central ellipse")
-                self.invalid.add(name)
+            # if the_map.ninfs_in(center_ellipse) / npixels_in_ellipse > self.config.ninvalid_pixels_tolerance:
+            #     log.warning("The '" + name + "' map contains too many infinities within the central ellipse")
+            #     self.invalid.add(name)
 
             # Check zeros within center ellipse
             if the_map.nzeroes_in(center_ellipse) / npixels_in_ellipse > self.config.nzero_pixels_tolerance:
                 log.warning("The '" + name + "' map contains too many zero values within the central ellipse")
-                #self.invalid.add(name)
                 self.zero.add(name)
 
             # Check whether constant within center ellipse
             if the_map.is_constant_in(center_ellipse):
                 log.warning("The '" + name + "' map is constant within the central ellipse")
-                #self.invalid.add(name)
                 self.constant.add(name)
 
             # Check negatives within central ellipse
-            relative_nnegatives = the_map.nnegatives_in(center_ellipse) / npixels_in_ellipse
+            #relative_nnegatives = the_map.nnegatives_in(center_ellipse) / npixels_in_ellipse # old
+            relative_nnegatives = negatives.nmasked_in(center_ellipse) / npixels_in_ellipse if negatives is not None else 0.0
             if relative_nnegatives > self.config.nnegative_pixels_tolerance:
                 log.warning("The '" + name + "' map contains too many negative values within the central ellipse")
-                #self.invalid.add(name)
                 self.negative.add(name)
 
             # NEW
             self.nnegatives[name] = relative_nnegatives
 
             # Check central pixel
-            if np.isnan(the_map.center_value):
+            if np.isnan(the_map.center_value) or (nans is not None and nans.data[the_map.pixel_center.y, the_map.pixel_center.x]): # old, new way
                 log.warning("The '" + name + "' map has NaN at the center pixel")
                 self.invalid.add(name)
 
-            # Check central pixel
-            if np.isinf(the_map.center_value):
-                log.warning("The '" + name + "' map has infinity at the center pixel")
-                self.invalid.add(name)
+            # INFS SHOULDN'T HAPPEN
+            # # Check central pixel
+            # if np.isinf(the_map.center_value):
+            #     log.warning("The '" + name + "' map has infinity at the center pixel")
+            #     self.invalid.add(name)
 
             # Clean
             gc.collect()

@@ -111,7 +111,7 @@ class BulgeOldStellarMapMaker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 4. Make the map of old stars
+        # 2. Make the map of old stars
         self.make_map()
 
     # -----------------------------------------------------------------

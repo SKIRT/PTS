@@ -915,10 +915,26 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
         radius_range += step
 
     # Create the plot
+    plot_xy(radius_list, value_list, title=title, format=format, transparent=transparent, path=path)
+
+# -----------------------------------------------------------------
+
+def plot_xy(x, y, title=None, path=None, format=None, transparent=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param title:
+    :param path:
+    :param format:
+    :param transparent
+    :return:
+    """
 
     # Create plot
     plt.figure()
-    plt.plot(radius_list, value_list)
+    plt.plot(x, y)
 
     # Add vertical lines
     # for factor in self.ellipses[name]:
