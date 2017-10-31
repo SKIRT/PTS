@@ -619,7 +619,7 @@ class MapsPlotter(MapsComponent):
         self.load_dust()
 
         # Plot dust maps
-        self.plot_dust(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
+        self.plot_dust(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting)
 
         # Clear the maps
         self.clear()

@@ -361,6 +361,29 @@ def split_except_within_single_quotes(text):
 
 # -----------------------------------------------------------------
 
+def split_except_within_double_quotes(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    parts = []
+
+    lst = text.split('"')
+
+    for i, item in enumerate(lst):
+
+        if i % 2: parts.append('"' + item + '"')
+        else:
+
+            for a in item.split(): parts.append(a)
+
+    return parts
+
+# -----------------------------------------------------------------
+
 def stripwhite_around(text, around):
 
     """

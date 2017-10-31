@@ -60,6 +60,9 @@ definition.add_flag("convolve", "perform convolution during the creation of the 
 # REBINNING
 definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
 
+# AUTO-SELECT??
+definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)
+
 # Selections
 definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)
 definition.add_optional("young", "string_list", "selected young stellar maps", choices=young_map_names)

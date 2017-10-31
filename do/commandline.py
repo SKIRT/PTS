@@ -24,21 +24,39 @@ from pts.core.tools import time
 
 # -----------------------------------------------------------------
 
+pts_settings_names = ["version", "interactive", "arguments", "configfile", "rerun", "remote", "keep", "input", "output", "input_files", "output_files"]
+
+expects_argument = dict()
+expects_argument["version"] = False
+expects_argument["interactive"] = False
+expects_argument["arguments"] = False
+expects_argument["configfile"] = True
+expects_argument["rerun"] = False
+expects_argument["remote"] = True
+expects_argument["keep"] = False
+expects_argument["input"] = True
+expects_argument["output"] = True
+expects_argument["input_files"] = True
+expects_argument["output_files"] = True
+
+# -----------------------------------------------------------------
+
 class Command(object):
 
     """
     This class ...
     """
 
-    def __init__(self, command, description, settings, input_dict, cwd=None, finish=None):
+    def __init__(self, command, description, settings, input_dict, cwd=None, finish=None, pts_settings=None):
 
         """
         This function ...
         :param command:
-        :param settings:
-        :param input_dict:
+        :param settings: dictionary
+        :param input_dict: dictionary
         :param cwd:
         :param finish:
+        :param pts_settings:
         """
 
         # Set working directory
@@ -54,6 +72,31 @@ class Command(object):
         self.input_dict = input_dict
         self.cwd = cwd
         self.finish = finish
+        self.pts_settings = pts_settings
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        command = "pts "
+
+        if self.pts_settings is not None:
+            for name in self.pts_settings:
+                command += "--" + name + " "
+                if self.pts_settings[name] is not True: command += self.pts_settings[name] + " "
+
+        from ..core.tools.stringify import represent_dict
+
+        command += self.command + " "
+        command += represent_dict(self.settings)
+
+        # Return
+        return command
 
 # -----------------------------------------------------------------
 

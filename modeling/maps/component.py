@@ -1388,7 +1388,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
                   mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True, interval=None,
-                  strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, cmaps=None):
+                  strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, cmaps=None, methods=None, not_methods=None):
 
         """
         Thisfunction ...
@@ -1408,6 +1408,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param soft_vmin:
         :param soft_vmax:
         :param cmaps:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1450,6 +1452,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
+
+                # Plot method
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting maps for the '" + method + "' method ...")
@@ -1550,7 +1556,8 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False, transparent=True):
+    def plot_negatives(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False,
+                       transparent=True, methods=None, not_methods=None):
 
         """
         This function ...
@@ -1559,6 +1566,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param clear_other_formats:
         :param show_axes:
         :param transparent:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1573,6 +1582,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
+
+                # Do method?
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting negative pixel masks for the '" + method + "' method ...")
@@ -1631,7 +1644,8 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_nans(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False, transparent=True):
+    def plot_nans(self, format="pdf", cropping_factor=1.3, clear_other_formats=True, show_axes=False, transparent=True,
+                  methods=None, not_methods=None):
 
         """
         This finction ...
@@ -1640,6 +1654,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param clear_other_formats:
         :param show_axes:
         :param transparent:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1654,6 +1670,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
+
+                # Plot method?
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting NaN pixel masks for the '" + method + "' method ...")
@@ -1768,7 +1788,8 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None,
-                        share_limits=True, mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True):
+                        share_limits=True, mask_negatives=False, clear_other_formats=True, show_axes=False,
+                        transparent=True, methods=None, not_methods=None):
 
         """
         This function ...
@@ -1781,7 +1802,9 @@ class MapMakerBase(GalaxyModelingComponent):
         :param mask_negatives:
         :param clear_other_formats:
         :param show_axes:
-        :param transparent
+        :param transparent:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1796,6 +1819,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.extra_maps[method]):
+
+                # Plot method?
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting extra maps for the '" + method + "' method ...")
@@ -1868,7 +1895,7 @@ class MapMakerBase(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def plot_contours(self, filled=False, nlevels=10, format="pdf", cropping_factor=1.3, clear_other_formats=True,
-                      show_axes=False, transparent=True):
+                      show_axes=False, transparent=True, methods=None, not_methods=None):
 
         """
         This function ...
@@ -1879,6 +1906,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param clear_other_formats:
         :param show_axes:
         :param transparent:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1890,6 +1919,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
+
+                # Plot method?
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting contours for the '" + method + "' method ...")
@@ -1966,7 +1999,7 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_profiles(self, nbins=20, format="pdf", clear_other_formats=True, transparent=True):
+    def plot_profiles(self, nbins=20, format="pdf", clear_other_formats=True, transparent=True, methods=None, not_methods=None):
 
         """
         Thisn function ...
@@ -1974,6 +2007,8 @@ class MapMakerBase(GalaxyModelingComponent):
         :param format:
         :param clear_other_formats:
         :param transparent:
+        :param methods:
+        :param not_methods:
         :return:
         """
 
@@ -1989,6 +2024,10 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
+
+                # plot method?
+                if methods is not None and method not in methods: continue
+                if not_methods is not None and method in not_methods: continue
 
                 # Debugging
                 log.debug("Plotting radial profiles for the '" + method + "' method ...")
@@ -4372,10 +4411,15 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_dust(self, maps=True, contours=True, profiles=True, nans=True):
+    def plot_dust(self, maps=True, contours=True, profiles=True, negatives=True, nans=True):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param negatives:
+        :param nans:
         :return:
         """
 
@@ -4391,6 +4435,9 @@ class MapsComponent(MapMakerBase):
 
         # Plot the radial profiles
         if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+
+        # Plot the negative pixel masks
+        if negatives: self.plot_negatives(format=self.config.format, clear_other_formats=True, methods=["hot"])
 
         # Plot the NaNs masks
         if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)

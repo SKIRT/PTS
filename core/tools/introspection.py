@@ -28,6 +28,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from distutils.spawn import find_executable
 from importlib import import_module
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
@@ -259,6 +260,9 @@ pts_executable_path = fs.join(pts_do_dir, "__main__.py")
 
 # The path to the main directory for a given PTS subproject
 def pts_subproject_dir(subproject): return fs.join(pts_package_dir, subproject)
+
+# The path to the do directory for a given PTS subproject
+def pts_subproject_do_dir(subproject): return fs.join(pts_do_dir, subproject)
 
 # The path to the 'config' directory for a given PTS subproject
 def pts_config_dir(subproject): return fs.join(pts_package_dir, subproject, "config")
@@ -1825,6 +1829,27 @@ def which_module(subpackage, name):
 
 # -----------------------------------------------------------------
 
+def get_scripts_in_subproject(subproject):
+
+    """
+    This function ...
+    :param subproject:
+    :return:
+    """
+
+    scripts = []
+
+    # Determine subproject do path
+    subproject_do_path = pts_subproject_do_dir(subproject)
+
+    # Loop over the files in the directory
+    for filepath, filename in fs.files_in_path(subproject_do_path, not_contains="__init__", extension="py", returns=["path", "name"]): scripts.append((subproject, filename + ".py"))
+
+    # Return
+    return sorted(scripts, key=itemgetter(1))
+
+# -----------------------------------------------------------------
+
 def get_scripts():
 
     """
@@ -1841,6 +1866,127 @@ def get_scripts():
 
     # Return the sorted list of script names
     return sorted(scripts, key=itemgetter(1))
+
+# -----------------------------------------------------------------
+
+def find_commands_in_subproject(name, subproject):
+
+    """
+    Thisn function ...
+    :param name:
+    :param subproject:
+    :return:
+    """
+
+    from ...do.commandline import get_description
+
+    scripts = get_scripts_in_subproject(subproject)
+    table = get_argument_table(subproject)
+
+    # Find matches
+    matches, table_matches = find_matches_in_subproject(name, subproject, scripts=scripts, table=table)
+
+    # Initialize dictionary
+    commands = OrderedDict()
+
+    # Scripts
+    for script in matches:
+
+        #subproject = script[0]
+        command = script[1]
+        command_name = command[:-3]
+
+        # Determine the path to the script
+        filepath = fs.join(pts_subproject_do_dir(subproject), command)
+
+        # Get the description
+        description = get_description(filepath, subproject, command_name)
+
+        # Add
+        commands[command_name] = description
+
+    # Tables
+    for _subproject, index in table_matches:
+
+        assert _subproject == subproject
+        command = table["Command"][index]
+        description = table["Description"][index]
+        #configuration_method = tables[subproject]["Configuration method"][index]
+
+        # Add
+        commands[command] = description
+
+    # Return
+    return commands
+
+# -----------------------------------------------------------------
+
+def get_all_commands_in_subproject(subproject):
+
+    """
+    Thisnf unction ...
+    :param subproject:
+    :return:
+    """
+
+    from ...do.commandline import get_description
+
+    # Initialize a dictionary
+    commands = OrderedDict()
+
+    scripts = get_scripts_in_subproject(subproject)
+    table = get_argument_table(subproject)
+    #print(table["Command"])
+
+    # Scripts
+    for script in scripts:
+
+        command = script[1]
+        command_name = command[:-3]
+
+        # Determine the path to the script
+        filepath = fs.join(pts_subproject_do_dir(subproject), command)
+
+        # Get the description
+        description = get_description(filepath, subproject, command_name)
+
+        # Add
+        commands[command_name] = description
+
+    # Tables
+    for index in range(len(table["Command"])):
+
+        command = table["Command"][index]
+        description = table["Description"][index]
+
+        # Add
+        commands[command] = description
+
+    # Return
+    return commands
+
+# -----------------------------------------------------------------
+
+def find_matches_in_subproject(name, subproject, scripts=None, table=None):
+
+    """
+    This function ...
+    :param name:
+    :param subproject:
+    :param scripts:
+    :param table:
+    :return:
+    """
+
+    if scripts is not None: scripts = get_scripts_in_subproject(subproject)
+    if table is not None: table = get_argument_table(subproject)
+
+    # Find matches
+    matches = find_matches_scripts(name, scripts)
+    table_matches = find_matches_tables(name, {subproject: table})
+
+    # Return
+    return matches, table_matches
 
 # -----------------------------------------------------------------
 

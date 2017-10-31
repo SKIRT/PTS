@@ -25,6 +25,7 @@ from ....core.basics.configurable import Configurable
 from ...core.list import NamedFrameList
 from ....core.tools import sequences
 from ....core.units.parsing import parse_unit as u
+from ...core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -91,9 +92,8 @@ class HotDustMapsMaker(Configurable):
 
         # -- Attributes --
 
-        # THe mips 24 frame and error map
+        # The mips 24 image
         self.mips24 = None
-        #self.mips24_errors = None
 
         # The maps of the old stellar disk
         self.old = None
@@ -115,6 +115,12 @@ class HotDustMapsMaker(Configurable):
 
         # The methods
         self.methods = dict()
+
+        # Method name
+        self.method_name = None
+
+        # Region of interest
+        self.region_of_interest = None
 
     # -----------------------------------------------------------------
 
@@ -147,7 +153,6 @@ class HotDustMapsMaker(Configurable):
 
         # Get the input
         self.mips24 = kwargs.pop("mips24")
-        #self.mips24_errors = kwargs.pop("mips24_errors")
 
         # Maps of old stars and their origins
         self.old = kwargs.pop("old")
@@ -160,6 +165,9 @@ class HotDustMapsMaker(Configurable):
 
         # Set factors
         self.factors = kwargs.pop("factors")
+
+        # Get region of interest
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
     # -----------------------------------------------------------------
 
@@ -235,7 +243,6 @@ class HotDustMapsMaker(Configurable):
         ## DO THE CONVERSION
 
         self.mips24 *= conversion_factor
-        #self.mips24_errors *= conversion_factor
 
     # -----------------------------------------------------------------
 
@@ -264,7 +271,6 @@ class HotDustMapsMaker(Configurable):
 
             # CHECK IF OLD IS STILL NORMALIZED
             if not normalized_old.is_normalized():
-                #raise RuntimeError("Normalization of old stellar map failed")
                 log.warning("Need to re-normalize the old stellar map")
                 normalized_old.normalize()
 
@@ -305,39 +311,23 @@ class HotDustMapsMaker(Configurable):
                     continue
 
                 # Calculate the corrected 24 micron image
-                corrected = make_corrected_24mu_map(frames["mips24"], frames["old"], factor)
+                hot_dust = make_corrected_24mu_map(frames["mips24"], frames["old"], factor)
 
-                # Add the dust map to the dictionary
-                self.maps[name] = corrected
+                # Interpolate negatives
+                negatives = hot_dust.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
+                hot_dust.replace_negatives(0.0)  # if any left
 
-    # -----------------------------------------------------------------
+                # Normalize
+                try: hot_dust.normalize()
+                except RuntimeError: log.warning("The '" + name + "' hot dust map could not be normalized")
 
-    #def make_distributions(self):
+                # Create image
+                image = Image()
+                image.add_frame(hot_dust, "hot")
+                if negatives is not None: image.add_mask(negatives, "negatives")
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Inform the user
-        #log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
-
-        # Create mask
-        #mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
-
-        # NEW: TODO
-
-        # Loop over the different maps
-        #for factor in self.corrected_24mu_maps:
-
-            # Get the values
-            #values = self.corrected_24mu_maps[factor][mask]
-
-            # Make a distribution of the pixel values indicated by the mask
-            #distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
-
-            # Add the distribution to the dictionary
-            #self.corrected_24mu_distributions[factor] = distribution
+                # Add the image to the dictionary
+                self.maps[name] = image
 
     # -----------------------------------------------------------------
 
@@ -364,14 +354,6 @@ def make_corrected_24mu_map(mips24, disk, factor):
     # Inform the user
     log.info("Subtracting the old stellar contribution from the 24 micron emission map with a factor of " + str(factor) + " ...")
 
-    ## Subtract old stellar contribution from FUV and MIPS 24 emission
-
-    #     From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
-    #     for this we typically use an exponential disk
-    #     (scale length detemermined by GALFIT)
-
-    ## MIPS HAS BEEN CONVERTED TO LSUN (ABOVE)
-
     # typisch 20% en 35% respectievelijk
     # 48% voor MIPS 24 komt van Lu et al. 2014
 
@@ -380,12 +362,6 @@ def make_corrected_24mu_map(mips24, disk, factor):
 
     # Subtract the disk contribution to the 24 micron image
     new_mips = mips24 - total_contribution * disk # disk image is normalized
-
-    # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-    #new_mips[new_mips < 0.0] = 0.0
-
-    # Set zero where low signal-to-noise ratio
-    # new_mips[self.mips < self.config.ionizing_stars.mips_young_stars.mips_snr_level*self.mips_errors] = 0.0
 
     # Return the new 24 micron frame
     return new_mips

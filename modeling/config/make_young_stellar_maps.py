@@ -37,7 +37,8 @@ definition.add_flag("replot", "replot already existing plots", False)
 
 # Old component
 old_components = ["bulge", "disk", "total"]
-definition.add_optional("old_component", "string", "old stellar component to use to subtract diffuse emission by evolved stars", "disk")
+default_old_component = "total"
+definition.add_optional("old_component", "string", "old stellar component to use to subtract diffuse emission by evolved stars", default_old_component, choices=old_components)
 
 # -----------------------------------------------------------------
 

@@ -35,7 +35,7 @@ import argparse
 # Import the relevant PTS modules
 from pts.core.tools import introspection, parsing
 from pts.core.tools import filesystem as fs
-from pts.do.run import run_script, run_configurable, no_match, no_input, show_version, multiple_matches
+from pts.do.run import run_configurable, no_match, no_input, show_version, multiple_matches
 
 # -----------------------------------------------------------------
 

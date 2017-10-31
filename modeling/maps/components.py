@@ -211,6 +211,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Auto-select
+        if self.config.auto: self.auto_select()
+
         # 2. Prompt
         self.prompt()
 
@@ -586,6 +589,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         origins.update(self.ionizing_selection_origins)
         origins.update(self.dust_selection_origins)
         return list(origins)
+
+    # -----------------------------------------------------------------
+
+    def auto_select(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically making maps selections ...")
+
+        
 
     # -----------------------------------------------------------------
 

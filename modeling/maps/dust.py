@@ -321,7 +321,8 @@ class DustMapMaker(MapsComponent):
         else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
-        maker.run(mips24=mips24, old=self.old, old_origins=self.old_origins, old_methods=self.old_methods, method_name=method_name, factors=factors, maps=current)
+        maker.run(mips24=mips24, old=self.old, old_origins=self.old_origins, old_methods=self.old_methods,
+                  method_name=method_name, factors=factors, maps=current, region_of_interest=self.truncation_ellipse)
 
         # Add the dust maps
         self.maps[method_name] = maker.maps

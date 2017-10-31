@@ -271,6 +271,112 @@ def stringify_list(value, **kwargs):
 
 # -----------------------------------------------------------------
 
+def represent_dict(value, **kwargs):
+
+    """
+    Thisf unction ...
+    :param value:
+    :param kwargs:
+    :return:
+    """
+
+    if len(value) == 0: return ""
+
+    # Only for stringifying the values
+    value_kwargs = copy.copy(kwargs)
+    # If delimiter is passed for stringifying the values in the list
+    if "value_delimiter" in value_kwargs: value_kwargs["delimiter"] = value_kwargs.pop("value_delimiter")
+
+    # Get identify symbol
+    identity_symbol = kwargs.pop("identity_symbol", ": ")
+    quote_key = kwargs.pop("quote_key", True)
+    quote_value = kwargs.pop("quote_value", True)
+    quote_character = kwargs.pop("quote_character", "'")
+
+    # Don't quote certain thingies
+    no_quote_keys = kwargs.pop("no_quote_keys", [])
+    no_quote_value_for_keys = kwargs.pop("no_quote_value_for_keys", [])
+
+    # Do quote certain thingies
+    quote_keys = kwargs.pop("quote_keys", [])
+    quote_value_for_keys = kwargs.pop("quote_value_for_keys", [])
+
+    replace_spaces_keys = kwargs.pop("replace_spaces_keys", None)
+    replace_spaces_values = kwargs.pop("replace_spaces_values", None)
+
+    replace_in_keys = kwargs.pop("replace_in_keys", None)
+    replace_in_values = kwargs.pop("replace_in_values", None)
+
+    parts = []
+
+    # Loop over the dictionary keys
+    for key in value:
+
+        # Stringify the key
+        ktype, kstring = stringify(key, **kwargs)
+        if replace_spaces_keys is not None: kstring = kstring.replace(" ", replace_spaces_keys)
+        if replace_in_keys is not None: kstring = strings.replace_from_dict(kstring, replace_in_keys)
+
+        v = value[key]
+
+        # Stringify the value
+        vtype, vstring = stringify(v, **value_kwargs)
+        if replace_spaces_values is not None: vstring = vstring.replace(" ", replace_spaces_values)
+        if replace_in_values is not None: vstring = strings.replace_from_dict(vstring, replace_in_values)
+
+        # Quote keys
+        if quote_key:
+
+            # Don't quote after all
+            if key in no_quote_keys: kstring_with_quotes = kstring
+
+            # Quote
+            else: kstring_with_quotes = quote_character + kstring + quote_character
+
+        # Don't quote keys
+        else:
+
+            # Quote after all
+            if key in quote_keys: kstring_with_quotes = quote_character + kstring + quote_character
+
+            # Don't quote
+            else: kstring_with_quotes = kstring
+
+        # DON't QUOTE THESE
+        if vtype == "integer" or vtype == "real" or vtype == "boolean": vstring_with_quotes = vstring
+
+        # Quote values
+        elif quote_value:
+
+            # Don't quote after all
+            if key in no_quote_value_for_keys: vstring_with_quotes = vstring
+
+            # Just quote
+            else: vstring_with_quotes = quote_character + vstring + quote_character
+
+        # Don't quote values
+        else:
+
+            # DO quote after all
+            if key in quote_value_for_keys: vstring_with_quotes = quote_character + vstring + quote_character
+
+            # Don't quote
+            else: vstring_with_quotes = vstring
+
+        # Determine line
+        string = kstring_with_quotes + identity_symbol + vstring_with_quotes
+
+        # Add line
+        parts.append(string)
+
+    # Get delimiter
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return delimiter.join(parts)
+
+# -----------------------------------------------------------------
+
 def stringify_dict(value, **kwargs):
 
     """
