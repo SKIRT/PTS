@@ -2891,7 +2891,6 @@ class MapMakerBase(GalaxyModelingComponent):
 
         return self.collection.maps_sub_names
 
-
     # -----------------------------------------------------------------
 
     def has_frame_for_filter(self, fltr):
@@ -3934,6 +3933,155 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.get_map_paths_sub_name(self.maps_sub_name, flatten=flatten, method=method)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_all_method(self, method):
+
+        """
+        This function ....
+        :param method:
+        :return:
+        """
+
+        # Maps
+        self.clear_current_maps_method(method)
+
+        # Plots
+        self.clear_current_plots_method(method)
+
+        # Contour plots
+        self.clear_current_contours_method(method)
+
+        # Profile plots
+        self.clear_current_profiles_method(method)
+
+        # Negatives plots
+        self.clear_current_negatives_method(method)
+
+        # NaNs plots
+        self.clear_current_nans_method(method)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_maps_method(self, method):
+
+        """
+        Thisf ucntion ...
+        :param method:
+        :return:
+        """
+
+        paths = self.get_map_paths_sub_name(self.maps_sub_name, flatten=True, method=method)
+
+        # Loop over the files
+        for name in paths:
+
+            path = paths[name]
+            log.warning("Removing the '" + name + "' map ...")
+            fs.remove_file(path)
+
+        # Remove the origins file
+        origins_path = fs.join(self.maps_sub_path, method, "origins.txt")
+        if fs.is_file(origins_path):
+            log.warning("Removing the origins file ...")
+            fs.remove_file(origins_path)
+
+        # Remove the methods file
+        methods_path = fs.join(self.maps_sub_path, method, "methods.txt")
+        if fs.is_file(methods_path):
+            log.warning("Removing the methods file ...")
+            fs.remove_file(methods_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_plots_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Determine plots path
+        plots_path = fs.join(self.maps_sub_path, method, self.map_plots_name)
+        if not fs.is_directory(plots_path): return
+
+        # Clear
+        log.warning("Clearing the '" + method + "' plots directory ...")
+        fs.clear_directory(plots_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_contours_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Determine contours path
+        contours_path = fs.join(self.maps_sub_path, method, self.contour_plots_name)
+        if not fs.is_directory(contours_path): return
+
+        # Clear
+        log.warning("Clearing the '" + method + "' contours directory ...")
+        fs.clear_directory(contours_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_profiles_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Determine profiles path
+        profiles_path = fs.join(self.maps_sub_path, method, self.profile_plots_name)
+        if not fs.is_directory(profiles_path): return
+
+        # Clear
+        log.warning("Clearing the '" + method + "' profiles directory ...")
+        fs.clear_directory(profiles_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_negatives_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Determine negatives path
+        negatives_path = fs.join(self.maps_sub_path, method, self.negatives_plots_name)
+        if not fs.is_directory(negatives_path): return
+
+        # Clear
+        log.warning("Clearing the '" + method + "' negatives directory ...")
+        fs.clear_directory(negatives_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_nans_method(self, method):
+
+        """
+        Thisf unction ...
+        :param method:
+        :return:
+        """
+
+        # Determine nans path
+        nans_path = fs.join(self.maps_sub_path, method, self.nans_plots_name)
+        if not fs.is_directory(nans_path): return
+
+        # Clear
+        log.warning("Clearing the '" + method + "' NaNs directory ...")
+        fs.clear_directory(nans_path)
 
     # -----------------------------------------------------------------
 

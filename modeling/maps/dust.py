@@ -194,6 +194,9 @@ class DustMapMaker(MapsComponent):
         attenuation_origins = self.get_attenuation_origins(flatten=True)
         attenuation_methods = self.get_attenuation_methods(flatten=True)
 
+        # Clear already created maps
+        if self.config.clear: self.clear_current_all_method(method_name)
+
         # Get current
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
@@ -296,6 +299,30 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return tostr(self.config.old, delimiter="_")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return {self.old_filter_name: self.old}
+
+    # -----------------------------------------------------------------
+
     def make_hot(self):
 
         """
@@ -321,12 +348,15 @@ class DustMapMaker(MapsComponent):
         # Debugging
         log.debug("Using the following factors for subtracting diffuse emission: " + tostr(factors, delimiter=", "))
 
+        # Clear already created maps
+        if self.config.clear: self.clear_current_all_method(method_name)
+
         # Get already created maps
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
-        maker.run(mips24=mips24, old=self.old, old_origins=self.old_origins, old_methods=self.old_methods,
+        maker.run(mips24=mips24, old=self.old_maps, old_origins=self.old_origins, old_methods=self.old_methods,
                   method_name=method_name, factors=factors, maps=current, region_of_interest=self.truncation_ellipse)
 
         # Add the dust maps

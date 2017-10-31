@@ -3104,7 +3104,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     """
 
     # Debugging
-    log.debug("Rebinning frame " + name + "with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
+    log.debug("Rebinning frame '" + name + "' with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
 
     # CONVERT TO PER ANGULAR OR INTRINSIC AREA, IF UNIT IS DEFINED
     if frame.unit is not None:
