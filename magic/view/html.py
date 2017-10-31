@@ -1488,8 +1488,10 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, s
     x_radii = dict()
     y_radii = dict()
     for display_id in ellipses:
-        x_radii[display_id] = ellipses[display_id].radius.x
-        y_radii[display_id] = ellipses[display_id].radius.y
+        #x_radii[display_id] = ellipses[display_id].radius.x
+        #y_radii[display_id] = ellipses[display_id].radius.y
+        x_radii[display_id] = ellipses[display_id].radius.x * start_factor
+        y_radii[display_id] = ellipses[display_id].radius.y * start_factor
 
     #code += "var x_radii = {" + stringify_dict(x_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
     #code += "var y_radii = {" + stringify_dict(y_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
@@ -1518,7 +1520,7 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, s
     existing_function_code += "function isExistingDisplayWithImage(displayid)\n"
     existing_function_code += "{\n"
     #existing_function_code += "    return JS9.IsDisplay(displayid);\n"
-    existing_function_code += "    return JS9.LookupDisplay(displayid) != null;\n"
+    existing_function_code += "    return JS9.LookupDisplay(displayid, mustExist=false) != null;\n"
     existing_function_code += "}\n"
 
     code += existing_function_code
@@ -1542,8 +1544,11 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, s
 
     #new_factor = 2.0
 
-    code += "    var x_factor = x_radius / x_radii[lastim.display.id] * " + str(start_factor) + ";\n"
-    code += "    var y_factor = y_radius / y_radii[lastim.display.id] * " + str(start_factor) + ";\n"
+    #code += "    var x_factor = x_radius / x_radii[lastim.display.id] * " + str(start_factor) + ";\n"
+    #code += "    var y_factor = y_radius / y_radii[lastim.display.id] * " + str(start_factor) + ";\n"
+
+    code += "    var x_factor = x_radius / x_radii[lastim.display.id];\n"
+    code += "    var y_factor = y_radius / y_radii[lastim.display.id];\n"
 
     #code += "   window.alert('factor = ' + String(x_factor));\n"
     #code += "   window.alert('factor = ' + String(y_factor));\n"
@@ -1574,63 +1579,16 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, s
 
     code += "    var displayIds = " + str(display_ids) + ";\n"
 
-    #code += "    window.alert(displayIds);\n"
-
-    # for display_id in display_ids:
-    #
-    #     im_temp_name = display_id.lower() + "image"
-    #     code += "    try\n    {\n"
-    #     code += "        var " + im_temp_name + " = JS9.GetImage({display: '" + display_id + "'});\n"
-    #     code += "        window.alert('" + display_id + " image is found');\n"
-    #     code += "    }\n"
-    #     code += "    catch(err)\n{\n"
-    #     code += "        window.alert('" + display_id + " image is NOT found');"
-    #     code += "\n    }"
-
-    #code += "    window.alert(displayIds.length);\n"
-
-    # existing_function_code = ""
-    # existing_function_code += "function isExistingDisplay(display_id)\n"
-    # existing_function_code += "{\n"
-    # existing_function_code += "    try\n"
-    # existing_function_code += "    {\n"
-    # existing_function_code += "        var im_temp_name = JS9.GetImage({display: display_id});\n"
-    # existing_function_code += "        return true;\n"
-    # existing_function_code += "    }\n"
-    # existing_function_code += "    catch(err)\n"
-    # existing_function_code += "    {\n"
-    # existing_function_code += "        return false;\n"
-    # existing_function_code += "    }\n"
-    # existing_function_code += "}\n"
-
-    #code += existing_function_code
-    #code += existing_function_code
-
     code += "\n"
 
     code += "    for(var i = 0; i < displayIds.length ; i++)\n"
     code += "    {\n"
-    code += "         var displayid = displayIds[i];\n"
-    #code += "        window.alert(i);\n"
-    #code += "        var isCurrent = displayIDs[i] == lastim.display.id;\n"
-    #code += "        window.alert(isCurrent);\n"
-    #code += "        if (isCurrent == true) { window.alert(displayIDs[i] + ' = current'); }\n"
-    #code += "        else { window.alert(displayIDs[i] + ' = not current'); }\n"
 
-    #code += "        window.alert(displayIds[i] == lastim.display.id);\n"
-
-    #code += "        if(displayid == lastim.display.id)\n"
-    #code += "        if(displayid != lastim.display.id)\n"
+    code += "        var displayid = displayIds[i];\n"
     code += "        var exists = isExistingDisplayWithImage(displayid);\n"
     #code += "        window.alert('Display ' + displayid + ': ' + String(exists));\n"
     code += "        if(displayid != lastim.display.id && exists)\n"
-    #code += "        {\n"
-    #code += "            window.alert(displayIds[i] + ' = current');\n"
-    #code += "        }\n"
-    #code += "        else\n"
     code += "        {\n"
-    #code += "            window.alert(displayIds[i] + ' = not current');\n"
-
     code += "            var x_radius_i = x_radii[displayid];\n"
     code += "            var y_radius_i = y_radii[displayid];\n"
 
