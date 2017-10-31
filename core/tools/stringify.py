@@ -301,6 +301,14 @@ def stringify_dict(value, **kwargs):
     quote_value = kwargs.pop("quote_value", True)
     quote_character = kwargs.pop("quote_character", "'")
 
+    # Don't quote certain thingies
+    no_quote_keys = kwargs.pop("no_quote_keys", [])
+    no_quote_value_for_keys = kwargs.pop("no_quote_value_for_keys", [])
+
+    # Do quote certain thingies
+    quote_keys = kwargs.pop("quote_keys", [])
+    quote_value_for_keys = kwargs.pop("quote_value_for_keys", [])
+
     replace_spaces_keys = kwargs.pop("replace_spaces_keys", None)
     replace_spaces_values = kwargs.pop("replace_spaces_values", None)
 
@@ -336,12 +344,51 @@ def stringify_dict(value, **kwargs):
         if ptype is None: ptype = vtype
         elif ptype != vtype: ptype = "mixed"
 
-        if quote_key: kstring_with_quotes = quote_character + kstring + quote_character
-        else: kstring_with_quotes = kstring
+        # if quote_key and key not in no_quote_keys: kstring_with_quotes = quote_character + kstring + quote_character
+        # else: kstring_with_quotes = kstring
 
+        # Quote keys
+        if quote_key:
+
+            # Don't quote after all
+            if key in no_quote_keys: kstring_with_quotes = kstring
+
+            # Quote
+            else: kstring_with_quotes = quote_character + kstring + quote_character
+
+        # Don't quote keys
+        else:
+
+            # Quote after all
+            if key in quote_keys: kstring_with_quotes = quote_character + kstring + quote_character
+
+            # Don't quote
+            else: kstring_with_quotes = kstring
+
+        #if ptype == "integer" or ptype == "real" or ptype == "boolean": vstring_with_quotes = vstring
+        #elif quote_value and key not in no_quote_value_for_keys: vstring_with_quotes = quote_character + vstring + quote_character
+        #else: vstring_with_quotes = vstring
+
+        # DON't QUOTE THESE
         if ptype == "integer" or ptype == "real" or ptype == "boolean": vstring_with_quotes = vstring
-        elif quote_value: vstring_with_quotes = quote_character + vstring + quote_character
-        else: vstring_with_quotes = vstring
+
+        # Quote values
+        elif quote_value:
+
+            # Don't quote after all
+            if key in no_quote_value_for_keys: vstring_with_quotes = vstring
+
+            # Just quote
+            else: vstring_with_quotes = quote_character + vstring + quote_character
+
+        # Don't quote values
+        else:
+
+            # DO quote after all
+            if key in quote_value_for_keys: vstring_with_quotes = quote_character + vstring + quote_character
+
+            # Don't quote
+            else: vstring_with_quotes = vstring
 
         # Determine line
         string = kstring_with_quotes + identity_symbol + vstring_with_quotes

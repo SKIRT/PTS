@@ -2786,7 +2786,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.clip_maps_html_page_path)
+        with browser.serve_local_host: browser.open_path(self.clip_maps_html_page_path)
 
     # -----------------------------------------------------------------
 

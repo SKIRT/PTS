@@ -14,9 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .base import ImageViewer
-from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, make_script_button, dictionary, make_usable
+from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, center, make_script_button, dictionary, make_usable
 from ...core.basics.log import log
-from .html import body_settings, javascripts, css_scripts, JS9Loader, JS9Spawner, JS9Window, make_load_region, make_load_regions, JS9Preloader
+from .html import body_settings, javascripts, css_scripts, JS9Loader, JS9Spawner, JS9Window, make_load_regions, JS9Preloader, load_region_or_regions
 from .html import make_replace_infs_by_nans_multiple, make_replace_negatives_by_nans_multiple
 from .html import make_spawn_code, add_to_div
 from ...core.tools import filesystem as fs
@@ -116,7 +116,7 @@ class MultiImageViewer(ImageViewer):
         self.make_table()
 
         # 5. Generate the page
-        self.generate_page()
+        if self.config.page: self.generate_page()
 
         # 6. Show
         if self.config.show: self.show()
@@ -545,14 +545,11 @@ class MultiImageViewer(ImageViewer):
                 region_button_id = display_name + "regionsbutton"
                 load_region_function_name = "load_regions_" + display_name
 
-                if isinstance(region, Region):
-                    load_region = make_load_region(region, display=display_id, movable=False, rotatable=False,
-                                                   removable=False, resizable=True, quote_character="'")
-                elif isinstance(region, RegionList):
-                    load_region = make_load_regions(region, display=display_id, movable=False, rotatable=False,
-                                                    removable=False, resizable=True, quote_character="'")
-                else: raise ValueError("Invalid region or region list")
-
+                # Make load region code
+                load_region = load_region_or_regions(region, display=display_id, changeable=self.config.regions.changeable,
+                                                     movable=self.config.regions.movable, rotatable=self.config.regions.rotatable,
+                                                     removable=self.config.regions.removable, resizable=self.config.resizable,
+                                                     color=self.config.regions.color, quote_character="'")
                 region_loads[display_id] = load_region
 
                 # Create region loader
@@ -751,15 +748,12 @@ class MultiImageViewer(ImageViewer):
 
     # -----------------------------------------------------------------
 
-    def generate_page(self):
+    def _initialize_page(self):
 
         """
         This function ...
         :return:
         """
-
-        # Inform the user
-        log.info("Generating the page ...")
 
         settings_body = body_settings if self.preloader is not None and self.preloader.has_images else None
 
@@ -770,27 +764,99 @@ class MultiImageViewer(ImageViewer):
         self.page = HTMLPage(self.title, body_settings=settings_body, javascript_path=javascripts,
                              css_path=css_paths, style=style, footing=updated_footing())
 
-        classes = dict()
-        classes["JS9Menubar"] = "data-backgroundColor"
+    # -----------------------------------------------------------------
 
-        self.page += center(make_theme_button(classes=classes))
-        self.page += newline
+    def _add_theme_button(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make theme button
+        self.page += center(self.theme_button) + newline
+
+    # -----------------------------------------------------------------
+
+    def _add_infs_button(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Infs
         self.page += center(self.all_infs_button) + newline
 
+    # -----------------------------------------------------------------
+
+    def _add_negatives_button(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
         # Ngeatives
         self.page += center(self.all_negatives_button) + newline
 
+    # -----------------------------------------------------------------
+
+    def _add_all_loader(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Add all images loader
         if self.all_loader is not None:
+
             self.page += center(str(self.all_loader))
             self.page += newline
+
+    # -----------------------------------------------------------------
+
+    def _add_preloader(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add preloader
+        if self.preloader is not None and self.preloader.has_images: self.page += self.preloader
+
+    # -----------------------------------------------------------------
+
+    def generate_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the page ...")
+
+        # Initialize
+        self._initialize_page()
+
+        # Add theme button
+        self._add_theme_button()
+
+        # Infs and negatives
+        self._add_infs_button()
+        self._add_negatives_button()
+
+        # All images loader
+        self._add_all_loader()
 
         # Add the table
         self.page += self.table
 
         # Add preloader
-        if self.preloader is not None and self.preloader.has_images: self.page += self.preloader
+        self._add_preloader()
 
     # -----------------------------------------------------------------
 

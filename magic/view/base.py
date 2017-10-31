@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -59,6 +59,22 @@ class ImageViewer(Configurable):
 
         # The page
         self.page = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ImageViewer, self).setup(**kwargs)
+
+        # Check
+        if self.config.show and not self.config.page: raise ValueError("Cannot show the page when generating the page is disabled")
 
     # -----------------------------------------------------------------
 
@@ -124,6 +140,18 @@ class ImageViewer(Configurable):
 
         # Create the button
         return html.make_script_button(button_id, "Replace negatives", replace_nans_negatives, replace_function_name)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def _initialize_page(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

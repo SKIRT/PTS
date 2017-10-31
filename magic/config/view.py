@@ -49,7 +49,25 @@ definition.add_optional("zoom", "string", "zoom function", default_zoom, choices
 
 # -----------------------------------------------------------------
 
+# Make page?
+definition.add_flag("page", "generate the page", True)
+
 # Show?
 definition.add_flag("show", "show the view", True)
+
+# -----------------------------------------------------------------
+
+# Regions settings
+definition.add_section("regions", "regions settings")
+
+# Color of the regions
+definition.sections["regions"].add_optional("color", "string", "color to render all regions (None means default of the regions)")
+
+# Other settings
+definition.sections["regions"].add_flag("changeable", "changeable", False)
+definition.sections["regions"].add_flag("movable", "movable", False)
+definition.sections["regions"].add_flag("rotatable", "rotatable", False)
+definition.sections["regions"].add_flag("removable", "removable", False)
+definition.sections["regions"].add_flag("resizable", "resizable", True)
 
 # -----------------------------------------------------------------

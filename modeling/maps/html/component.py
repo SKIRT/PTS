@@ -978,7 +978,7 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.page_path)
+        with browser.serve_local_host(): browser.open_path(self.page_path)
 
     # -----------------------------------------------------------------
 

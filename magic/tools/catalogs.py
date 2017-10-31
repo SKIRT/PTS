@@ -196,6 +196,9 @@ def get_ngc_name(galaxy_name, delimiter=" "):
     simbad.ROW_LIMIT = -1
 
     result = simbad.query_objectids(galaxy_name)
+    if result is None or len(result) == 0: raise ValueError("Galaxy name '" + galaxy_name + "' could not be recognized")
+
+    # Loop over the results
     for name in result["ID"]:
 
         if "NGC" in name:

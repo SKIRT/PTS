@@ -1643,6 +1643,18 @@ def contains_lines(path):
 
 # -----------------------------------------------------------------
 
+def has_lines(path):
+
+    """
+    Thisfunction ...
+    :param path:
+    :return:
+    """
+
+    return contains_lines(path)
+
+# -----------------------------------------------------------------
+
 def get_line(path, row):
 
     """
@@ -2084,6 +2096,19 @@ def relative_to(path, base_path):
     relative = path.split(base_path)[1]
     if relative.startswith("/"): return relative[1:]
     else: return relative
+
+# -----------------------------------------------------------------
+
+def in_localhost_path(path, serve_path, port=8000):
+
+    """
+    Thisf unction ...
+    :param path:
+    :param serve_path:
+    :return:
+    """
+
+    return "http://localhost:" + str(port) + "/" + relative_to(path, serve_path)
 
 # -----------------------------------------------------------------
 

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments, prompt_finish
 from pts.core.tools import browser
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.html.component import data_page_filename, photometry_page_filename, components_page_filename
@@ -109,11 +109,22 @@ if not fs.is_file(page_path): raise ValueError("The page is not present")
 
 # -----------------------------------------------------------------
 
-# Setup localhost server
-with browser.serve_local_host():
+# # Setup localhost server
+# with browser.serve_local_host():
+#     # Open
+#     # SHOULD BE AN OPEN AND WAIT FOR CLOSING FUNCTION?
+#     browser.open_path(page_path)
 
-    # Open
-    # SHOULD BE AN OPEN AND WAIT FOR CLOSING FUNCTION?
-    browser.open_path(page_path)
+import subprocess
+from pts.core.tools import introspection
+
+python_path = introspection.python_executable_path()
+
+command = [python_path, "-m", "SimpleHTTPServer"]
+subprocess.Popen(command)
+
+#thread = browser.start_localhost()
+browser.open_path(page_path)
+prompt_finish()
 
 # -----------------------------------------------------------------

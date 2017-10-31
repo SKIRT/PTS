@@ -15,13 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 import string
+from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from ...core.tools import types
-from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
@@ -176,6 +176,10 @@ class Region(object):
 
     # -----------------------------------------------------------------
 
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
     def __init__(self, **kwargs):
 
         """
@@ -263,7 +267,7 @@ class Region(object):
         :return:
         """
 
-
+        pass
 
 # -----------------------------------------------------------------
 

@@ -997,7 +997,7 @@ def make_script_function_script(function_name, script):
 
 # -----------------------------------------------------------------
 
-def make_script_button(id, text, script, function_name):
+def make_script_button(id, text, script, function_name, quote_character='"'):
 
     """
     This function ...
@@ -1005,18 +1005,12 @@ def make_script_button(id, text, script, function_name):
     :param text:
     :param script:
     :param function_name:
+    :param quote_character:
     """
-
-    # code = button(id, text, function_name + "()")
-    # code += "\n"
-    # code += "<script>"
-    # code += "\n"
-    # code += make_script_function(function_name, script)
-    # code += "\n</script>"
 
     code = make_script_function_script(function_name, script)
     code += "\n"
-    code += button(id, text, function_name + "()")
+    code += button(id, text, function_name + "();", quote_character=quote_character)
 
     # Return the code
     return code

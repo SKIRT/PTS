@@ -27,6 +27,7 @@ from pts.evolve.welcome import welcome as welcome_evolve
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
 from pts.core.basics.configuration import create_configuration
 from pts.modeling.setup import setup as setup_modeling, finish as finish_modeling
+from pts.modeling.setup import check_modeling_cwd
 from pts.magic.setup import setup as setup_magic, finish as finish_magic
 from pts.evolve.setup import setup as setup_evolve, finish as finish_evolve
 from pts.dustpedia.setup import setup as setup_dustpedia, finish as finish_dustpedia
@@ -183,6 +184,9 @@ def run_configurable(table_matches, args, tables):
     elif subproject == "magic": welcome_magic()
     elif subproject == "dustpedia": welcome_dustpedia()
     elif subproject == "evolve": welcome_evolve()
+
+    # Special
+    if subproject == "modeling": check_modeling_cwd(command_name, fs.cwd())
 
     # Get the configuration definition
     definition = introspection.get_configuration_definition_pts_not_yet_in_pythonpath(configuration_module_path)

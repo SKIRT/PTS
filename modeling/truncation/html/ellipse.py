@@ -14,21 +14,22 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import gc
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..component import TruncationComponent
-from ....core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, make_script_button, dictionary, make_usable
+from ....core.tools.html import newline, center, dictionary
 from ....core.basics.log import log
-from ....magic.view.html import JS9Preloader, body_settings, javascripts, css_scripts, JS9Loader, JS9Spawner, JS9Window, make_load_region, make_synchronize_regions_script
-from ....magic.view.html import make_spawn_code, add_to_div
+from ....magic.view.html import make_synchronize_regions_script
 from ....core.tools import filesystem as fs
 from ....core.tools.utils import lazyproperty
-from ....core.filter.filter import parse_filter
 from ..analytics import mask_names
 from ....core.tools import browser
 from ....magic.core.frame import Frame
 from ....magic.tools.info import get_image_info_from_header
 from ....magic.region.list import PixelRegionList
+from ....magic.view.multi import MultiImageViewer
+from ....core.filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -70,21 +71,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # The truncation factor indicator
         self.indicator = None
 
-        # The preloader
-        self.preloader = None
-
-        # The loaders
-        self.loaders = dict()
-
-        # The region loaders
-        self.region_loaders = dict()
-
-        # The windows
-        self.windows = dict()
-
-        # The page
-        self.page = None
-
         # The plots directory
         self.plots_path = None
 
@@ -106,17 +92,11 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # The coordinate systems
         self.coordinate_systems = dict()
 
-        # The display IDs
-        self.display_ids = dict()
-
         # The ellipses
         self.ellipses = dict()
 
-        # All images loader
-        self.all_loader = None
-
-        # The table
-        self.table = None
+        # The viewer
+        self.viewer = None
 
     # -----------------------------------------------------------------
 
@@ -153,16 +133,13 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # 8. Make the views
         self.make_views()
 
-        # 9. Make table
-        self.make_table()
-
-        # 10. Generate the page
+        # 9. Generate the page
         self.generate_page()
 
-        # 11. Writing
+        # 10. Writing
         self.write()
 
-        # 12. Showing
+        # 11. Showing
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -177,10 +154,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
         # Call the setup function of the base class
         super(TruncationEllipsePageGenerator, self).setup(**kwargs)
-
-        # Set the preloader
-        #if self.config.preload: self.preloader = JS9Preloader()
-        self.preloader = JS9Preloader()
 
         # Make directory to contain the plots
         self.plots_path = fs.join(self.truncation_html_path, "plots")
@@ -222,7 +195,7 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Sorted on wavelength!
         if self.config.filters is not None: return sorted(self.config.filters, key=lambda fltr: fltr.wavelength.to("micron").value)
         #else: return sorted(self.dataset.filters, key=lambda fltr: fltr.wavelength) # TOO SLOW
-        else: return sorted((parse_filter(name) for name in self.dataset.names), key=lambda fltr: fltr.wavelength.to("micron").value)
+        else: return sorted((fltr for fltr in self.dataset.filters_from_names if not (isinstance(fltr, BroadBandFilter) and fltr.is_planck)), key=lambda fltr: fltr.wavelength.to("micron").value)
 
     # -----------------------------------------------------------------
 
@@ -402,7 +375,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
             rebin_wcs = None
 
         # Loop over the images
-        # for name in self.dataset.names:
         for name, fltr in zip(self.names, self.filters):
 
             # Get frame
@@ -478,7 +450,8 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
             # Save
             #frame.saveto_png(filepath, colours=self.config.colormap, alpha="absolute")
-            frame.saveto_png(filepath, scale="linear", colours="gray", alpha="absolute") # PNG IN GRAYSCALE
+            #frame.saveto_png(filepath, scale="linear", colours="gray", alpha="absolute") # PNG IN GRAYSCALE
+            frame.saveto_png(filepath, scale=self.config.scale, colours="gray", alpha="absolute") # USE DEDICATED SCALE, USE LINEAR IN THE VIEWER
 
             # Cleanup
             gc.collect()
@@ -615,6 +588,32 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def image_paths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Initialize
+        paths = OrderedDict()
+
+        # Loop over all prepared images, get the images
+        for name, fltr in zip(self.names, self.filters):
+
+            # Get path
+            if self.config.png: path = self.plots_paths[name]
+            else: path = self.dataset.get_frame_path(name)
+
+            # Set the path
+            paths[name] = path
+
+        # Return the dictionary
+        return paths
+
+    # -----------------------------------------------------------------
+
     def make_views(self):
 
         """
@@ -623,226 +622,143 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Making views ...")
+        log.info("Making the views ...")
 
-        load_info = dict()
-        images = dict()
-        region_loads = dict()
-        placeholders = dict()
-        views = dict()
+        # Initialize the viewer
+        self.viewer = MultiImageViewer()
 
-        # Loop over all prepared images, get the images
-        for name, fltr in zip(self.names, self.filters):
+        # Set the scale
+        if self.config.png: self.viewer.config.scale = "linear"
+        else: self.viewer.config.scale = self.config.scale
 
-            # Get name
-            display_name = make_usable(name)
+        # Set colormap and zoom
+        self.viewer.config.colormap = self.config.colormap
+        self.viewer.config.zoom = self.config.zoom
 
-            # Get path
-            if self.config.png: path = self.plots_paths[name]
-            else: path  = self.dataset.get_frame_path(name)
+        # Set advanced settings
+        self.viewer.config.preload_all = self.config.preload_all
+        self.viewer.config.preload = self.config.preload
+        self.viewer.config.dynamic = self.config.dynamic
+        self.viewer.config.load_regions = self.config.load_regions
 
-            settings = dict()
-            settings["scale"] = self.config.scale
-            settings["colormap"] = self.config.colormap
-            settings["zoom"] = self.config.zoom
-            #settings["fits2png"] = "true"
+        # Set regions settings
+        self.viewer.config.regions.color = "white"
+        self.viewer.config.regions.changeable = False
+        self.viewer.config.regions.movable = False
+        self.viewer.config.regions.rotatable = False
+        self.viewer.config.regions.removable = False
+        self.viewer.config.regions.resizable = True
 
-            #regions = "ellipse"
+        # Disable
+        self.viewer.config.page = False
+        self.viewer.config.show = False
 
-            # Get the angle
-            #center = self.disk_ellipse.center  # in sky coordinates
-            #semimajor = self.disk_ellipse.semimajor
-            #semiminor = self.disk_ellipse.semiminor
-            #angle = self.disk_ellipse.angle
+        # Run the viewer
+        self.viewer.run(paths=self.image_paths, regions=self.ellipses)
 
-            # Determine the ratio of semimajor and semiminor
-            #ratio = semiminor / semimajor
+    # -----------------------------------------------------------------
 
-            #region_string = str(self.disk_ellipse)
+    @lazyproperty
+    def page(self):
 
-            # Get region
-            region = self.ellipses[name]
-            regions_for_loader = self.ellipses[name] if self.config.load_regions else None
+        """
+        This function ...
+        :return:
+        """
 
-            # Add preload
-            if self.config.preload_all or (self.config.preload is not None and fltr in self.config.preload):
+        # Initialize the page
+        self.viewer._initialize_page()
 
-                # Add to preloader
-                image = self.preloader.add_path(name, path, settings=settings, display=display_name, regions=regions_for_loader)
-
-                # Create window
-                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height,
-                                               background_color=background_color, menubar=self.config.menubar,
-                                               colorbar=self.config.colorbar, resize=self.config.resize)
-                display_id = display_name
-
-                # Set load info
-                views[display_id] = self.windows[name].view
-                load_info[display_id] = (name, path, regions_for_loader)
-                images[display_id] = image
-
-            # Add dynamic load
-            elif self.config.dynamic:
-
-                # Create the loader
-                self.loaders[name] = JS9Spawner.from_path("Load image", name, path, settings=settings, button=True,
-                                                          menubar=self.config.menubar, colorbar=self.config.colorbar,
-                                                          regions=regions_for_loader, add_placeholder=False, background_color=background_color)
-                display_id = self.loaders[name].display_id
-
-                self.windows[name] = self.loaders[name].placeholder
-
-                # Set load info
-                views[display_id] = self.loaders[name].view
-                load_info[display_id] = (name, path, regions_for_loader)
-                images[display_id] = self.loaders[name].image
-                placeholders[display_id] = self.loaders[name].spawn_div_name
-
-            # Regular button load in a pre-existing viewer
-            else:
-
-                # Create loader
-                self.loaders[name] = JS9Loader.from_path("Load image", name, path, display=display_name,
-                                                         settings=settings, button=True, regions=regions_for_loader)
-
-                # Create window
-                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height, background_color=background_color, menubar=self.config.menubar, colorbar=self.config.colorbar, resize=self.config.resize)
-
-                display_id = display_name
-
-                # Set load info
-                views[display_id] = self.windows[name].view
-                load_info[display_id] = (name, path, regions_for_loader)
-                images[display_id] = self.loaders[name].image
-
-            # Set display ID
-            self.display_ids[name] = display_id
-
-            # Regions button
-            region_button_id = display_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + display_name
-            # load_region = make_load_region_function(load_region_function_name, regions, display=None)
-            load_region = make_load_region(region, display=display_id, movable=False, rotatable=False,
-                                           removable=False, resizable=True, quote_character="'")
-
-            region_loads[display_id] = load_region
-
-            # Create region loader
-            self.region_loaders[name] = make_script_button(region_button_id, "Load regions", load_region,
-                                                           load_region_function_name)
-
-            # CREATE ALL IMAGES LOADER
-            #buttonid = self.image.name + "Loader"
-            #load_html = self.image.load(regions=self.regions)
-            #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
-
-        all_loader_name = "allimagesloaderbutton"
-        all_loader_text = "Load all images"
-
-        load_script = ""
-
-        # Load over the images (displays)
-        for display_id in load_info:
-
-            #name, path, regions_for_loader = load_info[display_id]
-            image = images[display_id]
-            view = views[display_id]
-
-            load_image = image.load()
-            load_region = region_loads[display_id]
-
-            if display_id in placeholders:
-
-                spawn_div_name = placeholders[display_id]
-
-                # Make spawn code
-                spawn_code = make_spawn_code(view, image, menubar=self.config.menubar, colorbar=self.config.colorbar, width=image_width,
-                                             background_color=background_color)
-
-                # Add html code to DIV
-                load_script += add_to_div(spawn_div_name, spawn_code)
-
-                # Add DIV to JS9
-                #load_script += "\n"
-                load_script += "JS9.AddDivs('" + display_id + "');\n"
-
-            # Load image and region code
-            load_script += load_image
-            load_script += "\n"
-            load_script += load_region
-            load_script += "\n\n"
-
-        function_name = "loadAllImages"
-        self.all_loader = make_script_button(all_loader_name, all_loader_text, load_script, function_name)
+        # Return the page
+        return self.viewer.page
 
     # -----------------------------------------------------------------
 
     @property
-    def ncolumns(self):
+    def display_ids(self):
 
         """
-        This function ...
+        Thisf unction ...
         :return:
         """
 
-        if self.config.dynamic:
-            if self.config.info: return 2
-            else: return 1
-        else: return ncolumns
+        return self.viewer.display_ids
 
     # -----------------------------------------------------------------
 
     @property
-    def table_class(self):
+    def all_loader(self):
 
         """
         This function ...
         :return:
         """
 
-        return "realtable"
+        return self.viewer.all_loader
 
     # -----------------------------------------------------------------
 
-    def make_table(self):
+    @property
+    def table(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Making table ...")
+        return self.viewer.table
 
-        cells = []
+    # -----------------------------------------------------------------
 
-        # Loop over the images
-        for name, fltr in zip(self.names, self.filters):
+    @property
+    def preloader(self):
 
-            # Add name of the image
-            string = center(name + newline)
+        """
+        Thsi function ...
+        :return:
+        """
 
-            # Add loader if necessary
-            if name in self.loaders:
-                string += center(str(self.loaders[name]))
-                string += newline
+        return self.viewer.preloader
 
-            # Add region loader if necessary
-            if name in self.region_loaders:
-                string += center(str(self.region_loaders[name]))
-                string += newline
+    # -----------------------------------------------------------------
 
-            # Add the window
-            if name in self.windows: string += str(self.windows[name])
+    def add_buttons(self):
 
-            # Add the cell
-            cells.append(string)
+        """
+        This function ...
+        :return:
+        """
 
-            # Add info
-            if self.config.info: cells.append(self.info[name])
+        # Theme button
+        self.viewer._add_theme_button()
 
-        # Make the table
-        self.table = SimpleTable.rasterize(cells, ncolumns=self.ncolumns, css_class=self.table_class)
+        # Infs and negatives
+        self.viewer._add_infs_button()
+        self.viewer._add_negatives_button()
+
+    # -----------------------------------------------------------------
+
+    def add_loader(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # All images loader
+        self.viewer._add_all_loader()
+
+    # -----------------------------------------------------------------
+
+    def add_preloader(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add preloader
+        self.viewer._add_preloader()
 
     # -----------------------------------------------------------------
 
@@ -856,39 +772,29 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         # Inform the user
         log.info("Generating the page ...")
 
-        settings_body = body_settings if self.preloader.has_images else None
-
-        css_paths = css_scripts[:]
-        css_paths.append(stylesheet_url)
-
-        # Create the page
-        self.page = HTMLPage(self.title, body_settings=settings_body, javascript_path=javascripts, css_path=css_paths, style=style, footing=updated_footing())
-
-        classes = dict()
-        classes["JS9Menubar"] = "data-backgroundColor"
-
+        # Set dictionary of ellipse per display
         ellipses = dict()
         for name in self.ellipses:
             display_id = self.display_ids[name]
             ellipses[display_id] = self.ellipses[name]
 
-        #ellipse = self.ellipses[name]
+        # Add regions synchronization
         self.page += make_synchronize_regions_script(self.indicator_id, self.display_ids.values(), ellipses, start_factor=self.default_factor) + "\n"
 
-        # Add theme button
-        self.page += center(make_theme_button(classes=classes)) + newline
+        # Add buttons
+        self.add_buttons()
 
-        # Add the indicator
+        # Add the factor indicator
         self.page += center(self.indicator) + newline
 
-        # Add all images loader
-        if self.all_loader is not None: self.page += center(str(self.all_loader)) + newline
+        # Add loader
+        self.add_loader()
 
         # Add the table
         self.page += self.table
 
         # Add preloader
-        if self.preloader.has_images: self.page += self.preloader
+        self.add_preloader()
 
     # -----------------------------------------------------------------
 
@@ -957,6 +863,6 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.ellipse_page_path)
+        with browser.serve_local_host(): browser.open_path(self.ellipse_page_path)
 
 # -----------------------------------------------------------------

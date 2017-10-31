@@ -80,7 +80,7 @@ class SingleImageViewer(ImageViewer):
         if self.has_regions: self.make_regions()
 
         # 4. Page
-        self.generate_page()
+        if self.config.page: self.generate_page()
 
         # 5. Show
         if self.config.show: self.show()
@@ -108,6 +108,18 @@ class SingleImageViewer(ImageViewer):
         """
 
         return fs.strip_extension(fs.name(self.config.image))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.image
 
     # -----------------------------------------------------------------
 
@@ -153,7 +165,7 @@ class SingleImageViewer(ImageViewer):
 
         # Create preloader
         self.preloader = JS9Preloader()
-        image = self.preloader.add_path(self.filename, self.config.image, settings=settings, display=self.display_name)
+        image = self.preloader.add_path(self.filename, self.filepath, settings=settings, display=self.display_name)
 
         # Create window
         self.window = JS9Window(self.display_name, width=self.config.width, height=self.config.height,
@@ -238,6 +250,27 @@ class SingleImageViewer(ImageViewer):
 
     # -----------------------------------------------------------------
 
+    def _initialize_page(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Create CSS for the page width
+        css = html.make_page_width(self.config.page_width)
+
+        # Create list of css scripts
+        css_paths = css_scripts[:]
+        css_paths.append(stylesheet_url)
+
+        # Create the page
+        self.page = html.HTMLPage(self.title, css=css, body_settings=body_settings, style=page_style,
+                                  css_path=css_paths,
+                                  javascript_path=javascripts, footing=html.updated_footing())
+
+    # -----------------------------------------------------------------
+
     def generate_page(self):
 
         """
@@ -248,16 +281,8 @@ class SingleImageViewer(ImageViewer):
         # Inform the user
         log.info("Generating the page ...")
 
-        # Create CSS for the page width
-        css = html.make_page_width(self.config.page_width)
-
-        # Create list of css scripts
-        css_paths = css_scripts[:]
-        css_paths.append(stylesheet_url)
-
-        # Create the page
-        self.page = html.HTMLPage(self.title, css=css, body_settings=body_settings, style=page_style, css_path=css_paths,
-                             javascript_path=javascripts, footing=html.updated_footing())
+        # Initialize
+        self._initialize_page()
 
         # Make theme button
         self.page += html.center(self.theme_button) + html.newline

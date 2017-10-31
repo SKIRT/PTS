@@ -117,7 +117,9 @@ class JS9Image(object):
 
     # -----------------------------------------------------------------
 
-    def load(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None):
+    def onload(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None,
+               display_variable_name=None, as_lines=False, newlines=False, changeable=False, movable=False, rotatable=False,
+               removable=False, resizable=True):
 
         """
         This function ...
@@ -128,116 +130,141 @@ class JS9Image(object):
         :param interval:
         :param colormap:
         :param contrast_bias:
+        :param display_variable_name:
+        :param as_lines:
+        :param newlines:
+        :param changeable:
+        :param movable:
+        :param rotatable:
+        :param removable:
+        :param resizable:
         :return:
         """
 
-        string = 'JS9.Load("' + self.path + '"'
-        if self.settings is not None: string += ", {" + stringify_dict(self.settings, identity_symbol=":", quote_key=False, quote_character='"')[1] + "}"
-        if self.display is not None: string += ', {display:"' + self.display + '"}'
+        # Set either display variable name or display name
+        if display_variable_name is None: display_name = self.display
+        else: display_name = None
 
-        # End
-        string += ');'
+        # Initialize list to contain the lines
+        lines = []
 
         # Add regions
-        if regions is not None:
-
-            from ..region.region import Region
-            from ..region.list import RegionList
-
-            if isinstance(regions, Region):
-                load_region = make_load_region(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
-            elif isinstance(regions, RegionList):
-                load_region = make_load_regions(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
-            else: raise ValueError("Invalid region or region list")
-
-            string += "\n"
-            string += load_region
+        if regions is not None: lines.append(load_region_or_regions(regions, changeable=changeable, movable=movable, rotatable=rotatable, removable=removable, resizable=resizable, display_variable=display_variable_name, display=display_name))
 
         # Color map
-        if colormap is not None:
-
-            string += "\n"
-            string += 'JS9.SetColormap("' + colormap + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if colormap is not None: lines.append(set_colormap(colormap, display_variable=display_variable_name, display=display_name))
 
         # Contrast and bias
-        if contrast_bias is not None:
-
-            string += "\n"
-            string += 'JS9.SetColormap("' + str(contrast_bias[0]) + "," + str(contrast_bias[1]) + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if contrast_bias is not None: lines.append(set_contrast_bias(contrast_bias[0], contrast_bias[1], display_variable=display_variable_name, display=display_name))
 
         # Scale
-        if scale is not None:
-
-            string += "\n"
-            string += 'JS9.SetScale("' + scale + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if scale is not None: lines.append(set_scale(scale, display_variable=display_variable_name, display=display_name))
 
         # Interval
-        if interval is not None:
-
-            string += "\n"
-            string += 'JS9.SetScale("' + str(interval[0]) + "," + str(interval[1]) + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if interval is not None: lines.append(set_interval(interval, display_variable=display_variable_name, display=display_name))
 
         # Zoom factor
-        if zoom is not None:
-
-            string += "\n"
-            string += 'JS9.SetZoom("' + zoom + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if zoom is not None: lines.append(set_zoom(zoom, display_variable=display_variable_name, display=display_name))
 
         # Pan position
-        if pan is not None:
-
-            string += "\n"
-            string += 'JS9.SetPan("' + str(pan[0]) + "," + str(pan[1]) + '"'
-            if self.display is not None: string += ', {display:"' + self.display + '"}'
-            string += ');'
+        if pan is not None: lines.append(set_pan(pan[0], pan[1], display_variable=display_variable_name, display=display_name))
 
         # Return
-        return string
+        if as_lines: return lines
+        elif newlines: return "\n".join(lines)
+        else: return "".join(lines)
 
     # -----------------------------------------------------------------
 
-    def preload(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None):
+    def load(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None, as_lines=False, newlines=True):
 
         """
         This function ...
         :param regions:
+        :param zoom:
+        :param pan:
+        :param scale:
+        :param interval:
+        :param colormap:
+        :param contrast_bias:
+        :param as_lines:
         :return:
         """
 
-        string = 'JS9.Preload("' + self.path + '"'
-        if self.settings is not None: string += ", {" + stringify_dict(self.settings, identity_symbol=":", quote_key=False, quote_character='"')[1] + "}"
+        lines = []
+
+        string = 'JS9.Load("' + self.path + '"'
+
+        # Create settings dictionary
+        if self.settings is not None: settings = self.settings.copy()
+        else: settings = dict()
+
+        # Make onload code
+        display_variable_name = "im"
+        onload = self.onload(regions=regions, zoom=zoom, pan=pan, scale=scale, interval=interval, colormap=colormap,
+                             contrast_bias=contrast_bias, newlines=False, display_variable_name=display_variable_name)
+        settings["onload"] = "function(" + display_variable_name + "){" + onload + "}"
+
+        # Add settings
+        string += ", {" + stringify_dict(settings, identity_symbol=":", quote_key=False, quote_character='"', no_quote_value_for_keys=["onload"])[1] + "}"
+
+        # Add display name
         if self.display is not None: string += ', {display:"' + self.display + '"}'
 
         # End
         string += ');'
-
-        # Add regions
-        if regions is not None:
-
-            from ..region.region import Region
-            from ..region.list import RegionList
-
-            if isinstance(regions, Region):
-                load_region = make_load_region(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
-            elif isinstance(regions, RegionList):
-                load_region = make_load_regions(regions, display=self.display, movable=False, rotatable=False, removable=False, resizable=True)
-            else: raise ValueError("Invalid region or region list")
-
-            string += "\n"
-            string += load_region
+        lines.append(string)
 
         # Return
-        return string
+        if as_lines: return lines
+        elif newlines: return "\n".join(lines)
+        else: return "".join(lines)
+
+    # -----------------------------------------------------------------
+
+    def preload(self, regions=None, zoom=None, pan=None, scale=None, interval=None, colormap=None, contrast_bias=None, as_lines=False, newlines=True):
+
+        """
+        This function ...
+        :param regions:
+        :param zoom:
+        :param pan:
+        :param scale:
+        :param interval
+        :param colormap:
+        :param contrast_bias:
+        :param as_lines:
+        :param newlines:
+        :return:
+        """
+
+        lines = []
+
+        string = 'JS9.Preload("' + self.path + '"'
+
+        # Create settings dictionary
+        if self.settings is not None: settings = self.settings.copy()
+        else: settings = dict()
+
+        # Make onload code
+        display_variable_name = "im"
+        onload = self.onload(regions=regions, zoom=zoom, pan=pan, scale=scale, interval=interval, colormap=colormap,
+                             contrast_bias=contrast_bias, newlines=False, display_variable_name=display_variable_name)
+        settings["onload"] = "function(" + display_variable_name + "){" + onload + "}"
+
+        string += ", {" + stringify_dict(settings, identity_symbol=":", quote_key=False, quote_character='"', no_quote_value_for_keys=["onload"])[1] + "}"
+
+        # Add display name
+        if self.display is not None: string += ', {display:"' + self.display + '"}'
+
+        # End
+        string += ');'
+        lines.append(string)
+
+        # Return
+        if as_lines: return lines
+        elif newlines: return "\n".join(lines)
+        else: return "".join(lines)
 
 # -----------------------------------------------------------------
 
@@ -323,8 +350,16 @@ class JS9Loader(object):
         if self.button:
 
             buttonid = self.image.name + "Loader"
+
             load_html = self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan)
-            return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
+
+            #lines = self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan, as_lines=True)
+            # Make function for loading the image
+
+            function_name = "load_image_" + self.image.name
+
+            return html.make_script_button(buttonid, self.text, load_html, function_name, quote_character=strings.other_quote_character(self.text, load_html))
+            #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
 
         else: return "<a href='javascript:" + self.image.load(regions=self.regions, colormap=self.colormap, contrast_bias=self.contrast_bias, scale=self.scale, interval=self.interval, zoom=self.zoom, pan=self.pan) + "'>" + self.text + "</a>"
 
@@ -1201,7 +1236,7 @@ class JS9Window(object):
 
 def make_load_region(region, display=None, changeable=True, movable=True, resizable=True, rotatable=True,
                      removable=True, zoomable=True, lock_x=False, lock_y=False, lock_rotation=False,
-                     quote_character='"'):
+                     quote_character='"', display_variable=None, color=None):
 
     """
     This function ...
@@ -1217,10 +1252,12 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
     :param lock_y:
     :param lock_rotation:
     :param quote_character:
+    :param display_variable:
+    :param color:
     :return:
     """
 
-    string = ""
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
 
     properties = dict()
     properties["changeable"] = str(changeable).lower()
@@ -1233,18 +1270,25 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
     properties["lockMovementY"] = str(lock_y).lower()
     properties["lockRotation"] = str(lock_rotation).lower()
 
-    string += "var region_id = JS9.AddRegions('" + str(region) + "'"
-    string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character)[1] + '}'
+    # Add color
+    if color is not None: properties["color"] = color
 
+    #string += "var region_id = JS9.AddRegions('" + str(region) + "'"
+    string = "JS9.AddRegions('" + str(region) + "'"
+    string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character, quote_value_for_keys=["color"])[1] + '}'
+
+    # Display name
     if display is not None:
         if quote_character == '"': string += ', {display:"' + display + '"}'
         elif quote_character == "'": string += ", {display:'" + display + "'}"
         else: raise ValueError("Invalid quote character: " + quote_character)
+
+    # Display variable
+    elif display_variable is not None: string += ', {display:' + display_variable + '}'
+
     string += ');'
-    #string += "\n"
 
-    #string += "window.alert(region_id);"
-
+    # Return
     return string
 
 # -----------------------------------------------------------------
@@ -2148,5 +2192,180 @@ def make_load_regions_and_masks():
 
     # Return the code
     return code
+
+# -----------------------------------------------------------------
+
+def load_region_or_regions(regions, changeable=False, movable=False, rotatable=False, removable=False, resizable=True,
+                           display=None, display_variable=None, color=None, quote_character='"'):
+
+    """
+    This function ...
+    :param regions:
+    :param changeable:
+    :param movable:
+    :param rotatable:
+    :param removable:
+    :param resizable:
+    :param display:
+    :param display_variable:
+    :param color:
+    :param quote_character:
+    :return:
+    """
+
+    from ..region.region import Region
+    from ..region.list import RegionList
+
+    # Single region
+    if isinstance(regions, Region): load_region = make_load_region(regions, display=display, changeable=changeable,
+                                                                   movable=movable, rotatable=rotatable, removable=removable,
+                                                                   resizable=resizable, display_variable=display_variable,
+                                                                   quote_character=quote_character, color=color)
+
+    # Region list
+    elif isinstance(regions, RegionList): load_region = make_load_regions(regions, display=display, changeable=changeable,
+                                                                          movable=movable, rotatable=rotatable, removable=removable,
+                                                                          resizable=resizable, display_variable=display_variable,
+                                                                          quote_character=quote_character, color=color)
+
+    # Invalid
+    else: raise ValueError("Invalid region or region list")
+
+    # Return
+    return load_region
+
+# -----------------------------------------------------------------
+
+def set_colormap(colormap, display=None, display_variable=None):
+
+    """
+    Thisjf unction ...
+    :param colormap:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetColormap("' + colormap + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display:' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
+def set_contrast_bias(contrast, bias, display=None, display_variable=None):
+
+    """
+    This function ...
+    :param contrast:
+    :param bias:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetColormap("' + str(contrast) + "," + str(bias) + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display:' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
+def set_scale(scale, display=None, display_variable=None):
+
+    """
+    This function ...
+    :param scale:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetScale("' + scale + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display:' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
+def set_interval(interval, display=None, display_variable=None):
+
+    """
+    This fnuction ...
+    :param interval:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetScale("' + str(interval[0]) + "," + str(interval[1]) + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display: ' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
+def set_zoom(zoom, display=None, display_variable=None):
+
+    """
+    This function ...
+    :param zoom:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetZoom("' + zoom + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display: ' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
+def set_pan(x, y, display=None, display_variable=None):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param display:
+    :param display_variable:
+    :return:
+    """
+
+    if display is not None and display_variable is not None: raise ValueError("Can only specify 'display' or 'display_variable'")
+
+    string = 'JS9.SetPan("' + str(x) + "," + str(y) + '"'
+    if display is not None: string += ', {display:"' + display + '"}'
+    if display_variable is not None: string += ', {display: ' + display_variable + '}'
+    string += ');'
+
+    # Return
+    return string
 
 # -----------------------------------------------------------------

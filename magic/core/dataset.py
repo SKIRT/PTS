@@ -444,6 +444,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters_from_names(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.get_filters_from_names().values()
+
+    # -----------------------------------------------------------------
+
     def get_filters(self):
 
         """
@@ -459,6 +471,24 @@ class DataSet(object):
         for name in self.paths: fltrs[name] = self.get_filter(name)
 
         # Return the dictionary with the filters
+        return fltrs
+
+    # -----------------------------------------------------------------
+
+    def get_filters_from_names(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Initialize
+        fltrs = OrderedDict()
+
+        # Loop over the iamges
+        for name in self.paths: fltrs[name] = parse_filter(name)
+
+        # Return
         return fltrs
 
     # -----------------------------------------------------------------

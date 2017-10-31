@@ -820,6 +820,30 @@ class BroadBandFilter(Filter):
     # ---------- Retrieving information -------------------------------
 
     @property
+    def is_planck(self):
+        return self.observatory == "Planck"
+
+    @property
+    def is_sdss(self):
+        return self.instrument == "SDSS"
+
+    @property
+    def is_2mass(self):
+        return self.instrument == "2MASS"
+
+    @property
+    def is_galex(self):
+        return self.instrument == "GALEX"
+
+    @property
+    def is_spitzer(self):
+        return self.observatory == "Spitzer"
+
+    @property
+    def is_herschel(self):
+        return self.observatory == "Herschel"
+
+    @property
     def aliases(self):
         # returns the aliases
         return list(generate_aliases(identifiers[self.name]))

@@ -75,6 +75,31 @@ def open_page(page):
 
 # -----------------------------------------------------------------
 
+def start_localhost(port=8000, protocol="HTTP/1.0"):
+
+    """
+    This function ...
+    :param port:
+    :param protocol:
+    :return:
+    """
+
+    server_address = ('', port)
+    SimpleHTTPRequestHandler.protocol_version = protocol
+    httpd = BaseHTTPServer.HTTPServer(server_address, SimpleHTTPRequestHandler)
+
+    # Serve from other thread
+    # httpd.serve_forever()
+    thread = threading.Thread(target=httpd.serve_forever, args=[])
+    thread.start()
+
+    #httpd.serve_forever()
+
+    # Return the thread?
+    return thread
+
+# -----------------------------------------------------------------
+
 class serve_local_host():
 
     """
@@ -114,6 +139,7 @@ class serve_local_host():
         # Serve from other thread
         #self.httpd.serve_forever()
         self.thread = threading.Thread(target=self.httpd.serve_forever, args=[])
+        self.thread.start()
 
     # -----------------------------------------------------------------
 

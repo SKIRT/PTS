@@ -14,7 +14,7 @@ from pts.modeling.config.maps import definition
 default_colour = "jet"
 default_colormap = "viridis"
 default_scale = "log"
-default_zoom = "toFit"
+default_zoom = "toFit;x2"
 
 # -----------------------------------------------------------------
 

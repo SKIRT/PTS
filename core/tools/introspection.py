@@ -2699,3 +2699,14 @@ def load_object(*args, **kwargs):
     return obj
 
 # -----------------------------------------------------------------
+
+def python_executable_path():
+
+    """
+    Thisf unction ...
+    :return:
+    """
+
+    return sys.executable
+
+# -----------------------------------------------------------------

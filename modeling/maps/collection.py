@@ -2060,7 +2060,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(colours_name)
-        return len(self.colour_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.colour_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.colour_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2073,7 +2074,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(ssfr_name)
-        return len(self.ssfr_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.ssfr_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.ssfr_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2086,7 +2088,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(tir_name)
-        return len(self.tir_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.tir_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.tir_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2099,7 +2102,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(attenuation_name)
-        return len(self.attenuation_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.attenuation_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.attenuation_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2112,7 +2116,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(old_name)
-        return len(self.old_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.old_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.old_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2125,7 +2130,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(young_name)
-        return len(self.young_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.young_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.young_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2138,7 +2144,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(ionizing_name)
-        return len(self.ionizing_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.ionizing_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.ionizing_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2151,7 +2158,8 @@ class MapsCollection(object):
         """
 
         #return self.get_nmaps_sub_name(dust_name)
-        return len(self.dust_maps_flat) # SO IT CAN GET LAZIFIED
+        #return len(self.dust_maps_flat) # SO IT CAN GET LAZIFIED
+        return len(self.dust_map_paths_flat)
 
     # -----------------------------------------------------------------
 
@@ -2260,6 +2268,42 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def colour_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_colour_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_paths_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_colour_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_names_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colour_map_paths_flat.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def colour_maps(self):
 
         """
@@ -2280,6 +2324,42 @@ class MapsCollection(object):
         """
 
         return self.get_colour_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_paths_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_names_flat(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.ssfr_map_paths_flat.keys()
 
     # -----------------------------------------------------------------
 
@@ -2308,6 +2388,42 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def tir_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_tir_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_map_paths_flat(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.get_tir_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_map_names_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tir_map_paths_flat.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def tir_maps(self):
 
         """
@@ -2328,6 +2444,42 @@ class MapsCollection(object):
         """
 
         return self.get_tir_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_paths_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_names_flat(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return self.attenuation_map_paths_flat.keys()
 
     # -----------------------------------------------------------------
 
@@ -2356,6 +2508,42 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_map_paths(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.get_old_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_paths_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_old_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_names_flat(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.old_map_paths_flat.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_maps(self):
 
         """
@@ -2376,6 +2564,42 @@ class MapsCollection(object):
         """
 
         return self.get_old_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_paths_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_names_flat(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.young_map_paths_flat.keys()
 
     # -----------------------------------------------------------------
 
@@ -2404,6 +2628,42 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def ionizing_map_paths(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.get_ionizing_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_paths_flat(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.get_ionizing_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_names_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_map_paths_flat.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_maps(self):
 
         """
@@ -2424,6 +2684,42 @@ class MapsCollection(object):
         """
 
         return self.get_ionizing_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_map_paths(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_paths_flat(self):
+
+        """
+        This funciton ...
+        :return:
+        """
+
+        return self.get_dust_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_names_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_map_paths_flat.keys()
 
     # -----------------------------------------------------------------
 

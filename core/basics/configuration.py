@@ -237,6 +237,19 @@ def prompt_proceed(description=None):
 
 # -----------------------------------------------------------------
 
+def prompt_finish(description=None):
+
+    """
+    This function ...
+    :param description:
+    :return:
+    """
+
+    if description is None: description = "press ENTER to finish"
+    result = raw_input(description)
+
+# -----------------------------------------------------------------
+
 def prompt_automatic(name, description, default, choices=None, default_alias=None):
 
     """

@@ -34,6 +34,11 @@ for index in range(len(table["Command"])):
 
 # -----------------------------------------------------------------
 
+# Determine commands for which the cwd doesn't need to be a modeling directory
+not_modeling_cwd_commands = ["setup"]
+
+# -----------------------------------------------------------------
+
 def setup(command_name, cwd, configuration_method_argument=None):
 
     """
@@ -44,11 +49,32 @@ def setup(command_name, cwd, configuration_method_argument=None):
     :return: 
     """
 
+    # Check directory
+    # NOW CALLED IN DO/RUN.PY: TO AVOID CONFIG BEING WRITTEN OUT BEFORE
+    #check_modeling_cwd(command_name, cwd)
+
     # Add command to history
     mark_start(command_name, cwd)
 
     # Add command to commands file
     add_command(command_name, cwd, configuration_method_argument=configuration_method_argument)
+
+# -----------------------------------------------------------------
+
+def check_modeling_cwd(command_name, cwd):
+
+    """
+    This function ...
+    :param command_name:
+    :param cwd:
+    :return:
+    """
+
+    if command_name in not_modeling_cwd_commands: return
+
+    # Check whether this is a modeling directory
+    from .core.environment import is_modeling_path
+    if not is_modeling_path(cwd): raise ValueError("Not a modeling directory")
 
 # -----------------------------------------------------------------
 

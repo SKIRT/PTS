@@ -19,7 +19,7 @@ from collections import defaultdict
 from ....core.basics.log import log
 from ..component import MapsComponent
 from ...html.component import stylesheet_url, page_style
-from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ...core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
@@ -28,7 +28,7 @@ from ....core.tools import browser
 from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
 from ....core.basics.range import RealRange
-from ....magic.tools.info import get_image_info_strings, get_image_info
+from ....magic.tools.info import get_image_info
 from ....magic.core.frame import Frame
 from ....magic.core.image import Image
 from ....core.tools.serialization import load_dict, write_dict
@@ -410,12 +410,12 @@ class AllMapsPageGenerator(MapsComponent):
     @property
     def has_ssfr_maps(self):
 
-        """
-        This function ...
-        :return:
-        """
+         """
+         This function ...
+         :return:
+         """
 
-        return self.static_collection.has_ssfr_maps
+         return self.static_collection.has_ssfr_maps
 
     # -----------------------------------------------------------------
 
@@ -479,6 +479,18 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_dust_maps(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.static_collection.has_dust_maps
+
+    # -----------------------------------------------------------------
+
     def get_info(self):
 
         """
@@ -490,28 +502,83 @@ class AllMapsPageGenerator(MapsComponent):
         log.info("Getting image info ...")
 
         # Colour
-        if self.has_colour_maps: self.get_colour_info()
+        if self.has_colour_maps:
+            if self.has_colour_info: self.load_colour_info()
+            else: self.get_colour_info()
 
         # SSFR
-        if self.has_ssfr_maps: self.get_ssfr_info()
+        if self.has_ssfr_maps:
+            if self.has_ssfr_info: self.load_ssfr_info()
+            else: self.get_ssfr_info()
 
         # TIR
-        if self.has_tir_maps: self.get_tir_info()
+        if self.has_tir_maps:
+            if self.has_tir_info: self.load_tir_info()
+            else: self.get_tir_info()
 
         # Attenuation
-        if self.has_attenuation_maps: self.get_attenuation_info()
+        if self.has_attenuation_maps:
+            if self.has_attenuation_info: self.load_attenuation_info()
+            else: self.get_attenuation_info()
 
         # Old
-        if self.has_old_maps: self.get_old_info()
+        if self.has_old_maps:
+            if self.has_old_info: self.load_old_info()
+            else: self.get_old_info()
 
         # Young
-        if self.has_young_maps: self.get_young_info()
+        if self.has_young_maps:
+            if self.has_young_info: self.load_young_info()
+            else: self.get_young_info()
 
         # Ionizing
-        if self.has_ionizing_maps: self.get_ionizing_info()
+        if self.has_ionizing_maps:
+            if self.has_ionizing_info: self.load_ionizing_info()
+            else: self.get_ionizing_info()
 
         # Dust
-        if self.has_dust_maps: self.get_dust_info()
+        if self.has_dust_maps:
+            if self.has_dust_info: self.load_dust_info()
+            else: self.get_dust_info()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_info_path(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return fs.join(self.colour_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.colour_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_colour_info(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading colour maps info ...")
+
+        #return load_dict(self.colour_info_path)
+        self.colour_info = load_dict(self.colour_info_path)
 
     # -----------------------------------------------------------------
 
@@ -537,6 +604,48 @@ class AllMapsPageGenerator(MapsComponent):
             # Add info
             self.colour_info[name] = code
 
+        # Write the info
+        write_dict(self.colour_info, self.colour_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.ssfr_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ssfr_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_ssfr_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading sSFR maps info ...")
+
+        #return load_dict(self.ssfr_info_path)
+        self.ssfr_info = load_dict(self.ssfr_info_path)
+
     # -----------------------------------------------------------------
 
     def get_ssfr_info(self):
@@ -560,6 +669,48 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add info
             self.ssfr_info[name] = code
+
+        # Write the info
+        write_dict(self.ssfr_info, self.ssfr_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.tir_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_info(self):
+
+        """
+        Thisfnuction ...
+        :return:
+        """
+
+        return fs.is_file(self.tir_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_tir_info(self):
+
+        """
+        This funciton ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading TIR maps info ...")
+
+        #return load_dict(self.tir_info_path)
+        self.tir_info = load_dict(self.tir_info_path)
 
     # -----------------------------------------------------------------
 
@@ -585,6 +736,48 @@ class AllMapsPageGenerator(MapsComponent):
             # Add info
             self.tir_info[name] = code
 
+        # Write the info
+        write_dict(self.tir_info, self.tir_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_info_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.attenuation_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.attenuation_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_attenuation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading attenuation maps info ...")
+
+        #return load_dict(self.attenuation_info_path)
+        self.attenuation_info = load_dict(self.attenuation_info_path)
+
     # -----------------------------------------------------------------
 
     def get_attenuation_info(self):
@@ -608,6 +801,48 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add info
             self.attenuation_info[name] = code
+
+        # Write the info
+        write_dict(self.attenuation_info, self.attenuation_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_old_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading old stellar maps info ...")
+
+        #return load_dict(self.old_info_path)
+        self.old_info = load_dict(self.old_info_path)
 
     # -----------------------------------------------------------------
 
@@ -633,6 +868,48 @@ class AllMapsPageGenerator(MapsComponent):
             # Add info
             self.old_info[name] = code
 
+        # Write the info
+        write_dict(self.old_info, self.old_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_info_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.young_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.young_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_young_info(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading young stellar maps info ...")
+
+        #return load_dict(self.young_info_path)
+        self.young_info = load_dict(self.young_info_path)
+
     # -----------------------------------------------------------------
 
     def get_young_info(self):
@@ -656,6 +933,48 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add info
             self.young_info[name] = code
+
+        # Write the info
+        write_dict(self.young_info, self.young_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_info_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.ionizing_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ionizing_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading ionizing stellar maps info ...")
+
+        #return load_dict(self.ionizing_info_path)
+        self.ionizing_info = load_dict(self.ionizing_info_path)
 
     # -----------------------------------------------------------------
 
@@ -681,6 +1000,48 @@ class AllMapsPageGenerator(MapsComponent):
             # Add info
             self.ionizing_info[name] = code
 
+        # Write the info
+        write_dict(self.ionizing_info, self.ionizing_info_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.dust_plots_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_info_path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading dust map info ...")
+
+        #return load_dict(self.dust_info_path)
+        self.dust_info = load_dict(self.dust_info_path)
+
     # -----------------------------------------------------------------
 
     def get_dust_info(self):
@@ -704,6 +1065,9 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add info
             self.dust_info[name] = code
+
+        # Write the info
+        write_dict(self.dust_info, self.dust_info_path)
 
     # -----------------------------------------------------------------
 
@@ -1078,7 +1442,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.colour_intervals_path)
+        return fs.is_file(self.colour_intervals_path) and fs.has_lines(self.colour_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1089,7 +1453,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.colour_intervals_path)
+        # Inform the user
+        log.info("Loading colour map intervals ...")
+
+        #return load_dict(self.colour_intervals_path)
+        self.colour_plot_intervals = load_dict(self.colour_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1113,7 +1481,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.ssfr_intervals_path)
+        return fs.is_file(self.ssfr_intervals_path) and fs.has_lines(self.ssfr_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1124,7 +1492,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.ssfr_intervals_path)
+        # Inform the user
+        log.info("Loading sSFR map intervals ...")
+
+        #return load_dict(self.ssfr_intervals_path)
+        self.ssfr_plot_intervals = load_dict(self.ssfr_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1148,7 +1520,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.tir_intervals_path)
+        return fs.is_file(self.tir_intervals_path) and fs.has_lines(self.tir_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1159,7 +1531,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.tir_intervals_path)
+        # Inform the user
+        log.info("Loading TIR map intervals ...")
+
+        #return load_dict(self.tir_intervals_path)
+        self.tir_plot_intervals = load_dict(self.tir_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1183,7 +1559,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.attenuation_intervals_path)
+        return fs.is_file(self.attenuation_intervals_path) and fs.has_lines(self.attenuation_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1194,7 +1570,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.attenuation_intervals_path)
+        # Inform the user
+        log.info("Loading attenuation map intervals ...")
+
+        #return load_dict(self.attenuation_intervals_path)
+        self.attenuation_plot_intervals = load_dict(self.attenuation_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1218,7 +1598,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.old_intervals_path)
+        return fs.is_file(self.old_intervals_path) and fs.has_lines(self.old_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1229,7 +1609,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.old_intervals_path)
+        # Inform the user
+        log.info("Loading old stellar map intervals ...")
+
+        #return load_dict(self.old_intervals_path)
+        self.old_plot_intervals = load_dict(self.old_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1253,7 +1637,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.young_intervals_path)
+        return fs.is_file(self.young_intervals_path) and fs.has_lines(self.young_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1264,7 +1648,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.young_intervals_path)
+        # Inform the user
+        log.info("Loading young stellar map intervals ...")
+
+        #return load_dict(self.young_intervals_path)
+        self.young_plot_intervals = load_dict(self.young_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1288,7 +1676,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.ionizing_intervals_path)
+        return fs.is_file(self.ionizing_intervals_path) and fs.has_lines(self.ionizing_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1299,7 +1687,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.ionizing_intervals_path)
+        # Inform the user
+        log.info("Loading ionizing stellar map intervals ...")
+
+        #return load_dict(self.ionizing_intervals_path)
+        self.ionizing_plot_intervals = load_dict(self.ionizing_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1323,7 +1715,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return fs.is_file(self.dust_intervals_path)
+        return fs.is_file(self.dust_intervals_path) and fs.has_lines(self.dust_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1334,7 +1726,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return load_dict(self.dust_intervals_path)
+        # Inform the user
+        log.info("Loading dust map intervals ...")
+
+        #return load_dict(self.dust_intervals_path)
+        self.dust_plot_intervals = load_dict(self.dust_intervals_path)
 
     # -----------------------------------------------------------------
 
@@ -1746,17 +2142,13 @@ class AllMapsPageGenerator(MapsComponent):
         settings["colormap"] = colormap
         settings["zoom"] = zoom
 
-        # Get region in image coordinates
-        #region = self.disk_ellipse.to_pixel(self.coordinate_systems[name])
-        #regions_for_loader = region if self.config.load_regions else None
-
-        # Add the region
-        #self.ellipses[name] = region
-
         regions_for_loader = None
 
         # Set text
         text = plot
+
+        # Determine filepath
+        filepath = fs.in_localhost_path(filepath, self.config.path)
 
         # Create the loader
         loader = JS9Spawner.from_path(text, name, filepath, settings=settings, button=False,
@@ -1765,14 +2157,6 @@ class AllMapsPageGenerator(MapsComponent):
                                       replace=True, width=self.view_height, height=self.view_height,
                                       center=True, replace_nans=True, replace_infs=True, zoom=next_zoom,
                                       interval=interval)
-
-        #display_id = self.loaders[name].display_id
-        #self.windows[name] = self.loaders[name].placeholder
-
-        # Set load info
-        #load_info[display_id] = (name, path, regions_for_loader)
-        #images[display_id] = self.loaders[name].image
-        #placeholders[display_id] = self.loaders[name].spawn_div_name
 
         # Return the loader
         return loader
@@ -2780,8 +3164,9 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.center(html.make_theme_button(classes=classes))
         self.page += html.newline
 
-        # Add the tables
-        #self.page += self.table
+        test_path = fs.join(self.config.path, "maps", "raw", "attenuation", "buat", "NUV__single_SPIRE_PSW.fits")
+        localhost_test_path = fs.in_localhost_path(test_path, self.config.path)
+        self.page += html.hyperlink(localhost_test_path, "get test")
 
         # Add the colours table
         self.page += "COLOURS"
@@ -2925,7 +3310,12 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Showing the page ...")
 
-        # Open in browser
+        # Serve and show
+        #with browser.serve_local_host(): browser.open_path(self.all_maps_html_page_path)
+
+        thread = browser.start_localhost()
         browser.open_path(self.all_maps_html_page_path)
+
+        raw_input("ENTER...")
 
 # -----------------------------------------------------------------
