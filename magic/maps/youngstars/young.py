@@ -405,13 +405,14 @@ class YoungStellarMapsMaker(Configurable):
 
 # -----------------------------------------------------------------
 
-def make_corrected_fuv_map(fuv, old, factor):
+def make_corrected_fuv_map(fuv, old, factor, normalize_in=None):
 
     """
     This function ...
     :param fuv:
     :param old:
     :param factor:
+    :param normalize_in:
     :return:
     """
 
@@ -436,7 +437,9 @@ def make_corrected_fuv_map(fuv, old, factor):
         log.warning("Need to re-normalize the old stellar map")
         old.normalize()
 
-    flux_fuv = fuv.sum()
+    # Calculate the flux to which to normalize
+    if normalize_in is not None: flux_fuv = fuv.sum_in(normalize_in, add_unit=False)
+    else: flux_fuv = fuv.sum()
 
     # typisch 20% en 35% respectievelijk
 

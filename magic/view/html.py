@@ -1517,7 +1517,8 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3, s
     existing_function_code = ""
     existing_function_code += "function isExistingDisplayWithImage(displayid)\n"
     existing_function_code += "{\n"
-    existing_function_code += "    return JS9.IsDisplay(displayid);\n"
+    #existing_function_code += "    return JS9.IsDisplay(displayid);\n"
+    existing_function_code += "    return JS9.LookupDisplay(displayid) != null;\n"
     existing_function_code += "}\n"
 
     code += existing_function_code

@@ -4191,10 +4191,14 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_colours(self, maps=True, contours=True, profiles=True):
+    def plot_colours(self, maps=True, contours=True, profiles=True, format="pdf"):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param format:
         :return:
         """
 
@@ -4202,13 +4206,13 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the colour maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.colours_scale, cmap=self.colours_cmap, share_limits=self.colours_share_limits, format=self.config.format, clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.colours_scale, cmap=self.colours_cmap, share_limits=self.colours_share_limits, format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4284,10 +4288,14 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_ssfr(self, maps=True, contours=True, profiles=True):
+    def plot_ssfr(self, maps=True, contours=True, profiles=True, format="pdf"):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param format:
         :return:
         """
 
@@ -4297,13 +4305,13 @@ class MapsComponent(MapMakerBase):
         # Plot the maps
         if maps: self.plot_maps(scale=self.ssfr_scale, cmap=self.ssfr_cmap, strict_vmin=self.ssfr_min,
                                               soft_vmax=self.ssfr_soft_max, share_limits=False,
-                                              format=self.config.format, clear_other_formats=True)
+                                              format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4343,10 +4351,15 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_tir(self, maps=True, contours=True, profiles=True, nans=True):
+    def plot_tir(self, maps=True, contours=True, profiles=True, nans=True, format="pdf"):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param nans:
+        :param format:
         :return:
         """
 
@@ -4354,17 +4367,16 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the TIR maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.tir_scale, cmap=self.tir_cmap, format=self.config.format,
-                                              clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.tir_scale, cmap=self.tir_cmap, format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4416,10 +4428,16 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_attenuation(self, maps=True, contours=True, profiles=True, extra=True, nans=True):
+    def plot_attenuation(self, maps=True, contours=True, profiles=True, extra=True, nans=True, format="pdf"):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param extra:
+        :param nans:
+        :param format:
         :return:
         """
 
@@ -4427,21 +4445,19 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the attenuation maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.attenuation_scale, cmap=self.attenuation_cmap,
-                                              format=self.config.format, clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.attenuation_scale, cmap=self.attenuation_cmap, format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the extra maps
-        if extra: self.plot_extra_maps(scale="sqrt", format=self.config.format,
-                                                          clear_other_formats=True, cmap=self.tir_to_fuv_cmap)
+        if extra: self.plot_extra_maps(scale="sqrt", format=format, clear_other_formats=True, cmap=self.tir_to_fuv_cmap)
 
         # Plot the NaNs masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4482,7 +4498,7 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_old(self, maps=True, contours=True, profiles=True, nans=True):
+    def plot_old(self, maps=True, contours=True, profiles=True, nans=True, format="pdf"):
 
         """
         This function ...
@@ -4490,6 +4506,7 @@ class MapsComponent(MapMakerBase):
         :param contours:
         :param profiles:
         :param nans:
+        :param format:
         :return:
         """
 
@@ -4497,17 +4514,16 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the old stellar maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scale=self.old_scale, cmap=self.old_cmap, format=self.config.format,
-                                              clear_other_formats=True)
+        if maps: self.plot_maps(scale=self.old_scale, cmap=self.old_cmap, format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4519,10 +4535,9 @@ class MapsComponent(MapMakerBase):
         :return:
         """
 
-        from .dust import blackbody, emission, attenuation, hot
+        from .dust import blackbody, attenuation, hot
         scales = dict()
         scales[blackbody] = "linear"
-        scales[emission] = "linear"
         scales[attenuation] = "linear"
         scales[hot] = "log"
         return scales
@@ -4537,10 +4552,9 @@ class MapsComponent(MapMakerBase):
         :return:
         """
 
-        from .dust import blackbody, emission, attenuation, hot
+        from .dust import blackbody, attenuation, hot
         cmaps = dict()
         cmaps[blackbody] = "jet"
-        cmaps[emission] = "jet"
         cmaps[attenuation] = "gist_ncar"
         cmaps[hot] = "jet"
         return cmaps
@@ -4559,7 +4573,7 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_dust(self, maps=True, contours=True, profiles=True, negatives=True, nans=True):
+    def plot_dust(self, maps=True, contours=True, profiles=True, negatives=True, nans=True, format="pdf"):
 
         """
         This function ...
@@ -4568,6 +4582,7 @@ class MapsComponent(MapMakerBase):
         :param profiles:
         :param negatives:
         :param nans:
+        :param format:
         :return:
         """
 
@@ -4575,20 +4590,19 @@ class MapsComponent(MapMakerBase):
         log.info("Plotting the dust maps ...")
 
         # Plot the maps
-        if maps: self.plot_maps(scales=self.dust_scales, cmaps=self.dust_cmaps, format=self.config.format,
-                                              clear_other_formats=True)
+        if maps: self.plot_maps(scales=self.dust_scales, cmaps=self.dust_cmaps, format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the negative pixel masks
-        if negatives: self.plot_negatives(format=self.config.format, clear_other_formats=True, methods=["hot"])
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, methods=["hot"])
 
         # Plot the NaNs masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4629,10 +4643,16 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_young(self, maps=True, contours=True, profiles=True, negatives=True, nans=True):
+    def plot_young(self, maps=True, contours=True, profiles=True, negatives=True, nans=True, format="pdf"):
 
         """
         Thins function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param negatives:
+        :param nans:
+        :param format:
         :return:
         """
 
@@ -4641,19 +4661,19 @@ class MapsComponent(MapMakerBase):
 
         # Plot the maps
         if maps: self.plot_maps(scale=self.young_scale, cmap=self.young_cmap, mask_negatives=True,
-                                              format=self.config.format, clear_other_formats=True)
+                                              format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the negative pixel masks
-        if negatives: self.plot_negatives(format=self.config.format, clear_other_formats=True)
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True)
 
         # Plot the NaN pixel masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
     # -----------------------------------------------------------------
 
@@ -4694,10 +4714,15 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_ionizing(self, maps=True, contours=True, profiles=True, nans=True):
+    def plot_ionizing(self, maps=True, contours=True, profiles=True, nans=True, format="pdf"):
 
         """
         This function ...
+        :param maps:
+        :param contours:
+        :param profiles:
+        :param nans:
+        :param format:
         :return:
         """
 
@@ -4706,16 +4731,16 @@ class MapsComponent(MapMakerBase):
 
         # Plot the maps
         if maps: self.plot_maps(scale=self.ionizing_scale, cmap=self.ionizing_cmap,
-                                              format=self.config.format, clear_other_formats=True)
+                                              format=format, clear_other_formats=True)
 
         # Plot the contours
-        if contours: self.plot_contours(filled=True, format=self.config.format, clear_other_formats=True)
+        if contours: self.plot_contours(filled=True, format=format, clear_other_formats=True)
 
         # Plot the radial profiles
-        if profiles: self.plot_profiles(format=self.config.format, clear_other_formats=True)
+        if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the NaNs masks
-        if nans: self.plot_nans(format=self.config.format, clear_other_formats=True)
+        if nans: self.plot_nans(format=format, clear_other_formats=True)
 
 # -----------------------------------------------------------------
 

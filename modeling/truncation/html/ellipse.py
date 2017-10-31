@@ -648,6 +648,7 @@ class TruncationEllipsePageGenerator(TruncationComponent):
         self.viewer.config.regions.rotatable = False
         self.viewer.config.regions.removable = False
         self.viewer.config.regions.resizable = True
+        self.viewer.config.regions.changeable = True
 
         # Disable
         self.viewer.config.page = False

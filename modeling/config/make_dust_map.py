@@ -27,7 +27,7 @@ definition.add_positional_optional("methods", "string_list", "dust map making me
 # -----------------------------------------------------------------
 
 # Old stellar contribution subtraction factor
-definition.add_optional("hot_factor_range", "real_range", "range of factor to create the hot dust maps", "0.2>0.7", convert_default=True)
+definition.add_optional("hot_factor_range", "real_range", "range of factor to create the hot dust maps", "0.2>0.9", convert_default=True)
 definition.add_optional("factor_nvalues", "positive_integer", "number of factors", 8)
 
 # Remake?

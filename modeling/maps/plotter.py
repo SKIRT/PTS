@@ -388,7 +388,7 @@ class MapsPlotter(MapsComponent):
         self.load_colours()
 
         # Plot the maps
-        self.plot_colours(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting)
+        self.plot_colours(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -433,7 +433,7 @@ class MapsPlotter(MapsComponent):
         self.load_ssfr()
 
         # Plot the maps
-        self.plot_ssfr(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting)
+        self.plot_ssfr(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -478,7 +478,7 @@ class MapsPlotter(MapsComponent):
         self.load_tir()
 
         # Plot the TIR maps
-        self.plot_tir(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
+        self.plot_tir(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -526,7 +526,7 @@ class MapsPlotter(MapsComponent):
         self.load_attenuation()
 
         # Plot maps
-        self.plot_attenuation(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, extra=self.extra_maps_plotting, nans=self.nans_plotting)
+        self.plot_attenuation(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, extra=self.extra_maps_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -574,7 +574,7 @@ class MapsPlotter(MapsComponent):
         self.load_old()
 
         # Plot
-        self.plot_old(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
+        self.plot_old(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -619,7 +619,7 @@ class MapsPlotter(MapsComponent):
         self.load_dust()
 
         # Plot dust maps
-        self.plot_dust(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting)
+        self.plot_dust(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -664,7 +664,7 @@ class MapsPlotter(MapsComponent):
         self.load_young()
 
         # Plot
-        self.plot_young(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting)
+        self.plot_young(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()
@@ -709,7 +709,7 @@ class MapsPlotter(MapsComponent):
         self.load_ionizing()
 
         # Plot
-        self.plot_ionizing(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting)
+        self.plot_ionizing(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting, nans=self.nans_plotting, format=self.config.format)
 
         # Clear the maps
         self.clear()

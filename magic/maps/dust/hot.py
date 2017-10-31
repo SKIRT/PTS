@@ -311,7 +311,7 @@ class HotDustMapsMaker(Configurable):
                     continue
 
                 # Calculate the corrected 24 micron image
-                hot_dust = make_corrected_24mu_map(frames["mips24"], frames["old"], factor)
+                hot_dust = make_corrected_24mu_map(frames["mips24"], frames["old"], factor, normalize_in=self.region_of_interest)
 
                 # Interpolate negatives
                 negatives = hot_dust.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
@@ -344,10 +344,14 @@ class HotDustMapsMaker(Configurable):
 
 # -----------------------------------------------------------------
 
-def make_corrected_24mu_map(mips24, disk, factor):
+def make_corrected_24mu_map(mips24, disk, factor, normalize_in=None):
 
     """
     This function ...
+    :param mips24:
+    :param disk:
+    :param factor:
+    :param normalize_in:
     :return:
     """
 
@@ -357,8 +361,12 @@ def make_corrected_24mu_map(mips24, disk, factor):
     # typisch 20% en 35% respectievelijk
     # 48% voor MIPS 24 komt van Lu et al. 2014
 
+    # Calculate sum of MIPS 24 in the specified region
+    if normalize_in is not None: normalization_value = mips24.sum_in(normalize_in, add_unit=False)
+    else: normalization_value = mips24.sum(add_unit=False)
+
     # Total contribution in solar units
-    total_contribution = factor * mips24.sum()
+    total_contribution = factor * normalization_value
 
     # Subtract the disk contribution to the 24 micron image
     new_mips = mips24 - total_contribution * disk # disk image is normalized
