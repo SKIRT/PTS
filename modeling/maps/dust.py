@@ -25,10 +25,13 @@ from ...core.tools.stringify import tostr
 # -----------------------------------------------------------------
 
 blackbody = "black-body"
-emission = "emission"
 attenuation = "attenuation"
 hot = "hot"
-methods = [blackbody, emission, attenuation, hot]
+
+# -----------------------------------------------------------------
+
+methods = [blackbody, attenuation, hot]
+default_methods = [attenuation, hot]
 
 # -----------------------------------------------------------------
 
@@ -63,6 +66,42 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def black_body(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return blackbody in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return attenuation in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def hot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return hot in self.config.methods
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -75,21 +114,18 @@ class DustMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Make a dust map based on black body pixel fitting
-        if self.config.make_black_body: self.make_black_body()
+        if self.black_body: self.make_black_body()
 
-        # 3. Make a dust map simply based on FIR / submm emission in a certain band
-        if self.config.make_emission: self.make_emission()
+        # 3. Make a dust map based on UV attenuation
+        if self.attenuation: self.make_attenuation()
 
-        # 4. Make a dust map based on UV attenuation
-        if self.config.make_attenuation: self.make_attenuation()
+        # 4. Make a map of the hot dust
+        if self.hot: self.make_hot()
 
-        # 5. Make a map of the hot dust
-        if self.config.make_hot: self.make_hot()
-
-        # 6. Writing
+        # 5. Writing
         self.write()
 
-        # 7. Plot
+        # 6. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -129,36 +165,6 @@ class DustMapMaker(MapsComponent):
         # Add the dust map to the dictionary
         self.maps[method_name] = maker.maps
         #self.error_maps["black-body"] = maker.error_maps
-
-        # Set origins
-        self.origins[method_name] = maker.origins
-
-        # Set methods
-        self.methods[method_name] = maker.methods
-
-    # -----------------------------------------------------------------
-
-    def make_emission(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a dust map based on the emission in a certain FIR/submm band ...")
-
-        # Set method name
-        method_name = "emission"
-
-        # Create the emission dust map maker
-        maker = EmissionDustMapsMaker()
-
-        # Run the maker
-        maker.run()
-
-        # Add the dust map to the dictionary
-        self.maps[method_name] = maker.maps
 
         # Set origins
         self.origins[method_name] = maker.origins

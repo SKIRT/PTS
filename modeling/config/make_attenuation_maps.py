@@ -11,9 +11,6 @@ from pts.modeling.maps.attenuation import methods
 
 # -----------------------------------------------------------------
 
-# Add optional
-#definition.add_optional("ssfr_colour", "string", "SSFR colour to use", default="FUV-H", choices=["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"])
-
 # Remake?
 definition.add_flag("remake", "remake already existing maps", False)
 
