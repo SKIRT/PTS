@@ -7,11 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.modeling.config.maps import definition
+from pts.modeling.maps.old import methods
 
 # -----------------------------------------------------------------
 
-# Remove holes from the cutoff mask
-definition.add_flag("remove_holes", "remove holes from the total cutoff mask")
+# Methods
+definition.add_positional_optional("methods", "string_list", "dust map making methods", default=methods, choices=methods)
+
+# -----------------------------------------------------------------
 
 # Flags
 definition.add_flag("write", "write out the maps", True)
@@ -21,6 +24,9 @@ definition.add_flag("remake", "remake already existing maps", False)
 
 # Replot?
 definition.add_flag("replot", "replot already existing plots", False)
+
+# CLEAR
+definition.add_flag("clear", "clear already existing maps (for the methods selected)", False)
 
 # -----------------------------------------------------------------
 

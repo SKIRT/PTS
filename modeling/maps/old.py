@@ -57,6 +57,42 @@ class OldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "disk" in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "total" in self.config.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "bulge" in self.config.methods
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -69,13 +105,13 @@ class OldStellarMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Make disk map
-        self.make_disk_map()
+        if self.disk: self.make_disk_map()
 
         # 3. Make total map
-        self.make_total_map()
+        if self.total: self.make_total_map()
 
         # 4. Make bulge map
-        self.make_bulge_map()
+        if self.bulge: self.make_bulge_map()
 
         # 5. Writing
         self.write()
@@ -110,6 +146,9 @@ class OldStellarMapMaker(MapsComponent):
 
         # Set the method name
         method_name = "disk"
+
+        # Clear?
+        if self.config.clear: self.clear_current_all_method(method_name)
 
         # Get current maps
         if self.config.remake: current = dict()
@@ -154,6 +193,9 @@ class OldStellarMapMaker(MapsComponent):
         # Set the method name
         method_name = "total"
 
+        # Clear?
+        if self.config.clear: self.clear_current_all_method(method_name)
+
         # Get current maps
         if self.config.remake: current = dict()
         else: current = self.get_current_maps_method(method_name)
@@ -191,6 +233,9 @@ class OldStellarMapMaker(MapsComponent):
 
         # Set the method name
         method_name = "bulge"
+
+        # Clear?
+        if self.config.clear: self.clear_current_all_method(method_name)
 
         # Get current maps
         if self.config.remake: current = dict()
