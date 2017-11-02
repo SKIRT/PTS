@@ -2292,6 +2292,56 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def colour_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.colour_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.colour_has_methods: raise ValueError("No methods")
+        else: return self.colour_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_names(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        if self.colour_has_methods: raise ValueError("Has different methods. Call colour_map_names_for_method.")
+        else: return self.colour_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def colour_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.colour_map_paths[method].keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def colour_map_names_flat(self):
 
         """
@@ -2348,6 +2398,56 @@ class MapsCollection(object):
         """
 
         return self.get_ssfr_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.ssfr_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.ssfr_has_methods: raise ValueError("No methods")
+        else: return self.ssfr_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.ssfr_has_methods: raise ValueError("Has different methods. Call ssfr_map_names_for_method.")
+        else: return self.ssfr_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def ssfr_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.ssfr_map_paths[method].keys()
 
     # -----------------------------------------------------------------
 
@@ -2412,6 +2512,56 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def tir_has_methods(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.tir_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.tir_has_methods: raise ValueError("No methods")
+        else: return self.tir_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.tir_has_methods: raise ValueError("Has methods. Call tir_map_names_for_method.")
+        else: return self.tir_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def tir_map_names_for_method(self, method):
+
+        """
+        This function ....
+        :param method:
+        :return:
+        """
+
+        return self.tir_map_paths[method].keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def tir_map_names_flat(self):
 
         """
@@ -2468,6 +2618,56 @@ class MapsCollection(object):
         """
 
         return self.get_attenuation_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.attenuation_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.attenuation_has_methods: raise ValueError("No methods")
+        else: return self.attenuation_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.attenuation_has_methods: raise ValueError("Has methods. Call attenuation_map_names_for_method.")
+        else: return self.attenuation_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def attenuation_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.attenuation_map_paths[method].keys()
 
     # -----------------------------------------------------------------
 
@@ -2532,6 +2732,56 @@ class MapsCollection(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.old_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_methods(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        if not self.old_has_methods: raise ValueError("No methods")
+        else: return self.old_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_names(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        if self.old_has_methods: raise ValueError("Has methods. Call old_map_names_for_method.")
+        else: return self.old_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def old_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.old_map_paths[method].keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_map_names_flat(self):
 
         """
@@ -2588,6 +2838,56 @@ class MapsCollection(object):
         """
 
         return self.get_young_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.young_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.young_has_methods: raise ValueError("No methods")
+        else: return self.young_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.young_has_methods: raise ValueError("Has methods. Call young_map_names_for_method.")
+        else: return self.young_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def young_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.young_map_paths[method].keys()
 
     # -----------------------------------------------------------------
 
@@ -2649,6 +2949,56 @@ class MapsCollection(object):
 
         return self.get_ionizing_map_paths(flatten=True)
 
+    # ---------------------------------------unc--------------------------
+
+    @property
+    def ionizing_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.ionizing_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_methods(self):
+
+        """
+        Thisj function ....
+        :return:
+        """
+
+        if not self.ionizing_has_methods: raise ValueError("No methods")
+        else: return self.ionizing_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.ionizing_has_methods: raise ValueError("Has methods. Call ionizing_map_names_for_method.")
+        else: return self.ionizing_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def ionizing_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.ionizing_map_paths[method].keys()
+
     # -----------------------------------------------------------------
 
     @property
@@ -2708,6 +3058,56 @@ class MapsCollection(object):
         """
 
         return self.get_dust_map_paths(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return types.is_dictionary_of_dictionaries(self.dust_map_paths, passive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.dust_has_methods: raise ValueError("No methods")
+        else: return self.dust_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.dust_has_methods: raise ValueError("Has methods. Call dust_map_names_for_method")
+        else: return self.dust_map_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def dust_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.dust_map_paths[method].keys()
 
     # -----------------------------------------------------------------
 

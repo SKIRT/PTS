@@ -121,21 +121,32 @@ def is_dictionary(value):
 
 # -----------------------------------------------------------------
 
-def is_dictionary_of_dictionaries(value):
+def is_dictionary_of_dictionaries(value, passive=False):
 
     """
     This function ...
-    :param value: 
+    :param value:
+    :param passive:
     :return: 
     """
 
     if not is_dictionary(value): raise ValueError("Not a dictionary")
     if len(value) == 0: raise ValueError("Empty dictionary")
 
-    # Loop over the keys
-    for key in value:
-        if not is_dictionary(value[key]): return False
-    return True
+    if passive:
+
+        for key in value:
+            # from the moment one element is also a dict, return True
+            if is_dictionary(value[key]): return True
+            else: return False
+        return False
+
+    else:
+
+        # Loop over the keys
+        for key in value:
+            if not is_dictionary(value[key]): return False
+        return True
 
 # -----------------------------------------------------------------
 

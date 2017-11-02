@@ -602,8 +602,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Automatically making maps selections ...")
 
-        # Select
-        self.has_ssfr_maps
+        # Select sSFR
+        if not self.has_ssfr_maps: raise IOError("No sSFR maps are present")
+        if not self.ssfr_has_methods: raise IOError("Place the contents of the sSFR maps inside a 'colours' directory")
+
+        # Get sSFR method names
+        ssfr_methods = self.ssfr_map_methods
+        if "colours" not in ssfr_methods: raise RuntimeError("Cannot make automatic choice when sSFR maps are not based on colours")
+
+        # Get the sSFR colour map names
+        map_names = self.ssfr_map_names_for_method("colours")
+
+        print(map_names)
+        
+        exit()
 
         print(self.old_selection)
         print(self.young_selection)

@@ -1757,6 +1757,9 @@ class MapMakerBase(GalaxyModelingComponent):
                 # Loop over the base names
                 for base_name in grouped:
 
+                    # Skip if only one datapoint
+                    if len(grouped[base_name]) == 1: continue
+
                     # Determine plot path
                     plot_path = self.get_path_for_nnegatives_curves_plot(base_name, method, extension=format)
 
@@ -1788,6 +1791,9 @@ class MapMakerBase(GalaxyModelingComponent):
 
             # Loop over the base names
             for base_name in grouped:
+
+                # Skip if only one datapoint
+                if len(grouped[base_name]) == 1: continue
 
                 # Determine plot path
                 plot_path = self.get_path_for_nnegatives_curves_plot(base_name, extension=format)

@@ -896,4 +896,143 @@ class MapsSelectionComponent(MapsComponent):
         # Soften edges
         return the_map.soften_edges(ellipse, softening_range)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_colour_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.colour_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_ssfr_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ssfr_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ssfr_map_methods
+
+    # -----------------------------------------------------------------
+
+    def ssfr_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.ssfr_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_tir_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_attenuation_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_old_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_young_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Static because maps collection will not change when in a selection component
+        return self.static_collection.has_ionizing_maps
+
 # -----------------------------------------------------------------

@@ -194,7 +194,7 @@ class DiskOldStellarMapMaker(Configurable):
             image.add_mask(negatives, "negatives")
 
             # Add
-            self.maps[name] = minus_bulge
+            self.maps[name] = image
 
     # -----------------------------------------------------------------
 
