@@ -50,6 +50,36 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
 
 # -----------------------------------------------------------------
 
+def all_regimes(lower=True):
+
+    """
+    This function ...
+    :param lower:
+    :return:
+    """
+
+    regimes = set()
+
+    # Loop over the dictionary
+    for key in spectrum_wavelengths:
+
+        # Get division
+        if lower: division = key[0].lower()
+        else: division = key[0]
+
+        # Get subdivision
+        if lower: subdivision = key[1].lower()
+        else: subdivision = key[1]
+
+        # Add both division and subdivision
+        regimes.add(division)
+        regimes.add(subdivision)
+
+    # Return as list
+    return list(regimes)
+
+# -----------------------------------------------------------------
+
 ranges = Map()
 for key in spectrum_wavelengths:
 
@@ -261,6 +291,39 @@ def wavelength_range_for_regime(regime, subregime=None):
 
 # -----------------------------------------------------------------
 
+def find_wavelength_range(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    keys = find_keys(regime)
+
+    min_wavelength = None
+    max_wavelength = None
+
+    # Loop over the matching subregimes
+    for regime, subregime in keys:
+
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_regime(regime, subregime)
+
+        # Adjust
+        if min_wavelength is None or wavelength_range.min < min_wavelength: min_wavelength = wavelength_range.min
+        if max_wavelength is None or wavelength_range.max > max_wavelength: max_wavelength = wavelength_range.max
+
+    #print(min_wavelength, max_wavelength)
+
+    if min_wavelength is None: raise ValueError("Minimum wavelength is undefined")
+    if max_wavelength is None: raise ValueError("Maximum wavelength is undefined")
+
+    # Return the wavelength range
+    return QuantityRange(min_wavelength, max_wavelength)
+
+# -----------------------------------------------------------------
+
 def find_keys(regime):
 
     """
@@ -275,10 +338,8 @@ def find_keys(regime):
     for key in spectrum_wavelengths:
 
         if key == regime: keys.append(key)
-        if key[0] == regime: keys.append(key)
-        if key[1] == regime: keys.append(key)
-
-    #raise ValueError("Invalid regime: " + regime)
+        if key[0].lower() == regime.lower(): keys.append(key)
+        if key[1].lower() == regime.lower(): keys.append(key)
 
     # Return the keys
     return keys
@@ -298,8 +359,8 @@ def find_key_indices(regime):
     for index, key in enumerate(spectrum_wavelengths.keys()):
 
         if key == regime: indices.append(index)
-        if key[0] == regime: indices.append(index)
-        if key[1] == regime: indices.append(index)
+        if key[0].lower() == regime.lower(): indices.append(index)
+        if key[1].lower() == regime.lower(): indices.append(index)
 
     return indices
 
@@ -316,8 +377,8 @@ def find_first_key(regime):
     for key in spectrum_wavelengths:
 
         if key == regime: return key
-        if key[0] == regime: return key
-        if key[1] == regime: return key
+        if key[0].lower() == regime.lower(): return key
+        if key[1].lower() == regime.lower(): return key
 
     raise ValueError("Invalid regime: " + regime)
 
@@ -334,8 +395,8 @@ def find_first_key_index(regime):
     for index, key in enumerate(spectrum_wavelengths.keys()):
 
         if key == regime: return index
-        if key[0] == regime: return index
-        if key[1] == regime: return index
+        if key[0].lower() == regime.lower(): return index
+        if key[1].lower() == regime.lower(): return index
 
     raise ValueError("Invalid regime: " + regime)
 
@@ -352,8 +413,8 @@ def find_last_key(regime):
     for key in reversed(spectrum_wavelengths.keys()):
 
         if key == regime: return key
-        if key[0] == regime: return key
-        if key[1] == regime: return key
+        if key[0].lower() == regime.lower(): return key
+        if key[1].lower() == regime.lower(): return key
 
     raise ValueError("Invalid regime: " + regime)
 
@@ -370,8 +431,8 @@ def find_last_key_index(regime):
     for index, key in reversed(enumerate(spectrum_wavelengths.keys())):
 
         if key == regime: return key
-        if key[0] == regime: return key
-        if key[1] == regime: return key
+        if key[0].lower() == regime.lower(): return key
+        if key[1].lower() == regime.lower(): return key
 
     raise ValueError("Invalid regime: " + regime)
 

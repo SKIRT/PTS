@@ -33,6 +33,7 @@ from ...core.tools.stringify import tostr
 from ...core.basics.range import QuantityRange
 from ...core.units.parsing import parse_unit as u
 from ...magic.basics.vector import PixelShape
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -600,7 +601,45 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.info("Automatically making maps selections ...")
+        log.info("Automatically selecting appropriate maps ...")
+
+        # sSFR
+        ssfr_method, ssfr_name = self.auto_select_ssfr_map()
+
+        # TIR
+        tir_method, tir_name = self.auto_select_tir_map()
+
+        # Attenuation
+        attenuation_method, attenuation_name = self.auto_select_attenuation_map(tir_method, tir_name, ssfr_method, ssfr_name)
+
+        # Old
+        old_method, old_name = self.auto_select_old_map()
+
+        # Dust
+        dust_method, dust_name = self.auto_select_dust_map(attenuation_method, attenuation_name)
+
+        # Young
+        young_method, young_name = self.auto_select_young_map(attenuation_method, attenuation_name)
+
+        # Ionizing
+        ionizing_method, ionizing_name = self.auto_select_ionizing_map()
+
+    # -----------------------------------------------------------------
+
+    def auto_select_ssfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate sSFR map ...")
+
+        from ...magic.tools import colours
+
+        preferred_method = "colours"
+        preferred_colours = ["FUV-r", "FUV-H", "FUV-i", "FUV-g"]
 
         # Select sSFR
         if not self.has_ssfr_maps: raise IOError("No sSFR maps are present")
@@ -608,19 +647,271 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Get sSFR method names
         ssfr_methods = self.ssfr_map_methods
-        if "colours" not in ssfr_methods: raise RuntimeError("Cannot make automatic choice when sSFR maps are not based on colours")
+        if preferred_method not in ssfr_methods: raise RuntimeError("Cannot make automatic choice when sSFR maps are not based on colours")
 
         # Get the sSFR colour map names
         map_names = self.ssfr_map_names_for_method("colours")
 
-        print(map_names)
-        
-        exit()
+        # Select the preferred sSFR colour map name
+        ssfr_map_name = None
 
-        print(self.old_selection)
-        print(self.young_selection)
-        print(self.ionizing_selection)
-        print(self.dust_selection)
+        # Loop over the preferred colours
+        for colour in preferred_colours:
+
+            # Loop over the map names
+            for name in map_names:
+
+                # Select
+                if colours.same_colour(colour, name):
+                    ssfr_map_name = name
+                    break
+
+        # Check
+        if ssfr_map_name is None: raise RuntimeError("Cannot make automatic choice: none of the expected sSFR colour maps are present")
+
+        # Return method and map name
+        return preferred_method, ssfr_map_name
+
+    # -----------------------------------------------------------------
+
+    def auto_select_tir_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate TIR map ...")
+
+        # Preferred methods
+        preferred_methods = ["multi", "single"]
+
+        # Check
+        if not self.has_tir_maps: raise IOError("No TIR maps are present")
+        if not self.tir_has_methods: raise IOError("No methods for the TIR maps")
+
+        # Get TIR method names
+        tir_methods = self.tir_map_methods
+
+        # The best combination
+        best = None
+        best_nfilters = None
+        best_has_spire = None
+
+        # Loop over the preferred methods
+        for method in preferred_methods:
+
+            # No maps for this method
+            if method not in tir_methods: continue
+
+            # Get the map names for this method
+            map_names = self.tir_map_names_for_method(method)
+
+            # Loop over the maps
+            for name in map_names:
+
+                # Get the filters (origins) for this map
+                filters = self.tir_origins[method][name]
+                nfilters = len(filters)
+                has_spire = sequences.contains_any(filters, self.spire_filters)
+
+                if best is None:
+
+                    best = (method, name)
+                    best_nfilters = nfilters
+                    best_has_spire = has_spire
+
+                elif nfilters > best_nfilters:
+
+                    best = (method, name)
+                    best_nfilters = nfilters
+                    best_has_spire = has_spire
+
+                elif nfilters == best_nfilters and best_has_spire and not has_spire:
+
+                    best = (method, name)
+                    best_nfilters = nfilters
+                    best_has_spire = has_spire
+
+        # Return the best map
+        return best
+
+    # -----------------------------------------------------------------
+
+    def auto_select_attenuation_map(self, tir_method, tir_name, ssfr_method, ssfr_name):
+
+        """
+        This function ...
+        :param tir_method:
+        :param tir_name:
+        :param ssfr_method:
+        :param ssfr_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate FUV attenuation map ...")
+
+        # Check
+        if not self.has_attenuation_maps: raise IOError("No atttenuation maps are present")
+        if not self.attenuation_has_methods: raise IOError("No methods for the attenuation maps")
+
+        # Get attenuation method names
+        attenuation_methods = self.attenuation_map_methods
+
+        # Prefer Cortese, Buat otherwise
+        if "cortese" in attenuation_methods: return self.auto_select_cortese_attenuation_map(tir_method, tir_name, ssfr_method, ssfr_name)
+        elif "buat" in attenuation_methods: return self.auto_select_buat_attenuation_map(tir_method, tir_name)
+        else: raise ValueError("Cannot find a proper attenuation map method")
+
+    # -----------------------------------------------------------------
+
+    def auto_select_cortese_attenuation_map(self, tir_method, tir_name, ssfr_method, ssfr_name):
+
+        """
+        This function ...
+        :param tir_method:
+        :param tir_name:
+        :param ssfr_method:
+        :param ssfr_name:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Automatically selecting appropriate Cortese attenuation map ...")
+
+        # Loop over the map names
+        map_name = None
+        for name in self.attenuation_map_names_for_method("cortese"):
+
+            if tir_name in name and ssfr_name in name:
+                map_name = name
+                break
+
+        # Not found?
+        if map_name is None: raise RuntimeError("Something went wrong finding the required map")
+
+        # Return
+        return "cortese", map_name
+
+    # -----------------------------------------------------------------
+
+    def auto_select_buat_attenuation_map(self, tir_method, tir_name):
+
+        """
+        This function ...
+        :param tir_method:
+        :param tir_name:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Automatically selecting appropriate Buat attenuation map ...")
+
+        preferred_filters = ["FUV", "NUV"]
+
+        map_name = None
+
+        # Loop over the preferred filters
+        for uv_filter_name in preferred_filters:
+
+            # Loop over the maps for this UV filter
+            for name in self.attenuation_map_names_for_method("buat"):
+                if not name.startswith(uv_filter_name): continue
+
+                if tir_name in name:
+                    map_name = name
+                    break
+
+        # Not found?
+        if map_name is None: raise RuntimeError("Something went wrong finding the required map")
+
+        # Return
+        return "buat", map_name
+
+    # -----------------------------------------------------------------
+
+    def auto_select_old_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate old stellar map ...")
+
+        preferred_filters = ["IRAC I1", "IRAC I2", "2MASS H", "2MASS K", "WISE W1", "WISE W2"]
+
+        # Check
+        if not self.has_old_maps: raise IOError("No old stellar maps are present")
+        if not self.old_has_methods: raise IOError("No methods for the old stellar maps")
+
+        method_name = "disk"
+        if method_name not in self.old_map_methods: raise ValueError("'disk' method is not present among the old stellar maps")
+
+        # Loop over the preferred filters
+        map_name = None
+        for filter_name in preferred_filters:
+
+            fltr = parse_filter(filter_name)
+
+            # Loop over the maps
+            for name in self.old_map_names_for_method(method_name):
+
+                map_filter = parse_filter(name)
+                if map_filter == fltr:
+                    map_name = name
+                    break
+
+        # No map?
+        if map_name is None: raise ValueError("No appropriate old stellar disk map was found")
+
+        # Return
+        return method_name, map_name
+
+    # -----------------------------------------------------------------
+
+    def auto_select_dust_map(self, attenuation_method, attenuation_name):
+
+        """
+        Thisfunction ...
+        :param attenuation_method:
+        :param attenuation_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate dust map ...")
+
+    # -----------------------------------------------------------------
+
+    def auto_select_young_map(self, attenuation_method, attenuation_name):
+
+        """
+        This function ...
+        :param attenuation_method:
+        :param attenuation_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate young stellar map ...")
+
+    # -----------------------------------------------------------------
+
+    def auto_select_ionizing_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate ionizing stellar map ...")
+
+
 
     # -----------------------------------------------------------------
 

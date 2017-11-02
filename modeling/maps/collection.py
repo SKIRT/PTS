@@ -544,6 +544,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colour_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_colours_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_ssfr_origins(self, flatten=False):
 
         """
@@ -556,6 +568,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ssfr_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_tir_origins(self, flatten=False, methods=None):
 
         """
@@ -565,7 +589,19 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_tir_name, flatten=flatten)
+        return self.get_origins_sub_name(self.maps_tir_name, flatten=flatten, methods=methods)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_tir_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -581,6 +617,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def attenuation_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_old_origins(self, flatten=False):
 
         """
@@ -590,6 +638,18 @@ class MapsCollection(object):
         """
 
         return self.get_origins_sub_name(self.maps_old_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_old_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -605,6 +665,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def young_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_ionizing_origins(self, flatten=False):
 
         """
@@ -617,6 +689,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ionizing_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ionizing_origins(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_dust_origins(self, flatten=False):
 
         """
@@ -626,6 +710,18 @@ class MapsCollection(object):
         """
 
         return self.get_origins_sub_name(self.maps_dust_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -733,6 +829,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colour_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_colours_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_ssfr_methods(self, flatten=False):
 
         """
@@ -742,6 +850,18 @@ class MapsCollection(object):
         """
 
         return self.get_methods_sub_name(self.maps_ssfr_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -758,6 +878,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def tir_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_tir_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_attenuation_methods(self, flatten=False):
 
         """
@@ -767,6 +899,18 @@ class MapsCollection(object):
         """
 
         return self.get_methods_sub_name(self.maps_attenuation_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -782,6 +926,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_old_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_young_methods(self, flatten=False):
 
         """
@@ -791,6 +947,18 @@ class MapsCollection(object):
         """
 
         return self.get_methods_sub_name(self.maps_young_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
@@ -806,6 +974,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ionizing_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ionizing_methods(flatten=False)
+
+    # -----------------------------------------------------------------
+
     def get_dust_methods(self, flatten=False):
 
         """
@@ -815,6 +995,18 @@ class MapsCollection(object):
         """
 
         return self.get_methods_sub_name(self.maps_dust_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_methods(flatten=False)
 
     # -----------------------------------------------------------------
 

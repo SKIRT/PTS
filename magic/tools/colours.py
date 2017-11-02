@@ -34,29 +34,11 @@ def calculate_colour(flux_a, flux_b):
     """
 
     # Check units
-    flux_a = flux_a.to("Jy")
-    flux_b = flux_b.to("Jy")
+    flux_a = flux_a.to("Jy").value
+    flux_b = flux_b.to("Jy").value
 
+    # Calculate and return
     return -2.5 * np.log10(flux_a / flux_b)
-
-# -----------------------------------------------------------------
-
-#def make_colour_map(frame_a, frame_b):
-
-    #"""
-    #This function ...
-    #:param frame_a:
-    #:param frame_b:
-    #:return:
-    #"""
-
-    # Check units
-    #frame_a = frame_a.copy()
-    #frame_a.convert_to("Jy")
-    #frame_b = frame_b.copy()
-    #frame_b.convert_to("Jy")
-
-    #return Frame(-2.5 * np.log10(frame_a / frame_b), wcs=frame_a.wcs)
 
 # -----------------------------------------------------------------
 
@@ -69,11 +51,30 @@ def get_filters_for_colour(colour, delimiter="auto"):
     :return: 
     """
 
+    # Find the delimiter
     if delimiter == "auto": delimiter = find_delimiter(colour)
 
     str_a, str_b = colour.split(delimiter)
     fltr_a, fltr_b = parse_filter(str_a), parse_filter(str_b)
     return fltr_a, fltr_b
+
+# -----------------------------------------------------------------
+
+def same_colour(colour_a, colour_b):
+
+    """
+    This function ...
+    :param colour_a:
+    :param colour_b:
+    :return:
+    """
+
+    # Get the filters
+    fltr_aa, fltr_ab = get_filters_for_colour(colour_a)
+    fltr_ba, fltr_bb = get_filters_for_colour(colour_b)
+
+    # Return
+    return fltr_aa == fltr_ba and fltr_ab == fltr_bb
 
 # -----------------------------------------------------------------
 

@@ -35,6 +35,7 @@ from ..basics.log import log
 from ..tools import parsing
 from .broad import categorized_filters_sorted_labels as sorted_broad_labels
 from .narrow import categorized_filters_sorted_labels as sorted_narrow_labels
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -93,6 +94,33 @@ class FilterShower(Configurable):
         # Call the setup function of the base clas
         super(FilterShower, self).setup(**kwargs)
 
+        # Check
+        if self.config.matching is not None and self.config.regime is not None: raise ValueError("Cannot specifiy 'matching' and 'regime'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def add_narrow(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "narrow" in self.config.types
+
+    # -----------------------------------------------------------------
+
+    @property
+    def add_broad(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "broad" in self.config.types
+
     # -----------------------------------------------------------------
 
     def categorize(self):
@@ -106,10 +134,10 @@ class FilterShower(Configurable):
         log.info("Categorizing ...")
 
         # Categorize the narrow bands
-        if "narrow" in self.config.types: self.categorize_narrow()
+        if self.add_narrow: self.categorize_narrow()
 
         # Categorize the broad bands
-        if "broad" in self.config.types: self.categorize_broad()
+        if self.add_broad: self.categorize_broad()
 
     # -----------------------------------------------------------------
 
@@ -127,7 +155,6 @@ class FilterShower(Configurable):
         if self.config.matching is not None:
 
             filters = parsing.lazy_broad_band_filter_list(self.config.matching)
-            #self.broad[self.config.matching] = filters
             for fltr in filters: self.broad[fltr.spec].append(fltr.spec)
 
         # ALl broad band filters
@@ -149,11 +176,24 @@ class FilterShower(Configurable):
         if self.config.matching is not None:
 
             filters = parsing.lazy_narrow_band_filter_list(self.config.matching)
-            #self.narrow[self.config.matching] = filters
             for fltr in filters: self.narrow[fltr.spec].append(fltr.spec)
 
         # All narrow band filters
         else: self.narrow = categorize_narrow()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...magic.tools.wavelengths import find_wavelength_range
+        if self.config.regime is None: return None
+        else: return find_wavelength_range(self.config.regime)
 
     # -----------------------------------------------------------------
 
@@ -168,10 +208,10 @@ class FilterShower(Configurable):
         log.info("Showing the filters ...")
 
         # Show narrow band filters
-        if "narrow" in self.config.types: self.show_narrow()
+        if self.add_narrow: self.show_narrow()
 
         # Show broad band filters
-        if "broad" in self.config.types: self.show_broad()
+        if self.add_broad: self.show_broad()
 
     # -----------------------------------------------------------------
 
@@ -186,7 +226,7 @@ class FilterShower(Configurable):
         print(fmt.bold + fmt.blue + "NARROW BAND FILTERS" + fmt.reset)
         print("")
 
-        #for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
+        # Loop over the narrow band filter labels
         for label in sorted_narrow_labels(self.narrow):
 
             print(fmt.yellow + fmt.bold + label + fmt.reset)
@@ -208,6 +248,12 @@ class FilterShower(Configurable):
 
                     wavelength = None
                     wavelength_range = wavelength_range_for_spec(spec)
+
+                # Check wavelength
+                if self.wavelength_range is not None:
+
+                    if wavelength is not None and wavelength not in self.wavelength_range: continue
+                    if wavelength_range is not None and (wavelength_range.min not in self.wavelength_range or wavelength_range.max not in self.wavelength_range): continue
 
                 print("   " + fmt.green + fmt.bold + spec + fmt.reset)
 
@@ -250,6 +296,9 @@ class FilterShower(Configurable):
 
                 # Load the filter
                 fltr = BroadBandFilter(spec)
+
+                # Check wavelength
+                if self.wavelength_range is not None and fltr.wavelength not in self.wavelength_range: continue
 
                 print("   " + fmt.green + fmt.bold + spec + fmt.reset)
                 if not self.config.short:

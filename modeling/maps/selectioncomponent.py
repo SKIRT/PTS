@@ -924,6 +924,42 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     @property
+    def colour_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.colour_map_methods
+
+    # -----------------------------------------------------------------
+
+    def colour_map_names_for_method(self, method):
+
+        """
+        This function...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.colour_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.colour_origins
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ssfr_maps(self):
 
         """
@@ -973,6 +1009,18 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ssfr_origins
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_tir_maps(self):
 
         """
@@ -982,6 +1030,54 @@ class MapsSelectionComponent(MapsComponent):
 
         # Static because maps collection will not change when in a selection component
         return self.static_collection.has_tir_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_has_methods(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        return self.static_collection.tir_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.tir_map_methods
+
+    # -----------------------------------------------------------------
+
+    def tir_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.tir_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.tir_origins
 
     # -----------------------------------------------------------------
 
@@ -999,6 +1095,54 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     @property
+    def attenuation_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.attenuation_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_methods(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_collection.attenuation_map_methods
+
+    # -----------------------------------------------------------------
+
+    def attenuation_map_names_for_method(self, method):
+
+        """
+        Thisfunction ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.attenuation_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_origins(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.static_collection.attenuation_origins
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_old_maps(self):
 
         """
@@ -1008,6 +1152,54 @@ class MapsSelectionComponent(MapsComponent):
 
         # Static because maps collection will not change when in a selection component
         return self.static_collection.has_old_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.old_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_methods(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_collection.old_map_methods
+
+    # -----------------------------------------------------------------
+
+    def old_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.old_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.old_origins
 
     # -----------------------------------------------------------------
 
@@ -1025,6 +1217,54 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     @property
+    def young_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.young_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.young_map_methods
+
+    # -----------------------------------------------------------------
+
+    def young_map_names_for_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.young_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.young_origins
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ionizing_maps(self):
 
         """
@@ -1034,5 +1274,113 @@ class MapsSelectionComponent(MapsComponent):
 
         # Static because maps collection will not change when in a selection component
         return self.static_collection.has_ionizing_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ionizing_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ionizing_map_methods
+
+    # -----------------------------------------------------------------
+
+    def ionizing_map_names_for_method(self, method):
+
+        """
+        This function ....
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.ionizing_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ionizing_origins
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.has_dust_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.dust_has_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.dust_map_methods
+
+    # -----------------------------------------------------------------
+
+    def dust_map_names_for_method(self, method):
+
+        """
+        This unction ...
+        :param method:
+        :return:
+        """
+
+        return self.static_collection.dust_map_names_for_method(method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.dust_origins
 
 # -----------------------------------------------------------------

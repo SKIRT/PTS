@@ -527,6 +527,42 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def spire_pmw_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return BroadBandFilter("SPIRE PMW")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spire_plw_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return BroadBandFilter("SPIRE PLW")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spire_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parsing.lazy_broad_band_filter_list("SPIRE")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def planck_filters(self):
 
         """

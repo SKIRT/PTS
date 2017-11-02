@@ -1283,3 +1283,33 @@ def has_any(lst):
     return len(lst) > 0
 
 # -----------------------------------------------------------------
+
+def contains_any(lst, other):
+
+    """
+    This function ...
+    :param lst:
+    :param other:
+    :return:
+    """
+
+    for item in other:
+        if item in lst: return True
+    return False
+
+# -----------------------------------------------------------------
+
+def contains_all(lst, other):
+
+    """
+    This function ...
+    :param lst:
+    :param other:
+    :return:
+    """
+
+    for item in other:
+        if item not in lst: return False
+    return True
+
+# -----------------------------------------------------------------
