@@ -195,57 +195,6 @@ class HotDustMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_mips(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the MIPS 24 micron image and converting to solar units ...")
-
-        # Get MIPS 24 micron frame and error map
-        #self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
-        #self.mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
-
-        ## CONVERT TO LSUN
-
-        # Get the galaxy distance
-        #distance = self.galaxy_properties.distance
-        distance = self.mips24.distance
-
-        # Get pixelscale and wavelength
-        pixelscale = self.mips24.average_pixelscale
-        wavelength = self.mips24.filter.pivot
-
-        # Conversion from MJy / sr to Jy / sr
-        conversion_factor = 1e6
-
-        # Conversion from Jy / sr to Jy / pix(2)
-        conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
-
-        # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
-        conversion_factor *= 1e-26
-
-        # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
-        conversion_factor *= (speed_of_light / wavelength ** 2).to("Hz/m").value
-
-        # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
-        conversion_factor *= (4. * np.pi * distance ** 2).to("m2").value
-
-        # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
-        conversion_factor *= wavelength.to("m").value
-
-        # Conversion from W to Lsun
-        conversion_factor *= 1. / solar_luminosity.to("W").value
-
-        ## DO THE CONVERSION
-
-        self.mips24 *= conversion_factor
-
-    # -----------------------------------------------------------------
-
     def make_maps(self):
 
         """
@@ -316,10 +265,7 @@ class HotDustMapsMaker(Configurable):
                 # Interpolate negatives
                 negatives = hot_dust.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
                 hot_dust.replace_negatives(0.0)  # if any left
-
-                # Normalize
-                try: hot_dust.normalize()
-                except RuntimeError: log.warning("The '" + name + "' hot dust map could not be normalized")
+                # DON'T Normalize!!
 
                 # Create image
                 image = Image()
