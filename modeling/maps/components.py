@@ -34,6 +34,11 @@ from ...core.basics.range import QuantityRange
 from ...core.units.parsing import parse_unit as u
 from ...magic.basics.vector import PixelShape
 from ...core.filter.filter import parse_filter
+from ...core.tools.parsing import real
+from ...magic.core.image import Image
+from ...magic.tools import colours
+from ...magic.basics.mask import Mask as oldMask
+from ...core.basics.containers import ordered_by_key
 
 # -----------------------------------------------------------------
 
@@ -619,10 +624,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
         dust_method, dust_name = self.auto_select_dust_map(attenuation_method, attenuation_name)
 
         # Young
-        young_method, young_name = self.auto_select_young_map(attenuation_method, attenuation_name)
+        young_name = self.auto_select_young_map(attenuation_method, attenuation_name, old_name)
+
+        # Hot dust
+        hot_dust_method, hot_dust_name = self.auto_select_hot_dust_map(old_name)
 
         # Ionizing
-        ionizing_method, ionizing_name = self.auto_select_ionizing_map()
+        ionizing_name = self.auto_select_ionizing_map(hot_dust_name)
+
+        # Set selections
+        self.old_selection = [old_name]
+        self.young_selection = [young_name]
+        self.ionizing_selection = [ionizing_name]
+        self.dust_selection = [dust_name]
 
     # -----------------------------------------------------------------
 
@@ -635,8 +649,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Inform the user
         log.info("Automatically selecting appropriate sSFR map ...")
-
-        from ...magic.tools import colours
 
         preferred_method = "colours"
         preferred_colours = ["FUV-r", "FUV-H", "FUV-i", "FUV-g"]
@@ -658,13 +670,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Loop over the preferred colours
         for colour in preferred_colours:
 
-            # Loop over the map names
-            for name in map_names:
-
-                # Select
-                if colours.same_colour(colour, name):
-                    ssfr_map_name = name
-                    break
+            map_name = find_matching_colour_map_name(colour, map_names)
+            if map_name is not None:
+                ssfr_map_name = map_name
+                break
 
         # Check
         if ssfr_map_name is None: raise RuntimeError("Cannot make automatic choice: none of the expected sSFR colour maps are present")
@@ -885,33 +894,214 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Automatically selecting appropriate dust map ...")
 
+        preferred_method = "attenuation"
+
+        # Check
+        if not self.has_dust_maps: raise IOError("No dust maps are present")
+        if not self.dust_has_methods: raise IOError("No methods for the dust maps")
+
+        if preferred_method not in self.dust_map_methods: raise ValueError("'attenuation' method is not present among the dust maps")
+
+        # Loop over the attenuation dust maps
+        map_name = None
+        for name in self.dust_map_names_for_method(preferred_method):
+
+            # Check whether the right one
+            if attenuation_method in name and attenuation_name in name:
+                map_name = name
+                break
+
+        # Check if found
+        if map_name is None: raise RuntimeError("Appropriate dust map not found")
+
+        # Return
+        return preferred_method, map_name
+
     # -----------------------------------------------------------------
 
-    def auto_select_young_map(self, attenuation_method, attenuation_name):
+    def auto_select_young_map(self, attenuation_method, attenuation_name, old_name):
 
         """
         This function ...
         :param attenuation_method:
         :param attenuation_name:
+        :param old_name:
         :return:
         """
 
         # Inform the user
         log.info("Automatically selecting appropriate young stellar map ...")
 
+        # Check
+        if not self.has_young_maps: raise IOError("No young stellar maps are present")
+        if self.young_has_methods: raise IOError("Didn't expect different methods for the young stellar maps")
+
+        # Get the paths to the young stellar maps
+        paths = self.get_young_map_paths()
+
+        # Initialize dictionary to store the number of negatives for each factor
+        nnegatives_dict = dict()
+        names_dict = dict()
+
+        # Loop over the young stellar maps made with the specific attenuation map
+        for name in self.young_map_names_no_methods:
+            if not (attenuation_method in name and attenuation_name in name): continue
+
+            # Get the factor
+            factor = real(name.split("__")[-1])
+
+            # Open the map to get the number of negatives in a central ellipse
+            map_path = paths[name]
+            image = Image.from_file(map_path)
+            if "negatives" not in image.masks:
+                log.warning("Negatives mask not present in the '" + name + "' young stellar map image: skipping ...")
+                continue
+
+            # Count the number of negatives
+            mask = image.masks["negatives"]
+            if isinstance(mask, oldMask): mask = Mask(mask, wcs=image.wcs) # Fix type
+            nnegatives = mask.relative_nmasked_in(self.central_ellipse)
+
+            # Add to dictionary
+            nnegatives_dict[factor] = nnegatives
+            names_dict[factor] = name
+
+        # Check if anything is found
+        if len(nnegatives_dict) == 0: raise RuntimeError("No appropriate young stellar maps were found")
+
+        # If only one is found
+        if len(nnegatives_dict) == 1:
+            log.warning("Map was found for only one factor")
+            factor = names_dict.keys()[0]
+            return names_dict[factor]
+
+        # Sort
+        nnegatives_dict = ordered_by_key(nnegatives_dict)
+
+        # Find the factor
+        factor = find_factor_max_nnegatives(nnegatives_dict, 0.1)
+
+        # Get the corresponding map name
+        map_name = names_dict[factor]
+
+        # Return the map name
+        return map_name
+
     # -----------------------------------------------------------------
 
-    def auto_select_ionizing_map(self):
+    def auto_select_hot_dust_map(self, old_name):
 
         """
         This function ...
+        :param old_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Automatically selecting appropriate hot dust map ...")
+
+        method_name = "hot"
+
+        # Check
+        if not self.has_dust_maps: raise IOError("No dust maps are present")
+        if not self.dust_has_methods: raise IOError("No methods for the dust maps")
+
+        # No hot dust maps
+        if method_name not in self.dust_map_methods:
+            log.warning("No hot dust maps are present")
+            return None, None
+
+        # Get the paths to the hot dust maps
+        paths = self.get_dust_map_paths(flatten=False, method=method_name)
+
+        # Iinitialize dictionary to store the number of negatives for each factor
+        nnegatives_dict = dict()
+        names_dict = dict()
+
+        # Loop over the hot dust maps correct with the same old stellar filter as the old stellar disk map
+        for name in self.dust_map_names_for_method(method_name):
+            if not name.startswith(old_name): continue
+
+            # Get the factor
+            factor = real(name.split("__")[1])
+
+            # Open the map to get the number of negatives in a central ellipse
+            map_path = paths[name]
+            image = Image.from_file(map_path)
+            if "negatives" not in image.masks:
+                log.warning("Negatives mask not present in the '" + name + "' hot dust map image: skipping ...")
+                continue
+
+            # Count the number of negatives
+            mask = image.masks["negatives"]
+            if isinstance(mask, oldMask): mask = Mask(mask, wcs=image.wcs) # Fix type
+            nnegatives = mask.relative_nmasked_in(self.central_ellipse)
+
+            # Add to dictionary
+            nnegatives_dict[factor] = nnegatives
+            names_dict[factor] = name
+
+        # Check
+        if len(nnegatives_dict) == 0: raise RuntimeError("No appropriate hot dust maps were found")
+
+        # Only one is found
+        if len(nnegatives_dict) == 1:
+            log.warning("Maps was found for only one factor")
+            factor = names_dict.keys()[0]
+            return method_name, names_dict[factor]
+
+        # Sort
+        nnegatives_dict = ordered_by_key(nnegatives_dict)
+
+        # Find the factor
+        factor = find_factor_max_nnegatives(nnegatives_dict, 0.1)
+
+        # Get the corresponding map name
+        map_name = names_dict[factor]
+
+        # Return
+        return method_name, map_name
+
+    # -----------------------------------------------------------------
+
+    def auto_select_ionizing_map(self, hot_dust_name):
+
+        """
+        This function ...
+        :param hot_dust_name:
         :return:
         """
 
         # Inform the user
         log.info("Automatically selecting appropriate ionizing stellar map ...")
 
+        # Check
+        if not self.has_ionizing_maps: raise IOError("No ionizing stellar maps are present")
+        if self.ionizing_has_methods: raise IOError("Didn't expect different methods for the ionizing stellar maps")
 
+        # No hot dust maps could be made
+        if hot_dust_name is None:
+
+            name = "halpha"
+            if name not in self.ionizing_map_names_no_methods: raise RuntimeError("Could not find appropriate ionizing stellar map: no hot dust and no halpha map")
+            else: return name
+
+        # Hot dust map was found
+        else:
+
+            # Loop over the ionizing stellar map names
+            map_name = None
+            for name in self.ionizing_map_names_no_methods:
+
+                if hot_dust_name in name:
+                    map_name = name
+                    break
+
+            # Check
+            if map_name is None: raise RuntimeError("Could not find the appropriate ionizing stellar map")
+
+            # Return
+            return map_name
 
     # -----------------------------------------------------------------
 
@@ -6332,5 +6522,48 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         return None
+
+# -----------------------------------------------------------------
+
+def find_matching_colour_map_name(colour, map_names):
+
+    """
+    This function ...
+    :param colour:
+    :param map_names:
+    :return:
+    """
+
+    # Loop over the map names
+    for name in map_names:
+
+        # Select
+        if colours.same_colour(colour, name): return name
+
+    # Nothing found
+    return None
+
+# -----------------------------------------------------------------
+
+def find_factor_max_nnegatives(nnegatives, max_nnegatives):
+
+    """
+    This function ...
+    :param nnegatives:
+    :param max_nnegatives:
+    :return:
+    """
+
+    # Loop over the factors in reverse order
+    for factor in reversed(nnegatives.keys()):
+
+        # Get the number of negatives
+        negatives = nnegatives[factor]
+
+        # Succes?
+        if negatives < max_nnegatives: return factor
+
+    # Error
+    raise ValueError("None of the maps have a relative number of negatives lower than the limit of " + str(max_nnegatives*100) + "%")
 
 # -----------------------------------------------------------------

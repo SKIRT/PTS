@@ -1133,13 +1133,6 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
     :return:
     """
 
-    #print(sequence)
-    #print(selected)
-    #print(not_selected)
-    #print(nrandom)
-    #print(all)
-    #print(none)
-
     if selected is not None and none: raise ValueError("Selection is made but 'none' is enabled")
     if indices is not None and none: raise ValueError("Selection is made but 'none' is enabled")
     if all and none: raise ValueError("Cannot enable 'all' and 'none' simultaneously")

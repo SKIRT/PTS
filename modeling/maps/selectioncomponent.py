@@ -935,6 +935,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colour_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.colour_map_names
+
+    # -----------------------------------------------------------------
+
     def colour_map_names_for_method(self, method):
 
         """
@@ -993,6 +1005,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.ssfr_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_map_names_no_methods(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_collection.ssfr_map_names
 
     # -----------------------------------------------------------------
 
@@ -1057,6 +1081,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def tir_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.tir_map_names
+
+    # -----------------------------------------------------------------
+
     def tir_map_names_for_method(self, method):
 
         """
@@ -1115,6 +1151,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.attenuation_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.attenuation_map_names
 
     # -----------------------------------------------------------------
 
@@ -1179,6 +1227,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.old_map_names
+
+    # -----------------------------------------------------------------
+
     def old_map_names_for_method(self, method):
 
         """
@@ -1237,6 +1297,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.young_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.young_map_names
 
     # -----------------------------------------------------------------
 
@@ -1301,6 +1373,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ionizing_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.ionizing_map_names
+
+    # -----------------------------------------------------------------
+
     def ionizing_map_names_for_method(self, method):
 
         """
@@ -1358,6 +1442,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.dust_map_methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_names_no_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_collection.dust_map_names
 
     # -----------------------------------------------------------------
 

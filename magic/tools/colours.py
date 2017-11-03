@@ -73,6 +73,9 @@ def same_colour(colour_a, colour_b):
     fltr_aa, fltr_ab = get_filters_for_colour(colour_a)
     fltr_ba, fltr_bb = get_filters_for_colour(colour_b)
 
+    #print(fltr_aa, fltr_ba)
+    #print(fltr_ab, fltr_bb)
+
     # Return
     return fltr_aa == fltr_ba and fltr_ab == fltr_bb
 
