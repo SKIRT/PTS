@@ -158,7 +158,7 @@ class FilterShower(Configurable):
             for fltr in filters: self.broad[fltr.spec].append(fltr.spec)
 
         # ALl broad band filters
-        else: self.broad = categorize_broad()
+        else: self.broad = categorize_broad(wavelength_range=self.wavelength_range)
 
     # -----------------------------------------------------------------
 
@@ -179,7 +179,7 @@ class FilterShower(Configurable):
             for fltr in filters: self.narrow[fltr.spec].append(fltr.spec)
 
         # All narrow band filters
-        else: self.narrow = categorize_narrow()
+        else: self.narrow = categorize_narrow(wavelength_range=self.wavelength_range)
 
     # -----------------------------------------------------------------
 
@@ -197,6 +197,45 @@ class FilterShower(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_narrow(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.narrow) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nbroad(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        total = 0
+        for label in self.broad:
+            total += len(self.broad[label])
+        return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_broad(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nbroad > 0
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -208,10 +247,10 @@ class FilterShower(Configurable):
         log.info("Showing the filters ...")
 
         # Show narrow band filters
-        if self.add_narrow: self.show_narrow()
+        if self.add_narrow and self.has_narrow: self.show_narrow()
 
         # Show broad band filters
-        if self.add_broad: self.show_broad()
+        if self.add_broad and self.has_broad: self.show_broad()
 
     # -----------------------------------------------------------------
 
@@ -235,7 +274,7 @@ class FilterShower(Configurable):
             # Loop over the filters
             for spec in self.narrow[label]:
 
-                identifier = narrow_identifiers[spec]
+                #identifier = narrow_identifiers[spec]
 
                 if defines_wavelength(spec):
 
@@ -248,12 +287,6 @@ class FilterShower(Configurable):
 
                     wavelength = None
                     wavelength_range = wavelength_range_for_spec(spec)
-
-                # Check wavelength
-                if self.wavelength_range is not None:
-
-                    if wavelength is not None and wavelength not in self.wavelength_range: continue
-                    if wavelength_range is not None and (wavelength_range.min not in self.wavelength_range or wavelength_range.max not in self.wavelength_range): continue
 
                 print("   " + fmt.green + fmt.bold + spec + fmt.reset)
 
@@ -269,7 +302,7 @@ class FilterShower(Configurable):
 
                 if self.config.aliases:
 
-                    print("    " + stringify.stringify_list_fancy(list(narrow_generate_aliases(narrow_identifiers[spec])), 100, " :: ", "    ")[1])
+                    print("    " + stringify.stringify_list_fancy(list(narrow_generate_aliases(narrow_identifiers[spec])), width=100, delimiter=" :: ", lines_prefix="    ")[1])
                     print("")
 
     # -----------------------------------------------------------------
@@ -297,9 +330,6 @@ class FilterShower(Configurable):
                 # Load the filter
                 fltr = BroadBandFilter(spec)
 
-                # Check wavelength
-                if self.wavelength_range is not None and fltr.wavelength not in self.wavelength_range: continue
-
                 print("   " + fmt.green + fmt.bold + spec + fmt.reset)
                 if not self.config.short:
 
@@ -317,7 +347,7 @@ class FilterShower(Configurable):
 
                 if self.config.aliases:
 
-                    print("    " + stringify.stringify_list_fancy(list(broad_generate_aliases(broad_identifiers[spec])), 100, " :: ", "    ")[1])
+                    print("    " + stringify.stringify_list_fancy(list(broad_generate_aliases(broad_identifiers[spec])), width=100, delimiter=" :: ", lines_prefix="    ")[1])
                     print("")
 
     # -----------------------------------------------------------------

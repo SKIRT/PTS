@@ -268,10 +268,11 @@ def get_filters(min_wavelength=None, max_wavelength=None, categorize=False):
 
 # -----------------------------------------------------------------
 
-def categorize_filters():
+def categorize_filters(wavelength_range=None):
 
     """
     This function ...
+    :param wavelength_range:
     :return:
     """
 
@@ -288,6 +289,17 @@ def categorize_filters():
         elif "observatories" in identifier: broad[identifier.observatories[0]].append(spec)
         elif "system" in identifier: broad[identifier.system].append(spec)
         else: broad[spec].append(spec)
+
+    # Filter out ones outside of the wavelength range
+    if wavelength_range is not None:
+
+        # Loop over the filters
+        for label in broad.keys():
+            for spec in list(broad[label]):
+                fltr = BroadBandFilter(spec)
+                if fltr.wavelength not in wavelength_range:
+                    broad[label].remove(spec)
+            if len(broad[label]) == 0: broad.pop(label)
 
     # Return
     return broad

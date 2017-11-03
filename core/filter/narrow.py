@@ -35,6 +35,7 @@ def get_filters_for_regime(regime, subregime=None, categorize=False):
     This function ...
     :param regime:
     :param subregime:
+    :param categorize:
     :return:
     """
 
@@ -54,16 +55,15 @@ def get_filters(min_wavelength=None, max_wavelength=None, categorize=False):
     :return:
     """
 
-    filters = []
-
-
+    raise NotImplementedError("Not yet implemented")
 
 # -----------------------------------------------------------------
 
-def categorize_filters():
+def categorize_filters(wavelength_range=None):
 
     """
     This function ...
+    :param wavelength_range:
     :return:
     """
 
@@ -72,6 +72,25 @@ def categorize_filters():
     # Categorize
     for spec in identifiers: narrow[spec].append(spec)
 
+    # Filter out those outside of the wavelength range
+    if wavelength_range is not None:
+
+        # Loop over the filters
+        for spec in narrow.keys():
+
+            if defines_wavelength(spec):
+                fltr = NarrowBandFilter(spec)
+                wavelength = fltr.wavelength
+                wavelength_range_filter = None
+            else:
+                wavelength = None
+                wavelength_range_filter = wavelength_range_for_spec(spec)
+
+            # Check wavelength
+            if wavelength is not None and wavelength not in wavelength_range: narrow.pop(spec)
+            if wavelength_range_filter is not None and (wavelength_range_filter.min not in wavelength_range or wavelength_range_filter.max not in wavelength_range): narrow.pop(spec)
+
+    # Return
     return narrow
 
 # -----------------------------------------------------------------
