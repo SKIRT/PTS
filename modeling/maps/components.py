@@ -632,6 +632,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Ionizing
         ionizing_name = self.auto_select_ionizing_map(hot_dust_name)
 
+        # Show selections
+        log.info("Selected the following maps automaticaly:")
+        log.info("")
+        log.info(" - old stellar disk: " + old_name)
+        log.info(" - young stellar disk: " + young_name)
+        log.info(" - ionizing stellar disk: " + ionizing_name)
+        log.info(" - dust disk: " + dust_name)
+        log.info("")
+
         # Set selections
         self.old_selection = [old_name]
         self.young_selection = [young_name]
