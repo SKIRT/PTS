@@ -96,13 +96,13 @@ class YoungStellarMapMaker(MapsComponent):
         # 2. Load the necessary input maps
         self.load_input()
 
-        # 4. Make the map of young stars
+        # 3. Make the map of young stars
         self.make_maps()
 
-        # 5. Writing
+        # 4. Writing
         self.write()
 
-        # 6. Plotting
+        # 5. Plotting
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------

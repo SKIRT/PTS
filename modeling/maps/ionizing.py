@@ -187,11 +187,15 @@ class IonizingStellarMapMaker(MapsComponent):
         if self.config.remake: current = dict()
         else: current = self.current_maps
 
+        # Negatives of the hot dust maps
+        hot_negatives = self.get_dust_negatives(flatten=True, method="hot")
+
         # Create
         maker = IonizingStellarMapsMaker()
 
         # Run
-        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods, maps=current)
+        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods,
+                  maps=current, hots_negatives=hot_negatives, region_of_interest=self.truncation_ellipse)
 
         # Set the maps
         self.maps = maker.maps

@@ -15,21 +15,14 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from copy import copy
 
-# Import astronomical modules
-from astropy import constants
-
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
 from ...core.list import NamedFrameList
-
-# -----------------------------------------------------------------
-
-speed_of_light = constants.c
-solar_luminosity = 3.846e26 * u("W")
+from ...core.image import Image
+from ...core.mask import union
 
 # -----------------------------------------------------------------
 
@@ -82,6 +75,12 @@ class IonizingStellarMapsMaker(Configurable):
         self.hots = None
         self.hots_origins = None
         self.hots_methods = None
+        self.hots_negatives = None
+        self.region_of_interest = None
+
+        # Halpha negatives and nans masks
+        self.halpha_nans = None
+        self.halpha_negatives = None
 
         # THE MAPS OF IONIZING STARS
         self.maps = dict()
@@ -105,7 +104,10 @@ class IonizingStellarMapsMaker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 3. Make the map
+        # 2. Process the H-alpha map
+        self.process_halpha()
+
+        # 3. Make the maps
         self.make_maps()
 
     # -----------------------------------------------------------------
@@ -126,6 +128,8 @@ class IonizingStellarMapsMaker(Configurable):
         self.hots = kwargs.pop("hots", None)
         self.hots_origins = kwargs.pop("hots_origins", None)
         self.hots_methods = kwargs.pop("hots_methods", None)
+        self.hots_negatives = kwargs.pop("hots_negatives", None)
+        self.region_of_interest = kwargs.pop("region_of_interest", None)
 
         # Get already existing maps
         self.maps = kwargs.pop("maps", dict())
@@ -156,14 +160,63 @@ class IonizingStellarMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_maps(self):
+    @property
+    def has_negatives(self):
 
         """
         This function ...
         :return:
         """
 
-        # H-ALPHA HAS BEEN CONVERTED TO LSUN (ABOVE)
+        return self.hots_negatives is not None
+
+    # -----------------------------------------------------------------
+
+    def has_negatives_for_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_negatives and name in self.hots_negatives and self.hots_negatives[name] is not None
+
+    # -----------------------------------------------------------------
+
+    def process_halpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Processing the H-alpha image ...")
+
+        # Make copy if necessary
+        if self.config.interpolate_halpha or self.config.halpha_smoothing_factor: self.halpha = self.halpha.copy()
+
+        # Interpolate?
+        if self.config.interpolate_halpha:
+
+            # Interpolate NaNs
+            self.halpha_nans = self.halpha.interpolate_nans(max_iterations=None)
+
+            # Interpolate negative values
+            self.halpha_negatives = self.halpha.interpolate_negatives(max_iterations=None)
+
+        # Smooth?
+        if self.config.smooth_halpha: self.halpha.smooth(self.config.halpha_smoothing_factor)
+
+    # -----------------------------------------------------------------
+
+    def make_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
         log.info("Making the map of ionizing stars ...")
@@ -211,20 +264,13 @@ class IonizingStellarMapsMaker(Configurable):
                 log.success("The " + name + " ionizing stellar map is already created: not creating it again")
                 continue
 
-            # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
-            #best_corrected_24mu_map = self.corrected_24mu_maps[factor]
-
-            # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-            #best_corrected_24mu_map[best_corrected_24mu_map < 0.0] = 0.0
-
+            # Get the hot dust map
             hot = self.hots[name]
-            hot[hot < 0.0] = 0.0
+            #hot[hot < 0.0] = 0.0
 
             # Uniformize the hot dust and H-alpha map
             frames = NamedFrameList(hot=hot, halpha=self.halpha)
             frames.convolve_and_rebin()  # convolve and rebin
-
-            # SEE CALZETTI et al., 2007
 
             # Convert to erg/s
             frames["halpha"].convert_to("erg/s")
@@ -232,35 +278,33 @@ class IonizingStellarMapsMaker(Configurable):
             frames["hot"].convert_to("erg/s", density=True, density_strict=True)
 
             # Calculate ionizing stars map and ratio
+            # CALZETTI et al., 2007
             ionizing = frames["halpha"] + 0.031 * frames["hot"]
 
-            # Normalize the dust map
+            # Normalize the ionizing stellar map
             ionizing.normalize()
 
+            # Create image
+            image = Image()
+            image.add_frame(ionizing, "ionizing")
+
+            # Collect negative pixels masks
+            negatives = []
+            if self.halpha_negatives is not None: negatives.append(self.halpha_negatives.rebinned(ionizing.wcs))
+            if self.has_negatives_for_name(name): negatives.append(self.hots_negatives[name])
+
+            # Create and add negatives mask
+            if len(negatives) > 0:
+                negatives = union(*negatives)
+                image.add_mask(negatives, "negatives")
+
+            # Add NaNs mask
+            if self.halpha_nans is not None:
+                nans = self.halpha_nans.rebinned(ionizing.wcs)
+                image.add_mask(nans, "nans")
+
             # Add the map of ionizing stars
-            self.maps[name] = ionizing
-
-        # ionizing_ratio = self.ha / (0.031*mips_young_stars)
-
-        # MASK NEGATIVE AND LOW SIGNAL-TO-NOISE PIXELS
-
-        # Set pixels to zero with low signal-to-noise in the H Alpha image
-        # ionizing[self.ha < self.config.ionizing_stars.ha_snr_level*self.ha_errors] = 0.0
-        # ionizing_ratio[self.ha < self.config.ionizing_stars.ha_snr_level*self.ha_errors] = 0.0
-
-        # Set pixels to zero with low signal-to-noise in the 24 micron image
-        # ionizing[self.mips < self.config.ionizing_stars.mips_snr_level*self.mips_errors] = 0.0
-        # ionizing_ratio[self.mips < self.config.ionizing_stars.mips_snr_level*self.mips_errors] = 0.0
-
-        # Make sure all pixel values are larger than or equal to zero
-        # ionizing[ionizing < 0.0] = 0.0
-        # ionizing_ratio[ionizing < 0.0] = 0.0
-
-        # New
-        #ionizing[self.cutoff_masks["Halpha"]] = 0.0
-
-        # Set the ionizing stars map
-        #self.map = ionizing
+            self.maps[name] = image
 
     # -----------------------------------------------------------------
 
@@ -276,14 +320,20 @@ class IonizingStellarMapsMaker(Configurable):
 
         method_name = "halpha"
 
+        # Take the processed halpha image
         ionizing = self.halpha.copy()
-        ionizing[ionizing < 0.0] = 0.0
 
-        # Normalize the dust map
+        # Normalize the map
         ionizing.normalize()
 
+        # Create image
+        image = Image()
+        image.add_frame(ionizing, "ionizing")
+        if self.halpha_nans is not None: image.add_mask(self.halpha_nans, "nans")
+        if self.halpha_negatives is not None: image.add_mask(self.halpha_negatives, "negatives")
+
         # Add the map of ionizing stars
-        self.maps[method_name] = ionizing
+        self.maps[method_name] = image
 
         # Set origins
         if self.has_origins: self.origins[method_name] = [parse_filter("Halpha")]
@@ -324,14 +374,20 @@ class IonizingStellarMapsMaker(Configurable):
                 log.warning("The " + name + " ionizing stellar map is already created: not creating it again")
                 continue
 
+            # Get the hot dust map
             ionizing = self.hots[name].copy()
-            ionizing[ionizing < 0.0] = 0.0
+            #ionizing[ionizing < 0.0] = 0.0
 
             # Normalize the dust map
             ionizing.normalize()
 
+            # Create image
+            image = Image()
+            image.add_frame(ionizing, "ionizing")
+            if self.has_negatives_for_name(name): image.add_mask(self.hots_negatives[name], "negatives")
+
             # Add the map of ionizing stars
-            self.maps[name] = ionizing
+            self.maps[name] = image
 
     # -----------------------------------------------------------------
 

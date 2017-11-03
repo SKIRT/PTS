@@ -2059,15 +2059,16 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_and_rebin(self, remote=None):
+    def convolve_and_rebin(self, remote=None, unitless=None):
 
         """
         This function ...
         :param remote:
+        :param unitless:
         :return:
         """
 
-        new_frames = convolve_and_rebin(*self.values, names=self.names, remote=remote)
+        new_frames = convolve_and_rebin(*self.values, names=self.names, remote=remote, unitless=unitless)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -2793,6 +2794,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # In place?
     in_place = kwargs.pop("in_place", False)
 
+    # Which are unitless?
+    unitless = kwargs.pop("unitless", None)
+
     # Check
     if len(frames) == 1:
 
@@ -2833,7 +2837,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     log.debug("The highest pixelscale is " + tostr(highest_pixelscale))
 
     # Rebin
-    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=in_place)
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs,
+                               remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=in_place,
+                               unitless=unitless)
 
 # -----------------------------------------------------------------
 
@@ -3014,6 +3020,9 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
     # IN PLACE?
     in_place = kwargs.pop("in_place", False)
 
+    # Which are unitless
+    unitless = kwargs.pop("unitless", None)
+
     if rebin_remote_threshold is not None and remote is None:
         log.warning("'rebin_remote_threshold' is defined but 'remote' is not specified: rebinning locally ...")
         rebin_remote_threshold = None
@@ -3067,14 +3076,20 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
         # The frame has a lower pixelscale, has to be rebinned
         else:
 
+            # Unitless frame
+            if unitless is not None: unitless_frame = name in unitless
+            else: unitless_frame = False
+
             # In place?
-            if in_place: rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold, session=session, in_place=True)
+            if in_place: rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold,
+                                     session=session, in_place=True, unitless=unitless)
 
             # New frames
             else:
 
                 # Create rebinned frame
-                rebinned = rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold, session=session)
+                rebinned = rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold,
+                                       session=session, unitless=unitless)
 
                 # Set the name
                 if names is not None: rebinned.name = names[index]
@@ -3090,7 +3105,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
-def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_place=False):
+def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_place=False, unitless=False):
 
     """
     This function ...
@@ -3100,11 +3115,13 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     :param rebin_remote_threshold:
     :param session:
     :param in_place:
+    :param unitless:
     :return:
     """
 
     # Debugging
-    log.debug("Rebinning frame '" + name + "' with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
+    if frame.unit is not None: log.debug("Rebinning frame '" + name + "' with unit " + tostr(frame.unit, add_physical_type=True) + " ...")
+    else: log.debug("Rebinning frame '" + name + "' without unit ...")
 
     # CONVERT TO PER ANGULAR OR INTRINSIC AREA, IF UNIT IS DEFINED
     if frame.unit is not None:
@@ -3119,7 +3136,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
     # UNIT IS NOT DEFINED
     else:
-        log.warning("The unit of the '" + name + "' frame is not defined: make sure it is per unit of angular or intrinsic area (or only the relative variation is important)")
+        if not unitless: log.warning("The unit of the '" + name + "' frame is not defined: make sure it is per unit of angular or intrinsic area (or only the relative variation is important)")
         original_unit = None
 
     # REBIN remotely

@@ -216,7 +216,7 @@ class HotDustMapsMaker(Configurable):
 
             # Uniformize the MIPS 24 micron image and the old disk map
             frames = NamedFrameList(old=normalized_old, mips24=self.mips24)
-            frames.convolve_and_rebin()
+            frames.convolve_and_rebin(unitless="old")
 
             # CHECK IF OLD IS STILL NORMALIZED
             if not frames["old"].is_normalized():
@@ -303,9 +303,7 @@ def make_corrected_24mu_map(mips24, disk, factor, normalize_in=None):
 
     # Inform the user
     log.info("Subtracting the old stellar contribution from the 24 micron emission map with a factor of " + str(factor) + " ...")
-
-    # typisch 20% en 35% respectievelijk
-    # 48% voor MIPS 24 komt van Lu et al. 2014
+    # Lu et al. 2014: 48% voor MIPS 24
 
     # Calculate sum of MIPS 24 in the specified region
     if normalize_in is not None: normalization_value = mips24.sum_in(normalize_in, add_unit=False)

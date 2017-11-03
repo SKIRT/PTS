@@ -427,7 +427,7 @@ def make_corrected_fuv_map(fuv, old, factor, normalize_in=None):
 
     # Convert to same pixelscale and convolve to same resolution
     frames = NamedFrameList(fuv=fuv, old=old)
-    frames.convolve_and_rebin()
+    frames.convolve_and_rebin(unitless="old")
 
     fuv = frames["fuv"]
     old = frames["old"]

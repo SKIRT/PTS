@@ -13,7 +13,9 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition()
 
-# Add optional
-definition.add_optional("filter", "filter", "band to use")
+# Processing of H-alpha image
+definition.add_flag("interpolate_halpha", "interpolate the negative and NaN values in the H-alpha image", True)
+definition.add_flag("smooth_halpha", "smooth the H-alpha image", True)
+definition.add_optional("halpha_smoothing_factor", "positive_real", "smoothing factor", 2.)
 
 # -----------------------------------------------------------------

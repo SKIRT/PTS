@@ -739,6 +739,20 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_dust_negatives(self, flatten=False, framelist=False, method=None):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :param method:
+        :return:
+        """
+
+        return self.collection.get_dust_negatives(flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_dust_nans(self, flatten=False, framelist=False):
 
         """
@@ -4877,13 +4891,14 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_ionizing(self, maps=True, contours=True, profiles=True, nans=True, format="pdf"):
+    def plot_ionizing(self, maps=True, contours=True, profiles=True, negatives=True, nans=True, format="pdf"):
 
         """
         This function ...
         :param maps:
         :param contours:
         :param profiles:
+        :param negatives:
         :param nans:
         :param format:
         :return:
@@ -4901,6 +4916,9 @@ class MapsComponent(MapMakerBase):
 
         # Plot the radial profiles
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
+
+        # Plot the negative masks
+        if negatives: self.plot_negatives(format=format, clear_other_formats=True, count_within=self.central_ellipse)
 
         # Plot the NaNs masks
         if nans: self.plot_nans(format=format, clear_other_formats=True)

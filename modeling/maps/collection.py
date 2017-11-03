@@ -1342,6 +1342,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_dust_negatives(self, flatten=False, framelist=False):
+
+        """
+        Thisf unction ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_negatives_sub_name(self.maps_dust_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
     def get_dust_nans(self, flatten=False, framelist=False):
 
         """
@@ -2180,6 +2193,25 @@ class MapsCollection(object):
 
         if self.from_analysis: return get_extra_maps_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
         else: return get_extra_maps_sub_name(self.environment, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # -----------------------------------------------------------------
+
+    def get_negatives_sub_name(self, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+        """
+        This function ...
+        :param name:
+        :param flatten:
+        :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
+        :return:
+        """
+
+        if self.from_analysis: return get_negatives_sub_name_analysis(self.analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+        else: return get_negatives_sub_name(self.environment, name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -3747,6 +3779,29 @@ def get_extra_maps_sub_name_analysis(analysis_run, name, flatten=False, framelis
 
 # -----------------------------------------------------------------
 
+def get_negatives_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    This function ...
+    :param analysis_run:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_map_paths_sub_name_analysis(analysis_run, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # Return the map paths
+    return get_negatives_sub_name_from_paths(paths, framelist=framelist)
+
+# -----------------------------------------------------------------
+
 def get_nans_sub_name_analysis(analysis_run, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
@@ -3820,6 +3875,29 @@ def get_extra_maps_sub_name(environment, name, flatten=False, framelist=False, m
 
 # -----------------------------------------------------------------
 
+def get_negatives_sub_name(environment, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
+
+    """
+    This fnuction ...
+    :param environment:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :param methods:
+    :param not_method:
+    :param not_methods:
+    :return:
+    """
+
+    # Get map paths
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
+
+    # Return the negative masks
+    return get_negatives_sub_name_from_paths(paths, framelist=framelist)
+
+# -----------------------------------------------------------------
+
 def get_nans_sub_name(environment, name, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
     """
@@ -3838,7 +3916,7 @@ def get_nans_sub_name(environment, name, flatten=False, framelist=False, method=
     # Get map paths
     paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
-    # Return the nans maps
+    # Return the nans masks
     return get_nans_sub_name_from_paths(paths, framelist=framelist)
 
 # -----------------------------------------------------------------
@@ -3961,6 +4039,56 @@ def get_extra_maps_sub_name_from_paths(paths, framelist=False, images=True):
     # Return the maps
     if framelist: return NamedFrameList(**maps)
     else: return maps
+
+# -----------------------------------------------------------------
+
+def get_negatives_sub_name_from_paths(paths, framelist=False):
+
+    """
+    Thisf unction ...
+    :param paths:
+    :param framelist:
+    :return:
+    """
+
+    # Initialize the negatives dictionary
+    negatives = dict()
+
+    # Loop over the entries
+    for method_or_name in paths:
+
+        # Methods
+        if types.is_dictionary(paths[method_or_name]):
+
+            method_name = method_or_name
+            negatives[method_name] = dict()
+
+            # Loop over the paths
+            for name in paths[method_or_name]:
+
+                # Get the path
+                map_path = paths[method_or_name][name]
+
+                # Check mask planes
+                if "negatives" in get_mask_names(map_path): negatives[method_name][name] = Mask.from_file(map_path, plane="negatives")
+                else: negatives[method_name][name] = None
+
+        # Just maps
+        elif types.is_string_type(paths[method_or_name]):
+
+            name = method_or_name
+
+            # Get the path
+            map_path = paths[method_or_name]
+
+            # Check mask planes
+            if "negatives" in get_mask_names(map_path): negatives[name] = Mask.from_file(map_path, plane="negatives")
+            else: negatives[name] = None
+
+    # Return the masks
+    if framelist:
+        raise NotImplementedError("Not implemented yet")
+    else: return negatives
 
 # -----------------------------------------------------------------
 
