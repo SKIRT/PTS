@@ -749,7 +749,7 @@ class MapMakerBase(GalaxyModelingComponent):
         :return:
         """
 
-        return self.collection.get_dust_negatives(flatten=flatten, framelist=framelist)
+        return self.collection.get_dust_negatives(flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 
@@ -4109,6 +4109,39 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def clear_current_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Maps
+        self.clear_current_maps()
+
+        # Origins
+        self.clear_current_origins()
+
+        # Methods
+        self.clear_current_methods()
+
+        # Plots
+        self.clear_current_plots()
+
+        # Contour plots
+        self.clear_current_contours()
+
+        # Profile plots
+        self.clear_current_profiles()
+
+        # Negatives plots
+        self.clear_current_negatives()
+
+        # NaNs plots
+        self.clear_current_nans()
+
+    # -----------------------------------------------------------------
+
     def clear_current_all_method(self, method):
 
         """
@@ -4119,6 +4152,12 @@ class MapsComponent(MapMakerBase):
 
         # Maps
         self.clear_current_maps_method(method)
+
+        # Origins
+        self.clear_current_origins_method(method)
+
+        # Methods
+        self.clear_current_methods_method(method)
 
         # Plots
         self.clear_current_plots_method(method)
@@ -4137,6 +4176,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def clear_current_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_map_paths_sub_name(self.maps_sub_name)
+        self.clear_maps_from_paths(paths)
+
+    # -----------------------------------------------------------------
+
     def clear_current_maps_method(self, method):
 
         """
@@ -4146,6 +4197,17 @@ class MapsComponent(MapMakerBase):
         """
 
         paths = self.get_map_paths_sub_name(self.maps_sub_name, flatten=True, method=method)
+        self.clear_maps_from_paths(paths)
+
+    # -----------------------------------------------------------------
+
+    def clear_maps_from_paths(self, paths):
+
+        """
+        Thisnf unction ...
+        :param paths:
+        :return:
+        """
 
         # Loop over the files
         for name in paths:
@@ -4154,17 +4216,84 @@ class MapsComponent(MapMakerBase):
             log.warning("Removing the '" + name + "' map ...")
             fs.remove_file(path)
 
+    # -----------------------------------------------------------------
+
+    def clear_current_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Remove the origins file
+        origins_path = fs.join(self.maps_sub_path, "origins.txt")
+        if fs.is_file(origins_path):
+            log.warning("Removing the origins file ...")
+            fs.remove_file(origins_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_origins_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
         # Remove the origins file
         origins_path = fs.join(self.maps_sub_path, method, "origins.txt")
         if fs.is_file(origins_path):
             log.warning("Removing the origins file ...")
             fs.remove_file(origins_path)
 
+    # -----------------------------------------------------------------
+
+    def clear_current_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Remove the methods file
+        methods_path = fs.join(self.maps_sub_path, "methods.txt")
+        if fs.is_file(methods_path):
+            log.warning("Removing the methods file ...")
+            fs.remove_file(methods_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_methods_method(self, method):
+
+        """
+        Thisf unction ...
+        :param method:
+        :return:
+        """
+
         # Remove the methods file
         methods_path = fs.join(self.maps_sub_path, method, "methods.txt")
         if fs.is_file(methods_path):
             log.warning("Removing the methods file ...")
             fs.remove_file(methods_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine plots path
+        plots_path = fs.join(self.maps_sub_path, self.map_plots_name)
+        if not fs.is_directory(plots_path): return
+
+        # Clear
+        log.warning("Clearing the plots directory ...")
+        fs.clear_directory(plots_path)
 
     # -----------------------------------------------------------------
 
@@ -4186,6 +4315,23 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def clear_current_contours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine contours path
+        contours_path = fs.join(self.maps_sub_path, self.contour_plots_name)
+        if not fs.is_directory(contours_path): return
+
+        # Clear
+        log.warning("Clearing the contours directory ...")
+        fs.clear_directory(contours_path)
+
+    # -----------------------------------------------------------------
+
     def clear_current_contours_method(self, method):
 
         """
@@ -4201,6 +4347,23 @@ class MapsComponent(MapMakerBase):
         # Clear
         log.warning("Clearing the '" + method + "' contours directory ...")
         fs.clear_directory(contours_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_current_profiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine profiles path
+        profiles_path = fs.join(self.maps_sub_path, self.profile_plots_name)
+        if not fs.is_directory(profiles_path): return
+
+        # Clear
+        log.warning("Clearing the profiles directory ...")
+        fs.clear_directory(profiles_path)
 
     # -----------------------------------------------------------------
 
@@ -4222,6 +4385,23 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def clear_current_negatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine negatives path
+        negatives_path = fs.join(self.maps_sub_path, self.negatives_plots_name)
+        if not fs.is_directory(negatives_path): return
+
+        # Clear
+        log.warning("Clearing the negatives directory ...")
+        fs.clear_directory(negatives_path)
+
+    # -----------------------------------------------------------------
+
     def clear_current_negatives_method(self, method):
 
         """
@@ -4240,6 +4420,23 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def clear_current_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine nans path
+        nans_path = fs.join(self.maps_sub_path, self.nans_plots_name)
+        if not fs.is_directory(nans_path): return
+
+        # Clear
+        log.warning("Clearing the NaNs directory ...")
+        fs.clear_directory(nans_path)
+
+    # -----------------------------------------------------------------
+
     def clear_current_nans_method(self, method):
 
         """
@@ -4255,33 +4452,6 @@ class MapsComponent(MapMakerBase):
         # Clear
         log.warning("Clearing the '" + method + "' NaNs directory ...")
         fs.clear_directory(nans_path)
-
-    # -----------------------------------------------------------------
-
-    #def write_error_maps(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Inform the user
-        #log.info("Writing the error maps (with different methods) ...")
-
-        # Loop over the methods
-        #for method in self.maps:
-
-            # Create a directory
-            #path = fs.create_directory_in(self.maps_dust_path, method)
-
-            # Loop over the maps
-            #for name in self.error_maps[method]:
-
-                # Determine path
-                #map_path = fs.join(path, name + "_error.fits")
-
-                # Save the map
-                #self.maps[method][name].saveto(map_path)
 
     # -----------------------------------------------------------------
 

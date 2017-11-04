@@ -1342,16 +1342,17 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_dust_negatives(self, flatten=False, framelist=False):
+    def get_dust_negatives(self, flatten=False, framelist=False, method=None):
 
         """
         Thisf unction ...
         :param flatten:
         :param framelist:
+        :param method:
         :return:
         """
 
-        return self.get_negatives_sub_name(self.maps_dust_name, flatten=flatten, framelist=framelist)
+        return self.get_negatives_sub_name(self.maps_dust_name, flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 

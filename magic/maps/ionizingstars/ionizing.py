@@ -291,7 +291,7 @@ class IonizingStellarMapsMaker(Configurable):
             # Collect negative pixels masks
             negatives = []
             if self.halpha_negatives is not None: negatives.append(self.halpha_negatives.rebinned(ionizing.wcs))
-            if self.has_negatives_for_name(name): negatives.append(self.hots_negatives[name])
+            if self.has_negatives_for_name(name): negatives.append(self.hots_negatives[name].rebinned(ionizing.wcs))
 
             # Create and add negatives mask
             if len(negatives) > 0:

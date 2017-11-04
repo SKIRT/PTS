@@ -183,12 +183,15 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map ...")
 
+        # Clear?
+        if self.config.clear: self.clear_current_all()
+
         # Get the current maps
         if self.config.remake: current = dict()
         else: current = self.current_maps
 
         # Negatives of the hot dust maps
-        hot_negatives = self.get_dust_negatives(flatten=True, method="hot")
+        hot_negatives = self.get_dust_negatives(flatten=False, method="hot")
 
         # Create
         maker = IonizingStellarMapsMaker()

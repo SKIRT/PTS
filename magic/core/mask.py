@@ -370,16 +370,17 @@ class Mask(MaskBase):
         :return:
         """
 
+        from .frame import Frame
+
         # Check whether the frame has a WCS
         if not self.has_wcs: raise RuntimeError("Cannot rebin a mask without coordinate system")
+
+        # Check whether the WCS is the same
+        if self.wcs == reference_wcs: return Frame.ones_like(self)
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
         else: new_data, footprint = reproject_interp((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape)
-
-        #print(new_data)
-        #print(np.sum(np.isnan(new_data)))
-        #print(new_data > threshold)
 
         #print(np.isnan(new_data))
         mask_data = np.logical_or(new_data > threshold, np.isnan(new_data))
@@ -390,7 +391,6 @@ class Mask(MaskBase):
         self._wcs = reference_wcs.copy()
 
         # Return the footprint
-        from .frame import Frame
         return Frame(footprint, wcs=reference_wcs.copy())
 
     # -----------------------------------------------------------------
