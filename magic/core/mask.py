@@ -24,6 +24,8 @@ from ...core.basics.log import log
 from ..basics.mask import MaskBase
 from ..basics.mask import Mask as oldMask
 from ..tools import cropping
+from ..basics.pixelscale import Pixelscale
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -46,6 +48,9 @@ class Mask(MaskBase):
 
         # Set the WCS
         self._wcs = kwargs.pop("wcs", None)
+
+        # Set the pixelscale
+        self._pixelscale = kwargs.pop("pixelscale", None)
 
         # The path
         self.path = None
@@ -119,6 +124,109 @@ class Mask(MaskBase):
         """
 
         return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the pixelscale of the WCS is WCS is defined
+        if self.wcs is not None: return self.wcs.pixelscale
+        else: return self._pixelscale  # return the pixelscale
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, Pixelscale): value = Pixelscale(value)
+        self._pixelscale = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixelscale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.pixelscale is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_angle(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_length_quantity(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.wcs is not None: return self.wcs.average_pixelscale
+        else: return self._pixelscale.average if self._pixelscale is not None else None
 
     # -----------------------------------------------------------------
 

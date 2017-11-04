@@ -24,10 +24,11 @@ from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import headers
-from ..basics.mask import Mask
+#from ..basics.mask import Mask
 from .frame import Frame
 from .segmentationmap import SegmentationMap
 from ...core.tools import strings
+from .mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -353,7 +354,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             elif plane_type == "mask":
 
                 #data, name=None, description=None
-                mask = Mask(hdu.data[i], name=name, description=description)
+                mask = Mask(hdu.data[i], name=name, description=description, wcs=wcs, pixelscale=pixelscale)
                 masks[name] = mask
 
             elif plane_type == "segments":
@@ -404,7 +405,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
         # Mask
         elif plane_type == "mask":
 
-            mask = Mask(hdu.data, name=name, description=description)
+            mask = Mask(hdu.data, name=name, description=description, wcs=wcs, pixelscale=pixelscale)
             # Add the mask
             masks[name] = mask
 

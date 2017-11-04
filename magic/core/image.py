@@ -21,11 +21,10 @@ from astropy.io.fits import Header
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
 from ..region.list import PixelRegionList
-from ..basics.mask import Mask
-from .mask import Mask as newMask
+from .mask import Mask, union, intersection
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
-from .frame import Frame, sum_frames
+from .frame import sum_frames
 from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit
 from ...core.units.stringify import represent_unit
@@ -1374,7 +1373,7 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Rebinning the " + frame_name + " frame ...")
+            log.debug("Rebinning the '" + frame_name + "' frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
             footprint = self.frames[frame_name].rebin(reference_wcs, exact=exact, parallel=parallel)
@@ -1383,26 +1382,27 @@ class Image(object):
         for mask_name in self.masks:
 
             # Inform the user
-            log.debug("Rebinning the " + mask_name + " mask ...")
+            log.debug("Rebinning the '" + mask_name + "' mask ...")
 
-            # Create a frame for the mask
-            mask_frame = Frame(self.masks[mask_name].astype(float), wcs=original_wcs)
+            # Rebin
+            self.masks[mask_name].rebin(reference_wcs)
 
-            # Rebin the mask frame
-            footprint = mask_frame.rebin(reference_wcs, exact=exact, parallel=parallel)
+        # Loop over the segmentation maps
+        for segments_name in self.segments:
 
-            # Return the rebinned mask
-            # data, name, description
-            self.masks[mask_name] = Mask(mask_frame > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
+            # Infomr the user
+            log.debug("Rebinning the '" + segments_name + "' segmentation map ...")
 
-        # TODO: REBIN THE SEGMENTATION MAPS!!
+            # Rebin
+            self.segments[segments_name].rebin(reference_wcs)
 
         # If there was any frame or mask, we have footprint
         if footprint is not None:
 
             # Add mask for padded pixels after rebinning
             # this mask now covers pixels added to the frame after rebinning plus more (radius 10 pixels)
-            padded = Mask(footprint < 0.9).disk_dilation(radius=10)
+            padded = Mask(footprint < 0.9, wcs=self.wcs, pixelscale=self.pixelscale)
+            padded.disk_dilate(radius=10)
             self.add_mask(padded, "padded")
 
     # -----------------------------------------------------------------
@@ -1462,11 +1462,8 @@ class Image(object):
         :return:
         """
 
-        # Calculate the total mask
-        mask = newMask.intersection(*self.masks.values())
-
-        # Return the mask
-        return mask
+        # Intersection
+        return intersection(*self.masks.values())
 
     # -----------------------------------------------------------------
 
@@ -1478,10 +1475,7 @@ class Image(object):
         """
 
         # Calculate the total mask
-        mask = newMask.union(*self.masks.values())
-
-        # Return the mask
-        return mask
+        return union(*self.masks.values())
 
     # -----------------------------------------------------------------
 

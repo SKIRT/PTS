@@ -597,6 +597,37 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def disk_dilate(self, radius=5, niterations=1):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :return:
+        """
+
+        from skimage import morphology
+
+        structure = morphology.disk(radius, dtype=bool)
+        self._data = ndimage.binary_dilation(self.data, structure, niterations)
+
+    # -----------------------------------------------------------------
+
+    def disk_dilated(self, radius=5, niterations=1):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :return:
+        """
+
+        new = self.copy()
+        new.disk_dilate(radius=radius, niterations=niterations)
+        return new
+
+    # -----------------------------------------------------------------
+
     def open(self):
 
         """
