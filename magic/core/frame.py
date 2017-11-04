@@ -36,12 +36,12 @@ from ..basics.coordinate import SkyCoordinate, PixelCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
 from ...core.basics.log import log
-from ..basics.mask import Mask, MaskBase
+from ..basics.mask import MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ...core.units.unit import PhotometricUnit
 from ...core.filter.filter import parse_filter
-from .mask import Mask as newMask
+from .mask import Mask
 from .alpha import AlphaMask
 from ..convolution.kernels import get_fwhm, has_variable_fwhm
 from ...core.tools import types
@@ -963,8 +963,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None)
-        #return newMask(self._data == value)
+        return Mask(np.equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -976,7 +975,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.not_equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None)
+        return Mask(np.not_equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -988,7 +987,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.less(self._data, value))
+        return Mask(np.less(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -1000,7 +999,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.less_equal(self._data, value))
+        return Mask(np.less_equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -1012,7 +1011,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.greater(self._data, value))
+        return Mask(np.greater(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -1024,7 +1023,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return newMask(np.greater_equal(self._data, value))
+        return Mask(np.greater_equal(self._data, value), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -1048,9 +1047,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        #from .mask import union
-        #return union(*[self.where(value) for value in nan_values])
-        return newMask(np.isnan(self.data), wcs=self.wcs.copy() if self.wcs is not None else None)
+        return Mask(np.isnan(self.data), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -1121,9 +1118,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        #from .mask import union
-        #return union(*[self.where(value) for value in inf_values])
-        return newMask(np.isinf(self.data), wcs=self.wcs.copy() if self.wcs is not None else None)
+        return Mask(np.isinf(self.data), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -4007,7 +4002,7 @@ class Frame(NDDataArray):
                 # Apply the masks
                 else:
 
-                    new_nans = newMask.above(new_nans_data, 0.5)
+                    new_nans = Mask.above(new_nans_data, 0.5)
                     #new_nans = new_nans_data > 0.5
                     new_nans.dilate_rc(2, connectivity=1, iterations=2)
                     new_data[new_nans] = nan_value
@@ -4024,7 +4019,7 @@ class Frame(NDDataArray):
                 # Apply the masks
                 else:
 
-                    new_infs = newMask.above(new_infs_data, 0.5)
+                    new_infs = Mask.above(new_infs_data, 0.5)
                     #new_infs = new_infs_data > 0.5
                     new_infs.dilate_rc(2, connectivity=1, iterations=2)
                     new_data[new_infs] = inf_value
@@ -4224,7 +4219,7 @@ class Frame(NDDataArray):
 
                 index = int(index)
 
-                where = Mask(old._data == index)
+                where = old._data == index
 
                 # Calculate the downsampled array
                 data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
@@ -4286,7 +4281,7 @@ class Frame(NDDataArray):
             self.wcs = rotated_wcs
 
         # Return mask of padded pixels
-        return self.nans()
+        return self.nans
 
     # -----------------------------------------------------------------
 
@@ -4299,7 +4294,7 @@ class Frame(NDDataArray):
         """
 
         data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
-        return newMask(np.isnan(data))
+        return Mask(np.isnan(data), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
