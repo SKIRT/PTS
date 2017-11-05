@@ -2353,3 +2353,159 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
     return paths, error_paths
 
 # -----------------------------------------------------------------
+
+def get_bulge2d_model_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    components_path = fs.join(modeling_path, "components")
+    return fs.join(components_path, "2D", "S4G", "bulge.mod")
+
+# -----------------------------------------------------------------
+
+def has_bulge2d_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_bulge2d_model_path(modeling_path)
+    return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def get_bulge2d_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_bulge2d_model_path(modeling_path)
+    return load_2d_model(path)
+
+# -----------------------------------------------------------------
+
+def get_disk2d_model_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    components_path = fs.join(modeling_path, "components")
+    return fs.join(components_path, "2D", "S4G", "disk.mod")
+
+# -----------------------------------------------------------------
+
+def has_disk2d_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_disk2d_model_path(modeling_path)
+    return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def get_disk2d_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_disk2d_model_path(modeling_path)
+    return load_2d_model(path)
+
+# -----------------------------------------------------------------
+
+def get_bulge_model_path(modeling_path):
+
+    """
+    Thisf unction ...
+    :param modeling_path:
+    :return:
+    """
+
+    components_path = fs.join(modeling_path, "components")
+    return fs.join(components_path, "models", "bulge.mod")
+
+# -----------------------------------------------------------------
+
+def has_bulge_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_bulge_model_path(modeling_path)
+    return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def get_bulge_model(modeling_path):
+
+    """
+    Thisj function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_bulge_model_path(modeling_path)
+    return load_3d_model(path)
+
+# -----------------------------------------------------------------
+
+def get_disk_model_path(modeling_path):
+
+    """
+    Thisj function ...
+    :param modeling_path:
+    :return:
+    """
+
+    components_path = fs.join(modeling_path, "components")
+    return fs.join(components_path, "models", "disk.mod")
+
+# -----------------------------------------------------------------
+
+def has_disk_model(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_disk_model_path(modeling_path)
+    return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def get_disk_model(modeling_path):
+
+    """
+    Thisf unction ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_disk_model_path(modeling_path)
+    return load_3d_model(path)
+
+# -----------------------------------------------------------------

@@ -39,6 +39,12 @@ from ...magic.core.image import Image
 from ...magic.tools import colours
 from ...magic.basics.mask import Mask as oldMask
 from ...core.basics.containers import ordered_by_key
+from ...magic.core.fits import get_plane_names
+
+# -----------------------------------------------------------------
+
+negatives_plane_name = "negatives"
+nans_plane_name = "nans"
 
 # -----------------------------------------------------------------
 
@@ -51,12 +57,13 @@ edgeon_name = "edgeon"
 # -----------------------------------------------------------------
 
 correct_step = "corrected"
+interpolate_negatives_step = "interpolated_negatives"
 interpolate_step = "interpolated"
 truncate_step = "truncated"
 crop_step = "cropped"
 clip_step = "clipped"
 softened_step = "softened"
-steps = [correct_step, interpolate_step, truncate_step, crop_step, clip_step, softened_step]
+steps = [correct_step, interpolate_negatives_step, interpolate_step, truncate_step, crop_step, clip_step, softened_step]
 
 # -----------------------------------------------------------------
 
@@ -167,6 +174,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.young_edgeon_path = None
         self.ionizing_edgeon_path = None
         self.dust_edgeon_path = None
+
+        # Negative masks
+        self.old_negative_masks = dict()
+        self.young_negative_masks = dict()
+        self.ionizing_negative_masks = dict()
+        self.dust_negative_masks = dict()
 
         # The clip masks
         self.old_clip_masks = dict()
@@ -2665,6 +2678,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Set metadata
                 for step in steps: self.old_maps[name].metadata[step] = False
 
+            # Get negatives plane
+            if negatives_plane_name in get_plane_names(self.old_map_paths[name]):
+                negatives = Mask.from_file(self.old_map_paths[name], plane=negatives_plane_name)
+                self.old_negative_masks[name] = negatives
+
     # -----------------------------------------------------------------
 
     def load_young(self):
@@ -2707,6 +2725,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Set metadata
                 for step in steps: self.young_maps[name].metadata[step] = False
+
+            # Get negatives plane
+            if negatives_plane_name in get_plane_names(self.young_map_paths[name]):
+                negatives = Mask.from_file(self.young_map_paths[name], plane=negatives_plane_name)
+                self.young_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -2751,6 +2774,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Set metadata
                 for step in steps: self.ionizing_maps[name].metadata[step] = False
 
+            # Get negatives plane
+            if negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
+                negatives = Mask.from_file(self.ionizing_map_paths[name], plane=negatives_plane_name)
+                self.ionizing_negative_masks[name] = negatives
+
     # -----------------------------------------------------------------
 
     def load_dust(self):
@@ -2793,6 +2821,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Set metadata
                 for step in steps: self.dust_maps[name].metadata[step] = False
+
+            # Get negatives plane
+            if negatives_plane_name in get_plane_names(self.dust_map_paths[name]):
+                negatives = Mask.from_file(self.dust_map_paths[name], plane=negatives_plane_name)
+                self.dust_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -3161,6 +3194,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Correct
         self.correct_maps()
 
+        # 2. Interpolate negatives
+        self.interpolate_negatives_maps()
+
         # 2. Interpolate
         self.interpolate_maps()
 
@@ -3375,6 +3411,322 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.step: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, correct_step))
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the negatives in the maps ...")
+
+        # Old
+        self.interpolate_negatives_old_maps()
+
+        # Young
+        self.interpolate_negatives_young_maps()
+
+        # Ionizing
+        self.interpolate_negatives_ionizing_maps()
+
+        # Dust
+        self.interpolate_negatives_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_negatives_old(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.old_maps[name].metadata[interpolate_negatives_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_negatives_young(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.young_maps[name].metadata[interpolate_negatives_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_negatives_ionizing(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.ionizing_maps[name].metadata[interpolate_negatives_step]
+
+    # -----------------------------------------------------------------
+
+    def is_interpolated_negatives_dust(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_maps[name].metadata[interpolate_negatives_step]
+
+    # -----------------------------------------------------------------
+
+    def has_negatives_mask_old(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.old_negative_masks and self.old_negative_masks[name] is not None
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the negatives of the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # No interpolation?
+            if not self.config.interpolate_old_negatives:
+                self.old_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_negatives_old(name):
+                log.success("The negatives of the '" + name + "' old stellar map is already interpolated")
+                continue
+
+            # Check whether there is a negatives mask
+            if not self.has_negatives_mask_old(name):
+                log.debug("No negatives for the '" + name + "' old stellar map")
+                self.old_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Debugging
+            log.debug("Interpolating the negatives of '" + name + "' old stellar map ...")
+
+            # Get the mask
+            mask = self.old_negative_masks[name]
+
+            # Dilate the mask
+            mask.disk_dilate(radius=self.config.old_negatives_dilation_radius)
+
+            # Fill holes
+            mask.fill_holes()
+
+            # Interpolate the map
+            the_map = self.old_maps[name]
+            the_map.interpolate(mask, max_iterations=None)
+
+            # Set flag
+            self.old_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def has_negatives_mask_young(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.young_negative_masks and self.young_negative_masks[name] is not None
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the negatives of the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # No interpolation?
+            if not self.config.interpolate_young_negatives:
+                self.young_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_negatives_young(name):
+                log.success("The negatives of the '" + name + "' young stellar map is already interpolated")
+                continue
+
+            # Check whether there is a negatives mask
+            if not self.has_negatives_mask_young(name):
+                log.debug("No negatives for the '" + name + "' young stellar map")
+                self.young_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Debugging
+            log.debug("Interpolating the negatives of '" + name + "' young stellar map ...")
+
+            # Get the mask
+            mask = self.young_negative_masks[name]
+
+            # Dilate the mask
+            mask.disk_dilate(radius=self.config.young_negatives_dilation_radius)
+
+            # Fill holes
+            mask.fill_holes()
+
+            # Interpolate the map
+            the_map = self.young_maps[name]
+            the_map.interpolate(mask, max_iterations=None)
+
+            # Set flag
+            self.young_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def has_negatives_mask_ionizing(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.ionizing_negative_masks and self.ionizing_negative_masks[name] is not None
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the negatives of the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # No interpolation?
+            if not self.config.interpolate_ionizing_negatives:
+                self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_negatives_ionizing(name):
+                log.success("The negatives of the '" + name + "' ionizing stellar map is already interpolated")
+                continue
+
+            # Check whether there is a negatives mask
+            if not self.has_negatives_mask_ionizing(name):
+                log.debug("No negatives for the '" + name + "' ionizing stellar map")
+                self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Debugging
+            log.debug("Interpolating the negatives of '" + name + "' ionizing stellar map ...")
+
+            # Get the mask
+            mask = self.ionizing_negative_masks[name]
+
+            # Dilate the mask
+            mask.disk_dilate(radius=self.config.ionizing_negatives_dilation_radius)
+
+            # Fill holes
+            mask.fill_holes()
+
+            # Interpolate the map
+            the_map = self.ionizing_maps[name]
+            the_map.interpolate(mask, max_iterations=None)
+
+            # Set flag
+            self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def has_negatives_mask_dust(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.dust_negative_masks and self.dust_negative_masks[name] is not None
+
+    # -----------------------------------------------------------------
+
+    def interpolate_negatives_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the negatives of the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # No interpolation?
+            if not self.config.interpolate_dust_negatives:
+                self.dust_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
+            # Check
+            if self.is_interpolated_negatives_dust(name):
+                log.success("The negatives of the '" + name + "' dust map is already interpolated")
+                continue
+
+            # Check whether there is a negatives mask
+            if not self.has_negatives_mask_dust(name):
+                log.debug("No negatives for the '" + name + "' dust map")
+                self.dust_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Debugging
+            log.debug("Interpolating the negatives of '" + name + "' dust stellar map ...")
+
+            # Get the mask
+            mask = self.dust_negative_masks[name]
+
+            # Dilate the mask
+            mask.disk_dilate(radius=self.config.dust_negatives_dilation_radius)
+
+            # Fill holes
+            mask.fill_holes()
+
+            # Interpolate the map
+            the_map = self.dust_maps[name]
+            the_map.interpolate(mask, max_iterations=None)
+
+            # Set flag
+            self.dust_maps[name].metadata[interpolate_negatives_step] = True
 
     # -----------------------------------------------------------------
 

@@ -5,14 +5,18 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
-from pts.core.tools import filesystem as fs
 from pts.modeling.maps.collection import MapsCollection
 from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
 from pts.modeling.maps.components import steps
 from pts.magic.core.cutout import interpolation_methods
 from pts.modeling.config.build_stars import degeyter_ratio, scalelength_scaleheight_ratios
+from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.component.galaxy import has_bulge2d_model, has_disk2d_model, get_bulge2d_model, get_disk2d_model
 
 # -----------------------------------------------------------------
 
@@ -20,8 +24,8 @@ default_sigma_level = 3.0
 
 # -----------------------------------------------------------------
 
-# Set the modeling path
-modeling_path = fs.cwd()
+# Get the modeling path
+modeling_path = verify_modeling_cwd()
 
 # Create the maps collection
 collection = MapsCollection.from_modeling_path(modeling_path)
@@ -195,6 +199,19 @@ definition.add_flag("interpolate_young", "interpolate core region of young stell
 definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", True)
 definition.add_flag("interpolate_dust", "interpolate core region of dust maps", False)
 
+# Interpolate negatives WITH DILATION
+definition.add_flag("interpolate_old_negatives", "interpolate negatives in old stellar maps", True)
+definition.add_flag("interpolate_young_negatives", "interpolate negatives in young stellar maps", True)
+definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", True)
+definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust maps", True)
+
+# Dilation radius
+default_negatives_dilation_radius = 10
+definition.add_optional("old_negatives_dilation_radius", "old negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("young_negatives_dilation_radius", "young negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("ionizing_negatives_dilation_radius", "ionizing negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("dust_negatives_dilation_radius", "dust negatives dilation radius", default_negatives_dilation_radius)
+
 # Interpolation core
 definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
 definition.add_optional("young_core_region_factor", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
@@ -206,8 +223,19 @@ definition.add_optional("source_outer_factor", "real", "outer factor", 1.4)
 definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
 definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)
 
+# -18 deg # suggestion for M81 for offset old
+if has_disk2d_model(modeling_path) and has_bulge2d_model(modeling_path):
+
+    # Get the difference in position angle
+    bulge = get_bulge2d_model(modeling_path)
+    disk = get_disk2d_model(modeling_path)
+    default_old_offset = bulge.position_angle - disk.position_angle
+
+# No models: no offset
+else: default_old_offset = Angle(0.0, "deg")
+
 # ALSO FOR INTERPOLATION
-definition.add_optional("interpolation_angle_offset_old", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True, suggestions=["-18 deg"], convert_suggestions=True) # suggestion is for M81
+definition.add_optional("interpolation_angle_offset_old", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", default_old_offset)
 definition.add_optional("interpolation_angle_offset_young", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 definition.add_optional("interpolation_angle_offset_ionizing", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
 definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of angle of ellipse for interpolation w.r.t. angle of truncation ellipse", "0 deg", convert_default=True)
