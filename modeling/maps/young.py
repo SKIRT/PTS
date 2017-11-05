@@ -280,6 +280,9 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the maps ...")
 
+        # Clear?
+        if self.config.clear: self.clear_current_all()
+
         # Get the current maps
         if self.config.remake: current = dict()
         else: current = self.get_current_maps(factors=self.factors)

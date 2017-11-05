@@ -684,10 +684,30 @@ def stringify_list_fancy(lst, **kwargs):
     width = kwargs.pop("width", 100)
     delimiter = kwargs.pop("delimiter", ", ")
     lines_prefix = kwargs.pop("lines_prefix", "")
+    colour = kwargs.pop("colour", None)
+    colour_indices = kwargs.pop("colour_indices", None)  # colour only certain indices
 
     from textwrap import wrap
 
     ptype, string = stringify(lst)
+
+    if colour is not None:
+
+        from .formatting import get_color_code, reset
+        code = get_color_code(colour)
+
+        if colour_indices is not None:
+
+            parts = string.split(",")
+            new_parts = []
+            for index, part in enumerate(parts):
+                if index in colour_indices: new_part = code + part + reset
+                else: new_part = part
+                new_parts.append(new_part)
+            string = ",".join(new_parts)
+
+        else: string = code + string + reset
+
     return ptype, lines_prefix + ("\n" + lines_prefix).join(wrap(string.replace(",", delimiter), width))
 
 # -----------------------------------------------------------------

@@ -50,15 +50,20 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
 
 # -----------------------------------------------------------------
 
-def all_regimes(lower=True):
+def all_regimes(lower=True, divisions=True, subdivisions=True, as_dict=False):
 
     """
     This function ...
     :param lower:
+    :param divisions:
+    :param subdivisions:
+    :param as_dict:
     :return:
     """
 
-    regimes = set()
+    from ...core.basics.containers import DefaultOrderedDict
+    if as_dict: regimes = DefaultOrderedDict(list)
+    else: regimes = set()
 
     # Loop over the dictionary
     for key in spectrum_wavelengths:
@@ -71,12 +76,64 @@ def all_regimes(lower=True):
         if lower: subdivision = key[1].lower()
         else: subdivision = key[1]
 
-        # Add both division and subdivision
-        regimes.add(division)
-        regimes.add(subdivision)
+        # Add
+        if as_dict: regimes[division].append(subdivision)
+        else:
 
-    # Return as list
-    return list(regimes)
+            # Add both division and subdivision
+            if divisions: regimes.add(division)
+            if subdivisions: regimes.add(subdivision)
+
+    # Return
+    if as_dict: return regimes
+    else: return list(regimes)
+
+# -----------------------------------------------------------------
+
+def regimes_in_range(wavelength_range, lower=True, divisions=True, subdivisions=True, as_dict=False):
+
+    """
+    This function ...
+    :param wavelength_range:
+    :param lower:
+    :param divisions:
+    :param subdivisions:
+    :param as_dict:
+    :return:
+    """
+
+    from ...core.basics.containers import DefaultOrderedDict
+    if as_dict: regimes = DefaultOrderedDict(list)
+    else: regimes = set()
+
+    # Loop over the dictionary
+    for key in spectrum_wavelengths:
+
+        # In range?
+        key_range = wavelength_range_for_regime(key[0], key[1])
+        both_below = key_range.max < wavelength_range.min
+        both_above = key_range.min > wavelength_range.max
+        if both_below or both_above: continue
+
+        # Get division
+        if lower: division = key[0].lower()
+        else: division = key[0]
+
+        # Get subdivision
+        if lower: subdivision = key[1].lower()
+        else: subdivision = key[1]
+
+        # Add
+        if as_dict: regimes[division].append(subdivision)
+        else:
+
+            # Add both division and subdivision
+            if divisions: regimes.add(division)
+            if subdivisions: regimes.add(subdivision)
+
+    # Return
+    if as_dict: return regimes
+    else: return list(regimes)
 
 # -----------------------------------------------------------------
 

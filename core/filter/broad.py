@@ -255,8 +255,6 @@ def get_filters(min_wavelength=None, max_wavelength=None, categorize=False):
     # As dictionary
     if categorize:
 
-        #print(filters)
-
         # Sort on min wavelength for each label
         filters = sorted(filters, key=lambda x: x[1][0].wavelength)
 
