@@ -398,14 +398,77 @@ class MapsSelectionComponent(MapsComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Correcting map ...")
+
+        # Infinities
+        self.replace_infinities(the_map)
+
+        # NaNs
+        self.replace_nans(the_map)
+
+        # Negatives
+        self.replace_negatives(the_map)
+
+    # -----------------------------------------------------------------
+
+    def replace_infinities(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Replacing infinities in the map ...")
+
         # Replace infinities
-        the_map.replace_infs(0.0)
+        infs = the_map.replace_infs(0.0)
+
+        # Show number of infinities
+        ninfs = np.sum(infs)
+        log.debug("Map contained " + str(ninfs) + " inifinities")
+
+    # -----------------------------------------------------------------
+
+    def replace_nans(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Replacing NaNs in the map ...")
 
         # Replace NaNs
-        the_map.replace_nans(0.0)
+        nans = the_map.replace_nans(0.0)
+
+        # Show number of NaNs
+        nnans = np.sum(nans)
+        log.debug("Map contained " + str(nnans) + " NaN values")
+
+    # -----------------------------------------------------------------
+
+    def replace_negatives(self, the_map):
+
+        """
+        Thisj function ...
+        :param the_map:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Replacing negatives in the map ...")
 
         # Replace negative values
-        the_map.replace_negatives(0.0)
+        negatives = the_map.replace_negatives(0.0)
+
+        # Show number of negatives
+        nnegatives = np.sum(negatives)
+        log.debug("Map contained " + str(nnegatives) + " negative values")
 
     # -----------------------------------------------------------------
 

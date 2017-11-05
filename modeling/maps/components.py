@@ -217,43 +217,43 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Auto-select
+        # 2. Auto-select
         if self.config.auto: self.auto_select()
 
-        # 2. Prompt
+        # 3. Prompt
         self.prompt()
 
-        # 3. Set rerun
+        # 4. Set rerun
         if self.rerun: self.set_rerun()
 
-        # 4. Set redeproject
+        # 5. Set redeproject
         if self.redeproject: self.set_redeproject()
 
-        # 5. Set redeproject SKIRT
+        # 6. Set redeproject SKIRT
         if self.redeproject_skirt: self.set_redeproject_skirt()
 
-        # Set reproject
+        # 7. Set reproject
         if self.reproject: self.set_reproject()
 
-        # 6. Remove other
+        # 8. Remove other
         if self.remove: self.remove_other()
 
-        # 7. Load the maps
+        # 9. Load the maps
         self.load_maps()
 
-        # 8. Load the masks
+        # 10. Load the masks
         self.load_masks()
 
-        # 9. Process the maps
+        # 11. Process the maps
         self.process_maps()
 
-        # 10. Deproject the maps
+        # 12. Deproject the maps
         self.deproject()
 
-        # 11. Project the maps to the edge-on view
+        # 13. Project the maps to the edge-on view
         self.project()
 
-        # 12. Writing
+        # 14. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -3161,19 +3161,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Correct
         self.correct_maps()
 
-        # 2. Interpolate the cores
+        # 2. Interpolate
         self.interpolate_maps()
 
-        # 2. Truncate
+        # 3. Truncate
         self.truncate_maps()
 
-        # 3. Crop
+        # 4. Crop
         self.crop_maps()
 
-        # 4. Clip
+        # 5. Clip
         self.clip_maps()
 
-        # 5. Soften the edges
+        # 6. Soften the edges
         self.soften_edges()
 
     # -----------------------------------------------------------------
@@ -3482,7 +3482,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        ellipse = self.truncation_ellipse * self.config.interpolate_old
+        ellipse = self.truncation_ellipse * self.config.old_core_region_factor
         ellipse.angle += self.config.interpolation_angle_offset_old
         return ellipse
 
@@ -3502,7 +3502,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         for name in self.old_maps:
 
             # No interpolation?
-            if self.config.interpolate_old is None:
+            if not self.config.interpolate_old:
                 self.old_maps[name].metadata[interpolate_step] = True
                 continue
 
@@ -3517,17 +3517,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_old.to_pixel(self.old_maps[name].wcs)
 
-            # Create a source
-            source = Detection.from_shape(self.old_maps[name], ellipse, self.config.source_outer_factor)
+            # Kernel method
+            if self.config.interpolation_method == "kernel":
 
-            # Estimate the background
-            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+                # Get the map and interpolate in the ellipse region
+                the_map = self.old_maps[name]
+                the_map.interpolate(ellipse, max_iterations=None)
 
-            # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+            # Other interpolation methods
+            else:
 
-            # Replace the pixels by the background
-            source.background.replace(self.old_maps[name], where=alpha_mask)
+                # Create a source
+                source = Detection.from_shape(self.old_maps[name], ellipse, self.config.source_outer_factor)
+
+                # Estimate the background
+                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+                # Create alpha mask
+                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+
+                # Replace the pixels by the background
+                source.background.replace(self.old_maps[name], where=alpha_mask)
 
             # Set flag
             self.old_maps[name].metadata[interpolate_step] = True
@@ -3545,7 +3555,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        ellipse = self.truncation_ellipse * self.config.interpolate_young
+        ellipse = self.truncation_ellipse * self.config.young_core_region_factor
         ellipse.angle += self.config.interpolation_angle_offset_young
         return ellipse
 
@@ -3565,7 +3575,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         for name in self.young_maps:
 
             # No interpolation?
-            if self.config.interpolate_young is None:
+            if not self.config.interpolate_young:
                 self.young_maps[name].metadata[interpolate_step] = True
                 continue
 
@@ -3580,17 +3590,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_young.to_pixel(self.young_maps[name].wcs)
 
-            # Create a source
-            source = Detection.from_shape(self.young_maps[name], ellipse, self.config.source_outer_factor)
+            # Kernel method
+            if self.config.interpolation_method == "kernel":
 
-            # Estimate the background
-            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+                # Get the map and interpolate in the ellipse region
+                the_map = self.old_maps[name]
+                the_map.interpolate(ellipse, max_iterations=None)
 
-            # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+            # Other methods
+            else:
 
-            # Replace the pixels by the background
-            source.background.replace(self.young_maps[name], where=alpha_mask)
+                # Create a source
+                source = Detection.from_shape(self.young_maps[name], ellipse, self.config.source_outer_factor)
+
+                # Estimate the background
+                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+                # Create alpha mask
+                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+
+                # Replace the pixels by the background
+                source.background.replace(self.young_maps[name], where=alpha_mask)
 
             # Set flag
             self.young_maps[name].metadata[interpolate_step] = True
@@ -3608,7 +3628,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        ellipse = self.truncation_ellipse * self.config.interpolate_ionizing
+        ellipse = self.truncation_ellipse * self.config.ionizing_core_region_factor
         ellipse.angle += self.config.interpolation_angle_offset_ionizing
         return ellipse
 
@@ -3628,7 +3648,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         for name in self.ionizing_maps:
 
             # No interpolation?
-            if self.config.interpolate_ionizing is None:
+            if not self.config.interpolate_ionizing:
                 self.ionizing_maps[name].metadata[interpolate_step] = True
                 continue
 
@@ -3643,17 +3663,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_ionizing.to_pixel(self.ionizing_maps[name].wcs)
 
-            # Create a source
-            source = Detection.from_shape(self.ionizing_maps[name], ellipse, self.config.source_outer_factor)
+            # Kernel method
+            if self.config.interpolation_method == "kernel":
 
-            # Estimate the background
-            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+                # Get the map and interpolate in the ellipse region
+                the_map = self.old_maps[name]
+                the_map.interpolate(ellipse, max_iterations=None)
 
-            # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+            # Other maps
+            else:
 
-            # Replace the pixels by the background
-            source.background.replace(self.ionizing_maps[name], where=alpha_mask)
+                # Create a source
+                source = Detection.from_shape(self.ionizing_maps[name], ellipse, self.config.source_outer_factor)
+
+                # Estimate the background
+                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+                # Create alpha mask
+                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+
+                # Replace the pixels by the background
+                source.background.replace(self.ionizing_maps[name], where=alpha_mask)
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_step] = True
@@ -3671,7 +3701,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        ellipse = self.truncation_ellipse * self.config.interpolate_dust
+        ellipse = self.truncation_ellipse * self.config.dust_core_region_factor
         ellipse.angle += self.config.interpolation_angle_offset_dust
         return ellipse
 
@@ -3691,7 +3721,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         for name in self.dust_maps:
 
             # No interpolation?
-            if self.config.interpolate_dust is None:
+            if not self.config.interpolate_dust:
                 self.dust_maps[name].metadata[interpolate_step] = True
                 continue
 
@@ -3706,17 +3736,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_dust.to_pixel(self.dust_maps[name].wcs)
 
-            # Create a source
-            source = Detection.from_shape(self.dust_maps[name], ellipse, self.config.source_outer_factor)
+            # Kernel method
+            if self.config.interpolation_method == "kernel":
 
-            # Estimate the background
-            source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+                # Get the map and interpolate in the ellipse region
+                the_map = self.old_maps[name]
+                the_map.interpolate(ellipse, max_iterations=None)
 
-            # Create alpha mask
-            alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+            # Other methods
+            else:
 
-            # Replace the pixels by the background
-            source.background.replace(self.dust_maps[name], where=alpha_mask)
+                # Create a source
+                source = Detection.from_shape(self.dust_maps[name], ellipse, self.config.source_outer_factor)
+
+                # Estimate the background
+                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+
+                # Create alpha mask
+                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
+
+                # Replace the pixels by the background
+                source.background.replace(self.dust_maps[name], where=alpha_mask)
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_step] = True

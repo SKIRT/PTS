@@ -180,15 +180,28 @@ definition.add_flag("reproject_dust", "reproject the dust maps")
 
 # -----------------------------------------------------------------
 
-default_interpolation_method = "pts"
+#default_interpolation_method = "pts"
+default_interpolation_method = "kernel"
+
+# -----------------------------------------------------------------
+
+default_core_region_factor = 0.06
 
 # -----------------------------------------------------------------
 
 # INTERPOLATION OF CORE OF THE MAPS
-definition.add_optional("interpolate_old", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", suggestions=[0.06]) # suggestion is for M81
-definition.add_optional("interpolate_young", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse")
-definition.add_optional("interpolate_ionizing", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse")
-definition.add_optional("interpolate_dust", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse")
+definition.add_flag("interpolate_old", "interpolate core region of old stellar maps", True)
+definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", True)
+definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", True)
+definition.add_flag("interpolate_dust", "interpolate core region of dust maps", False)
+
+# Interpolation core
+definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
+definition.add_optional("young_core_region_factor", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
+definition.add_optional("ionizing_core_region_factor", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
+definition.add_optional("dust_core_region_factor", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse", default=default_core_region_factor)
+
+# Interpolation settings
 definition.add_optional("source_outer_factor", "real", "outer factor", 1.4)
 definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
 definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)

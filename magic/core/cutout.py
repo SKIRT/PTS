@@ -28,7 +28,7 @@ from .alpha import AlphaMask
 
 # -----------------------------------------------------------------
 
-interpolation_methods = ["polynomial", "local_mean", "idw", "mean", "median", "biharmonic", "pts"]
+interpolation_methods = ["polynomial", "local_mean", "idw", "mean", "median", "biharmonic", "pts", "kernel"]
 
 # -----------------------------------------------------------------
 

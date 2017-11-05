@@ -3193,11 +3193,11 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
+    def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
 
         """
         Thisfunction ...
-        :param mask:
+        :param region_or_mask:
         :param sigma:
         :param max_iterations:
         :param plot:
@@ -3205,6 +3205,9 @@ class Frame(NDDataArray):
         :param min_max_in:
         :return:
         """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
 
         # Get a mask of the original NaN pixels
         original_nans = self.nans
@@ -4255,6 +4258,95 @@ class Frame(NDDataArray):
         """
 
         self._data.fill(value)
+
+    # -----------------------------------------------------------------
+
+    def fill_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fill(nan_value)
+
+    # -----------------------------------------------------------------
+
+    def fill_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fill(inf_value)
+
+    # -----------------------------------------------------------------
+
+    def fill_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fill(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def fill_in(self, region_or_mask, value):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :param value:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Fill
+        self._data[mask] = value
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def fill_nans_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        return self.fill_in(region_or_mask, nan_value)
+
+    # -----------------------------------------------------------------
+
+    def fill_infs_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        return self.fill_in(region_or_mask, inf_value)
+
+    # -----------------------------------------------------------------
+
+    def fill_zeroes_in(self, region_or_mask):
+
+        """
+        This function ...
+        :param region_or_mask:
+        :return:
+        """
+
+        return self.fill_in(region_or_mask, zero_value)
 
     # -----------------------------------------------------------------
 
