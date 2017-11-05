@@ -587,13 +587,19 @@ class Cutout(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def interpolated(self, mask, method, no_clip_mask=None, plot=False):
+    def interpolated(self, mask, method, no_clip_mask=None, plot=False, sigma=None, fwhm=None, max_iterations=10,
+                     not_converge="keep"):
 
         """
         This function ...
         :param mask:
         :param method:
         :param no_clip_mask:
+        :param plot:
+        :param sigma:
+        :param fwhm:
+        :param max_iterations:
+        :param not_converge:
         :return:
         """
 
@@ -642,13 +648,15 @@ class Cutout(np.ndarray):
         elif method == "mean":
 
             mean = np.ma.mean(np.ma.masked_array(self, mask=mask))
-            return self.full(mean)
+            data = np.full(self.shape, mean)
+            return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Calculate the median value of the data
         elif method == "median":
 
-            median = np.ma.median(np.ma.masked_array(self, mask=mask))
-            return self.full(median)
+            median = float(np.ma.median(np.ma.masked_array(self, mask=mask)))
+            data = np.full(self.shape, median)
+            return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Use the biharmonic method of the Scikit-image package
         elif method == "biharmonic":
@@ -668,6 +676,72 @@ class Cutout(np.ndarray):
                 data = interpolation.in_paint(data, mask)
 
             return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+        # Use the kernel  method
+        elif method == "kernel":
+
+            from ..tools import statistics
+            from astropy.convolution import interpolate_replace_nans
+            from astropy.convolution import Gaussian2DKernel
+
+            # Get the sigma
+            if fwhm is not None:
+                sigma_from_fwhm = fwhm * statistics.fwhm_to_sigma
+                if sigma is not None and not np.isclose(sigma, sigma_from_fwhm): raise ValueError("Sigma and FWHM do not correspond")
+                sigma = sigma_from_fwhm
+            elif sigma is None: raise ValueError("Either FWHM or sigma has to be specified")
+
+            # We smooth with a Gaussian kernel with stddev passed by the user
+            # Create the kernel
+            kernel = Gaussian2DKernel(stddev=sigma)
+
+            # Create data with NaNs
+            data = self.copy()
+            data[mask] = float("NaN")
+
+            # Interpolate
+            result = interpolate_replace_nans(data, kernel)
+            niterations = 1
+
+            # Get the current number of nans
+            previous_nnans = None  # don't get it for performance
+            nnans = np.sum(np.isnan(result))
+
+            # Debugging
+            log.debug("The number of NaN values after iteration 1 is " + str(nnans))
+
+            # Are there still NaNs?
+            while nnans > 0:
+
+                # Check number of iterations
+                if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+
+                # Debugging
+                log.debug("Interpolation iteration " + str(niterations + 1) + " ...")
+
+                # Perform next interpolation
+                result = interpolate_replace_nans(result, kernel)
+
+                # Increment the niterations counter
+                niterations += 1
+
+                # Get the current number of nans
+                previous_nnans = nnans
+                nnans = np.sum(np.isnan(result))
+
+                # Not converging
+                if nnans >= previous_nnans:
+                    if not_converge == "keep":
+                        log.warning("The number of NaNs could not converge to zero: " + str(nnans) + " NaN values will remain")
+                        break  # break the loop
+                    elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero")
+                    else: raise ValueError("Invalid option for 'not_converge'")
+
+                # Debugging
+                log.debug("The number of NaN values after iteration " + str(niterations) + " is " + str(nnans))
+
+            # Return the result
+            return Cutout(result, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Use the 'PTS' method
         elif method == "pts":

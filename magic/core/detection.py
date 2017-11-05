@@ -463,13 +463,18 @@ class Detection(object):
 
     # -----------------------------------------------------------------
 
-    def estimate_background(self, method, sigma_clip=True, sigma_level=3.0):
+    def estimate_background(self, method, sigma_clip=True, sigma_level=3.0, sigma=None, fwhm=None, max_iterations=10,
+                            not_converge="keep"):
 
         """
         This function ...
         :param method:
         :param sigma_clip:
         :param sigma_level:
+        :param sigma:
+        :param fwhm:
+        :param max_iterations:
+        :param not_converge:
         :return:
         """
 
@@ -514,16 +519,14 @@ class Detection(object):
 
                 no_clip_mask = self.mask
 
+        # Other methods
         else:
+
             # Perform sigma-clipping on the background if requested
             if sigma_clip:
-                try:
-                    mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
-                except:
-                    mask = self.mask
-
+                try: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                except: mask = self.mask
             else: mask = self.mask
-
             no_clip_mask = None
 
         # Add contamination
@@ -531,11 +534,12 @@ class Detection(object):
             mask = mask + self.contamination
             if no_clip_mask is not None: no_clip_mask = no_clip_mask + self.contamination
 
-
         # Perform the interpolation
-        self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=self.special)
+        self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=self.special,
+                                                   sigma=sigma, fwhm=fwhm, max_iterations=max_iterations,
+                                                   not_converge=not_converge)
 
-
+        # Special: plot
         if self.special: self.plot(title="background estimated")
 
     # -----------------------------------------------------------------
