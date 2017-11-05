@@ -207,10 +207,10 @@ definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust
 
 # Dilation radius
 default_negatives_dilation_radius = 10
-definition.add_optional("old_negatives_dilation_radius", "old negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("young_negatives_dilation_radius", "young negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("ionizing_negatives_dilation_radius", "ionizing negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("dust_negatives_dilation_radius", "dust negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("old_negatives_dilation_radius", "real", "old negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("young_negatives_dilation_radius", "real", "young negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("ionizing_negatives_dilation_radius", "real", "ionizing negatives dilation radius", default_negatives_dilation_radius)
+definition.add_optional("dust_negatives_dilation_radius", "real", "dust negatives dilation radius", default_negatives_dilation_radius)
 
 # Interpolation core
 definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=default_core_region_factor)

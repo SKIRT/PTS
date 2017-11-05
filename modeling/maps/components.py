@@ -26,7 +26,7 @@ from ...core.tools import numbers
 from ...core.basics.range import RealRange
 from ...core.tools import sequences
 from ...core.remote.remote import Remote
-from ...magic.core.mask import Mask
+from ...magic.core.mask import Mask, intersection
 from ...magic.core.alpha import AlphaMask
 from ...magic.core.detection import Detection
 from ...core.tools.stringify import tostr
@@ -40,6 +40,7 @@ from ...magic.tools import colours
 from ...magic.basics.mask import Mask as oldMask
 from ...core.basics.containers import ordered_by_key
 from ...magic.core.fits import get_plane_names
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -621,6 +622,33 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Automatically selecting appropriate maps ...")
 
+        # Make selection
+        old_name, young_name, ionizing_name, dust_name = self.auto_select_maps()
+
+        # Show selections
+        log.info("Selected the following maps automaticaly:")
+        log.info("")
+        log.info(" - " + fmt.bold + "old stellar disk: " + fmt.reset + old_name)
+        log.info(" - " + fmt.bold + "young stellar disk: " + fmt.reset + young_name)
+        log.info(" - " + fmt.bold + "ionizing stellar disk: " + fmt.reset + ionizing_name)
+        log.info(" - " + fmt.bold + "dust disk: " + fmt.reset + dust_name)
+        log.info("")
+
+        # Set selections
+        self.old_selection = [old_name]
+        self.young_selection = [young_name]
+        self.ionizing_selection = [ionizing_name]
+        self.dust_selection = [dust_name]
+
+    # -----------------------------------------------------------------
+
+    def auto_select_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # sSFR
         ssfr_method, ssfr_name = self.auto_select_ssfr_map()
 
@@ -645,20 +673,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Ionizing
         ionizing_name = self.auto_select_ionizing_map(hot_dust_name)
 
-        # Show selections
-        log.info("Selected the following maps automaticaly:")
-        log.info("")
-        log.info(" - old stellar disk: " + old_name)
-        log.info(" - young stellar disk: " + young_name)
-        log.info(" - ionizing stellar disk: " + ionizing_name)
-        log.info(" - dust disk: " + dust_name)
-        log.info("")
+        # Make full names
+        #full_old_name = old_method + "_" + old_name
+        full_old_name = old_name # because we only consider disk maps
+        full_young_name = young_name
+        full_ionizing_name = ionizing_name
+        full_dust_name = dust_method + "_" + dust_name
 
-        # Set selections
-        self.old_selection = [old_name]
-        self.young_selection = [young_name]
-        self.ionizing_selection = [ionizing_name]
-        self.dust_selection = [dust_name]
+        # Return the full names
+        return full_old_name, full_young_name, full_ionizing_name, full_dust_name
 
     # -----------------------------------------------------------------
 
@@ -3197,19 +3220,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 2. Interpolate negatives
         self.interpolate_negatives_maps()
 
-        # 2. Interpolate
+        # 3. Interpolate
         self.interpolate_maps()
 
-        # 3. Truncate
+        # 4. Truncate
         self.truncate_maps()
 
-        # 4. Crop
+        # 5. Crop
         self.crop_maps()
 
-        # 5. Clip
+        # 6. Clip
         self.clip_maps()
 
-        # 6. Soften the edges
+        # 7. Soften the edges
         self.soften_edges()
 
     # -----------------------------------------------------------------
@@ -3414,6 +3437,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def negatives_central_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * 0.5
+
+    # -----------------------------------------------------------------
+
     def interpolate_negatives_maps(self):
 
         """
@@ -3494,7 +3529,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return name in self.old_negative_masks and self.old_negative_masks[name] is not None
+        return name in self.old_negative_masks and self.old_negative_masks[name] is not None and self.old_negative_masks[name].has_masked
 
     # -----------------------------------------------------------------
 
@@ -3525,12 +3560,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if not self.has_negatives_mask_old(name):
                 log.debug("No negatives for the '" + name + "' old stellar map")
                 self.old_maps[name].metadata[interpolate_negatives_step] = True
+                continue
 
             # Debugging
             log.debug("Interpolating the negatives of '" + name + "' old stellar map ...")
 
+            # Get the map
+            the_map = self.old_maps[name]
+
+            # Get the truncation mask
+            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+
             # Get the mask
             mask = self.old_negative_masks[name]
+            mask = intersection(mask, truncation_mask)
 
             # Dilate the mask
             mask.disk_dilate(radius=self.config.old_negatives_dilation_radius)
@@ -3539,7 +3582,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask.fill_holes()
 
             # Interpolate the map
-            the_map = self.old_maps[name]
             the_map.interpolate(mask, max_iterations=None)
 
             # Set flag
@@ -3555,7 +3597,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return name in self.young_negative_masks and self.young_negative_masks[name] is not None
+        return name in self.young_negative_masks and self.young_negative_masks[name] is not None and self.young_negative_masks[name].has_masked
 
     # -----------------------------------------------------------------
 
@@ -3586,12 +3628,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if not self.has_negatives_mask_young(name):
                 log.debug("No negatives for the '" + name + "' young stellar map")
                 self.young_maps[name].metadata[interpolate_negatives_step] = True
+                continue
 
             # Debugging
             log.debug("Interpolating the negatives of '" + name + "' young stellar map ...")
 
+            # Get the map
+            the_map = self.young_maps[name]
+
+            # Get the truncation mask
+            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+
             # Get the mask
             mask = self.young_negative_masks[name]
+            mask = intersection(mask, truncation_mask)
 
             # Dilate the mask
             mask.disk_dilate(radius=self.config.young_negatives_dilation_radius)
@@ -3600,7 +3650,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask.fill_holes()
 
             # Interpolate the map
-            the_map = self.young_maps[name]
             the_map.interpolate(mask, max_iterations=None)
 
             # Set flag
@@ -3616,7 +3665,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return name in self.ionizing_negative_masks and self.ionizing_negative_masks[name] is not None
+        return name in self.ionizing_negative_masks and self.ionizing_negative_masks[name] is not None and self.ionizing_negative_masks[name].has_masked
 
     # -----------------------------------------------------------------
 
@@ -3647,12 +3696,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if not self.has_negatives_mask_ionizing(name):
                 log.debug("No negatives for the '" + name + "' ionizing stellar map")
                 self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+                continue
 
             # Debugging
             log.debug("Interpolating the negatives of '" + name + "' ionizing stellar map ...")
 
+            # Get the map
+            the_map = self.ionizing_maps[name]
+
+            # Get the truncation mask
+            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+
             # Get the mask
             mask = self.ionizing_negative_masks[name]
+            mask = intersection(mask, truncation_mask)
 
             # Dilate the mask
             mask.disk_dilate(radius=self.config.ionizing_negatives_dilation_radius)
@@ -3661,7 +3718,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask.fill_holes()
 
             # Interpolate the map
-            the_map = self.ionizing_maps[name]
             the_map.interpolate(mask, max_iterations=None)
 
             # Set flag
@@ -3677,7 +3733,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return name in self.dust_negative_masks and self.dust_negative_masks[name] is not None
+        return name in self.dust_negative_masks and self.dust_negative_masks[name] is not None and self.dust_negative_masks[name].has_masked
 
     # -----------------------------------------------------------------
 
@@ -3708,12 +3764,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if not self.has_negatives_mask_dust(name):
                 log.debug("No negatives for the '" + name + "' dust map")
                 self.dust_maps[name].metadata[interpolate_negatives_step] = True
+                continue
 
             # Debugging
             log.debug("Interpolating the negatives of '" + name + "' dust stellar map ...")
 
+            # Get the map
+            the_map = self.dust_maps[name]
+
+            # Get the truncation mask
+            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+
             # Get the mask
             mask = self.dust_negative_masks[name]
+            mask = intersection(mask, truncation_mask)
 
             # Dilate the mask
             mask.disk_dilate(radius=self.config.dust_negatives_dilation_radius)
@@ -3722,7 +3786,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask.fill_holes()
 
             # Interpolate the map
-            the_map = self.dust_maps[name]
             the_map.interpolate(mask, max_iterations=None)
 
             # Set flag
