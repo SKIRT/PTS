@@ -64,6 +64,13 @@ definition.add_flag("convolve", "perform convolution during the creation of the 
 # REBINNING
 definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
 
+# -----------------------------------------------------------------
+
+# SELECTION
+
+# Use previous selection
+definition.add_optional("previous", "positive_integer", "use previous selection")
+
 # AUTO-SELECT??
 definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)
 
@@ -105,6 +112,8 @@ definition.add_flag("all_ionizing", "select all ionizing stellar maps")
 definition.add_flag("all_dust", "select all dust maps")
 definition.add_flag("all", "select all maps")
 
+# -----------------------------------------------------------------
+
 # Levels
 definition.add_optional("levels", "filter_real_dictionary", "significance levels for the different images")
 definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
@@ -130,9 +139,6 @@ definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust sca
 # For clip mask
 definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
 definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
-
-# For plotting mask
-#definition.add_flag("mask_alpha", "use alpha for the mask", True) -> No: we write masks as FITS files, not as PNG plots
 
 # For masking
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)

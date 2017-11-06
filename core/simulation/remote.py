@@ -31,6 +31,7 @@ from ..basics.handle import ExecutionHandle
 from .status import LogSimulationStatus
 from .input import SimulationInput
 from ..tools import types
+from ..tools import numbers
 from .output import get_output_type, get_parent_type
 from .data import SimulationData
 
@@ -1139,20 +1140,8 @@ class SKIRTRemote(Remote):
         # Get a list of the ID's currently in use
         current_ids = self._simulation_ids_in_use()
 
-        # Sort the current simulation ID's and find the lowest 'missing' integer number
-        if len(current_ids) > 0:
-            current_ids = sorted(current_ids)
-            simulation_id = max(current_ids)+1
-            for index in range(max(current_ids)):
-                if current_ids[index] != index:
-                    simulation_id = index
-                    break
-
-            # Return the simulation ID
-            return simulation_id
-
-        # If no simulation ID's are currently in use, return 0
-        else: return 0
+        # Return the lowest missing integer
+        return numbers.lowest_missing_integer(current_ids)
 
     # -----------------------------------------------------------------
 

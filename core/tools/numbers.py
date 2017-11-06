@@ -1332,3 +1332,46 @@ def nearest_odd_integer_above(number, above, including=False):
     return integer
 
 # -----------------------------------------------------------------
+
+def lowest_missing_integer(integers):
+
+    """
+    This function ...
+    :param integers:
+    :return:
+    """
+
+    if len(integers) == 0: return 0
+
+    integers = sorted(integers)
+    lowest_missing = max(integers) + 1
+
+    # Adjust to lower to whichever is missing
+    for index in range(max(integers)):
+        if integers[index] != index:
+            lowest_missing = index
+            break
+
+    # Return the lowest missing integer
+    return lowest_missing
+
+# -----------------------------------------------------------------
+
+def missing_integers(integers):
+
+    """
+    This function ...
+    :param integers:
+    :return:
+    """
+
+    if len(integers) == 0: return []
+
+    missing = []
+    for index in range(max(integers)):
+        if index not in integers: missing.append(index)
+
+    # Return the missing integers
+    return missing
+
+# -----------------------------------------------------------------
