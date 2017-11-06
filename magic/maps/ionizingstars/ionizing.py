@@ -266,7 +266,6 @@ class IonizingStellarMapsMaker(Configurable):
 
             # Get the hot dust map
             hot = self.hots[name]
-            #hot[hot < 0.0] = 0.0
 
             # Uniformize the hot dust and H-alpha map
             frames = NamedFrameList(hot=hot, halpha=self.halpha)
@@ -297,6 +296,9 @@ class IonizingStellarMapsMaker(Configurable):
             if len(negatives) > 0:
                 negatives = union(*negatives)
                 image.add_mask(negatives, "negatives")
+
+            # Add hot dust negatives map
+            if self.has_negatives_for_name(name): image.add_mask(self.hots_negatives[name].rebinned(ionizing.wcs), "hot_negatives")
 
             # Add NaNs mask
             if self.halpha_nans is not None:

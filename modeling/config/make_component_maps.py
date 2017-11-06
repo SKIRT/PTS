@@ -85,6 +85,11 @@ else: definition.add_fixed("previous_levels", "use previous levels", None)
 # AUTO-SELECT??
 definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)
 
+# Auto selection options
+default_max_nnegatives = 0.1
+definition.add_optional("hot_dust_max_nnegatives", "positive_real", "maximum relative number of negatives in a central ellipse for selection of hot dust map", default_max_nnegatives)
+definition.add_optional("young_max_nnegatives", "positive_real", "maximum relative number of negatives in a central ellipse for selection of young stellar map", default_max_nnegatives)
+
 # Selections
 definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)
 definition.add_optional("young", "string_list", "selected young stellar maps", choices=young_map_names)
@@ -212,8 +217,8 @@ default_core_region_factor = 0.06
 
 # INTERPOLATION OF CORE OF THE MAPS
 definition.add_flag("interpolate_old", "interpolate core region of old stellar maps", True)
-definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", True)
-definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", True)
+definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", False)
+definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", False)
 definition.add_flag("interpolate_dust", "interpolate core region of dust maps", False)
 
 # Interpolate negatives WITH DILATION
@@ -265,6 +270,10 @@ definition.add_optional("interpolation_softening_end", "real", "relative radius 
 
 # CLEAR ALL
 definition.add_flag("clear_all", "clear all previous results")
+definition.add_flag("clear_old", "clear all previous results of old stellar maps")
+definition.add_flag("clear_young", "clear all previous results of young stellar maps")
+definition.add_flag("clear_ionizing", "clear all previous results of ionizing maps")
+definition.add_flag("clear_dust", "clear all previous results of dust maps")
 
 # -----------------------------------------------------------------
 

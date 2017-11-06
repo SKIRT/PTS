@@ -305,11 +305,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
         fs.set_nallowed_open_files(self.config.nopen_files)
 
         # Clear all?
-        if self.config.clear_all:
-            fs.clear_directory(self.old_component_maps_path)
-            fs.clear_directory(self.young_component_maps_path)
-            fs.clear_directory(self.ionizing_component_maps_path)
-            fs.clear_directory(self.dust_component_maps_path)
+        if self.config.clear_all: self.config.clear_old = self.config.clear_young = self.config.clear_ionizing = self.config.clear_dust = True
+
+        # Clear?
+        if self.config.clear_old: fs.clear_directory(self.old_component_maps_path)
+        if self.config.clear_young: fs.clear_directory(self.young_component_maps_path)
+        if self.config.clear_ionizing: fs.clear_directory(self.ionizing_component_maps_path)
+        if self.config.clear_dust: fs.clear_directory(self.dust_component_maps_path)
 
         # Set the steps paths
         self.old_steps_path = fs.join(self.old_component_maps_path, steps_name)
@@ -1119,7 +1121,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         nnegatives_dict = ordered_by_key(nnegatives_dict)
 
         # Find the factor
-        factor = find_factor_max_nnegatives(nnegatives_dict, 0.1)
+        factor = find_factor_max_nnegatives(nnegatives_dict, self.config.young_max_nnegatives)
 
         # Get the corresponding map name
         map_name = names_dict[factor]
@@ -1194,7 +1196,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         nnegatives_dict = ordered_by_key(nnegatives_dict)
 
         # Find the factor
-        factor = find_factor_max_nnegatives(nnegatives_dict, 0.1)
+        factor = find_factor_max_nnegatives(nnegatives_dict, self.config.hot_dust_max_nnegatives)
 
         # Get the corresponding map name
         map_name = names_dict[factor]
@@ -2954,8 +2956,14 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 for step in steps: self.ionizing_maps[name].metadata[step] = False
 
             # Get negatives plane
-            if negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
-                negatives = Mask.from_file(self.ionizing_map_paths[name], plane=negatives_plane_name)
+            #if negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
+            #    negatives = Mask.from_file(self.ionizing_map_paths[name], plane=negatives_plane_name)
+            #    self.ionizing_negative_masks[name] = negatives
+
+            # Get negatives plane of the HOT DUST (not the negatives of the H-alpha map)
+            hot_negatives_plane_name = "hot_negatives"
+            if hot_negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
+                negatives = Mask.from_file(self.ionizing_map_paths[name], plane=hot_negatives_plane_name)
                 self.ionizing_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
