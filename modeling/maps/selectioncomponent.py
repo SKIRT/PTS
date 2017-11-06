@@ -31,6 +31,15 @@ from ...core.basics.configuration import prompt_string_list
 from ...magic.core.mask import Mask
 from ...magic.core.alpha import AlphaMask
 from ...core.basics.range import RealRange
+from ...magic.tools import plotting
+
+# -----------------------------------------------------------------
+
+plots_name = "plots"
+
+map_plot_filename = "map"
+edgeon_plot_filename = "edgeon"
+deprojected_plot_filename = "deprojected"
 
 # -----------------------------------------------------------------
 
@@ -72,6 +81,31 @@ class MapsSelectionComponent(MapsComponent):
 
         # Cached clip masks
         self.clip_masks = dict()
+
+        # Plots directories
+        self.old_plots_path = None
+        self.young_plots_path = None
+        self.ionizing_plots_path = None
+        self.dust_plots_path = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup of the base class
+        super(MapsSelectionComponent, self).setup(**kwargs)
+
+        # Plots directories
+        self.old_plots_path = fs.create_directory_in(self.old_component_maps_path, plots_name)
+        self.young_plots_path = fs.create_directory_in(self.young_component_maps_path, plots_name)
+        self.ionizing_plots_path = fs.create_directory_in(self.ionizing_component_maps_path, plots_name)
+        self.dust_plots_path = fs.create_directory_in(self.dust_component_maps_path, plots_name)
 
     # -----------------------------------------------------------------
 
@@ -1588,6 +1622,570 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.dust_origins
+
+    # -----------------------------------------------------------------
+
+    def old_plotting_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.old_plots_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def young_plotting_path_for_map(self, name, create=True):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.young_plots_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def ionizing_plotting_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.ionizing_plots_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def dust_plotting_path_for_map(self, name, create=True):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.dust_plots_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def plot_components_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps ...")
+
+        # Old
+        self.plot_old_component_maps()
+
+        # Young
+        self.plot_young_component_maps()
+
+        # Ionizing
+        self.plot_ionizing_component_maps()
+
+        # Dust
+        self.plot_dust_component_maps()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_scale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "afmhot"
+
+    # -----------------------------------------------------------------
+
+    def old_map_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.old_plotting_path_for_map(name), map_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_component_maps(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting old stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Determine path
+            path = self.old_map_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.old_maps[name], path=path, format=format, interval=minmax,
+                                               scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
+                                               show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "plasma"
+
+    # -----------------------------------------------------------------
+
+    def young_map_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.young_plotting_path_for_map(name), map_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_young_component_maps(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting young stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Determine path
+            path = self.young_map_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.young_maps[name], path=path, format=format, interval=minmax,
+                                             scale=self.young_scale, cmap=self.young_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_scale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return "log"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_cmap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "summer"
+
+    # -----------------------------------------------------------------
+
+    def ionizing_map_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.ionizing_plotting_path_for_map(name), map_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_component_maps(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ionizing stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Determine path
+            path = self.ionizing_map_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.ionizing_maps[name], path=path, format=format, interval=minmax,
+                                             scale=self.ionizing_scale, cmap=self.ionizing_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_scale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "linear"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_cmap(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "inferno"
+
+    # -----------------------------------------------------------------
+
+    def dust_map_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.dust_plotting_path_for_map(name), map_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_component_maps(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        Thisf unction ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting dust component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Determine path
+            path = self.dust_map_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.dust_maps[name], path=path, format=format, interval=minmax,
+                                             scale=self.dust_scale, cmap=self.dust_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    def plot_components_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the component map masks ...")
+
+        # Old
+        self.plot_old_component_masks()
+
+        # Young
+        self.plot_young_component_masks()
+
+        # Ionizing
+        self.plot_ionizing_component_masks()
+
+        # Dust
+        self.plot_dust_component_masks()
+
+    # -----------------------------------------------------------------
+
+    def plot_old_component_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting old stellar component map masks ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_component_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting young stellar component map masks ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_component_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ionizing stellar component map masks ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_component_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting dust component map masks ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_components_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected component maps ...")
+
+        # Old
+        self.plot_old_deprojected()
+
+        # Young
+        self.plot_young_deprojected()
+
+        # Ionizing
+        self.plot_ionizing_deprojected()
+
+        # Dust
+        self.plot_dust_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def plot_old_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting deprojected old stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting deprojected young stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting deprojected ionizing stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting deprojected dust component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_components_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the edgeon component maps ...")
+
+        # Old
+        self.plot_old_edgeon()
+
+        # Young
+        self.plot_young_edgeon()
+
+        # Ionizing
+        self.plot_ionizing_edgeon()
+
+        # Dust
+        self.plot_dust_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def plot_old_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting edge-on old stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting edge-on young stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting edge-on ionizing stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting edge-on dust component maps ...")
 
 # -----------------------------------------------------------------
 

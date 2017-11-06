@@ -227,6 +227,9 @@ definition.add_flag("interpolate_young_negatives", "interpolate negatives in you
 definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", True)
 definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust maps", True)
 
+# Central ellipse factor
+definition.add_optional("negatives_central_ellipse_factor", "real", "factor for the central ellipse for considering negatives", 0.4)
+
 # Dilation radius
 default_negatives_dilation_radius = 10
 definition.add_optional("old_negatives_dilation_radius", "real", "old negatives dilation radius", default_negatives_dilation_radius)

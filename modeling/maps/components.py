@@ -288,6 +288,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 15. Writing
         self.write()
 
+        # 16. Plot
+        self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -3761,7 +3764,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.truncation_ellipse * 0.5
+        return self.truncation_ellipse * self.config.negatives_central_ellipse_factor
 
     # -----------------------------------------------------------------
 
@@ -7370,6 +7373,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Write
             self.dust_edgeon_skirt[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Maps
+        self.plot_components_maps()
+
+        # Masks
+        self.plot_components_masks()
+
+        # Deprojected
+        self.plot_components_deprojected()
+
+        # Edgeon
+        self.plot_components_edgeon()
 
     # -----------------------------------------------------------------
 

@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from .component import MapsComponent
+from .selectioncomponent import MapsSelectionComponent
 
 # -----------------------------------------------------------------
 
@@ -742,5 +743,112 @@ class MapsPlotter(MapsComponent):
 
         # Load the methods
         self.origins = self.get_ionizing_methods()
+
+# -----------------------------------------------------------------
+
+class ComponentMapsPlotter(MapsSelectionComponent):
+
+    """
+    This class ..
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ComponentMapsPlotter, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function
+        self.setup(**kwargs)
+
+        # Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "maps" in self.config.features
+
+    # -----------------------------------------------------------------
+
+    @property
+    def masks_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "masks" in self.config.features
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deprojected_plotting(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "deprojected" in self.config.features
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "edgeon" in self.config.features
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Maps
+        if self.maps_plotting: self.plot_components_maps()
+
+        # Masks
+        if self.masks_plotting: self.plot_components_masks()
+
+        # Deprojected
+        if self.deprojected_plotting: self.plot_components_deprojected()
+
+        # Edgeon
+        if self.edgeon_plotting: self.plot_components_edgeon()
 
 # -----------------------------------------------------------------

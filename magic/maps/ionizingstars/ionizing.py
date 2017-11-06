@@ -202,9 +202,11 @@ class IonizingStellarMapsMaker(Configurable):
 
             # Interpolate NaNs
             self.halpha_nans = self.halpha.interpolate_nans(max_iterations=None)
+            if not self.halpha_nans.has_masked: self.halpha_nans = None
 
             # Interpolate negative values
             self.halpha_negatives = self.halpha.interpolate_negatives(max_iterations=None)
+            if not self.halpha_negatives.has_masked: self.halpha_negatives = None
 
         # Smooth?
         if self.config.smooth_halpha: self.halpha.smooth(self.config.halpha_smoothing_factor)
