@@ -130,6 +130,17 @@ def steps_after_and_including(step):
 
 # -----------------------------------------------------------------
 
+central_ellipse_filename = "central_ellipse.reg"
+negatives_mask_filename = "negatives.fits"
+negatives_dilated_filename = "negatives_dilated.fits"
+negatives_filled_filename = "negatives_filled.fits"
+
+# -----------------------------------------------------------------
+
+interpolation_ellipse_filename = "interpolation_ellipse.reg"
+
+# -----------------------------------------------------------------
+
 class ComponentMapsMaker(MapsSelectionComponent):
 
     """
@@ -2941,6 +2952,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def old_extra_path_for_map(self, name, filename):
+
+        """
+        This function ...
+        :param name:
+        :param filename:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the filepath
+        return fs.join(map_path, filename)
+
+    # -----------------------------------------------------------------
+
     def old_step_path_for_map(self, name, step):
 
         """
@@ -2978,6 +3006,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
+    def young_extra_path_for_map(self, name, filename):
+
+        """
+        This function ...
+        :param name:
+        :param filename:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the filepath
+        return fs.join(map_path, filename)
 
     # -----------------------------------------------------------------
 
@@ -3021,6 +3066,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def ionizing_extra_path_for_map(self, name, filename):
+
+        """
+        This function ...
+        :param name:
+        :param filename:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the filepath
+        return fs.join(map_path, filename)
+
+    # -----------------------------------------------------------------
+
     def ionizing_step_path_for_map(self, name, step):
 
         """
@@ -3058,6 +3120,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
+    def dust_extra_path_for_map(self, name, filename):
+
+        """
+        This function ...
+        :param name:
+        :param filename:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Return the filepath
+        return fs.join(map_path, filename)
 
     # -----------------------------------------------------------------
 
@@ -3658,17 +3737,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
             the_map = self.old_maps[name]
 
             # Get the truncation mask
-            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+            central_ellipse = self.negatives_central_ellipse.to_pixel(the_map.wcs)
+            central_mask = central_ellipse.to_mask(the_map.xsize, the_map.ysize)
+
+            # Save the central ellipse
+            if self.config.steps: central_ellipse.saveto(self.old_extra_path_for_map(name, central_ellipse_filename))
 
             # Get the mask
             mask = self.old_negative_masks[name]
-            mask = intersection(mask, truncation_mask)
+            mask = intersection(mask, central_mask)
+
+            # Save the mask
+            if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_mask_filename))
 
             # Dilate the mask
             mask.disk_dilate(radius=self.config.old_negatives_dilation_radius)
 
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_dilated_filename))
+
             # Fill holes
             mask.fill_holes()
+
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
             the_map.interpolate(mask, max_iterations=None)
@@ -3729,17 +3821,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
             the_map = self.young_maps[name]
 
             # Get the truncation mask
-            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+            central_ellipse = self.negatives_central_ellipse.to_pixel(the_map.wcs)
+            truncation_mask = central_ellipse.to_mask(the_map.xsize, the_map.ysize)
+
+            # Save the central ellipse
+            if self.config.steps: central_ellipse.saveto(self.young_extra_path_for_map(name, central_ellipse_filename))
 
             # Get the mask
             mask = self.young_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Save the mask
+            if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_mask_filename))
+
             # Dilate the mask
             mask.disk_dilate(radius=self.config.young_negatives_dilation_radius)
 
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_dilated_filename))
+
             # Fill holes
             mask.fill_holes()
+
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
             the_map.interpolate(mask, max_iterations=None)
@@ -3800,17 +3905,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
             the_map = self.ionizing_maps[name]
 
             # Get the truncation mask
-            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+            central_ellipse = self.negatives_central_ellipse.to_pixel(the_map.wcs)
+            truncation_mask = central_ellipse.to_mask(the_map.xsize, the_map.ysize)
+
+            # Save the central ellipse
+            if self.config.steps: central_ellipse.saveto(self.ionizing_extra_path_for_map(name, central_ellipse_filename))
 
             # Get the mask
             mask = self.ionizing_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Save the mask
+            if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_mask_filename))
+
             # Dilate the mask
             mask.disk_dilate(radius=self.config.ionizing_negatives_dilation_radius)
 
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_dilated_filename))
+
             # Fill holes
             mask.fill_holes()
+
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
             the_map.interpolate(mask, max_iterations=None)
@@ -3871,17 +3989,30 @@ class ComponentMapsMaker(MapsSelectionComponent):
             the_map = self.dust_maps[name]
 
             # Get the truncation mask
-            truncation_mask = self.negatives_central_ellipse.to_pixel(the_map.wcs).to_mask(the_map.xsize, the_map.ysize)
+            central_ellipse = self.negatives_central_ellipse.to_pixel(the_map.wcs)
+            truncation_mask = central_ellipse.to_mask(the_map.xsize, the_map.ysize)
+
+            # Save the central ellipse
+            if self.config.steps: central_ellipse.saveto(self.dust_extra_path_for_map(name, central_ellipse_filename))
 
             # Get the mask
             mask = self.dust_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Save the mask
+            if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_mask_filename))
+
             # Dilate the mask
             mask.disk_dilate(radius=self.config.dust_negatives_dilation_radius)
 
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_dilated_filename))
+
             # Fill holes
             mask.fill_holes()
+
+            # Save the mask again
+            if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
             the_map.interpolate(mask, max_iterations=None)
@@ -4033,6 +4164,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_old.to_pixel(self.old_maps[name].wcs)
 
+            # Save the interpolation ellipse
+            if self.config.steps: ellipse.saveto(self.old_extra_path_for_map(name, interpolation_ellipse_filename))
+
             # Kernel method
             if self.config.interpolation_method == "kernel":
 
@@ -4105,6 +4239,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_young.to_pixel(self.young_maps[name].wcs)
+
+            # Save the interpolation ellipse
+            if self.config.steps: ellipse.saveto(self.young_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Kernel method
             if self.config.interpolation_method == "kernel":
@@ -4179,6 +4316,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_ionizing.to_pixel(self.ionizing_maps[name].wcs)
 
+            # Save the interpolation ellipse
+            if self.config.steps: ellipse.saveto(self.ionizing_extra_path_for_map(name, interpolation_ellipse_filename))
+
             # Kernel method
             if self.config.interpolation_method == "kernel":
 
@@ -4251,6 +4391,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Create interpolation ellipse
             ellipse = self.interpolation_ellipse_dust.to_pixel(self.dust_maps[name].wcs)
+
+            # Save the interpolation ellipse
+            if self.config.steps: ellipse.saveto(self.dust_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Kernel method
             if self.config.interpolation_method == "kernel":

@@ -23,6 +23,7 @@ from ....core.tools import sequences
 from ...core.frame import Frame
 from ...core.list import NamedFrameList
 from ...core.image import Image
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -323,6 +324,42 @@ class YoungStellarMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old.filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return str(self.old_filter).replace(" ", "_")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_has_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old.filter is not None
+
+    # -----------------------------------------------------------------
+
     def subtract_old_contribution(self):
 
         """
@@ -345,8 +382,9 @@ class YoungStellarMapsMaker(Configurable):
             # Loop over the different factors
             for factor in self.factors:
 
-                # Determine name
-                key = name + "__" + repr(factor)
+                # Determine name for the young stellar map
+                if self.old_has_filter: key = name + "__" + self.old_filter_name + "__" + repr(factor)
+                else: key = name + "__" + repr(factor)
 
                 # Set the origins
                 if self.has_origins:
@@ -419,12 +457,6 @@ def make_corrected_fuv_map(fuv, old, factor, normalize_in=None):
     # Inform the user
     log.info("Subtracting the old stellar contribution from the map of the FUV emission with a factor of " + str(factor) + "...")
 
-    ## Subtract old stellar contribution from FUV and MIPS 24 emission
-
-    # From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
-    # for this we typically use an exponential disk
-    # (scale length determined by GALFIT)
-
     # Convert to same pixelscale and convolve to same resolution
     frames = NamedFrameList(fuv=fuv, old=old)
     frames.convolve_and_rebin(unitless="old")
@@ -441,18 +473,11 @@ def make_corrected_fuv_map(fuv, old, factor, normalize_in=None):
     if normalize_in is not None: flux_fuv = fuv.sum_in(normalize_in, add_unit=False)
     else: flux_fuv = fuv.sum()
 
-    # typisch 20% en 35% respectievelijk
-
+    # Determine the contribution that has to be subtracted
     total_contribution = factor * flux_fuv
 
     # Subtract the disk contribution to the FUV image
     new_fuv = fuv - total_contribution * old
-
-    # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-    #new_fuv[new_fuv < 0.0] = 0.0
-
-    # Set zero where low signal-to-noise ratio
-    # new_fuv[self.fuv < self.config.non_ionizing_stars.fuv_snr_level*self.fuv_errors] = 0.0
 
     # Check unit and WCS
     new_fuv.unit = fuv.unit
