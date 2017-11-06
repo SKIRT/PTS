@@ -1016,7 +1016,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             if item_name.startswith("."): value = 0
             else:
                 try:
-                    if convert_split_index is not None: item_name = item_name.split(convert_split_pattern)[convert_split_index]
+                    if convert_split_index is not None:
+                        try: item_name = item_name.split(convert_split_pattern)[convert_split_index]
+                        except IndexError: pass
                     value = sort(item_name)
                 except ValueError: value = 0
             return value

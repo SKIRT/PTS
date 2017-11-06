@@ -1533,7 +1533,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine path for the selection file
         current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, convert_split_pattern="_", convert_split_index=1)
         index = numbers.lowest_missing_integer(current_indices)
-        selection_path = fs.join(self.maps_components_path, str(index) + ".dat")
+        selection_path = fs.join(self.maps_components_path, "selection_" + str(index) + ".dat")
 
         # Write the selection
         write_dict(selection, selection_path)
@@ -1565,7 +1565,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine path for the levels file
         current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", startswith="levels", convert=int, convert_split_pattern="_", convert_split_index=1)
         index = numbers.lowest_missing_integer(current_indices)
-        levels_path = fs.join(self.maps_components_path, str(index) + ".dat")
+        levels_path = fs.join(self.maps_components_path, "levels_" + str(index) + ".dat")
 
         # Write levels dictionary
         write_dict(self.levels, levels_path)
