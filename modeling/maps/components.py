@@ -3587,6 +3587,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Set flag
             self.old_maps[name].metadata[interpolate_negatives_step] = True
 
+            # Save intermediate result
+            if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, interpolate_negatives_step))
+
     # -----------------------------------------------------------------
 
     def has_negatives_mask_young(self, name):
@@ -3654,6 +3657,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Set flag
             self.young_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, interpolate_negatives_step))
 
     # -----------------------------------------------------------------
 
@@ -3723,6 +3729,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
 
+            # Save intermediate result
+            if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, interpolate_negatives_step))
+
     # -----------------------------------------------------------------
 
     def has_negatives_mask_dust(self, name):
@@ -3790,6 +3799,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_negatives_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, interpolate_negatives_step))
 
     # -----------------------------------------------------------------
 
@@ -4009,7 +4021,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.interpolation_method == "kernel":
 
                 # Get the map and interpolate in the ellipse region
-                the_map = self.old_maps[name]
+                the_map = self.young_maps[name]
                 the_map.interpolate(ellipse, max_iterations=None)
 
             # Other methods
@@ -4082,7 +4094,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.interpolation_method == "kernel":
 
                 # Get the map and interpolate in the ellipse region
-                the_map = self.old_maps[name]
+                the_map = self.ionizing_maps[name]
                 the_map.interpolate(ellipse, max_iterations=None)
 
             # Other maps
@@ -4155,7 +4167,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.interpolation_method == "kernel":
 
                 # Get the map and interpolate in the ellipse region
-                the_map = self.old_maps[name]
+                the_map = self.dust_maps[name]
                 the_map.interpolate(ellipse, max_iterations=None)
 
             # Other methods
