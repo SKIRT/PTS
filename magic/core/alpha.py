@@ -54,6 +54,37 @@ class AlphaMask(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_file(cls, path, index=None, plane=None, hdulist_index=None):
+
+        """
+        This function ...
+        :param path:
+        :param index:
+        :param plane:
+        :param hdulist_index:
+        :return:
+        """
+
+        name = None
+        description = None
+        no_filter = True
+        fwhm = None
+        add_meta = False
+
+        from . import fits as pts_fits
+
+        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+
+        # Set the path
+        mask.path = path
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_ellipse(cls, ellipse, shape, factor_range, wcs=None):
 
         """

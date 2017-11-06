@@ -17,6 +17,7 @@ from pts.magic.core.cutout import interpolation_methods
 from pts.modeling.config.build_stars import degeyter_ratio, scalelength_scaleheight_ratios
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.component.galaxy import has_bulge2d_model, has_disk2d_model, get_bulge2d_model, get_disk2d_model
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -69,7 +70,11 @@ definition.add_optional("rebin_remote_threshold", "data_quantity", "data size th
 # SELECTION
 
 # Use previous selection
-definition.add_optional("previous", "positive_integer", "use previous selection")
+maps_path = fs.join(modeling_path, "maps")
+maps_components_path = fs.join(maps_path, "components")
+current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", convert=int, sort=int)
+if len(current_indices) > 0: definition.add_optional("previous", "positive_integer", "use previous selection", choices=current_indices)
+else: definition.add_fixed("previous", "positive_integer", None)
 
 # AUTO-SELECT??
 definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)

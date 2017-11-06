@@ -1060,8 +1060,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
         names_dict = dict()
 
         # Loop over the young stellar maps made with the specific attenuation map
+        # AND WITH THE SPECIFIC OLD STELLAR FILTER
         for name in self.young_map_names_no_methods:
             if not (attenuation_method in name and attenuation_name in name): continue
+            if not old_name in name: continue
 
             # Get the factor
             factor = real(name.split("__")[-1])
@@ -2952,6 +2954,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def old_clipping_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Determine the clipping directory path
+        clipping_path = fs.join(map_path, "clipping")
+        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+
+        # Return the clipping path
+        return clipping_path
+
+    # -----------------------------------------------------------------
+
     def old_extra_path_for_map(self, name, filename):
 
         """
@@ -3006,6 +3029,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
+    def young_clipping_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Determine the clipping directory path
+        clipping_path = fs.join(map_path, "clipping")
+        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+
+        # Return the clipping path
+        return clipping_path
 
     # -----------------------------------------------------------------
 
@@ -3066,6 +3110,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def ionizing_clipping_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Determine the clipping directory path
+        clipping_path = fs.join(map_path, "clipping")
+        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+
+        # Return the clipping path
+        return clipping_path
+
+    # -----------------------------------------------------------------
+
     def ionizing_extra_path_for_map(self, name, filename):
 
         """
@@ -3120,6 +3185,27 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Return the MASK path
         return fs.join(map_path, step + "_mask.fits")
+
+    # -----------------------------------------------------------------
+
+    def dust_clipping_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        if not fs.is_directory(map_path): fs.create_directory(map_path)
+
+        # Determine the clipping directory path
+        clipping_path = fs.join(map_path, "clipping")
+        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+
+        # Return the clipping path
+        return clipping_path
 
     # -----------------------------------------------------------------
 
@@ -4942,7 +5028,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
                                                  connectivity=self.config.connectivity,
                                                  rebin_remote_threshold=self.config.rebin_remote_threshold,
                                                  fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                 fuzziness_offset=self.config.fuzzy_min_significance_offset)
+                                                 fuzziness_offset=self.config.fuzzy_min_significance_offset,
+                                                 output_path=self.old_clipping_path_for_map(name))
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True

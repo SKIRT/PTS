@@ -1280,7 +1280,7 @@ class MapMakerBase(GalaxyModelingComponent):
             plot_path = fs.create_directory_in(path, self.negatives_plots_name)
 
             # Set path
-            map_base_path = fs.join(plot_path, name + "_counts")
+            map_base_path = fs.join(plot_path, name + "__counts")
             filepath = map_base_path + "." + extension
 
         # Determine path
@@ -1290,7 +1290,7 @@ class MapMakerBase(GalaxyModelingComponent):
             plot_path = fs.create_directory_in(self.maps_sub_path, self.negatives_plots_name)
 
             # Set path
-            map_base_path = fs.join(plot_path, name + "_counts")
+            map_base_path = fs.join(plot_path, name + "__counts")
             filepath = map_base_path + "." + extension
 
         # Return the path

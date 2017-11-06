@@ -26,7 +26,7 @@ from ...core.tools.stringify import tostr
 from ...core.tools.utils import lazyproperty
 from ...core.basics.containers import hashdict
 from ...core.tools import types
-from ...core.filter.filter import parse_filter
+from ...core.tools import filesystem as fs
 from ...core.basics.configuration import prompt_string_list
 from ...magic.core.mask import Mask
 from ...magic.core.alpha import AlphaMask
@@ -521,7 +521,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8,
-                 rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
+                 rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1., output_path=None):
 
         """
         This function ...
@@ -535,13 +535,14 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzzy
         :param fuzziness:
         :param fuzziness_offset:
+        :param output_path:
         :return:
         """
 
         # Create the clip mask
         mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels,
                                   connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold,
-                                  fuzzy=fuzzy, fuzziness=fuzziness, fuzziness_offset=fuzziness_offset)
+                                  fuzzy=fuzzy, fuzziness=fuzziness, fuzziness_offset=fuzziness_offset, output_path=output_path)
 
         # Clip
         #the_map[mask] = 0.0
@@ -610,7 +611,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8,
-                      rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
+                      rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1., output_path=None):
 
         """
         This function ...
@@ -624,6 +625,7 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzzy:
         :param fuzziness:
         :param fuzziness_offset:
+        :param output_path:
         :return:
         """
 
@@ -635,7 +637,7 @@ class MapsSelectionComponent(MapsComponent):
             mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote,
                                        npixels=npixels, connectivity=connectivity,
                                        rebin_remote_threshold=rebin_remote_threshold, fuzzy=fuzzy, fuzziness=fuzziness,
-                                       fuzziness_offset=fuzziness_offset)
+                                       fuzziness_offset=fuzziness_offset, output_path=output_path)
 
             # Cache the mask
             if wcs is None: self.clip_masks[tuple(origins)] = mask
@@ -646,7 +648,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8,
-                       rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
+                       rebin_remote_threshold=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1., output_path=None):
 
         """
         This function ...
@@ -661,6 +663,7 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzzy:
         :param fuzziness:
         :param fuzziness_offset:
+        :param output_path:
         :return:
         """
 
@@ -673,51 +676,91 @@ class MapsSelectionComponent(MapsComponent):
         # Get error map list
         errors = self.dataset.get_errormaplist_for_filters(origins)
 
-        # Convolve
-        if convolve:
+        # Construct levels list, in the order of the frames
+        levels_list = [levels[frames[name].filter] for name in frames.names]
 
-            frames.convolve_to_highest_fwhm(remote=remote)
-            errors.convolve_to_highest_fwhm(remote=remote)
+        # Check whether the resulting mask is already saved
+        if output_path is not None and has_resulting_mask(output_path, levels_list, fuzzy=fuzzy):
 
-        # WCS is specified: rebin to this WCS
-        if wcs is not None:
+            # Return the mask
+            return load_resulting_mask(output_path, levels_list, fuzzy=fuzzy)
 
-            frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
-            errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+        # Check whether the raw combination mask is already saved
+        if output_path is not None and has_combination_mask(output_path, levels_list, fuzzy=fuzzy):
 
-        # Otherwise, rebin to the highest pixelscale WCS
+            # Load
+            mask = load_combination_mask(output_path, levels_list, fuzzy=fuzzy)
+
+        # Combination mask still has to be created
         else:
 
-            # Rebin the frames to the same pixelgrid
-            frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
-            errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            # Set names to ignore for convolution and rebinning because we already have the mask
+            ignore = []
+            if output_path:
+                for name in frames.names:
+                    frame = frames[name]
+                    level = levels[frame.filter]
+                    if has_single_mask(output_path, name, level, fuzzy=fuzzy):
+                        log.success("The clip mask for the '" + name + "' image with a sigma level of " + str(level) + " has already been created")
+                        ignore.append(name)
 
-        masks = []
-        for name in frames.names:
+            # Convolve
+            if convolve:
 
-            frame = frames[name]
-            errormap = errors[name]
-            level = levels[frame.filter]
+                frames.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
+                errors.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
 
-            #mask = frame > level * errormap
-            #masks.append(mask)
+            # WCS is specified: rebin to this WCS
+            if wcs is not None:
 
-            # Create significance map
-            significance = frame / errormap
+                frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
 
-            # Create the mask
-            if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level, fuzziness=fuzziness, offset=fuzziness_offset)
-            else: mask = self.create_mask_for_level(significance, level)
+            # Otherwise, rebin to the highest pixelscale WCS
+            else:
 
-            # Add the mask
-            masks.append(mask)
+                # Rebin the frames to the same pixelgrid
+                frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
 
-        # Create intersection mask
-        #mask = intersection(*masks)
+            masks = []
+            for name in frames.names:
 
-        # Create intersection mask
-        if fuzzy: mask = product(*masks)
-        else: mask = intersection(*masks)
+                # Get frame, errormap and level
+                frame = frames[name]
+                errormap = errors[name]
+                level = levels[frame.filter]
+
+                # Already calculated mask
+                if has_single_mask(output_path, name, level, fuzzy=fuzzy):
+                    # Load the mask and continue
+                    mask = load_single_mask(output_path, name, level, fuzzy=fuzzy)
+                    masks.append(mask)
+                    continue
+
+                # Create significance map
+                significance = frame / errormap
+
+                # Create the mask
+                if fuzzy: mask = self.create_fuzzy_mask_for_level(significance, level, fuzziness=fuzziness, offset=fuzziness_offset)
+                else: mask = self.create_mask_for_level(significance, level)
+
+                # Save the mask
+                if output_path is not None: mask.saveto(get_single_mask_path(output_path, name, level, fuzzy=fuzzy))
+
+                # Add the mask
+                masks.append(mask)
+
+            # Create intersection mask
+            if fuzzy: mask = product(*masks)
+            else: mask = intersection(*masks)
+
+            # Save the mask
+            if output_path is not None:
+                mask_base_path = fs.join(output_path, "mask__combination__" + "_".join(repr(level) for level in levels_list))
+                if fuzzy: mask_path = mask_base_path + "__fuzzy.fits"
+                else: mask_path = mask_base_path + ".fits"
+                mask.saveto(mask_path)
 
         # Only keep largest patch
         mask = mask.largest(npixels=npixels, connectivity=connectivity)
@@ -725,14 +768,18 @@ class MapsSelectionComponent(MapsComponent):
         # Fill holes
         mask.fill_holes()
 
-        # Invert
-        #mask.invert()
-
         # Set the WCS
         if wcs is not None: mask.wcs = wcs
 
         # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
         if not fuzzy: mask.invert()
+
+        # Save the mask
+        if output_path is not None:
+            mask_base_path = fs.join(output_path, "mask__result__" + "_".join(repr(level) for level in levels_list))
+            if fuzzy: mask_path = mask_base_path + "__fuzzy.fits"
+            else: mask_path = mask_base_path + ".fits"
+            mask.saveto(mask_path)
 
         # Return the mask
         return mask
@@ -1541,5 +1588,179 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.static_collection.dust_origins
+
+# -----------------------------------------------------------------
+
+def get_single_mask_path(output_path, name, level, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param name:
+    :param level:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine the path
+    mask_base_path = fs.join(output_path, "mask__" + name.replace(" ", "_") + "__" + repr(level))
+    if fuzzy: mask_path = mask_base_path + "__fuzzy.fits"
+    else: mask_path = mask_base_path + ".fits"
+
+    # Return the path
+    return mask_path
+
+# -----------------------------------------------------------------
+
+def has_single_mask(output_path, name, level, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param name:
+    :param level:
+    :param fuzzy:
+    :return:
+    """
+
+    # Get the path
+    mask_path = get_single_mask_path(output_path, name, level, fuzzy=fuzzy)
+
+    # Check
+    return fs.is_file(mask_path)
+
+# -----------------------------------------------------------------
+
+def load_single_mask(output_path, name, level, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param name:
+    :param level:
+    :param fuzzy:
+    :return:
+    """
+
+    # Get the path
+    mask_path = get_single_mask_path(output_path, name, level, fuzzy=fuzzy)
+
+    # Check
+    if fuzzy: return AlphaMask.from_file(mask_path)
+    else: return Mask.from_file(mask_path)
+
+# -----------------------------------------------------------------
+
+def get_combination_mask_path(output_path, levels, fuzzy):
+
+    """
+    This function ....
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine path
+    mask_base_path = fs.join(output_path, "mask__combination__" + "_".join(repr(level) for level in levels))
+    if fuzzy: mask_path = mask_base_path + "__fuzzy.fits"
+    else: mask_path = mask_base_path + ".fits"
+
+    # Return
+    return mask_path
+
+# -----------------------------------------------------------------
+
+def has_combination_mask(output_path, levels, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine path
+    mask_path = get_combination_mask_path(output_path, levels, fuzzy)
+
+    # Check
+    return fs.is_file(mask_path)
+
+# -----------------------------------------------------------------
+
+def load_combination_mask(output_path, levels, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine path
+    mask_path = get_combination_mask_path(output_path, levels, fuzzy)
+
+    # Load and return
+    if fuzzy: return AlphaMask.from_file(mask_path)
+    else: return Mask.from_file(mask_path)
+
+# -----------------------------------------------------------------
+
+def get_resulting_mask_path(output_path, levels, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine path
+    mask_base_path = fs.join(output_path, "mask__result__" + "_".join(repr(level) for level in levels))
+    if fuzzy: mask_path = mask_base_path + "__fuzzy.fits"
+    else: mask_path = mask_base_path + ".fits"
+
+    # Return
+    return mask_path
+
+# -----------------------------------------------------------------
+
+def has_resulting_mask(output_path, levels, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine the path
+    mask_path = get_resulting_mask_path(output_path, levels, fuzzy)
+
+    # Check
+    return fs.is_file(mask_path)
+
+# -----------------------------------------------------------------
+
+def load_resulting_mask(output_path, levels, fuzzy):
+
+    """
+    This function ...
+    :param output_path:
+    :param levels:
+    :param fuzzy:
+    :return:
+    """
+
+    # Determine the path
+    mask_path = get_resulting_mask_path(output_path, levels, fuzzy)
+
+    # Load and return
+    if fuzzy: return AlphaMask.from_file(mask_path)
+    else: return Mask.from_file(mask_path)
 
 # -----------------------------------------------------------------

@@ -1446,37 +1446,39 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_to_highest_fwhm(self, remote=None):
+    def convolve_to_highest_fwhm(self, remote=None, ignore=None):
 
         """
         This function ...
         :param remote:
-        :return: 
+        :param ignore:
+        :return:
         """
 
-        new_frames = convolve_to_highest_fwhm(*self.values, names=self.filter_names, remote=remote)
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.filter_names, remote=remote, ignore=ignore)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False):
+    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False, ignore=None):
 
         """
         This function ...
         :param remote:
         :param rebin_remote_threshold:
         :param in_place:
+        :param ignore:
         :return: 
         """
 
         # In place
-        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True, ignore=ignore)
 
         # Replace
         else:
 
-            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
             self.remove_all()
             for frame in new_frames: self.append(frame)
 
@@ -1936,7 +1938,7 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_wcs(self, wcs, remote=None, rebin_remote_threshold=None, in_place=False):
+    def rebin_to_wcs(self, wcs, remote=None, rebin_remote_threshold=None, in_place=False, ignore=None):
 
         """
         This function ...
@@ -1944,6 +1946,7 @@ class NamedFrameList(NamedList):
         :param remote:
         :param rebin_remote_threshold:
         :param in_place:
+        :param ignore:
         :return:
         """
 
@@ -1951,13 +1954,13 @@ class NamedFrameList(NamedList):
         pixelscale = wcs.average_pixelscale
 
         # In place
-        if in_place: rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+        if in_place: rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True, ignore=ignore)
 
         # Replace
         else:
 
             # Rebin and replace
-            new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
             self.remove_all()
             for frame in new_frames: self.append(frame)
 
@@ -2023,37 +2026,39 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_to_highest_fwhm(self, remote=None):
+    def convolve_to_highest_fwhm(self, remote=None, ignore=None):
 
         """
         This function ...
         :param remote:
+        :param ignore:
         :return:
         """
 
-        new_frames = convolve_to_highest_fwhm(*self.values, names=self.names, remote=remote)
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.names, remote=remote, ignore=ignore)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False):
+    def rebin_to_highest_pixelscale(self, remote=None, rebin_remote_threshold=None, in_place=False, ignore=None):
 
         """
         This function ...
         :param remote:
         :param rebin_remote_threshold:
         :param in_place:
+        :param ignore:
         :return:
         """
 
         # In place
-        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True)
+        if in_place: rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=True, ignore=ignore)
 
         # REplace
         else:
 
-            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
             self.remove_all()
             for frame in new_frames: self.append(frame)
 
@@ -2797,6 +2802,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # Which are unitless?
     unitless = kwargs.pop("unitless", None)
 
+    # Ignore?
+    ignore = kwargs.pop("ignore", None)
+
     # Check
     if len(frames) == 1:
 
@@ -2816,6 +2824,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     # Loop over the frames
     for index, frame in enumerate(frames):
+
+        # Ignore?
+        if ignore is not None and names[index] in ignore: continue
 
         wcs = frame.wcs
         if wcs is None:
@@ -2839,7 +2850,7 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # Rebin
     return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs,
                                remote=remote, rebin_remote_threshold=rebin_remote_threshold, in_place=in_place,
-                               unitless=unitless)
+                               unitless=unitless, ignore=ignore)
 
 # -----------------------------------------------------------------
 
@@ -2941,6 +2952,7 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
     names = kwargs.pop("names")
     #pixelscale = kwargs.pop("pixelscale")
     wcs = kwargs.pop("wcs")
+    ignore = kwargs.pop("ignore", None)
 
     # Get remote
     remote = kwargs.pop("remote")
@@ -2953,6 +2965,7 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
     # Save the frames
     for index, frame in enumerate(frames):
         name = names[index]
+        if ignore is not None and name in ignore: continue # ignore?
         filepath = fs.join(temp_path, name + ".fits")
         frame.saveto(filepath)
 
@@ -2963,20 +2976,28 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
     output = execute_pts_remote(remote, "rebin", cwd=remote_temp_path, show_output=log.is_debug(), wcs=wcs, backup=False)
 
     # Download the rebinned frames
-    temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)
+    temp_path = remote.download_directory_to(remote_temp_path, introspection.pts_temp_dir)
 
     # Initialize list for rebinned frames
     new_frames = []
 
     # Load the frames
-    for name in names:
+    for index, name in enumerate(names):
 
-        # Determine the filepath
-        filepath = fs.join(temp_path, name + ".fits")
+        # Ignored frame?
+        if ignore is not None and name in ignore:
 
-        # Load the frame
-        frame = Frame.from_file(filepath)
-        new_frames.append(frame)
+            new = frames[index].copy()
+            new_frames.append(new)
+
+        else:
+
+            # Determine the filepath
+            filepath = fs.join(temp_path, name + ".fits")
+
+            # Load the frame
+            frame = Frame.from_file(filepath)
+            new_frames.append(frame)
 
     # Return the list of rebinned frames
     return new_frames
@@ -3023,15 +3044,16 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
     # Which are unitless
     unitless = kwargs.pop("unitless", None)
 
+    # Ignore?
+    ignore = kwargs.pop("ignore", None)
+
     if rebin_remote_threshold is not None and remote is None:
         log.warning("'rebin_remote_threshold' is defined but 'remote' is not specified: rebinning locally ...")
         rebin_remote_threshold = None
 
     # Remote rebinning check
     if rebin_remote_threshold is not None:
-
         #if remote is None: raise ValueError("Cannot specify 'rebin_remote_threshold' when 'remote' is not specified")
-
         # Make remote session, ONLY IF IT WILL BE NECESSARY
         if any_frame_above_threshold(frames, rebin_remote_threshold):
 
@@ -3058,9 +3080,26 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
         name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
-        # If the current frame is the frame with the highest pixelscale
-        if frame.wcs == highest_pixelscale_wcs:
+        # Ignore?
+        if ignore is not None and name in ignore:
 
+            # Debugging
+            if names is not None: log.debug("Frame " + print_name + "will be ignored for rebinning")
+
+            # Not in place: create copy
+            if not in_place:
+
+                # Create new and set the name
+                new = frame.copy()
+                if names is not None: new.name = names[index]
+
+                # Add
+                new_frames.append(new)
+
+        # If the current frame is the frame with the highest pixelscale
+        elif frame.wcs == highest_pixelscale_wcs:
+
+            # Debugging
             if names is not None: log.debug("Frame " + print_name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
 
             # Not in place, create copy
@@ -3082,14 +3121,14 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
             # In place?
             if in_place: rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold,
-                                     session=session, in_place=True, unitless=unitless)
+                                     session=session, in_place=True, unitless=unitless_frame)
 
             # New frames
             else:
 
                 # Create rebinned frame
                 rebinned = rebin_frame(name, frame, highest_pixelscale_wcs, rebin_remote_threshold=rebin_remote_threshold,
-                                       session=session, unitless=unitless)
+                                       session=session, unitless=unitless_frame)
 
                 # Set the name
                 if names is not None: rebinned.name = names[index]
@@ -3372,6 +3411,9 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     # Get remote
     remote = kwargs.pop("remote", None)
 
+    # Get ignore
+    ignore = kwargs.pop("ignore", None)
+
     # Check
     if len(frames) == 1:
 
@@ -3391,6 +3433,9 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     # Loop over the frames
     for index, frame in enumerate(frames):
+
+        # Ignore?
+        if ignore and names[index] in ignore: continue
 
         # Search and set frame FWHM
         frame_fwhm = frame.fwhm
@@ -3412,7 +3457,7 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     if names is not None: log.debug("The frame with the highest FWHM is the '" + names[highest_fwhm_index] + "' frame ...")
 
     # Convolve
-    return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter, remote=remote)
+    return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter, remote=remote, ignore=ignore)
 
 # -----------------------------------------------------------------
 
@@ -3443,6 +3488,7 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
     names = kwargs.pop("names")
     fwhm = kwargs.pop("fwhm")
     fltr = kwargs.pop("filter")
+    ignore = kwargs.pop("ignore", None)
 
     # Get remote
     remote = kwargs.pop("remote")
@@ -3455,6 +3501,7 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
     # Save the frames
     for index, frame in enumerate(frames):
         name = names[index]
+        if ignore is not None and name in ignore: continue
         filepath = fs.join(temp_path, name + ".fits")
         frame.saveto(filepath)
 
@@ -3465,20 +3512,30 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
     output = execute_pts_remote(remote, "convolve", cwd=remote_temp_path, show_output=log.is_debug(), filter=fltr, fwhm=fwhm, backup=False)
 
     # Download the rebinned frames
-    temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)
+    temp_path = remote.download_directory_to(remote_temp_path, introspection.pts_temp_dir)
 
     # Initialize list for rebinned frames
     new_frames = []
 
     # Load the frames
-    for name in names:
+    for index, name in enumerate(names):
 
-        # Determine the filepath
-        filepath = fs.join(temp_path, name + ".fits")
+        # Ignored frame?
+        if ignore is not None and name in ignore:
 
-        # Load the frame
-        frame = Frame.from_file(filepath)
-        new_frames.append(frame)
+            # Add copy
+            new = frames[index].copy()
+            new_frames.append(new)
+
+        # Not ignored
+        else:
+
+            # Determine the filepath
+            filepath = fs.join(temp_path, name + ".fits")
+
+            # Load the frame
+            frame = Frame.from_file(filepath)
+            new_frames.append(frame)
 
     # Return the list of rebinned frames
     return new_frames
@@ -3498,6 +3555,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
     names = kwargs.pop("names")
     highest_fwhm = kwargs.pop("fwhm")
     highest_fwhm_filter = kwargs.pop("filter")
+    ignore = kwargs.pop("ignore", None)
 
     # Get kernel services
     aniano = AnianoKernels()
@@ -3514,7 +3572,21 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
-        if frame.psf_filter == highest_fwhm_filter:
+        # Ignore?
+        if ignore is not None and name in ignore:
+
+            # Debugging
+            log.debug("Frame " + print_name + "will be ignored for convolution")
+
+            # Make new frame and set the name
+            new = frame.copy()
+            if names is not None: new.name = names[index]
+
+            # Add a copy of the frame
+            new_frames.append(new)
+
+        # Doesn't need convolution
+        elif frame.psf_filter == highest_fwhm_filter:
 
             # Debugging
             log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")

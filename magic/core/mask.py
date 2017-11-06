@@ -77,10 +77,8 @@ class Mask(MaskBase):
 
         from . import fits as pts_fits  # Import here because io imports SegmentationMap
 
-        try:
-            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-            mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
-        except TypeError: raise IOError("The file is possibly damaged")
+        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
 
         # Set the path
         mask.path = path
