@@ -69,12 +69,18 @@ definition.add_optional("rebin_remote_threshold", "data_quantity", "data size th
 
 # SELECTION
 
-# Use previous selection
 maps_path = fs.join(modeling_path, "maps")
 maps_components_path = fs.join(maps_path, "components")
-current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", convert=int, sort=int)
-if len(current_indices) > 0: definition.add_optional("previous", "positive_integer", "use previous selection", choices=current_indices)
-else: definition.add_fixed("previous", "positive_integer", None)
+
+# Use previous selection
+current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
+if len(current_indices) > 0: definition.add_optional("previous_selection", "positive_integer", "use previous selection", choices=current_indices)
+else: definition.add_fixed("previous_selection", "use previous selection", None)
+
+# Use previous levels
+current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="levels", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
+if len(current_indices) > 0: definition.add_optional("previous_levels", "positive_integer", "use previous levels", choices=current_indices)
+else: definition.add_fixed("previous_levels", "use previous levels", None)
 
 # AUTO-SELECT??
 definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)

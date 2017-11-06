@@ -252,6 +252,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 4. Write the selection
         if not self.from_previous_selection: self.write_selection()
 
+        # 5. Write the levels
+        if not self.from_previous_levels: self.write_levels()
+
         # 5. Set rerun
         if self.rerun: self.set_rerun()
 
@@ -377,7 +380,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, indices=self.config.dust_indices, not_indices=self.config.not_dust_indices)
 
         # Levels
-        if self.config.levels is not None: self.levels = self.config.levels
+        if self.from_previous_levels: self.load_previous_levels()
+        elif self.config.levels is not None: self.levels = self.config.levels
 
         # Set rerun options
         if self.config.rerun is not None:
@@ -417,7 +421,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.config.previous is not None
+        return self.config.previous_selection is not None
 
     # -----------------------------------------------------------------
 
@@ -432,7 +436,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.debug("Loading previous maps selections ...")
 
         # Determine the path
-        path = fs.join(self.maps_components_path, str(self.config.previous) + ".dat")
+        path = fs.join(self.maps_components_path, "selection_" + str(self.config.previous_selection) + ".dat")
 
         # Load the selection file
         selection = load_dict(path)
@@ -442,6 +446,24 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.young_selection = selection["young"]
         self.ionizing_selection = selection["ionizing"]
         self.dust_selection = selection["dust"]
+
+    # -----------------------------------------------------------------
+
+    def load_previous_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading previous sigma levels ...")
+
+        # Determine the path
+        path = fs.join(self.maps_components_path, "levels_" + str(self.config.previous_levels) + ".dat")
+
+        # Load the levels file
+        self.levels = load_dict(path)
 
     # -----------------------------------------------------------------
 
@@ -1509,12 +1531,44 @@ class ComponentMapsMaker(MapsSelectionComponent):
         selection["dust"] = self.dust_selection
 
         # Determine path for the selection file
-        current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", convert=int)
+        current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, convert_split_pattern="_", convert_split_index=1)
         index = numbers.lowest_missing_integer(current_indices)
         selection_path = fs.join(self.maps_components_path, str(index) + ".dat")
 
         # Write the selection
         write_dict(selection, selection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_previous_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.previous_levels is not None
+
+    # -----------------------------------------------------------------
+
+    def write_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the levels ...")
+
+        # Determine path for the levels file
+        current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", startswith="levels", convert=int, convert_split_pattern="_", convert_split_index=1)
+        index = numbers.lowest_missing_integer(current_indices)
+        levels_path = fs.join(self.maps_components_path, str(index) + ".dat")
+
+        # Write levels dictionary
+        write_dict(self.levels, levels_path)
 
     # -----------------------------------------------------------------
 
@@ -2968,7 +3022,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Determine the clipping directory path
         clipping_path = fs.join(map_path, "clipping")
-        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+        if create and not fs.is_directory(clipping_path): fs.create_directory(clipping_path)
 
         # Return the clipping path
         return clipping_path
@@ -3046,7 +3100,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Determine the clipping directory path
         clipping_path = fs.join(map_path, "clipping")
-        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+        if create and not fs.is_directory(clipping_path): fs.create_directory(clipping_path)
 
         # Return the clipping path
         return clipping_path
@@ -3124,7 +3178,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Determine the clipping directory path
         clipping_path = fs.join(map_path, "clipping")
-        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+        if create and not fs.is_directory(clipping_path): fs.create_directory(clipping_path)
 
         # Return the clipping path
         return clipping_path
@@ -3202,7 +3256,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Determine the clipping directory path
         clipping_path = fs.join(map_path, "clipping")
-        if create and not fs.is_directory(clipping_path): fs.create_directory(map_path)
+        if create and not fs.is_directory(clipping_path): fs.create_directory(clipping_path)
 
         # Return the clipping path
         return clipping_path
@@ -5087,7 +5141,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
                                                    connectivity=self.config.connectivity,
                                                    rebin_remote_threshold=self.config.rebin_remote_threshold,
                                                    fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                   fuzziness_offset=self.config.fuzzy_min_significance_offset)
+                                                   fuzziness_offset=self.config.fuzzy_min_significance_offset,
+                                                   output_path=self.young_clipping_path_for_map(name))
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -5145,7 +5200,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
                                                       connectivity=self.config.connectivity,
                                                       rebin_remote_threshold=self.config.rebin_remote_threshold,
                                                       fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                      fuzziness_offset=self.config.fuzzy_min_significance_offset)
+                                                      fuzziness_offset=self.config.fuzzy_min_significance_offset,
+                                                      output_path=self.ionizing_clipping_path_for_map(name))
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -5203,7 +5259,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
                                                   connectivity=self.config.connectivity,
                                                   rebin_remote_threshold=self.config.rebin_remote_threshold,
                                                   fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                  fuzziness_offset=self.config.fuzzy_min_significance_offset)
+                                                  fuzziness_offset=self.config.fuzzy_min_significance_offset,
+                                                  output_path=self.dust_clipping_path_for_map(name))
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True

@@ -966,7 +966,7 @@ def files_in_cwd(**kwargs):
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, not_extension=None, contains=None,
                   not_contains=None, extensions=False, returns="path", exact_name=None, exact_not_name=None,
                   startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False,
-                  convert=None):
+                  convert=None, convert_split_index=None, convert_split_pattern=" "):
 
     """
     This function ...
@@ -988,6 +988,8 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param recursion_level:
     :param unpack:
     :param convert:
+    :param convert_split_index:
+    :param convert_split_pattern:
     :return:
     """
 
@@ -1013,7 +1015,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             item_name = strip_extension(name(x))
             if item_name.startswith("."): value = 0
             else:
-                try: value = sort(item_name)
+                try:
+                    if convert_split_index is not None: item_name = item_name.split(convert_split_pattern)[convert_split_index]
+                    value = sort(item_name)
                 except ValueError: value = 0
             return value
         items.sort(key=sort_function)
@@ -1152,7 +1156,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
                 else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
         # CONVERT?
-        if convert is not None: thing = convert(thing)
+        if convert is not None:
+            if convert_split_index is not None: thing = thing.split(convert_split_pattern)[convert_split_index]
+            thing = convert(thing)
 
         # Add to the list
         file_paths.append(thing)
