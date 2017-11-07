@@ -1033,7 +1033,7 @@ class Projector(GalaxyModelingComponent):
         for name in self.models:
 
             # Debugging
-            log.debug("Creating a ski file for the deprojection of the '" + name + "' map ...")
+            log.debug("Creating a ski file for the projection of the '" + name + "' map ...")
 
             # Make copy
             ski = self.ski_template.copy()

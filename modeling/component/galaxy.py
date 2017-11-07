@@ -1531,7 +1531,7 @@ class GalaxyModelingComponent(ModelingComponent):
         from ..misc.deprojector import Deprojector
 
         # Create the deprojector
-        deprojector = Deprojector()
+        deprojector = Deprojector(cwd=root_path)
 
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
@@ -1570,7 +1570,7 @@ class GalaxyModelingComponent(ModelingComponent):
         from ..misc.deprojector import Deprojector
 
         # Create the deprojector
-        deprojector = Deprojector()
+        deprojector = Deprojector(cwd=root_path)
 
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
@@ -1607,7 +1607,7 @@ class GalaxyModelingComponent(ModelingComponent):
         from ..misc.projector import Projector
 
         # Create the projector
-        projector = Projector()
+        projector = Projector(cwd=root_path)
 
         # Get number of pixels
         npixels = get_npixels(npixels)
@@ -1653,7 +1653,7 @@ class GalaxyModelingComponent(ModelingComponent):
         from ..misc.projector import Projector
 
         # Create the projector
-        projector = Projector()
+        projector = Projector(cwd=root_path)
 
         # Get number of pixels
         npixels = get_npixels(npixels)
@@ -1701,7 +1701,7 @@ class GalaxyModelingComponent(ModelingComponent):
         azimuth = parse_angle("0 deg")
 
         # Create the projector
-        projector = Projector()
+        projector = Projector(cwd=root_path)
 
         # Set settings
         projector.config.writing.projections = write

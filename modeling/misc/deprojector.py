@@ -298,6 +298,9 @@ class Deprojector(GalaxyModelingComponent):
             # Set output path
             self.output_paths[name] = fs.create_directory_in(self.root_path, name)
 
+            # Debugging
+            log.debug("The output directory is '" + self.output_paths[name] + "'")
+
     # -----------------------------------------------------------------
 
     @property
@@ -789,8 +792,14 @@ class Deprojector(GalaxyModelingComponent):
         # Loop over the ski files
         for name in self.ski_files:
 
+            # Debugging
+            log.debug("Writing the ski file for the deprojection of the '" + name + "' map ...")
+
             # Determine path
             filepath = fs.join(self.output_paths[name], name + ".ski")
+
+            # Debugging
+            log.debug("Writing the ski file to '" + filepath + "' ...")
 
             # Save the ski file
             self.ski_files[name].saveto(filepath, fix=True)
