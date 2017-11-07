@@ -388,9 +388,12 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Get the ssfr map
                 ssfr = self.ssfrs[ssfr_colour]
+                if isinstance(ssfr, Image): ssfr_frame = ssfr.primary
+                elif isinstance(ssfr, Frame): ssfr_frame = ssfr
+                else: raise ValueError("Something went wrong")
 
                 # Rebin and convolve the TIR-to-FUV, FUV and the sSFR maps
-                frames = NamedFrameList(fuv=self.fuv, ssfr=ssfr, tirtofuv=tir_to_fuv)
+                frames = NamedFrameList(fuv=self.fuv, ssfr=ssfr_frame, tirtofuv=tir_to_fuv)
                 frames.convolve_and_rebin()
                 
                 # Create log of TIRtoFUV frame

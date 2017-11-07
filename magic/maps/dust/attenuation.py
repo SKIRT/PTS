@@ -16,10 +16,11 @@ from __future__ import absolute_import, division, print_function
 from copy import copy
 
 # Import the relevant PTS classes and modules
+from ....magic.core.frame import Frame
 from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 from ....magic.core.frame import AllZeroError
-
+from ....magic.core.image import Image
 # -----------------------------------------------------------------
 
 def make_map(attenuation):
@@ -186,14 +187,17 @@ class AttenuationDustMapsMaker(Configurable):
 
             # Get the map
             dust = self.attenuation[name]
+            if isinstance(dust, Image): dust_frame = dust.primary
+            elif isinstance(dust, Frame): dust_frame = dust
+            else: raise ValueError("Something went wrong")
 
             # Normalized
-            try: dust.normalize()
+            try: dust_frame.normalize()
             except AllZeroError:
                 log.warning("The " + name + " dust map cannot be normalized: sum is zero")
 
             # Set as dust map
-            self.maps[name] = dust
+            self.maps[name] = dust_frame
 
     # -----------------------------------------------------------------
 
