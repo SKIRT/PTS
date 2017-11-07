@@ -3739,27 +3739,62 @@ class MapsComponent(MapMakerBase):
         :return:
         """
 
-        return
+        return self.static_selection.get_young_deprojected_skirt_paths()
 
     # -----------------------------------------------------------------
 
     def get_component_young_deprojected_skirt(self):
 
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.static_selection.get_young_deprojected_skirt()
+
     # -----------------------------------------------------------------
 
     def get_component_ionizing_deprojected_skirt_paths(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_deprojected_skirt_paths()
 
     # -----------------------------------------------------------------
 
     def get_component_ionizing_deprojected_skirt(self):
 
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_deprojected_skirt()
+
     # -----------------------------------------------------------------
 
     def get_component_dust_deprojected_skirt_paths(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_deprojected_skirt_paths()
+
     # -----------------------------------------------------------------
 
     def get_component_dust_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_deprojected_skirt()
 
     # -----------------------------------------------------------------
 
@@ -3769,29 +3804,78 @@ class MapsComponent(MapMakerBase):
 
     def get_component_old_edgeon_paths(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_edgeon_paths()
+
     # -----------------------------------------------------------------
 
     def get_component_old_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_edgeon()
 
     # -----------------------------------------------------------------
 
     def get_component_young_edgeon_paths(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_edgeon_paths()
+
     # -----------------------------------------------------------------
 
     def get_component_young_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_edgeon()
 
     # -----------------------------------------------------------------
 
     def get_component_ionizing_edgeon_paths(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_edgeon_paths()
+
     # -----------------------------------------------------------------
 
     def get_component_ionizing_edgeon(self):
 
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_edgeon()
+
     # -----------------------------------------------------------------
 
     def get_component_dust_edgeon_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_edgeon_paths()
 
     # -----------------------------------------------------------------
 
@@ -3801,6 +3885,8 @@ class MapsComponent(MapMakerBase):
         Thisf unction ...
         :return:
         """
+
+        return self.static_selection.get_dust_edgeon()
 
     # -----------------------------------------------------------------
 

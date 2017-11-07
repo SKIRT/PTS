@@ -212,24 +212,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.ionizing_deprojections = None
         self.dust_deprojections = None
 
-        # # The deprojected maps
-        # self.old_deprojected = dict()
-        # self.young_deprojected = dict()
-        # self.ionizing_deprojected = dict()
-        # self.dust_deprojected = dict()
-        #
-        # # The deprojected maps with SKIRT
-        # self.old_deprojected_skirt = dict()
-        # self.young_deprojected_skirt = dict()
-        # self.ionizing_deprojected_skirt = dict()
-        # self.dust_deprojected_skirt = dict()
-        #
-        # # Edgeon maps with SKIRT
-        # self.old_edgeon_skirt = dict()
-        # self.young_edgeon_skirt = dict()
-        # self.ionizing_edgeon_skirt = dict()
-        # self.dust_edgeon_skirt = dict()
-
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -7504,19 +7486,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Plotting ...")
 
         # Maps
-        self.plot_components_maps()
+        self.plot_components_maps(format=self.config.plotting_format)
 
         # Masks
-        self.plot_components_masks()
+        self.plot_components_masks(format=self.config.plotting_format)
 
         # Deprojected
-        self.plot_components_deprojected()
+        self.plot_components_deprojected(format=self.config.plotting_format)
 
         # Deprojected with SKIRT
-        self.plot_components_deprojected_skirt()
+        self.plot_components_deprojected_skirt(format=self.config.plotting_format)
 
         # Edgeon
-        self.plot_components_edgeon()
+        self.plot_components_edgeon(format=self.config.plotting_format)
 
     # -----------------------------------------------------------------
 

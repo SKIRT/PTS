@@ -296,6 +296,9 @@ definition.add_optional("scale_heights", "positive_real", "scale heights", 10.)
 # -----------------------------------------------------------------
 
 # Plot
+formats = ["pdf", "png"]
+default_format = "pdf"
 definition.add_flag("plot", "make plots", True)
+definition.add_optional("plotting_format", "string", "plotting format", default=default_format, choices=formats)
 
 # -----------------------------------------------------------------

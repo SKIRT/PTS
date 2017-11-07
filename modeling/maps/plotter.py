@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.log import log
 from .component import MapsComponent
 from .selectioncomponent import MapsSelectionComponent
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -795,6 +796,39 @@ class ComponentMapsPlotter(MapsSelectionComponent):
         # Call the setup function of the base class
         super(ComponentMapsPlotter, self).setup(**kwargs)
 
+        # Replot
+        if self.config.replot:
+
+            from .selectioncomponent import map_plot_filename, edgeon_plot_filename, deprojected_plot_filename, deprojected_skirt_plot_filename
+
+            if self.plot_old:
+
+                if self.maps_plotting: fs.remove_files_in_path(self.old_plots_path, exact_name=map_plot_filename, recursive=True)
+                if self.deprojected_plotting: fs.remove_files_in_path(self.old_plots_path, exact_name=deprojected_plot_filename, recursive=True)
+                if self.deprojected_skirt_plotting: fs.remove_files_in_path(self.old_plots_path, exact_name=deprojected_skirt_plot_filename, recursive=True)
+                if self.edgeon_plotting: fs.remove_files_in_path(self.old_plots_path, exact_name=edgeon_plot_filename, recursive=True)
+
+            if self.plot_young:
+
+                if self.maps_plotting: fs.remove_files_in_path(self.young_plots_path, exact_name=map_plot_filename, recursive=True)
+                if self.deprojected_plotting: fs.remove_files_in_path(self.young_plots_path, exact_name=deprojected_plot_filename, recursive=True)
+                if self.deprojected_skirt_plotting: fs.remove_files_in_path(self.young_plots_path, exact_name=deprojected_skirt_plot_filename, recursive=True)
+                if self.edgeon_plotting: fs.remove_files_in_path(self.young_plots_path, exact_name=edgeon_plot_filename, recursive=True)
+
+            if self.plot_ionizing:
+
+                if self.maps_plotting: fs.remove_files_in_path(self.ionizing_plots_path, exact_name=map_plot_filename, recursive=True)
+                if self.deprojected_plotting: fs.remove_files_in_path(self.ionizing_plots_path, exact_name=deprojected_plot_filename, recursive=True)
+                if self.deprojected_skirt_plotting: fs.remove_files_in_path(self.ionizing_plots_path, exact_name=deprojected_skirt_plot_filename, recursive=True)
+                if self.edgeon_plotting: fs.remove_files_in_path(self.ionizing_plots_path, exact_name=edgeon_plot_filename, recursive=True)
+
+            if self.plot_dust:
+
+                if self.maps_plotting: fs.remove_files_in_path(self.dust_plots_path, exact_name=map_plot_filename, recursive=True)
+                if self.deprojected_plotting: fs.remove_files_in_path(self.dust_plots_path, exact_name=deprojected_plot_filename, recursive=True)
+                if self.deprojected_skirt_plotting: fs.remove_files_in_path(self.dust_plots_path, exact_name=deprojected_skirt_plot_filename, recursive=True)
+                if self.edgeon_plotting: fs.remove_files_in_path(self.dust_plots_path, exact_name=edgeon_plot_filename, recursive=True)
+
     # -----------------------------------------------------------------
 
     @property
@@ -1216,19 +1250,19 @@ class ComponentMapsPlotter(MapsSelectionComponent):
         log.info("Plotting ...")
 
         # Maps
-        if self.maps_plotting: self.plot_components_maps()
+        if self.maps_plotting: self.plot_components_maps(format=self.config.format)
 
         # Masks
-        if self.masks_plotting: self.plot_components_masks()
+        if self.masks_plotting: self.plot_components_masks(format=self.config.format)
 
         # Deprojected
-        if self.deprojected_plotting: self.plot_components_deprojected()
+        if self.deprojected_plotting: self.plot_components_deprojected(format=self.config.format)
 
         # Deprojected with SKIRT
-        if self.deprojected_skirt_plotting: self.plot_components_deprojected_skirt()
+        if self.deprojected_skirt_plotting: self.plot_components_deprojected_skirt(format=self.config.format)
 
         # Edgeon
-        if self.edgeon_plotting: self.plot_components_edgeon()
+        if self.edgeon_plotting: self.plot_components_edgeon(format=self.config.format)
 
     # -----------------------------------------------------------------
 

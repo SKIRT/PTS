@@ -150,8 +150,8 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
-        return fs.join(self.dust_component_path, deprojected_name)
+        from .components import deprojected_name
+        return fs.join(self.old_component_path, deprojected_name)
 
     # -----------------------------------------------------------------
 
@@ -163,7 +163,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_name
         return fs.join(self.young_component_path, deprojected_name)
 
     # -----------------------------------------------------------------
@@ -176,7 +176,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_name
         return fs.join(self.ionizing_component_path, deprojected_name)
 
     # -----------------------------------------------------------------
@@ -189,7 +189,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_name
         return fs.join(self.dust_component_path, deprojected_name)
 
     # -----------------------------------------------------------------
@@ -202,7 +202,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_skirt_name
         return fs.join(self.old_component_path, deprojected_skirt_name)
 
     # -----------------------------------------------------------------
@@ -215,7 +215,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_skirt_name
         return fs.join(self.young_component_path, deprojected_skirt_name)
 
     # -----------------------------------------------------------------
@@ -228,7 +228,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_skirt_name
         return fs.join(self.ionizing_component_path, deprojected_skirt_name)
 
     # -----------------------------------------------------------------
@@ -241,7 +241,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import deprojected_skirt_name
         return fs.join(self.dust_component_path, deprojected_skirt_name)
 
     # -----------------------------------------------------------------
@@ -254,7 +254,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import edgeon_name
         return fs.join(self.old_component_path, edgeon_name)
 
     # -----------------------------------------------------------------
@@ -267,7 +267,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import edgeon_name
         return fs.join(self.young_component_path, edgeon_name)
 
     # -----------------------------------------------------------------
@@ -280,7 +280,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import edgeon_name
         return fs.join(self.ionizing_component_path, edgeon_name)
 
     # -----------------------------------------------------------------
@@ -293,7 +293,7 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        from .components import deprojected_name, deprojected_skirt_name, edgeon_name
+        from .components import edgeon_name
         return fs.join(self.dust_component_path, edgeon_name)
 
     # -----------------------------------------------------------------
@@ -397,13 +397,8 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        maps = dict()
         paths = self.get_old_map_paths()
-        for name in paths:
-            path = paths[name]
-            the_map = Frame.from_file(path)
-            maps[name] = the_map
-        return maps
+        return paths_to_frames_dict(paths)
 
     # -----------------------------------------------------------------
 
@@ -414,13 +409,8 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        maps = dict()
         paths = self.get_young_map_paths()
-        for name in paths:
-            path = paths[name]
-            the_map = Frame.from_file(path)
-            maps[name] = the_map
-        return maps
+        return paths_to_frames_dict(paths)
 
     # -----------------------------------------------------------------
 
@@ -431,13 +421,8 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        maps = dict()
         paths = self.get_ionizing_map_paths()
-        for name in paths:
-            path = paths[name]
-            the_map = Frame.from_file(path)
-            maps[name] = the_map
-        return maps
+        return paths_to_frames_dict(paths)
 
     # -----------------------------------------------------------------
 
@@ -448,13 +433,284 @@ class ComponentMapsSelection(object):
         :return:
         """
 
-        maps = dict()
         paths = self.get_dust_map_paths()
-        for name in paths:
-            path = paths[name]
-            the_map = Frame.from_file(path)
-            maps[name] = the_map
-        return maps
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_old_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.old_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_young_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.young_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.ionizing_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_old_deprojected_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_young_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_young_deprojected_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_deprojected(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        paths = self.get_ionizing_deprojected_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_dust_deprojected_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_old_deprojected_skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.old_skirt_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_young_deprojected_skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.young_skirt_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_deprojected_skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.ionizing_skirt_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojected_skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_skirt_deprojected_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_deprojected_skirt(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        paths = self.get_old_deprojected_skirt_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_young_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_young_deprojected_skirt_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_ionizing_deprojected_skirt_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojected_skirt(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        paths = self.get_dust_deprojected_skirt_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_old_edgeon_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.old_edgeon_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_young_edgeon_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.young_edgeon_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_edgeon_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.ionizing_edgeon_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_edgeon_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_edgeon_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        paths = self.get_old_edgeon_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_young_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_young_edgeon_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_ionizing_edgeon_paths()
+        return paths_to_frames_dict(paths)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = self.get_dust_edgeon_paths()
+        return paths_to_frames_dict(paths)
 
     # -----------------------------------------------------------------
 
@@ -734,5 +990,22 @@ class ComponentMapsSelection(object):
 # -----------------------------------------------------------------
 
 StaticComponentMapsSelection = create_lazified_class(ComponentMapsSelection, "StaticComponentMapsSelection")
+
+# -----------------------------------------------------------------
+
+def paths_to_frames_dict(paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    maps = dict()
+    for name in paths:
+        path = paths[name]
+        the_map = Frame.from_file(path)
+        maps[name] = the_map
+    return maps
 
 # -----------------------------------------------------------------
