@@ -808,36 +808,65 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    def fill_holes(self):
+    def get_holes(self, npixels=1, connectivity=8):
 
         """
         This function ...
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
-        # Create a copy of this mask
-        #new_mask = self.copy()
-
         # Perform the segmentation
-        segments = detect_sources(self.inverse().data.astype(float), 0.5, 1).data
+        segments = detect_sources(self.inverse().data.astype(float), 0.5, npixels=npixels, connectivity=connectivity).data
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
-        if len(label_counts) > 1:
+        if len(label_counts) <= 1: return
 
-            background_label = np.argmax(label_counts[1:]) + 1
-            # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
-            # therefore we do the '[1:]'
+        background_label = np.argmax(label_counts[1:]) + 1
+        # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
+        # therefore we do the '[1:]'
 
-            # Create a mask for the holes identified as background
-            holes = self.inverse().data
-            holes[segments == background_label] = False
+        # Create a mask for the holes identified as background
+        holes = self.inverse().data
+        holes[segments == background_label] = False
 
-            # Remove holes from the mask
-            self._data[holes] = True
+        # Return the holes
+        return holes
 
-        # Return the new mask
-        #return new_mask
+    # -----------------------------------------------------------------
+
+    def fill_holes(self, npixels=1, connectivity=8):
+
+        """
+        This function ...
+        :param npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Get the holes
+        holes = self.get_holes(npixels=npixels, connectivity=connectivity)
+
+        # Remove holes from the mask
+        self._data[holes] = True
+
+    # -----------------------------------------------------------------
+
+    def filled_holes(self, npixels=1, connectivity=8):
+
+        """
+        This function ...
+        :param npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Create new, inverted copy
+        new = self.copy()
+        new.fill_holes(npixels=npixels, connectivity=connectivity)
+        return new
 
     # -----------------------------------------------------------------
 

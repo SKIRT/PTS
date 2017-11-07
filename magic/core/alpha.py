@@ -28,6 +28,13 @@ from ..dist_ellipse import distance_ellipse
 
 # -----------------------------------------------------------------
 
+min_alpha = 0
+max_alpha = 255
+half_alpha = 128
+nalpha_bins = 256
+
+# -----------------------------------------------------------------
+
 class AlphaMask(object):
     
     """
@@ -46,7 +53,10 @@ class AlphaMask(object):
         self._data = data.astype(np.uint8)
 
         # Set the WCS
-        self.wcs = kwargs.pop("wcs", None)
+        self._wcs = kwargs.pop("wcs", None)
+
+        # Set the pixelscale
+        self._pixelscale = kwargs.pop("pixelscale", None)
 
         # The path
         self.path = None
@@ -132,7 +142,7 @@ class AlphaMask(object):
         :return:
         """
 
-        return cls(data * 255, **kwargs)
+        return cls(data * max_alpha, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -251,6 +261,149 @@ class AlphaMask(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._wcs
+
+    # -----------------------------------------------------------------
+
+    @wcs.setter
+    def wcs(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._wcs = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the pixelscale of the WCS is WCS is defined
+        if self.wcs is not None: return self.wcs.pixelscale
+        else: return self._pixelscale  # return the pixelscale
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from ..basics.pixelscale import Pixelscale
+        if not isinstance(value, Pixelscale): value = Pixelscale(value)
+        self._pixelscale = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixelscale(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.pixelscale is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.tools import types
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_angle(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.tools import types
+        if not self.has_pixelscale: raise ValueError("No pixelscale")
+        return types.is_length_quantity(self.x_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.wcs is not None: return self.wcs.average_pixelscale
+        else: return self._pixelscale.average if self._pixelscale is not None else None
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """
@@ -269,7 +422,7 @@ class AlphaMask(object):
         :return:
         """
 
-        return self.data.astype(float) / 255
+        return self.data.astype(float) / max_alpha
 
     # -----------------------------------------------------------------
 
@@ -280,7 +433,7 @@ class AlphaMask(object):
         :return:
         """
 
-        self._data = 255 - self._data
+        self._data = max_alpha - self._data
 
     # -----------------------------------------------------------------
 
@@ -332,7 +485,7 @@ class AlphaMask(object):
         """
 
         # Perform the segmentation
-        segments = detect_sources(self.data, 1, npixels=npixels, connectivity=connectivity).data
+        segments = detect_sources(self.data, min_alpha, npixels=npixels, connectivity=connectivity).data
 
         # To plot the multiple segments that are detected
         # if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))
@@ -363,7 +516,7 @@ class AlphaMask(object):
         """
 
         # Perform the segmentation
-        segments = detect_sources(self.data, 1, npixels=npixels, connectivity=connectivity).data
+        segments = detect_sources(self.data, min_alpha, npixels=npixels, connectivity=connectivity).data
 
         # Get counts for each label
         unique, counts = np.unique(segments, return_counts=True)
@@ -388,9 +541,343 @@ class AlphaMask(object):
 
         # Return copy with only largest
         new = self.copy()
-        #print(segments != label)
         new._data[segments != label] = 0
         return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return np.min(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return np.max(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data == min_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def transparent_filled(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        transparent = self.transparent
+        transparent.fill_holes(connectivity=4)
+        return transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def semitransparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .mask import Mask
+        #return Mask(min_alpha < self.data < max_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
+        above = self.data > min_alpha
+        below = self.data < max_alpha
+        return Mask(above * below, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def semitransparent_filled(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        semitransparent = self.semitransparent
+        semitransparent.fill_holes(connectivity=4)
+        return semitransparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def opaque(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data == max_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def opaque_filled(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        opaque = self.opaque
+        opaque.fill_holes(connectivity=4)
+        return opaque
+
+    # -----------------------------------------------------------------
+
+    def equal(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data == value, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def equal_filled(self, value):
+
+        """
+        Thisf unction ...
+        :param value:
+        :return:
+        """
+
+        equal = self.equal(value)
+        equal.fill_holes(connectivity=4)
+        return equal
+
+    # -----------------------------------------------------------------
+
+    def above(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data > value, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def above_filled(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        above = self.equal(value)
+        above.fill_holes(connectivity=4)
+        return above
+
+    # -----------------------------------------------------------------
+
+    def above_or_equal(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data >= value, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def above_or_equal_filled(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        above_or_equal = self.above_or_equal(value)
+        above_or_equal.fill_holes(connectivity=4)
+        return above_or_equal
+
+    # -----------------------------------------------------------------
+
+    def below(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data < value, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def below_filled(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        below = self.below(value)
+        below.fill_holes(connectivity=4)
+        return below
+
+    # -----------------------------------------------------------------
+
+    def below_or_equal(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        from .mask import Mask
+        return Mask(self.data <= value, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def below_or_equal_filled(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        below_or_equal = self.below_or_equal(value)
+        below_or_equal.fill_holes(connectivity=4)
+        return below_or_equal
+
+    # -----------------------------------------------------------------
+
+    @property
+    def above_half(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.above_or_equal(half_alpha)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def above_half_filled(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.above_or_equal_filled(half_alpha)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def below_half(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.below(half_alpha)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def below_half_filled(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.below_filled(half_alpha)
+
+    # -----------------------------------------------------------------
+
+    def get_holes(self, npixels=1, connectivity=8):
+
+        """
+        This function ...
+        :param npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Perform the segmentation
+        segments = detect_sources(self.inverse().data, self.max-1, npixels=npixels, connectivity=connectivity).data
+
+        from ..tools import plotting
+        #plotting.plot_mask(self.inverse())
+        #plotting.plot_box(segments)
+
+        # Find the label of the largest segment (=the background)
+        label_counts = np.bincount(segments.flatten())
+        if len(label_counts) <= 1: return
+
+        # Determine background label
+        background_label = np.argmax(label_counts[1:]) + 1
+        # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
+        # therefore we do the '[1:]'
+        #print(background_label)
+
+        # Create a mask for the holes identified as background
+        holes = self.inverse().data > 1
+        holes[segments == background_label] = False
+
+        # Get 'edge', unmark as holes
+        #core = self.opaque_filled
+        core = self.above_half_filled
+        edge = core.inverse()
+        holes[edge] = False
+
+        #plotting.plot_mask(holes, title="holes")
+        #plotting.plot_mask(self.opaque_filled, title="opaque filled")
+
+        # Return
+        return holes
 
     # -----------------------------------------------------------------
 
@@ -403,23 +890,27 @@ class AlphaMask(object):
         :return:
         """
 
-        # Perform the segmentation
-        segments = detect_sources(self.inverse().data, 1, npixels=npixels, connectivity=connectivity).data
+        # Get the holes
+        holes = self.get_holes(npixels=npixels, connectivity=connectivity)
 
-        # Find the label of the largest segment (=the background)
-        label_counts = np.bincount(segments.flatten())
-        if len(label_counts) > 1:
+        # Remove holes from the mask
+        self._data[holes] = 255
 
-            background_label = np.argmax(label_counts[1:]) + 1
-            # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
-            # therefore we do the '[1:]'
+    # -----------------------------------------------------------------
 
-            # Create a mask for the holes identified as background
-            holes = self.inverse().data > 1
-            holes[segments == background_label] = False
+    def filled_holes(self, npixels=1, connectivity=8):
 
-            # Remove holes from the mask
-            self._data[holes] = 255
+        """
+        This function ...
+        :param npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Create new, inverted copy
+        new = self.copy()
+        new.fill_holes(npixels=npixels, connectivity=connectivity)
+        return new
 
     # -----------------------------------------------------------------
 
