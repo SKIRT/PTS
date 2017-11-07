@@ -610,27 +610,42 @@ def stringify_not_list(value, **kwargs):
     elif types.is_string_type(value): return "string", value
     elif types.is_none(value): return "None", kwargs.pop("none_string", "None")
 
-    # Special
+    # Unit, quantity, angle
     elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value, **kwargs)
     elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value, **kwargs)
     elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value, **kwargs)
+
+    # Range
     elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", str_from_real_range(value, **kwargs)
     elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", str_from_integer_range(value, **kwargs)
     elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, **kwargs)
+
+    # Coordinates
     elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", str_from_coordinate(value, **kwargs)
-    elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", str_from_stretch(value, **kwargs)
-    elif introspection.lazy_isinstance(value, "Filter", "pts.core.filter.filter"): return introspection.lazy_call("stringify_filter", "pts.core.filter.filter", value, **kwargs)
-    elif introspection.lazy_isinstance(value, "Pixelscale", "pts.magic.basics.pixelscale"): return "pixelscale", str(value)
-    elif introspection.lazy_isinstance(value, "Parallelization", "pts.core.simulation.parallelization"): return "parallelization", introspection.lazy_call("represent_parallelization", "pts.core.simulation.parallelization", value)
-
-    # Other
-    #elif introspection.isinstance(Instrument):
-
     elif introspection.lazy_isinstance(value, "PixelCoordinate", "pts.magic.basics.coordinate"): return "pixelcoordinate", str_from_pixelcoordinate(value, **kwargs)
     elif introspection.lazy_isinstance(value, "PhysicalCoordinate", "pts.magic.basics.coordinate"): return "physicalcoordinate", str_from_physicalcoordinate(value, **kwargs)
 
+    # Stretch
+    #elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", str_from_stretch(value, **kwargs)
+
+    # Extents
+    elif introspection.lazy_isinstance(value, "SkyExtent", "pts.magic.basics.stretch"): return "sky_extent", str_from_angle_extent(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "PhysicalExtent", "pts.magic.basics.stretch"): return "physical_extent", str_from_quantity_extent(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "IntegerExtent", "pts.magic.basics.vector"): return "integer_extent", str_from_integer_extent(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "RealExtent", "pts.magic.basics.vector"): return "real_extent", str_from_real_extent(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "AngleExtent", "pts.magic.basics.vector"): return "angle_extent", str_from_angle_extent(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "QuantityExtent", "pts.magic.basics.vector"): return "quantity_extent", str_from_quantity_extent(value, **kwargs)
+
+    # Filter
+    elif introspection.lazy_isinstance(value, "Filter", "pts.core.filter.filter"): return introspection.lazy_call("stringify_filter", "pts.core.filter.filter", value, **kwargs)
+
+    # Pixelscale
+    elif introspection.lazy_isinstance(value, "Pixelscale", "pts.magic.basics.pixelscale"): return "pixelscale", str(value)
+
+    # Parallelization
+    elif introspection.lazy_isinstance(value, "Parallelization", "pts.core.simulation.parallelization"): return "parallelization", introspection.lazy_call("represent_parallelization", "pts.core.simulation.parallelization", value)
+
     # Unrecognized
-    #else: raise ValueError("Unrecognized type: " + str(type(value)))
     else:
         warnings.warn("Unrecognized type: " + str(type(value)))
         return None, str(value)
@@ -949,6 +964,71 @@ def str_from_stretch(stretch, **kwargs):
                                    **kwargs)[1] + delimiter + introspection.lazy_call("stringify_quantity",
                                                                                    "pts.core.units.stringify",
                                                                                    stretch.dec, **kwargs)[1]
+
+# -----------------------------------------------------------------
+
+def str_from_angle_extent(extent, **kwargs):
+
+    """
+    This function ...
+    :param extent:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return str_from_angle(extent.x, **kwargs) + delimiter + str_from_angle(extent.y, **kwargs)
+
+# -----------------------------------------------------------------
+
+def str_from_quantity_extent(extent, **kwargs):
+
+    """
+    Thisf unction ...
+    :param extent:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", extent.x, **kwargs)[1] + delimiter + \
+           introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", extent.y, **kwargs)[1]
+
+# -----------------------------------------------------------------
+
+def str_from_integer_extent(extent, **kwargs):
+
+    """
+    This function ...
+    :param extent:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return str_from_integer(extent.x, **kwargs) + delimiter + str_from_integer(extent.y, **kwargs)
+
+# -----------------------------------------------------------------
+
+def str_from_real_extent(extent, **kwargs):
+
+    """
+    This function ...
+    :param extent:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return str_from_real(extent.x, **kwargs) + delimiter + str_from_real(extent.y, **kwargs)
 
 # -----------------------------------------------------------------
 
