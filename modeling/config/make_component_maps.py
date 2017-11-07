@@ -270,10 +270,14 @@ definition.add_optional("interpolation_softening_start", "real", "relative radiu
 definition.add_optional("interpolation_softening_end", "real", "relative radius for softening to end (relative to interpolation ellipse", 1.2)
 
 # INTERPOLATION SMOOTHING
-definition.add_optional("old_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of old stellar maps", 2.)
-definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of young stellar maps", 2.)
-definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", 2.)
-definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", 2.)
+default_smoothing_factor = 5.
+definition.add_optional("old_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of old stellar maps", default_smoothing_factor)
+definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of young stellar maps", default_smoothing_factor)
+definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", default_smoothing_factor)
+definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", default_smoothing_factor)
+
+# INTERPOLATE IN CUTOUT (FOR SPEED?)
+definition.add_flag("interpolate_in_cutout", "interpolate in cutouts", False)
 
 # -----------------------------------------------------------------
 

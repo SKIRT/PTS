@@ -78,6 +78,26 @@ def find_contours(data, segments, sigma_level):
 
 # -----------------------------------------------------------------
 
+def find_contour_mask(mask):
+
+    """
+    This function ...
+    :param mask:
+    :return:
+    """
+
+    x_min = 0
+    x_max = mask.xsize - 1
+    y_min = 0
+    y_max = mask.ysize - 1
+
+    from ..core.cutout import Cutout
+    fake_data = Cutout(mask.data.astype(int), x_min, x_max, y_min, y_max)
+    contour = find_contour(fake_data, mask, sigma_level=1)
+    return contour
+
+# -----------------------------------------------------------------
+
 def find_contour(box, mask, sigma_level):
 
     """

@@ -105,19 +105,8 @@ class Detection(object):
         # Create a source from the bounding box of the shape
         source = cls.from_rectangle(frame, shape.bounding_box, factor)
 
-        # Calculate the shift for the shape to be in the source cutout
-        #shift = PixelStretch(source.x_min, source.y_min)
-
-        #print(shape.center)
-        #print(shift)
-        #print((shape-shift).center)
-        #print(source.cutout.shape)
-
         # Create a mask based on the shape, shifted into the source cutout
         mask = (shape - source.shift).to_mask(source.cutout.xsize, source.cutout.ysize)
-
-        #from ..tools import plotting
-        #plotting.plot_mask(mask)
 
         # Set the source mask
         source.mask = mask
@@ -210,6 +199,34 @@ class Detection(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_mask(cls, frame, mask, factor):
+
+        """
+        This function ...
+        :param frame:
+        :param mask:
+        :param factor:
+        :return:
+        """
+
+        from ..analysis.sources import find_contour_mask
+
+        # Create contour for mask
+        ellipse = find_contour_mask(mask)
+
+        # Create from ellipse
+        detection = cls.from_ellipse(frame, ellipse, factor=factor)
+
+        # Set the mask
+        mask_cutout = Mask(mask.data[detection.y_slice, detection.x_slice])
+        detection.mask = mask_cutout
+
+        # Return the detection
+        return detection
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_image(cls, image):
 
         """
@@ -224,9 +241,11 @@ class Detection(object):
         y_min = int(image.metadata["y_min"])
         y_max = int(image.metadata["y_max"])
         center = PixelCoordinate(float(image.metadata["center_x"]), float(image.metadata["center_y"]))
+
         if "radius" in image.metadata: radius = float(image.metadata["radius"])
         elif "radius_x" in image.metadata: radius = PixelStretch(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
-        else: RuntimeError("Radius information is missing in metadata")
+        else: raise RuntimeError("Radius information is missing in metadata")
+
         angle = Angle(float(image.metadata["angle"]), "deg")
         factor = float(image.metadata["factor"])
         if "peak_x" in image.metadata: peak = PixelCoordinate(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))

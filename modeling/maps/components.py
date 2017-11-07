@@ -42,6 +42,8 @@ from ...core.basics.containers import ordered_by_key
 from ...magic.core.fits import get_plane_names
 from ...core.tools import formatting as fmt
 from ...core.tools.serialization import write_dict, load_dict
+from ...magic.basics.mask import MaskBase
+from ...magic.region.region import PixelRegion
 
 # -----------------------------------------------------------------
 
@@ -4012,8 +4014,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_filled_filename))
 
-            # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.old_interpolation_smoothing_factor)
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
+
+                interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, mask,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.old_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
+
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.old_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.old_interpolation_smoothing_factor)
 
             # Set flag
             self.old_maps[name].metadata[interpolate_negatives_step] = True
@@ -4097,7 +4107,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
+            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
+
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
+
+                interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, mask,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.young_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
+
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.young_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.young_interpolation_smoothing_factor)
 
             # Set flag
             self.young_maps[name].metadata[interpolate_negatives_step] = True
@@ -4181,7 +4202,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.ionizing_interpolation_smoothing_factor)
+            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
+
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
+
+                interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, mask,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.ionizing_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
+
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
@@ -4265,7 +4297,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
+            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
+
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
+
+                interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, mask,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.dust_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
+
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.dust_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_negatives_step] = True
@@ -4417,27 +4460,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the interpolation ellipse
             if self.config.steps: ellipse.saveto(self.old_extra_path_for_map(name, interpolation_ellipse_filename))
 
-            # Kernel method
-            if self.config.interpolation_method == "kernel":
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
 
-                # Get the map and interpolate in the ellipse region
-                the_map = self.old_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.old_interpolation_smoothing_factor)
+                interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, ellipse,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.old_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
 
-            # Other interpolation methods
-            else:
-
-                # Create a source
-                source = Detection.from_shape(self.old_maps[name], ellipse, self.config.source_outer_factor)
-
-                # Estimate the background
-                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
-
-                # Create alpha mask
-                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
-
-                # Replace the pixels by the background
-                source.background.replace(self.old_maps[name], where=alpha_mask)
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.old_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.old_interpolation_smoothing_factor)
 
             # Set flag
             self.old_maps[name].metadata[interpolate_step] = True
@@ -4493,27 +4525,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the interpolation ellipse
             if self.config.steps: ellipse.saveto(self.young_extra_path_for_map(name, interpolation_ellipse_filename))
 
-            # Kernel method
-            if self.config.interpolation_method == "kernel":
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
 
-                # Get the map and interpolate in the ellipse region
-                the_map = self.young_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
+                interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, ellipse,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.young_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
 
-            # Other methods
-            else:
-
-                # Create a source
-                source = Detection.from_shape(self.young_maps[name], ellipse, self.config.source_outer_factor)
-
-                # Estimate the background
-                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
-
-                # Create alpha mask
-                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
-
-                # Replace the pixels by the background
-                source.background.replace(self.young_maps[name], where=alpha_mask)
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.young_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.young_interpolation_smoothing_factor)
 
             # Set flag
             self.young_maps[name].metadata[interpolate_step] = True
@@ -4569,27 +4590,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the interpolation ellipse
             if self.config.steps: ellipse.saveto(self.ionizing_extra_path_for_map(name, interpolation_ellipse_filename))
 
-            # Kernel method
-            if self.config.interpolation_method == "kernel":
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
 
-                # Get the map and interpolate in the ellipse region
-                the_map = self.ionizing_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
+                interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, ellipse,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.ionizing_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
 
-            # Other maps
-            else:
-
-                # Create a source
-                source = Detection.from_shape(self.ionizing_maps[name], ellipse, self.config.source_outer_factor)
-
-                # Estimate the background
-                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
-
-                # Create alpha mask
-                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
-
-                # Replace the pixels by the background
-                source.background.replace(self.ionizing_maps[name], where=alpha_mask)
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_step] = True
@@ -4645,27 +4655,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the interpolation ellipse
             if self.config.steps: ellipse.saveto(self.dust_extra_path_for_map(name, interpolation_ellipse_filename))
 
-            # Kernel method
-            if self.config.interpolation_method == "kernel":
+            # INTERPOLATE IN CUTOUT
+            if self.config.interpolate_in_cutout:
 
-                # Get the map and interpolate in the ellipse region
-                the_map = self.dust_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
+                interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, ellipse,
+                                          source_outer_factor=self.config.source_outer_factor,
+                                          smoothing_factor=self.config.dust_interpolation_smoothing_factor,
+                                          sigma_clip=self.config.sigma_clip)
 
-            # Other methods
-            else:
-
-                # Create a source
-                source = Detection.from_shape(self.dust_maps[name], ellipse, self.config.source_outer_factor)
-
-                # Estimate the background
-                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
-
-                # Create alpha mask
-                alpha_mask = AlphaMask.from_ellipse(ellipse - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=self.old_maps[name])
-
-                # Replace the pixels by the background
-                source.background.replace(self.dust_maps[name], where=alpha_mask)
+            # INTERPOLATE IN FRAME
+            else: interpolate_map(self.dust_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_step] = True
@@ -7554,5 +7553,59 @@ def find_factor_max_nnegatives(nnegatives, max_nnegatives):
 
     # Error
     raise ValueError("None of the maps have a relative number of negatives lower than the limit of " + str(max_nnegatives*100) + "%")
+
+# -----------------------------------------------------------------
+
+def interpolate_map(the_map, method, region_or_mask, smoothing_factor=None):
+
+    """
+    Thisf unction ...
+    :param the_map:
+    :param method:
+    :param region_or_mask:
+    :param smoothing_factor:
+    :return:
+    """
+
+    # Check interpolation method
+    if method != "kernel": raise ValueError
+
+    # Get the map and interpolate in the ellipse region
+    the_map.interpolate(region_or_mask, max_iterations=None, smoothing_factor=smoothing_factor)
+
+# -----------------------------------------------------------------
+
+def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=1.4, smoothing_factor=None, sigma_clip=True):
+
+    """
+    This function ...
+    :param the_map:
+    :param method:
+    :param region_or_mask:
+    :param source_outer_factor:
+    :param smoothing_factor:
+    :param sigma_clip:
+    :return:
+    """
+
+    # Create source
+    if isinstance(region_or_mask, MaskBase): source = Detection.from_mask(the_map, mask, source_outer_factor)
+    elif isinstance(region_or_mask, PixelRegion): source = Detection.from_shape(the_map, region_or_mask, source_outer_factor)
+    else: raise ValueError("Invalid value for 'region_or_mask'")
+
+    # Determine the FWHM for interpolation
+    fwhm = the_map.fwhm_pix
+    if smoothing_factor is not None:
+        if method != "kernel": raise ValueError("Cannot specify smoothing factor for interpolation method other than 'kernel'")
+        fwhm = fwhm * smoothing_factor
+
+    # Estimate the background, specifying the FWHM for 'kernel' method
+    source.estimate_background(method, sigma_clip=sigma_clip, fwhm=fwhm)
+
+    # Create alpha mask
+    alpha_mask = AlphaMask.from_ellipse(region - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=the_map.wcs)
+
+    # Replace the pixels by the background
+    source.background.replace(the_map, where=alpha_mask)
 
 # -----------------------------------------------------------------
