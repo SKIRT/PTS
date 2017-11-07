@@ -17,6 +17,8 @@ from ....magic.core.list import NamedFrameList
 from ....core.tools.stringify import tostr
 from ....core.basics.log import log
 from ....core.units.unit import PhotometricUnit
+from ...core.image import Image
+from ...core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -55,20 +57,24 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     fuv.convert_to("W/m2", density=True, density_strict=True, brightness=False, brightness_strict=True, distance=distance) # here it is a neutral density!
 
     # UNIT CONVERSION OF TIR MAP
-    tir = tir.copy()
-    tir_map_data = tir.data.astype('float64') # Necessary for extreme conversion factors
+    if isinstance(tir, Image): tir_frame = tir.primary
+    elif isinstance(tir, Frame): tir_frame = tir.copy()
+    else: raise ValueError("Something went wrong")
+
+    tir_map_data = tir_frame.data.astype('float64') # Necessary for extreme conversion factors
     #factor = tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
-    factor = tir.unit.conversion_factor("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True, distance=distance, pixelscale=tir.pixelscale) # HERE IT IS BOLOMETRIC, AND NO FLUX!!!!
+    factor = tir_frame.unit.conversion_factor("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True, distance=distance, pixelscale=tir.pixelscale) # HERE IT IS BOLOMETRIC, AND NO FLUX!!!!
     log.debug("Conversion factor for the TIR map from " + tostr(tir.unit, add_physical_type=True) + " to W/m2 is " + str(factor))
-    tir._data = tir_map_data * factor
-    tir.unit = PhotometricUnit("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True)
+
+    tir_frame._data = tir_map_data * factor
+    tir_frame.unit = PhotometricUnit("W/m2", density=False, density_strict=True, brightness=False, brightness_strict=True)
 
     #frames.convert_to_same_unit("W/m2", density=True)
 
     ## TIR IN W/M2
 
     # Convert to same pixelscale and convolve to same resolution
-    frames = NamedFrameList(fuv=fuv, tir=tir)
+    frames = NamedFrameList(fuv=fuv, tir=tir_frame)
     frames.convolve_and_rebin()
     
     # CALCULATE TIR TO FUV RATIO
