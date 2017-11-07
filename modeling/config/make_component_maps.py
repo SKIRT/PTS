@@ -269,6 +269,12 @@ definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of a
 definition.add_optional("interpolation_softening_start", "real", "relative radius for softening to start (relative to interpolation ellipse)", 0.65)
 definition.add_optional("interpolation_softening_end", "real", "relative radius for softening to end (relative to interpolation ellipse", 1.2)
 
+# INTERPOLATION SMOOTHING
+definition.add_optional("old_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of old stellar maps", 2.)
+definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of young stellar maps", 2.)
+definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", 2.)
+definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", 2.)
+
 # -----------------------------------------------------------------
 
 # Clear results

@@ -3193,7 +3193,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
+    def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep",
+                    min_max_in=None, smoothing_factor=None):
 
         """
         Thisfunction ...
@@ -3203,6 +3204,7 @@ class Frame(NDDataArray):
         :param plot:
         :param not_converge:
         :param min_max_in:
+        :param smoothing_factor:
         :return:
         """
 
@@ -3218,7 +3220,8 @@ class Frame(NDDataArray):
         self[mask] = nan_value
 
         # Interpolate the nans
-        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
+        try: self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, plot=plot, not_converge=not_converge,
+                                   min_max_in=min_max_in, smoothing_factor=smoothing_factor)
         except RuntimeError as e:
 
             # Reset the original values (e.g. infs)
@@ -3252,7 +3255,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans_if_below(self, threshold=0.7, sigma=None, max_iterations=None, min_max_in=None):
+    def interpolate_nans_if_below(self, threshold=0.7, sigma=None, max_iterations=None, min_max_in=None, smoothing_factor=None):
 
         """
         This function ...
@@ -3260,6 +3263,7 @@ class Frame(NDDataArray):
         :param sigma:
         :param max_iterations:
         :param min_max_in:
+        :param smoothing_factor:
         :return:
         """
 
@@ -3273,7 +3277,7 @@ class Frame(NDDataArray):
             log.debug("The relative number of NaN values in the frame is " + str(relnans * 100) + "%")
 
             # Interpolate, returning the nans
-            nans = self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, min_max_in=min_max_in)
+            nans = self.interpolate_nans(sigma=sigma, max_iterations=max_iterations, min_max_in=min_max_in, smoothing_factor=smoothing_factor)
 
         # ABOVE THRESHOLD
         else:
@@ -3326,7 +3330,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None):
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                         smoothing_factor=None):
 
         """
         This function ...
@@ -3336,6 +3341,7 @@ class Frame(NDDataArray):
         :param not_converge: what to do with NaN values when the number of NaN pixels does not converge to zero?
         #                     -> "error', or "keep"
         :param min_max_in:
+        :param smoothing_factor:
         :return:
         """
 
@@ -3350,6 +3356,16 @@ class Frame(NDDataArray):
 
             # Get the sigma in pixels
             sigma = self.sigma_pix
+
+            # Smoothing factor
+            if smoothing_factor is not None:
+                if smoothing_factor < 1: raise ValueError("Smoothing factor cannot be smaller than one")
+                log.debug("Original sigma of the frame resolution is " + tostr(sigma) + " pixels")
+                log.debug("Interpolated regions will be smoother by a factor of " + str(smoothing_factor))
+                sigma = sigma * smoothing_factor
+
+        # Smoothing factor is passed but also sigma
+        elif smoothing_factor is not None: raise ValueError("Smoothing factor cannot be passed when sigma is passed: multiply the specified sigma with the desired smoothing factor")
 
         # Debugging
         log.debug("Creating a kernel with a sigma of " + tostr(sigma) + " pixels ...")

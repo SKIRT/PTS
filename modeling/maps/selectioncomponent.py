@@ -1796,8 +1796,9 @@ class MapsSelectionComponent(MapsComponent):
 
             # Plot the map
             vmin, vmax = plotting.plot_frame(self.old_maps[name], path=path, format=format, interval=minmax,
-                                               scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
-                                               show_axes=show_axes, transparent=transparent)
+                                             scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent,
+                                             truncate_outside=self.truncation_ellipse)
 
     # -----------------------------------------------------------------
 
@@ -1867,7 +1868,8 @@ class MapsSelectionComponent(MapsComponent):
             # Plot the map
             vmin, vmax = plotting.plot_frame(self.young_maps[name], path=path, format=format, interval=minmax,
                                              scale=self.young_scale, cmap=self.young_cmap, colorbar=colorbar,
-                                             show_axes=show_axes, transparent=transparent)
+                                             show_axes=show_axes, transparent=transparent,
+                                             truncate_outside=self.truncation_ellipse)
 
     # -----------------------------------------------------------------
 
@@ -1937,7 +1939,8 @@ class MapsSelectionComponent(MapsComponent):
             # Plot the map
             vmin, vmax = plotting.plot_frame(self.ionizing_maps[name], path=path, format=format, interval=minmax,
                                              scale=self.ionizing_scale, cmap=self.ionizing_cmap, colorbar=colorbar,
-                                             show_axes=show_axes, transparent=transparent)
+                                             show_axes=show_axes, transparent=transparent,
+                                             truncate_outside=self.truncation_ellipse)
 
     # -----------------------------------------------------------------
 
@@ -2007,7 +2010,8 @@ class MapsSelectionComponent(MapsComponent):
             # Plot the map
             vmin, vmax = plotting.plot_frame(self.dust_maps[name], path=path, format=format, interval=minmax,
                                              scale=self.dust_scale, cmap=self.dust_cmap, colorbar=colorbar,
-                                             show_axes=show_axes, transparent=transparent)
+                                             show_axes=show_axes, transparent=transparent,
+                                             truncate_outside=self.truncation_ellipse)
 
     # -----------------------------------------------------------------
 

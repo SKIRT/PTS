@@ -4013,7 +4013,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None)
+            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.old_interpolation_smoothing_factor)
 
             # Set flag
             self.old_maps[name].metadata[interpolate_negatives_step] = True
@@ -4097,7 +4097,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None)
+            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
 
             # Set flag
             self.young_maps[name].metadata[interpolate_negatives_step] = True
@@ -4181,7 +4181,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None)
+            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.ionizing_interpolation_smoothing_factor)
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
@@ -4265,7 +4265,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
 
             # Interpolate the map
-            the_map.interpolate(mask, max_iterations=None)
+            the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_negatives_step] = True
@@ -4422,7 +4422,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Get the map and interpolate in the ellipse region
                 the_map = self.old_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None)
+                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.old_interpolation_smoothing_factor)
 
             # Other interpolation methods
             else:
@@ -4498,7 +4498,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Get the map and interpolate in the ellipse region
                 the_map = self.young_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None)
+                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
 
             # Other methods
             else:
@@ -4574,7 +4574,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Get the map and interpolate in the ellipse region
                 the_map = self.ionizing_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None)
+                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
 
             # Other maps
             else:
@@ -4650,7 +4650,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
                 # Get the map and interpolate in the ellipse region
                 the_map = self.dust_maps[name]
-                the_map.interpolate(ellipse, max_iterations=None)
+                the_map.interpolate(ellipse, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
 
             # Other methods
             else:
