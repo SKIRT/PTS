@@ -17,7 +17,7 @@ default_format = "pdf"
 
 types = ["old", "young", "ionizing", "dust"]
 #features = ["maps", "contours", "profiles", "negatives"]
-features = ["maps", "masks", "deprojected", "edgeon"]
+features = ["maps", "masks", "deprojected", "deprojected_skirt", "edgeon"]
 
 # -----------------------------------------------------------------
 

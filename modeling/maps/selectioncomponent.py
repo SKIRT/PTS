@@ -40,6 +40,7 @@ plots_name = "plots"
 map_plot_filename = "map"
 edgeon_plot_filename = "edgeon"
 deprojected_plot_filename = "deprojected"
+deprojected_skirt_plot_filename = "deprojected_skirt"
 
 # -----------------------------------------------------------------
 
@@ -87,6 +88,24 @@ class MapsSelectionComponent(MapsComponent):
         self.young_plots_path = None
         self.ionizing_plots_path = None
         self.dust_plots_path = None
+
+        # The deprojected maps
+        self.old_deprojected = dict()
+        self.young_deprojected = dict()
+        self.ionizing_deprojected = dict()
+        self.dust_deprojected = dict()
+
+        # The deprojected maps with SKIRT
+        self.old_deprojected_skirt = dict()
+        self.young_deprojected_skirt = dict()
+        self.ionizing_deprojected_skirt = dict()
+        self.dust_deprojected_skirt = dict()
+
+        # Edgeon maps with SKIRT
+        self.old_edgeon_skirt = dict()
+        self.young_edgeon_skirt = dict()
+        self.ionizing_edgeon_skirt = dict()
+        self.dust_edgeon_skirt = dict()
 
     # -----------------------------------------------------------------
 
@@ -2069,7 +2088,20 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_old_deprojected(self):
+    def old_deprojected_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.old_plotting_path_for_map(name), deprojected_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_deprojected(self, show_axes=False, transparent=True, colorbar=True):
 
         """
         This function ...
@@ -2079,9 +2111,36 @@ class MapsSelectionComponent(MapsComponent):
         # Inform the user
         log.info("Plotting deprojected old stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.old_deprojected:
+
+            # Determine path
+            path = self.old_deprojected_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.old_deprojected[name], path=path, format=format, interval=minmax,
+                                             scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_young_deprojected(self):
+    def young_deprojected_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.young_plotting_path_for_map(name), deprojected_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_young_deprojected(self, show_axes=False, transparent=True, colorbar=True):
 
         """
         This function ...
@@ -2091,9 +2150,36 @@ class MapsSelectionComponent(MapsComponent):
         # Inform the user
         log.info("Plotting deprojected young stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.young_deprojected:
+
+            # Determine path
+            path = self.young_deprojected_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.young_deprojected[name], path=path, format=format, interval=minmax,
+                                             scale=self.young_scale, cmap=self.young_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_ionizing_deprojected(self):
+    def ionizing_deprojected_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.ionizing_plotting_path_for_map(name), deprojected_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_deprojected(self, show_axes=False, transparent=True, colorbar=True):
 
         """
         This function ...
@@ -2103,9 +2189,36 @@ class MapsSelectionComponent(MapsComponent):
         # Inform the user
         log.info("Plotting deprojected ionizing stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.ionizing_deprojected:
+
+            # Determine path
+            path = self.ionizing_deprojected_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.ionizing_deprojected[name], path=path, format=format, interval=minmax,
+                                             scale=self.ionizing_scale, cmap=self.ionizing_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_dust_deprojected(self):
+    def dust_deprojected_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.dust_plotting_path_for_map(name), deprojected_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_deprojected(self, show_axes=False, transparent=True, colorbar=True):
 
         """
         This function ...
@@ -2114,6 +2227,212 @@ class MapsSelectionComponent(MapsComponent):
 
         # Inform the user
         log.info("Plotting deprojected dust component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.dust_deprojected:
+
+            # Determine path
+            path = self.dust_deprojected_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.dust_deprojected[name], path=path, format=format, interval=minmax,
+                                             scale=self.dust_scale, cmap=self.dust_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    def plot_components_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected with SKIRT component maps ...")
+
+        # Old
+        self.plot_old_deprojected_skirt()
+
+        # Young
+        self.plot_young_deprojected_skirt()
+
+        # Ionizing
+        self.plot_ionizing_deprojected_skirt()
+
+        # Dust
+        self.plot_dust_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def old_deprojected_skirt_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.old_plotting_path_for_map(name), deprojected_skirt_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_deprojected_skirt(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        Thisf unction ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected with SKIRT old stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.old_deprojected_skirt:
+
+            # Determine path
+            path = self.old_deprojected_skirt_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.old_deprojected_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    def young_deprojected_skirt_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.young_plotting_path_for_map(name), deprojected_skirt_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_young_deprojected_skirt(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        Thisf unction ...
+        :param show_axes:
+        :param transparent
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected with SKIRT young stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.young_deprojected_skirt:
+
+            # Determine path
+            path = self.young_deprojected_skirt_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.young_deprojected_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.young_scale, cmap=self.young_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    def ionizing_deprojected_skirt_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.ionizing_plotting_path_for_map(name), deprojected_skirt_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_deprojected_skirt(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected with SKIRT ionizing stellar component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.ionizing_deprojected_skirt:
+
+            # Determine path
+            path = self.ionizing_deprojected_skirt_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.ionizing_deprojected_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.ionizing_scale, cmap=self.ionizing_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
+    # -----------------------------------------------------------------
+
+    def dust_deprojected_skirt_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.dust_plotting_path_for_map(name), deprojected_skirt_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_deprojected_skirt(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        Thisf ucntion ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the deprojected with SKIRT dust component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.dust_deprojected_skirt:
+
+            # Determine path
+            path = self.dust_deprojected_skirt_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.dust_deprojected_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.dust_scale, cmap=self.dust_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
 
     # -----------------------------------------------------------------
 
@@ -2141,51 +2460,171 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_old_edgeon(self):
+    def old_edgeon_plot_for_map(self, name, format="pdf"):
 
         """
         This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.old_plotting_path_for_map(name), edgeon_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_edgeon(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
         :return:
         """
 
         # Inform the user
         log.info("Plotting edge-on old stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.old_edgeon_skirt:
+
+            # Determine path
+            path = self.old_edgeon_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.old_edgeon_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.old_scale, cmap=self.old_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_young_edgeon(self):
+    def young_edgeon_plot_for_map(self, name, format="pdf"):
 
         """
         This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.young_plotting_path_for_map(name), edgeon_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_young_edgeon(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
         :return:
         """
 
         # Inform the user
         log.info("Plotting edge-on young stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.young_edgeon_skirt:
+
+            # Determine path
+            path = self.young_edgeon_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.young_edgeon_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.young_scale, cmap=self.young_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_ionizing_edgeon(self):
+    def ionizing_edgeon_plot_for_map(self, name, format="pdf"):
 
         """
         This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.ionizing_plotting_path_for_map(name), edgeon_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_edgeon(self, show_axes=False, transparent=True, colorbar=True):
+
+        """
+        This function ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
         :return:
         """
 
         # Inform the user
         log.info("Plotting edge-on ionizing stellar component maps ...")
 
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.ionizing_edgeon_skirt:
+
+            # Determine path
+            path = self.ionizing_edgeon_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.ionizing_edgeon_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.ionizing_scale, cmap=self.ionizing_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
+
     # -----------------------------------------------------------------
 
-    def plot_dust_edgeon(self):
+    def dust_edgeon_plot_for_map(self, name, format="pdf"):
+
+        """
+        This function ...
+        :param name:
+        :param format:
+        :return:
+        """
+
+        return fs.join(self.dust_plotting_path_for_map(name), edgeon_plot_filename + "." + format)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_edgeon(self, show_axes=False, transparent=True, colorbar=True):
 
         """
         Thisf unction ...
+        :param show_axes:
+        :param transparent:
+        :param colorbar:
         :return:
         """
 
         # Inform the user
         log.info("Plotting edge-on dust component maps ...")
+
+        # Interval
+        minmax = "pts"
+
+        # Loop over the maps
+        for name in self.dust_edgeon_skirt:
+
+            # Determine path
+            path = self.dust_edgeon_plot_for_map(name)
+
+            # Plot the map
+            vmin, vmax = plotting.plot_frame(self.dust_edgeon_skirt[name], path=path, format=format, interval=minmax,
+                                             scale=self.dust_scale, cmap=self.dust_cmap, colorbar=colorbar,
+                                             show_axes=show_axes, transparent=transparent)
 
 # -----------------------------------------------------------------
 

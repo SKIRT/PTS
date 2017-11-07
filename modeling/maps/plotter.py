@@ -818,6 +818,18 @@ class ComponentMapsPlotter(MapsSelectionComponent):
     # -----------------------------------------------------------------
 
     @property
+    def deprojected_skirt_plotting(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "deprojected_skirt" in self.config.features
+
+    # -----------------------------------------------------------------
+
+    @property
     def edgeon_plotting(self):
 
         """
@@ -847,6 +859,9 @@ class ComponentMapsPlotter(MapsSelectionComponent):
 
         # Deprojected
         if self.deprojected_plotting: self.plot_components_deprojected()
+
+        # Deprojected with SKIRT
+        if self.deprojected_skirt_plotting: self.plot_components_deprojected_skirt()
 
         # Edgeon
         if self.edgeon_plotting: self.plot_components_edgeon()

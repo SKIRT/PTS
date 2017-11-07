@@ -206,29 +206,29 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.ionizing_softening_masks = dict()
         self.dust_softening_masks = dict()
 
-        # The deprojected maps
-        self.old_deprojected = dict()
-        self.young_deprojected = dict()
-        self.ionizing_deprojected = dict()
-        self.dust_deprojected = dict()
-
         # The deprojections
         self.old_deprojections = None
         self.young_deprojections = None
         self.ionizing_deprojections = None
         self.dust_deprojections = None
 
-        # The deprojected maps with SKIRT
-        self.old_deprojected_skirt = dict()
-        self.young_deprojected_skirt = dict()
-        self.ionizing_deprojected_skirt = dict()
-        self.dust_deprojected_skirt = dict()
-
-        # Edgeon maps with SKIRT
-        self.old_edgeon_skirt = dict()
-        self.young_edgeon_skirt = dict()
-        self.ionizing_edgeon_skirt = dict()
-        self.dust_edgeon_skirt = dict()
+        # # The deprojected maps
+        # self.old_deprojected = dict()
+        # self.young_deprojected = dict()
+        # self.ionizing_deprojected = dict()
+        # self.dust_deprojected = dict()
+        #
+        # # The deprojected maps with SKIRT
+        # self.old_deprojected_skirt = dict()
+        # self.young_deprojected_skirt = dict()
+        # self.ionizing_deprojected_skirt = dict()
+        # self.dust_deprojected_skirt = dict()
+        #
+        # # Edgeon maps with SKIRT
+        # self.old_edgeon_skirt = dict()
+        # self.young_edgeon_skirt = dict()
+        # self.ionizing_edgeon_skirt = dict()
+        # self.dust_edgeon_skirt = dict()
 
     # -----------------------------------------------------------------
 
@@ -289,7 +289,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.write()
 
         # 16. Plot
-        self.plot()
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -351,6 +351,15 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.young_edgeon_path = fs.create_directory_in(self.young_component_maps_path, edgeon_name)
         self.ionizing_edgeon_path = fs.create_directory_in(self.ionizing_component_maps_path, edgeon_name)
         self.dust_edgeon_path = fs.create_directory_in(self.dust_component_maps_path, edgeon_name)
+
+        # Clear results?
+        if self.config.clear_results: self.config.clear_results_old = self.config.clear_results_young = self.config.clear_results_ionizing = self.config.clear_results_dust = True
+
+        # Clear results?
+        if self.config.clear_results_old: self.clear_results_old()
+        if self.config.clear_results_young: self.clear_results_young()
+        if self.config.clear_results_ionizing: self.clear_results_ionizing()
+        if self.config.clear_results_dust: self.clear_results_dust()
 
         # Set random
         if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
@@ -415,6 +424,114 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.config.reproject_young = True
             self.config.reproject_ionizing = True
             self.config.reproject_dust = True
+
+    # -----------------------------------------------------------------
+
+    def clear_results_old(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing results from old stellar component maps ...")
+
+        # Remove all FITS files in the directory
+        fs.remove_files_in_path(self.old_component_maps_path, extension="fits")
+
+        # Clear masks
+        fs.clear_directory(self.old_masks_path)
+
+        # Clear deprojected
+        fs.clear_directory(self.old_deprojection_path)
+
+        # Clear deprojected with SKIRT
+        fs.clear_directory(self.old_deprojection_skirt_path)
+
+        # Clear edgeon
+        fs.clear_directory(self.old_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_results_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing results from young stellar component maps ...")
+
+        # Remove all FITS files in the directory
+        fs.remove_files_in_path(self.young_component_maps_path, extension="fits")
+
+        # Clear masks
+        fs.clear_directory(self.young_masks_path)
+
+        # Clear deprojected
+        fs.clear_directory(self.young_deprojection_path)
+
+        # Clear deprojected with SKIRT
+        fs.clear_directory(self.young_deprojection_skirt_path)
+
+        # Clear edgeon
+        fs.clear_directory(self.young_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_results_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing results from ionizing stellar component maps ...")
+
+        # Remove all FITS files in the directory
+        fs.remove_files_in_path(self.ionizing_component_maps_path, extension="fits")
+
+        # Clear masks
+        fs.clear_directory(self.ionizing_masks_path)
+
+        # Clear deprojected
+        fs.clear_directory(self.ionizing_deprojection_path)
+
+        # Clear deprojected with SKIRT
+        fs.clear_directory(self.young_deprojection_skirt_path)
+
+        # Clear edgeon
+        fs.clear_directory(self.ionizing_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_results_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing results from dust component maps ...")
+
+        # Remove all FITS files in the directory
+        fs.remove_files_in_path(self.dust_component_maps_path, extension="fits")
+
+        # Clear masks
+        fs.clear_directory(self.dust_masks_path)
+
+        # Clear deprojected
+        fs.clear_directory(self.dust_deprojection_path)
+
+        # Clear deprojected with SKIRT
+        fs.clear_directory(self.dust_deprojection_skirt_path)
+
+        # Clear edgeon
+        fs.clear_directory(self.dust_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -7394,6 +7511,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Deprojected
         self.plot_components_deprojected()
+
+        # Deprojected with SKIRT
+        self.plot_components_deprojected_skirt()
 
         # Edgeon
         self.plot_components_edgeon()

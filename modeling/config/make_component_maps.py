@@ -271,12 +271,19 @@ definition.add_optional("interpolation_softening_end", "real", "relative radius 
 
 # -----------------------------------------------------------------
 
-# CLEAR ALL
-definition.add_flag("clear_all", "clear all previous results")
-definition.add_flag("clear_old", "clear all previous results of old stellar maps")
-definition.add_flag("clear_young", "clear all previous results of young stellar maps")
-definition.add_flag("clear_ionizing", "clear all previous results of ionizing maps")
-definition.add_flag("clear_dust", "clear all previous results of dust maps")
+# Clear results
+definition.add_flag("clear_results", "clear previous results")
+definition.add_flag("clear_results_old", "clear previous results of old stellar maps")
+definition.add_flag("clear_results_young", "clear previous results of young stellar maps")
+definition.add_flag("clear_results_ionizing", "clear previous results of ionizing stellar maps")
+definition.add_flag("clear_results_dust", "clear previous results of dust maps")
+
+# CLEAR
+definition.add_flag("clear_all", "clear all previous results and steps")
+definition.add_flag("clear_old", "clear all previous results and steps of old stellar maps")
+definition.add_flag("clear_young", "clear all previous results and steps of young stellar maps")
+definition.add_flag("clear_ionizing", "clear all previous results and steps of ionizing maps")
+definition.add_flag("clear_dust", "clear all previous results and steps of dust maps")
 
 # -----------------------------------------------------------------
 
@@ -285,5 +292,10 @@ definition.add_optional("downsample_factor", "positive_real", "downsample factor
 
 # FOR PROJECTION
 definition.add_optional("scale_heights", "positive_real", "scale heights", 10.)
+
+# -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "make plots", True)
 
 # -----------------------------------------------------------------
