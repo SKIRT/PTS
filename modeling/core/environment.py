@@ -1637,8 +1637,55 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        raise NotImplementedError("Not implemented yet")
-        # return self.truncation_area
+        return self.truncation_ellipse.to_physical(distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    def physical_truncation_ellipse_for_frame(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return self.physical_truncation_ellipse_for_wcs(frame.wcs)
+
+    # -----------------------------------------------------------------
+
+    def physical_truncation_ellipse_for_wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return self.truncation_ellipse.to_physical(distance=self.galaxy_distance, wcs=wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse.semimajor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def physical_truncation_radius(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return (self.truncation_radius * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
 
     # -----------------------------------------------------------------
 

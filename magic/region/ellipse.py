@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import warnings
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -25,7 +26,6 @@ from astropy.coordinates import frame_transform_graph
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
-#from ..basics.mask import Mask
 from ...core.units.parsing import parse_unit as u
 from ..core.mask import Mask
 from .region import add_info, make_ellipse_template, coordsys_name_mapping
@@ -573,6 +573,19 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
     # -----------------------------------------------------------------
 
+    def to_physical(self, distance, wcs=None):
+
+        """
+        This function ...
+        :param distance:
+        :param wcs:
+        :return:
+        """
+
+        return PhysicalEllipseRegion.from_sky(self, distance, wcs=wcs)
+
+    # -----------------------------------------------------------------
+
     @property
     def unrotated_radius(self):
 
@@ -662,5 +675,32 @@ class PhysicalEllipseRegion(EllipseRegion, PhysicalRegion):
 
         # Call the constructor of the base class
         super(PhysicalEllipseRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sky(cls, region, distance, wcs=None):
+
+        """
+        This function ...
+        :param region:
+        :param distance:
+        :param wcs:
+        :return:
+        """
+
+        # Convert radius
+        radius = region.radius.to_physical(distance)
+
+        # Convert center??
+        if wcs is not None: center = region.center.to_physical()
+
+        # No coordinate system
+        else:
+            warnings.warn("Center coordinate is lost during conversion from sky ellipse region to physical ellipse region when coordinate system is not passed")
+            center = PhysicalCoordinate.zero()
+
+        # Call the constructor
+        return cls(center, radius, angle=region.angle)
 
 # -----------------------------------------------------------------

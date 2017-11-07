@@ -3522,6 +3522,10 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    # MAPS
+
+    # -----------------------------------------------------------------
+
     def get_component_old_map_paths(self):
 
         """
@@ -3530,6 +3534,17 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.static_selection.get_old_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_maps()
 
     # -----------------------------------------------------------------
 
@@ -3544,6 +3559,17 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def get_component_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_maps()
+
+    # -----------------------------------------------------------------
+
     def get_component_ionizing_map_paths(self):
 
         """
@@ -3555,6 +3581,17 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    def get_component_ionizing_maps(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_maps()
+
+    # -----------------------------------------------------------------
+
     def get_component_dust_map_paths(self):
 
         """
@@ -3563,6 +3600,255 @@ class MapsComponent(MapMakerBase):
         """
 
         return self.static_selection.get_dust_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    # DEPROJECTED
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_deprojected_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_deprojected(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.static_selection.get_old_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_deprojected_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_young_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_deprojected_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_deprojected(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_selection.get_ionizing_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_deprojected_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_deprojected_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_deprojected(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.static_selection.get_dust_deprojected()
+
+    # -----------------------------------------------------------------
+
+    # DEPROJECTED WITH SKIRT
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_deprojected_skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.get_old_deprojected_skirt_paths()
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_deprojected_skirt(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.static_selection.get_old_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_deprojected_skirt_paths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_deprojected_skirt(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_deprojected_skirt_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_deprojected_skirt(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_deprojected_skirt_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_deprojected_skirt(self):
+
+    # -----------------------------------------------------------------
+
+    # EDGE-ON
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_edgeon_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_old_edgeon(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_edgeon_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_young_edgeon(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_edgeon_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_ionizing_edgeon(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_edgeon_paths(self):
+
+    # -----------------------------------------------------------------
+
+    def get_component_dust_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_component_map_names(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.static_selection.old_map_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_component_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.young_map_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_component_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.ionizing_map_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.static_selection.dust_map_names
 
     # -----------------------------------------------------------------
 

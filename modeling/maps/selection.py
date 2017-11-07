@@ -16,8 +16,9 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools import filesystem as fs
 from ..core.environment import GalaxyModelingEnvironment
 from ..core.history import ModelingHistory
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 from ...core.tools.utils import create_lazified_class
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -386,6 +387,74 @@ class ComponentMapsSelection(object):
         """
 
         return fs.files_in_path(self.dust_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maps = dict()
+        paths = self.get_old_map_paths()
+        for name in paths:
+            path = paths[name]
+            the_map = Frame.from_file(path)
+            maps[name] = the_map
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maps = dict()
+        paths = self.get_young_map_paths()
+        for name in paths:
+            path = paths[name]
+            the_map = Frame.from_file(path)
+            maps[name] = the_map
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maps = dict()
+        paths = self.get_ionizing_map_paths()
+        for name in paths:
+            path = paths[name]
+            the_map = Frame.from_file(path)
+            maps[name] = the_map
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maps = dict()
+        paths = self.get_dust_map_paths()
+        for name in paths:
+            path = paths[name]
+            the_map = Frame.from_file(path)
+            maps[name] = the_map
+        return maps
 
     # -----------------------------------------------------------------
 

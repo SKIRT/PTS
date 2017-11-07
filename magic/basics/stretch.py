@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 
+# Import astronomical modules
+from astropy.units import dimensionless_angles
+
 # Import the relevant PTS classes and modules
 from .vector import Extent, RealExtent, AngleExtent, QuantityExtent
 from ...core.tools import types
@@ -61,7 +64,6 @@ class SkyExtent(AngleExtent):
         :return:
         """
 
-        # TODO: check
         self.x = value
 
     # -----------------------------------------------------------------
@@ -87,7 +89,6 @@ class SkyExtent(AngleExtent):
         :return:
         """
 
-        # TODO: check
         self.y = value
 
 # -----------------------------------------------------------------
@@ -127,6 +128,23 @@ class PhysicalExtent(QuantityExtent):
 
     # -----------------------------------------------------------------
 
+    @length1.setter
+    def length1(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check
+        if not types.is_length_quantity(value): raise ValueError("Argument must be length quantity")
+
+        # Set
+        self.x = value
+
+    # -----------------------------------------------------------------
+
     @property
     def length2(self):
 
@@ -136,6 +154,23 @@ class PhysicalExtent(QuantityExtent):
         """
 
         return self.y
+
+    # -----------------------------------------------------------------
+
+    @length2.setter
+    def length2(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check
+        if not types.is_length_quantity(value): raise ValueError("Argument must be length quantity")
+
+        # Set
+        self.x  =value
 
 # -----------------------------------------------------------------
 
@@ -394,7 +429,6 @@ class SkyStretch(SkyExtent, Stretch):
         :return:
         """
 
-        # TODO: check
         self.ra = value
 
     # -----------------------------------------------------------------
@@ -419,7 +453,6 @@ class SkyStretch(SkyExtent, Stretch):
         :return:
         """
 
-        # TODO: check
         self.dec = value
 
     # -----------------------------------------------------------------
@@ -448,9 +481,42 @@ class SkyStretch(SkyExtent, Stretch):
         :return:
         """
 
+        # Convert
         x_angular = wcs.pixelscale.x.to("deg") * stretch.x
         y_angular = wcs.pixelscale.y.to("deg") * stretch.y
 
+        # Create and return
+        return cls(x_angular, y_angular)
+
+    # -----------------------------------------------------------------
+
+    def to_physical(self, distance):
+
+        """
+        Thisn function ...
+        :param distance:
+        :return:
+        """
+
+        return PhysicalStretch.from_sky(self, distance)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_physical(cls, stretch, distance):
+
+        """
+        Thisn function ...
+        :param stretch:
+        :param distance:
+        :return:
+        """
+
+        # Convert
+        x_angular = (stretch.x / distance).to("deg", equivalencies=dimensionless_angles())
+        y_angular = (stretch.y / distance).to("deg", equivalencies=dimensionless_angles())
+
+        # Create and return
         return cls(x_angular, y_angular)
 
 # -----------------------------------------------------------------
@@ -497,7 +563,6 @@ class PhysicalStretch(PhysicalExtent, Stretch):
         :return:
         """
 
-        # TODO: check
         self.length1 = value
 
     # -----------------------------------------------------------------
@@ -523,7 +588,37 @@ class PhysicalStretch(PhysicalExtent, Stretch):
         :return:
         """
 
-        # TODO: check
         self.length2 = value
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sky(cls, stretch, distance):
+
+        """
+        This function ...
+        :param stretch:
+        :param distance:
+        :return:
+        """
+
+        # Convert
+        length1 = (stretch.x * distance).to("kpc", equivalencies=dimensionless_angles())
+        length2 = (stretch.y * distance).to("kpc", equivalencies=dimensionless_angles())
+
+        # Create
+        return cls(length1, length2)
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, distance):
+
+        """
+        This function ...
+        :param distance:
+        :return:
+        """
+
+        return SkyStretch.from_physical(self, distance)
 
 # -----------------------------------------------------------------

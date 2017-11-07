@@ -773,11 +773,375 @@ class ComponentMapsPlotter(MapsSelectionComponent):
         :return:
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Plot
+        # 2. Load
+        self.load()
+
+        # 3. Plot
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        Thisf unction ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ComponentMapsPlotter, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_old(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return "old" in self.config.types
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_young(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "young" in self.config.types
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "ionizing" in self.config.types
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "dust" in self.config.types
+
+    # -----------------------------------------------------------------
+
+    def load(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading input ...")
+
+        # Load the maps
+        if self.maps_plotting: self.load_maps()
+
+        # Load the deprojected maps
+        if self.deprojected_plotting: self.load_deprojected()
+
+        # Deprojected with SKIRT
+        if self.deprojected_skirt_plotting: self.load_deprojected_skirt()
+
+        # Edgeon
+        if self.edgeon_plotting: self.load_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Old
+        if self.plot_old: self.load_old_maps()
+
+        # Young
+        if self.plot_young: self.load_young_maps()
+
+        # Ionizing
+        if self.plot_ionizing: self.load_ionizing_maps()
+
+        # Dust
+        if self.plot_dust: self.load_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def load_old_maps(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Load
+        self.old_maps = self.get_component_old_maps()
+
+    # -----------------------------------------------------------------
+
+    def load_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.young_maps = self.get_component_young_maps()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_maps = self.get_component_ionizing_maps()
+
+    # -----------------------------------------------------------------
+
+    def load_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.dust_maps = self.get_component_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def load_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Old
+        if self.plot_old: self.load_old_deprojected()
+
+        # Young
+        if self.plot_young: self.load_young_deprojected()
+
+        # Ionizing
+        if self.plot_ionizing: self.load_ionizing_deprojected()
+
+        # Dust
+        if self.plot_dust: self.load_dust_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def load_old_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.old_deprojected = self.get_component_old_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def load_young_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.young_deprojected = self.get_component_young_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_deprojected = self.get_component_ionizing_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def load_dust_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.dust_deprojected = self.get_component_dust_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def load_deprojected_skirt(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Old
+        if self.plot_old: self.load_old_deprojected_skirt()
+
+        # Young
+        if self.plot_young: self.load_young_deprojected_skirt()
+
+        # Ionizing
+        if self.plot_ionizing: self.load_ionizing_deprojected_skirt()
+
+        # Dust
+        if self.plot_dust: self.load_dust_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def load_old_deprojected_skirt(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Load
+        self.old_deprojected_skirt = self.get_component_old_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def load_young_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.young_deprojected_skirt = self.get_component_young_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_deprojected_skirt = self.get_component_ionizing_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def load_dust_deprojected_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.dust_deprojected_skirt = self.get_component_dust_deprojected_skirt()
+
+    # -----------------------------------------------------------------
+
+    def load_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Old
+        if self.plot_old: self.load_old_edgeon()
+
+        # Young
+        if self.plot_young: self.load_young_edgeon()
+
+        # Ionizing
+        if self.plot_ionizing: self.load_ionizing_edgeon()
+
+        # Dust
+        if self.plot_dust: self.load_dust_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_old_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.old_edgeon_skirt = self.get_component_old_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_young_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.young_edgeon_skirt = self.get_component_young_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_edgeon_skirt = self.get_component_ionizing_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_dust_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.dust_edgeon_skirt = self.get_component_dust_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -865,5 +1229,17 @@ class ComponentMapsPlotter(MapsSelectionComponent):
 
         # Edgeon
         if self.edgeon_plotting: self.plot_components_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return None
 
 # -----------------------------------------------------------------

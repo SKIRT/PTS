@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.coordinates import SkyCoord
-from astropy.units import dimensionless_angles
+from astropy.units import dimensionless_angles, Unit
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Position3D
@@ -262,6 +262,19 @@ class SkyCoordinate(SkyCoord, Coordinate):
 
     # -----------------------------------------------------------------
 
+    def to_physical(self, wcs, distance):
+
+        """
+        This function ...
+        :param wcs:
+        :param distance:
+        :return:
+        """
+
+        return PhysicalCoordinate.from_sky(self, wcs, distance)
+
+    # -----------------------------------------------------------------
+
     def to_astropy(self):
 
         """
@@ -328,6 +341,22 @@ class PhysicalCoordinate(Position, Coordinate):
     # -----------------------------------------------------------------
 
     @classmethod
+    def zero(cls, unit="pc"):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        # Create zero length
+        zero_length = 0. * Unit(unit)
+
+        # Create and return
+        return cls(zero_length, zero_length)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_pixel(cls, coordinate, wcs, distance, from_center=False):
 
         """
@@ -356,6 +385,27 @@ class PhysicalCoordinate(Position, Coordinate):
 
         # Create and return the coordinate
         return cls(center_x, center_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sky(cls, coordinate, wcs, distance, from_center=False, mode="wcs"):
+
+        """
+        This function ...
+        :param coordinate:
+        :param wcs:
+        :param distance:
+        :param from_center:
+        :param mode:
+        :return:
+        """
+
+        # Convert to pixel coordinate
+        pixel = coordinate.to_pixel(wcs, mode=mode)
+
+        # From pixel coordinate
+        return cls.from_pixel(pixel, wcs, distance, from_center=from_center)
 
     # -----------------------------------------------------------------
 
