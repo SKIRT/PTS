@@ -17,7 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.html.all import AllPagesGenerator
-from pts.core.remote.host import load_host
+from pts.core.remote.host import load_host, Host
 from pts.core.remote.mounter import RemoteMounter
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.core.tools import browser
@@ -28,6 +28,7 @@ from pts.core.tools import browser
 definition = ConfigurationDefinition()
 definition.add_flag("generate", "first (re)generate the HTML", False)
 definition.add_flag("check", "check by opening in the browser", False)
+definition.add_optional("credentials", "username_password", "username and password")
 config = parse_arguments("upload_status", definition)
 
 # -----------------------------------------------------------------
@@ -57,8 +58,25 @@ if config.generate:
 
 # -----------------------------------------------------------------
 
-# Create host
-host = load_host("www")
+# Credentials are given: create temporary host runtime object
+if config.credentials is not None:
+
+    # Create
+    host = Host("www")
+
+    # Set properties
+    host.mount_point = "sjversto/www/users"
+    host.protocol = "smb"
+    host.name = "files.ugent.be"
+
+    # Set username and password
+    host.user = config.credentials.username
+    host.password = config.credentials.password
+
+# Load the host
+else: host = load_host("www")
+
+# -----------------------------------------------------------------
 
 # Mount
 mounter = RemoteMounter()

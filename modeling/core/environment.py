@@ -638,6 +638,9 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         self.observed_sed_path = fs.join(self.phot_path, fluxes_name)
 
+        # Truncation HTML path
+        self.truncation_html_path = fs.create_directory_in(self.truncation_path, html_name)
+
         # DIFFERENT MAPS SUBDIRECTORIES:
 
         # The maps raw directory

@@ -69,16 +69,22 @@ if config.page.startswith("maps/"):
     elif page == "selection": page_path = environment.maps_selection_html_page_path
     else: raise ValueError("Invalid maps page name")
 
+    # Set directory
+    directory = environment.maps_html_path
+
 # Truncation page
-elif config.startswith("truncation/"):
+elif config.page.startswith("truncation/"):
 
     page = config.page.split("truncation/")[1]
     truncation_html_path = fs.create_directory_in(environment.truncation_path, html_name)
 
-    # Detemrine the page path
-    if page == "ellipse": fs.join(truncation_html_path, ellipse_page_filename)
-    elif page == "levels": fs.join(truncation_html_path, significance_page_filename)
+    # Determine the page path
+    if page == "ellipse": page_path = fs.join(truncation_html_path, ellipse_page_filename)
+    elif page == "levels": page_path = fs.join(truncation_html_path, significance_page_filename)
     else: raise ValueError("Invalid truncation page name")
+
+    # Set directory
+    directory = environment.truncation_html_path
 
 # Other
 else:
@@ -102,6 +108,8 @@ else:
     elif config.page == "heating": page_path = fs.join(environment.html_path, heating_page_filename)
     else: raise ValueError("Invalid page name")
 
+    directory = None
+
 # -----------------------------------------------------------------
 
 # Check whether page exists
@@ -115,16 +123,21 @@ if not fs.is_file(page_path): raise ValueError("The page is not present")
 #     # SHOULD BE AN OPEN AND WAIT FOR CLOSING FUNCTION?
 #     browser.open_path(page_path)
 
+if directory is not None: fs.change_cwd(directory)
+
 import subprocess
 from pts.core.tools import introspection
 
 python_path = introspection.python_executable_path()
 
 command = [python_path, "-m", "SimpleHTTPServer"]
-subprocess.Popen(command)
+process = subprocess.Popen(command)
 
 #thread = browser.start_localhost()
 browser.open_path(page_path)
 prompt_finish()
+
+# Kill the server
+process.kill()
 
 # -----------------------------------------------------------------

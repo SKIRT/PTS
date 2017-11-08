@@ -2259,3 +2259,20 @@ def parallelization(argument, default_nthreads_per_core=1):
     return Parallelization(ncores, nthreads_per_core, nprocesses, data_parallel=data_parallel)
 
 # -----------------------------------------------------------------
+
+def username_password(argument):
+
+    """
+    This function ....
+    :param argument:
+    :return:
+    """
+
+    from ..basics.map import Map
+    username, password = string_tuple(argument)
+    credentials = Map()
+    credentials.username = username
+    credentials.password = password
+    return credentials
+
+# -----------------------------------------------------------------

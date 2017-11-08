@@ -23,8 +23,11 @@ from ...core.tools import types
 # -----------------------------------------------------------------
 
 # Find the JS9 directory
-js9_path = fs.join(fs.home(), "JS9", "js9")
-if not fs.is_directory(js9_path): raise IOError("The JS9 installation directory is not found")
+#js9_path = fs.join(fs.home(), "JS9", "js9")
+#if not fs.is_directory(js9_path): raise IOError("The JS9 installation directory is not found")
+
+# JS9 URL
+js9_path = "http://users.ugent.be/~sjversto/js9"
 
 # -----------------------------------------------------------------
 
@@ -43,7 +46,6 @@ main_filepath = fs.join(js9_path, main_filename)
 prefs_filepath = fs.join(js9_path, prefs_filename)
 support_min_filepath = fs.join(js9_path, support_min_filename)
 min_filepath = fs.join(js9_path, min_filename)
-#min_filepath = fs.join(js9_path, js9_filename)
 plugins_filepath = fs.join(js9_path, plugins_filename)
 
 # -----------------------------------------------------------------

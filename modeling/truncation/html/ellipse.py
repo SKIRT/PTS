@@ -606,8 +606,11 @@ class TruncationEllipsePageGenerator(TruncationComponent):
             if self.config.png: path = self.plots_paths[name]
             else: path = self.dataset.get_frame_path(name)
 
+            # Determine the relative path
+            relpath = fs.relative_to(path, self.truncation_html_path)
+
             # Set the path
-            paths[name] = path
+            paths[name] = relpath
 
         # Return the dictionary
         return paths
