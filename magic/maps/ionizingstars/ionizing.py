@@ -348,6 +348,8 @@ class IonizingStellarMapsMaker(Configurable):
             # Calculate the ratio of the halpha and the hot dust map
             ratio = frames["halpha"] / frames["hot"]
             ratio.replace_infs_by_nans()
+            ratio.replace_by_nans_where_greater_than(1)
+            ratio.cutoff_below_zero()
 
             # Add the ratio
             self.halphatohots[name] = ratio
