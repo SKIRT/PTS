@@ -4106,9 +4106,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
-            # Interpolate the map
-            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.young_interpolation_smoothing_factor)
-
             # INTERPOLATE IN CUTOUT
             if self.config.interpolate_in_cutout:
 
@@ -4201,9 +4198,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
-            # Interpolate the map
-            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
-
             # INTERPOLATE IN CUTOUT
             if self.config.interpolate_in_cutout:
 
@@ -4295,9 +4289,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask again
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
-
-            # Interpolate the map
-            #the_map.interpolate(mask, max_iterations=None, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
 
             # INTERPOLATE IN CUTOUT
             if self.config.interpolate_in_cutout:

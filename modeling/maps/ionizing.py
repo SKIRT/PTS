@@ -55,6 +55,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # Methods
         self.hots_methods = None
 
+        # Define name for extra maps
+        self.extra_maps_name = "HalphaToHot"
+
     # -----------------------------------------------------------------
 
     @property
@@ -190,6 +193,10 @@ class IonizingStellarMapMaker(MapsComponent):
         if self.config.remake: current = dict()
         else: current = self.current_maps
 
+        # Get current extra maps
+        if self.config.remake: current_extra = dict()
+        else: current_extra = self.get_current_extra_maps()
+
         # Negatives of the hot dust maps
         hot_negatives = self.get_dust_negatives(flatten=False, method="hot")
 
@@ -198,7 +205,7 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Run
         maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods,
-                  maps=current, hots_negatives=hot_negatives, region_of_interest=self.truncation_ellipse)
+                  maps=current, hots_negatives=hot_negatives, region_of_interest=self.truncation_ellipse, halpha_to_hots=current_extra)
 
         # Set the maps
         self.maps = maker.maps
@@ -208,6 +215,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Set the methods
         self.methods = maker.methods
+
+        # Set the extra maps
+        self.extra_maps = maker.halphatohots
 
     # -----------------------------------------------------------------
 
@@ -229,6 +239,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Write the methods
         self.write_methods()
+
+        # Write the extra maps
+        self.write_extra_maps()
 
     # -----------------------------------------------------------------
 

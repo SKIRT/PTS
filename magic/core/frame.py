@@ -4594,6 +4594,28 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_nans_by_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_nans(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_nans_by_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_nans(inf_value)
+
+    # -----------------------------------------------------------------
+
     def replace_infs(self, value):
 
         """
@@ -4605,6 +4627,28 @@ class Frame(NDDataArray):
         infs = self.infs
         self._data[infs] = value
         return infs
+
+    # -----------------------------------------------------------------
+
+    def replace_infs_by_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_infs(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_infs_by_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_infs(nan_value)
 
     # -----------------------------------------------------------------
 
@@ -4622,6 +4666,28 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_zeroes_by_infs(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.replace_zeroes(inf_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_zeroes_by_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_zeroes(nan_value)
+
+    # -----------------------------------------------------------------
+
     def replace_negatives(self, value):
 
         """
@@ -4633,6 +4699,39 @@ class Frame(NDDataArray):
         negatives = self.negatives
         self._data[negatives] = value
         return negatives
+
+    # -----------------------------------------------------------------
+
+    def replace_negatives_by_zeroes(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.replace_negatives(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_negatives_by_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_negatives(inf_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_negatives_by_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.replace_negatives(nan_value)
 
     # -----------------------------------------------------------------
 

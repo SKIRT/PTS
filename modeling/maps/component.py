@@ -5433,13 +5433,26 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
-    def plot_ionizing(self, maps=True, contours=True, profiles=True, negatives=True, nans=True, format="pdf"):
+    @property
+    def halpha_to_hot_cmap(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return "jet"
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing(self, maps=True, contours=True, profiles=True, extra=True, negatives=True, nans=True, format="pdf"):
 
         """
         This function ...
         :param maps:
         :param contours:
         :param profiles:
+        :param extra:
         :param negatives:
         :param nans:
         :param format:
@@ -5458,6 +5471,9 @@ class MapsComponent(MapMakerBase):
 
         # Plot the radial profiles
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
+
+        # Plot the extra maps
+        if extra: self.plot_extra_maps(scale="log", format=format, clear_other_formats=True, cmap=self.halpha_to_hot_cmap)
 
         # Plot the negative masks
         if negatives: self.plot_negatives(format=format, clear_other_formats=True, count_within=self.central_ellipse)

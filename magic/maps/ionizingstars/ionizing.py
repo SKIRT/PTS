@@ -91,6 +91,9 @@ class IonizingStellarMapsMaker(Configurable):
         # The methods
         self.methods = dict()
 
+        # The H-alpha to hot dust ratio maps
+        self.halphatohots = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -133,6 +136,9 @@ class IonizingStellarMapsMaker(Configurable):
 
         # Get already existing maps
         self.maps = kwargs.pop("maps", dict())
+
+        # Get already calculated H-alpha to hot dust ratio maps
+        self.halphatohots = kwargs.pop("halpha_to_hots", dict())
 
     # -----------------------------------------------------------------
 
@@ -213,6 +219,66 @@ class IonizingStellarMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_hots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.hots is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_halpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.halpha is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def halpha_with_hots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_hots and self.has_halpha
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_halpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_halpha and not self.has_hots
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_hots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_hots and not self.has_halpha
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -223,18 +289,18 @@ class IonizingStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Making the map of ionizing stars ...")
 
-        # With hot dust contribution
-        if self.hots is not None and self.halpha is not None: self.make_maps_hot()
+        # H-alpha with hot dust contribution
+        if self.halpha_with_hots: self.make_maps_halpha_hot()
 
         # Only halpha
-        if self.halpha is not None: self.make_map_halpha()
+        if self.has_halpha: self.make_map_halpha()
 
         # Only hot dust contribution, and no Halpha to combine it with
-        if self.hots is not None and self.halpha is None: self.make_maps_only_hot()
+        if self.only_hots: self.make_maps_hot()
 
     # -----------------------------------------------------------------
 
-    def make_maps_hot(self):
+    def make_maps_halpha_hot(self):
 
         """
         This function ...
@@ -244,7 +310,8 @@ class IonizingStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Making maps of ionizing stars based on H-alpha emission and hot dust maps ...")
 
-        method_name = "hot"
+        # Set method name
+        method_name = "halpha-hot"
 
         # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
         for name in self.hots:
@@ -277,6 +344,13 @@ class IonizingStellarMapsMaker(Configurable):
             frames["halpha"].convert_to("erg/s")
             # convert to neutral spectral (frequency/wavelength) density (nu * Lnu or lambda * Llambda)
             frames["hot"].convert_to("erg/s", density=True, density_strict=True)
+
+            # Calculate the ratio of the halpha and the hot dust map
+            ratio = frames["halpha"] / frames["hot"]
+            ratio.replace_infs_by_nans()
+
+            # Add the ratio
+            self.halphatohots[name] = ratio
 
             # Calculate ionizing stars map and ratio
             # CALZETTI et al., 2007
@@ -322,6 +396,7 @@ class IonizingStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Making map of ionizing stars based on H-alpha emission ...")
 
+        # Set method name
         method_name = "halpha"
 
         # Take the processed halpha image
@@ -347,7 +422,7 @@ class IonizingStellarMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_maps_only_hot(self):
+    def make_maps_hot(self):
 
         """
         This function ...
@@ -355,9 +430,10 @@ class IonizingStellarMapsMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Making map of ionizing stars based on MIPS 24 um emission ...")
+        log.info("Making map of ionizing stars based on hot dust maps ...")
 
-        method_name = "only_hot"
+        # Set method name
+        method_name = "hot"
 
         # MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
         for name in self.hots:
