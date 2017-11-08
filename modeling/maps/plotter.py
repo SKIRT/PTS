@@ -714,12 +714,16 @@ class MapsPlotter(MapsComponent):
         # Set sub path
         self._maps_sub_path = self.maps_ionizing_path
 
+        # Define name for extra maps
+        self.extra_maps_name = "HalphaToHot"
+
         # Load
         self.load_ionizing()
 
         # Plot
         self.plot_ionizing(maps=self.maps_plotting, contours=self.contours_plotting, profiles=self.profiles_plotting,
-                           negatives=self.negatives_plotting, nans=self.nans_plotting, format=self.config.format)
+                           extra=self.extra_maps_plotting, negatives=self.negatives_plotting, nans=self.nans_plotting,
+                           format=self.config.format)
 
         # Clear the maps
         self.clear()

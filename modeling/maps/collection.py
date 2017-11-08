@@ -34,6 +34,14 @@ from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
+extra_maps_directory_names = ["extra", "TIRtoFUV", "HalphaToHot"]
+plot_directory_names = ["plots", "negatives", "nans", "contours", "profiles"]
+
+# Directories that should not be recognized as different methods
+directory_names_not_methods = extra_maps_directory_names + plot_directory_names
+
+# -----------------------------------------------------------------
+
 origins_filename = "origins.txt"
 methods_filename = "methods.txt"
 
@@ -3504,7 +3512,7 @@ def get_map_paths_in_sub_path(sub_path, flatten=False, method=None, methods=None
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"]):
+    if fs.contains_directories(sub_path, exact_not_name=directory_names_not_methods):
 
         # One method is specified
         if method is not None:
@@ -3588,7 +3596,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
         not_methods = [not_method]
 
     # Subdirectories
-    if fs.contains_directories(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"]):
+    if fs.contains_directories(sub_path, exact_not_name=directory_names_not_methods):
 
         # One method is specified
         if method is not None:
@@ -3601,7 +3609,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
             if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
 
             # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
+            subdirectory_names = fs.directories_in_path(method_path, exact_not_name=directory_names_not_methods, returns="name")
 
             # No extra maps
             if len(subdirectory_names) == 0: return dict()
@@ -3647,7 +3655,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
                 if not_methods is not None and method_name in not_methods: continue
 
                 # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
+                subdirectory_names = fs.directories_in_path(method_path, exact_not_name=directory_names_not_methods, returns="name")
 
                 # No extra maps
                 if len(subdirectory_names) == 0: files = dict()
@@ -3698,7 +3706,7 @@ def get_extra_map_paths_in_sub_path(sub_path, flatten=False, method=None, method
         if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
 
         # Find a directory that contains extra maps (a directorty that isn't called 'plot', 'contours', or 'profiles'
-        subdirectory_names = fs.directories_in_path(sub_path, exact_not_name=["plots", "negatives", "nans", "contours", "profiles"], returns="name")
+        subdirectory_names = fs.directories_in_path(sub_path, exact_not_name=directory_names_not_methods, returns="name")
 
         # No extra maps
         if len(subdirectory_names) == 0: return dict()
