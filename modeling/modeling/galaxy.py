@@ -32,6 +32,7 @@ from ..maps.dust import DustMapMaker
 from ..maps.colour import ColoursMapMaker
 from ..maps.attenuation import AttenuationMapMaker
 from ..maps.tir import TIRMapMaker
+from ..maps.selector import ComponentMapsSelector
 from ..maps.components import ComponentMapsMaker
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.galaxy import GalaxyFittingInitializer
@@ -1086,6 +1087,18 @@ class GalaxyModeler(ModelerBase):
     # -----------------------------------------------------------------
 
     @property
+    def needs_maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("select_component_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
     def needs_component_maps(self):
 
         """
@@ -1130,6 +1143,9 @@ class GalaxyModeler(ModelerBase):
 
         # Create the map of the ionizing stellar population
         if self.needs_ionizing_stellar_maps: self.make_ionizing_stellar_maps()
+
+        # Make the component maps selection
+        if self.needs_maps_selection: self.select_component_maps()
 
         # Create the maps for the different RT model components
         if self.needs_component_maps: self.make_component_maps()
@@ -1311,6 +1327,31 @@ class GalaxyModeler(ModelerBase):
 
         # Run the ionizing stellar map maker
         with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
+
+    # -----------------------------------------------------------------
+
+    def select_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Selecting the component maps ...")
+
+        # Create configuration
+        config = dict()
+        config["auto"] = True  # automatic selection
+
+        # Create the maps selector
+        selector = ComponentMapsSelector(config)
+
+        # Set the working directory
+        selector.config.path = self.modeling_path
+
+        # Run
+        with self.write_log(selector), self.register(selector), self.write_config(selector): selector.run()
 
     # -----------------------------------------------------------------
 
