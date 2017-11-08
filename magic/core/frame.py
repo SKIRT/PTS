@@ -3671,6 +3671,9 @@ class Frame(NDDataArray):
         self._data = new_data
         self._wcs = new_wcs
 
+        # Return the limits
+        return x_min, x_max, y_min, y_max
+
     # -----------------------------------------------------------------
 
     def cropped_to(self, region, factor=1, out_of_bounds="error"):
@@ -3702,13 +3705,13 @@ class Frame(NDDataArray):
         # Pixel rectangle
         if isinstance(region, PixelRectangleRegion):
             if factor != 1: region = region * factor
-            self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel, out_of_bounds=out_of_bounds)
+            return self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel, out_of_bounds=out_of_bounds)
 
         # Sky rectangle: to pixel rectangle
-        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs), factor=factor, out_of_bounds=out_of_bounds)
+        elif isinstance(region, SkyRectangleRegion): return self.crop_to(region.to_pixel(self.wcs), factor=factor, out_of_bounds=out_of_bounds)
 
         # Other kind of shape
-        else: self.crop_to(region.bounding_box, factor=factor, out_of_bounds=out_of_bounds)
+        else: return self.crop_to(region.bounding_box, factor=factor, out_of_bounds=out_of_bounds)
 
     # -----------------------------------------------------------------
 

@@ -7,15 +7,13 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.modeling.maps.collection import MapsCollection
 from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-#relative_sigma_levels = [0.5, 1., 1.5]
-#relative_sigma_levels = [1., 1.2, 1.5]
-relative_sigma_levels = [0.5, 0.75, 0.85, 1.]
+relative_sigma_levels = [0.2, 0.3, 0.4, 0.5, 0.75, 0.85, 1.]
 default_relative_sigma_level = 1.0
 
 # -----------------------------------------------------------------
@@ -31,7 +29,7 @@ default_mask_color = "black"
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # Set paths
 maps_path = fs.join(modeling_path, "maps")
@@ -91,9 +89,12 @@ definition.add_optional("image_height", "positive_integer", "height of the image
 
 # -----------------------------------------------------------------
 
+definition.add_flag("write_data", "write the data in the form of FITS files", False)
+
+# -----------------------------------------------------------------
+
 # For masks
 definition.add_optional("mask_colour", "string", "colour for the mask", default=default_mask_color)
-#definition.add_flag("mask_alpha", "use alpha for the mask", True) # we allow alpha for alpha masks and not for regular masks, to tell them apart
 
 # For masking
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
@@ -103,9 +104,8 @@ definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minim
 # -----------------------------------------------------------------
 
 # For PNG
-definition.add_optional("scale", "string", "scaling", "log", scales)
+#definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", default_interval)
-definition.add_optional("colours", "string", "colour or colour scale", "red")
 definition.add_optional("alpha_method", "string", "alpha method", "absolute")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
 

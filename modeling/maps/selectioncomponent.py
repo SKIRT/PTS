@@ -1755,6 +1755,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_color(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "orange"
+
+    # -----------------------------------------------------------------
+
     def old_map_plot_for_map(self, name, format="pdf"):
 
         """
@@ -1823,6 +1835,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return "plasma"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_color(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "lime_green"
 
     # -----------------------------------------------------------------
 
@@ -1897,6 +1921,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ionizing_color(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return "sky_blue"
+
+    # -----------------------------------------------------------------
+
     def ionizing_map_plot_for_map(self, name, format="pdf"):
 
         """
@@ -1965,6 +2001,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return "inferno"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_color(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return "red"
 
     # -----------------------------------------------------------------
 

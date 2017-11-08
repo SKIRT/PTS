@@ -87,7 +87,7 @@ def find_host_ids(schedulers=None, protocol="ssh"):
     # Loop over the configuration files in the hosts directory
     for file_path, host_id in fs.files_in_path(hosts_directory, extension="cfg", returns=["path", "name"]):
 
-        #host = None
+        # Load the host
         host = load_host(host_id)
 
         # If schedulers is specified (False or True)

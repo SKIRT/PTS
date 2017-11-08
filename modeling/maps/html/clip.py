@@ -36,13 +36,21 @@ from ....magic.core.alpha import AlphaMask
 from ....core.tools.utils import memoize_method
 from ....core.basics import containers
 from ....core.tools.serialization import load_dict
+from ....core.tools.stringify import stringify_dict
 
 # -----------------------------------------------------------------
 
 clipped_name = "clipped"
+clipped_data_name = "clipped_data"
 image_masks_name = "image_masks"
 ncolumns = 2
-colour_map = "jet"
+
+# -----------------------------------------------------------------
+
+old_name = "old"
+young_name = "young"
+ionizing_name = "ionizing"
+dust_name = "dust"
 
 # -----------------------------------------------------------------
 
@@ -133,28 +141,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 3. Set the paths
         self.set_paths()
 
-        # 5. Check present maps
+        # 4. Check present maps
         if not self.config.replot: self.check_present()
 
-        # 6. Process the maps
+        # 5. Process the maps
         self.process_maps()
 
-        # 7. Make plots
+        # 6. Make plots
         self.make_plots()
 
-        # 8. Make image mask plots
+        # 7. Make image mask plots
         self.plot_image_masks()
 
-        # 9. Make sliders
+        # 8. Make sliders
         self.make_sliders()
 
-        # 10. Generate the page
+        # 9. Generate the page
         self.generate_page()
 
-        # 11. Writing
+        # 10. Writing
         self.write()
 
-        # 12. Show
+        # 11. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -182,10 +190,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         else: fs.create_directory(self.clipped_plots_path)
 
         # Create subdirectories
-        if self.config.add_old: self.old_plot_path = fs.create_directory_in(self.clipped_plots_path, "old", clear=self.config.replot_old)
-        if self.config.add_young: self.young_plot_path = fs.create_directory_in(self.clipped_plots_path, "young", clear=self.config.replot_young)
-        if self.config.add_ionizing: self.ionizing_plot_path = fs.create_directory_in(self.clipped_plots_path, "ionizing", clear=self.config.replot_ionizing)
-        if self.config.add_dust: self.dust_plot_path = fs.create_directory_in(self.clipped_plots_path, "dust", clear=self.config.replot_dust)
+        if self.config.add_old: self.old_plot_path = fs.create_directory_in(self.clipped_plots_path, old_name, clear=self.config.replot_old)
+        if self.config.add_young: self.young_plot_path = fs.create_directory_in(self.clipped_plots_path, young_name, clear=self.config.replot_young)
+        if self.config.add_ionizing: self.ionizing_plot_path = fs.create_directory_in(self.clipped_plots_path, ionizing_name, clear=self.config.replot_ionizing)
+        if self.config.add_dust: self.dust_plot_path = fs.create_directory_in(self.clipped_plots_path, dust_name, clear=self.config.replot_dust)
 
         # Create directory to contain the image mask plots
         self.image_mask_plots_path = fs.join(self.maps_html_path, image_masks_name)
@@ -201,6 +209,136 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Create plot directories for image masks
         self.create_image_mask_plot_directories()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def clipped_data_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        path = fs.join(self.maps_html_path, clipped_data_name)
+        if self.config.write_data and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def clipped_data_old_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_path, old_name)
+        if self.config.write_data and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def clipped_data_young_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_path, young_name)
+        if self.config.write_data and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def clipped_data_ionizing_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_path, ionizing_name)
+        if self.config.write_data and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def clipped_data_dust_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_path, dust_name)
+        if self.config.write_data and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def clipped_data_old_path_for_map(self, name, create=True):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_old_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def clipped_data_young_path_for_map(self, name, create=True):
+
+        """
+        Thisn function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_young_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def clipped_data_ionizing_path_for_map(self, name, create=True):
+
+        """
+        Thisn function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_ionizing_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def clipped_data_dust_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        path = fs.join(self.clipped_data_dust_path, name)
+        if create and not fs.is_directory(path): fs.create_directory(path)
+        return path
 
     # -----------------------------------------------------------------
 
@@ -1517,6 +1655,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Set the masks
             self.old_masks[name] = masks
 
+            # Write the data
+            if self.config.write_data:
+
+                # Loop over the level combinations
+                for levels_dict in maps:
+
+                    # Create string for the levels
+                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+
+                    # Determine path for the map and mask
+                    map_filename = name + "___" + levels_string + ".fits"
+                    mask_filename = name + "___" + levels_string + "_mask.fits"
+
+                    # Determine filepaths
+                    path = self.clipped_data_old_path_for_map(name, create=True)
+                    map_filepath = fs.join(path, map_filename)
+                    mask_filepath = fs.join(path, mask_filename)
+
+                    # Save
+                    maps[levels_dict].saveto(map_filepath)
+                    masks[levels_dict].saveto(mask_filepath)
+
             # Cleanup
             gc.collect()
 
@@ -1566,6 +1726,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Set the masks
             self.young_masks[name] = masks
+
+            # Write the data
+            if self.config.write_data:
+
+                # Loop over the level combinations
+                for levels_dict in maps:
+
+                    # Create string for the levels
+                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+
+                    # Determine path for the map and mask
+                    map_filename = name + "___" + levels_string + ".fits"
+                    mask_filename = name + "___" + levels_string + "_mask.fits"
+
+                    # Determine filepaths
+                    path = self.clipped_data_young_path_for_map(name, create=True)
+                    map_filepath = fs.join(path, map_filename)
+                    mask_filepath = fs.join(path, mask_filename)
+
+                    # Save
+                    maps[levels_dict].saveto(map_filepath)
+                    masks[levels_dict].saveto(mask_filepath)
 
             # Cleanup
             gc.collect()
@@ -1617,6 +1799,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Set the masks
             self.ionizing_masks[name] = masks
 
+            # Write the data
+            if self.config.write_data:
+
+                # Loop over the level combinations
+                for levels_dict in maps:
+
+                    # Create string for the levels
+                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+
+                    # Determine path for the map and mask
+                    map_filename = name + "___" + levels_string + ".fits"
+                    mask_filename = name + "___" + levels_string + "_mask.fits"
+
+                    # Determine filepaths
+                    path = self.clipped_data_ionizing_path_for_map(name, create=True)
+                    map_filepath = fs.join(path, map_filename)
+                    mask_filepath = fs.join(path, mask_filename)
+
+                    # Save
+                    maps[levels_dict].saveto(map_filepath)
+                    masks[levels_dict].saveto(mask_filepath)
+
             # Cleanup
             gc.collect()
 
@@ -1666,6 +1870,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Set the masks
             self.dust_masks[name] = masks
+
+            # Write the data
+            if self.config.write_data:
+
+                # Loop over the level combinations
+                for levels_dict in maps:
+
+                    # Create string for the levels
+                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+
+                    # Determine path for the map and mask
+                    map_filename = name + "___" + levels_string + ".fits"
+                    mask_filename = name + "___" + levels_string + "_mask.fits"
+
+                    # Determine filepaths
+                    path = self.clipped_data_dust_path_for_map(name, create=True)
+                    map_filepath = fs.join(path, map_filename)
+                    mask_filepath = fs.join(path, mask_filename)
+
+                    # Save
+                    maps[levels_dict].saveto(map_filepath)
+                    masks[levels_dict].saveto(mask_filepath)
 
             # Cleanup
             gc.collect()
@@ -1793,19 +2019,21 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def make_rgba_plot(self, the_map, filepath):
+    def make_rgba_plot(self, the_map, filepath, colours="red", scale="log"):
 
         """
         This function ...
         :param the_map:
         :param filepath:
+        :param colours:
+        :param scale:
         :return:
         """
 
         # Plot as RGB
-        the_map.saveto_png(filepath, interval=self.config.interval, scale=self.config.scale,
+        the_map.saveto_png(filepath, interval=self.config.interval, scale=scale,
                            alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha,
-                           colours=self.config.colours)
+                           colours=colours)
 
     # -----------------------------------------------------------------
 
@@ -1926,7 +2154,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.old_maps[name][levels], filepath)
+                self.make_rgba_plot(self.old_maps[name][levels], filepath, colours=self.old_color, scale=self.old_scale)
 
             # Clear
             del self.old_maps[name]
@@ -2081,7 +2309,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.young_maps[name][levels], filepath)
+                self.make_rgba_plot(self.young_maps[name][levels], filepath, colours=self.young_color, scale=self.young_scale)
 
             # Clear
             del self.young_maps[name]
@@ -2236,7 +2464,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.ionizing_maps[name][levels], filepath)
+                self.make_rgba_plot(self.ionizing_maps[name][levels], filepath, colours=self.ionizing_color, scale=self.ionizing_scale)
 
             # Clear
             del self.ionizing_maps[name]
@@ -2360,7 +2588,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
-        # Return the filepath
         return filepath
 
     # -----------------------------------------------------------------
@@ -2391,7 +2618,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.dust_maps[name][levels], filepath)
+                self.make_rgba_plot(self.dust_maps[name][levels], filepath, colours=self.dust_color, scale=self.dust_scale)
 
             # Clear
             del self.dust_maps[name]
@@ -2598,7 +2825,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             plot_path = self.image_mask_plot_paths[name]
 
             # Check whether not all plots are already present
-            # if self.has_all_plots(name): continue
             if self.has_all_mask_plots_for_image(name):
                 log.success("All mask plots for the '" + name + "' image are already present")
                 for level in levels:
@@ -2613,11 +2839,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             frame = self.dataset.get_frame(name)
 
             # Crop the frame
-            frame.crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            x_min, x_max, y_min, y_max = frame.crop_to(self.truncation_box, factor=self.config.cropping_factor)
 
             # Get error map and crop as well
             errormap = self.dataset.get_errormap(name)
-            errormap.rebin(frame.wcs)
+            errormap.crop(x_min, x_max, y_min, y_max)
 
             # Create the significance map
             significance = frame / errormap
@@ -2726,7 +2952,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
         self.page += html.center(html.make_theme_button(classes=classes))
-
         self.page += html.newline
 
         # Add the sliders
