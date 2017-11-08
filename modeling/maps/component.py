@@ -5409,14 +5409,14 @@ class MapsComponent(MapMakerBase):
     # -----------------------------------------------------------------
 
     @property
-    def halpha_to_hot_interval(self):
+    def halpha_to_hot_vmax(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-
+        return 1.
 
     # -----------------------------------------------------------------
 
@@ -5448,7 +5448,7 @@ class MapsComponent(MapMakerBase):
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the extra maps
-        if extra: self.plot_extra_maps(scale="log", format=format, clear_other_formats=True, cmap=self.halpha_to_hot_cmap, interval=self.halpha_to_hot_interval)
+        if extra: self.plot_extra_maps(scale="log", format=format, clear_other_formats=True, cmap=self.halpha_to_hot_cmap, strict_vmax=self.halpha_to_hot_vmax)
 
         # Plot the negative masks
         if negatives: self.plot_negatives(format=format, clear_other_formats=True, count_within=self.central_ellipse)

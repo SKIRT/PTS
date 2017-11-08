@@ -227,52 +227,46 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Auto-select
-        if self.config.auto: self.auto_select()
+        # 2. Load the selection
+        self.load_selection()
 
-        # 3. Prompt
-        self.prompt()
-
-        # 4. Write the selection
-        if not self.from_previous_selection: self.write_selection()
-
-        # 5. Write the levels
+        # 3. Write the levels
         if not self.from_previous_levels: self.write_levels()
 
-        # 5. Set rerun
+        # 4. Set rerun
         if self.rerun: self.set_rerun()
 
-        # 6. Set redeproject
+        # 5. Set redeproject
         if self.redeproject: self.set_redeproject()
 
-        # 7. Set redeproject SKIRT
+        # 6. Set redeproject SKIRT
         if self.redeproject_skirt: self.set_redeproject_skirt()
 
-        # 8. Set reproject
+        # 7. Set reproject
         if self.reproject: self.set_reproject()
 
-        # 9. Remove other
+        # 8. Remove other
         if self.remove: self.remove_other()
 
-        # 10. Load the maps
+        # 9. Load the maps
         self.load_maps()
 
-        # 11. Load the masks
+        # 10. Load the masks
         self.load_masks()
 
-        # 12. Process the maps
+        # 11. Process the maps
         self.process_maps()
 
-        # 13. Deproject the maps
+        # 12. Deproject the maps
         self.deproject()
 
-        # 14. Project the maps to the edge-on view
+        # 13. Project the maps to the edge-on view
         self.project()
 
-        # 15. Writing
+        # 14. Writing
         self.write()
 
-        # 16. Plot
+        # 15. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -344,38 +338,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         if self.config.clear_results_young: self.clear_results_young()
         if self.config.clear_results_ionizing: self.clear_results_ionizing()
         if self.config.clear_results_dust: self.clear_results_dust()
-
-        # Set random
-        if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
-
-        # Set all
-        if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
-
-        # Check arguments
-        if self.from_previous_selection and self.config.random_old: raise ValueError("Cannot set 'previous' and enable random old maps selection")
-        if self.from_previous_selection and self.config.random_young: raise ValueError("Cannot set 'previous' and enable random young maps selection")
-        if self.from_previous_selection and self.config.random_ionizing: raise ValueError("Cannot set 'previous' and enable random ionizing maps selection")
-        if self.from_previous_selection and self.config.random_dust: raise ValueError("Cannot set 'previous' and enable random dust maps selection")
-        if self.from_previous_selection and self.config.all_old: raise ValueError("Cannot set 'previous' and enable all old maps selection")
-        if self.from_previous_selection and self.config.all_young: raise ValueError("Cannot set 'previous' and enable all young maps selection")
-        if self.from_previous_selection and self.config.all_ionizing: raise ValueError("Cannot set 'previous' and enable all ionizing maps selection")
-        if self.from_previous_selection and self.config.all_dust: raise ValueError("Cannot set 'previous' and enable all dust maps selection")
-        if self.from_previous_selection and self.config.old is not None: raise ValueError("Cannot set 'previous' and 'old' simultaneously")
-        if self.from_previous_selection and self.config.young is not None: raise ValueError("Cannot set 'previous' and 'young' simultaneously")
-        if self.from_previous_selection and self.config.ionizing is not None: raise ValueError("Cannot set 'previous' and 'ionizing' simultaneously")
-        if self.from_previous_selection and self.config.dust is not None: raise ValueError("Cannot set 'previous' and 'dust' simultaneously")
-
-        # Load previous selection
-        if self.from_previous_selection: self.load_previous_selection()
-
-        # New selection
-        else:
-
-            # Make selections
-            self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old, indices=self.config.old_indices, not_indices=self.config.not_old_indices)
-            self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young, indices=self.config.young_indices, not_indices=self.config.not_young_indices)
-            self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, indices=self.config.ionizing_indices, not_indices=self.config.not_ionizing_indices)
-            self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, indices=self.config.dust_indices, not_indices=self.config.not_dust_indices)
 
         # Levels
         if self.from_previous_levels: self.load_previous_levels()
@@ -519,19 +481,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def from_previous_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.config.previous_selection is not None
-
-    # -----------------------------------------------------------------
-
-    def load_previous_selection(self):
+    def load_selection(self):
 
         """
         This function ...
@@ -539,10 +489,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         # Inform the user
-        log.debug("Loading previous maps selections ...")
+        log.debug("Loading maps selections ...")
 
         # Determine the path
-        path = fs.join(self.maps_components_path, "selection_" + str(self.config.previous_selection) + ".dat")
+        path = fs.join(self.maps_components_path, "selection_" + str(self.config.selection) + ".dat")
 
         # Load the selection file
         selection = load_dict(path)
@@ -1614,35 +1564,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if fs.is_file(filepath): return step, filepath
 
         raise RuntimeError("We shouldn't get here")
-
-    # -----------------------------------------------------------------
-
-    def write_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the selection ...")
-
-        # Make single selection dictionary
-        selection = dict()
-
-        # Set the selected map names
-        selection["old"] = self.old_selection
-        selection["young"] = self.young_selection
-        selection["ionizing"] = self.ionizing_selection
-        selection["dust"] = self.dust_selection
-
-        # Determine path for the selection file
-        current_indices = fs.files_in_path(self.maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, convert_split_pattern="_", convert_split_index=1)
-        index = numbers.lowest_missing_integer(current_indices)
-        selection_path = fs.join(self.maps_components_path, "selection_" + str(index) + ".dat")
-
-        # Write the selection
-        write_dict(selection, selection_path)
 
     # -----------------------------------------------------------------
 

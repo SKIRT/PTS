@@ -28,28 +28,19 @@ default_sigma_level = 3.0
 # Get the modeling path
 modeling_path = verify_modeling_cwd()
 
-# Create the maps collection
-collection = MapsCollection.from_modeling_path(modeling_path)
+# Set paths
+maps_path = fs.join(modeling_path, "maps")
+maps_components_path = fs.join(maps_path, "components")
 
 # -----------------------------------------------------------------
 
-# Get maps
-old_map_paths = collection.get_old_stellar_disk_map_paths()
-young_map_paths = collection.get_young_map_paths(flatten=True)
-ionizing_map_paths = collection.get_ionizing_map_paths(flatten=True)
-dust_map_paths = collection.get_not_hot_dust_map_paths(flatten=True)
+# Get selection indices
+indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
 
-# Get map names
-old_map_names = old_map_paths.keys()
-young_map_names = young_map_paths.keys()
-ionizing_map_names = ionizing_map_paths.keys()
-dust_map_names = dust_map_paths.keys()
-
-# Get number of maps
-nold_maps = len(old_map_names)
-nyoung_maps = len(young_map_names)
-nionizing_maps = len(ionizing_map_names)
-ndust_maps = len(dust_map_names)
+# Add the setting
+if len(indices) == 0: raise RuntimeError("Could not find any selection file")
+elif len(indices) == 1: definition.add_fixed("selection", "selection to use", indices[0])
+else: definition.add_optional("selection", "positive_integer", "selection to use", choices=indices)
 
 # -----------------------------------------------------------------
 
@@ -67,66 +58,12 @@ definition.add_optional("rebin_remote_threshold", "data_quantity", "data size th
 
 # -----------------------------------------------------------------
 
-# SELECTION
-
-maps_path = fs.join(modeling_path, "maps")
-maps_components_path = fs.join(maps_path, "components")
-
-# Use previous selection
-current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="selection", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
-if len(current_indices) > 0: definition.add_optional("previous_selection", "positive_integer", "use previous selection", choices=current_indices)
-else: definition.add_fixed("previous_selection", "use previous selection", None)
+# LEVELS
 
 # Use previous levels
 current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="levels", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
 if len(current_indices) > 0: definition.add_optional("previous_levels", "positive_integer", "use previous levels", choices=current_indices)
 else: definition.add_fixed("previous_levels", "use previous levels", None)
-
-# AUTO-SELECT??
-definition.add_flag("auto", "make selections automatically based on the preferred modeling guidelines", False)
-
-# Auto selection options
-default_max_nnegatives = 0.1
-definition.add_optional("hot_dust_max_nnegatives", "positive_real", "maximum relative number of negatives in a central ellipse for selection of hot dust map", default_max_nnegatives)
-definition.add_optional("young_max_nnegatives", "positive_real", "maximum relative number of negatives in a central ellipse for selection of young stellar map", default_max_nnegatives)
-
-# Selections
-definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)
-definition.add_optional("young", "string_list", "selected young stellar maps", choices=young_map_names)
-definition.add_optional("ionizing", "string_list", "selected ionizing stellar maps", choices=ionizing_map_names)
-definition.add_optional("dust", "string_list", "selected dust maps", choices=dust_map_names)
-
-# Selections with indices
-definition.add_optional("old_indices", "integer_list", "selected old stellar maps", choices=range(nold_maps))
-definition.add_optional("young_indices", "integer_list", "selected young stellar maps", choices=range(nyoung_maps))
-definition.add_optional("ionizing_indices", "integer_list", "selected ionizing stellar maps", choices=range(nionizing_maps))
-definition.add_optional("dust_indices", "integer_list", "selected dust maps", choices=range(ndust_maps))
-
-# Anti-selections
-definition.add_optional("not_old", "string_list", "ignore old stellar maps", choices=old_map_names)
-definition.add_optional("not_young", "string_list", "ignore young stellar maps", choices=young_map_names)
-definition.add_optional("not_ionizing", "string_list", "ignore ionizing stellar maps", choices=ionizing_map_names)
-definition.add_optional("not_dust", "string_list", "ignore dust maps", choices=dust_map_names)
-
-# Anti-selections with indices
-definition.add_optional("not_old_indices", "integer_list", "ignore old stellar maps", choices=range(nold_maps))
-definition.add_optional("not_young_indices", "integer_list", "ignore young stellar maps", choices=range(nyoung_maps))
-definition.add_optional("not_ionizing_indices", "integer_list", "ignore ionizing stellar maps", choices=range(nionizing_maps))
-definition.add_optional("not_dust_indices", "integer_list", "ignore dust maps", choices=range(ndust_maps))
-
-# Random selections
-definition.add_optional("random_old", "positive_integer", "select x random old stellar maps")
-definition.add_optional("random_young", "positive_integer", "select x random young stellar maps")
-definition.add_optional("random_ionizing", "positive_integer", "select x random ionizing stellar maps")
-definition.add_optional("random_dust", "positive_integer", "select x random dust maps")
-definition.add_optional("random", "positive_integer", "select x maps for old stars, young stars, ionizing stars and dust")
-
-# Flags
-definition.add_flag("all_old", "select all old stellar maps")
-definition.add_flag("all_young", "select all young stellar maps")
-definition.add_flag("all_ionizing", "select all ionizing stellar maps")
-definition.add_flag("all_dust", "select all dust maps")
-definition.add_flag("all", "select all maps")
 
 # -----------------------------------------------------------------
 
