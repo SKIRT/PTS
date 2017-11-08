@@ -35,6 +35,7 @@ from ....magic.core.mask import Mask
 from ....magic.core.alpha import AlphaMask
 from ....core.tools.utils import memoize_method
 from ....core.basics import containers
+from ....core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
@@ -192,50 +193,14 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             if self.config.replot or self.config.replot_image_masks: fs.clear_directory(self.image_mask_plots_path)
         else: fs.create_directory(self.image_mask_plots_path)
 
-        # Set random
-        if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
-
-        # Set all
-        if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
-
-        # Make selections
-        self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old, none=not self.config.add_old, indices=self.config.old_indices, not_indices=self.config.not_old_indices)
-        self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young, none=not self.config.add_young, indices=self.config.young_indices, not_indices=self.config.not_young_indices)
-        self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, none=not self.config.add_ionizing, indices=self.config.ionizing_indices, not_indices=self.config.not_ionizing_indices)
-        self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, none=not self.config.add_dust, indices=self.config.dust_indices, not_indices=self.config.not_dust_indices)
-
-        # Prompt for user input (if selections not specified)
-        self.prompt()
+        # Load the selection
+        self.load_selection()
 
         # Create plot directories for each image
         self.create_plot_directories()
 
         # Create plot directories for image masks
         self.create_image_mask_plot_directories()
-
-    # -----------------------------------------------------------------
-
-    def prompt(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for user input (if necessary) ...")
-
-        # Old
-        if not self.has_old_selection: self.prompt_old()
-
-        # Young
-        if not self.has_young_selection: self.prompt_young()
-
-        # Ionizing
-        if not self.has_ionizing_selection: self.prompt_ionizing()
-
-        # Dust
-        if not self.has_dust_selection: self.prompt_dust()
 
     # -----------------------------------------------------------------
 
@@ -249,6 +214,30 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         if self.config.remote is None: return None
         else: return Remote(host_id=self.config.remote)
+
+    # -----------------------------------------------------------------
+
+    def load_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Loading maps selections ...")
+
+        # Determine the path
+        path = fs.join(self.maps_components_path, "selection_" + str(self.config.selection) + ".dat")
+
+        # Load the selection file
+        selection = load_dict(path)
+
+        # Set the selections
+        self.old_selection = selection["old"]
+        self.young_selection = selection["young"]
+        self.ionizing_selection = selection["ionizing"]
+        self.dust_selection = selection["dust"]
 
     # -----------------------------------------------------------------
 
