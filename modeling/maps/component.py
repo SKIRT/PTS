@@ -1449,7 +1449,8 @@ class MapMakerBase(GalaxyModelingComponent):
 
     def plot_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None, share_limits=True,
                   mask_negatives=False, clear_other_formats=True, show_axes=False, transparent=True, interval=None,
-                  strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, cmaps=None, methods=None, not_methods=None):
+                  strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, cmaps=None, methods=None,
+                  not_methods=None, soft_max_scaling=1.5):
 
         """
         Thisfunction ...
@@ -1471,42 +1472,15 @@ class MapMakerBase(GalaxyModelingComponent):
         :param cmaps:
         :param methods:
         :param not_methods:
+        :param soft_max_scaling:
         :return:
         """
 
         # Inform the user
         log.info("Plotting the maps ...")
 
-        passed_min = False
-        passed_max = False
-        soft_min = False
-        soft_max = False
-
-        # The vmin and vmax
-        if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
-            if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
-            vmin, vmax = interval
-            passed_min = True
-            passed_max = True
-        else:
-
-            if strict_vmin is not None:
-                vmin = strict_vmin
-                passed_min = True
-            elif soft_vmin is not None:
-                vmin = soft_vmin
-                soft_min = True
-                passed_min = True
-            else: vmin = None
-
-            if strict_vmax is not None:
-                vmax = strict_vmax
-                passed_max = True
-            elif soft_vmax is not None:
-                vmax = soft_vmax
-                soft_max = True
-                passed_max = True
-            else: vmax = None
+        # Determine min, max etc.
+        vmin, vmax, passed_min, passed_max, soft_min, soft_max = set_vminvmax(interval=interval, strict_vmin=strict_vmin, strict_vmax=strict_vmax, soft_vmin=soft_vmin, soft_vmax=soft_vmax, share_limits=share_limits)
 
         # Loop over the methods
         for method in self.maps:
@@ -1550,36 +1524,18 @@ class MapMakerBase(GalaxyModelingComponent):
                     else: frame_cmap = cmap
 
                     # Plot
-                    if share_limits and vmin is not None and vmax is not None: minmax = [vmin, vmax]
-                    elif passed_min and passed_max: minmax = [vmin, vmax]
-                    elif interval is not None: minmax = interval
-                    else: minmax = "pts"
+                    minmax = get_minmax(interval=interval, vmin=vmin, vmax=vmax, passed_min=passed_min, passed_max=passed_max, share_limits=share_limits, default_interval="pts")
                     frame = self.maps[method][name]
                     if isinstance(frame, Image): frame = frame.primary
                     vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path, format=format, interval=minmax,
                                                      scale=frame_scale, cmap=frame_cmap, normalize_in=self.truncation_ellipse, colorbar=True,
                                                      mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent,
-                                                     soft_min=soft_min, soft_max=soft_max, soft_max_scaling=1.5)
+                                                     soft_min=soft_min, soft_max=soft_max, soft_max_scaling=soft_max_scaling)
                     if share_limits: vmin, vmax = vmini, vmaxi
 
                 # End of method: reset vmin and vmax
-                if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
-                    if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
-                    vmin, vmax = interval
-                else:
-
-                    if strict_vmin is not None: vmin = strict_vmin
-                    elif soft_vmin is not None:
-                        vmin = soft_vmin
-                        soft_min = True
-                    else: vmin = None
-
-                    if strict_vmax is not None: vmax = strict_vmax
-                    elif soft_vmax is not None:
-                        vmax = soft_vmax
-                        soft_max = True
-                    else: vmax = None
+                vmin, vmax, soft_min, soft_max = reset_vminvmax(soft_min, soft_max, interval=interval, strict_vmin=strict_vmin, strict_vmax=strict_vmax, soft_vmin=soft_vmin, soft_vmax=soft_vmax, share_limits=share_limits)
 
             # No different methods
             else:
@@ -1602,17 +1558,14 @@ class MapMakerBase(GalaxyModelingComponent):
                 else: frame_cmap = cmap
 
                 # Plot
-                if share_limits and vmin is not None and vmax is not None: minmax = [vmin, vmax]
-                elif passed_min and passed_max: minmax = [vmin, vmax]
-                elif interval is not None: minmax = interval
-                else: minmax = "pts"
+                minmax = get_minmax(interval=interval, vmin=vmin, vmax=vmax, passed_min=passed_min, passed_max=passed_max, share_limits=share_limits, default_interval="pts")
                 frame = self.maps[method]
                 if isinstance(frame, Image): frame = frame.primary
                 vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box, cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path, format=format,
                                                  interval=minmax, scale=frame_scale, cmap=frame_cmap, normalize_in=self.truncation_ellipse,
                                                  colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes,
-                                                 transparent=transparent, soft_min=soft_min, soft_max=soft_max, soft_max_scaling=1.5)
+                                                 transparent=transparent, soft_min=soft_min, soft_max=soft_max, soft_max_scaling=soft_max_scaling)
                 if share_limits: vmin, vmax = vmini, vmaxi
 
     # -----------------------------------------------------------------
@@ -1962,7 +1915,8 @@ class MapMakerBase(GalaxyModelingComponent):
 
     def plot_extra_maps(self, cmap="viridis", scale="log", format="pdf", cropping_factor=1.3, scales=None,
                         share_limits=True, mask_negatives=False, clear_other_formats=True, show_axes=False,
-                        transparent=True, methods=None, not_methods=None):
+                        transparent=True, interval=None, strict_vmin=None, strict_vmax=None, soft_vmin=None,
+                        soft_vmax=None, methods=None, not_methods=None, soft_max_scaling=1.5):
 
         """
         This function ...
@@ -1976,16 +1930,22 @@ class MapMakerBase(GalaxyModelingComponent):
         :param clear_other_formats:
         :param show_axes:
         :param transparent:
+        :param interval:
+        :param strict_vmin:
+        :param strict_vmax:
+        :param soft_vmin:
+        :param soft_vmax:
         :param methods:
         :param not_methods:
+        :param soft_max_scaling:
         :return:
         """
 
         # Inform the user
         log.info("Plotting the extra maps ...")
 
-        # The vmin and vmax
-        vmin = vmax = None
+        # Determine min, max etc.
+        vmin, vmax, passed_min, passed_max, soft_min, soft_max = set_vminvmax(interval=interval, strict_vmin=strict_vmin, strict_vmax=strict_vmax, soft_vmin=soft_vmin, soft_vmax=soft_vmax, share_limits=share_limits)
 
         # Loop over the methods
         for method in self.extra_maps:
@@ -2021,20 +1981,21 @@ class MapMakerBase(GalaxyModelingComponent):
                     else: frame_scale = scale
 
                     # Plot
-                    if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
-                    else: interval = "pts"
+                    minmax = get_minmax(interval=interval, vmin=vmin, vmax=vmax, passed_min=passed_min, passed_max=passed_max, share_limits=share_limits, default_interval="pts")
                     frame = self.extra_maps[method][name]
                     if isinstance(frame, Image): frame = frame.primary
-                    vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box,
+                    vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box,
                                                      cropping_factor=cropping_factor,
                                                      truncate_outside=self.truncation_ellipse, path=plot_path,
-                                                     format=format, interval=interval,
+                                                     format=format, interval=minmax,
                                                      scale=frame_scale, cmap=cmap, normalize_in=self.truncation_ellipse,
                                                      colorbar=True, mask_negatives=mask_negatives, show_axes=show_axes,
-                                                     transparent=transparent)
+                                                     transparent=transparent, soft_min=soft_min, soft_max=soft_max,
+                                                     soft_max_scaling=soft_max_scaling)
+                    if share_limits: vmin, vmax = vmini, vmaxi
 
                 # End of method: reset vmin and vmax
-                vmin = vmax = None
+                vmin, vmax, soft_min, soft_max = reset_vminvmax(soft_min, soft_max, interval=interval, strict_vmin=strict_vmin, strict_vmax=strict_vmax, soft_vmin=soft_vmin, soft_vmax=soft_vmax, share_limits=share_limits)
 
             # No different methods
             else:
@@ -2053,17 +2014,19 @@ class MapMakerBase(GalaxyModelingComponent):
                 else: frame_scale = scale
 
                 # Plot
-                if share_limits and vmin is not None and vmax is not None: interval = [vmin, vmax]
-                else: interval = "pts"
+                minmax = get_minmax(interval=interval, vmin=vmin, vmax=vmax, passed_min=passed_min, passed_max=passed_max, share_limits=share_limits, default_interval="pts")
                 frame = self.extra_maps[method]
                 if isinstance(frame, Image): frame = frame.primary
-                vmin, vmax = plotting.plot_frame(frame, crop_to=self.truncation_box,
+                vmini, vmaxi = plotting.plot_frame(frame, crop_to=self.truncation_box,
                                                  cropping_factor=cropping_factor,
                                                  truncate_outside=self.truncation_ellipse, path=plot_path,
                                                  format=format,
-                                                 interval=interval, scale=frame_scale, cmap=cmap,
+                                                 interval=minmax, scale=frame_scale, cmap=cmap,
                                                  normalize_in=self.truncation_ellipse, colorbar=True,
-                                                 mask_negatives=mask_negatives, show_axes=show_axes, transparent=transparent)
+                                                 mask_negatives=mask_negatives, show_axes=show_axes,
+                                                 transparent=transparent, soft_min=soft_min, soft_max=soft_max,
+                                                 soft_max_scaling=soft_max_scaling)
+                if share_limits: vmin, vmax = vmini, vmaxi
 
     # -----------------------------------------------------------------
 
@@ -5445,6 +5408,18 @@ class MapsComponent(MapMakerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def halpha_to_hot_interval(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
     def plot_ionizing(self, maps=True, contours=True, profiles=True, extra=True, negatives=True, nans=True, format="pdf"):
 
         """
@@ -5473,7 +5448,7 @@ class MapsComponent(MapMakerBase):
         if profiles: self.plot_profiles(format=format, clear_other_formats=True)
 
         # Plot the extra maps
-        if extra: self.plot_extra_maps(scale="log", format=format, clear_other_formats=True, cmap=self.halpha_to_hot_cmap)
+        if extra: self.plot_extra_maps(scale="log", format=format, clear_other_formats=True, cmap=self.halpha_to_hot_cmap, interval=self.halpha_to_hot_interval)
 
         # Plot the negative masks
         if negatives: self.plot_negatives(format=format, clear_other_formats=True, count_within=self.central_ellipse)
@@ -5505,5 +5480,145 @@ def select_maps(maps, title, return_names=False):
     # Return the selected maps
     if return_names: return new_maps, names
     else: return new_maps
+
+# -----------------------------------------------------------------
+
+def set_vminvmax(interval=None, strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, share_limits=True):
+
+    """
+    This function ...
+    :param interval:
+    :param strict_vmin:
+    :param strict_vmax:
+    :param soft_vmin:
+    :param soft_vmax:
+    :param share_limits:
+    :return:
+    """
+
+    # Initialize flags
+    passed_min = False
+    passed_max = False
+    soft_min = False
+    soft_max = False
+
+    # The vmin and vmax
+    if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
+
+        if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
+        vmin, vmax = interval
+        passed_min = True
+        passed_max = True
+
+    else:
+
+        # MIN
+
+        if strict_vmin is not None:
+
+            vmin = strict_vmin
+            passed_min = True
+
+        elif soft_vmin is not None:
+
+            vmin = soft_vmin
+            soft_min = True
+            passed_min = True
+
+        else: vmin = None
+
+        # MAX
+
+        if strict_vmax is not None:
+
+            vmax = strict_vmax
+            passed_max = True
+
+        elif soft_vmax is not None:
+
+            vmax = soft_vmax
+            soft_max = True
+            passed_max = True
+
+        else: vmax = None
+
+    # Return
+    return vmin, vmax, passed_min, passed_max, soft_min, soft_max
+
+# -----------------------------------------------------------------
+
+def get_minmax(interval=None, vmin=None, vmax=None, passed_min=False, passed_max=False, share_limits=True, default_interval="pts"):
+
+    """
+    This function ...
+    :param interval:
+    :param vmin:
+    :param vmax:
+    :param passed_min:
+    :param passed_max:
+    :param share_limits:
+    :param default_interval:
+    :return:
+    """
+
+    # Share limits?
+    if share_limits and vmin is not None and vmax is not None: minmax = [vmin, vmax]
+
+    # Passed min and passed max: fixed interval
+    elif passed_min and passed_max: minmax = [vmin, vmax]
+
+    # Interval is set
+    elif interval is not None: minmax = interval
+
+    # Let PTS determine interval
+    else: minmax = default_interval
+
+    # Return
+    return minmax
+
+# -----------------------------------------------------------------
+
+def reset_vminvmax(soft_min, soft_max, interval=None, strict_vmin=None, strict_vmax=None, soft_vmin=None, soft_vmax=None, share_limits=True):
+
+    """
+    This function ...
+    :param soft_min:
+    :param soft_max:
+    :param interval:
+    :param strict_vmin:
+    :param strict_vmax:
+    :param soft_vmin:
+    :param soft_vmax:
+    :param share_limits:
+    :return:
+    """
+
+    if interval is not None and (isinstance(interval, list) or isinstance(interval, tuple)):
+
+        if not share_limits: raise ValueError("share_limits can only be true when interval passed is vmin,vmax")
+        vmin, vmax = interval
+
+    else:
+
+        if strict_vmin is not None: vmin = strict_vmin
+
+        elif soft_vmin is not None:
+
+            vmin = soft_vmin
+            soft_min = True
+
+        else: vmin = None
+
+        if strict_vmax is not None: vmax = strict_vmax
+
+        elif soft_vmax is not None:
+
+            vmax = soft_vmax
+            soft_max = True
+
+        else: vmax = None
+
+    # Return
+    return vmin, vmax, soft_min, soft_max
 
 # -----------------------------------------------------------------
