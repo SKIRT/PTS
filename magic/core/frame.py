@@ -4735,6 +4735,164 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_where_greater_than(self, value, replacement):
+
+        """
+        This function ...
+        :param value:
+        :param replacement
+        :return:
+        """
+
+        # Get the mask
+        mask = self.where_greater_than(value)
+
+        # Replace
+        self.data[mask] = replacement
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def cutoff_greater(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_greater_than(value, value)
+
+    # -----------------------------------------------------------------
+
+    def cutoff_above_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutoff_greater(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_where_smaller_than(self, value, replacement):
+
+        """
+        Thisnf unction ...
+        :param value:
+        :param replacement:
+        :return:
+        """
+
+        # Get the mask
+        mask = self.where_smaller_than(value)
+
+        # Replace
+        self.data[mask] = replacement
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def cutoff_smaller(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_smaller_than(value, value)
+
+    # -----------------------------------------------------------------
+
+    def cutoff_below_zero(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.cutoff_smaller(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_zeroes_where_greater_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_greater_than(value, zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_nans_where_greater_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_greater_than(value, nan_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_infs_where_greater_than(self, value):
+
+        """
+        Thisnf unction ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_greater_than(value, inf_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_zeroes_where_smaller_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_smaller_than(value, zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_nans_where_smaller_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_smaller_than(value, nan_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_infs_where_smaller_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.replace_where_smaller_than(value, inf_value)
+
+    # -----------------------------------------------------------------
+
     def box_like(self, box):
 
         """
