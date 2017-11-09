@@ -64,7 +64,7 @@ class AlphaMask(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, plane=None, hdulist_index=None):
+    def from_file(cls, path, index=None, plane=None, hdulist_index=None, no_wcs=False):
 
         """
         This function ...
@@ -72,6 +72,7 @@ class AlphaMask(object):
         :param index:
         :param plane:
         :param hdulist_index:
+        :param no_wcs:
         :return:
         """
 
@@ -84,7 +85,7 @@ class AlphaMask(object):
         from . import fits as pts_fits
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, no_wcs=no_wcs)
 
         # Set the path
         mask.path = path
@@ -837,6 +838,188 @@ class AlphaMask(object):
 
     # -----------------------------------------------------------------
 
+    def between_levels(self, min_level, max_level, include_min=False, include_max=False):
+
+        """
+        This function ...
+        :param min_level:
+        :param max_level:
+        :param include_min:
+        :param include_max:
+        :return:
+        """
+
+        from .mask import Mask
+
+        # Above (or equal) minimum value
+        if include_min: above = self.data >= min_level
+        else: above = self.data > min_level
+
+        # Below (or equal) maximum value
+        if include_max: below = self.data <= max_level
+        else: below = self.data < max_level
+
+        # Create mask
+        return Mask(above * below, wcs=self.wcs, pixelscale=self.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    def between_levels_filled(self, min_level, max_level, include_min=False, include_max=False):
+
+        """
+        This function ...
+        :param min_level:
+        :param max_level:
+        :param include_min:
+        :param include_max:
+        :return:
+        """
+
+        between = self.between_levels(min_level, max_level, include_min=include_min, include_max=include_max)
+        between.fill_holes(connectivity=4)
+        return between
+
+    # -----------------------------------------------------------------
+
+    @property
+    def between_min_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.between_levels(self.lowest_level, self.highest_level, include_min=False, include_max=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def between_min_max_filled(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        between = self.between_min_max
+        between.fill_holes(connectivity=4)
+        return between
+
+    # -----------------------------------------------------------------
+
+    @property
+    def levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(np.unique(self.data))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlevels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.levels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.levels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.levels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def at_lowest_level(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.equal(self.lowest_level)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def at_highest_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.equal(self.highest_level)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def levels_between_min_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        levels = self.levels
+        if len(levels) < 3: return []
+        else: return self.levels[1:-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def levels_between_transparent_opaque(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        levels = self.levels
+        if levels[0] == min_alpha: levels = levels[1:]
+        if levels[-1] == max_alpha: levels = levels[:-1]
+        return levels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def levels_semitransparent(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.levels_between_transparent_opaque
+
+    # -----------------------------------------------------------------
+
     def get_holes(self, npixels=1, connectivity=8):
 
         """
@@ -849,7 +1032,7 @@ class AlphaMask(object):
         # Perform the segmentation
         segments = detect_sources(self.inverse().data, self.max-1, npixels=npixels, connectivity=connectivity).data
 
-        from ..tools import plotting
+        #from ..tools import plotting
         #plotting.plot_mask(self.inverse())
         #plotting.plot_box(segments)
 
@@ -894,7 +1077,7 @@ class AlphaMask(object):
         holes = self.get_holes(npixels=npixels, connectivity=connectivity)
 
         # Remove holes from the mask
-        self._data[holes] = 255
+        self._data[holes] = max_alpha
 
     # -----------------------------------------------------------------
 
@@ -910,6 +1093,93 @@ class AlphaMask(object):
         # Create new, inverted copy
         new = self.copy()
         new.fill_holes(npixels=npixels, connectivity=connectivity)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def disk_dilate(self, radius=5, niterations=1, nbins=10):
+
+        """
+        This function ...
+        :param radius:disk_dilate
+        :param niterations:
+        :param nbins:
+        :return:
+        """
+
+        # Get all levels
+        #levels = self.levels_between_transparent_opaque
+        levels = self.levels_between_min_max
+
+        # Get the bins
+        freq, edges = np.histogram(levels, nbins)
+        nbins = len(edges) - 1
+
+        # Get the bin centers
+        centers = []
+        for i in range(nbins): centers.append(0.5 * (edges[i] + edges[i + 1]))
+        #nbins = len(centers)
+
+        # Get the bin widths
+        #widths = []
+        #for i in range(len(edges) - 1):
+        #    widths.append(edges[i + 1] - edges[i])
+
+        # Get the lower limits of the bins
+        lower = []
+        for i in range(nbins): lower.append(edges[i])
+
+        # Get the upper limits of the bins
+        upper = []
+        for i in range(nbins): upper.append(edges[i+1])
+
+        # Create new data, filled with lowest level
+        #data = np.zeros_like(self.data)
+        data = np.full(self.data.shape, self.lowest_level)
+
+        # Loop over the bins, starting with the lower levels
+        first = True
+        for lower_value, center_value, upper_value in zip(lower, centers, upper):
+
+            #print(lower_value, upper_value, center_value)
+
+            # Get mask
+            mask = self.between_levels(lower_value, upper_value, include_min=first, include_max=True)
+            first = False
+
+            # Dilate the mask
+            mask.disk_dilate(radius=radius, niterations=niterations)
+
+            # Make integer center level
+            center = int(round(center_value))
+
+            # Set new data
+            data[mask] = center
+
+        # Dilate mask of the maximum value
+        highest_mask = self.at_highest_level
+        highest_mask.disk_dilate(radius=radius, niterations=niterations)
+
+        # Set
+        data[highest_mask] = self.highest_level
+
+        # Set the new data
+        self._data = data
+
+    # -----------------------------------------------------------------
+
+    def disk_dilated(self, radius=5, niterations=1, nbins=10):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :param nbins:
+        :return:
+        """
+
+        new = self.copy()
+        new.disk_dilate(radius=radius, niterations=niterations, nbins=nbins)
         return new
 
     # -----------------------------------------------------------------

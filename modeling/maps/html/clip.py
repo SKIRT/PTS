@@ -1056,8 +1056,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Dust
         if self.config.add_dust: self.check_data_dust()
 
-        exit()
-
     # -----------------------------------------------------------------
 
     def check_data_old(self):
