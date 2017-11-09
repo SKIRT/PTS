@@ -65,9 +65,10 @@ class GreyBody:
     # This function returns the temperature \em T (K) and the dust mass \em M (Msun) for the best grey body fit with
     # the given flux data data points (wavelengths in micron and fluxes in Jy) and uncertainties (relative weights),
     # using the values for distance, power-law exponent, and opacity specified in the constructor of the object.
-    def fit(self, lambdav, fluxv, sigmav):
+    # Optionally, the caller can specify initial values for the temperature (K) and/or dust mass (Msun).
+    def fit(self, lambdav, fluxv, sigmav, Tinit=20, Minit=1e7):
         if np.all(np.asarray(fluxv)>0):
-            popt, pcov = curve_fit(self._bound_greybody, lambdav, fluxv, p0=(17,1e7), sigma=sigmav,
+            popt, pcov = curve_fit(self._bound_greybody, lambdav, fluxv, p0=(Tinit,Minit), sigma=sigmav,
                                     absolute_sigma=False, maxfev=5000)
             return popt
         else:

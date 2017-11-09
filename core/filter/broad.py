@@ -705,7 +705,45 @@ class BroadBandFilter(Filter):
                 # Initialize
                 self._initialize2(wavelengths, transmissions)
 
-            # string --> load from appropriate resource file
+            # SCUBA-2 filters have to be handled seperately
+            elif isinstance(filterspec, types.StringTypes) and "scuba" in filterspec.lower():
+
+                # Select band
+                if "450" in filterspec:
+                    band = "450"
+                elif "850" in filterspec:
+                    band = "850"
+                else:
+                    raise ValueError("Specified SCUBA-2 filter does not exist or is not supported")
+
+                # Load
+                corepath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                filename = os.path.join(corepath, "dat", "filters", "JCMT", "scuba2_{}_transmission.dat".format(band))
+                wavelengths, transmissions = np.loadtxt(filename, unpack=True)
+
+                # Set properties
+                self._WavelengthMin = wavelengths.min()
+                self._WavelengthMax = wavelengths.max()
+                self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
+                self._WavelengthMean = None
+                self._WavelengthEff = None
+                self._EffWidth = None
+                self._FWHM = None
+                self._Wavelengths = wavelengths
+                self._Transmission = transmissions
+                self._PhotonCounter = False
+
+                true_filter = True
+
+                # Determine ID and description
+                identifier = identifiers[filterspec]
+                filter_id = "JCMT/SCUBA-2.{}mu".format(band)
+                description = "JCMT SCUBA-2 {} micron".format(band)
+
+                # Initialize
+                self._initialize1()
+
+            # string --> load from SVO resource file
             elif isinstance(filterspec, types.StringTypes):
 
                 # Load
