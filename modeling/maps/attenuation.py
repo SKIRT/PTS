@@ -135,7 +135,7 @@ class AttenuationMapMaker(MapsComponent):
 
         # Get sSFR maps
         ssfrs, ssfrs_origins, ssfrs_methods, ssfrs_nans = self.select_ssfr_maps(self.config.ssfrs, prompt=self.config.select_ssfr,
-                                                                                title="sSFR maps to create Cortese attenuation maps")
+                                                                                title="sSFR maps to create Cortese attenuation maps", method="colours")
 
         # Get current maps
         if self.config.remake: current = dict()

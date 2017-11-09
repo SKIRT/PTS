@@ -366,11 +366,12 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def select_ssfr_maps(self, names=None, methods=None, prompt=False, title="sSFR maps"):
+    def select_ssfr_maps(self, names=None, method=None, methods=None, prompt=False, title="sSFR maps"):
 
         """
         This function ...
         :param names:
+        :param method:
         :param methods:
         :param prompt:
         :param title:
@@ -378,16 +379,16 @@ class MapMakerBase(GalaxyModelingComponent):
         """
 
         # Get maps
-        ssfrs = self.get_ssfr_maps(flatten=True)
+        ssfrs = self.get_ssfr_maps(flatten=True, method=method, methods=methods)
 
         # Origins
-        ssfrs_origins = self.get_ssfr_origins(flatten=True)
+        ssfrs_origins = self.get_ssfr_origins(flatten=True, method=method, methods=methods)
 
         # Methods
-        ssfrs_methods = self.get_ssfr_methods(flatten=True)
+        ssfrs_methods = self.get_ssfr_methods(flatten=True, method=method, methods=methods)
 
         # Nans
-        ssfrs_nans = self.get_ssfr_nans(flatten=True)
+        ssfrs_nans = self.get_ssfr_nans(flatten=True, method=method, methods=methods)
 
         # Get only certain sSFR maps
         if names is not None:
@@ -423,29 +424,37 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_maps(self, flatten=False, framelist=False):
+    def get_ssfr_maps(self, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.collection.get_ssfr_maps(flatten=flatten, framelist=framelist)
+        return self.collection.get_ssfr_maps(flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_nans(self, flatten=False, framelist=False):
+    def get_ssfr_nans(self, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         Thisfunction ...
         :param flatten:
         :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.collection.get_ssfr_nans(flatten=flatten, framelist=framelist)
+        return self.collection.get_ssfr_nans(flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -2328,15 +2337,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_origins(self, flatten=False):
+    def get_ssfr_origins(self, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.collection.get_ssfr_origins(flatten=flatten)
+        return self.collection.get_ssfr_origins(flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -2517,15 +2530,19 @@ class MapMakerBase(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_methods(self, flatten=False):
+    def get_ssfr_methods(self, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.collection.get_ssfr_methods(flatten=flatten)
+        return self.collection.get_ssfr_methods(flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 

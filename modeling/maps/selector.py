@@ -254,7 +254,7 @@ class ComponentMapsSelector(MapsSelectionComponent):
         log.info("Automatically selecting appropriate sSFR map ...")
 
         preferred_method = "colours"
-        preferred_colours = ["FUV-r", "FUV-H", "FUV-i", "FUV-g"]
+        preferred_colours = ["FUV-r", "FUV-i", "FUV-H", "FUV-g"]
 
         # Select sSFR
         if not self.has_ssfr_maps: raise IOError("No sSFR maps are present")

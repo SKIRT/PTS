@@ -108,7 +108,7 @@ class IonizingStellarMapsMaker(Configurable):
         self.setup(**kwargs)
 
         # 2. Process the H-alpha map
-        self.process_halpha()
+        if self.has_halpha: self.process_halpha()
 
         # 3. Make the maps
         self.make_maps()

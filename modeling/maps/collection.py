@@ -564,15 +564,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_origins(self, flatten=False):
+    def get_ssfr_origins(self, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_ssfr_name, flatten=flatten)
+        return self.get_origins_sub_name(self.maps_ssfr_name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -849,15 +853,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_methods(self, flatten=False):
+    def get_ssfr_methods(self, flatten=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.get_methods_sub_name(self.maps_ssfr_name, flatten=flatten)
+        return self.get_methods_sub_name(self.maps_ssfr_name, flatten=flatten, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1076,29 +1084,37 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_maps(self, flatten=False, framelist=False):
+    def get_ssfr_maps(self, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.get_maps_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist)
+        return self.get_maps_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_nans(self, flatten=False, framelist=False):
+    def get_ssfr_nans(self, flatten=False, framelist=False, method=None, methods=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param method:
+        :param methods:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return self.get_nans_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist)
+        return self.get_nans_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist, method=method, methods=methods, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
