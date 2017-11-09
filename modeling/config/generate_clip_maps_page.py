@@ -107,7 +107,15 @@ definition.add_optional("image_height", "positive_integer", "height of the image
 
 # -----------------------------------------------------------------
 
+# Write data
 definition.add_flag("write_data", "write the data in the form of FITS files", False)
+
+# Clear data?
+definition.add_flag("clear_data", "clear all data", False)
+definition.add_flag("clear_old_data", "clear all data from old stellar maps", False)
+definition.add_flag("clear_young_data", "clear all data from young stellar maps", False)
+definition.add_flag("clear_ionizing_data", "clear all data from ionizing stellar maps", False)
+definition.add_flag("clear_dust_data", "clear all data from dust maps", False)
 
 # -----------------------------------------------------------------
 

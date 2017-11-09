@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import copy
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
@@ -32,6 +33,7 @@ from ...magic.core.mask import Mask
 from ...magic.core.alpha import AlphaMask
 from ...core.basics.range import RealRange
 from ...magic.tools import plotting
+from ...core.basics import containers
 
 # -----------------------------------------------------------------
 
@@ -613,7 +615,7 @@ class MapsSelectionComponent(MapsComponent):
 
     def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
                           npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
-                          return_masks=False):
+                          return_masks=False, current=None, current_masks=None):
 
         """
         This function ...
@@ -630,20 +632,30 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzziness:
         :param fuzziness_offset:
         :param return_masks:
+        :param current:
+        :param current_masks:
         :return:
         """
+
+        # Check
+        if current is not None and current_masks is not None:
+            if not containers.equal_keys(current, current_masks): raise ValueError("levels dictionaries should be the same")
 
         # Make the masks
         masks = self.make_clip_masks(name, origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
                                      rebin_remote_threshold=rebin_remote_threshold, npixels=npixels,
                                      connectivity=connectivity, present=present, fuzzy=fuzzy, fuzziness=fuzziness,
-                                     fuzziness_offset=fuzziness_offset)
+                                     fuzziness_offset=fuzziness_offset, current_masks=current_masks)
 
         # The maps
-        maps = dict()
+        if current is not None: maps = copy.copy(current) # shallow copy
+        else: maps = dict()
 
         # Make the maps
         for levels in masks:
+
+            # Already in the maps dictionary
+            if levels in maps: continue
 
             # Debugging
             log.debug("Clipping the map for sigma levels [" + tostr(levels) + "] ...")
@@ -842,7 +854,7 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
-                        npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.):
+                        npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1., current_masks=None):
 
         """
         Thisn function ...
@@ -858,6 +870,7 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzzy:
         :param fuzziness:
         :param fuzziness_offset:
+        :param current_masks:
         :return:
         """
 
@@ -928,6 +941,11 @@ class MapsSelectionComponent(MapsComponent):
                 log.success("The clipped '" + name + "' map for sigma levels [" + tostr(levels_dict) + "] is already present")
                 continue
 
+            # Check if already created
+            if current_masks is not None and levels_dict in current_masks:
+                masks_levels[levels_dict] = current_masks[levels_dict]
+                continue
+
             # Debugging
             log.debug("Making clip mask for sigma levels [" + tostr(levels_dict) + "] ...")
 
@@ -960,6 +978,8 @@ class MapsSelectionComponent(MapsComponent):
 
             # Fill holes
             mask.fill_holes()
+
+            # TODO: DILATE??
 
             # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
             if not fuzzy: mask.invert()
@@ -1929,7 +1949,8 @@ class MapsSelectionComponent(MapsComponent):
         :return:
         """
 
-        return "sky_blue"
+        #return "sky_blue"
+        return "turquoise"
 
     # -----------------------------------------------------------------
 

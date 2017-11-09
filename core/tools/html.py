@@ -542,6 +542,7 @@ function getCSSRule(ruleName)
     var find = Array.prototype.find;
 
     find.call(document.styleSheets, styleSheet => {
+        if (styleSheet.cssRules == null) { return null; }
         result = find.call(styleSheet.cssRules, cssRule => {
             return cssRule instanceof CSSStyleRule 
                 && cssRule.selectorText.toLowerCase() == ruleName;
@@ -794,6 +795,7 @@ dark_tables_function = """
 function darkTables()
 {
     var hovertable = getCSSRule('table.hovertable tr:hover, table.sortable tr:hover');
+    if (hovertable == null) { return; }
     //window.alert(hovertable);
     hovertable.style["background-color"] = "#3b3d3f";
 }
@@ -805,6 +807,7 @@ light_tables_function = """
 function lightTables()
 {
     var hovertable = getCSSRule('table.hovertable tr:hover, table.sortable tr:hover');
+    if (hovertable == null) { return; }
     //window.alert(hovertable);
     hovertable.style["background-color"] = "lightgrey";
 }

@@ -116,11 +116,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # The sliders
         self.sliders = None
 
+        # The clipped maps
+        self.old_clipped_maps = dict()
+        self.young_clipped_maps = dict()
+        self.ionizing_clipped_maps = dict()
+        self.dust_clipped_maps = dict()
+
         # The masks
         self.old_masks = dict()
         self.young_masks = dict()
         self.ionizing_masks = dict()
         self.dust_masks = dict()
+
+        # Has all data (clipped maps and masks)?
+        self.has_all_data_old = dict()
+        self.has_all_data_young = dict()
+        self.has_all_data_ionizing = dict()
+        self.has_all_data_dust = dict()
 
     # -----------------------------------------------------------------
 
@@ -143,6 +155,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # 4. Check present maps
         if not self.config.replot: self.check_present()
+
+        # Check data
+        if not self.config.clear_data: self.check_data()
 
         # 5. Process the maps
         self.process_maps()
@@ -200,6 +215,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         if fs.is_directory(self.image_mask_plots_path):
             if self.config.replot or self.config.replot_image_masks: fs.clear_directory(self.image_mask_plots_path)
         else: fs.create_directory(self.image_mask_plots_path)
+
+        # Clear data?
+        if self.config.clear_data and fs.is_directory(self.clipped_data_path): fs.clear_directory(self.clipped_data_path)
+        if self.config.clear_old_data and fs.is_directory(self.clipped_data_old_path): fs.remove_directory(self.clipped_data_old_path)
+        if self.config.clear_young_data and fs.is_directory(self.clipped_data_young_path): fs.remove_directory(self.clipped_data_young_path)
+        if self.config.clear_ionizing_data and fs.is_directory(self.clipped_data_ionizing_path): fs.remove_directory(self.clipped_data_ionizing_path)
 
         # Load the selection
         self.load_selection()
@@ -1001,7 +1022,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Create string for the levels
-        levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+        #levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__", value_delimiter='-')[1] # key_delimiter is not yet implemented, value_delimiter is not right
+        levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__", replace_spaces_keys="-")[1]
 
         # Determine path for the map and mask
         map_filename = name + "___" + levels_string + ".fits"
@@ -1009,6 +1031,348 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Return the names
         return map_filename, mask_filename
+
+    # -----------------------------------------------------------------
+
+    def check_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking existing data ...")
+
+        # Old
+        if self.config.add_old: self.check_data_old()
+
+        # Young
+        if self.config.add_young: self.check_data_young()
+
+        # Ionizing
+        if self.config.add_ionizing: self.check_data_ionizing()
+
+        # Dust
+        if self.config.add_dust: self.check_data_dust()
+
+        exit()
+
+    # -----------------------------------------------------------------
+
+    def check_data_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking existing data for old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.process_old_map_names:
+
+            # Debugging
+            log.debug("Checking data for the '" + name + "' old stellar map ...")
+
+            # Get the origins
+            origins = self.old_map_origins[name]
+
+            # Get image names
+            names = [str(fltr) for fltr in origins]
+
+            # Get the corresponding sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Has all?
+            has_all = True
+
+            # Loop over the different combinations
+            for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels_combination)})
+
+                # Debugging
+                levels_string = self.levels_to_string(levels_dict)
+                log.debug("Checking data for the combination '" + levels_string + "' ...")
+
+                # Debugging
+                if log.is_debug():
+                    map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+                    log.debug("Looking for files: '" + map_filepath + "' and '" + mask_filepath + "' ...")
+
+                # Check whether file is present
+                if self.has_old_map_and_mask_for_levels(name, levels_dict):
+
+                    # Success
+                    log.success("Data for combination '" + levels_string + "' is present")
+
+                    # Load map and mask
+                    the_map, mask = self.load_old_map_and_mask_for_levels(name, levels_dict)
+
+                    # Set flag
+                    the_map.metadata["finished"] = False
+
+                    # Initialize
+                    if name not in self.old_clipped_maps: self.old_clipped_maps[name] = dict()
+                    if name not in self.old_masks: self.old_masks[name] = dict()
+
+                    # Replace by a dictionary of maps
+                    self.old_clipped_maps[name][levels_dict] = the_map
+
+                    # Set the masks
+                    self.old_masks[name][levels_dict] = mask
+
+                # Doesn't have map and mask for each levels dict
+                else: has_all = False
+
+            # Set has all flag
+            self.has_all_data_old[name] = has_all
+
+            # If has all: remove the map
+            if has_all: del self.old_maps[name]
+
+            # Succes
+            if has_all: log.success("All data is already present for the '" + name + "' old stellar map")
+
+    # -----------------------------------------------------------------
+
+    def check_data_young(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking existing data for young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.process_young_map_names:
+
+            # Debugging
+            log.debug("Checking data for the '" + name + "' young stellar map ...")
+
+            # Get the origins
+            origins = self.young_map_origins[name]
+
+            # Get image names
+            names = [str(fltr) for fltr in origins]
+
+            # Get the corresponding sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Has all?
+            has_all = True
+
+            # Loop over the different combinations
+            for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels_combination)})
+
+                # Debugging
+                levels_string = self.levels_to_string(levels_dict)
+                log.debug("Checking data for the combination '" + levels_string + "' ...")
+
+                # Debugging
+                if log.is_debug():
+                    map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+                    log.debug("Looking for files: '" + map_filepath + "' and '" + mask_filepath + "' ...")
+
+                # Check whether file is present
+                if self.has_young_map_and_mask_for_levels(name, levels_dict):
+
+                    # Success
+                    log.success("Data for combination '" + levels_string + "' is present")
+
+                    # Load map and mask
+                    the_map, mask = self.load_young_map_and_mask_for_levels(name, levels_dict)
+
+                    # Set flag
+                    the_map.metadata["finished"] = False
+
+                    # Initialize
+                    if name not in self.young_clipped_maps: self.young_clipped_maps[name] = dict()
+                    if name not in self.young_masks: self.young_masks[name] = dict()
+
+                    # Replace by a dictionary of maps
+                    self.young_clipped_maps[name][levels_dict] = the_map
+
+                    # Set the masks
+                    self.young_masks[name][levels_dict] = mask
+
+                # Doesn't have map and mask for each levels dict
+                else: has_all = False
+
+            # Set has all flag
+            self.has_all_data_young[name] = has_all
+
+            # If has all: remove the map
+            if has_all: del self.young_maps[name]
+
+            # Succes
+            if has_all: log.success("All data is already present for the '" + name + "' young stellar map")
+
+    # -----------------------------------------------------------------
+
+    def check_data_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking existing data for ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.process_ionizing_map_names:
+
+            # Debugging
+            log.debug("Checking data for the '" + name + "' ionizing stellar map ...")
+
+            # Get the origins
+            origins = self.ionizing_map_origins[name]
+
+            # Get image names
+            names = [str(fltr) for fltr in origins]
+
+            # Get the corresponding sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Has all?
+            has_all = True
+
+            # Loop over the different combinations
+            for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels_combination)})
+
+                # Debugging
+                levels_string = self.levels_to_string(levels_dict)
+                log.debug("Checking data for the combination '" + levels_string + "' ...")
+
+                # Debugging
+                if log.is_debug():
+                    map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+                    log.debug("Looking for files: '" + map_filepath + "' and '" + mask_filepath + "' ...")
+
+                # Check whether file is present
+                if self.has_ionizing_map_and_mask_for_levels(name, levels_dict):
+
+                    # Success
+                    log.success("Data for combination '" + levels_string + "' is present")
+
+                    # Load map and mask
+                    the_map, mask = self.load_ionizing_map_and_mask_for_levels(name, levels_dict)
+
+                    # Set flag
+                    the_map.metadata["finished"] = False
+
+                    # Initialize
+                    if name not in self.ionizing_clipped_maps: self.ionizing_clipped_maps[name] = dict()
+                    if name not in self.ionizing_masks: self.ionizing_masks[name] = dict()
+
+                    # Replace by a dictionary of maps
+                    self.ionizing_clipped_maps[name][levels_dict] = the_map
+
+                    # Set the masks
+                    self.ionizing_masks[name][levels_dict] = mask
+
+                # Doesn't have map and mask for each levels dict
+                else: has_all = False
+
+            # Set has all flag
+            self.has_all_data_ionizing[name] = has_all
+
+            # If has all: remove the map
+            if has_all: del self.ionizing_maps[name]
+
+            # Succes
+            if has_all: log.success("All data is already present for the '" + name + "' ionizing stellar map")
+
+    # -----------------------------------------------------------------
+
+    def check_data_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking existing data for dust maps ...")
+
+        # Loop over the maps
+        for name in self.process_dust_map_names:
+
+            # Debugging
+            log.debug("Checking data for the '" + name + "' dust map ...")
+
+            # Get the origins
+            origins = self.dust_map_origins[name]
+
+            # Get image names
+            names = [str(fltr) for fltr in origins]
+
+            # Get the corresponding sigma levels
+            sigma_levels = self.get_sigma_levels_for_origins(origins, as_list=True)
+
+            # Has all?
+            has_all = True
+
+            # Loop over the different combinations
+            for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
+
+                # Create dictionary that says which sigma level was used for which frame
+                levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels_combination)})
+
+                # Debugging
+                levels_string = self.levels_to_string(levels_dict)
+                log.debug("Checking data for the combination '" + levels_string + "' ...")
+
+                # Debugging
+                if log.is_debug():
+                    map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+                    log.debug("Looking for files: '" + map_filepath + "' and '" + mask_filepath + "' ...")
+
+                # Check whether file is present
+                if self.has_dust_map_and_mask_for_levels(name, levels_dict):
+
+                    # Success
+                    log.success("Data for combination '" + levels_string + "' is present")
+
+                    # Load map and mask
+                    the_map, mask = self.load_dust_map_and_mask_for_levels(name, levels_dict)
+
+                    # Set flag
+                    the_map.metadata["finished"] = False
+
+                    # Initialize
+                    if name not in self.dust_clipped_maps: self.dust_clipped_maps[name] = dict()
+                    if name not in self.dust_masks: self.dust_masks[name] = dict()
+
+                    # Replace by a dictionary of maps
+                    self.dust_clipped_maps[name][levels_dict] = the_map
+
+                    # Set the masks
+                    self.dust_masks[name][levels_dict] = mask
+
+                # Doesn't have map and mask for each levels dict
+                else: has_all = False
+
+            # Set has all flag
+            self.has_all_data_dust[name] = has_all
+
+            # If has all: remove the map
+            if has_all: del self.dust_maps[name]
+
+            # Succes
+            if has_all: log.success("All data is already present for the '" + name + "' dust stellar map")
 
     # -----------------------------------------------------------------
 
@@ -1070,6 +1434,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_old_map_names:
 
+            # Needed?
+            if name not in self.old_maps:
+                if not self.has_all_data_old[name]: raise ValueError("Something went wrong")
+                if not len(self.old_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Correcting the '" + name + "' old stellar map ...")
 
@@ -1093,6 +1463,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.process_young_map_names:
+
+            # Needed?
+            if name not in self.young_maps:
+                if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
+                if not len(self.young_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
 
             # Debugging
             log.debug("Correcting the '" + name + "' young stellar map ...")
@@ -1118,6 +1494,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_ionizing_map_names:
 
+            # Needed?
+            if name not in self.ionizing_maps:
+                if not self.has_all_data_ionizing[name]: raise ValueError("Something went wrong")
+                if not len(self.ionizing_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Correcting the '" + name + "' ionizing stellar map ...")
 
@@ -1141,6 +1523,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.process_dust_map_names:
+
+            # Needed?
+            if name not in self.dust_maps:
+                if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
+                if not len(self.dust_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
 
             # Debugging
             log.debug("Correcting the '" + name + "' dust map ...")
@@ -1190,6 +1578,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_old_map_names:
 
+            # Needed?
+            if name not in self.old_maps:
+                if not self.has_all_data_old[name]: raise ValueError("Something went wrong")
+                if not len(self.old_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Cropping the '" + name + "' old stellar map ...")
 
@@ -1213,6 +1607,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.process_young_map_names:
+
+            # Needed?
+            if name not in self.young_maps:
+                if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
+                if not len(self.young_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
 
             # Debugging
             log.debug("Cropping the '" + name + "' young stellar map ...")
@@ -1238,6 +1638,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_ionizing_map_names:
 
+            # Needed?
+            if name not in self.ionizing_maps:
+                if not self.has_all_data_ionizing[name]: raise ValueError("Something went wrong")
+                if not len(self.ionizing_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Cropping the '" + name + "' ionizing stellar map ...")
 
@@ -1261,6 +1667,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.process_dust_map_names:
+
+            # Needed?
+            if name not in self.dust_maps:
+                if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
+                if not len(self.dust_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
 
             # Debugging
             log.debug("Cropping the '" + name + "' dust map ...")
@@ -1649,6 +2061,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             #    log.success("All plots for the '" + name + "' image at the requested sigma levels are already present")
             #    continue
 
+            # Needed?
+            if name not in self.old_maps:
+                if not self.has_all_data_old[name]: raise ValueError("Something went wrong")
+                if not len(self.old_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' old stellar map ...")
 
@@ -1663,15 +2081,17 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Clip the map
             maps, masks = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
-                                          convolve=self.config.convolve, remote=self.remote,
-                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_old_plots_level_combinations_for(name),
-                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
+                                              convolve=self.config.convolve, remote=self.remote,
+                                              rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                              npixels=self.config.min_npixels, connectivity=self.config.connectivity,
+                                              present=self.present_old_plots_level_combinations_for(name),
+                                              fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
+                                              fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
+                                              current=self.old_clipped_maps[name], current_masks=self.old_masks[name])
 
             # Replace by a dictionary of maps
-            self.old_maps[name] = maps
+            #self.old_maps[name] = maps
+            self.old_clipped_maps[name] = maps
 
             # Set the masks
             self.old_masks[name] = masks
@@ -1724,6 +2144,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def load_old_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get the filepaths
+        map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
+
+        # Return
+        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
     def write_old_maps_and_masks(self, name, maps, masks):
 
         """
@@ -1767,6 +2204,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
             #     continue
 
+            # Needed?
+            if name not in self.young_maps:
+                if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
+                if not len(self.young_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' young stellar map ...")
 
@@ -1779,6 +2222,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
+            # Get current
+            current = self.young_clipped_maps[name] if name in self.young_clipped_maps else None
+            current_masks = self.young_masks[name] if name in self.young_masks else None
+
             # Clip the map
             maps, masks = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
@@ -1786,10 +2233,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
                                           present=self.present_young_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
+                                          current=current, current_masks=current_masks)
 
             # Replace by a dictionary of maps
-            self.young_maps[name] = maps
+            #self.young_maps[name] = maps
+            self.young_clipped_maps[name] = maps
 
             # Set the masks
             self.young_masks[name] = masks
@@ -1842,6 +2291,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def load_young_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        Thisnf unction ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
+
+        # Return
+        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
     def write_young_maps_and_masks(self, name, maps, masks):
 
         """
@@ -1885,6 +2351,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
             #     continue
 
+            # Needed?
+            if name not in self.ionizing_maps:
+                if not self.has_all_data_ionizing[name]: raise ValueError("Something went wrong")
+                if not len(self.ionizing_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' ionizing stellar map ...")
 
@@ -1897,6 +2369,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
+            # Get current
+            current = self.ionizing_clipped_maps[name] if name in self.ionizing_clipped_maps else None
+            current_masks = self.ionizing_masks[name] if name in self.ionizing_masks else None
+
             # Clip the map
             maps, masks = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
@@ -1904,10 +2380,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
                                           present=self.present_ionizing_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
+                                          current=current, current_masks=current_masks)
 
             # Replace by a dictionary of maps
-            self.ionizing_maps[name] = maps
+            #self.ionizing_maps[name] = maps
+            self.ionizing_clipped_maps[name] = maps
 
             # Set the masks
             self.ionizing_masks[name] = masks
@@ -1960,6 +2438,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def load_ionizing_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
+
+        # Return
+        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
     def write_ionizing_maps_and_masks(self, name, maps, masks):
 
         """
@@ -2003,6 +2498,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
             #     continue
 
+            # Needed?
+            if name not in self.dust_maps:
+                if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
+                if not len(self.dust_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
+                continue
+
             # Debugging
             log.debug("Clipping the '" + name + "' dust map ...")
 
@@ -2015,6 +2516,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
+            # Get current
+            current = self.dust_clipped_maps[name] if name in self.dust_clipped_maps else None
+            current_masks = self.dust_masks[name] if name in self.dust_masks else None
+
             # Clip the map
             maps, masks = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
@@ -2022,10 +2527,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
                                           present=self.present_dust_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True)
+                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
+                                          current=self.dust_clipped_maps[name], current_masks=self.dust_masks[name])
 
             # Replace by a dictionary of maps
-            self.dust_maps[name] = maps
+            #self.dust_maps[name] = maps
+            self.dust_clipped_maps[name] = maps
 
             # Set the masks
             self.dust_masks[name] = masks
@@ -2075,6 +2582,23 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Return
         return fs.is_file(map_filepath) and fs.is_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
+
+        # Return
+        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2347,7 +2871,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' old stellar map ...")
 
             # Loop over the levels dicts
-            for levels in self.old_maps[name]:
+            #for levels in self.old_maps[name]:
+            for levels in self.old_clipped_maps[name]:
 
                 # Get the filepath
                 filepath = self.get_old_map_filepath(name, levels)
@@ -2359,10 +2884,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.old_maps[name][levels], filepath, colours=self.old_color, scale=self.old_scale)
+                self.make_rgba_plot(self.old_clipped_maps[name][levels], filepath, colours=self.old_color, scale=self.old_scale)
 
             # Clear
-            del self.old_maps[name]
+            del self.old_clipped_maps[name]
             gc.collect()
 
     # -----------------------------------------------------------------
@@ -2502,7 +3027,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' young stellar map ...")
 
             # Loop over the levels dicts
-            for levels in self.young_maps[name]:
+            #for levels in self.young_maps[name]:
+            for levels in self.young_clipped_maps[name]:
 
                 # Get filepath
                 filepath = self.get_young_map_filepath(name, levels)
@@ -2514,10 +3040,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.young_maps[name][levels], filepath, colours=self.young_color, scale=self.young_scale)
+                self.make_rgba_plot(self.young_clipped_maps[name][levels], filepath, colours=self.young_color, scale=self.young_scale)
 
             # Clear
-            del self.young_maps[name]
+            del self.young_clipped_maps[name]
             gc.collect()
 
     # -----------------------------------------------------------------
@@ -2657,7 +3183,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' ionizing stellar map ...")
 
             # Loop over the levels dicts
-            for levels in self.ionizing_maps[name]:
+            #for levels in self.ionizing_maps[name]:
+            for levels in self.ionizing_clipped_maps[name]:
 
                 # Get the filepath
                 filepath = self.get_ionizing_map_filepath(name, levels)
@@ -2669,10 +3196,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.ionizing_maps[name][levels], filepath, colours=self.ionizing_color, scale=self.ionizing_scale)
+                self.make_rgba_plot(self.ionizing_clipped_maps[name][levels], filepath, colours=self.ionizing_color, scale=self.ionizing_scale)
 
             # Clear
-            del self.ionizing_maps[name]
+            del self.ionizing_clipped_maps[name]
             gc.collect()
 
     # -----------------------------------------------------------------
@@ -2811,7 +3338,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' dust map ...")
 
             # Loop over the levels dicts
-            for levels in self.dust_maps[name]:
+            #for levels in self.dust_maps[name]:
+            for levels in self.dust_clipped_maps[name]:
 
                 # Get the filepath
                 filepath = self.get_dust_map_filepath(name, levels)
@@ -2823,10 +3351,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
-                self.make_rgba_plot(self.dust_maps[name][levels], filepath, colours=self.dust_color, scale=self.dust_scale)
+                self.make_rgba_plot(self.dust_clipped_maps[name][levels], filepath, colours=self.dust_color, scale=self.dust_scale)
 
             # Clear
-            del self.dust_maps[name]
+            del self.dust_clipped_maps[name]
             gc.collect()
 
     # -----------------------------------------------------------------

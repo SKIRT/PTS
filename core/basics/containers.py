@@ -1119,6 +1119,24 @@ def equal_dicts(dict_a, dict_b):
 
 # -----------------------------------------------------------------
 
+def equal_keys(dict_a, dict_b):
+
+    """
+    This function ...
+    :param dict_a:
+    :param dict_b:
+    :return:
+    """
+
+    if len(dict_a) != len(dict_b): return False
+
+    for key in dict_a:
+        if key not in dict_b: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
 def close_dicts(dict_a, dict_b, rtol=1.e-5, atol=1.e-8):
 
     """

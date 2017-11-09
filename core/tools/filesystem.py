@@ -1396,6 +1396,60 @@ def rename_file_path(file_path, new_name):
 
 # -----------------------------------------------------------------
 
+def replace_file_path(file_path, replace, replace_with):
+
+    """
+    This function ...
+    :param file_path:
+    :param replace:
+    :param replace_with:
+    :return:
+    """
+
+    directory = directory_of(file_path)
+    original_name = name(file_path)
+    new_name = original_name.replace(replace, replace_with)
+    return rename_file(directory, original_name, new_name)
+
+# -----------------------------------------------------------------
+
+def replace_file_paths_in_path(path, replace, replace_with, **kwargs):
+
+    """
+    This function ...
+    :param path:
+    :param replace:
+    :param replace_with:
+    :param kwargs:
+    :return:
+    """
+
+    # Loop over the files
+    for filepath in files_in_path(path, **kwargs):
+
+        # Replace in the filepath
+        replace_file_path(filepath, replace, replace_with)
+
+# -----------------------------------------------------------------
+
+def replace_file_paths_in_cwd(replace, replace_with, **kwargs):
+
+    """
+    This function ...
+    :param replace:
+    :param replace_with:
+    :param kwargs:
+    :return:
+    """
+
+    # Loop over the files
+    for filepath in files_in_cwd(**kwargs):
+
+        # Replace in the filepath
+        replace_file_path(filepath, replace, replace_with)
+
+# -----------------------------------------------------------------
+
 def remove_extension(filepath):
 
     """
