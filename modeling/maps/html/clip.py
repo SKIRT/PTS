@@ -2079,6 +2079,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
+            # Get current
+            current = self.old_clipped_maps[name] if name in self.old_clipped_maps else None
+            current_masks = self.old_masks[name] if name in self.old_masks else None
+
             # Clip the map
             maps, masks = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
                                               convolve=self.config.convolve, remote=self.remote,
@@ -2087,7 +2091,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               present=self.present_old_plots_level_combinations_for(name),
                                               fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                               fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                              current=self.old_clipped_maps[name], current_masks=self.old_masks[name])
+                                              current=current, current_masks=current_masks)
 
             # Replace by a dictionary of maps
             #self.old_maps[name] = maps
@@ -2157,7 +2161,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2304,7 +2308,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2451,7 +2455,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2528,7 +2532,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_dust_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=self.dust_clipped_maps[name], current_masks=self.dust_masks[name])
+                                          current=current, current_masks=current_masks)
 
             # Replace by a dictionary of maps
             #self.dust_maps[name] = maps
@@ -2598,7 +2602,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 

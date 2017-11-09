@@ -58,7 +58,7 @@ class Mask(MaskBase):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, plane=None, hdulist_index=None):
+    def from_file(cls, path, index=None, plane=None, hdulist_index=None, no_wcs=False):
 
         """
         This function ...
@@ -66,6 +66,7 @@ class Mask(MaskBase):
         :param index:
         :param plane:
         :param hdulist_index:
+        :param no_wcs:
         :return:
         """
 
@@ -78,7 +79,7 @@ class Mask(MaskBase):
         from . import fits as pts_fits  # Import here because io imports SegmentationMap
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, no_wcs=no_wcs)
 
         # Set the path
         mask.path = path
