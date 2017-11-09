@@ -13,7 +13,8 @@ from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-relative_sigma_levels = [0.2, 0.3, 0.4, 0.5, 0.75, 0.85, 1.]
+#relative_sigma_levels = [0.2, 0.3, 0.4, 0.5, 0.75, 0.85, 1.]
+relative_sigma_levels = [0.5, 0.75, 1.]
 default_relative_sigma_level = 1.0
 
 # -----------------------------------------------------------------
@@ -71,6 +72,23 @@ definition.add_flag("add_dust", "add dust maps", True)
 # Sigma levels
 definition.add_positional_optional("sigma_levels", "ascending_real_list", "different sigma levels for which to generate significance masks", relative_sigma_levels)
 definition.add_optional("default_sigma_level", "real", "default sigma level", default_relative_sigma_level)
+
+# Additional levels for some images
+definition.add_optional("additional_levels", "filter_real_list_dictionary", "additional relative sigma levels for some images")
+
+# DEFAULT SIGMA LEVELS FROM LEVELS FILE
+
+# Get indices of level files
+current_indices = fs.files_in_path(maps_components_path, extension="dat", returns="name", startswith="levels", convert=int, sort=int, convert_split_index=1, convert_split_pattern="_")
+
+# There are current level files
+if len(current_indices) == 0: definition.add_fixed("default_levels_from", "use default levels from levels file", None)
+
+# Just one level file: use it
+elif len(current_indices) == 1: definition.add_fixed("default_levels_from", "use default levels from levels file", current_indices[0])
+
+# More than one
+else: definition.add_optional("default_levels_from", "positive_integer", "use default levels from levels file", choices=current_indices)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", False)

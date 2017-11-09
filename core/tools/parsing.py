@@ -1188,6 +1188,27 @@ def filter_real_dictionary(argument):
     new = dict()
     for key, value in d.items():
         fltr = filter(key)
+        if not types.is_real_type(value): raise ValueError("All values must be real numbers")
+        new[fltr] = value
+
+    # Return the dictionary
+    return new
+
+# -----------------------------------------------------------------
+
+def filter_real_list_dictionary(argument):
+
+    """
+    Thisf unction ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    new = dict()
+    for key, value in d.items():
+        fltr = filter(key)
+        if not types.is_real_sequence(value): raise ValueError("All values must be real sequences")
         new[fltr] = value
 
     # Return the dictionary

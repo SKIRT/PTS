@@ -991,6 +991,27 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def get_map_and_masks_filenames_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Create string for the levels
+        levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
+
+        # Determine path for the map and mask
+        map_filename = name + "___" + levels_string + ".fits"
+        mask_filename = name + "___" + levels_string + "_mask.fits"
+
+        # Return the names
+        return map_filename, mask_filename
+
+    # -----------------------------------------------------------------
+
     def process_maps(self):
 
         """
@@ -1656,29 +1677,75 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.old_masks[name] = masks
 
             # Write the data
-            if self.config.write_data:
-
-                # Loop over the level combinations
-                for levels_dict in maps:
-
-                    # Create string for the levels
-                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
-
-                    # Determine path for the map and mask
-                    map_filename = name + "___" + levels_string + ".fits"
-                    mask_filename = name + "___" + levels_string + "_mask.fits"
-
-                    # Determine filepaths
-                    path = self.clipped_data_old_path_for_map(name, create=True)
-                    map_filepath = fs.join(path, map_filename)
-                    mask_filepath = fs.join(path, mask_filename)
-
-                    # Save
-                    maps[levels_dict].saveto(map_filepath)
-                    masks[levels_dict].saveto(mask_filepath)
+            if self.config.write_data: self.write_old_maps_and_masks(name, maps, masks)
 
             # Cleanup
             gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def get_old_map_and_mask_paths_for_levels(self, name, levels_dict, create=True):
+
+        """
+        Thisf unction ....
+        :param name:
+        :param levels_dict:
+        :param create:
+        :return:
+        """
+
+        # Get filenames
+        map_filename, mask_filename = self.get_map_and_masks_filenames_for_levels(name, levels_dict)
+
+        # Determine filepaths
+        path = self.clipped_data_old_path_for_map(name, create=create)
+        map_filepath = fs.join(path, map_filename)
+        mask_filepath = fs.join(path, mask_filename)
+
+        # Return the filepaths
+        return map_filepath, mask_filepath
+
+    # -----------------------------------------------------------------
+
+    def has_old_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get the filepaths
+        map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+
+        # Return
+        return fs.is_file(map_filepath) and fs.is_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_old_maps_and_masks(self, name, maps, masks):
+
+        """
+        This function ...
+        :param name:
+        :param maps:
+        :param masks:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the clipped old stellar maps and clip masks for the '" + name + "' map ...")
+
+        # Loop over the level combinations
+        for levels_dict in maps:
+
+            # Get filepaths
+            map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
+
+            # Save
+            maps[levels_dict].saveto(map_filepath)
+            masks[levels_dict].saveto(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1728,29 +1795,75 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.young_masks[name] = masks
 
             # Write the data
-            if self.config.write_data:
-
-                # Loop over the level combinations
-                for levels_dict in maps:
-
-                    # Create string for the levels
-                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
-
-                    # Determine path for the map and mask
-                    map_filename = name + "___" + levels_string + ".fits"
-                    mask_filename = name + "___" + levels_string + "_mask.fits"
-
-                    # Determine filepaths
-                    path = self.clipped_data_young_path_for_map(name, create=True)
-                    map_filepath = fs.join(path, map_filename)
-                    mask_filepath = fs.join(path, mask_filename)
-
-                    # Save
-                    maps[levels_dict].saveto(map_filepath)
-                    masks[levels_dict].saveto(mask_filepath)
+            if self.config.write_data: self.write_young_maps_and_masks(name, maps, masks)
 
             # Cleanup
             gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_and_mask_paths_for_levels(self, name, levels_dict, create=True):
+
+        """
+        Thisf unction ....
+        :param name:
+        :param levels_dict:
+        :param create:
+        :return:
+        """
+
+        # Get filenames
+        map_filename, mask_filename = self.get_map_and_masks_filenames_for_levels(name, levels_dict)
+
+        # Determine filepaths
+        path = self.clipped_data_young_path_for_map(name, create=create)
+        map_filepath = fs.join(path, map_filename)
+        mask_filepath = fs.join(path, mask_filename)
+
+        # Return the filepaths
+        return map_filepath, mask_filepath
+
+    # -----------------------------------------------------------------
+
+    def has_young_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+
+        # Check and return
+        return fs.is_file(map_filepath) and fs.is_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_young_maps_and_masks(self, name, maps, masks):
+
+        """
+        This function ...
+        :param name:
+        :param maps:
+        :param masks:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the clipped young stellar maps and clip masks for the '" + name + "' map ...")
+
+        # Loop over the level combinations
+        for levels_dict in maps:
+
+            # Get filepaths
+            map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
+
+            # Save
+            maps[levels_dict].saveto(map_filepath)
+            masks[levels_dict].saveto(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1800,29 +1913,75 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.ionizing_masks[name] = masks
 
             # Write the data
-            if self.config.write_data:
-
-                # Loop over the level combinations
-                for levels_dict in maps:
-
-                    # Create string for the levels
-                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
-
-                    # Determine path for the map and mask
-                    map_filename = name + "___" + levels_string + ".fits"
-                    mask_filename = name + "___" + levels_string + "_mask.fits"
-
-                    # Determine filepaths
-                    path = self.clipped_data_ionizing_path_for_map(name, create=True)
-                    map_filepath = fs.join(path, map_filename)
-                    mask_filepath = fs.join(path, mask_filename)
-
-                    # Save
-                    maps[levels_dict].saveto(map_filepath)
-                    masks[levels_dict].saveto(mask_filepath)
+            if self.config.write_data: self.write_ionizing_maps_and_masks(name, maps, masks)
 
             # Cleanup
             gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_map_and_mask_paths_for_levels(self, name, levels_dict, create=True):
+
+        """
+        Thisf unction ....
+        :param name:
+        :param levels_dict:
+        :param create:
+        :return:
+        """
+
+        # Get filenames
+        map_filename, mask_filename = self.get_map_and_masks_filenames_for_levels(name, levels_dict)
+
+        # Determine filepaths
+        path = self.clipped_data_ionizing_path_for_map(name, create=create)
+        map_filepath = fs.join(path, map_filename)
+        mask_filepath = fs.join(path, mask_filename)
+
+        # Return the filepaths
+        return map_filepath, mask_filepath
+
+    # -----------------------------------------------------------------
+
+    def has_ionizing_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+
+        # Check and return
+        return fs.is_file(map_filepath) and fs.is_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_maps_and_masks(self, name, maps, masks):
+
+        """
+        This function ...
+        :param name:
+        :param maps:
+        :param masks:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the clipped ionizing stellar maps and clip masks for the '" + name + "' map ...")
+
+        # Loop over the level combinations
+        for levels_dict in maps:
+
+            # Get filepaths
+            map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
+
+            # Save
+            maps[levels_dict].saveto(map_filepath)
+            masks[levels_dict].saveto(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1872,29 +2031,75 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.dust_masks[name] = masks
 
             # Write the data
-            if self.config.write_data:
-
-                # Loop over the level combinations
-                for levels_dict in maps:
-
-                    # Create string for the levels
-                    levels_string = stringify_dict(levels_dict, quote_key=False, quote_value=False, identity_symbol="_", delimiter="__")[1]
-
-                    # Determine path for the map and mask
-                    map_filename = name + "___" + levels_string + ".fits"
-                    mask_filename = name + "___" + levels_string + "_mask.fits"
-
-                    # Determine filepaths
-                    path = self.clipped_data_dust_path_for_map(name, create=True)
-                    map_filepath = fs.join(path, map_filename)
-                    mask_filepath = fs.join(path, mask_filename)
-
-                    # Save
-                    maps[levels_dict].saveto(map_filepath)
-                    masks[levels_dict].saveto(mask_filepath)
+            if self.config.write_data: self.write_dust_maps_and_masks(name, maps, masks)
 
             # Cleanup
             gc.collect()
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_and_mask_paths_for_levels(self, name, levels_dict, create=True):
+
+        """
+        Thisf unction ....
+        :param name:
+        :param levels_dict:
+        :param create:
+        :return:
+        """
+
+        # Get filenames
+        map_filename, mask_filename = self.get_map_and_masks_filenames_for_levels(name, levels_dict)
+
+        # Determine filepaths
+        path = self.clipped_data_dust_path_for_map(name, create=create)
+        map_filepath = fs.join(path, map_filename)
+        mask_filepath = fs.join(path, mask_filename)
+
+        # Return the filepaths
+        return map_filepath, mask_filepath
+
+    # -----------------------------------------------------------------
+
+    def has_dust_map_and_mask_for_levels(self, name, levels_dict):
+
+        """
+        This function ...
+        :param name:
+        :param levels_dict:
+        :return:
+        """
+
+        # Get filepaths
+        map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict, create=False)
+
+        # Return
+        return fs.is_file(map_filepath) and fs.is_file(mask_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps_and_masks(self, name, maps, masks):
+
+        """
+        This function ...
+        :param name:
+        :param maps:
+        :param masks:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the clipped dust maps and clip masks for the '" + name + "' map ...")
+
+        # Loop over the level combinations
+        for levels_dict in maps:
+
+            # Get filepaths
+            map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
+
+            # Save
+            maps[levels_dict].saveto(map_filepath)
+            masks[levels_dict].saveto(mask_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2703,6 +2908,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
+        # Return as a list?
         if as_list:
 
             levels = []
@@ -2710,11 +2916,105 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             for origin in origins: levels.append(self.sigma_levels_for_images[origin])
             return levels
 
+        # Return as a dictionary
         else:
 
             levels = dict()
             for origin in origins: levels[origin] = self.sigma_levels_for_images[origin]
             return levels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_additional_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.additional_levels is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def additional_levels_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.config.additional_levels]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def additional_levels_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        levels = dict()
+        for fltr in self.config.additional_levels:
+            name = str(fltr)
+            levels[name] = self.config.additional_levels[fltr]
+        return levels
+
+    # -----------------------------------------------------------------
+
+    def has_additional_levels_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_additional_levels and name in self.additional_levels_image_names
+
+    # -----------------------------------------------------------------
+
+    def get_additional_levels_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.additional_levels_images[name]
+
+    # -----------------------------------------------------------------
+
+    def get_relative_levels_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if not self.has_additional_levels_for_image(name):  relative_levels = self.config.sigma_levels
+        else:
+
+            all_levels = self.config.sigma_levels + self.get_additional_levels_for_image(name)
+            relative_levels = list(sorted(set(all_levels)))
+
+        # Check whether default is in
+        if self.has_default_levels_from_file:
+
+            # Get relative default level
+            relative_default_level = self.get_relative_default_sigma_level_for_image_from_file(name)
+            relative_levels.append(relative_default_level)
+
+            # Put it in
+            relative_levels = list(sorted(set(relative_levels)))
+
+        # Return
+        return relative_levels
 
     # -----------------------------------------------------------------
 
@@ -2735,14 +3035,120 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Get the level
             level = self.significance_levels[name]
 
+            # Get the factors
+            factors = self.get_relative_levels_for_image(name)
+
             # Get the different sigma levels
-            sigma_levels = [level * factor for factor in self.config.sigma_levels]
+            sigma_levels = [level * factor for factor in factors]
 
             # Set the levels
             levels[name] = sigma_levels
 
         # Return the levels
         return levels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_default_levels_from_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.default_levels_from is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def default_levels_from_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.maps_components_path, "levels_" + str(self.config.default_levels_from) + ".dat")
+
+        # Load the levels file
+        levels = load_dict(path)
+
+        # Return the levels
+        return levels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def default_levels_from_file_images(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        levels = dict()
+        for fltr in self.default_levels_from_file:
+            name = str(fltr)
+            levels[name] = self.default_levels_from_file[fltr]
+        return levels
+
+    # -----------------------------------------------------------------
+
+    def get_default_sigma_level_for_image_from_file(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.default_levels_from_file_images[name]
+
+    # -----------------------------------------------------------------
+
+    def get_relative_default_sigma_level_for_image_from_file(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the level
+        level = self.significance_levels[name]
+
+        # Get the absolute default level
+        default_level = self.get_default_sigma_level_for_image_from_file(name)
+
+        # Return relative
+        return default_level / level
+
+    # -----------------------------------------------------------------
+
+    def get_default_sigma_level_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Has default levels from file
+        if self.has_default_levels_from_file: relative = self.get_relative_default_sigma_level_for_image_from_file(name)
+
+        # Default level from factor
+        else: relative = self.config.default_sigma_level
+
+        # Get the level
+        level = self.significance_levels[name]
+
+        # Set the default level
+        default_level = relative * level
+
+        # Return
+        return default_level
 
     # -----------------------------------------------------------------
 
@@ -2760,11 +3166,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the images
         for name in self.image_names:
 
-            # Get the level
-            level = self.significance_levels[name]
-
-            # Set the default level
-            default_level = self.config.default_sigma_level * level
+            # Get the default level
+            default_level = self.get_default_sigma_level_for_image(name)
 
             # Set the level
             levels[name] = default_level
