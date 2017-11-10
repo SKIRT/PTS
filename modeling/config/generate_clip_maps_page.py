@@ -10,6 +10,7 @@ from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.magic.core.rgba import alpha_methods
 
 # -----------------------------------------------------------------
 
@@ -68,6 +69,10 @@ definition.add_flag("add_old", "add old stellar maps", True)
 definition.add_flag("add_young", "add young stellar maps", True)
 definition.add_flag("add_ionizing", "add ionizing stellar maps", True)
 definition.add_flag("add_dust", "add dust maps", True)
+
+# ONLY
+map_types = ["old", "young", "ionizing", "dust"]
+definition.add_optional("only", "string_list", "only add these types of maps", choices=map_types)
 
 # Sigma levels
 definition.add_positional_optional("sigma_levels", "ascending_real_list", "different sigma levels for which to generate significance masks", relative_sigma_levels)
@@ -129,7 +134,8 @@ definition.add_optional("fuzziness", "percentage", "relative fuzziness edge widt
 definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
 
 # Dilate masks?
-definition.add_flag("dilate_fuzzy_masks", "dilate masks", True)
+definition.add_flag("dilate_masks", "dilate regular masks", True)
+definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
 # Soften regular masks
 definition.add_flag("soften_masks", "soften regular masks", True)
@@ -137,9 +143,11 @@ definition.add_flag("soften_masks", "soften regular masks", True)
 # -----------------------------------------------------------------
 
 # For PNG
+default_alpha_method = "combined"
+default_peak_alpha = 1.5
 definition.add_optional("interval", "string", "interval", default_interval)
-definition.add_optional("alpha_method", "string", "alpha method", "absolute")
-definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
+definition.add_optional("alpha_method", "string", "alpha method", default_alpha_method, choices=alpha_methods)
+definition.add_optional("peak_alpha", "real", "alpha of peak value", default_peak_alpha)
 
 # -----------------------------------------------------------------
 

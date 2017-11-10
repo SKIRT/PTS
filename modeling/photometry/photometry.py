@@ -138,7 +138,7 @@ class PhotoMeter(PhotometryComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the truncated images
+        # 2. Load the images
         self.load_images()
 
         # 4. Calculate the fluxes

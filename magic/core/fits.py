@@ -437,7 +437,7 @@ other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False, density=False, brightness=False,
-               density_strict=False, brightness_strict=False):
+               density_strict=False, brightness_strict=False, class_picker=None):
 
     """
     This function ...
@@ -458,11 +458,20 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param brightness:
     :param density_strict:
     :param brightness_strict:
+    :param class_picker:
     :return:
     """
 
+    # String is passed
+    if isinstance(cls, basestring):
+        if class_picker is None: raise ValueError("Class picking function must be passed")
+        classname = cls
+
+    # Assume it's an actual class object
     # Class can be Frame, Mask or SegmentationMap
-    classname = cls.__name__
+    else: classname = cls.__name__
+
+    # Get plane name
     classname_lower = classname.lower()
     classname_plane = classname_lower if classname_lower != "segmentationmap" else "segments"
 
@@ -683,6 +692,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
 
+        # Get the class
+        if class_picker is not None: cls = class_picker(hdu.data[index])
+
         # Create the frame
         frame = cls(hdu.data[index],
                    wcs=wcs,
@@ -716,6 +728,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
+
+        # Get the class
+        if class_picker is not None: cls = class_picker(hdu.data)
 
         # Create the frame
         frame = cls(hdu.data,

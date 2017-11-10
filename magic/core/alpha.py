@@ -35,6 +35,47 @@ nalpha_bins = 256
 
 # -----------------------------------------------------------------
 
+def load_mask_or_alpha_mask(path, index=None, plane=None, hdulist_index=None, no_wcs=False):
+
+    """
+    This function ...
+    :param path:
+    :param index:
+    :param plane:
+    :param hdulist_index:
+    :param no_wcs:
+    :return:
+    """
+
+    name = None
+    description = None
+    no_filter = True
+    fwhm = None
+    add_meta = False
+
+    from . import fits as pts_fits
+
+    def is_binary(data):
+        return np.array_equal(data, data.astype(bool))
+
+    from .mask import Mask
+
+    def mask_class_picker(data):
+        if is_binary(data): return Mask
+        else: return AlphaMask
+
+    # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+    mask = pts_fits.load_frame("mask", path, index, name, description, plane, hdulist_index, no_filter, fwhm,
+                               add_meta=add_meta, no_wcs=no_wcs, class_picker=mask_class_picker)
+
+    # Set the path
+    mask.path = path
+
+    # Return the mask or alpha mask
+    return mask
+
+# -----------------------------------------------------------------
+
 class AlphaMask(object):
     
     """

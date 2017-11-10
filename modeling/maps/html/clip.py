@@ -32,7 +32,7 @@ from ....core.tools.stringify import tostr
 from ....core.remote.remote import Remote
 from ....core.basics.containers import hashdict
 from ....magic.core.mask import Mask
-from ....magic.core.alpha import AlphaMask
+from ....magic.core.alpha import AlphaMask, load_mask_or_alpha_mask
 from ....core.tools.utils import memoize_method
 from ....core.basics import containers
 from ....core.tools.serialization import load_dict
@@ -134,6 +134,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         self.has_all_data_ionizing = dict()
         self.has_all_data_dust = dict()
 
+        # The page
+        self.page = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -179,6 +182,58 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # 11. Show
         if self.config.show: self.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.only is not None: return "old" in self.config.only
+        else: return self.config.add_old
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.only is not None: return "young" in self.config.only
+        else: return self.config.add_young
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.only is not None: return "ionizing" in self.config.only
+        else: return self.config.add_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_dust(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.config.only is not None: return "dust" in self.config.only
+        else: return self.config.add_dust
 
     # -----------------------------------------------------------------
 
@@ -571,16 +626,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Loading the selected maps ...")
 
         # Load the old stellar maps
-        if self.config.add_old: self.load_old()
+        if self.do_old: self.load_old()
 
         # Load the young stellar maps
-        if self.config.add_young: self.load_young()
+        if self.do_young: self.load_young()
 
         # Load the ionizing stellar maps
-        if self.config.add_ionizing: self.load_ionizing()
+        if self.do_ionizing: self.load_ionizing()
 
         # Load the dust maps
-        if self.config.add_dust: self.load_dust()
+        if self.do_dust: self.load_dust()
 
     # -----------------------------------------------------------------
 
@@ -1045,16 +1100,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Checking existing data ...")
 
         # Old
-        if self.config.add_old: self.check_data_old()
+        if self.do_old: self.check_data_old()
 
         # Young
-        if self.config.add_young: self.check_data_young()
+        if self.do_young: self.check_data_young()
 
         # Ionizing
-        if self.config.add_ionizing: self.check_data_ionizing()
+        if self.do_ionizing: self.check_data_ionizing()
 
         # Dust
-        if self.config.add_dust: self.check_data_dust()
+        if self.do_dust: self.check_data_dust()
 
     # -----------------------------------------------------------------
 
@@ -1494,16 +1549,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Correcting the maps ...")
 
         # Old
-        if self.config.add_old: self.correct_old_maps()
+        if self.do_old: self.correct_old_maps()
 
         # Young
-        if self.config.add_young: self.correct_young_maps()
+        if self.do_young: self.correct_young_maps()
 
         # Ionizing
-        if self.config.add_ionizing: self.correct_ionizing_maps()
+        if self.do_ionizing: self.correct_ionizing_maps()
 
         # Dust
-        if self.config.add_dust: self.correct_dust_maps()
+        if self.do_dust: self.correct_dust_maps()
 
     # -----------------------------------------------------------------
 
@@ -1650,16 +1705,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Cropping the maps ...")
 
         # Old
-        if self.config.add_old: self.crop_old_maps()
+        if self.do_old: self.crop_old_maps()
 
         # Young
-        if self.config.add_young: self.crop_young_maps()
+        if self.do_young: self.crop_young_maps()
 
         # Ionizing
-        if self.config.add_ionizing: self.crop_ionizing_maps()
+        if self.do_ionizing: self.crop_ionizing_maps()
 
         # Dust
-        if self.config.add_dust: self.crop_dust_maps()
+        if self.do_dust: self.crop_dust_maps()
 
     # -----------------------------------------------------------------
 
@@ -1806,16 +1861,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Clipping the maps ...")
 
         # Old
-        if self.config.add_old: self.clip_old_maps()
+        if self.do_old: self.clip_old_maps()
 
         # Young
-        if self.config.add_young: self.clip_young_maps()
+        if self.do_young: self.clip_young_maps()
 
         # Ionizing
-        if self.config.add_ionizing: self.clip_ionizing_maps()
+        if self.do_ionizing: self.clip_ionizing_maps()
 
         # Dust
-        if self.config.add_dust: self.clip_dust_maps()
+        if self.do_dust: self.clip_dust_maps()
 
     # -----------------------------------------------------------------
 
@@ -2199,7 +2254,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               present=self.present_old_plots_level_combinations_for(name),
                                               fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                               fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                              current=current, current_masks=current_masks,
+                                              current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                               dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                               resoften_current_masks=self.config.resoften_masks)
 
@@ -2270,7 +2325,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2345,7 +2401,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_young_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks,
+                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks)
 
@@ -2416,7 +2472,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2491,7 +2548,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_ionizing_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks,
+                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks)
 
@@ -2562,7 +2619,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2637,7 +2695,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_dust_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks,
+                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks)
 
@@ -2708,7 +2766,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2838,10 +2897,14 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         names = set()
-        if self.config.add_old: names.update(self.old_maps_image_names)
-        if self.config.add_young: names.update(self.young_maps_image_names)
-        if self.config.add_ionizing: names.update(self.ionizing_maps_image_names)
-        if self.config.add_dust: names.update(self.dust_maps_image_names)
+        #if self.config.add_old: names.update(self.old_maps_image_names)
+        #if self.config.add_young: names.update(self.young_maps_image_names)
+        #if self.config.add_ionizing: names.update(self.ionizing_maps_image_names)
+        #if self.config.add_dust: names.update(self.dust_maps_image_names)
+        if self.do_old: names.update(self.old_maps_image_names)
+        if self.do_young: names.update(self.young_maps_image_names)
+        if self.do_ionizing: names.update(self.ionizing_maps_image_names)
+        if self.do_dust: names.update(self.dust_maps_image_names)
         return names
 
     # -----------------------------------------------------------------
@@ -2902,16 +2965,16 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         log.info("Making plots ...")
 
         # Old
-        if self.config.add_old: self.make_old_plots()
+        if self.do_old: self.make_old_plots()
 
         # Young
-        if self.config.add_young: self.make_young_plots()
+        if self.do_young: self.make_young_plots()
 
         # Ionizing
-        if self.config.add_ionizing: self.make_ionizing_plots()
+        if self.do_ionizing: self.make_ionizing_plots()
 
         # Dust
-        if self.config.add_dust: self.make_dust_plots()
+        if self.do_dust: self.make_dust_plots()
 
     # -----------------------------------------------------------------
 
@@ -2981,7 +3044,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Making plots of the '" + name + "' old stellar map ...")
 
             # Loop over the levels dicts
-            #for levels in self.old_maps[name]:
             for levels in self.old_clipped_maps[name]:
 
                 # Get the filepath
@@ -3963,7 +4025,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         paths["dust"] = self.dust_plot_paths
 
         # Make the slider
-        # image_names, urls, regulator_names, labels, default
         self.sliders = html.make_multi_image_sliders(names, paths, self.image_names, self.sigma_levels_for_images,
                                                      self.default_sigma_levels_for_images, width=self.image_width,
                                                      height=self.image_height, basic=True, img_class=None,
