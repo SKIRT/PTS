@@ -615,7 +615,8 @@ class MapsSelectionComponent(MapsComponent):
 
     def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
                           npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
-                          return_masks=False, current=None, current_masks=None):
+                          return_masks=False, current=None, current_masks=None, dilate_fuzzy=True,
+                          dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=20):
 
         """
         This function ...
@@ -628,12 +629,19 @@ class MapsSelectionComponent(MapsComponent):
         :param rebin_remote_threshold:
         :param npixels:
         :param connectivity:
+        :param present:
         :param fuzzy:
         :param fuzziness:
         :param fuzziness_offset:
         :param return_masks:
         :param current:
         :param current_masks:
+        :param dilate_fuzzy:
+        :param dilation_radius:
+        :param dilation_nbins:
+        :param soften:
+        :param softening_radius:
+        :param softening_nbins:
         :return:
         """
 
@@ -645,7 +653,9 @@ class MapsSelectionComponent(MapsComponent):
         masks = self.make_clip_masks(name, origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
                                      rebin_remote_threshold=rebin_remote_threshold, npixels=npixels,
                                      connectivity=connectivity, present=present, fuzzy=fuzzy, fuzziness=fuzziness,
-                                     fuzziness_offset=fuzziness_offset, current_masks=current_masks)
+                                     fuzziness_offset=fuzziness_offset, current_masks=current_masks, dilate_fuzzy=dilate_fuzzy,
+                                     dilation_radius=dilation_radius, dilation_nbins=dilation_nbins, soften=soften,
+                                     softening_radius=softening_radius, softening_nbins=softening_nbins)
 
         # The maps
         if current is not None: maps = copy.copy(current) # shallow copy
@@ -854,16 +864,19 @@ class MapsSelectionComponent(MapsComponent):
     # -----------------------------------------------------------------
 
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
-                        npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1., current_masks=None):
+                        npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
+                        current_masks=None, dilate_fuzzy=True, dilation_radius=5, dilation_max_radius=20, dilation_nbins=20,
+                        soften=True, softening_radius=15, softening_nbins=20):
 
         """
         Thisn function ...
+        :param name:
         :param origins:
         :param levels_dict:
         :param wcs:
         :param convolve:
         :param remote:
-        :parma rebin_remote_threshold:
+        :param rebin_remote_threshold:
         :param npixels:
         :param connectivity:
         :param present:
@@ -871,6 +884,13 @@ class MapsSelectionComponent(MapsComponent):
         :param fuzziness:
         :param fuzziness_offset:
         :param current_masks:
+        :param dilate_fuzzy:
+        :param dilation_radius:
+        :param dilation_max_radius:
+        :param dilation_nbins:
+        :param soften:
+        :param softening_radius:
+        :param softening_nbins:
         :return:
         """
 
@@ -907,9 +927,6 @@ class MapsSelectionComponent(MapsComponent):
         nframes = len(names)
 
         # Get list of level lists, sorted on the order of the frames
-
-        #frame_levels = [levels[name] for name in names]
-
         frame_levels = []
 
         # LEVELS ARE GIVEN AS A SEQUENCE: SAME FOR EACH FRAME
@@ -926,7 +943,6 @@ class MapsSelectionComponent(MapsComponent):
         else: raise ValueError("Levels must be specified as list (same for each image) or dictionary keyed on filter")
 
         # Container to keep the set of masks
-        #masks_levels = []
         masks_levels = dict()
 
         # Loop over each level combination
@@ -976,17 +992,28 @@ class MapsSelectionComponent(MapsComponent):
             # Only keep largest patch
             mask = mask.largest(npixels=npixels, connectivity=connectivity)
 
-            # Fill holes
-            mask.fill_holes()
+            # Alpha mask?
+            if fuzzy:
 
-            # TODO: DILATE??
+                # First dilate if requested
+                if dilate_fuzzy: mask.disk_dilate(radius=dilation_radius, nbins=dilation_nbins, max_radius=dilation_max_radius)
 
-            # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
-            if not fuzzy: mask.invert()
+                # Now fill holes AFTER dilation, some holes may already be filled
+                mask.fill_holes()
 
-            # Add item to the list
-            #item = (levels_dict, mask)
-            #masks_levels.append(item)
+            # Regular mask?
+            else:
+
+                # First fill holes
+                mask.fill_holes(connectivity=4)
+
+                # Now create softened (fuzzy) mask based on dilation if requested
+                if soften: mask = mask.softened(max_radius=softening_radius, nbins=softening_nbins)
+
+                # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
+                else: mask.invert()
+
+            # Add the mask to the dictionary
             masks_levels[levels_dict] = mask
 
         # Return the masks

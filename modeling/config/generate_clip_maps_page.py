@@ -123,14 +123,20 @@ definition.add_flag("clear_dust_data", "clear all data from dust maps", False)
 definition.add_optional("mask_colour", "string", "colour for the mask", default=default_mask_color)
 
 # For masking
-definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
+fuzzy_mask = False
+definition.add_flag("fuzzy_mask", "use fuzzy masks", fuzzy_mask)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
 definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
+
+# Dilate masks?
+definition.add_flag("dilate_fuzzy_masks", "dilate masks", True)
+
+# Soften regular masks
+definition.add_flag("soften_masks", "soften regular masks", True)
 
 # -----------------------------------------------------------------
 
 # For PNG
-#definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", default_interval)
 definition.add_optional("alpha_method", "string", "alpha method", "absolute")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)

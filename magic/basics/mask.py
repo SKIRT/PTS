@@ -870,6 +870,55 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def softened(self, min_radius=0, max_radius=5, nbins=10, niterations=1, min_level=0):
+
+        """
+        This function ...
+        :param min_radius:
+        :param max_radius:
+        :param nbins:
+        :param niterations:
+        :param min_level:
+        :return:
+        """
+
+        from ..core.alpha import AlphaMask
+        from ..tools import statistics
+
+        # All levels
+        max_level = 255
+        min_level_not_transparent = 1 if min_level == 0 else min_level
+        alpha_levels = list(range(min_level_not_transparent,255))
+        level_span = max_level - min_level_not_transparent
+
+        # Get the bins
+        centers, lower, upper = statistics.histogram(alpha_levels, nbins=nbins)
+
+        levels = dict()
+
+        # Loop over the levels
+        for lower_value, center_value, upper_value in zip(lower, centers, upper):
+
+            # Get integer center level
+            center = int(round(center_value))
+
+            radius_span = max_radius - min_radius
+            level_radius = min_radius - radius_span / level_span * (center - max_level)
+            int_level_radius = int(round(level_radius))
+
+            # Create dilated mask
+            from skimage import morphology
+            structure = morphology.disk(int_level_radius, dtype=bool)
+            data = ndimage.binary_dilation(self.data, structure, niterations)
+
+            # Add the data to the dictionary
+            levels[center] = data
+
+        # Create alpha mask
+        return AlphaMask.from_levels(levels)
+
+    # -----------------------------------------------------------------
+
     @property
     def npixels(self):
 

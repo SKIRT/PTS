@@ -2054,11 +2054,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_old_map_names:
 
-            # Check
-            #if self.has_all_old_plots_for(name):
-            #    log.success("All plots for the '" + name + "' image at the requested sigma levels are already present")
-            #    continue
-
             # Needed?
             if name not in self.old_maps:
                 if not self.has_all_data_old[name]: raise ValueError("Something went wrong")
@@ -2089,10 +2084,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               present=self.present_old_plots_level_combinations_for(name),
                                               fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                               fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                              current=current, current_masks=current_masks)
+                                              current=current, current_masks=current_masks,
+                                              dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
 
             # Replace by a dictionary of maps
-            #self.old_maps[name] = maps
             self.old_clipped_maps[name] = maps
 
             # Set the masks
@@ -2201,11 +2196,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_young_map_names:
 
-            # # Check
-            # if self.has_all_young_plots_for(name):
-            #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
-            #     continue
-
             # Needed?
             if name not in self.young_maps:
                 if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
@@ -2236,10 +2226,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_young_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks)
+                                          current=current, current_masks=current_masks,
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
 
             # Replace by a dictionary of maps
-            #self.young_maps[name] = maps
             self.young_clipped_maps[name] = maps
 
             # Set the masks
@@ -2348,11 +2338,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_ionizing_map_names:
 
-            # # Check
-            # if self.has_all_ionizing_plots_for(name):
-            #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
-            #     continue
-
             # Needed?
             if name not in self.ionizing_maps:
                 if not self.has_all_data_ionizing[name]: raise ValueError("Something went wrong")
@@ -2383,10 +2368,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_ionizing_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks)
+                                          current=current, current_masks=current_masks,
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
 
             # Replace by a dictionary of maps
-            #self.ionizing_maps[name] = maps
             self.ionizing_clipped_maps[name] = maps
 
             # Set the masks
@@ -2495,11 +2480,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.process_dust_map_names:
 
-            # # Check
-            # if self.has_all_dust_plots_for(name):
-            #     log.success("All plots for the '" + name + "' image at requested sigma levels are already present")
-            #     continue
-
             # Needed?
             if name not in self.dust_maps:
                 if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
@@ -2530,10 +2510,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           present=self.present_dust_plots_level_combinations_for(name),
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks)
+                                          current=current, current_masks=current_masks,
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
 
             # Replace by a dictionary of maps
-            #self.dust_maps[name] = maps
             self.dust_clipped_maps[name] = maps
 
             # Set the masks

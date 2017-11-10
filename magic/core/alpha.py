@@ -177,6 +177,105 @@ class AlphaMask(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def full(cls, shape, wcs=None, pixelscale=None, value=255):
+
+        """
+        This function ...
+        :param shape:
+        :param wcs:
+        :param pixelscale:
+        :param value:
+        :return:
+        """
+
+        # Create data
+        data = np.full(shape, value, dtype=np.uint8)
+
+        # Create alpha mask
+        return cls(data, wcs=wcs, pixelscale=pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def full_like(cls, other, wcs=None, pixelscale=None, value=255):
+
+        """
+        This function ...
+        :param other:
+        :param wcs:
+        :param pixelscale:
+        :param value:
+        :return:
+        """
+
+        return cls.full(other.shape, wcs=wcs, pixelscale=pixelscale, value=value)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def empty(cls, shape, wcs=None, pixelscale=None):
+
+        """
+        This function ...
+        :param shape:
+        :param wcs:
+        :param pixelscale:
+        :return:
+        """
+
+        # Create data
+        data = np.zeros(shape, dtype=np.uint8)
+
+        # Create alpha mask
+        return cls(data, wcs=wcs, pixelscale=pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def empty_like(cls, other, wcs=None, pixelscale=None):
+
+        """
+        This function ..
+        :param other:
+        :param wcs:
+        :param pixelscale:
+        :return:
+        """
+
+        return cls.empty(other.shape, wcs=wcs, pixelscale=pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_levels(cls, levels, wcs=None, pixelscale=None):
+
+        """
+        This function ...
+        :param levels:
+        :param wcs:
+        :param pixelscale:
+        :return:
+        """
+
+        if len(levels) == 0: raise ValueError("No level data is given")
+
+        # Initialize
+        first = levels[levels.keys()[0]]
+        alpha = cls.empty_like(first, wcs=wcs, pixelscale=pixelscale)
+        #alpha = cls.full_like(first, wcs=wcs, pixelscale=pixelscale, value=min_level)
+
+        # Set levels
+        for level in sorted(levels.keys()):
+
+            mask = levels[level]
+            alpha._data[mask] = level
+
+        # Return the alpha mask
+        return alpha
+
+    # -----------------------------------------------------------------
+
     @property
     def shape(self):
 
@@ -1009,6 +1108,30 @@ class AlphaMask(object):
     # -----------------------------------------------------------------
 
     @property
+    def lowest_level_not_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.levels_between_transparent_opaque[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_level_not_opaque(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.levels_between_transparent_opaque[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
     def levels_semitransparent(self):
 
         """
@@ -1097,61 +1220,59 @@ class AlphaMask(object):
 
     # -----------------------------------------------------------------
 
-    def disk_dilate(self, radius=5, niterations=1, nbins=10):
+    def disk_dilate(self, radius=5, niterations=1, nbins=10, max_radius=None):
 
         """
         This function ...
         :param radius:disk_dilate
         :param niterations:
         :param nbins:
+        :param max_radius:
         :return:
         """
 
+        from ..tools import statistics
+
         # Get all levels
-        #levels = self.levels_between_transparent_opaque
         levels = self.levels_between_min_max
 
-        # Get the bins
-        freq, edges = np.histogram(levels, nbins)
-        nbins = len(edges) - 1
+        # Get the minimum and maximum level
+        minimum_level = self.lowest_level_not_transparent
+        maximum_level = self.highest_level
+        level_span = maximum_level - minimum_level
 
-        # Get the bin centers
-        centers = []
-        for i in range(nbins): centers.append(0.5 * (edges[i] + edges[i + 1]))
-        #nbins = len(centers)
-
-        # Get the bin widths
-        #widths = []
-        #for i in range(len(edges) - 1):
-        #    widths.append(edges[i + 1] - edges[i])
-
-        # Get the lower limits of the bins
-        lower = []
-        for i in range(nbins): lower.append(edges[i])
-
-        # Get the upper limits of the bins
-        upper = []
-        for i in range(nbins): upper.append(edges[i+1])
+        # Get the bin properties
+        centers, lower, upper = statistics.histogram(levels, nbins)
 
         # Create new data, filled with lowest level
-        #data = np.zeros_like(self.data)
         data = np.full(self.data.shape, self.lowest_level)
+
+        radii = []
 
         # Loop over the bins, starting with the lower levels
         first = True
         for lower_value, center_value, upper_value in zip(lower, centers, upper):
 
-            #print(lower_value, upper_value, center_value)
+            # Get integer center level
+            center = int(round(center_value))
+
+            # Determine the radius for this level
+            if max_radius is not None:
+                radius_span = max_radius - radius
+                level_radius = radius - radius_span / level_span * (center - maximum_level)
+            else: level_radius = radius
+            int_level_radius = int(round(level_radius))
+
+            radii.append(int_level_radius)
+
+            #print(center, level_radius)
 
             # Get mask
             mask = self.between_levels(lower_value, upper_value, include_min=first, include_max=True)
             first = False
 
             # Dilate the mask
-            mask.disk_dilate(radius=radius, niterations=niterations)
-
-            # Make integer center level
-            center = int(round(center_value))
+            mask.disk_dilate(radius=int_level_radius, niterations=niterations)
 
             # Set new data
             data[mask] = center
@@ -1165,6 +1286,9 @@ class AlphaMask(object):
 
         # Set the new data
         self._data = data
+
+        # Return the bins and the radii used for dilation in each bin
+        return centers, lower, upper, radii
 
     # -----------------------------------------------------------------
 

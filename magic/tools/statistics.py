@@ -32,6 +32,41 @@ fwhm_to_sigma = 1.0 / sigma_to_fwhm
 
 # -----------------------------------------------------------------
 
+def histogram(data, nbins):
+
+    """
+    This function ...
+    :param data:
+    :param nbins:
+    :return:
+    """
+
+    # Get the bins
+    freq, edges = np.histogram(data, nbins)
+    nbins = len(edges) - 1
+
+    # Get the bin centers
+    centers = []
+    for i in range(nbins): centers.append(0.5 * (edges[i] + edges[i + 1]))
+
+    # Get the bin widths
+    # widths = []
+    # for i in range(len(edges) - 1):
+    #    widths.append(edges[i + 1] - edges[i])
+
+    # Get the lower limits of the bins
+    lower = []
+    for i in range(nbins): lower.append(edges[i])
+
+    # Get the upper limits of the bins
+    upper = []
+    for i in range(nbins): upper.append(edges[i + 1])
+
+    # Return the bin properties
+    return centers, lower, upper
+
+# -----------------------------------------------------------------
+
 def sigma_clip_mask_list(data, sigma=3.0, mask=None):
 
     """

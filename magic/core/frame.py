@@ -908,7 +908,6 @@ class Frame(NDDataArray):
         """
 
         data = mask.as_real()
-        #print(data)
         if invert: data = 1. - data
 
         # Multiply the data with the alpha mask
@@ -3715,20 +3714,21 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def soften_edges(self, region, factor_range):
+    def soften_edges(self, region, factor_range, invert=False):
 
         """
         This function ...
         :param region:
         :param factor_range:
+        :param invert:
         :return:
         """
 
         # Create alpha mask
         alpha = AlphaMask.from_ellipse(region, self.shape, factor_range, wcs=self.wcs)
 
-        # Apply alpha
-        self._data *= alpha.as_real()
+        # Apply the alpha mask
+        self.apply_alpha_mask(alpha, invert=invert)
 
         # Return the alpha mask
         return alpha
