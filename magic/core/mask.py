@@ -584,8 +584,13 @@ class Mask(MaskBase):
 
         from .fits import write_frame  # Import here because io imports Mask
 
+        # Supported types: no binary (unit2, also doesn't exist in numpy) :(
+        #from astropy.io.fits.hdu import DTYPE2BITPIX
+
         # Write to a FITS file
-        write_frame(self._data.astype(int), header, path)
+        # write_frame(self._data, header, path)
+        #write_frame(self._data.astype(int), header, path)
+        write_frame(self._data.astype(np.uint8), header, path)
 
         # Update the path
         if update_path: self.path = path
