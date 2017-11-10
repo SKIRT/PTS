@@ -47,20 +47,24 @@ class FluxErrorTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, fltr, calibration_error, aperture_noise, total_error, total_relative_error):
+    def add_entry(self, fltr, total_error, total_relative_error, calibration_error=None, aperture_noise=None):
 
         """
         This function ...
         :param fltr:
-        :param calibration_error:
-        :param aperture_noise:
         :param total_error:
         :param total_relative_error:
+        :param calibration_error:
+        :param aperture_noise:
         :return:
         """
 
         # Set the values
-        values = [fltr.instrument, fltr.band, calibration_error.lower, calibration_error.upper, aperture_noise.lower, aperture_noise.upper, total_error.lower, total_error.upper, total_relative_error]
+        calibration_upper = calibration_error.upper if calibration_error is not None else None
+        calibration_lower = calibration_error.lower if calibration_error is not None else None
+        noise_upper = aperture_noise.upper if aperture_noise is not None else None
+        noise_lower = aperture_noise.lower if aperture_noise is not None else None
+        values = [fltr.instrument, fltr.band, calibration_lower, calibration_upper, noise_lower, noise_upper, total_error.lower, total_error.upper, total_relative_error]
 
         # Add a row to the table
         self.add_row(values)
@@ -117,6 +121,9 @@ class FluxDifferencesTable(SmartTable):
 
         for name in self.colnames:
 
+            if name == "Instrument": continue
+            if name == "Band": continue
+            if name == "Flux": continue
             label = name.split(" relative difference")[0]
             labels.append(label)
 
@@ -135,10 +142,15 @@ class FluxDifferencesTable(SmartTable):
         :return:
         """
 
+        #print(flux_differences)
+
         values = [fltr.instrument, fltr.band, flux]
 
         # Add the parameter values
         for label in self.reference_labels: values.append(flux_differences[label])
+
+        #print(values)
+        #print(self.colnames)
 
         # Add a row to the table
         self.add_row(values)

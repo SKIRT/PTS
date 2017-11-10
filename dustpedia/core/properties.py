@@ -178,9 +178,9 @@ def calculate_calibration_error(flux, calibration_magn, errorbar=True):
     a = flux_mag - mag_error
     b = flux_mag + mag_error
 
-    log.debug("Flux value: " + str(flux))
-    log.debug("a magnitude: " + str(a))
-    log.debug("b magnitude: " + str(b))
+    #log.debug("Flux value: " + str(flux))
+    #log.debug("a magnitude: " + str(a))
+    #log.debug("b magnitude: " + str(b))
 
     # Convert a and b to Jy
     a = ab_to_jansky(a)
@@ -190,10 +190,10 @@ def calculate_calibration_error(flux, calibration_magn, errorbar=True):
     c = a - flux
     d = b - flux
 
-    log.debug("a value: " + str(a))
-    log.debug("b value: " + str(b))
-    log.debug("c value: " + str(c))
-    log.debug("d value: " + str(d))
+    #log.debug("a value: " + str(a))
+    #log.debug("b value: " + str(b))
+    #log.debug("c value: " + str(c))
+    #log.debug("d value: " + str(d))
 
     # Create the error bar
     if errorbar: error = ErrorBar(d, c)

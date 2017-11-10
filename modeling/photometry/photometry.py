@@ -20,15 +20,13 @@ from .component import PhotometryComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.data.sed import ObservedSED
-from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
+from ...core.basics.errorbar import ErrorBar
 from ...core.plot.sed import SEDPlotter
 from ...magic.convolution.aniano import AnianoKernels
 from ...magic.convolution.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher, launch_local
-from ...magic.misc.calibration import CalibrationError
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
-from ..preparation import unitconversion
 from .tables import FluxErrorTable, FluxDifferencesTable
 from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
 from ..preparation.preparer import has_statistics, load_statistics
@@ -103,17 +101,15 @@ class PhotoMeter(PhotometryComponent):
         self.truncation_masks = dict()
         self.clip_masks = dict()
 
-        # The fluxes
-        self.fluxes = dict()
-
-        # The flux errors
-        self.errors = dict()
-
         # The SED
         self.sed = None
 
         # The differences
         self.differences = None
+
+        # Truncated and asymptotic
+        self.truncated_sed = None
+        self.asymptotic_sed = None
 
         # Create the PTS remote launcher
         self.launcher = None
@@ -147,25 +143,29 @@ class PhotoMeter(PhotometryComponent):
         # Load masks
         self.load_masks()
 
-        self.apply_masks()
+        # Apply the masks
+        #self.apply_masks()
 
         # 4. Calculate the fluxes
         self.calculate_fluxes()
 
         # 5. Calculate the errors
-        self.calculate_errors()
+        #self.calculate_errors()
 
         # 6. Make the SED
-        self.make_sed()
+        #self.make_sed()
 
         # 7.  Make the error table
-        self.make_error_table()
+        #self.make_error_table()
 
         # 8. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
         # 9. Writing
         self.write()
+
+        # Plotting
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -182,6 +182,8 @@ class PhotoMeter(PhotometryComponent):
 
         # Create an observed SED
         self.sed = ObservedSED(photometry_unit="Jy")
+        self.asymptotic_sed = ObservedSED(photometry_unit="Jy")
+        self.truncated_sed = ObservedSED(photometry_unit="Jy")
 
         # Setup the remote PTS launcher
         if self.config.remote is not None:
@@ -189,10 +191,11 @@ class PhotoMeter(PhotometryComponent):
             self.launcher.setup(self.config.remote)
 
         # Initialize the flux error table
-        self.error_table = FluxErrorTable()
+        #self.error_table = FluxErrorTable()
 
         # Initialize the flux differences table
         self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
+        self.differences_table.setup()
 
     # -----------------------------------------------------------------
 
@@ -218,17 +221,11 @@ class PhotoMeter(PhotometryComponent):
             # Only broad band filters
             if not frame.is_broad_band: continue
 
-            # Load the truncated frame
-            #truncated_frame = self.dataset.get_frame(name)
-            #plotting.plot_frame(frame)
-            #plotting.plot_frame(truncated_frame)
-
             # Check whether preparation statistics can be found
             if not has_statistics(self.config.path, name): raise ValueError("Something went wrong in preparation: statistics not found")
 
             # Load the statistics
             statistics = load_statistics(self.config.path, name)
-
             mean_frame = statistics.mean_frame
             median_frame = statistics.median_frame
             stddev_frame = statistics.stddev_frame
@@ -242,8 +239,6 @@ class PhotoMeter(PhotometryComponent):
             median_subtracted = statistics.median_subtracted
             stddev_subtracted = statistics.stddev_subtracted
 
-            #print(frame.unit)
-
             # Debugging
             log.debug("Checking the units of the image ...")
 
@@ -251,7 +246,7 @@ class PhotoMeter(PhotometryComponent):
             if frame.is_per_angular_or_intrinsic_area: frame.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
 
             # Add to the appropriate dictionary
-            self.images[name] = frame #+ sky # add the sky to the frame
+            self.images[name] = frame #+ sky # add the sky to the frame # FOR FULL TREATMENT AS CAAPR
 
     # -----------------------------------------------------------------
 
@@ -375,112 +370,179 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Calculating the total flux in the " + name + " image ...")
 
-            # Calculate the total flux in Jansky
-            flux = self.images[name].primary.sum() # * Unit("Jansky")
+            frame = self.images[name]
 
+            # Calculate the total flux (asymptotic)
+            asymptotic = frame.sum()
+
+            # Apply truncation mask
+            truncation_mask = self.truncation_masks[name]
+            frame.apply_mask_nans(truncation_mask)
+
+            # Calculate the truncated flux
+            truncated = frame.sum()
+
+            # Apply clip mask
+            clip_mask = self.clip_masks[name]
+            frame.apply_mask_nans(clip_mask)
+
+            # Calculate the total flux in Jansky
+            #flux = self.images[name].primary.sum() # * Unit("Jansky")
             # Apply correction for EEF of aperture
             #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
-
             # Add the flux to the dictionary
-            self.fluxes[name] = flux
+            #self.fluxes[name] = flux
 
-    # -----------------------------------------------------------------
+            # Calculate proper flux
+            flux = frame.sum()
 
-    def calculate_errors(self):
+            # Set fluxes
+            #self.fluxes[name] = flux
+            #self.asymptotic_fluxes[name] = asymptotic
+            #self.truncated_fluxes[name] = truncated
 
-        """
-        This function ...
-        :return:
-        """
+            # Create total mask
+            #mask = intersection(truncation_mask, clip_mask)
 
-        # Inform the user
-        log.info("Calculating the errors on the aperture fluxes ...")
+            # Create image
+            image = Image()
+            image.add_frame(frame, "primary")
+            image.add_mask(truncation_mask, "truncation")
+            image.add_mask(clip_mask, "clip")
 
-        # Loop over all the images
-        for name in self.image_names:
-
-            # Debugging
-            log.debug("Calculating the flux error for the " + name + " image ...")
-
-            # Calculate the calibration error
-            #calibration_error = self.calculate_calibration_error(name)
-
-            # Calculate the aperture noise error
-            #aperture_noise = self.calculate_aperture_noise(name)
-
-            # Set the error contributions
-            #self.errors[name] = (calibration_error, aperture_noise)
-            #self.errors[name] = calibration_error
+            # Set
+            self.images[name] = image
 
             fltr = self.get_filter(name)
 
             # Get calibataion error as error bar
-            error = get_calibration_error(fltr, self.fluxes[name], errorbar=True)
-
-            # Add
-            self.errors[name] = error
-
-    # -----------------------------------------------------------------
-
-    def make_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the observed SED ...")
-
-        # Loop over all images
-        for name in self.image_names:
-
-            # Debugging
-            log.debug("Adding SED entry for the " + name + " image ...")
-
-            # The flux
-            flux = self.fluxes[name]
-
-            # The error contributions
-            #calibration_error, aperture_noise = self.errors[name]
-
-            # Add the error contributions
-            #errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
-
-            errorbar = self.errors[name]
+            error = get_calibration_error(fltr, flux, errorbar=True)
 
             # Add this entry to the SED
-            self.sed.add_point(self.images[name].filter, flux, errorbar)
+            self.sed.add_point(fltr, flux, error)
+
+            error_asymptotic = get_calibration_error(fltr, asymptotic, errorbar=True)
+
+            # Add this entry to the SED
+            self.asymptotic_sed.add_point(fltr, asymptotic, error_asymptotic)
+
+            error_truncated = get_calibration_error(fltr, truncated, errorbar=True)
+
+            # Add this entry to the SED
+            self.truncated_sed.add_point(fltr, truncated, error_truncated)
 
     # -----------------------------------------------------------------
 
-    def make_error_table(self):
+    # def calculate_errors(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Calculating the errors on the aperture fluxes ...")
+    #
+    #     # Loop over all the images
+    #     for name in self.image_names:
+    #
+    #         # Debugging
+    #         log.debug("Calculating the flux error for the " + name + " image ...")
+    #
+    #         # Calculate the calibration error
+    #         #calibration_error = self.calculate_calibration_error(name)
+    #
+    #         # Calculate the aperture noise error
+    #         #aperture_noise = self.calculate_aperture_noise(name)
+    #
+    #         # Set the error contributions
+    #         #self.errors[name] = (calibration_error, aperture_noise)
+    #         #self.errors[name] = calibration_error
+    #
+    #         fltr = self.get_filter(name)
+    #
+    #         # Get calibataion error as error bar
+    #         error = get_calibration_error(fltr, self.fluxes[name], errorbar=True)
+    #
+    #         # Add
+    #         self.errors[name] = error
+
+    # -----------------------------------------------------------------
+
+    # def make_sed(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Making the observed SED ...")
+    #
+    #     # Loop over all images
+    #     for name in self.image_names:
+    #
+    #         # Debugging
+    #         log.debug("Adding SED entry for the " + name + " image ...")
+    #
+    #         # The flux
+    #         flux = self.fluxes[name]
+    #
+    #         # The error contributions
+    #         #calibration_error, aperture_noise = self.errors[name]
+    #
+    #         # Add the error contributions
+    #         #errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
+    #
+    #         ##
+
+    # -----------------------------------------------------------------
+
+    def get_flux(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        # Inform the user
-        log.info("Making the flux error table ...")
+        fltr = self.get_filter(name)
+        return self.sed.photometry_for_filter(fltr)
 
-        # Loop over the errors
-        for name in self.images:
+    # -----------------------------------------------------------------
 
-            # Debugging
-            log.debug("Adding an entry to the error table for the " + name + " image ...")
-
-            # Get the error contributions
-            calibration_error, aperture_noise = self.errors[name]
-
-            # Add the error contributions
-            total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
-
-            # Calculate the relative error
-            total_relative_error = total_error / self.fluxes[name]
-
-            # Add an entry to the flux error table
-            self.error_table.add_entry(self.images[name].filter, calibration_error, aperture_noise, total_error, total_relative_error)
+    # def make_error_table(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Making the flux error table ...")
+    #
+    #     # Loop over the errors
+    #     for name in self.images:
+    #
+    #         # Debugging
+    #         log.debug("Adding an entry to the error table for the " + name + " image ...")
+    #
+    #         # Get the error contributions
+    #         #calibration_error, aperture_noise = self.errors[name]
+    #         calibration_error = self.errors[name]
+    #
+    #         # Add the error contributions
+    #         #total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
+    #
+    #         total_error = calibration_error
+    #
+    #         fltr = self.get_filter(name)
+    #
+    #         # Calculate the relative error
+    #         total_relative_error = total_error / self.get_flux(name)
+    #
+    #         # Add an entry to the flux error table
+    #         self.error_table.add_entry(fltr, calibration_error=calibration_error, total_error=total_error, total_relative_error=total_relative_error)
 
     # -----------------------------------------------------------------
 
@@ -517,11 +579,11 @@ class PhotoMeter(PhotometryComponent):
                 relative_difference = None
 
                 # Loop over the data points in the reference SED
-                for j in range(len(self.reference_seds[label].table["Wavelength"])):
+                for j in range(len(self.reference_seds[label]["Wavelength"])):
 
-                    if self.reference_seds[label].table["Instrument"][j] == instrument and self.reference_seds[label].table["Band"][j] == band:
+                    if self.reference_seds[label]["Instrument"][j] == instrument and self.reference_seds[label]["Band"][j] == band:
 
-                        difference = fluxes[i] - self.reference_seds[label].table["Flux"][j]
+                        difference = fluxes[i] - self.reference_seds[label]["Photometry"][j]
                         relative_difference = difference / fluxes[i] * 100.
 
                         # Break because a match has been found within this reference SED
@@ -551,17 +613,14 @@ class PhotoMeter(PhotometryComponent):
         # Write SED table
         self.write_sed()
 
-        # Write the contributions to the flux errors
-        self.write_error_table()
+        # Asymptotic SED
+        self.write_asymptotic_sed()
+
+        # Truncated SED
+        self.write_truncated_sed()
 
         # Write the differences
         self.write_differences()
-
-        # Plot the SED
-        self.plot_sed()
-
-        # Plot the SED with references
-        self.plot_sed_with_references()
 
     # -----------------------------------------------------------------
 
@@ -600,6 +659,42 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def write_asymptotic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing asymptotic SED to a data file ...")
+
+        # Determine path
+        path = fs.join(self.phot_path, "asymptotic.dat")
+
+        # Save the SED
+        self.asymptotic_sed.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_truncated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing truncated SED to a data file ...")
+
+        # Determine the path
+        path = fs.join(self.phot_path, "truncated.dat")
+
+        # Save the SED
+        self.truncated_sed.saveto(path)
+
+    # -----------------------------------------------------------------
+
     def write_error_table(self):
 
         """
@@ -627,6 +722,27 @@ class PhotoMeter(PhotometryComponent):
 
         # Save the differences table
         self.differences_table.saveto(self.phot_differences_path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the SED
+        self.plot_sed()
+
+        # Plot the SED with references
+        self.plot_sed_with_references()
+
+        # Plot the SED with the alternative SEDs
+        self.plot_sed_with_alternative()
 
     # -----------------------------------------------------------------
 
@@ -673,6 +789,34 @@ class PhotoMeter(PhotometryComponent):
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
+        plotter.run(ouput=path, title=self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed_with_alternative(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SED with alternative SEDs ...")
+
+        # Create a new SEDPlotter instance
+        plotter = SEDPlotter()
+
+        # Add the SED
+        plotter.add_sed(self.sed, "clipped")
+
+        # Add the truncated SED
+        plotter.add_sed(self.truncated_sed, "truncated")
+
+        # Add the asymptotic SED
+        plotter.add_sed(self.asymptotic_sed, "asymptotic")
+
+        # Determine the full path to the plot file
+        path = fs.join(self.phot_path, "sed_with_alternative.pdf")
         plotter.run(ouput=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------

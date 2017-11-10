@@ -22,3 +22,7 @@ noise_methods = ["caapr", "pts"]
 definition.add_optional("noise_method", "string", "method to use for the aperture noise calculation", choices=noise_methods, default="caapr")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("plot", "plot SEDs", True)
+
+# -----------------------------------------------------------------
