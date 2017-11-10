@@ -28,7 +28,7 @@ from ...magic.services.attenuation import GalacticAttenuation
 from ...core.filter.filter import parse_filter
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
-from ...dustpedia.core.properties import DustPediaProperties
+from ...dustpedia.core.properties import has_calibration_error, get_calibration_error, get_fwhm
 from ...dustpedia.core.photometry import DustPediaPhotometry
 from ...magic.core.frame import Frame, sum_frames_quadratically
 from ...magic.region.point import PixelPointRegion
@@ -389,9 +389,6 @@ class DataPreparer(PreparationComponent):
         # The attenuation calculator
         self.attenuation = None
 
-        # The DustPedia properties
-        self.properties = None
-
         # The DustPedia photometry object
         self.photometry = None
 
@@ -480,9 +477,6 @@ class DataPreparer(PreparationComponent):
 
         # Create the galactic extinction calculator
         self.attenuation = GalacticAttenuation(self.galaxy_center)
-
-        # Create the DustPedia properties
-        self.properties = DustPediaProperties()
 
         # Create the DustPedia photometry object
         self.photometry = DustPediaPhotometry()
@@ -849,7 +843,7 @@ class DataPreparer(PreparationComponent):
             # If the FWHM of the image is undefined, set it now
             if image.fwhm is None:
                 log.warning("The FWHM of the " + name + " image is still undefined. Getting the value from the DustPedia data properties ...")
-                image.fwhm = self.properties.get_fwhm(image.filter)
+                image.fwhm = get_fwhm(image.filter)
                 log.warning("Set the value of the FWHM to " + str(image.fwhm))
 
             config = dict()
@@ -966,17 +960,11 @@ class DataPreparer(PreparationComponent):
             error_maps = []
             error_contributions = []
 
-            # Set calibration error frame, if possible
-            if self.properties.has_filter(fltr):
+            # Get calibration error frame
+            if has_calibration_error(fltr):
 
-                # Calculate calibration error frame
-                if self.properties.has_calibration_error_magnitude(fltr):
-                    magnitude = self.properties.get_calibration_error_magnitude(fltr)
-                    calibration_frame = get_calibration_uncertainty_frame_from_magnitude(image, magnitude)
-                else:
-                    # Calculate calibration errors with percentage
-                    fraction = self.properties.get_calibration_error_relative(fltr)
-                    calibration_frame = image.primary * fraction
+                # Get frame
+                calibration_frame = get_calibration_error(fltr, image.primary)
 
                 # Add the calibration frame
                 image.add_frame(calibration_frame, "calibration_errors")

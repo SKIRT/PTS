@@ -49,6 +49,9 @@ class PhotometryComponent(GalaxyModelingComponent):
         # The path to the noise directory
         self.phot_noise_path = None
 
+        # The path to the images directory
+        self.phot_images_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -73,6 +76,9 @@ class PhotometryComponent(GalaxyModelingComponent):
 
         # Set ...
         self.phot_noise_path = fs.create_directory_in(self.phot_path, "noise")
+
+        # Set ...
+        self.phot_images_path = fs.create_directory_in(self.phot_path, "images")
 
     # -----------------------------------------------------------------
 

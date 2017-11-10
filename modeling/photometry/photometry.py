@@ -33,6 +33,9 @@ from .tables import FluxErrorTable, FluxDifferencesTable
 from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
 from ..preparation.preparer import has_statistics, load_statistics
 from ...dustpedia.core.properties import has_calibration_error, get_calibration_error
+from ...core.tools.utils import lazyproperty
+from ...magic.core.mask import intersection
+from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -93,8 +96,12 @@ class PhotoMeter(PhotometryComponent):
         # Call the constructor of the base class
         super(PhotoMeter, self).__init__(*args, **kwargs)
 
-        # The list of image frames
-        self.frames = dict()
+        # The list of images
+        self.images = dict()
+
+        # Masks
+        self.truncation_masks = dict()
+        self.clip_masks = dict()
 
         # The fluxes
         self.fluxes = dict()
@@ -136,6 +143,11 @@ class PhotoMeter(PhotometryComponent):
 
         # 2. Load the images
         self.load_images()
+
+        # Load masks
+        self.load_masks()
+
+        self.apply_masks()
 
         # 4. Calculate the fluxes
         self.calculate_fluxes()
@@ -203,6 +215,9 @@ class PhotoMeter(PhotometryComponent):
             # Load the frame
             frame = self.dataset.get_frame(name)
 
+            # Only broad band filters
+            if not frame.is_broad_band: continue
+
             # Load the truncated frame
             #truncated_frame = self.dataset.get_frame(name)
             #plotting.plot_frame(frame)
@@ -232,8 +247,23 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Checking the units of the image ...")
 
+            # Convert to non- angular or intrinsic area unit
+            if frame.is_per_angular_or_intrinsic_area: frame.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
             # Add to the appropriate dictionary
-            self.frames[name] = frame #+ sky # add the sky to the frame
+            self.images[name] = frame #+ sky # add the sky to the frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def image_names(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return list(sorted(self.images.keys(), key=lambda name: self.images[name].filter.wavelength.to("micron").value))
 
     # -----------------------------------------------------------------
 
@@ -245,7 +275,87 @@ class PhotoMeter(PhotometryComponent):
         :return:
         """
 
-        return self.frames[name].filter
+        return self.images[name].filter
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.images[name].wcs
+
+    # -----------------------------------------------------------------
+
+    def load_masks(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the masks ...")
+
+        # Loop over the images
+        for name in self.image_names:
+
+            # Get frame and error map
+            frame = self.images[name]
+            errors = self.dataset.get_errormap(name)
+            wcs = frame.wcs
+
+            # Get the masks
+            truncation_mask = self.get_truncation_mask(wcs)
+            clip_mask = self.get_significance_mask(frame, errors)
+
+            # Add the masks
+            self.truncation_masks[name] = truncation_mask
+            self.clip_masks[name] = clip_mask
+
+    # -----------------------------------------------------------------
+
+    def get_masks(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return [self.truncation_masks[name], self.clip_masks[name]]
+
+    # -----------------------------------------------------------------
+
+    def apply_masks(self):
+
+        """
+        Thisf unction ..
+        :return:
+        """
+
+        for name in self.image_names:
+
+            # Create combined mask
+            mask = intersection(*self.get_masks(name))
+
+            frame = self.images[name]
+
+            # Set masked pixels to NaN
+            frame.apply_mask_nans(mask)
+
+            # Create image
+            image = Image()
+            image.add_frame(frame, "primary")
+            image.add_mask(self.truncation_masks[name], "truncation")
+            image.add_mask(self.clip_masks[name], "clip")
+
+            # Set
+            self.images[name] = image
 
     # -----------------------------------------------------------------
 
@@ -260,13 +370,13 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the aperture fluxes ...")
 
         # Loop over all the images
-        for name in self.frames:
+        for name in self.images:
 
             # Debugging
             log.debug("Calculating the total flux in the " + name + " image ...")
 
             # Calculate the total flux in Jansky
-            flux = self.frames[name].sum() # * Unit("Jansky")
+            flux = self.images[name].primary.sum() # * Unit("Jansky")
 
             # Apply correction for EEF of aperture
             #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
@@ -287,7 +397,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the errors on the aperture fluxes ...")
 
         # Loop over all the images
-        for name in self.frames:
+        for name in self.image_names:
 
             # Debugging
             log.debug("Calculating the flux error for the " + name + " image ...")
@@ -323,7 +433,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Making the observed SED ...")
 
         # Loop over all images
-        for name in self.frames:
+        for name in self.image_names:
 
             # Debugging
             log.debug("Adding SED entry for the " + name + " image ...")
@@ -340,7 +450,7 @@ class PhotoMeter(PhotometryComponent):
             errorbar = self.errors[name]
 
             # Add this entry to the SED
-            self.sed.add_point(self.frames[name].filter, flux, errorbar)
+            self.sed.add_point(self.images[name].filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -355,7 +465,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Making the flux error table ...")
 
         # Loop over the errors
-        for name in self.frames:
+        for name in self.images:
 
             # Debugging
             log.debug("Adding an entry to the error table for the " + name + " image ...")
@@ -370,7 +480,7 @@ class PhotoMeter(PhotometryComponent):
             total_relative_error = total_error / self.fluxes[name]
 
             # Add an entry to the flux error table
-            self.error_table.add_entry(self.frames[name].filter, calibration_error, aperture_noise, total_error, total_relative_error)
+            self.error_table.add_entry(self.images[name].filter, calibration_error, aperture_noise, total_error, total_relative_error)
 
     # -----------------------------------------------------------------
 
@@ -435,6 +545,9 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the images
+        self.write_images()
+
         # Write SED table
         self.write_sed()
 
@@ -449,6 +562,26 @@ class PhotoMeter(PhotometryComponent):
 
         # Plot the SED with references
         self.plot_sed_with_references()
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the iamges ...")
+
+        for name in self.image_names:
+
+            # Detemrine path
+            path = fs.join(self.phot_images_path, name + ".fits")
+
+            # SAve
+            self.images[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -556,7 +689,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the aperture noise for " + name + " ...")
 
         # Get the frame (this is with the sky NOT subtracted)
-        frame = self.frames[name]
+        frame = self.images[name]
 
         truncation_ellipse_sky = self.truncation_ellipse
         truncation_ellipse_image = truncation_ellipse_sky.to_pixel(frame.wcs)

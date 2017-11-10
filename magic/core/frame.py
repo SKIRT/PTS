@@ -146,7 +146,8 @@ class Frame(NDDataArray):
         self.extinction_corrected = kwargs.pop("extinction_corrected", False)
         self.sky_subtracted = kwargs.pop("sky_subtracted", False)
 
-        # Set filter
+        # Set filter, go through setter
+        self._filter = None
         self.filter = kwargs.pop("filter", None)
 
         # Set FWHM
@@ -365,6 +366,32 @@ class Frame(NDDataArray):
 
         if fltr is None: self._filter = None
         else: self._filter = parse_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_broad_band(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.filter.broad import BroadBandFilter
+        return self.filter is not None and isinstance(self.filter, BroadBandFilter)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_narrow_band(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.filter.narrow import NarrowBandFilter
+        return self.filter is not None and isinstance(self.filter, NarrowBandFilter)
 
     # -----------------------------------------------------------------
 
@@ -882,6 +909,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def apply_mask_nans(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :return:
+        """
+
+        self.apply_mask(mask, fill=nan_value, invert=invert)
+
+    # -----------------------------------------------------------------
+
     def applied_mask(self, mask, fill=0.0, invert=False):
 
         """
@@ -895,6 +935,19 @@ class Frame(NDDataArray):
         new = self.copy()
         new.apply_mask(mask, fill=fill, invert=invert)
         return new
+
+    # -----------------------------------------------------------------
+
+    def applied_mask_nans(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :return:
+        """
+
+        return self.applied_mask(mask, fill=nan_value, invert=invert)
 
     # -----------------------------------------------------------------
 
