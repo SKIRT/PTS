@@ -870,15 +870,16 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    def softened(self, min_radius=0, max_radius=5, nbins=10, niterations=1, min_level=0):
+    def softened(self, radius=5, min_radius=0, nbins=10, niterations=1, min_level=0, per_level=False):
 
         """
         This function ...
+        :param radius:
         :param min_radius:
-        :param max_radius:
         :param nbins:
         :param niterations:
         :param min_level:
+        :param per_level
         :return:
         """
 
@@ -896,23 +897,51 @@ class MaskBase(object):
 
         levels = dict()
 
-        # Loop over the levels
-        for lower_value, center_value, upper_value in zip(lower, centers, upper):
+        # Radius is per level
+        if per_level:
 
-            # Get integer center level
-            center = int(round(center_value))
-
-            radius_span = max_radius - min_radius
-            level_radius = min_radius - radius_span / level_span * (center - max_level)
-            int_level_radius = int(round(level_radius))
-
-            # Create dilated mask
             from skimage import morphology
-            structure = morphology.disk(int_level_radius, dtype=bool)
-            data = ndimage.binary_dilation(self.data, structure, niterations)
+            structure = morphology.disk(radius, dtype=bool)
 
-            # Add the data to the dictionary
-            levels[center] = data
+            previous_mask = self.data
+            levels[max_level] = previous_mask
+
+            # Loop over the levels
+            for lower_value, center_value, upper_value in reversed(zip(lower, centers, upper)):
+
+                # Get integer center level
+                center = int(round(center_value))
+
+                # Create dilated mask
+                data = ndimage.binary_dilation(previous_mask, structure, niterations)
+                previous_mask = data
+
+                # Add the data to the dictionary
+                levels[center] = data
+
+        # Radius is maximum radius
+        else:
+
+            # Loop over the levels
+            for lower_value, center_value, upper_value in zip(lower, centers, upper):
+
+                # Get integer center level
+                center = int(round(center_value))
+
+                radius_span = radius - min_radius
+                level_radius = min_radius - radius_span / level_span * (center - max_level)
+                int_level_radius = int(round(level_radius))
+
+                # Create dilated mask
+                from skimage import morphology
+                structure = morphology.disk(int_level_radius, dtype=bool)
+                data = ndimage.binary_dilation(self.data, structure, niterations)
+
+                # Add the data to the dictionary
+                levels[center] = data
+
+            # Add maximum level
+            levels[max_level] = self.data
 
         # Create alpha mask
         return AlphaMask.from_levels(levels)

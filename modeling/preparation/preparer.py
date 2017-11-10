@@ -30,9 +30,7 @@ from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...dustpedia.core.properties import DustPediaProperties
 from ...dustpedia.core.photometry import DustPediaPhotometry
-from ...magic.basics.mask import Mask as oldMask
 from ...magic.core.frame import Frame, sum_frames_quadratically
-from . import unitconversion
 from ...magic.region.point import PixelPointRegion
 from ...magic.basics.coordinate import PixelCoordinate
 from ...magic.region.ellipse import PixelEllipseRegion
@@ -1736,77 +1734,7 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
 # -----------------------------------------------------------------
 
-def get_calibration_uncertainty_frame_from_magnitude(image, calibration_magn):
 
-    """
-    This fucntion ...
-    :param image:
-    :param calibration_magn:
-    :return: 
-    """
-
-    # Convert the frame into AB magnitudes
-    invalid = oldMask.is_zero_or_less(image.primary)
-    ab_frame = unitconversion.jansky_to_ab(image.primary)
-    # Set infinites to zero
-    ab_frame[invalid] = 0.0
-
-    # -----------------------------------------------------------------
-
-    # The calibration uncertainty in AB magnitude
-    #mag_error = calibration_magn.value
-    if hasattr(calibration_magn, "unit"): mag_error = calibration_magn.to("mag").value
-    else: mag_error = float(calibration_magn)
-
-    # a = image[mag] - mag_error
-    a = ab_frame - mag_error
-
-    # b = image[mag] + mag_error
-    b = ab_frame + mag_error
-
-    # Convert a and b to Jy
-    a = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * a)
-    b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * b)
-
-    # c = a[Jy] - image[Jy]
-    # c = a - jansky_frame
-    c = a - image.primary
-
-    # d = image[Jy] - b[Jy]
-    # d = jansky_frame - b
-    d = image.primary - b
-
-    # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
-
-    # Calibration errors = max(c, d)
-    # calibration_errors = np.maximum(c, d)  # element-wise maxima
-    # calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
-
-    # relative_calibration_errors = calibration_errors / jansky_frame
-    # relative_calibration_errors[invalid] = 0.0
-
-    # Check that there are no infinities or nans in the result
-    # assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
-
-    # The actual calibration errors in the same unit as the data
-    # calibration_frame = self.image.frames.primary * relative_calibration_errors
-
-    # -----------------------------------------------------------------
-
-    calibration_frame = np.maximum(c, d)  # element-wise maxima
-    calibration_frame[invalid] = 0.0  # set zero where AB magnitude could not be calculated
-
-    new_invalid = oldMask.is_nan(calibration_frame) + oldMask.is_inf(calibration_frame)
-    calibration_frame[new_invalid] = 0.0
-
-    # Check that there are no infinities or nans in the result
-    assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
-
-    # Make frame from numpy array
-    calibration_frame = Frame(calibration_frame)
-
-    # Return the frame
-    return calibration_frame
 
 #-----------------------------------------------------------------
 

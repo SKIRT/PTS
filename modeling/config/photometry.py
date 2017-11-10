@@ -15,9 +15,10 @@ from pts.core.remote.host import find_host_ids
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add option for the remote host ID
-definition.add_positional_optional("remote", "string", "remote host to use for the aperture correction calculation", find_host_ids())
+definition.add_positional_optional("remote", "string", "remote host to use for the aperture correction calculation", choices=find_host_ids(schedulers=False))
 
 # Add option
-definition.add_optional("noise_method", "string", "method to use for the aperture noise calculation", choices=["caapr", "pts"], default="caapr")
+noise_methods = ["caapr", "pts"]
+definition.add_optional("noise_method", "string", "method to use for the aperture noise calculation", choices=noise_methods, default="caapr")
 
 # -----------------------------------------------------------------

@@ -1325,6 +1325,9 @@ class GalaxyModelingComponent(ModelingComponent):
         # Inform the user
         log.info("Loading the reference SEDs ...")
 
+        # The seds
+        seds = dict()
+
         # Loop over the SEDs in the data/SEDs directory
         for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"], not_contains="Lines"):
 
@@ -1332,7 +1335,10 @@ class GalaxyModelingComponent(ModelingComponent):
             sed = ObservedSED.from_file(path)
 
             # Add the SED to the dictionary
-            self.reference_seds[name] = sed
+            seds[name] = sed
+
+        # Return the SEDs
+        return seds
 
     # -----------------------------------------------------------------
 

@@ -892,6 +892,14 @@ class BroadBandFilter(Filter):
         return self.observatory == "Herschel"
 
     @property
+    def is_pacs(self):
+        return self.instrument == "Pacs"
+
+    @property
+    def is_spire(self):
+        return self.instrument == "SPIRE"
+
+    @property
     def aliases(self):
         # returns the aliases
         return list(generate_aliases(identifiers[self.name]))

@@ -2256,7 +2256,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                               current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                               dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                              resoften_current_masks=self.config.resoften_masks)
+                                              resoften_current_masks=self.config.resoften_masks,
+                                              relative_softening_radius=self.config.relative_softening_radius)
 
             # Replace by a dictionary of maps
             self.old_clipped_maps[name] = maps
@@ -2403,7 +2404,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks)
+                                          resoften_current_masks=self.config.resoften_masks,
+                                          relative_softening_radius=self.config.relative_softening_radius)
 
             # Replace by a dictionary of maps
             self.young_clipped_maps[name] = maps
@@ -2550,7 +2552,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks)
+                                          resoften_current_masks=self.config.resoften_masks,
+                                          relative_softening_radius=self.config.relative_softening_radius)
 
             # Replace by a dictionary of maps
             self.ionizing_clipped_maps[name] = maps
@@ -2697,7 +2700,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks)
+                                          resoften_current_masks=self.config.resoften_masks,
+                                          relative_softening_radius=self.config.relative_softening_radius)
 
             # Replace by a dictionary of maps
             self.dust_clipped_maps[name] = maps

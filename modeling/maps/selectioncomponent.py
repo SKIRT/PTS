@@ -617,8 +617,8 @@ class MapsSelectionComponent(MapsComponent):
     def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
                           npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                           return_masks=False, current=None, current_masks=None, dilate=True, dilate_fuzzy=True,
-                          dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=20,
-                          resoften_current_masks=False):
+                          dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=10,
+                          resoften_current_masks=False, relative_softening_radius=None):
 
         """
         This function ...
@@ -646,6 +646,7 @@ class MapsSelectionComponent(MapsComponent):
         :param softening_radius:
         :param softening_nbins:
         :param resoften_current_masks:
+        :param relative_softening_radius:
         :return:
         """
 
@@ -660,7 +661,8 @@ class MapsSelectionComponent(MapsComponent):
                                      fuzziness_offset=fuzziness_offset, current_masks=current_masks, dilate=dilate,
                                      dilate_fuzzy=dilate_fuzzy, dilation_radius=dilation_radius,
                                      dilation_nbins=dilation_nbins, soften=soften, softening_radius=softening_radius,
-                                     softening_nbins=softening_nbins, resoften_current_masks=resoften_current_masks)
+                                     softening_nbins=softening_nbins, resoften_current_masks=resoften_current_masks,
+                                     relative_softening_radius=relative_softening_radius)
 
         # The maps
         if current is not None: maps = copy.copy(current) # shallow copy
@@ -875,7 +877,8 @@ class MapsSelectionComponent(MapsComponent):
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
                         npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                         current_masks=None, dilate=True, dilate_fuzzy=True, dilation_radius=5, dilation_max_radius=20,
-                        dilation_nbins=20, soften=True, softening_radius=20, softening_nbins=20, resoften_current_masks=False):
+                        dilation_nbins=20, soften=True, softening_radius=20, softening_nbins=10, resoften_current_masks=False,
+                        relative_softening_radius=None):
 
         """
         Thisn function ...
@@ -902,6 +905,7 @@ class MapsSelectionComponent(MapsComponent):
         :param softening_radius:
         :param softening_nbins:
         :param resoften_current_masks:
+        :param relative_softening_radius:
         :return:
         """
 
@@ -935,6 +939,13 @@ class MapsSelectionComponent(MapsComponent):
 
         # Get the common WCS of all the frames
         if wcs is None: wcs = frames[0].wcs
+
+        # Set softening radius from relative softening radius
+        if relative_softening_radius is not None:
+            softening_radius = relative_softening_radius * float(wcs.xsize)
+
+            # Debuggig
+            log.debug("The softening radius is " + str(softening_radius) + " pixels")
 
         # Get the number of frames
         names = frames.names
@@ -993,7 +1004,7 @@ class MapsSelectionComponent(MapsComponent):
                     #plotting.plot_mask(mask, title="filled holes")
 
                     # Soften the mask
-                    mask = mask.softened(max_radius=softening_radius, nbins=softening_nbins)
+                    mask = mask.softened(softening_radius, nbins=softening_nbins)
                     #plotting.plot_mask(mask, title="softened")
 
                     # Set the mask's coordinate system
@@ -1052,7 +1063,7 @@ class MapsSelectionComponent(MapsComponent):
                 mask.fill_holes(connectivity=4)
 
                 # Now create softened (fuzzy) mask based on dilation if requested
-                if soften: mask = mask.softened(max_radius=softening_radius, nbins=softening_nbins)
+                if soften: mask = mask.softened(softening_radius, nbins=softening_nbins)
 
                 # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
                 else: mask.invert()

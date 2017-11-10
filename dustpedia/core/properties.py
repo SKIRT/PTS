@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -89,6 +90,197 @@ def has_fwhm(fltr):
 
     properties = DustPediaProperties()
     return properties.has_filter(fltr)
+
+# -----------------------------------------------------------------
+
+def has_calibration_error(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    properties = DustPediaProperties()
+    return properties.has_filter(fltr)
+
+# -----------------------------------------------------------------
+
+def get_calibration_error(fltr, flux, errorbar=False):
+
+    """
+    Thisn function ...
+    :param fltr:
+    :param flux: can be array (Frame) or single value
+    :param errorbar:
+    :return:
+    """
+
+    from ...core.basics.errorbar import ErrorBar
+
+    # Load DustPedia properties
+    properties = DustPediaProperties()
+
+    # Calculate calibration error frame
+    if properties.has_calibration_error_magnitude(fltr):
+
+        magnitude = properties.get_calibration_error_magnitude(fltr)
+
+        # Real value or quantity
+        if types.is_real_type(flux) or types.is_quantity(flux): calibration_error = calculate_calibration_error(flux, magnitude, errorbar=errorbar)
+
+        # Assume it's a frame
+        else:
+            if errorbar: raise ValueError("Cannot return as errorbar")
+            calibration_error = get_calibration_uncertainty_frame_from_magnitude(flux, magnitude)
+
+    # From percentual calibration error
+    else:
+
+        # Calculate calibration errors with percentage
+        fraction = properties.get_calibration_error_relative(fltr)
+        calibration_error = flux * fraction
+
+        # As error bar
+        if errorbar: calibration_error = ErrorBar(calibration_error)
+
+    # Return the calibration error
+    return calibration_error
+
+# -----------------------------------------------------------------
+
+def calculate_calibration_error(flux, calibration_magn, errorbar=True):
+
+    """
+    This function ...
+    :param flux:
+    :param calibration_magn:
+    :param errorbar:
+    :return:
+    """
+
+    from ...core.basics.errorbar import ErrorBar
+    from ...core.units.utils import jansky_to_ab, ab_to_jansky
+
+    if hasattr(calibration_magn, "unit"): mag_error = calibration_magn.to("mag").value
+    else: mag_error = float(calibration_magn)
+
+    # Inform the user
+    #log.info("Calculating the calibration error for the " + name + " image ...")
+
+    # Get the calibration error
+    #calibration_error = CalibrationError.from_filter(self.frames[name].filter)
+    #mag_error = calibration_error.value
+
+    # Convert the total flux to AB magnitude
+    flux_mag = jansky_to_ab(flux)
+
+    a = flux_mag - mag_error
+    b = flux_mag + mag_error
+
+    log.debug("Flux value: " + str(flux))
+    log.debug("a magnitude: " + str(a))
+    log.debug("b magnitude: " + str(b))
+
+    # Convert a and b to Jy
+    a = ab_to_jansky(a)
+    b = ab_to_jansky(b)
+
+    # Calculate lower and upper limit of the flux
+    c = a - flux
+    d = b - flux
+
+    log.debug("a value: " + str(a))
+    log.debug("b value: " + str(b))
+    log.debug("c value: " + str(c))
+    log.debug("d value: " + str(d))
+
+    # Create the error bar
+    if errorbar: error = ErrorBar(d, c)
+
+    # No errorbar: max value
+    else: error = max(abs(d), abs(c))
+
+    # Return the calibration error
+    return error
+
+# -----------------------------------------------------------------
+
+def get_calibration_uncertainty_frame_from_magnitude(image, calibration_magn):
+
+    """
+    This fucntion ...
+    :param image:
+    :param calibration_magn:
+    :return:
+    """
+
+    from ...magic.core.frame import Frame
+    from ...magic.basics.mask import Mask as oldMask
+    from ...core.units.utils import jansky_to_ab, ab_mag_zero_point
+
+    # Convert the frame into AB magnitudes
+    invalid = oldMask.is_zero_or_less(image.primary)
+    ab_frame = jansky_to_ab(image.primary)
+    # Set infinites to zero
+    ab_frame[invalid] = 0.0
+
+    # -----------------------------------------------------------------
+
+    # The calibration uncertainty in AB magnitude
+    #mag_error = calibration_magn.value
+    if hasattr(calibration_magn, "unit"): mag_error = calibration_magn.to("mag").value
+    else: mag_error = float(calibration_magn)
+
+    # a = image[mag] - mag_error
+    a = ab_frame - mag_error
+
+    # b = image[mag] + mag_error
+    b = ab_frame + mag_error
+
+    # Convert a and b to Jy
+    a = ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * a)
+    b = ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * b)
+
+    # c = a[Jy] - image[Jy]
+    # c = a - jansky_frame
+    c = a - image.primary
+
+    # d = image[Jy] - b[Jy]
+    # d = jansky_frame - b
+    d = image.primary - b
+
+    # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
+
+    # Calibration errors = max(c, d)
+    # calibration_errors = np.maximum(c, d)  # element-wise maxima
+    # calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
+
+    # relative_calibration_errors = calibration_errors / jansky_frame
+    # relative_calibration_errors[invalid] = 0.0
+
+    # Check that there are no infinities or nans in the result
+    # assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
+
+    # The actual calibration errors in the same unit as the data
+    # calibration_frame = self.image.frames.primary * relative_calibration_errors
+
+    # -----------------------------------------------------------------
+
+    calibration_frame = np.maximum(c, d)  # element-wise maxima
+    calibration_frame[invalid] = 0.0  # set zero where AB magnitude could not be calculated
+
+    new_invalid = oldMask.is_nan(calibration_frame) + oldMask.is_inf(calibration_frame)
+    calibration_frame[new_invalid] = 0.0
+
+    # Check that there are no infinities or nans in the result
+    assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
+
+    # Make frame from numpy array
+    calibration_frame = Frame(calibration_frame)
+
+    # Return the frame
+    return calibration_frame
 
 # -----------------------------------------------------------------
 

@@ -139,6 +139,7 @@ definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
 # Soften regular masks
 definition.add_flag("soften_masks", "soften regular masks", True)
+definition.add_optional("relative_softening_radius", "positive_real", "softening radius relative to map xsize", 1./25.)
 
 # -----------------------------------------------------------------
 

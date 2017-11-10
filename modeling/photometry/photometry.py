@@ -31,6 +31,8 @@ from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
 from ..preparation import unitconversion
 from .tables import FluxErrorTable, FluxDifferencesTable
 from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
+from ..preparation.preparer import has_statistics, load_statistics
+from ...dustpedia.core.properties import has_calibration_error, get_calibration_error
 
 # -----------------------------------------------------------------
 
@@ -93,12 +95,6 @@ class PhotoMeter(PhotometryComponent):
 
         # The list of image frames
         self.frames = dict()
-
-        # The list of image frames
-        self.truncated_frames = dict()
-
-        # The sky values
-        #self.sky_values = dict()
 
         # The fluxes
         self.fluxes = dict()
@@ -204,48 +200,52 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Loading the " + name + " image ...")
 
-            # Load the frame, not truncated
-            frame = self.dataset.get_frame(name, masked=False)
+            # Load the frame
+            frame = self.dataset.get_frame(name)
 
             # Load the truncated frame
-            truncated_frame = self.dataset.get_frame(name)
+            #truncated_frame = self.dataset.get_frame(name)
+            #plotting.plot_frame(frame)
+            #plotting.plot_frame(truncated_frame)
 
-            # Get the sky value
-            sky = self.dataset.get_image_plane(name, "sky")[0,0]
+            # Check whether preparation statistics can be found
+            if not has_statistics(self.config.path, name): raise ValueError("Something went wrong in preparation: statistics not found")
 
-            # Debugging
-            log.debug("The sky value for this image is " + str(sky) + " MJy/sr")
+            # Load the statistics
+            statistics = load_statistics(self.config.path, name)
 
-            # Debugging
-            log.debug("Converting the " + name + " to Jy ...")
+            mean_frame = statistics.mean_frame
+            median_frame = statistics.median_frame
+            stddev_frame = statistics.stddev_frame
+            mean_frame_not_clipped = statistics.mean_frame_not_clipped
+            median_frame_not_clipped = statistics.median_frame_not_clipped
+            stddev_frame_not_clipped = statistics.stddev_frame_not_clipped
+            mean_sky = statistics.mean_sky
+            median_sky = statistics.median_sky
+            mean_noise = statistics.mean_noise
+            mean_subtracted = statistics.mean_subtracted
+            median_subtracted = statistics.median_subtracted
+            stddev_subtracted = statistics.stddev_subtracted
 
-            # CONVERSION TO JANSKY
-
-            # Convert from MJy/sr to Jy/sr
-            conversion_factor = 1.0
-            conversion_factor *= 1e6
-
-            # Conversion from Jy / sr to Jy / pixel
-            pixelscale = frame.average_pixelscale
-            pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
-            conversion_factor /= pixel_factor
-
-            # CONVERT IMAGE
-            frame *= conversion_factor
-            truncated_frame *= conversion_factor
-
-            # Convert the sky value
-            sky *= conversion_factor
+            #print(frame.unit)
 
             # Debugging
-            log.debug("The sky value in Jansky / pixel is " + str(sky))
+            log.debug("Checking the units of the image ...")
 
             # Add to the appropriate dictionary
-            self.frames[name] = frame + sky # add the sky to the frame
-            self.truncated_frames[name] = truncated_frame
+            self.frames[name] = frame #+ sky # add the sky to the frame
 
-            # Add the sky value
-            #self.sky_values[name] = sky
+    # -----------------------------------------------------------------
+
+    def get_filter(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.frames[name].filter
 
     # -----------------------------------------------------------------
 
@@ -266,10 +266,10 @@ class PhotoMeter(PhotometryComponent):
             log.debug("Calculating the total flux in the " + name + " image ...")
 
             # Calculate the total flux in Jansky
-            flux = self.truncated_frames[name].sum() # * Unit("Jansky")
+            flux = self.frames[name].sum() # * Unit("Jansky")
 
             # Apply correction for EEF of aperture
-            if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
+            #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
 
             # Add the flux to the dictionary
             self.fluxes[name] = flux
@@ -293,13 +293,22 @@ class PhotoMeter(PhotometryComponent):
             log.debug("Calculating the flux error for the " + name + " image ...")
 
             # Calculate the calibration error
-            calibration_error = self.calculate_calibration_error(name)
+            #calibration_error = self.calculate_calibration_error(name)
 
             # Calculate the aperture noise error
-            aperture_noise = self.calculate_aperture_noise(name)
+            #aperture_noise = self.calculate_aperture_noise(name)
 
             # Set the error contributions
-            self.errors[name] = (calibration_error, aperture_noise)
+            #self.errors[name] = (calibration_error, aperture_noise)
+            #self.errors[name] = calibration_error
+
+            fltr = self.get_filter(name)
+
+            # Get calibataion error as error bar
+            error = get_calibration_error(fltr, self.fluxes[name], errorbar=True)
+
+            # Add
+            self.errors[name] = error
 
     # -----------------------------------------------------------------
 
@@ -323,10 +332,12 @@ class PhotoMeter(PhotometryComponent):
             flux = self.fluxes[name]
 
             # The error contributions
-            calibration_error, aperture_noise = self.errors[name]
+            #calibration_error, aperture_noise = self.errors[name]
 
             # Add the error contributions
-            errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
+            #errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
+
+            errorbar = self.errors[name]
 
             # Add this entry to the SED
             self.sed.add_point(self.frames[name].filter, flux, errorbar)
@@ -530,73 +541,6 @@ class PhotoMeter(PhotometryComponent):
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
         plotter.run(ouput=path, title=self.galaxy_name)
-
-    # -----------------------------------------------------------------
-
-    def calculate_calibration_error(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the calibration error for the " + name + " image ...")
-
-        # The flux value
-        flux = self.fluxes[name]
-
-        # Get the calibration error
-        calibration_error = CalibrationError.from_filter(self.frames[name].filter)
-
-        if calibration_error.magnitude:
-
-            mag_error = calibration_error.value
-
-            # Convert the total flux to AB magnitude
-            flux_mag = unitconversion.jansky_to_ab(flux)
-
-            a = flux_mag - mag_error
-            b = flux_mag + mag_error
-
-            log.debug("Flux value: " + str(flux))
-            log.debug("a magnitude: " + str(a))
-            log.debug("b magnitude: " + str(b))
-
-            # Convert a and b to Jy
-            a = unitconversion.ab_to_jansky(a)
-            b = unitconversion.ab_to_jansky(b)
-
-            # Calculate lower and upper limit of the flux
-            c = a - flux
-            d = b - flux
-
-            log.debug("a value: " + str(a))
-            log.debug("b value: " + str(b))
-            log.debug("c value: " + str(c))
-            log.debug("d value: " + str(d))
-
-            # Create the error bar
-            error_bar = ErrorBar(d, c)
-
-        # The calibration uncertainty is expressed in a percentage (from the flux values)
-        elif calibration_error.percentage:
-
-            # Calculate calibration errors with percentage
-            fraction = calibration_error.value * 0.01
-
-            # Calculate the absolute error on the flux value
-            error = flux * fraction
-
-            # Create the error bar
-            error_bar = ErrorBar(error)
-
-        # Unrecognized calibration error (not a magnitude, not a percentage)
-        else: raise ValueError("Unrecognized calibration error")
-
-        # Return the calibration error
-        return error_bar
 
     # -----------------------------------------------------------------
 
