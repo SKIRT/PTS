@@ -30,6 +30,7 @@ from ...core.tools import types
 from ...core.tools import filesystem as fs
 from ...core.basics.configuration import prompt_string_list
 from ...magic.core.mask import Mask
+from ...magic.basics.mask import MaskBase
 from ...magic.core.alpha import AlphaMask
 from ...core.basics.range import RealRange
 from ...magic.tools import plotting
@@ -616,7 +617,8 @@ class MapsSelectionComponent(MapsComponent):
     def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
                           npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                           return_masks=False, current=None, current_masks=None, dilate_fuzzy=True,
-                          dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=20):
+                          dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=20,
+                          resoften_current_masks=False):
 
         """
         This function ...
@@ -642,6 +644,7 @@ class MapsSelectionComponent(MapsComponent):
         :param soften:
         :param softening_radius:
         :param softening_nbins:
+        :param resoften_current_masks:
         :return:
         """
 
@@ -655,7 +658,8 @@ class MapsSelectionComponent(MapsComponent):
                                      connectivity=connectivity, present=present, fuzzy=fuzzy, fuzziness=fuzziness,
                                      fuzziness_offset=fuzziness_offset, current_masks=current_masks, dilate_fuzzy=dilate_fuzzy,
                                      dilation_radius=dilation_radius, dilation_nbins=dilation_nbins, soften=soften,
-                                     softening_radius=softening_radius, softening_nbins=softening_nbins)
+                                     softening_radius=softening_radius, softening_nbins=softening_nbins,
+                                     resoften_current_masks=resoften_current_masks)
 
         # The maps
         if current is not None: maps = copy.copy(current) # shallow copy
@@ -675,8 +679,12 @@ class MapsSelectionComponent(MapsComponent):
 
             # Make clipped copy of the map
             clipped_map = the_map.copy()
-            if fuzzy: clipped_map.apply_alpha_mask(mask)
-            else: clipped_map.apply_mask(mask)
+            #if fuzzy: clipped_map.apply_alpha_mask(mask)
+            #else: clipped_map.apply_mask(mask)
+            # CAN ALSO BE 'FUZZY' when regular mask is softened
+            if isinstance(mask, AlphaMask): clipped_map.apply_alpha_mask(mask)
+            elif isinstance(mask, MaskBase): clipped_map.apply_mask(mask)
+            else: raise ValueError("Invalid mask: must be regular mask or alpha mask")
 
             # Add to the dictionary
             maps[levels] = clipped_map
@@ -866,7 +874,7 @@ class MapsSelectionComponent(MapsComponent):
     def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
                         npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                         current_masks=None, dilate_fuzzy=True, dilation_radius=5, dilation_max_radius=20, dilation_nbins=20,
-                        soften=True, softening_radius=15, softening_nbins=20):
+                        soften=True, softening_radius=15, softening_nbins=20, resoften_current_masks=False):
 
         """
         Thisn function ...
@@ -891,6 +899,7 @@ class MapsSelectionComponent(MapsComponent):
         :param soften:
         :param softening_radius:
         :param softening_nbins:
+        :param resoften_current_masks:
         :return:
         """
 
@@ -922,6 +931,9 @@ class MapsSelectionComponent(MapsComponent):
             frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
             errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
+        # Get the common WCS of all the frames
+        if wcs is None: wcs = frames[0].wcs
+
         # Get the number of frames
         names = frames.names
         nframes = len(names)
@@ -935,8 +947,6 @@ class MapsSelectionComponent(MapsComponent):
 
         # LEVELS ARE GIVEN AS A DICTIONARY: DEFINED FOR EACH IMAGE NAME
         elif types.is_dictionary(levels_dict):
-            #levels_dict = {parse_filter(fltr): levels for fltr, levels in levels_dict.items()}
-            #for fltr in frames.filters: frame_levels.append(levels_dict[fltr])
             for name in names: frame_levels.append(levels_dict[name]) # name = origin
 
         # Invalid
@@ -959,7 +969,29 @@ class MapsSelectionComponent(MapsComponent):
 
             # Check if already created
             if current_masks is not None and levels_dict in current_masks:
-                masks_levels[levels_dict] = current_masks[levels_dict]
+
+                # Get the mask
+                mask = current_masks[levels_dict]
+
+                # Re-soften?
+                if resoften_current_masks:
+
+                    # Get actual mask
+                    if isinstance(mask, AlphaMask): mask = mask.opaque
+                    elif isinstance(mask, MaskBase): mask = mask.inverse()
+                    else: raise ValueError("Invalid mask object")
+
+                    # Fill holes first
+                    mask.fill_holes(connectivity=4)
+
+                    # Soften the mask
+                    mask = mask.softened(max_radius=softening_radius, nbins=softening_nbins)
+
+                    # Set the mask's coordinate system
+                    mask.wcs = wcs
+
+                # Set the mask and continue
+                masks_levels[levels_dict] = mask
                 continue
 
             # Debugging
@@ -1012,6 +1044,9 @@ class MapsSelectionComponent(MapsComponent):
 
                 # Invert FOR NORMAL MASKS: WE HAVE TO SET PIXELS TO ZERO THAT ARE NOT ON THE MASK
                 else: mask.invert()
+
+            # Set the mask's coordinate system
+            mask.wcs = wcs
 
             # Add the mask to the dictionary
             masks_levels[levels_dict] = mask

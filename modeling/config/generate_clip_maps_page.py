@@ -148,3 +148,9 @@ definition.add_optional("min_npixels", "positive_integer", "minimum number of pi
 definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 
 # -----------------------------------------------------------------
+
+# ADVANCED
+definition.add_flag("reclip_from_masks", "reclip from saved masks", False)
+definition.add_flag("resoften_masks", "resoften masks", False)
+
+# -----------------------------------------------------------------

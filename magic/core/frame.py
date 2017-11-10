@@ -3576,6 +3576,10 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check if the reference WCS is not None
+        if reference_wcs is None: raise ValueError("Reference coordinate system has to be specified")
+        #if not isinstance(reference_wcs, CoordinateSystem): ... # extra check?
+
         # Check whether the frame has a WCS
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 

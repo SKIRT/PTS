@@ -1085,6 +1085,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Has all?
             has_all = True
+            has_any = False
 
             # Loop over the different combinations
             for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
@@ -1103,6 +1104,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Check whether file is present
                 if self.has_old_map_and_mask_for_levels(name, levels_dict):
+
+                    has_any = True
 
                     # Success
                     log.success("Data for combination '" + levels_string + "' is present")
@@ -1130,10 +1133,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.has_all_data_old[name] = has_all
 
             # If has all: remove the map
-            if has_all: del self.old_maps[name]
+            if has_all and not self.config.reclip_from_masks: del self.old_maps[name]
 
             # Succes
             if has_all: log.success("All data is already present for the '" + name + "' old stellar map")
+
+            # For reclipping
+            if self.config.reclip_from_masks and has_any:
+
+                # Message
+                log.success("But reclipping will be applied")
+
+                # Debugging
+                log.debug("Correcting the '" + name + "' old stellar map to be reclipped ...")
+
+                # Correct
+                self.correct_map(self.old_maps[name])
+
+                # Debugging
+                log.debug("Rebinning the '" + name + "' old stellar map to be reclipped ...")
+
+                # Rebin (so to be cropped as the clipped maps)
+                last_levels_dict = self.old_clipped_maps[name].keys()[-1]
+                self.old_maps[name].rebin(self.old_clipped_maps[name][last_levels_dict].wcs)
 
     # -----------------------------------------------------------------
 
@@ -1164,6 +1186,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Has all?
             has_all = True
+            has_any = False
 
             # Loop over the different combinations
             for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
@@ -1182,6 +1205,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Check whether file is present
                 if self.has_young_map_and_mask_for_levels(name, levels_dict):
+
+                    has_any = True
 
                     # Success
                     log.success("Data for combination '" + levels_string + "' is present")
@@ -1209,10 +1234,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.has_all_data_young[name] = has_all
 
             # If has all: remove the map
-            if has_all: del self.young_maps[name]
+            if has_all and not self.config.reclip_from_masks: del self.young_maps[name]
 
             # Succes
             if has_all: log.success("All data is already present for the '" + name + "' young stellar map")
+
+            # For reclipping
+            if self.config.reclip_from_masks and has_any:
+
+                # Message
+                log.success("But reclipping will be applied")
+
+                # Debugging
+                log.debug("Correcting the '" + name + "' young stellar map to be reclipped ...")
+
+                # Correct
+                self.correct_map(self.young_maps[name])
+
+                # Debugging
+                log.debug("Rebinning the '" + name + "' young stellar map to be reclipped ...")
+
+                # Rebin (so to be cropped as the clipped maps)
+                last_levels_dict = self.young_clipped_maps[name].keys()[-1]
+                self.young_maps[name].rebin(self.young_clipped_maps[name][last_levels_dict].wcs)
 
     # -----------------------------------------------------------------
 
@@ -1243,6 +1287,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Has all?
             has_all = True
+            has_any = False
 
             # Loop over the different combinations
             for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
@@ -1261,6 +1306,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Check whether file is present
                 if self.has_ionizing_map_and_mask_for_levels(name, levels_dict):
+
+                    has_any = True
 
                     # Success
                     log.success("Data for combination '" + levels_string + "' is present")
@@ -1288,10 +1335,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.has_all_data_ionizing[name] = has_all
 
             # If has all: remove the map
-            if has_all: del self.ionizing_maps[name]
+            if has_all and not self.config.reclip_from_masks: del self.ionizing_maps[name]
 
             # Succes
             if has_all: log.success("All data is already present for the '" + name + "' ionizing stellar map")
+
+            # For reclipping
+            if self.config.reclip_from_masks and has_any:
+
+                # Message
+                log.success("But reclipping will be applied")
+
+                # Debugging
+                log.debug("Correcting the '" + name + "' ionizing stellar map to be reclipped ...")
+
+                # Correct
+                self.correct_map(self.ionizing_maps[name])
+
+                # Debugging
+                log.debug("Rebinning the '" + name + "' ionizing stellar map to be reclipped ...")
+
+                # Rebin (so to be cropped as the clipped maps)
+                last_levels_dict = self.ionizing_clipped_maps[name].keys()[-1]
+                self.ionizing_maps[name].rebin(self.ionizing_clipped_maps[name][last_levels_dict].wcs)
 
     # -----------------------------------------------------------------
 
@@ -1322,6 +1388,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Has all?
             has_all = True
+            has_any = False
 
             # Loop over the different combinations
             for sigma_levels_combination in sequences.lists_combinations(*sigma_levels):
@@ -1340,6 +1407,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Check whether file is present
                 if self.has_dust_map_and_mask_for_levels(name, levels_dict):
+
+                    has_any = True
 
                     # Success
                     log.success("Data for combination '" + levels_string + "' is present")
@@ -1367,10 +1436,29 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             self.has_all_data_dust[name] = has_all
 
             # If has all: remove the map
-            if has_all: del self.dust_maps[name]
+            if has_all and not self.config.reclip_from_masks: del self.dust_maps[name]
 
             # Succes
             if has_all: log.success("All data is already present for the '" + name + "' dust stellar map")
+
+            # For reclipping
+            if self.config.reclip_from_masks and has_any:
+
+                # Message
+                log.success("But reclipping will be applied")
+
+                # Debugging
+                log.debug("Correcting the '" + name + "' dust map to be reclipped ...")
+
+                # Correct
+                self.correct_map(self.dust_maps[name])
+
+                # Debugging
+                log.debug("Rebinning the '" + name + "' dust map to be reclipped ...")
+
+                # Rebin (so to be cropped as the clipped maps)
+                last_levels_dict = self.dust_clipped_maps[name].keys()[-1]
+                self.dust_maps[name].rebin(self.dust_clipped_maps[name][last_levels_dict].wcs)
 
     # -----------------------------------------------------------------
 
@@ -1438,6 +1526,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not len(self.old_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
 
+            # Not needed because the map is already cropped?
+            if self.has_all_data_old[name]: continue
+
             # Debugging
             log.debug("Correcting the '" + name + "' old stellar map ...")
 
@@ -1467,6 +1558,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
                 if not len(self.young_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
+
+            # Not needed because the map is already cropped?
+            if self.has_all_data_young[name]: continue
 
             # Debugging
             log.debug("Correcting the '" + name + "' young stellar map ...")
@@ -1498,6 +1592,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not len(self.ionizing_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
 
+            # Not needed because the map is already corrected?
+            if self.has_all_data_ionizing[name]: continue
+
             # Debugging
             log.debug("Correcting the '" + name + "' ionizing stellar map ...")
 
@@ -1527,6 +1624,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
                 if not len(self.dust_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
+
+            # Not needed because the map is already corrected?
+            if self.has_all_data_dust[name]: continue
 
             # Debugging
             log.debug("Correcting the '" + name + "' dust map ...")
@@ -1582,6 +1682,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not len(self.old_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
 
+            # Not needed because the map is already cropped?
+            if self.has_all_data_old[name]: continue
+
             # Debugging
             log.debug("Cropping the '" + name + "' old stellar map ...")
 
@@ -1611,6 +1714,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not self.has_all_data_young[name]: raise ValueError("Something went wrong")
                 if not len(self.young_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
+
+            # Not needed because the map is already cropped?
+            if self.has_all_data_young[name]: continue
 
             # Debugging
             log.debug("Cropping the '" + name + "' young stellar map ...")
@@ -1642,6 +1748,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not len(self.ionizing_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
 
+            # Not needed because the map is already cropped?
+            if self.has_all_data_ionizing[name]: continue
+
             # Debugging
             log.debug("Cropping the '" + name + "' ionizing stellar map ...")
 
@@ -1671,6 +1780,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if not self.has_all_data_dust[name]: raise ValueError("Something went wrong")
                 if not len(self.dust_clipped_maps[name]) > 0: raise ValueError("Something went wrong")
                 continue
+
+            # Not needed because the map is already cropped?
+            if self.has_all_data_dust[name]: continue
 
             # Debugging
             log.debug("Cropping the '" + name + "' dust map ...")
@@ -2072,8 +2184,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
-            # Get current
-            current = self.old_clipped_maps[name] if name in self.old_clipped_maps else None
+            # Get current maps to reuse
+            if self.config.reclip_from_masks: current = None
+            else: current = self.old_clipped_maps[name] if name in self.old_clipped_maps else None
+
+            # Get current masks
             current_masks = self.old_masks[name] if name in self.old_masks else None
 
             # Clip the map
@@ -2085,7 +2200,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                               fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                               current=current, current_masks=current_masks,
-                                              dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
+                                              dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
+                                              resoften_current_masks=self.config.resoften_masks)
 
             # Replace by a dictionary of maps
             self.old_clipped_maps[name] = maps
@@ -2154,7 +2270,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2214,8 +2330,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
-            # Get current
-            current = self.young_clipped_maps[name] if name in self.young_clipped_maps else None
+            # Get current maps to reuse
+            if self.config.reclip_from_masks: current = None
+            else: current = self.young_clipped_maps[name] if name in self.young_clipped_maps else None
+
+            # Get current masks
             current_masks = self.young_masks[name] if name in self.young_masks else None
 
             # Clip the map
@@ -2227,7 +2346,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
+                                          resoften_current_masks=self.config.resoften_masks)
 
             # Replace by a dictionary of maps
             self.young_clipped_maps[name] = maps
@@ -2296,7 +2416,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath)
+        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2356,8 +2476,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
-            # Get current
-            current = self.ionizing_clipped_maps[name] if name in self.ionizing_clipped_maps else None
+            # Get current maps to reuse
+            if self.config.reclip_from_masks: current = None
+            else: current = self.ionizing_clipped_maps[name] if name in self.ionizing_clipped_maps else None
+
+            # Get current masks
             current_masks = self.ionizing_masks[name] if name in self.ionizing_masks else None
 
             # Clip the map
@@ -2369,7 +2492,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
+                                          resoften_current_masks=self.config.resoften_masks)
 
             # Replace by a dictionary of maps
             self.ionizing_clipped_maps[name] = maps
@@ -2438,7 +2562,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
@@ -2498,8 +2622,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Debugging
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
-            # Get current
-            current = self.dust_clipped_maps[name] if name in self.dust_clipped_maps else None
+            # Get current maps to reuse
+            if self.config.reclip_from_masks: current = None
+            else: current = self.dust_clipped_maps[name] if name in self.dust_clipped_maps else None
+
+            # Get current masks to use
             current_masks = self.dust_masks[name] if name in self.dust_masks else None
 
             # Clip the map
@@ -2511,7 +2638,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
                                           fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
                                           current=current, current_masks=current_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks)
+                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
+                                          resoften_current_masks=self.config.resoften_masks)
 
             # Replace by a dictionary of maps
             self.dust_clipped_maps[name] = maps
@@ -2580,7 +2708,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        return Frame.from_file(map_filepath, no_wcs=True, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
+        return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
 
