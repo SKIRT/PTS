@@ -290,13 +290,12 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def log(self, npoints, as_list=False, fancy=False):
+    def log(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
         :param as_list:
-        :param fancy:
         :return:
         """
 
@@ -304,36 +303,6 @@ class Range(object):
         if npoints == 1:
             if as_list: return [np.sqrt(self._min * self._max)]
             else: return np.array([np.sqrt(self._min * self._max)])
-
-        if fancy:
-
-            values = []
-            new_npoints = npoints
-
-            while len(values) < 0.8 * npoints:
-
-                #new_npoints = int(new_npoints * 1.2)
-                #values = [round_to_1(self.min)] * new_npoints
-
-                if len(values) > 0:
-                    factor = npoints / len(values)
-                    new_npoints = int(new_npoints * factor)
-                values = [round_to_1(self.min)] * new_npoints
-
-                #print(new_npoints)
-                ticksize = best_tick_log(self.max / self.min, new_npoints)
-
-                for i in range(1, new_npoints):
-                    new_value = values[i-1] * ticksize
-                    if new_value > self.max: break
-                    else: values[i] = new_value
-                values = np.array(values)
-                values = sorted(list(set(values)))
-
-                #print(values)
-
-                # DOESNT WORK, JUST BREAK AFTER THE FIRST
-                break
 
         else: values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
@@ -343,17 +312,14 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def sqrt(self, npoints, as_list=False, fancy=False):
+    def sqrt(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
         :param as_list:
-        :param fancy:
         :return:
         """
-
-        if fancy: raise NotImplementedError("Not implemented")
 
         width = self._max - self._min
         normalized = np.linspace(0.0, 1.0, npoints, endpoint=self.inclusive)
@@ -1263,50 +1229,6 @@ def best_tick(largest, max_nticks):
     else:
         tick = magnitude
     return tick
-
-# -----------------------------------------------------------------
-
-def best_tick_log(largest, maxnticks):
-
-    """
-    This function ...
-    :param largest:
-    :param maxnticks:
-    :return:
-    """
-
-    minimum_ticksize = math.pow(largest, 1./maxnticks)
-    magnitude = math.floor(minimum_ticksize)
-    residual = math.pow(minimum_ticksize, 1./magnitude)
-    if residual > 5:
-        tick = 10*magnitude
-    elif residual > 2:
-        tick = 5**magnitude
-    elif residual > 1:
-        tick = 2**magnitude
-    else: tick = magnitude
-
-    # Return
-    return tick
-
-# -----------------------------------------------------------------
-
-def best_tick2(largest, max_nticks):
-
-    """
-    This function ...
-    :param largest:
-    :param max_nticks:
-    :return:
-    """
-
-    minimum = largest / max_nticks
-    magnitude = 10 ** math.floor(math.log(minimum, 10))
-    residual = minimum / magnitude
-    # this table must begin with 1 and end with 10
-    table = [1, 1.5, 2, 3, 5, 7, 10]
-    tick = table[bisect.bisect_right(table, residual)] if residual < 10 else 10
-    return tick * magnitude
 
 # -----------------------------------------------------------------
 

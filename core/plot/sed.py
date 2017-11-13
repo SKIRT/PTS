@@ -1598,7 +1598,7 @@ class SEDPlotter(Configurable):
         self.main_plot.set_xscale('log')
 
         # Format the axis ticks and create a grid
-        ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10, fancy=True)
+        ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10)
         self.main_plot.set_xlim(ticks[0], ticks[-1])
 
         # Set x ticks

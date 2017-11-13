@@ -223,20 +223,20 @@ class PhotoMeter(PhotometryComponent):
             # Check whether preparation statistics can be found
             if not has_statistics(self.config.path, name): raise ValueError("Something went wrong in preparation: statistics not found")
 
-            # Load the statistics
-            statistics = load_statistics(self.config.path, name)
-            mean_frame = statistics.mean_frame
-            median_frame = statistics.median_frame
-            stddev_frame = statistics.stddev_frame
-            mean_frame_not_clipped = statistics.mean_frame_not_clipped
-            median_frame_not_clipped = statistics.median_frame_not_clipped
-            stddev_frame_not_clipped = statistics.stddev_frame_not_clipped
-            mean_sky = statistics.mean_sky
-            median_sky = statistics.median_sky
-            mean_noise = statistics.mean_noise
-            mean_subtracted = statistics.mean_subtracted
-            median_subtracted = statistics.median_subtracted
-            stddev_subtracted = statistics.stddev_subtracted
+            # # Load the statistics
+            # statistics = load_statistics(self.config.path, name)
+            # mean_frame = statistics.mean_frame
+            # median_frame = statistics.median_frame
+            # stddev_frame = statistics.stddev_frame
+            # mean_frame_not_clipped = statistics.mean_frame_not_clipped
+            # median_frame_not_clipped = statistics.median_frame_not_clipped
+            # stddev_frame_not_clipped = statistics.stddev_frame_not_clipped
+            # mean_sky = statistics.mean_sky
+            # median_sky = statistics.median_sky
+            # mean_noise = statistics.mean_noise
+            # mean_subtracted = statistics.mean_subtracted
+            # median_subtracted = statistics.median_subtracted
+            # stddev_subtracted = statistics.stddev_subtracted
 
             # Debugging
             log.debug("Checking the units of the image ...")
@@ -824,7 +824,7 @@ class PhotoMeter(PhotometryComponent):
         plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "Observed")
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed.pdf")
@@ -846,7 +846,7 @@ class PhotoMeter(PhotometryComponent):
         plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "Observed")
 
         # Add the reference SEDs
         for label in self.reference_seds: plotter.add_sed(self.reference_seds[label], label)

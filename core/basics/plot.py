@@ -1518,7 +1518,7 @@ class MPLFigure(Figure):
         """
 
         # Format the axis ticks and create a grid
-        ticks = x_range.log(nxticks, fancy=True)
+        ticks = x_range.log(nxticks)
         self.ax.set_xticks(ticks)
         self.ax.set_xticklabels(ticks)
 

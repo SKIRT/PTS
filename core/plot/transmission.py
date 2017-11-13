@@ -632,7 +632,7 @@ def set_ticks(ax, config, x_range, nxticks):
     """
 
     # Format the axis ticks and create a grid
-    ticks = x_range.log(nxticks, fancy=True)
+    ticks = x_range.log(nxticks)
     ax.set_xticks(ticks)
     ax.set_xticklabels(ticks)
 
