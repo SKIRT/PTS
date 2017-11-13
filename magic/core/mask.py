@@ -89,6 +89,41 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def nans_from_file(cls, path, index=None, plane=None, hdulist_index=None, no_wcs=False):
+
+        """
+        This function ...
+        :param path:
+        :param index:
+        :param plane:
+        :param hdulist_index:
+        :param no_wcs:
+        :return:
+        """
+
+        name = None
+        description = None
+        no_filter = True
+        fwhm = None
+        add_meta = False
+
+        from . import fits as pts_fits  # Import here because io imports SegmentationMap
+
+        data_converter = lambda data: np.isnan(data)
+
+        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+        mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm,
+                                   add_meta=add_meta, no_wcs=no_wcs, data_converter=data_converter)
+
+        # Set the path
+        mask.path = path
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
     @property
     def wcs(self):
 

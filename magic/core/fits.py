@@ -437,7 +437,7 @@ other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                fwhm=None, add_meta=True, extra_meta=None, distance=None, no_wcs=False, density=False, brightness=False,
-               density_strict=False, brightness_strict=False, class_picker=None):
+               density_strict=False, brightness_strict=False, class_picker=None, data_converter=None):
 
     """
     This function ...
@@ -459,6 +459,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param density_strict:
     :param brightness_strict:
     :param class_picker:
+    :param data_converter:
     :return:
     """
 
@@ -692,11 +693,15 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
 
+        # Get the data
+        if data_converter is not None: data = data_converter(hdu.data[index])
+        else: data = hdu.data[index]
+
         # Get the class
-        if class_picker is not None: cls = class_picker(hdu.data[index])
+        if class_picker is not None: cls = class_picker(data)
 
         # Create the frame
-        frame = cls(hdu.data[index],
+        frame = cls(data,
                    wcs=wcs,
                    name=name,
                    description=description,
@@ -729,11 +734,15 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
 
+        # Get the data
+        if data_converter is not None: data = data_converter(hdu.data)
+        else: data = hdu.data
+
         # Get the class
-        if class_picker is not None: cls = class_picker(hdu.data)
+        if class_picker is not None: cls = class_picker(data)
 
         # Create the frame
-        frame = cls(hdu.data,
+        frame = cls(data,
                    wcs=wcs,
                    name=name,
                    description=description,

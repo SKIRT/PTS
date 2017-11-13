@@ -27,13 +27,14 @@ from ...magic.convolution.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher, launch_local
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
-from .tables import FluxErrorTable, FluxDifferencesTable
+from .tables import FluxDifferencesTable
 from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
 from ..preparation.preparer import has_statistics, load_statistics
 from ...dustpedia.core.properties import has_calibration_error, get_calibration_error
 from ...core.tools.utils import lazyproperty
 from ...magic.core.mask import intersection
 from ...magic.core.image import Image
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -140,31 +141,22 @@ class PhotoMeter(PhotometryComponent):
         # 2. Load the images
         self.load_images()
 
-        # Load masks
-        self.load_masks()
+        # 3. Load masks
+        if not self.has_all_images: self.load_masks()
 
-        # Apply the masks
-        #self.apply_masks()
+        # 4. Apply masks
+        if not self.has_all_images: self.apply_masks()
 
-        # 4. Calculate the fluxes
+        # 5. Calculate the fluxes
         self.calculate_fluxes()
 
-        # 5. Calculate the errors
-        #self.calculate_errors()
-
-        # 6. Make the SED
-        #self.make_sed()
-
-        # 7.  Make the error table
-        #self.make_error_table()
-
-        # 8. Calculate the differences between the calculated photometry and the reference SEDs
+        # 6. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
-        # 9. Writing
+        # 7. Writing
         self.write()
 
-        # Plotting
+        # 8. Plotting
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -180,7 +172,7 @@ class PhotoMeter(PhotometryComponent):
         # Call the setup function of the base class
         super(PhotoMeter, self).setup(**kwargs)
 
-        # Create an observed SED
+        # Initialize the SEDs
         self.sed = ObservedSED(photometry_unit="Jy")
         self.asymptotic_sed = ObservedSED(photometry_unit="Jy")
         self.truncated_sed = ObservedSED(photometry_unit="Jy")
@@ -189,9 +181,6 @@ class PhotoMeter(PhotometryComponent):
         if self.config.remote is not None:
             self.launcher = PTSRemoteLauncher()
             self.launcher.setup(self.config.remote)
-
-        # Initialize the flux error table
-        #self.error_table = FluxErrorTable()
 
         # Initialize the flux differences table
         self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
@@ -214,6 +203,16 @@ class PhotoMeter(PhotometryComponent):
 
             # Debugging
             log.debug("Loading the " + name + " image ...")
+
+            # image already created
+            if self.has_image(name):
+
+                # Success
+                log.success("Truncated '" + name + "' image with masks has already been created: loading ...")
+
+                # Load the image
+                self.images[name] = self.load_image(name)
+                continue
 
             # Load the frame
             frame = self.dataset.get_frame(name)
@@ -262,6 +261,34 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def get_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        frame = self.images[name]
+        if not isinstance(frame, Frame): raise ValueError("Not a frame: '" + name + "'")
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_image(self, name):
+
+        """
+        Thisj function ...
+        :param name:
+        :return:
+        """
+
+        image = self.images[name]
+        if not isinstance(image, Image): raise ValueError("Not an image: '" + name + "'")
+        return image
+
+    # -----------------------------------------------------------------
+
     def get_filter(self, name):
 
         """
@@ -299,6 +326,9 @@ class PhotoMeter(PhotometryComponent):
         # Loop over the images
         for name in self.image_names:
 
+            # Masks already in created image
+            if self.has_image(name): continue
+
             # Get frame and error map
             frame = self.images[name]
             errors = self.dataset.get_errormap(name)
@@ -329,27 +359,47 @@ class PhotoMeter(PhotometryComponent):
     def apply_masks(self):
 
         """
-        Thisf unction ..
+        This function ...
         :return:
         """
 
-        for name in self.image_names:
+        # Inform the user
+        log.info("Applying the masks to the images ...")
 
-            # Create combined mask
-            mask = intersection(*self.get_masks(name))
+        # Loop over all the images
+        for name in self.images:
 
-            frame = self.images[name]
+            # Masks already in created image
+            if self.has_image(name): continue
 
-            # Set masked pixels to NaN
-            frame.apply_mask_nans(mask)
+            # Debugging
+            log.debug("Applying masks to the " + name + " image ...")
+
+            # Get the frame
+            frame = self.get_frame(name)
+
+            # Get masks
+            truncation_mask = self.truncation_masks[name]
+            clip_mask = self.clip_masks[name]
+
+            # Create total mask
+            mask = intersection(truncation_mask, clip_mask)
+            background = frame.applied_mask_nans(mask, invert=True)
+
+            #  Apply truncation mask
+            frame.apply_mask_nans(truncation_mask)
+
+            # Apply clip mask
+            frame.apply_mask_nans(clip_mask)
 
             # Create image
             image = Image()
             image.add_frame(frame, "primary")
-            image.add_mask(self.truncation_masks[name], "truncation")
-            image.add_mask(self.clip_masks[name], "clip")
+            image.add_frame(background, "background")
+            image.add_mask(truncation_mask, "truncation")
+            image.add_mask(clip_mask, "clip")
 
-            # Set
+            # Set the image
             self.images[name] = image
 
     # -----------------------------------------------------------------
@@ -370,131 +420,97 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Calculating the total flux in the " + name + " image ...")
 
-            frame = self.images[name]
+            # Get the image
+            image = self.get_image(name)
 
-            # Calculate the total flux (asymptotic)
-            asymptotic = frame.sum()
+            # Get the filter
+            fltr = self.get_filter(name)
 
-            # Apply truncation mask
-            truncation_mask = self.truncation_masks[name]
-            frame.apply_mask_nans(truncation_mask)
-
-            # Calculate the truncated flux
-            truncated = frame.sum()
-
-            # Apply clip mask
-            clip_mask = self.clip_masks[name]
-            frame.apply_mask_nans(clip_mask)
-
-            # Calculate the total flux in Jansky
-            #flux = self.images[name].primary.sum() # * Unit("Jansky")
-            # Apply correction for EEF of aperture
-            #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
-            # Add the flux to the dictionary
-            #self.fluxes[name] = flux
+            # Get the truncated frame and the background frame
+            frame = image.primary
+            background = image.frames["background"]
 
             # Calculate proper flux
             flux = frame.sum()
 
-            # Set fluxes
-            #self.fluxes[name] = flux
-            #self.asymptotic_fluxes[name] = asymptotic
-            #self.truncated_fluxes[name] = truncated
+            # Add the flux
+            self.add_flux(fltr, flux)
 
-            # Create total mask
-            #mask = intersection(truncation_mask, clip_mask)
+            # Calculate the flux in the background frame
+            background_flux = background.sum()
 
-            # Create image
-            image = Image()
-            image.add_frame(frame, "primary")
-            image.add_mask(truncation_mask, "truncation")
-            image.add_mask(clip_mask, "clip")
+            # Add the asymptotic flux
+            self.add_asymptotic_flux(fltr, flux + background_flux)
 
-            # Set
-            self.images[name] = image
+            # Get truncation mask
+            truncation_mask = self.truncation_masks[name]
 
-            fltr = self.get_filter(name)
+            # Calculate the truncated background flux
+            background = background.applied_mask_nans(truncation_mask)
+            truncated_background_flux = background.sum()
 
-            # Get calibataion error as error bar
-            error = get_calibration_error(fltr, flux, errorbar=True)
-
-            # Add this entry to the SED
-            self.sed.add_point(fltr, flux, error)
-
-            error_asymptotic = get_calibration_error(fltr, asymptotic, errorbar=True)
-
-            # Add this entry to the SED
-            self.asymptotic_sed.add_point(fltr, asymptotic, error_asymptotic)
-
-            error_truncated = get_calibration_error(fltr, truncated, errorbar=True)
-
-            # Add this entry to the SED
-            self.truncated_sed.add_point(fltr, truncated, error_truncated)
+            # Add the truncated flux
+            self.add_truncated_flux(fltr, flux + truncated_background_flux)
 
     # -----------------------------------------------------------------
 
-    # def calculate_errors(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Calculating the errors on the aperture fluxes ...")
-    #
-    #     # Loop over all the images
-    #     for name in self.image_names:
-    #
-    #         # Debugging
-    #         log.debug("Calculating the flux error for the " + name + " image ...")
-    #
-    #         # Calculate the calibration error
-    #         #calibration_error = self.calculate_calibration_error(name)
-    #
-    #         # Calculate the aperture noise error
-    #         #aperture_noise = self.calculate_aperture_noise(name)
-    #
-    #         # Set the error contributions
-    #         #self.errors[name] = (calibration_error, aperture_noise)
-    #         #self.errors[name] = calibration_error
-    #
-    #         fltr = self.get_filter(name)
-    #
-    #         # Get calibataion error as error bar
-    #         error = get_calibration_error(fltr, self.fluxes[name], errorbar=True)
-    #
-    #         # Add
-    #         self.errors[name] = error
+    def add_flux(self, fltr, flux):
+
+        """
+        This function ...
+        :param fltr:
+        :param flux:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding flux for the '" + str(fltr) + "' filter ...")
+
+        # Calcualte the error
+        error = get_calibration_error(fltr, flux, errorbar=True)
+
+        # Add this entry to the SED
+        self.sed.add_point(fltr, flux, error)
 
     # -----------------------------------------------------------------
 
-    # def make_sed(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Making the observed SED ...")
-    #
-    #     # Loop over all images
-    #     for name in self.image_names:
-    #
-    #         # Debugging
-    #         log.debug("Adding SED entry for the " + name + " image ...")
-    #
-    #         # The flux
-    #         flux = self.fluxes[name]
-    #
-    #         # The error contributions
-    #         #calibration_error, aperture_noise = self.errors[name]
-    #
-    #         # Add the error contributions
-    #         #errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
-    #
-    #         ##
+    def add_asymptotic_flux(self, fltr, flux):
+
+        """
+        This function ...
+        :param fltr:
+        :param flux:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding flux for the '" + str(fltr) + "' filter ...")
+
+        # Calculate the error
+        error_asymptotic = get_calibration_error(fltr, flux, errorbar=True)
+
+        # Add this entry to the SED
+        self.asymptotic_sed.add_point(fltr, flux, error_asymptotic)
+
+    # -----------------------------------------------------------------
+
+    def add_truncated_flux(self, fltr, flux):
+
+        """
+        THis ufnction ...
+        :param fltr:
+        :param flux:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding flux for the '" + str(fltr) + "' filter ...")
+
+        # Calculate the error
+        error_truncated = get_calibration_error(fltr, flux, errorbar=True)
+
+        # Add this entry to the SED
+        self.truncated_sed.add_point(fltr, flux, error_truncated)
 
     # -----------------------------------------------------------------
 
@@ -511,38 +527,29 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    # def make_error_table(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Making the flux error table ...")
-    #
-    #     # Loop over the errors
-    #     for name in self.images:
-    #
-    #         # Debugging
-    #         log.debug("Adding an entry to the error table for the " + name + " image ...")
-    #
-    #         # Get the error contributions
-    #         #calibration_error, aperture_noise = self.errors[name]
-    #         calibration_error = self.errors[name]
-    #
-    #         # Add the error contributions
-    #         #total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
-    #
-    #         total_error = calibration_error
-    #
-    #         fltr = self.get_filter(name)
-    #
-    #         # Calculate the relative error
-    #         total_relative_error = total_error / self.get_flux(name)
-    #
-    #         # Add an entry to the flux error table
-    #         self.error_table.add_entry(fltr, calibration_error=calibration_error, total_error=total_error, total_relative_error=total_relative_error)
+    def get_asymptotic_flux(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fltr = self.get_filter(name)
+        return self.asymptotic_sed.photometry_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_truncated_flux(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fltr = self.get_filter(name)
+        return self.truncated_sed.photometry_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -624,6 +631,59 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def get_path_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Detemrine path
+        return fs.join(self.phot_images_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_image(self, name):
+
+        """
+        This fnuction ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_path_for_image(name)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_image(self, name):
+
+        """
+        This function ..
+        :param name:
+        :return:
+        """
+
+        path = self.get_path_for_image(name)
+        return Image.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_all_images(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        for name in self.image_names:
+            if not self.has_image(name): return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def write_images(self):
 
         """
@@ -634,10 +694,14 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing the iamges ...")
 
+        # Loop over the images
         for name in self.image_names:
 
-            # Detemrine path
-            path = fs.join(self.phot_images_path, name + ".fits")
+            # Check
+            if self.has_image(name): continue
+
+            # Get path
+            path = self.get_path_for_image(name)
 
             # SAve
             self.images[name].saveto(path)
@@ -821,6 +885,20 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def noise_path_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Set ...
+        phot_noise_path = fs.create_directory_in(self.phot_path, "noise")
+        return fs.join(phot_noise_path, name)
+
+    # -----------------------------------------------------------------
+
     def calculate_aperture_noise(self, name):
 
         """
@@ -907,7 +985,9 @@ class PhotoMeter(PhotometryComponent):
         input_dict["annulus_inner_factor"] = 1.5
         input_dict["annulus_outer_factor"] = 2.0
 
-        input_dict["plot_path"] = self.phot_temp_path
+        # Set ...
+        phot_temp_path = fs.create_directory_in(self.phot_path, "temp")
+        input_dict["plot_path"] = phot_temp_path
 
         # Run the aperture noise calculator
         calculator.run(**input_dict)
@@ -1018,10 +1098,10 @@ class PhotoMeter(PhotometryComponent):
         # PREPARE THE CONVOLUTION KERNEL
         psf.prepare_for(frame)
 
-        psf.saveto(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
+        phot_temp_path = fs.create_directory_in(self.phot_path, "temp")
+        psf.saveto(fs.join(phot_temp_path, filter_name + "_psf.fits"))
 
         # SET INPUT DICT
-
         input_dict["psf"] = psf
 
         #annulus_inner_factor_x = annulus_inner.radius.x / truncation_ellipse_image.radius.x

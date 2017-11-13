@@ -895,30 +895,55 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def apply_mask(self, mask, fill=0.0, invert=False):
+    def apply_mask(self, mask, fill=0.0, invert=False, return_complement=False):
 
         """
         This function ...
         :param mask:
         :param fill:
         :param invert:
+        :param return_complement:
         """
 
-        if invert: self[mask.inverse()] = fill
-        else: self[mask] = fill
+        if invert:
+            mask = mask.inverse()
+            inverse_mask = mask
+        elif return_complement: inverse_mask = mask.inverse()
+        else: inverse_mask = None
+
+        # Apply the mask
+        self[mask] = fill
+
+        # Return the complementary frame
+        if return_complement: return self.applied_mask(inverse_mask, fill=fill)
 
     # -----------------------------------------------------------------
 
-    def apply_mask_nans(self, mask, invert=False):
+    def apply_mask_nans(self, mask, invert=False, return_complement=False):
 
         """
         This function ...
         :param mask:
         :param invert:
+        :param return_complement:
         :return:
         """
 
-        self.apply_mask(mask, fill=nan_value, invert=invert)
+        return self.apply_mask(mask, fill=nan_value, invert=invert, return_complement=return_complement)
+
+    # -----------------------------------------------------------------
+
+    def apply_mask_infs(self, mask, invert=False, return_complement=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :param return_complement:
+        :return:
+        """
+
+        return self.apply_mask(mask, fill=inf_value, invert=invert, return_complement=return_complement)
 
     # -----------------------------------------------------------------
 
@@ -948,6 +973,19 @@ class Frame(NDDataArray):
         """
 
         return self.applied_mask(mask, fill=nan_value, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    def applied_mask_infs(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :return:
+        """
+
+        return self.applied_mask(mask, fill=inf_value, invert=invert)
 
     # -----------------------------------------------------------------
 

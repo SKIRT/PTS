@@ -599,18 +599,21 @@ class SEDPlotter(Configurable):
 
                     else:
 
-                        if errors[k] is not None:
+                        if reference_flux is None: value = error = None
+                        else:
 
-                            value = (fluxes[k] - reference_flux) / reference_flux * 100.
-                            error = errors[k] / reference_flux * 100.0
+                            if errors[k] is not None:
 
-                        #else: value = error = None
-                        elif fluxes[k] is not None:
+                                value = (fluxes[k] - reference_flux) / reference_flux * 100.
+                                error = errors[k] / reference_flux * 100.0
 
-                            value = (fluxes[k] - reference_flux) / reference_flux * 100.
-                            error = ErrorBar.zero()
+                            #else: value = error = None
+                            elif fluxes[k] is not None:
 
-                        else: value = error = None
+                                value = (fluxes[k] - reference_flux) / reference_flux * 100.
+                                error = ErrorBar.zero()
+
+                            else: value = error = None
 
                 if value is not None and error is not None:
 
