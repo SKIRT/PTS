@@ -2417,6 +2417,46 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def get_clip_settings_old(self, name, current=None, current_masks=None):
+
+        """
+        This function ...
+        :param name:
+        :param current:
+        :param current_masks:
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity,
+        settings["present"] = self.present_old_plots_level_combinations_for(name)
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["return_masks"] = True
+        settings["current"] = current
+        settings["current_masks"] = current_masks
+        settings["dilate"] = self.config.dilate_masks,
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["resoften_current_masks"] = self.config.resoften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_old
+        settings["boundary"] = self.old_maps_boundary
+        settings["plot"] = self.config.plot_clipping_old
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_old
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def clip_old_maps(self):
 
         """
@@ -2456,19 +2496,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             current_masks = self.old_masks[name] if name in self.old_masks else None
 
             # Clip the map
-            maps, masks = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
-                                              convolve=self.config.convolve, remote=self.remote,
-                                              rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                              npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                              present=self.present_old_plots_level_combinations_for(name),
-                                              fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                              fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                              current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
-                                              dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                              resoften_current_masks=self.config.resoften_masks,
-                                              relative_softening_radius=self.config.relative_softening_radius_old,
-                                              boundary=self.old_maps_boundary, plot=self.config.plot_clipping_old,
-                                              relative_dilation_radius=self.config.relative_dilation_radius_old)
+            maps, masks = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels, **self.get_clip_settings_old(name, current, current_masks))
 
             # Replace by a dictionary of maps
             self.old_clipped_maps[name] = maps
@@ -2579,6 +2607,46 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def get_clip_settings_young(self, name, current=None, current_masks=None):
+
+        """
+        This function ...
+        :param name:
+        :param current:
+        :param current_masks:
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["present"] = self.present_young_plots_level_combinations_for(name)
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["return_masks"] = True
+        settings["current"] = current
+        settings["current_masks"] = current_masks
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["resoften_current_masks"] = self.config.resoften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_young
+        settings["boundary"] = self.young_maps_boundary
+        settings["plot"] = self.config.plot_clipping_young
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_young
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def clip_young_maps(self):
 
         """
@@ -2618,19 +2686,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             current_masks = self.young_masks[name] if name in self.young_masks else None
 
             # Clip the map
-            maps, masks = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels,
-                                          convolve=self.config.convolve, remote=self.remote,
-                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_young_plots_level_combinations_for(name),
-                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_young,
-                                          boundary=self.young_maps_boundary, plot=self.config.plot_clipping_young,
-                                          relative_dilation_radius=self.config.relative_dilation_radius_young)
+            maps, masks = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels, **self.get_clip_settings_young(name, current, current_masks))
 
             # Replace by a dictionary of maps
             self.young_clipped_maps[name] = maps
@@ -2741,6 +2797,46 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def get_clip_settings_ionizing(self, name, current=None, current_masks=None):
+
+        """
+        This function ...
+        :param name:
+        :param current:
+        :param current_masks:
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["present"] = self.present_ionizing_plots_level_combinations_for(name)
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["return_masks"] = True
+        settings["current"] = current
+        settings["current_masks"] = current_masks
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks,
+        settings["resoften_current_masks"] = self.config.resoften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_ionizing
+        settings["boundary"] = self.config.ionizing_maps_boundary
+        settings["plot"] = self.config.plot_clipping_ionizing
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_ionizing
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def clip_ionizing_maps(self):
 
         """
@@ -2780,19 +2876,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             current_masks = self.ionizing_masks[name] if name in self.ionizing_masks else None
 
             # Clip the map
-            maps, masks = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels,
-                                          convolve=self.config.convolve, remote=self.remote,
-                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_ionizing_plots_level_combinations_for(name),
-                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_ionizing,
-                                          boundary=self.config.ionizing_maps_boundary, plot=self.config.plot_clipping_ionizing,
-                                          relative_dilation_radius=self.config.relative_dilation_radius_ionizing)
+            maps, masks = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels, **self.get_clip_settings_ionizing(name, current, current_masks))
 
             # Replace by a dictionary of maps
             self.ionizing_clipped_maps[name] = maps
@@ -2903,6 +2987,46 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def get_clip_settings_dust(self, name, current=None, current_masks=None):
+
+        """
+        This function ...
+        :param name:
+        :param current:
+        :param current_masks:
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["present"] = self.present_dust_plots_level_combinations_for(name)
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["return_masks"] = True
+        settings["current"] = current
+        settings["current_masks"] = current_masks
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["resoften_current_masks"] = self.config.resoften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_dust
+        settings["boundary"] = self.dust_maps_boundary
+        settings["plot"] = self.config.plot_clipping_dust
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_dust
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def clip_dust_maps(self):
 
         """
@@ -2942,19 +3066,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             current_masks = self.dust_masks[name] if name in self.dust_masks else None
 
             # Clip the map
-            maps, masks = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels,
-                                          convolve=self.config.convolve, remote=self.remote,
-                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity,
-                                          present=self.present_dust_plots_level_combinations_for(name),
-                                          fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                          fuzziness_offset=self.config.fuzzy_min_significance_offset, return_masks=True,
-                                          current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
-                                          dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
-                                          resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_dust,
-                                          boundary=self.dust_maps_boundary, plot=self.config.plot_clipping_dust,
-                                          relative_dilation_radius=self.config.relative_dilation_radius_dust)
+            maps, masks = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels, **self.get_clip_settings_dust(name, current, current_masks))
 
             # Replace by a dictionary of maps
             self.dust_clipped_maps[name] = maps
