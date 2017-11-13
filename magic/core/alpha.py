@@ -616,6 +616,30 @@ class AlphaMask(object):
 
     # -----------------------------------------------------------------
 
+    def mask(self, where):
+
+        """
+        This function ...
+        :param where:
+        :return:
+        """
+
+        self.data[where] = max_alpha
+
+    # -----------------------------------------------------------------
+
+    def unmask(self, where):
+
+        """
+        This function ...
+        :param where:
+        :return:
+        """
+
+        self.data[where] = min_alpha
+
+    # -----------------------------------------------------------------
+
     def central(self, npixels=1, connectivity=8):
 
         """

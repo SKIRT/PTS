@@ -168,3 +168,11 @@ definition.add_flag("remove_other_data", "remove data that is not needed for the
 definition.add_flag("resoften_masks", "resoften masks", False)
 
 # -----------------------------------------------------------------
+
+# Compactness
+definition.add_flag("old_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the old stellar maps", 1.)
+definition.add_flag("young_compacntess_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the young stellar maps", 1.)
+definition.add_flag("ionizing_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the ionizing stellar maps", 1.)
+definition.add_flag("dust_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the dust maps", 0.88)
+
+# -----------------------------------------------------------------

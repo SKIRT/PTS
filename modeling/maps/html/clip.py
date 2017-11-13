@@ -150,10 +150,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 3. Set the paths
+        # 2. Set the paths
         self.set_paths()
 
-        # 2. Load the maps
+        # 3. Load the maps
         if not self.has_all_plots: self.load_maps()
 
         # 4. Check present maps
@@ -628,114 +628,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def load_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the selected maps ...")
-
-        # Load the old stellar maps
-        if self.do_old: self.load_old()
-
-        # Load the young stellar maps
-        if self.do_young: self.load_young()
-
-        # Load the ionizing stellar maps
-        if self.do_ionizing: self.load_ionizing()
-
-        # Load the dust maps
-        if self.do_dust: self.load_dust()
-
-    # -----------------------------------------------------------------
-
-    def load_old(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the old stellar maps ...")
-
-        # Load
-        for name in self.old_selection:
-
-            # Debugging
-            log.debug("Loading the '" + name + "' old stellar map ...")
-
-            # Load
-            self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
-
-    # -----------------------------------------------------------------
-
-    def load_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the young stellar maps ...")
-
-        # Load
-        for name in self.young_selection:
-
-            # Debugging
-            log.debug("Loading the '" + name + "' young stellar map ...")
-
-            # Load
-            self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
-
-    # -----------------------------------------------------------------
-
-    def load_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ionizing stellar maps ...")
-
-        # Load
-        for name in self.ionizing_selection:
-
-            # Debugging
-            log.debug("Loading the '" + name + "' ionizing stellar map ...")
-
-            # Load
-            self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
-
-    # -----------------------------------------------------------------
-
-    def load_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the dust maps ...")
-
-        # Load
-        for name in self.dust_selection:
-
-            # Debugging
-            log.debug("Loading the '" + name + "' dust map ...")
-
-            # Load
-            self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
-
-    # -----------------------------------------------------------------
-
     def set_paths(self):
 
         """
@@ -889,6 +781,114 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
                 # Set the path
                 self.dust_mask_plot_paths[name][levels_dict] = mask_filepath
+
+    # -----------------------------------------------------------------
+
+    def load_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the selected maps ...")
+
+        # Load the old stellar maps
+        if self.do_old: self.load_old()
+
+        # Load the young stellar maps
+        if self.do_young: self.load_young()
+
+        # Load the ionizing stellar maps
+        if self.do_ionizing: self.load_ionizing()
+
+        # Load the dust maps
+        if self.do_dust: self.load_dust()
+
+    # -----------------------------------------------------------------
+
+    def load_old(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the old stellar maps ...")
+
+        # Load
+        for name in self.old_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' old stellar map ...")
+
+            # Load
+            self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
+
+    # -----------------------------------------------------------------
+
+    def load_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the young stellar maps ...")
+
+        # Load
+        for name in self.young_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' young stellar map ...")
+
+            # Load
+            self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ionizing stellar maps ...")
+
+        # Load
+        for name in self.ionizing_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' ionizing stellar map ...")
+
+            # Load
+            self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
+
+    # -----------------------------------------------------------------
+
+    def load_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the dust maps ...")
+
+        # Load
+        for name in self.dust_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' dust map ...")
+
+            # Load
+            self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
 
     # -----------------------------------------------------------------
 
@@ -2405,6 +2405,18 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.old_compactness_factor
+
+    # -----------------------------------------------------------------
+
     def clip_old_maps(self):
 
         """
@@ -2454,7 +2466,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                               dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                               resoften_current_masks=self.config.resoften_masks,
-                                              relative_softening_radius=self.config.relative_softening_radius_old)
+                                              relative_softening_radius=self.config.relative_softening_radius_old,
+                                              boundary=self.old_maps_boundary)
 
             # Replace by a dictionary of maps
             self.old_clipped_maps[name] = maps
@@ -2553,6 +2566,18 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def young_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.young_compactness_factor
+
+    # -----------------------------------------------------------------
+
     def clip_young_maps(self):
 
         """
@@ -2602,7 +2627,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_young)
+                                          relative_softening_radius=self.config.relative_softening_radius_young,
+                                          boundary=self.young_maps_boundary)
 
             # Replace by a dictionary of maps
             self.young_clipped_maps[name] = maps
@@ -2701,6 +2727,18 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.ionizing_compactness_factor
+
+    # -----------------------------------------------------------------
+
     def clip_ionizing_maps(self):
 
         """
@@ -2750,7 +2788,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_ionizing)
+                                          relative_softening_radius=self.config.relative_softening_radius_ionizing,
+                                          boundary=self.config.ionizing_maps_boundary)
 
             # Replace by a dictionary of maps
             self.ionizing_clipped_maps[name] = maps
@@ -2849,6 +2888,18 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def dust_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.dust_compactness_factor
+
+    # -----------------------------------------------------------------
+
     def clip_dust_maps(self):
 
         """
@@ -2898,7 +2949,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           current=current, current_masks=current_masks, dilate=self.config.dilate_masks,
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
-                                          relative_softening_radius=self.config.relative_softening_radius_dust)
+                                          relative_softening_radius=self.config.relative_softening_radius_dust,
+                                          boundary=self.dust_maps_boundary)
 
             # Replace by a dictionary of maps
             self.dust_clipped_maps[name] = maps

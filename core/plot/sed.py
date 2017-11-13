@@ -1358,11 +1358,21 @@ class SEDPlotter(Configurable):
 
         # Keep track of minimum and maximum flux
         if error is not None:
-            lower_flux = flux + error.lower
-            upper_flux = flux + error.upper
-            if self._min_flux is None or lower_flux < self._min_flux: self._min_flux = lower_flux
-            if self._max_flux is None or upper_flux > self._max_flux: self._max_flux = upper_flux
+
+            if error.lower == numbers.min_inf:
+                if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
+            else:
+                lower_flux = flux + error.lower
+                if self._min_flux is None or lower_flux < self._min_flux: self._min_flux = lower_flux
+
+            if error.upper == numbers.inf:
+                if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
+            else:
+                upper_flux = flux + error.upper
+                if self._max_flux is None or upper_flux > self._max_flux: self._max_flux = upper_flux
+
         else:
+
             if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
             if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
 

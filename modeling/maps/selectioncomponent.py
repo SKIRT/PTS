@@ -35,6 +35,7 @@ from ...magic.core.alpha import AlphaMask
 from ...core.basics.range import RealRange
 from ...magic.tools import plotting
 from ...core.basics import containers
+from ...magic.region.region import PixelRegion, SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -618,7 +619,7 @@ class MapsSelectionComponent(MapsComponent):
                           npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                           return_masks=False, current=None, current_masks=None, dilate=True, dilate_fuzzy=True,
                           dilation_radius=20, dilation_nbins=20, soften=True, softening_radius=15, softening_nbins=10,
-                          resoften_current_masks=False, relative_softening_radius=None):
+                          resoften_current_masks=False, relative_softening_radius=None, boundary=None):
 
         """
         This function ...
@@ -647,6 +648,7 @@ class MapsSelectionComponent(MapsComponent):
         :param softening_nbins:
         :param resoften_current_masks:
         :param relative_softening_radius:
+        :param boundary:
         :return:
         """
 
@@ -662,7 +664,7 @@ class MapsSelectionComponent(MapsComponent):
                                      dilate_fuzzy=dilate_fuzzy, dilation_radius=dilation_radius,
                                      dilation_nbins=dilation_nbins, soften=soften, softening_radius=softening_radius,
                                      softening_nbins=softening_nbins, resoften_current_masks=resoften_current_masks,
-                                     relative_softening_radius=relative_softening_radius)
+                                     relative_softening_radius=relative_softening_radius, boundary=boundary)
 
         # The maps
         if current is not None: maps = copy.copy(current) # shallow copy
@@ -878,7 +880,7 @@ class MapsSelectionComponent(MapsComponent):
                         npixels=1, connectivity=8, present=None, fuzzy=False, fuzziness=0.5, fuzziness_offset=1.,
                         current_masks=None, dilate=True, dilate_fuzzy=True, dilation_radius=5, dilation_max_radius=20,
                         dilation_nbins=20, soften=True, softening_radius=20, softening_nbins=10, resoften_current_masks=False,
-                        relative_softening_radius=None):
+                        relative_softening_radius=None, boundary=None):
 
         """
         Thisn function ...
@@ -906,6 +908,7 @@ class MapsSelectionComponent(MapsComponent):
         :param softening_nbins:
         :param resoften_current_masks:
         :param relative_softening_radius:
+        :param boundary:
         :return:
         """
 
@@ -939,6 +942,14 @@ class MapsSelectionComponent(MapsComponent):
 
         # Get the common WCS of all the frames
         if wcs is None: wcs = frames[0].wcs
+
+        # Create the boundary mask
+        if boundary is not None:
+            if isinstance(boundary, PixelRegion): boundary_mask = boundary.to_mask(frames[0].xsize, frames[0].ysize, invert=True)
+            elif isinstance(boundary, SkyRegion): boundary_mask = boundary.to_pixel(wcs).to_mask(frames[0].xsize, frames[0].ysize, invert=True)
+            elif isinstance(boundary, MaskBase): boundary_mask = boundary.inverse()
+            else: raise ValueError("Invalid value for 'boundary': must be region or mask")
+        else: boundary_mask = None
 
         # Set softening radius from relative softening radius
         if relative_softening_radius is not None:
@@ -999,6 +1010,9 @@ class MapsSelectionComponent(MapsComponent):
                     # First dilate if requested
                     if dilate: mask.disk_dilate(radius=dilation_radius)
 
+                    # Remove parts outside boundary
+                    if boundary_mask is not None: mask.unmask(boundary_mask)
+
                     # Fill holes first
                     mask.fill_holes(connectivity=4)
                     #plotting.plot_mask(mask, title="filled holes")
@@ -1050,6 +1064,9 @@ class MapsSelectionComponent(MapsComponent):
                 # First dilate if requested
                 if dilate_fuzzy: mask.disk_dilate(radius=dilation_radius, nbins=dilation_nbins, max_radius=dilation_max_radius)
 
+                # Remove parts outside boundary
+                if boundary_mask is not None: mask.unmask(boundary_mask)
+
                 # Now fill holes AFTER dilation, some holes may already be filled
                 mask.fill_holes()
 
@@ -1058,6 +1075,9 @@ class MapsSelectionComponent(MapsComponent):
 
                 # First dilate if requested
                 if dilate: mask.disk_dilate(radius=dilation_radius)
+
+                # Remove parts outside boundary
+                if boundary_mask is not None: mask.unmask(boundary_mask)
 
                 # First fill holes
                 mask.fill_holes(connectivity=4)

@@ -506,6 +506,30 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def mask(self, where):
+
+        """
+        This function ...
+        :param where:
+        :return:
+        """
+
+        self.data[where] = True
+
+    # -----------------------------------------------------------------
+
+    def unmask(self, where):
+
+        """
+        This function ...
+        :param where:
+        :return:
+        """
+
+        self.data[where] = False
+
+    # -----------------------------------------------------------------
+
     def dilate_rc(self, rank, connectivity, iterations=1):
 
         """
