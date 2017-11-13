@@ -32,9 +32,12 @@ from ...core.basics.configuration import DictConfigurationSetter, ConfigurationD
 from ..preparation.preparer import has_statistics, load_statistics
 from ...dustpedia.core.properties import has_calibration_error, get_calibration_error
 from ...core.tools.utils import lazyproperty
-from ...magic.core.mask import intersection
+from ...magic.core.mask import intersection, union
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
+from ...core.filter.filter import parse_filter
+from ...magic.tools import plotting
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -139,7 +142,7 @@ class PhotoMeter(PhotometryComponent):
         self.setup(**kwargs)
 
         # 2. Load the images
-        self.load_images()
+        if not self.has_seds: self.load_images()
 
         # 3. Load masks
         if not self.has_all_images: self.load_masks()
@@ -148,10 +151,10 @@ class PhotoMeter(PhotometryComponent):
         if not self.has_all_images: self.apply_masks()
 
         # 5. Calculate the fluxes
-        self.calculate_fluxes()
+        if not self.has_seds: self.calculate_fluxes()
 
         # 6. Calculate the differences between the calculated photometry and the reference SEDs
-        self.calculate_differences()
+        if not self.has_differences: self.calculate_differences()
 
         # 7. Writing
         self.write()
@@ -172,19 +175,28 @@ class PhotoMeter(PhotometryComponent):
         # Call the setup function of the base class
         super(PhotoMeter, self).setup(**kwargs)
 
-        # Initialize the SEDs
-        self.sed = ObservedSED(photometry_unit="Jy")
-        self.asymptotic_sed = ObservedSED(photometry_unit="Jy")
-        self.truncated_sed = ObservedSED(photometry_unit="Jy")
+        # Initialize or load the observed SED
+        if self.has_sed: self.sed = ObservedSED.from_file(self.sed_path)
+        else: self.sed = ObservedSED(photometry_unit="Jy")
+
+        # Initialize or load asymptotic SED
+        if self.has_asymptotic_sed: self.asymptotic_sed = ObservedSED.from_file(self.asymptotic_sed_path)
+        else: self.asymptotic_sed = ObservedSED(photometry_unit="Jy")
+
+        # Initialize or load truncated SED
+        if self.has_truncated_sed: self.truncated_sed = ObservedSED.from_file(self.truncated_sed_path)
+        else: self.truncated_sed = ObservedSED(photometry_unit="Jy")
+
+        # Initialize the flux differences table
+        if self.has_differences: self.differences_table = FluxDifferencesTable.from_file(self.differences_path)
+        else:
+            self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
+            self.differences_table.setup()
 
         # Setup the remote PTS launcher
         if self.config.remote is not None:
             self.launcher = PTSRemoteLauncher()
             self.launcher.setup(self.config.remote)
-
-        # Initialize the flux differences table
-        self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
-        self.differences_table.setup()
 
     # -----------------------------------------------------------------
 
@@ -204,7 +216,7 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Loading the " + name + " image ...")
 
-            # image already created
+            # Image already created
             if self.has_image(name):
 
                 # Success
@@ -301,6 +313,18 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def get_filter_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return str(self.get_filter(name))
+
+    # -----------------------------------------------------------------
+
     def get_wcs(self, name):
 
         """
@@ -356,6 +380,18 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_image_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.config.plot_images is not None and fltr in self.config.plot_images
+
+    # -----------------------------------------------------------------
+
     def apply_masks(self):
 
         """
@@ -378,12 +414,22 @@ class PhotoMeter(PhotometryComponent):
             # Get the frame
             frame = self.get_frame(name)
 
+            # Get the filter
+            fltr = self.get_filter(name)
+
             # Get masks
             truncation_mask = self.truncation_masks[name]
             clip_mask = self.clip_masks[name]
 
             # Create total mask
-            mask = intersection(truncation_mask, clip_mask)
+            mask = union(truncation_mask, clip_mask)
+
+            # Check whether there are any unmasked pixels
+            if mask.all_masked:
+                level = self.get_significance_level(self.get_filter_name(name))
+                log.warning("All pixels of the '" + name + "' within the truncation ellipse are below the SNR threshold of " + str(level) + " sigma")
+
+            # Create the background frame
             background = frame.applied_mask_nans(mask, invert=True)
 
             #  Apply truncation mask
@@ -391,6 +437,13 @@ class PhotoMeter(PhotometryComponent):
 
             # Apply clip mask
             frame.apply_mask_nans(clip_mask)
+
+            # Plotting
+            if self.plot_image_for_filter(fltr):
+                plotting.plot_mask(truncation_mask, title="truncation")
+                plotting.plot_mask(clip_mask, title="clip")
+                plotting.plot_frame(frame, title="frame")
+                plotting.plot_frame(background, title="background")
 
             # Create image
             image = Image()
@@ -433,33 +486,54 @@ class PhotoMeter(PhotometryComponent):
             # Calculate proper flux
             flux = frame.sum()
 
-            # Add the flux
-            self.add_flux(fltr, flux)
-
             # Calculate the flux in the background frame
             background_flux = background.sum()
 
-            # Add the asymptotic flux
-            self.add_asymptotic_flux(fltr, flux + background_flux)
-
             # Get truncation mask
-            truncation_mask = self.truncation_masks[name]
+            truncation_mask = image.masks["truncation"]
 
             # Calculate the truncated background flux
             background = background.applied_mask_nans(truncation_mask)
             truncated_background_flux = background.sum()
 
-            # Add the truncated flux
-            self.add_truncated_flux(fltr, flux + truncated_background_flux)
+            # Add the fluxes
+            self.add_fluxes(fltr, flux, flux + truncated_background_flux, flux + background_flux, )
 
     # -----------------------------------------------------------------
 
-    def add_flux(self, fltr, flux):
+    def add_fluxes(self, fltr, flux, truncated, asymptotic):
 
         """
         This function ...
         :param fltr:
         :param flux:
+        :param truncated:
+        :param asymptotic:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding fluxes for the '" + str(fltr) + "' filter ...")
+
+        # Check the flux
+        if flux == 0: self.add_flux(fltr, truncated, upper_limit=True)
+        else: self.add_flux(fltr, flux)
+
+        # Add the truncated flux
+        self.add_truncated_flux(fltr, truncated)
+
+        # Add the asymptotic flux
+        self.add_asymptotic_flux(fltr, asymptotic)
+
+    # -----------------------------------------------------------------
+
+    def add_flux(self, fltr, flux, upper_limit=False):
+
+        """
+        This function ...
+        :param fltr:
+        :param flux:
+        :param upper_limit:
         :return:
         """
 
@@ -468,6 +542,11 @@ class PhotoMeter(PhotometryComponent):
 
         # Calcualte the error
         error = get_calibration_error(fltr, flux, errorbar=True)
+
+        # Set lower limit
+        if upper_limit:
+            if error.unit is not None: error.lower = numbers.min_inf * error.unit
+            else: error.lower = numbers.min_inf
 
         # Add this entry to the SED
         self.sed.add_point(fltr, flux, error)
@@ -484,7 +563,7 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Debugging
-        log.debug("Adding flux for the '" + str(fltr) + "' filter ...")
+        log.debug("Adding asymptotic flux for the '" + str(fltr) + "' filter ...")
 
         # Calculate the error
         error_asymptotic = get_calibration_error(fltr, flux, errorbar=True)
@@ -504,7 +583,7 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Debugging
-        log.debug("Adding flux for the '" + str(fltr) + "' filter ...")
+        log.debug("Adding truncated flux for the '" + str(fltr) + "' filter ...")
 
         # Calculate the error
         error_truncated = get_calibration_error(fltr, flux, errorbar=True)
@@ -618,16 +697,31 @@ class PhotoMeter(PhotometryComponent):
         self.write_images()
 
         # Write SED table
-        self.write_sed()
+        if not self.has_sed: self.write_sed()
 
         # Asymptotic SED
-        self.write_asymptotic_sed()
+        if not self.has_asymptotic_sed: self.write_asymptotic_sed()
 
         # Truncated SED
-        self.write_truncated_sed()
+        if not self.has_truncated_sed: self.write_truncated_sed()
 
         # Write the differences
         self.write_differences()
+
+    # -----------------------------------------------------------------
+
+    def reprocess_image(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        if self.config.reprocess is not None:
+            fltr = parse_filter(name)
+            return fltr in self.config.reprocess
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -653,7 +747,10 @@ class PhotoMeter(PhotometryComponent):
         """
 
         path = self.get_path_for_image(name)
-        return fs.is_file(path)
+        if self.reprocess_image(name):
+            if fs.is_file(path): fs.remove_file(path)
+            return False
+        else: return fs.is_file(path)
 
     # -----------------------------------------------------------------
 
@@ -692,7 +789,7 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Inform the user
-        log.info("Writing the iamges ...")
+        log.info("Writing the images ...")
 
         # Loop over the images
         for name in self.image_names:
@@ -708,6 +805,33 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.config.reprocess is not None:
+            if fs.is_file(self.sed_path): fs.remove_file(self.sed_path)
+            return False
+        else: return fs.is_file(self.sed_path)
+
+    # -----------------------------------------------------------------
+
     def write_sed(self):
 
         """
@@ -719,7 +843,22 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing SED to a data file ...")
 
         # Save the SED
-        self.sed.saveto(self.observed_sed_path)
+        self.sed.saveto(self.sed_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_asymptotic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.reprocess is not None:
+            if fs.is_file(self.asymptotic_sed_path): fs.remove_file(self.asymptotic_sed_path)
+            return False
+        else: return fs.is_file(self.asymptotic_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -733,11 +872,23 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing asymptotic SED to a data file ...")
 
-        # Determine path
-        path = fs.join(self.phot_path, "asymptotic.dat")
-
         # Save the SED
-        self.asymptotic_sed.saveto(path)
+        self.asymptotic_sed.saveto(self.asymptotic_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_truncated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.reprocess is not None:
+            if fs.is_file(self.truncated_sed_path): fs.remove_file(self.truncated_sed_path)
+            return False
+        else: return fs.is_file(self.truncated_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -751,11 +902,20 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing truncated SED to a data file ...")
 
-        # Determine the path
-        path = fs.join(self.phot_path, "truncated.dat")
-
         # Save the SED
-        self.truncated_sed.saveto(path)
+        self.truncated_sed.saveto(self.truncated_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sed and self.has_asymptotic_sed and self.has_truncated_sed
 
     # -----------------------------------------------------------------
 
@@ -774,6 +934,33 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def differences_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.phot_differences_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.reprocess is not None:
+            if fs.is_file(self.differences_path): fs.remove_file(self.differences_path)
+            return False
+        else: return fs.is_file(self.differences_path)
+
+    # -----------------------------------------------------------------
+
     def write_differences(self):
 
         """
@@ -785,7 +972,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing the percentual differences with reference fluxes to a data file ...")
 
         # Save the differences table
-        self.differences_table.saveto(self.phot_differences_path)
+        self.differences_table.saveto(self.differences_path)
 
     # -----------------------------------------------------------------
 
@@ -853,7 +1040,7 @@ class PhotoMeter(PhotometryComponent):
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
-        plotter.run(ouput=path, title=self.galaxy_name)
+        plotter.run(output=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -881,7 +1068,7 @@ class PhotoMeter(PhotometryComponent):
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_alternative.pdf")
-        plotter.run(ouput=path, title=self.galaxy_name)
+        plotter.run(output=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 

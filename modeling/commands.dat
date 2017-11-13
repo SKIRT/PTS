@@ -40,7 +40,7 @@ plot_component_maps | -- | maps.plotter.ComponentMapsPlotter | arguments | Make 
 view_maps | -- | maps.viewer.MapsViewer | arguments | View a page where maps can be viewed and inspected
 
 # PHOTOMETRY
-photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
+photometry | -- | photometry.photometry.PhotoMeter | arguments | Calculate the photometry of the different input images
 
 # MODEL BUILDING
 build_model_galaxy | -- | build.models.galaxy.GalaxyModelBuilder | interactive | Build the model for galaxy modeling

@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -377,6 +378,16 @@ def plot_mask(mask, **kwargs):
 
     if isinstance(mask, np.ndarray): maskdata = mask
     else: maskdata = mask.data
+
+    # Check if not completely masked or completely unmasked
+    all_masked = np.all(maskdata)
+    all_unmasked = np.all(np.logical_not(maskdata))
+    if all_masked:
+        warnings.warn("Cannot plot a mask that is completely filled")
+        return
+    if all_unmasked:
+        warnings.warn("Cannot plot a mask that is completely empty")
+        return
 
     # Make the plot
     plt.figure(figsize=(7,7))

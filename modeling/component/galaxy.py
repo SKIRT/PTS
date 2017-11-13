@@ -164,6 +164,174 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def truncated_sed_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.environment.truncated_sed_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def asymptotic_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.asymptotic_sed_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def phot_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.phot_images_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_image_names(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.environment.photometry_image_names
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_path(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        return self.environment.get_photometry_image_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_path_for_filter(self, fltr):
+
+        """
+        Thisfunction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.environment.get_photometry_image_path_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.environment.get_photometry_image(name)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.environment.get_photometry_image_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.environment.get_photometry_frame(name)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.environment.get_photometry_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_background(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.environment.get_photometry_background(name)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_background_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.environment.get_photometry_background_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.environment.get_photometry_mask(name)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_mask_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.environment.get_photometry_mask_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_sed_dustpedia_path(self):
 
         """

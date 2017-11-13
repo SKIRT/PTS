@@ -104,6 +104,49 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unit_lower(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if hasattr(self.lower, "unit"): return self.lower.unit
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit_upper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if hasattr(self.upper, "unit"): return self.upper.unit
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No unit
+        if self.unit_lower is None and self.unit_upper is None: return None
+
+        # Check
+        if self.unit_lower != self.unit_upper: raise ValueError("Units of lower and upper limit are different")
+        return self.unit_lower
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def zero(cls):
 

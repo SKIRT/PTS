@@ -39,6 +39,9 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools.serialization import load_dict
 from .steps import galaxy_modeling, sed_modeling, images_modeling
 from ...core.filter.filter import is_uv, is_optical, is_ir, is_nir, is_mir, is_fir, is_submm, is_fir_or_submm
+from ...magic.core.image import Image
+from ...magic.core.frame import Frame
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -541,6 +544,8 @@ map_sub_names = [colours_name, ssfr_name, tir_name, attenuation_name, old_name, 
 # -----------------------------------------------------------------
 
 fluxes_name = "fluxes.dat"
+asymptotic_sed_name = "asymptotic.dat"
+truncated_sed_name = "truncated.dat"
 properties_name = "properties.dat"
 info_name = "info.dat"
 
@@ -635,8 +640,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.data_images_path = fs.create_directory_in(self.data_path, images_dirname)
 
         # PHOTOMETRY
-
         self.observed_sed_path = fs.join(self.phot_path, fluxes_name)
+        self.asymptotic_sed_path = fs.join(self.phot_path, asymptotic_sed_name)
+        self.truncated_sed_path = fs.join(self.phot_path, truncated_sed_name)
+        self.phot_images_path = fs.create_directory_in(self.phot_path, "images")
 
         # Truncation HTML path
         self.truncation_html_path = fs.create_directory_in(self.truncation_path, html_name)
@@ -723,6 +730,142 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return ObservedSED.from_file(self.observed_sed_dustpedia_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometry_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.phot_images_path, extension="fits", returns="name")
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_path(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.phot_images_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_path_for_filter(self, fltr):
+
+        """
+        Thisfunction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_photometry_image_path(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_photometry_image_path(name)
+        return Image.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_photometry_image(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_photometry_image_path(name)
+        return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_photometry_frame(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_background(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_photometry_image_path(name)
+        return Frame.from_file(path, plane="background")
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_background_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_photometry_background(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_photometry_image_path(name)
+        return Mask.nans_from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_mask_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_photometry_mask(str(fltr))
 
     # -----------------------------------------------------------------
 

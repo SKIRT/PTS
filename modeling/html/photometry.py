@@ -56,6 +56,7 @@ class PhotometryPageGenerator(HTMLPageComponent):
 
         # The sed plot
         self.sed_plot = None
+        self.sed_plot_script = None
 
         # The sed table
         self.sed_table = None
@@ -70,22 +71,22 @@ class PhotometryPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Make plots
+        # 2. Make plots
         self.make_plots()
 
-        # Make tables
+        # 3. Make tables
         self.make_tables()
 
-        # Generate the html
+        # 4. Generate the html
         self.generate()
 
-        # Write
+        # 5. Write
         self.write()
 
-        # Show the page
+        # 6. Show the page
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -113,6 +114,24 @@ class PhotometryPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making plots ...")
 
+        # SED plot
+        self.make_sed_plot()
+
+        # Image plot
+        self.make_image_plots()
+
+    # -----------------------------------------------------------------
+
+    def make_sed_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making SED plot ...")
+
         # Create the SED plotter
         plotter = SEDPlotter()
 
@@ -124,12 +143,35 @@ class PhotometryPageGenerator(HTMLPageComponent):
 
         # Add the SED
         plotter.add_sed(self.observed_sed, "Observation")
+        plotter.add_sed(self.asymptotic_sed_path, "Asymptotic")
+        plotter.add_sed(self.truncated_sed_path, "Truncated")
 
         # Run the plotter
         plotter.run()
 
         # Get the figure
         self.sed_plot_script, self.sed_plot = plotter.figure.to_html_components(wrap_script=False)
+
+    # -----------------------------------------------------------------
+
+    def make_image_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making image plots ...")
+
+        # Loop over the images
+        for name in self.photometry_image_names:
+
+            # Make plots
+
+            # Eventually make (JS9) views
+
+            pass
 
     # -----------------------------------------------------------------
 

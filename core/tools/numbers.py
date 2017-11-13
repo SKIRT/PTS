@@ -25,6 +25,13 @@ from . import sequences
 
 # -----------------------------------------------------------------
 
+zero = 0.
+nan = float("nan")
+inf = float("inf")
+min_inf = float("-inf")
+
+# -----------------------------------------------------------------
+
 def is_number(value_or_string):
 
     """

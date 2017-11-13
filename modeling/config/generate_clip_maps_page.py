@@ -139,7 +139,10 @@ definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
 # Soften regular masks
 definition.add_flag("soften_masks", "soften regular masks", True)
-definition.add_optional("relative_softening_radius", "positive_real", "softening radius relative to map xsize", 1./25.)
+definition.add_optional("relative_softening_radius", "positive_real", "softening radius relative to old stellar map xsize", 1./25.)
+definition.add_optional("relative_softening_radius_young", "positive_real", "softening radius relative to young stellar map xsize", 1./15)
+definition.add_optional("relative_softening_radius_ionizing", "positive_real", "softening radius relative to ionizing stellar map xsize", 1./20)
+definition.add_optional("relative_softening_radius_dust", "positive_real", "softening radius relative to dust map xsize", 1./15)
 
 # -----------------------------------------------------------------
 
@@ -160,6 +163,8 @@ definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 
 # ADVANCED
 definition.add_flag("reclip_from_masks", "reclip from saved masks", False)
+definition.add_optional("data_from", "string", "get the data from this directory (relative to maps html directory of absolute)")
+definition.add_flag("remove_other_data", "remove data that is not needed for the selected levels", False)
 definition.add_flag("resoften_masks", "resoften masks", False)
 
 # -----------------------------------------------------------------

@@ -26,3 +26,11 @@ definition.add_optional("noise_method", "string", "method to use for the apertur
 definition.add_flag("plot", "plot SEDs", True)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("reprocess", "lazy_broad_band_filter_list", "reprocess images and calculate fluxes for certain filters")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("plot_images", "lazy_broad_band_filter_list", "plot the image frame and masks for certain filters")
+
+# -----------------------------------------------------------------

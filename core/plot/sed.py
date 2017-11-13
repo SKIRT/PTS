@@ -599,7 +599,7 @@ class SEDPlotter(Configurable):
 
                     else:
 
-                        if reference_flux is None: value = error = None
+                        if reference_flux == 0: value = error = None
                         else:
 
                             if errors[k] is not None:
@@ -1598,8 +1598,8 @@ class SEDPlotter(Configurable):
         self.main_plot.set_xscale('log')
 
         # Format the axis ticks and create a grid
-        ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10)
-        self.main_plot.set_xlim(ticks[0], ticks[-1])
+        #ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10)
+        #self.main_plot.set_xlim(ticks[0], ticks[-1])
 
         # Set x ticks
         #self.main_plot.set_xticks(ticks)
@@ -1607,8 +1607,10 @@ class SEDPlotter(Configurable):
 
         #print(type(self.main_plot))
 
-        self.main_plot.set_xticks(ticks, fontsize=self.config.plot.ticks_fontsize)
+        #self.main_plot.set_xticks(ticks, fontsize=self.config.plot.ticks_fontsize)
+        self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
+        #tick_params(labelsize=6)
 
         #self.main_plot.xaxis.set_major_formatter(FormatStrFormatter('%g'))
         #self.main_plot.yaxis.set_major_formatter(FormatStrFormatter('%g'))

@@ -1534,6 +1534,21 @@ def copy_directory(path, directory_path, new_name=None):
 
 # -----------------------------------------------------------------
 
+def clear_and_copy_from_directory(from_directory, to_directory, **kwargs):
+
+    """
+    This function ...
+    :param from_directory:
+    :param to_directory:
+    :param kwargs:
+    :return:
+    """
+
+    clear_directory(to_directory)
+    copy_from_directory(from_directory, to_directory, **kwargs)
+
+# -----------------------------------------------------------------
+
 def copy_from_directory(from_directory, to_directory, **kwargs):
 
     """

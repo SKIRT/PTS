@@ -1237,7 +1237,7 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def set_xticks(self, ticks, fontsize=None):
+    def set_xticks(self, ticks=None, fontsize=None):
 
         """
         This function ...
