@@ -162,6 +162,7 @@ class ModelingCommands(list):
                 # PTS setting
                 if string.startswith("-"):
                     setting_name = string.split("--")[1] if string.startswith("--") else string.split("-")[1]
+                    #print(setting_name)
                     if setting_name not in pts_settings_names: raise ValueError("Invalid command")
                     if expects_argument[setting_name]: # expects arguments
                         expect_argument = True
