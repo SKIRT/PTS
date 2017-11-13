@@ -150,11 +150,11 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the maps
-        if not self.has_all_plots: self.load_maps()
-
         # 3. Set the paths
         self.set_paths()
+
+        # 2. Load the maps
+        if not self.has_all_plots: self.load_maps()
 
         # 4. Check present maps
         if not self.config.replot: self.check_present()
@@ -3209,22 +3209,25 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         try: filepath = self.old_plot_paths[name][levels]
         except KeyError:
 
-            log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
-            log.warning("and dictionary keys:")
-            for key in self.old_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
-
-            log.warning("Looping over the keys and checking for equivalency ...")
-
-            filepath = None
-            for key in self.old_plot_paths[name]:
-                if containers.close_dicts(levels, key): filepath = self.old_plot_paths[name][key]
-                break
-
+            if len(self.old_plot_paths[name]) == 0: raise RuntimeError("No levels in the subdirectory")
             else:
+
+                log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
+                log.warning("and dictionary keys:")
+                for key in self.old_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
+
+                log.warning("Looping over the keys and checking for equivalency ...")
+
+                filepath = None
                 for key in self.old_plot_paths[name]:
-                    differences = containers.dicts_differences(key, levels)
-                    log.error(" - {" + tostr(differences) + "}")
-                raise RuntimeError("Could not find an equivalent key")
+                    if containers.close_dicts(levels, key): filepath = self.old_plot_paths[name][key]
+                    break
+
+                else:
+                    for key in self.old_plot_paths[name]:
+                        differences = containers.dicts_differences(key, levels)
+                        log.error(" - {" + tostr(differences) + "}")
+                    raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
         return filepath
@@ -3325,7 +3328,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Loop over the old stelar maps
-        for name in self.process_old_map_names:
+        for name in self.old_selection:
 
             # Check map
             if not self.has_all_old_map_plots(name): return False
@@ -3471,22 +3474,25 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         try: filepath = self.young_plot_paths[name][levels]
         except KeyError:
 
-            log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
-            log.warning("and dictionary keys:")
-            for key in self.young_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
-
-            log.warning("Looping over the keys and checking for equivalency ...")
-
-            filepath = None
-            for key in self.young_plot_paths[name]:
-                if containers.close_dicts(levels, key):
-                    filepath = self.young_plot_paths[name][key]
-                    break
+            if len(self.young_plot_paths[name]) == 0: raise RuntimeError("No levels in the subdirectory")
             else:
+
+                log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
+                log.warning("and dictionary keys:")
+                for key in self.young_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
+
+                log.warning("Looping over the keys and checking for equivalency ...")
+
+                filepath = None
                 for key in self.young_plot_paths[name]:
-                    differences = containers.dicts_differences(key, levels)
-                    log.error(" - {" + tostr(differences) + "}")
-                raise RuntimeError("Could not find an equivalent key")
+                    if containers.close_dicts(levels, key):
+                        filepath = self.young_plot_paths[name][key]
+                        break
+                else:
+                    for key in self.young_plot_paths[name]:
+                        differences = containers.dicts_differences(key, levels)
+                        log.error(" - {" + tostr(differences) + "}")
+                    raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
         return filepath
@@ -3587,7 +3593,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Loop over the old stelar maps
-        for name in self.process_young_map_names:
+        for name in self.young_selection:
 
             # Check map
             if not self.has_all_young_map_plots(name): return False
@@ -3734,22 +3740,25 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         try: filepath = self.ionizing_plot_paths[name][levels]
         except KeyError:
 
-            log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
-            log.warning("and dictionary keys:")
-            for key in self.ionizing_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
-
-            log.warning("Looping over the keys and checking for equivalency ...")
-
-            filepath = None
-            for key in self.ionizing_plot_paths[name]:
-                if containers.close_dicts(levels, key): filepath = self.ionizing_plot_paths[name][key]
-                break
-
+            if len(self.ionizing_plot_paths[name]) == 0: raise RuntimeError("No levels in subdirectory")
             else:
+
+                log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
+                log.warning("and dictionary keys:")
+                for key in self.ionizing_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
+
+                log.warning("Looping over the keys and checking for equivalency ...")
+
+                filepath = None
                 for key in self.ionizing_plot_paths[name]:
-                    differences = containers.dicts_differences(key, levels)
-                    log.error(" - {" + tostr(differences) + "}")
-                raise RuntimeError("Could not find an equivalent key")
+                    if containers.close_dicts(levels, key): filepath = self.ionizing_plot_paths[name][key]
+                    break
+
+                else:
+                    for key in self.ionizing_plot_paths[name]:
+                        differences = containers.dicts_differences(key, levels)
+                        log.error(" - {" + tostr(differences) + "}")
+                    raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
         return filepath
@@ -3850,7 +3859,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Loop over the old stelar maps
-        for name in self.process_ionizing_map_names:
+        for name in self.ionizing_selection:
 
             # Check map
             if not self.has_all_ionizing_map_plots(name): return False
@@ -3996,22 +4005,25 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         try: filepath = self.dust_plot_paths[name][levels]
         except KeyError:
 
-            log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
-            log.warning("and dictionary keys:")
-            for key in self.dust_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
-
-            log.warning("Looping over the keys and checking for equivalency ...")
-
-            filepath = None
-            for key in self.dust_plot_paths[name]:
-                if containers.close_dicts(levels, key): filepath = self.dust_plot_paths[name][key]
-                break
-
+            if len(self.dust_plot_paths[name]) == 0: raise RuntimeError("No levels in subdictionary")
             else:
+
+                log.warning("Mismatch between key = {" + tostr(levels) + "} (" + str(type(levels)) + ")")
+                log.warning("and dictionary keys:")
+                for key in self.dust_plot_paths[name]: log.warning(" - {" + tostr(key) + "} (" + str(type(key)) + ")")
+
+                log.warning("Looping over the keys and checking for equivalency ...")
+
+                filepath = None
                 for key in self.dust_plot_paths[name]:
-                    differences = containers.dicts_differences(key, levels)
-                    log.error(" - {" + tostr(differences) + "}")
-                raise RuntimeError("Could not find an equivalent key")
+                    if containers.close_dicts(levels, key): filepath = self.dust_plot_paths[name][key]
+                    break
+
+                else:
+                    for key in self.dust_plot_paths[name]:
+                        differences = containers.dicts_differences(key, levels)
+                        log.error(" - {" + tostr(differences) + "}")
+                    raise RuntimeError("Could not find an equivalent key")
 
         # Return the filepath
         return filepath

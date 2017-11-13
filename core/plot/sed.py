@@ -36,6 +36,7 @@ from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools import types
 from ..filter.broad import BroadBandFilter
 from ..basics.errorbar import ErrorBar
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -617,8 +618,8 @@ class SEDPlotter(Configurable):
 
                 if value is not None and error is not None:
 
-                    error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                    residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2)
+                    yerr, lolims, uplims = process_errorbar(error)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2, lolims=lolims, uplims=uplims)
 
             # The next observation is not the first anymore
             first = False
@@ -840,8 +841,8 @@ class SEDPlotter(Configurable):
                 value = 0.0
                 if errors[k] is not None:
                     error = errors[k] / fluxes[k] * 100.
-                    error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                    residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                    yerr, lolims, uplims = process_errorbar(error)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
             # Models as reference: plot points at the relative difference with the models (one panel for each model)
             elif self.config.residual_reference == "models":
@@ -877,8 +878,8 @@ class SEDPlotter(Configurable):
                     #value = 0.0
                     if errors[k] is not None:
                         error = errors[k] / model_value * 100. # NORMALIZE TO MODEL VALUE
-                        error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                        yerr, lolims, uplims = process_errorbar(error)
+                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
                     # Next residual plot
                     residual_plot_index += 1
@@ -1205,8 +1206,8 @@ class SEDPlotter(Configurable):
                     value = 0.0
                     if errors[k] is not None:
                         error = errors[k] / fluxes[k] * 100.
-                        error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                        residual_plot.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                        yerr, lolims, uplims = process_errorbar(error)
+                        residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
                 # Models as reference: plot points at the relative difference with the models (one panel for each model)
                 elif self.config.residual_reference == "models":
@@ -1246,12 +1247,13 @@ class SEDPlotter(Configurable):
                         else: errorbar = errors[k]
 
                         error = errorbar / model_value * 100.  # NORMALIZE TO MODEL VALUE
-                        error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
+
+                        yerr, lolims, uplims = process_errorbar(error)
 
                         # Plot on residual axes
-                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=error_bar, fmt=marker,
+                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker,
                                                markersize=7, color=color, markeredgecolor='black', ecolor=color,
-                                               capthick=2)
+                                               capthick=2, lolims=lolims, uplims=uplims)
 
                         # Next residual plot
                         residual_plot_index += 1
@@ -1383,17 +1385,26 @@ class SEDPlotter(Configurable):
 
                 #print(label, flux, lower_flux, upper_flux)
 
+                lolims = False
+                uplims = False
+
                 if lower_flux <= 0:
                     flux_lower_flux = float("-inf")
+                    uplims = [[True]]
                 else: flux_lower_flux = flux / lower_flux
+
+                if error.lower == numbers.min_inf: uplims = [[True]]
+                if error.upper == numbers.inf: lolims = [[True]]
 
                 flux_upper_flux = flux / upper_flux
 
-                error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
+                yerr = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
+                #yerr, lolims, uplims = process_errorbar(ErrorBar(np.log10(flux_lower_flux), np.log10(flux_upper_flux)))
+
                 used_labels.append(label)
 
                 #print("a", wavelength, flux)
-                patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
             else:
@@ -1409,14 +1420,20 @@ class SEDPlotter(Configurable):
 
             if error is not None:
 
-                error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+                lolims = False
+                uplims = False
+
+                yerr = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+                #yerr, lolims, uplims = process_errorbar(ErrorBar(np.log10(flux)-np.log10(flux + error.lower), np.log10(flux) - np.log10(flux + error.upper)))
+
+                if error.lower == numbers.min_inf: uplims = [[True]]
+                if error.upper == numbers.inf: lolims = [[True]]
+
                 #print("c", wavelength, flux)
-                patch = axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else:
-                #print("d", wavelength, flux)
-                patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+            else: patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
         # Return the patch if requested
         if return_patch: return patch
@@ -1887,5 +1904,27 @@ def get_plot_flux_limits(min_flux, max_flux):
     plot_max = 1.1 * log_max_flux
 
     return plot_min, plot_max
+
+# -----------------------------------------------------------------
+
+def process_errorbar(error):
+
+    """
+    This function ...
+    :param error:
+    :return:
+    """
+
+    lolims = False
+    uplims = False
+    error_limits = [[abs(error.lower), abs(error.upper)]]
+    if error.lower == numbers.min_inf:
+        error_limits[0][0] = error_limits[0][1]
+        uplims = [[True]]
+    if error.upper == numbers.inf:
+        error_limits[0][1] = error_limits[0][0]
+        lolims = [[True]]
+    yerr = np.array(error_limits).T
+    return yerr, lolims, uplims
 
 # -----------------------------------------------------------------

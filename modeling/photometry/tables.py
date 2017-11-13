@@ -155,4 +155,6 @@ class FluxDifferencesTable(SmartTable):
         # Add a row to the table
         self.add_row(values)
 
+        #if sort: self.sort()
+
 # -----------------------------------------------------------------

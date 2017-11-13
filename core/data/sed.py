@@ -427,7 +427,7 @@ class ObservedSED(FilterCurve):
         self.add_row(values, conversion_info=conversion_info)
 
         # Sort
-        if sort: self.sort(self.value_name)
+        if sort: self.sort("Wavelength")
 
     # -----------------------------------------------------------------
 

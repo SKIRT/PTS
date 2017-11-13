@@ -457,6 +457,66 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def has_flux_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the filter
+        fltr = self.get_filter(name)
+
+        # Check
+        return self.sed.has_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def has_asymptotic_flux_for_image(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        # Get the filter
+        fltr = self.get_filter(name)
+
+        # Check
+        return self.asymptotic_sed.has_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def has_truncated_flux_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the filter
+        fltr = self.get_filter(name)
+
+        # Check
+        return self.truncated_sed.has_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def has_fluxes_for_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_flux_for_image(name) and self.has_asymptotic_flux_for_image(name) and self.has_truncated_flux_for_image(name)
+
+    # -----------------------------------------------------------------
+
     def calculate_fluxes(self):
 
         """
@@ -470,8 +530,11 @@ class PhotoMeter(PhotometryComponent):
         # Loop over all the images
         for name in self.images:
 
+            # Already has fluxes
+            if self.has_fluxes_for_image(name): continue
+
             # Debugging
-            log.debug("Calculating the total flux in the " + name + " image ...")
+            log.debug("Calculating the flux in the " + name + " image ...")
 
             # Get the image
             image = self.get_image(name)
