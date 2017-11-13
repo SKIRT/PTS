@@ -137,9 +137,15 @@ definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minim
 definition.add_flag("dilate_masks", "dilate regular masks", True)
 definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
+# Dilation relative radii
+definition.add_optional("relative_dilation_radius_old", "positive_real", "dilation radius relative to old stellar map xsize", 1./60.)
+definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_dust", "positive_real", "dilation radius relative to dust map xsize", 1./50.)
+
 # Soften regular masks
 definition.add_flag("soften_masks", "soften regular masks", True)
-definition.add_optional("relative_softening_radius", "positive_real", "softening radius relative to old stellar map xsize", 1./25.)
+definition.add_optional("relative_softening_radius_old", "positive_real", "softening radius relative to old stellar map xsize", 1./25.)
 definition.add_optional("relative_softening_radius_young", "positive_real", "softening radius relative to young stellar map xsize", 1./15)
 definition.add_optional("relative_softening_radius_ionizing", "positive_real", "softening radius relative to ionizing stellar map xsize", 1./20)
 definition.add_optional("relative_softening_radius_dust", "positive_real", "softening radius relative to dust map xsize", 1./15)
@@ -170,9 +176,17 @@ definition.add_flag("resoften_masks", "resoften masks", False)
 # -----------------------------------------------------------------
 
 # Compactness
-definition.add_flag("old_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the old stellar maps", 1.)
-definition.add_flag("young_compacntess_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the young stellar maps", 1.)
-definition.add_flag("ionizing_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the ionizing stellar maps", 1.)
-definition.add_flag("dust_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the dust maps", 0.88)
+definition.add_optional("old_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the old stellar maps", 1.)
+definition.add_optional("young_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the young stellar maps", 1.)
+definition.add_optional("ionizing_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the ionizing stellar maps", 1.)
+definition.add_optional("dust_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the dust maps", 0.75)
+
+# -----------------------------------------------------------------
+
+# Plotting for debugging
+definition.add_flag("plot_clipping_old", "plot clipping steps for old stellar maps")
+definition.add_flag("plot_clipping_young", "plot clipping steps for young stellar maps")
+definition.add_flag("plot_clipping_ionizing", "plot clipping steps for ionizing stellar maps")
+definition.add_flag("plot_clipping_dust", "plot clipping steps for dust maps")
 
 # -----------------------------------------------------------------

@@ -72,6 +72,15 @@ definition.add_optional("levels", "filter_real_dictionary", "significance levels
 definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
 definition.add_flag("all_levels", "use the default sigma level for all maps")
 
+# MAPS PROCESSING STEPS
+definition.add_flag("correct", "correct the maps", True)
+definition.add_flag("interpolate_negatives", "interpolate negatives in the maps", True)
+definition.add_flag("interpolate", "interpolate core region in the maps", True)
+definition.add_flag("truncate", "truncate the maps", False)
+definition.add_flag("crop", "crop the maps", True)
+definition.add_flag("clip", "clip the maps", True)
+definition.add_flag("soften", "soften the maps", False)
+
 # CROPPING
 definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
 
@@ -94,9 +103,31 @@ definition.add_optional("min_npixels", "positive_integer", "minimum number of pi
 definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 
 # For masking
-definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
+fuzzy_mask = False
+definition.add_flag("fuzzy_mask", "use fuzzy masks", fuzzy_mask)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
 definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
+
+## NEW
+
+# Dilate masks?
+definition.add_flag("dilate_masks", "dilate regular masks", True)
+definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
+
+# Dilation relative radii
+definition.add_optional("relative_dilation_radius_old", "positive_real", "dilation radius relative to old stellar map xsize", 1./60.)
+definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_dust", "positive_real", "dilation radius relative to dust map xsize", 1./50.)
+
+# Soften regular masks
+definition.add_flag("soften_masks", "soften regular masks", True)
+definition.add_optional("relative_softening_radius_old", "positive_real", "softening radius relative to old stellar map xsize", 1./25.)
+definition.add_optional("relative_softening_radius_young", "positive_real", "softening radius relative to young stellar map xsize", 1./15)
+definition.add_optional("relative_softening_radius_ionizing", "positive_real", "softening radius relative to ionizing stellar map xsize", 1./20)
+definition.add_optional("relative_softening_radius_dust", "positive_real", "softening radius relative to dust map xsize", 1./15)
+
+##
 
 # -----------------------------------------------------------------
 
@@ -247,5 +278,19 @@ formats = ["pdf", "png"]
 default_format = "pdf"
 definition.add_flag("plot", "make plots", True)
 definition.add_optional("plotting_format", "string", "plotting format", default=default_format, choices=formats)
+
+# -----------------------------------------------------------------
+
+# Compactness
+definition.add_optional("old_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the old stellar maps", 1.)
+definition.add_optional("young_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the young stellar maps", 1.)
+definition.add_optional("ionizing_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the ionizing stellar maps", 1.)
+definition.add_optional("dust_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the dust maps", 0.75)
+
+# Plotting for debugging
+definition.add_flag("plot_clipping_old", "plot clipping steps for old stellar maps")
+definition.add_flag("plot_clipping_young", "plot clipping steps for young stellar maps")
+definition.add_flag("plot_clipping_ionizing", "plot clipping steps for ionizing stellar maps")
+definition.add_flag("plot_clipping_dust", "plot clipping steps for dust maps")
 
 # -----------------------------------------------------------------

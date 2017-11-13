@@ -3556,25 +3556,32 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Processing the maps ...")
 
         # 1. Correct
-        self.correct_maps()
+        if self.config.correct: self.correct_maps()
+        else: self.flag_corrected()
 
         # 2. Interpolate negatives
-        self.interpolate_negatives_maps()
+        if self.config.interpolate_negatives: self.interpolate_negatives_maps()
+        else: self.flag_interpolated_negatives()
 
         # 3. Interpolate
-        self.interpolate_maps()
+        if self.config.interpolate: self.interpolate_maps()
+        else: self.flag_interpolated()
 
         # 4. Truncate
-        self.truncate_maps()
+        if self.config.truncate: self.truncate_maps()
+        else: self.flag_truncated()
 
         # 5. Crop
-        self.crop_maps()
+        if self.config.crop: self.crop_maps()
+        else: self.flag_cropped()
 
         # 6. Clip
-        self.clip_maps()
+        if self.config.clip: self.clip_maps()
+        else: self.flag_clipped()
 
         # 7. Soften the edges
-        self.soften_edges()
+        if self.config.soften: self.soften_edges()
+        else: self.flag_softened()
 
     # -----------------------------------------------------------------
 
@@ -3599,6 +3606,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Dust
         self.correct_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def flag_corrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging the maps as being corrected ...")
+
+        # Old
+        self.flag_corrected_old()
+
+        # Young
+        self.flag_corrected_young()
+
+        # Ionizing
+        self.flag_corrected_ionizing()
+
+        # Dust
+        self.flag_corrected_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_corrected_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[correct_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_corrected_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[correct_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_corrected_ionizing(self):
+
+        """
+        This fuction ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[correct_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_corrected_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[correct_step] = True
 
     # -----------------------------------------------------------------
 
@@ -3811,6 +3902,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Dust
         self.interpolate_negatives_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_negatives(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging the maps as having negatives interpolated ...")
+
+        # Old
+        self.flag_interpolated_negatives_old()
+
+        # Young
+        self.flag_interpolated_negatives_young()
+
+        # Ionizing
+        self.flag_interpolated_negatives_ionizing()
+
+        # Dust
+        self.flag_interpolated_negatives_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_negatives_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_negatives_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_negatives_ionizing(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_negatives_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[interpolate_negatives_step] = True
 
     # -----------------------------------------------------------------
 
@@ -4278,6 +4453,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def flag_interpolated(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging the maps as being interpolated ...")
+
+        # Old
+        self.flag_interpolated_old()
+
+        # Young
+        self.flag_interpolated_young()
+
+        # Ionizing
+        self.flag_interpolated_ionizing()
+
+        # Dust
+        self.flag_interpolated_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[interpolate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[interpolate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[interpolate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_interpolated_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[interpolate_step] = True
+
+    # -----------------------------------------------------------------
+
     def is_interpolated_old(self, name):
 
         """
@@ -4610,6 +4869,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def flag_truncated(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging the maps as being truncated ...")
+
+
+
+    # -----------------------------------------------------------------
+
     def is_truncated_old(self, name):
 
         """
@@ -4858,6 +5131,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def flag_cropped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging the maps as being cropped ...")
+
+        # Old
+        self.flag_cropped_old()
+
+        # Young
+        self.flag_cropped_young()
+
+        # Ionizing
+        self.flag_cropped_ionizing()
+
+        # Dust
+        self.flag_cropped_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_cropped_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[crop_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_cropped_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[crop_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_cropped_ionizing(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[crop_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_cropped_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[crop_step] = True
+
+    # -----------------------------------------------------------------
+
     def crop_old_maps(self):
 
         """
@@ -5058,6 +5415,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def flag_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging maps as being clipped ...")
+
+        # Old
+        self.flag_clipped_old()
+
+        # Young
+        self.flag_clipped_young()
+
+        # Ionizing
+        self.flag_clipped_ionizing()
+
+        # Dust
+        self.flag_clipped_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_clipped_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[clip_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_clipped_young(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[clip_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_clipped_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[clip_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_clipped_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[clip_step] = True
+
+    # -----------------------------------------------------------------
+
     def has_old_clip_mask(self, name):
 
         """
@@ -5069,6 +5510,53 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine the path
         path = fs.join(self.old_masks_path, name + "_clip.fits")
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.old_compactness_factor
+
+    # -----------------------------------------------------------------
+
+    def get_clip_old_settings(self, name):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Initialize dictionary
+        settings = dict()
+
+        # Basic settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["output_path"] = self.old_clipping_path_for_map(name)
+
+        # NEW
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_old
+        settings["boundary"] = self.old_maps_boundary
+        settings["plot"] = self.config.plot_clipping_old
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_old
+
+        # Return the settings
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -5098,13 +5586,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
-                                                 remote=self.remote, npixels=self.config.min_npixels,
-                                                 connectivity=self.config.connectivity,
-                                                 rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                                 fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                 fuzziness_offset=self.config.fuzzy_min_significance_offset,
-                                                 output_path=self.old_clipping_path_for_map(name))
+            self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, **self.get_clip_old_settings(name))
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -5128,6 +5610,54 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine the path
         path = fs.join(self.young_masks_path, name + "_clip.fits")
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.young_compactness_factor
+
+    # -----------------------------------------------------------------
+
+    def get_clip_young_settings(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        # Initialize dictionary
+        settings = dict()
+
+        # Basic settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["output_path"] = self.young_clipping_path_for_map(name)
+
+        # NEW
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_young
+        settings["boundary"] = self.young_maps_boundary
+        settings["plot"] = self.config.plot_clipping_young
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_young
+
+        # Return the settings
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -5157,13 +5687,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
-                                                   remote=self.remote, npixels=self.config.min_npixels,
-                                                   connectivity=self.config.connectivity,
-                                                   rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                                   fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                   fuzziness_offset=self.config.fuzzy_min_significance_offset,
-                                                   output_path=self.young_clipping_path_for_map(name))
+            self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, **self.get_clip_young_settings(name))
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -5187,6 +5711,54 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine the path
         path = fs.join(self.ionizing_masks_path, name + "_clip.fits")
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.ionizing_compactness_factor
+
+    # -----------------------------------------------------------------
+
+    def get_clip_ionizing_settings(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        # Initialize dictionary
+        settings = dict()
+
+        # Basic settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["output_path"] = self.ionizing_clipping_path_for_map(name)
+
+        # NEW
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_ionizing
+        settings["boundary"] = self.ionizing_maps_boundary
+        settings["plot"] = self.config.plot_clipping_ionizing
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_ionizing
+
+        # Return the settings
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -5216,13 +5788,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
-                                                      remote=self.remote, npixels=self.config.min_npixels,
-                                                      connectivity=self.config.connectivity,
-                                                      rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                                      fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                      fuzziness_offset=self.config.fuzzy_min_significance_offset,
-                                                      output_path=self.ionizing_clipping_path_for_map(name))
+            self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, **self.get_clip_ionizing_settings(name))
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -5246,6 +5812,54 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Determine the path
         path = fs.join(self.dust_masks_path, name + "_clip.fits")
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_maps_boundary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.dust_compactness_factor
+
+    # -----------------------------------------------------------------
+
+    def get_clip_dust_settings(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        # Initialize dictionary
+        settings = dict()
+
+        # Basic settings
+        settings["convolve"] = self.config.convolve
+        settings["remote"] = self.remote
+        settings["npixels"] = self.config.min_npixels
+        settings["connectivity"] = self.config.connectivity
+        settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
+        settings["fuzzy"] = self.config.fuzzy_mask
+        settings["fuzziness"] = self.config.fuzziness
+        settings["fuzziness_offset"] = self.config.fuzzy_min_significance_offset
+        settings["output_path"] = self.dust_clipping_path_for_map(name)
+
+        # NEW
+        settings["dilate"] = self.config.dilate_masks
+        settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
+        settings["soften"] = self.config.soften_masks
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_dust
+        settings["boundary"] = self.dust_maps_boundary
+        settings["plot"] = self.config.plot_clipping_dust
+        settings["relative_dilation_radius"] = self.config.relative_dilation_radius_dust
+
+        # Return the settings
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -5275,13 +5889,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
-                                                  remote=self.remote, npixels=self.config.min_npixels,
-                                                  connectivity=self.config.connectivity,
-                                                  rebin_remote_threshold=self.config.rebin_remote_threshold,
-                                                  fuzzy=self.config.fuzzy_mask, fuzziness=self.config.fuzziness,
-                                                  fuzziness_offset=self.config.fuzzy_min_significance_offset,
-                                                  output_path=self.dust_clipping_path_for_map(name))
+            self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, **self.get_clip_dust_settings(name))
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True
@@ -5399,6 +6007,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Dust
         self.soften_edges_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_softened(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Flagging maps as being softened ...")
+
+        # Old
+        self.flag_softened_old()
+
+        # Young
+        self.flag_softened_young()
+
+        # Ionizing
+        self.flag_softened_ionizing()
+
+        # Dust
+        self.flag_softened_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_softened_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[softened_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_softened_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[softened_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_softened_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[softened_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_softened_dust(self):
+
+        """
+        Thisf nuction ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[softened_step] = True
 
     # -----------------------------------------------------------------
 
@@ -7501,7 +8193,7 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
     """
 
     # Create source
-    if isinstance(region_or_mask, MaskBase): source = Detection.from_mask(the_map, mask, source_outer_factor)
+    if isinstance(region_or_mask, MaskBase): source = Detection.from_mask(the_map, region_or_mask, source_outer_factor)
     elif isinstance(region_or_mask, PixelRegion): source = Detection.from_shape(the_map, region_or_mask, source_outer_factor)
     else: raise ValueError("Invalid value for 'region_or_mask'")
 

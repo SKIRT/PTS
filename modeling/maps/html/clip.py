@@ -2467,7 +2467,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                               dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                               resoften_current_masks=self.config.resoften_masks,
                                               relative_softening_radius=self.config.relative_softening_radius_old,
-                                              boundary=self.old_maps_boundary)
+                                              boundary=self.old_maps_boundary, plot=self.config.plot_clipping_old,
+                                              relative_dilation_radius=self.config.relative_dilation_radius_old)
 
             # Replace by a dictionary of maps
             self.old_clipped_maps[name] = maps
@@ -2628,7 +2629,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
                                           relative_softening_radius=self.config.relative_softening_radius_young,
-                                          boundary=self.young_maps_boundary)
+                                          boundary=self.young_maps_boundary, plot=self.config.plot_clipping_young,
+                                          relative_dilation_radius=self.config.relative_dilation_radius_young)
 
             # Replace by a dictionary of maps
             self.young_clipped_maps[name] = maps
@@ -2789,7 +2791,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
                                           relative_softening_radius=self.config.relative_softening_radius_ionizing,
-                                          boundary=self.config.ionizing_maps_boundary)
+                                          boundary=self.config.ionizing_maps_boundary, plot=self.config.plot_clipping_ionizing,
+                                          relative_dilation_radius=self.config.relative_dilation_radius_ionizing)
 
             # Replace by a dictionary of maps
             self.ionizing_clipped_maps[name] = maps
@@ -2950,7 +2953,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                                           dilate_fuzzy=self.config.dilate_fuzzy_masks, soften=self.config.soften_masks,
                                           resoften_current_masks=self.config.resoften_masks,
                                           relative_softening_radius=self.config.relative_softening_radius_dust,
-                                          boundary=self.dust_maps_boundary)
+                                          boundary=self.dust_maps_boundary, plot=self.config.plot_clipping_dust,
+                                          relative_dilation_radius=self.config.relative_dilation_radius_dust)
 
             # Replace by a dictionary of maps
             self.dust_clipped_maps[name] = maps
@@ -4176,7 +4180,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Loop over the old stelar maps
-        for name in self.process_dust_map_names:
+        for name in self.dust_selection:
 
             # Check map
             if not self.has_all_dust_map_plots(name): return False
