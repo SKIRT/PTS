@@ -105,8 +105,15 @@ class Detection(object):
         # Create a source from the bounding box of the shape
         source = cls.from_rectangle(frame, shape.bounding_box, factor)
 
+        #print(shape.center, shape.radius)
+        #print(source.shift)
+        #shape_min = shape - source.shift
+        #print(shape_min.center, shape_min.radius)
+
         # Create a mask based on the shape, shifted into the source cutout
         mask = (shape - source.shift).to_mask(source.cutout.xsize, source.cutout.ysize)
+
+        #plotting.plot_mask(mask, title="mask")
 
         # Set the source mask
         source.mask = mask
@@ -175,6 +182,8 @@ class Detection(object):
         radius = ellipse.radius
         angle = ellipse.angle
 
+        #print(center, radius.axis1, radius.axis2, angle)
+
         # Create cutout box
         ellipse = PixelEllipseRegion(center, radius * factor, angle) # new, expanded ellipse
         cutout = Cutout.from_ellipse(frame, ellipse, shape)
@@ -213,12 +222,28 @@ class Detection(object):
 
         # Create contour for mask
         ellipse = find_contour_mask(mask)
+        #print(ellipse)
+
+        #bounding_box = ellipse.bounding_box
+        #x_min = int(round(bounding_box.x_min - 20))
+        #x_max = int(round(bounding_box.x_max + 20))
+        #y_min = int(round(bounding_box.y_min - 20))
+        #y_max = int(round(bounding_box.y_max + 20))
+        #ellipse.center.x -= x_min
+        #ellipse.center.y -= y_min
+        #plotting.plot_box(mask[y_min:y_max, x_min:x_max], region=ellipse)
 
         # Create from ellipse
         detection = cls.from_ellipse(frame, ellipse, factor=factor)
 
+        #print(type(mask))
+        #print(mask)
+        #plotting.plot_mask(mask)
+        #plotting.plot_mask(mask.data[detection.y_slice, detection.x_slice])
+
         # Set the mask
         mask_cutout = Mask(mask.data[detection.y_slice, detection.x_slice])
+        #plotting.plot_mask(mask_cutout, title="mask cutout")
         detection.mask = mask_cutout
 
         # Return the detection

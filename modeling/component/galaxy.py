@@ -1023,15 +1023,27 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_significance_level(self, filter_name):
+    def get_significance_level(self, image_name):
 
         """
         This function ...
-        :param filter_name:
+        :param image_name:
         :return:
         """
 
-        return self.significance_levels[filter_name]
+        return self.significance_levels[image_name]
+
+    # -----------------------------------------------------------------
+
+    def get_significance_level_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_significance_level(str(fltr))
 
     # -----------------------------------------------------------------
 

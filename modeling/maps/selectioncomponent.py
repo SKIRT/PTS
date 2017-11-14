@@ -622,6 +622,9 @@ class MapsSelectionComponent(MapsComponent):
                                   relative_softening_radius=relative_softening_radius, boundary=boundary, plot=plot,
                                   relative_dilation_radius=relative_dilation_radius)
 
+        # Plot the mask
+        if plot: plotting.plot_mask(mask, title="clipping mask")
+
         # Apply the mask
         if isinstance(mask, AlphaMask): the_map.apply_alpha_mask(mask)
         elif isinstance(mask, MaskBase): the_map.apply_mask(mask)
@@ -803,6 +806,7 @@ class MapsSelectionComponent(MapsComponent):
         :param dilate:
         :param dilate_fuzzy:
         :param dilation_radius:
+        :param dilation_max_radius:
         :param dilation_nbins:
         :param soften:
         :param softening_radius:

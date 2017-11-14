@@ -92,8 +92,9 @@ def find_contour_mask(mask):
     y_max = mask.ysize - 1
 
     from ..core.cutout import Cutout
-    fake_data = Cutout(mask.data.astype(int), x_min, x_max, y_min, y_max)
-    contour = find_contour(fake_data, mask, sigma_level=1)
+    maskdata = mask.data
+    fake_data = Cutout(maskdata.astype(float), x_min, x_max, y_min, y_max)
+    contour = find_contour(fake_data, maskdata, sigma_level=3)
     return contour
 
 # -----------------------------------------------------------------
@@ -126,6 +127,10 @@ def find_contour(box, mask, sigma_level):
     angle = properties.orientation.value # in radians
     angle = Angle(angle, u.rad)
 
+    #print("a", a)
+    #print("b", b)
+
+    # Get radius
     radius = PixelStretch(a, b)
 
     # Create and return the elliptical contour

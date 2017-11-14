@@ -250,6 +250,9 @@ class Extent(Vector):
         :return:
         """
 
+        #print(self.x, type(self.x))
+        #print(self.y, type(self.y))
+        #print(value, type(value))
         return self.__class__(self.x * value, self.y * value)
 
     # -----------------------------------------------------------------

@@ -279,13 +279,13 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    def __array__(self):
+    def __array__(self, **kwargs):
 
         """
         Array representation of the mask (e.g., for matplotlib).
         """
 
-        return np.array(self.data)
+        return np.array(self.data, **kwargs)
 
     # -----------------------------------------------------------------
 

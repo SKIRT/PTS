@@ -9,7 +9,6 @@
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from pts.modeling.maps.collection import MapsCollection
 from pts.core.remote.host import find_host_ids
 from pts.modeling.config.maps import definition
 from pts.modeling.maps.components import steps
@@ -18,10 +17,6 @@ from pts.modeling.config.build_stars import degeyter_ratio, scalelength_scalehei
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.component.galaxy import has_bulge2d_model, has_disk2d_model, get_bulge2d_model, get_disk2d_model
 from pts.core.tools import filesystem as fs
-
-# -----------------------------------------------------------------
-
-default_sigma_level = 3.0
 
 # -----------------------------------------------------------------
 
@@ -69,8 +64,7 @@ else: definition.add_fixed("previous_levels", "use previous levels", None)
 
 # Levels
 definition.add_optional("levels", "filter_real_dictionary", "significance levels for the different images")
-definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
-definition.add_flag("all_levels", "use the default sigma level for all maps")
+definition.add_flag("all_default_levels", "use the default sigma level for all maps")
 
 # MAPS PROCESSING STEPS
 definition.add_flag("correct", "correct the maps", True)
@@ -80,6 +74,8 @@ definition.add_flag("truncate", "truncate the maps", False)
 definition.add_flag("crop", "crop the maps", True)
 definition.add_flag("clip", "clip the maps", True)
 definition.add_flag("soften", "soften the maps", False)
+
+# -----------------------------------------------------------------
 
 # CROPPING
 definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
@@ -187,11 +183,24 @@ definition.add_flag("interpolate_young", "interpolate core region of young stell
 definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", False)
 definition.add_flag("interpolate_dust", "interpolate core region of dust maps", False)
 
+# Plot?
+definition.add_flag("plot_interpolation_old", "plot interpolation for old stellar maps")
+definition.add_flag("plot_interpolation_young", "plot interpolation for young stellar maps")
+definition.add_flag("plot_interpolation_ionizing", "plot interpolation for ionizing stellar maps")
+definition.add_flag("plot_interpolation_dust", "plot interpolation for dust maps")
+
 # Interpolate negatives WITH DILATION
 definition.add_flag("interpolate_old_negatives", "interpolate negatives in old stellar maps", True)
 definition.add_flag("interpolate_young_negatives", "interpolate negatives in young stellar maps", True)
 definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", True)
 definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust maps", True)
+
+# Plot?
+# -> use flags plot_interpolation_old etc.
+# definition.add_flag("plot_interpolation_negatives_old", "plot interpolation of negatives for old stellar maps")
+# definition.add_flag("plot_interpolation_negatives_young", "plot interpolation of negatives for young stellar maps")
+# definition.add_flag("plot_interpolation_negatives_ionizing", "plot interpolation of negatives for ionizing stellar maps")
+# definition.add_flag("plot_interpolation_negatives_dust", "plot interpolation of negatives for dust maps")
 
 # Truncate
 definition.add_flag("truncate_old", "truncate old stellar maps", True)
@@ -210,6 +219,12 @@ definition.add_flag("clip_old", "clip old stellar maps", True)
 definition.add_flag("clip_young", "clip young stellar maps", True)
 definition.add_flag("clip_ionizing", "clip ionizing stellar maps", True)
 definition.add_flag("clip_dust", "clip dust maps", True)
+
+# Plot?
+definition.add_flag("plot_clipping_old", "plot clipping of old stellar maps")
+definition.add_flag("plot_clipping_young", "plot clipping of young stellar maps")
+definition.add_flag("plot_clipping_ionizing", "plot clipping of ionizing stellar maps")
+definition.add_flag("plot_clipping_dust", "plot clipping of dust maps")
 
 # Soften edges
 definition.add_flag("soften_old", "soften edges of old stellar maps", True)
@@ -308,11 +323,5 @@ definition.add_optional("old_compactness_factor", "positive_real", "relative fra
 definition.add_optional("young_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the young stellar maps", 1.)
 definition.add_optional("ionizing_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the ionizing stellar maps", 1.)
 definition.add_optional("dust_compactness_factor", "positive_real", "relative fraction of the truncation ellipse to take as the boundary of the dust maps", 0.75)
-
-# Plotting for debugging
-definition.add_flag("plot_clipping_old", "plot clipping steps for old stellar maps")
-definition.add_flag("plot_clipping_young", "plot clipping steps for young stellar maps")
-definition.add_flag("plot_clipping_ionizing", "plot clipping steps for ionizing stellar maps")
-definition.add_flag("plot_clipping_dust", "plot clipping steps for dust maps")
 
 # -----------------------------------------------------------------

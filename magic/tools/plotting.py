@@ -18,6 +18,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
+from matplotlib.patches import Rectangle as plt_Rectangle
+from matplotlib.patches import Ellipse as plt_Ellipse
 
 # Import astronomical modules
 from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
@@ -506,7 +508,7 @@ def plot_frame(frame, **kwargs):
 
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
-             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.):
+             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None):
 
     """
     This function ...
@@ -528,6 +530,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param soft_max:
     :param soft_min_scaling:
     :param soft_max_scaling:
+    :param region:
     :return:
     """
 
@@ -634,6 +637,12 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     plt.imshow(data, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
+
+    # Add region
+    if region is not None:
+        ax = plt.gca()
+        ell = plt_Ellipse((region.center.x, region.center.y), 2.0 * region.radius.x, 2.0 * region.radius.y, region.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
+        ax.add_patch(ell)
 
     # Show axis?
     if not show_axes: plt.axis('off')
