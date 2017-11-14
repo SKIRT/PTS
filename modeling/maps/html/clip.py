@@ -2435,7 +2435,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         settings["remote"] = self.remote
         settings["rebin_remote_threshold"] = self.config.rebin_remote_threshold
         settings["npixels"] = self.config.min_npixels
-        settings["connectivity"] = self.config.connectivity,
+        settings["connectivity"] = self.config.connectivity
         settings["present"] = self.present_old_plots_level_combinations_for(name)
         settings["fuzzy"] = self.config.fuzzy_mask
         settings["fuzziness"] = self.config.fuzziness
@@ -2443,7 +2443,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         settings["return_masks"] = True
         settings["current"] = current
         settings["current_masks"] = current_masks
-        settings["dilate"] = self.config.dilate_masks,
+        settings["dilate"] = self.config.dilate_masks
         settings["dilate_fuzzy"] = self.config.dilate_fuzzy_masks
         settings["soften"] = self.config.soften_masks
         settings["resoften_current_masks"] = self.config.resoften_masks
@@ -2565,7 +2565,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_old_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
         return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
@@ -2755,7 +2754,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_young_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
         return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
@@ -2945,7 +2943,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_ionizing_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
         return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------
@@ -3135,7 +3132,6 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         map_filepath, mask_filepath = self.get_dust_map_and_mask_paths_for_levels(name, levels_dict)
 
         # Return
-        #return Frame.from_file(map_filepath, no_filter=True), Mask.from_file(mask_filepath, no_wcs=True)
         return Frame.from_file(map_filepath, no_filter=True), load_mask_or_alpha_mask(mask_filepath, no_wcs=True)
 
     # -----------------------------------------------------------------

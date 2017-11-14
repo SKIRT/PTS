@@ -3892,16 +3892,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Interpolating the negatives in the maps ...")
 
         # Old
-        self.interpolate_negatives_old_maps()
+        if self.config.interpolate_old_negatives: self.interpolate_negatives_old_maps()
+        else: self.flag_interpolated_negatives_old()
 
         # Young
-        self.interpolate_negatives_young_maps()
+        if self.config.interpolate_young_negatives: self.interpolate_negatives_young_maps()
+        else: self.flag_interpolated_negatives_young()
 
         # Ionizing
-        self.interpolate_negatives_ionizing_maps()
+        if self.config.interpolate_ionizing_negatives: self.interpolate_negatives_ionizing_maps()
+        else: self.flag_interpolated_negatives_ionizing()
 
         # Dust
-        self.interpolate_negatives_dust_maps()
+        if self.config.interpolate_dust_negatives: self.interpolate_negatives_dust_maps()
+        else: self.flag_interpolated_negatives_dust()
 
     # -----------------------------------------------------------------
 
@@ -4049,6 +4053,28 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def interpolation_settings_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["source_outer_factor"] = self.config.source_outer_factor
+        settings["smoothing_factor"] = self.config.old_interpolation_smoothing_factor
+        settings["sigma_clip"] = self.config.sigma_clip
+        settings["interpolation_softening_range"] = self.interpolation_softening_range
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def interpolate_negatives_old_maps(self):
 
         """
@@ -4061,11 +4087,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.old_maps:
-
-            # No interpolation?
-            if not self.config.interpolate_old_negatives:
-                self.old_maps[name].metadata[interpolate_negatives_step] = True
-                continue
 
             # Check
             if self.is_interpolated_negatives_old(name):
@@ -4111,12 +4132,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_filled_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, mask,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.old_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_old)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.old_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.old_interpolation_smoothing_factor)
@@ -4141,6 +4157,28 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def interpolation_settings_young(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["source_outer_factor"] = self.config.source_outer_factor,
+        settings["smoothing_factor"] = self.config.young_interpolation_smoothing_factor,
+        settings["sigma_clip"] = self.config.sigma_clip
+        settings["interpolation_softening_range"] = self.interpolation_softening_range
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def interpolate_negatives_young_maps(self):
 
         """
@@ -4153,11 +4191,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.young_maps:
-
-            # No interpolation?
-            if not self.config.interpolate_young_negatives:
-                self.young_maps[name].metadata[interpolate_negatives_step] = True
-                continue
 
             # Check
             if self.is_interpolated_negatives_young(name):
@@ -4203,12 +4236,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, mask,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.young_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_young)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.young_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.young_interpolation_smoothing_factor)
@@ -4233,6 +4261,28 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def interpolation_settings_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["source_outer_factor"] = self.config.source_outer_factor
+        settings["smoothing_factor"] = self.config.ionizing_interpolation_smoothing_factor
+        settings["sigma_clip"] = self.config.sigma_clip
+        settings["interpolation_softening_range"] = self.interpolation_softening_range
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def interpolate_negatives_ionizing_maps(self):
 
         """
@@ -4245,11 +4295,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.ionizing_maps:
-
-            # No interpolation?
-            if not self.config.interpolate_ionizing_negatives:
-                self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
-                continue
 
             # Check
             if self.is_interpolated_negatives_ionizing(name):
@@ -4295,12 +4340,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, mask,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.ionizing_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_ionizing)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
@@ -4325,6 +4365,28 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def interpolation_settings_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        settings = dict()
+
+        # Add settings
+        settings["source_outer_factor"] = self.config.source_outer_factor,
+        settings["smoothing_factor"] = self.config.dust_interpolation_smoothing_factor,
+        settings["sigma_clip"] = self.config.sigma_clip
+        settings["interpolation_softening_range"] = self.interpolation_softening_range
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
     def interpolate_negatives_dust_maps(self):
 
         """
@@ -4337,11 +4399,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Loop over the maps
         for name in self.dust_maps:
-
-            # No interpolation?
-            if not self.config.interpolate_dust_negatives:
-                self.dust_maps[name].metadata[interpolate_negatives_step] = True
-                continue
 
             # Check
             if self.is_interpolated_negatives_dust(name):
@@ -4387,12 +4444,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, mask,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.dust_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_dust)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.dust_maps[name], self.config.interpolation_method, mask, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
@@ -4440,16 +4492,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Interpolating the maps ...")
 
         # Old
-        self.interpolate_old_maps()
+        if self.config.interpolate_old: self.interpolate_old_maps()
+        else: self.flag_interpolated_old()
 
         # Young
-        self.interpolate_young_maps()
+        if self.config.interpolate_young: self.interpolate_young_maps()
+        else: self.flag_interpolated_young()
 
         # Ionizing
-        self.interpolate_ionizing_maps()
+        if self.config.interpolate_ionizing: self.interpolate_ionizing_maps()
+        else: self.flag_interpolated_ionizing()
 
         # Dust
-        self.interpolate_dust_maps()
+        if self.config.interpolate_dust: self.interpolate_dust_maps()
+        else: self.flag_interpolated_dust()
 
     # -----------------------------------------------------------------
 
@@ -4612,11 +4668,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Loop over the maps
         for name in self.old_maps:
 
-            # No interpolation?
-            if not self.config.interpolate_old:
-                self.old_maps[name].metadata[interpolate_step] = True
-                continue
-
             # Check
             if self.is_interpolated_old(name):
                 log.success("The '" + name + "' old stellar map is already interpolated")
@@ -4632,12 +4683,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.old_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, ellipse,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.old_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.old_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_old)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.old_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.old_interpolation_smoothing_factor)
@@ -4677,11 +4723,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Loop over the maps
         for name in self.young_maps:
 
-            # No interpolation?
-            if not self.config.interpolate_young:
-                self.young_maps[name].metadata[interpolate_step] = True
-                continue
-
             # Check
             if self.is_interpolated_young(name):
                 log.success("The '" + name + "' young stellar map is already interpolated")
@@ -4699,10 +4740,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # INTERPOLATE IN CUTOUT
             if self.config.interpolate_in_cutout:
 
-                interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, ellipse,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.young_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+                interpolate_map_in_cutout(self.young_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_young)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.young_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.young_interpolation_smoothing_factor)
@@ -4742,11 +4780,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
-            # No interpolation?
-            if not self.config.interpolate_ionizing:
-                self.ionizing_maps[name].metadata[interpolate_step] = True
-                continue
-
             # Check
             if self.is_interpolated_ionizing(name):
                 log.success("The '" + name + "' ionizing stellar map is already interpolated")
@@ -4762,12 +4795,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.ionizing_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, ellipse,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.ionizing_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.ionizing_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_ionizing)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.ionizing_interpolation_smoothing_factor)
@@ -4807,11 +4835,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Loop over the maps
         for name in self.dust_maps:
 
-            # No interpolation?
-            if not self.config.interpolate_dust:
-                self.dust_maps[name].metadata[interpolate_step] = True
-                continue
-
             # Check
             if self.is_interpolated_dust(name):
                 log.success("The '" + name + "' dust map is already interpolated")
@@ -4827,12 +4850,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.dust_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # INTERPOLATE IN CUTOUT
-            if self.config.interpolate_in_cutout:
-
-                interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, ellipse,
-                                          source_outer_factor=self.config.source_outer_factor,
-                                          smoothing_factor=self.config.dust_interpolation_smoothing_factor,
-                                          sigma_clip=self.config.sigma_clip)
+            if self.config.interpolate_in_cutout: interpolate_map_in_cutout(self.dust_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_dust)
 
             # INTERPOLATE IN FRAME
             else: interpolate_map(self.dust_maps[name], self.config.interpolation_method, ellipse, smoothing_factor=self.config.dust_interpolation_smoothing_factor)
@@ -4856,16 +4874,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Truncating the maps ...")
 
         # Old
-        self.truncate_old_maps()
+        if self.config.truncate_old: self.truncate_old_maps()
+        else: self.flag_truncated_old()
 
         # Young
-        self.truncate_young_maps()
+        if self.config.truncate_young: self.truncate_young_maps()
+        else: self.flag_truncated_young()
 
         # Ionizing
-        self.truncate_ionizing_maps()
+        if self.config.truncate_ionizing: self.truncate_ionizing_maps()
+        else: self.flag_truncated_ionizing()
 
         # Dust
-        self.truncate_dust_maps()
+        if self.config.truncate_dust: self.truncate_dust_maps()
+        else: self.flag_truncated_dust()
 
     # -----------------------------------------------------------------
 
@@ -4879,7 +4901,77 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Flagging the maps as being truncated ...")
 
+        # Old
+        self.flag_truncated_old()
 
+        # Young
+        self.flag_truncated_young()
+
+        # Ionizing
+        self.flag_truncated_ionizing()
+
+        # Dust
+        self.flag_truncated_dust()
+
+    # -----------------------------------------------------------------
+
+    def flag_truncated_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Set flag
+            self.old_maps[name].metadata[truncate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_truncated_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Set flag
+            self.young_maps[name].metadata[truncate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_truncated_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Set flag
+            self.ionizing_maps[name].metadata[truncate_step] = True
+
+    # -----------------------------------------------------------------
+
+    def flag_truncated_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Set flag
+            self.dust_maps[name].metadata[truncate_step] = True
 
     # -----------------------------------------------------------------
 
@@ -5118,16 +5210,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Cropping the maps ...")
 
         # Old
-        self.crop_old_maps()
+        if self.config.crop_old: self.crop_old_maps()
+        else: self.flag_cropped_old()
 
         # Young
-        self.crop_young_maps()
+        if self.config.crop_young: self.crop_young_maps()
+        else: self.flag_cropped_young()
 
         # Ionizing
-        self.crop_ionizing_maps()
+        if self.config.crop_ionizing: self.crop_ionizing_maps()
+        else: self.flag_cropped_ionizing()
 
         # Dust
-        self.crop_dust_maps()
+        if self.config.crop_dust: self.crop_dust_maps()
+        else: self.flag_cropped_dust()
 
     # -----------------------------------------------------------------
 
@@ -5402,16 +5498,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Clipping the maps ...")
 
         # Old
-        self.clip_old_maps()
+        if self.config.clip_old: self.clip_old_maps()
+        else: self.flag_clipped_old()
 
         # Young
-        self.clip_young_maps()
+        if self.config.clip_young: self.clip_young_maps()
+        else: self.flag_clipped_young()
 
         # Ionizing
-        self.clip_ionizing_maps()
+        if self.config.clip_ionizing: self.clip_ionizing_maps()
+        else: self.flag_clipped_ionizing()
 
         # Dust
-        self.clip_dust_maps()
+        if self.config.clip_dust: self.clip_dust_maps()
+        else: self.flag_clipped_dust()
 
     # -----------------------------------------------------------------
 
@@ -5997,16 +6097,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
         log.info("Softening the map edges ...")
 
         # Old
-        self.soften_edges_old()
+        if self.config.soften_old: self.soften_edges_old()
+        else: self.flag_softened_old()
 
         # Young
-        self.soften_edges_young()
+        if self.config.soften_young: self.soften_edges_young()
+        else: self.flag_softened_young()
 
         # Ionizing
-        self.soften_edges_ionizing()
+        if self.config.soften_ionizing: self.soften_edges_ionizing()
+        else: self.flag_softened_ionizing()
 
         # Dust
-        self.soften_edges_dust()
+        if self.config.soften_dust: self.soften_edges_dust()
+        else: self.flag_softened_dust()
 
     # -----------------------------------------------------------------
 
@@ -8179,7 +8283,8 @@ def interpolate_map(the_map, method, region_or_mask, smoothing_factor=None):
 
 # -----------------------------------------------------------------
 
-def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=1.4, smoothing_factor=None, sigma_clip=True):
+def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=1.4, smoothing_factor=None,
+                              sigma_clip=True, interpolation_softening_range=None):
 
     """
     This function ...
@@ -8189,6 +8294,7 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
     :param source_outer_factor:
     :param smoothing_factor:
     :param sigma_clip:
+    :param interpolation_softening_range:
     :return:
     """
 
@@ -8206,10 +8312,18 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
     # Estimate the background, specifying the FWHM for 'kernel' method
     source.estimate_background(method, sigma_clip=sigma_clip, fwhm=fwhm)
 
-    # Create alpha mask
-    alpha_mask = AlphaMask.from_ellipse(region - source.shift, (source.ysize, source.xsize), self.interpolation_softening_range, wcs=the_map.wcs)
+    # Replace with background but with soft edge
+    if interpolation_softening_range is not None:
 
-    # Replace the pixels by the background
-    source.background.replace(the_map, where=alpha_mask)
+        # Create alpha mask
+        region = source.shape
+        shape = (source.ysize, source.xsize)
+        alpha_mask = AlphaMask.from_ellipse(region - source.shift, shape, interpolation_softening_range)
+
+        # Replace the pixels by the background
+        source.background.replace(the_map, where=alpha_mask)
+
+    # Replace in regular mask patch
+    else: source.background.replace(the_map)
 
 # -----------------------------------------------------------------

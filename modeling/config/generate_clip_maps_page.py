@@ -139,8 +139,8 @@ definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
 # Dilation relative radii
 definition.add_optional("relative_dilation_radius_old", "positive_real", "dilation radius relative to old stellar map xsize", 1./60.)
-definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./50.)
-definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./25.)
+definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./25.)
 definition.add_optional("relative_dilation_radius_dust", "positive_real", "dilation radius relative to dust map xsize", 1./50.)
 
 # Soften regular masks

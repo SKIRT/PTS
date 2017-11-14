@@ -108,16 +108,14 @@ definition.add_flag("fuzzy_mask", "use fuzzy masks", fuzzy_mask)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
 definition.add_optional("fuzzy_min_significance_offset", "positive_real", "minimum significance offset from start of fuzzy edge to maximum (peak) significance (in sigma levels)", 1.)
 
-## NEW
-
 # Dilate masks?
 definition.add_flag("dilate_masks", "dilate regular masks", True)
 definition.add_flag("dilate_fuzzy_masks", "dilate alpha masks", True)
 
 # Dilation relative radii
 definition.add_optional("relative_dilation_radius_old", "positive_real", "dilation radius relative to old stellar map xsize", 1./60.)
-definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./50.)
-definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./50.)
+definition.add_optional("relative_dilation_radius_young", "positive_real", "dilation radius relative to young stellar map xsize", 1./25.)
+definition.add_optional("relative_dilation_radius_ionizing", "positive_real", "dilation radius relative to ionizing stellar map xsize", 1./25.)
 definition.add_optional("relative_dilation_radius_dust", "positive_real", "dilation radius relative to dust map xsize", 1./50.)
 
 # Soften regular masks
@@ -126,8 +124,6 @@ definition.add_optional("relative_softening_radius_old", "positive_real", "softe
 definition.add_optional("relative_softening_radius_young", "positive_real", "softening radius relative to young stellar map xsize", 1./15)
 definition.add_optional("relative_softening_radius_ionizing", "positive_real", "softening radius relative to ionizing stellar map xsize", 1./20)
 definition.add_optional("relative_softening_radius_dust", "positive_real", "softening radius relative to dust map xsize", 1./15)
-
-##
 
 # -----------------------------------------------------------------
 
@@ -183,6 +179,8 @@ default_core_region_factor = 0.06
 
 # -----------------------------------------------------------------
 
+# CORRECTION: ALWAYS APPLY (for old, young, ionizing and dust)
+
 # INTERPOLATION OF CORE OF THE MAPS
 definition.add_flag("interpolate_old", "interpolate core region of old stellar maps", True)
 definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", False)
@@ -194,6 +192,30 @@ definition.add_flag("interpolate_old_negatives", "interpolate negatives in old s
 definition.add_flag("interpolate_young_negatives", "interpolate negatives in young stellar maps", True)
 definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", True)
 definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust maps", True)
+
+# Truncate
+definition.add_flag("truncate_old", "truncate old stellar maps", True)
+definition.add_flag("truncate_young", "truncate young stellar maps", True)
+definition.add_flag("truncate_ionizing", "truncate ionizing stellar maps", True)
+definition.add_flag("truncate_dust", "truncate dust maps", True)
+
+# Crop
+definition.add_flag("crop_old", "crop old stellar maps", True)
+definition.add_flag("crop_young", "crop young stellar maps", True)
+definition.add_flag("crop_ionizing", "crop ionizing stellar maps", True)
+definition.add_flag("crop_dust", "crop dust maps", True)
+
+# Clip
+definition.add_flag("clip_old", "clip old stellar maps", True)
+definition.add_flag("clip_young", "clip young stellar maps", True)
+definition.add_flag("clip_ionizing", "clip ionizing stellar maps", True)
+definition.add_flag("clip_dust", "clip dust maps", True)
+
+# Soften edges
+definition.add_flag("soften_old", "soften edges of old stellar maps", True)
+definition.add_flag("soften_young", "soften edges of young stellar maps", True)
+definition.add_flag("soften_ionizing", "soften edges of ionizing stellar maps", True)
+definition.add_flag("soften_dust", "soften edges of dust maps", True)
 
 # Central ellipse factor
 definition.add_optional("negatives_central_ellipse_factor", "real", "factor for the central ellipse for considering negatives", 0.4)
@@ -244,8 +266,8 @@ definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothi
 definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", default_smoothing_factor)
 definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", default_smoothing_factor)
 
-# INTERPOLATE IN CUTOUT (FOR SPEED?)
-definition.add_flag("interpolate_in_cutout", "interpolate in cutouts", False)
+# INTERPOLATE IN CUTOUT (FOR SPEED AND FOR SOFTENING EDGES OF INTERPOLATION REGIONS!!)
+definition.add_flag("interpolate_in_cutout", "interpolate in cutouts", True)
 
 # -----------------------------------------------------------------
 
