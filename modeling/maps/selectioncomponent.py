@@ -566,16 +566,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def crop_map(self, the_map, factor):
+    def crop_map(self, the_map, factor, mask=None):
 
         """
         This function ...
         :param the_map:
         :param factor:
+        :param mask:
         :return:
         """
 
-        the_map.crop_to(self.truncation_box, factor=factor)
+        x_min, x_max, y_min, y_max = the_map.crop_to(self.truncation_box, factor=factor)
+        if mask is not None: mask.crop(x_min, x_max, y_min, y_max)
 
     # -----------------------------------------------------------------
 

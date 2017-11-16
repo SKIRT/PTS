@@ -17,13 +17,14 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.tools import filesystem as fs
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
 definition = ConfigurationDefinition()
 definition.add_required("remote_path", "string", "remote path of the file or directory to retrieve")
 definition.add_required("remote", "string", "remote host to retrieve from", choices=find_host_ids())
-definition.add_optional("local_path", "string", "path of the local directory to store the file/directory")
+definition.add_positional_optional("local_path", "string", "path of the local directory to store the file/directory")
 
 config = parse_arguments("retrieve", definition)
 

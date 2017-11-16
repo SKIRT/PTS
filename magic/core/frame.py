@@ -3517,7 +3517,7 @@ class Frame(NDDataArray):
                 if not_converge == "keep":
                     log.warning("The number of NaNs could not converge to zero: " + str(nnans) + " NaN values will remain")
                     break # break the loop
-                elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero")
+                elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero (nnans = " + str(nnans) + ", previous nnans = " + str(previous_nnans) + ")")
                 else: raise ValueError("Invalid option for 'not_converge'")
 
             # Debugging

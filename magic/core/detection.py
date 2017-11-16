@@ -110,8 +110,14 @@ class Detection(object):
         #shape_min = shape - source.shift
         #print(shape_min.center, shape_min.radius)
 
+        # Calculate the relative coordinate of the center for the cutout box
+        #rel_center = cutout.rel_position(center)
+
+        # Create the shifted shape
+        relative_shape = shape - source.shift
+
         # Create a mask based on the shape, shifted into the source cutout
-        mask = (shape - source.shift).to_mask(source.cutout.xsize, source.cutout.ysize)
+        mask = relative_shape.to_mask(source.cutout.xsize, source.cutout.ysize)
 
         #plotting.plot_mask(mask, title="mask")
 
@@ -119,7 +125,7 @@ class Detection(object):
         source.mask = mask
 
         # Set the source shape
-        source.shape = shape
+        source.shape = relative_shape
 
         # Return the source
         return source
@@ -508,7 +514,7 @@ class Detection(object):
     # -----------------------------------------------------------------
 
     def estimate_background(self, method, sigma_clip=True, sigma_level=3.0, sigma=None, fwhm=None, max_iterations=10,
-                            not_converge="keep"):
+                            not_converge="keep", plot_interpolation=False):
 
         """
         This function ...
@@ -519,6 +525,7 @@ class Detection(object):
         :param fwhm:
         :param max_iterations:
         :param not_converge:
+        :param plot_interpolation:
         :return:
         """
 
@@ -578,13 +585,20 @@ class Detection(object):
             mask = mask + self.contamination
             if no_clip_mask is not None: no_clip_mask = no_clip_mask + self.contamination
 
+        # Plot mask
+        if self.special: plotting.plot_mask(mask, title="interpolation mask")
+
         # Perform the interpolation
-        self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=self.special,
+        if self.special: plot_interpolation = True
+        self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=plot_interpolation,
                                                    sigma=sigma, fwhm=fwhm, max_iterations=max_iterations,
                                                    not_converge=not_converge)
 
         # Special: plot
         if self.special: self.plot(title="background estimated")
+
+        # Return the interpolation mask
+        return mask
 
     # -----------------------------------------------------------------
 

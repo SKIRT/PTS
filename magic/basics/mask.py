@@ -946,14 +946,27 @@ class MaskBase(object):
         # Radius is maximum radius
         else:
 
+            has_negatives = False
+
+            radius_span = radius - min_radius
+
+            # Positive radii first (dilation)
+
+            index = 0
+
             # Loop over the levels
             for lower_value, center_value, upper_value in zip(lower, centers, upper):
 
                 # Get integer center level
                 center = int(round(center_value))
 
-                radius_span = radius - min_radius
+                # Calculate the radius for this level
                 level_radius = min_radius - radius_span / level_span * (center - max_level)
+
+                if level_radius < 0:
+                    has_negatives = True
+                    continue
+
                 int_level_radius = int(round(level_radius))
 
                 # Create dilated mask
@@ -964,8 +977,48 @@ class MaskBase(object):
                 # Add the data to the dictionary
                 levels[center] = data
 
+                index += 1
+
             # Add maximum level
-            levels[max_level] = self.data
+            if has_negatives:
+
+                center = 0.5 * (centers[index] + centers[index+1])
+
+                # Determine level for mask in its current form
+                #center = 0.
+                #level_radius = min_radius - radius_span / level_span * (center - max_level)
+
+                # Add
+                levels[center] = self.data
+
+            # No negatives
+            else: levels[max_level] = self.data
+
+            # Negative radii (erosion)
+            if has_negatives:
+
+                # Loop over the levels
+                for lower_value, center_value, upper_value in zip(lower, centers, upper):
+
+                    # Get integer center level
+                    center = int(round(center_value))
+
+                    # Calculate the radius for this level
+                    level_radius = min_radius - radius_span / level_span * (center - max_level)
+
+                    # Only negatives
+                    if level_radius > 0: continue
+
+                    abs_level_radius = abs(level_radius)
+                    int_level_radius = int(round(abs_level_radius))
+
+                    # Create dilated mask
+                    from skimage import morphology
+                    structure = morphology.disk(int_level_radius, dtype=bool)
+                    data = ndimage.binary_erosion(self.data, structure, niterations)
+
+                    # Add the data to the dictionary
+                    levels[center] = data
 
         # Create alpha mask
         return AlphaMask.from_levels(levels)

@@ -124,6 +124,32 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def empty_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.zeros(frame.shape), wcs=frame.wcs, pixelscale=frame.pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def full_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.ones(frame.shape), wcs=frame.wcs, pixelscale=frame.pixelscale)
+
+    # -----------------------------------------------------------------
+
     @property
     def wcs(self):
 

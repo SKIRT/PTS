@@ -130,6 +130,9 @@ definition.add_optional("rerun_young", "string", "rerun the map processing (for 
 definition.add_optional("rerun_ionizing", "string", "rerun the map processing (for all ionizing stellar maps) from this step", choices=steps)
 definition.add_optional("rerun_dust", "string", "rerun the map processing (for all dust maps) from this step", choices=steps)
 
+# Stop after a step?
+definition.add_optional("stop_after", "string", "stop after this map processing step has been completed", choices=steps)
+
 # ADVANCED
 # to save space
 definition.add_flag("remove_other", "remove maps, masks and intermediate results for maps other than those that are selected", False)
@@ -166,7 +169,6 @@ definition.add_flag("reproject_dust", "reproject the dust maps")
 
 # -----------------------------------------------------------------
 
-#default_interpolation_method = "pts"
 default_interpolation_method = "kernel"
 
 # -----------------------------------------------------------------
@@ -192,15 +194,8 @@ definition.add_flag("plot_interpolation_dust", "plot interpolation for dust maps
 # Interpolate negatives WITH DILATION
 definition.add_flag("interpolate_old_negatives", "interpolate negatives in old stellar maps", True)
 definition.add_flag("interpolate_young_negatives", "interpolate negatives in young stellar maps", True)
-definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", True)
+definition.add_flag("interpolate_ionizing_negatives", "interpolate negatives in ionizing stellar maps", False)
 definition.add_flag("interpolate_dust_negatives", "interpolate negatives in dust maps", True)
-
-# Plot?
-# -> use flags plot_interpolation_old etc.
-# definition.add_flag("plot_interpolation_negatives_old", "plot interpolation of negatives for old stellar maps")
-# definition.add_flag("plot_interpolation_negatives_young", "plot interpolation of negatives for young stellar maps")
-# definition.add_flag("plot_interpolation_negatives_ionizing", "plot interpolation of negatives for ionizing stellar maps")
-# definition.add_flag("plot_interpolation_negatives_dust", "plot interpolation of negatives for dust maps")
 
 # Truncate
 definition.add_flag("truncate_old", "truncate old stellar maps", True)
@@ -235,12 +230,17 @@ definition.add_flag("soften_dust", "soften edges of dust maps", True)
 # Central ellipse factor
 definition.add_optional("negatives_central_ellipse_factor", "real", "factor for the central ellipse for considering negatives", 0.4)
 
-# Dilation radius
-default_negatives_dilation_radius = 10
-definition.add_optional("old_negatives_dilation_radius", "real", "old negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("young_negatives_dilation_radius", "real", "young negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("ionizing_negatives_dilation_radius", "real", "ionizing negatives dilation radius", default_negatives_dilation_radius)
-definition.add_optional("dust_negatives_dilation_radius", "real", "dust negatives dilation radius", default_negatives_dilation_radius)
+# Dilate negative masks?
+definition.add_flag("dilate_negatives_old", "dilate negative masks for old stellar maps", True)
+definition.add_flag("dilate_negatives_young", "dilate negative masks for young stellar maps", True)
+definition.add_flag("dilate_negatives_ionizing", "dilate negative masks for ionizing stellar maps", True)
+definition.add_flag("dilate_negatives_dust", "dilate negative masks for dust maps", True)
+
+#default_negatives_relative_dilation_radius = 1./100
+definition.add_optional("old_negatives_relative_dilation_radius", "real", "old negatives dilation radius relative to old stellar map xsize", 1./100.)
+definition.add_optional("young_negatives_relative_dilation_radius", "real", "young negatives dilation radius relative to young stellar map xsize", 1./100.)
+definition.add_optional("ionizing_negatives_relative_dilation_radius", "real", "ionizing negatives dilation radius relative to ionizing stellar map xsize", 1./200.)
+definition.add_optional("dust_negatives_relative_dilation_radius", "real", "dust negatives dilation radius relative to dust map xsize", 1./100.)
 
 # Interpolation core
 definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
@@ -249,9 +249,10 @@ definition.add_optional("ionizing_core_region_factor", "real", "interpolation co
 definition.add_optional("dust_core_region_factor", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse", default=default_core_region_factor)
 
 # Interpolation settings
-definition.add_optional("source_outer_factor", "real", "outer factor", 1.4)
+default_source_outer_factor = 2.
+definition.add_optional("source_outer_factor", "real", "outer factor", default_source_outer_factor)
 definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
-definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", True)
+definition.add_flag("sigma_clip", "apply sigma clipping before interpolation", False)
 
 # -18 deg # suggestion for M81 for offset old
 if has_disk2d_model(modeling_path) and has_bulge2d_model(modeling_path):
@@ -274,12 +275,17 @@ definition.add_optional("interpolation_angle_offset_dust", "angle", "offset of a
 definition.add_optional("interpolation_softening_start", "real", "relative radius for softening to start (relative to interpolation ellipse)", 0.65)
 definition.add_optional("interpolation_softening_end", "real", "relative radius for softening to end (relative to interpolation ellipse", 1.2)
 
+definition.add_optional("relative_softening_radius_interpolation_old", "real", "radius of softening the interpolation masks, relative to cutout xsize", 1./20.)
+definition.add_optional("relative_softening_radius_interpolation_young", "real", "radius of softening the interpolation masks, relative to cutout xsize", 1./20.)
+definition.add_optional("relative_softening_radius_interpolation_ionizing", "real", "radius of softening the interpolation masks, relative to cutout xsize", 1./20.)
+definition.add_optional("relative_softening_radius_interpolation_dust", "real", "radius of softening the interpolation masks, relative to cutout xsize", 1./20.)
+
 # INTERPOLATION SMOOTHING
-default_smoothing_factor = 5.
-definition.add_optional("old_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of old stellar maps", default_smoothing_factor)
-definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of young stellar maps", default_smoothing_factor)
-definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", default_smoothing_factor)
-definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", default_smoothing_factor)
+#default_smoothing_factor = 5.
+definition.add_optional("old_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of old stellar maps", 5.)
+definition.add_optional("young_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of young stellar maps", 1.5)
+definition.add_optional("ionizing_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of ionizing stellar maps", 2.)
+definition.add_optional("dust_interpolation_smoothing_factor", "real", "smoothing factor for interpolation of dust maps", 2.)
 
 # INTERPOLATE IN CUTOUT (FOR SPEED AND FOR SOFTENING EDGES OF INTERPOLATION REGIONS!!)
 definition.add_flag("interpolate_in_cutout", "interpolate in cutouts", True)

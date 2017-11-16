@@ -137,7 +137,7 @@ class AlphaMask(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, ellipse, shape, factor_range, wcs=None):
+    def from_ellipse(cls, ellipse, shape, factor_range, wcs=None, dynamic_max=False):
 
         """
         Thisf unction ...
@@ -145,6 +145,7 @@ class AlphaMask(object):
         :param shape:
         :param factor_range:
         :param wcs:
+        :param dynamic_max:
         :return:
         """
 
@@ -157,14 +158,30 @@ class AlphaMask(object):
         ratio = ellipse.semiminor / ellipse.semimajor
         radius = distance_ellipse(shape, center, ratio, angle) / ellipse.semiminor
 
-        outside_max = radius > factor_range.max
-        inside_min = radius < factor_range.min
+        from ..tools import plotting
+        #print("factor:", factor_range)
+        plotting.plot_box(radius)
+
+        max_radius = np.max(radius)
+        if dynamic_max and factor_range.max > np.max(radius): max_factor = max_radius
+        else: max_factor = factor_range.max
+        min_factor = factor_range.min
+
+        outside_max = radius > max_factor
+        inside_min = radius < min_factor
+
+        plotting.plot_mask(outside_max, title="outside maximum factor")
+        plotting.plot_mask(inside_min, title="inside minimum factor")
 
         test = (factor_range.max - radius) / factor_range.span
+
+        plotting.plot_box(test, title="test")
 
         alpha_channel = test
         alpha_channel[inside_min] = 1
         alpha_channel[outside_max] = 0
+
+        plotting.plot_box(alpha_channel, title="final")
 
         # Create alpha mask
         alpha = cls.from_real(alpha_channel, wcs=wcs)
@@ -250,6 +267,11 @@ class AlphaMask(object):
         :return:
         """
 
+        # Set WCS and/or pixelscale
+        if wcs is None and hasattr(other, 'wcs'): wcs = other.wcs
+        if pixelscale is None and hasattr(other, 'pixelscale'): pixelscale = other.pixelscale
+
+        # Create and return
         return cls.full(other.shape, wcs=wcs, pixelscale=pixelscale, value=value)
 
     # -----------------------------------------------------------------
@@ -284,6 +306,11 @@ class AlphaMask(object):
         :return:
         """
 
+        # Set WCS and/or pixelscale
+        if wcs is None and hasattr(other, 'wcs'): wcs = other.wcs
+        if pixelscale is None and hasattr(other, 'pixelscale'): pixelscale = other.pixelscale
+
+        # Create and return
         return cls.empty(other.shape, wcs=wcs, pixelscale=pixelscale)
 
     # -----------------------------------------------------------------

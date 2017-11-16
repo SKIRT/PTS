@@ -3848,11 +3848,11 @@ class Remote(object):
 
         # Construct the command string
         copy_command = "scp "
-        if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
+        if connect_timeout is not None: copy_command += "-o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
 
         # Add the host address
-        copy_command += self.host.user + "@" + self.host.name + ":"
+        #copy_command += self.host.user + "@" + self.host.name + ":"
 
         origin_type = None
 
@@ -3862,6 +3862,9 @@ class Remote(object):
             # Check if the origin represents a file
             #if self.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
             if self.is_file(origin):
+
+                copy_command += self.host.user + "@" + self.host.name + ":"
+
                 origin_type = "file"
                 copy_command += "'" + origin.replace(" ", "\ ") + "' "
 
@@ -3869,7 +3872,13 @@ class Remote(object):
             #elif self.is_directory(origin): copy_command += origin.replace(" ", "\\ ") + "/* " + "-r "
             #elif self.is_directory(origin): copy_command += origin.replace(" ", "\\\ ") + "/* "
             elif self.is_directory(origin):
+
                 origin_type = "directory"
+                #copy_command += "-r '" + origin + "' "
+                #copy_command += "'" + origin.replace(" ", "\ ") + "/*' "
+
+                copy_command += "-r "
+                copy_command += self.host.user + "@" + self.host.name + ":"
                 copy_command += "'" + origin.replace(" ", "\ ") + "/*' "
 
             # The origin does not exist

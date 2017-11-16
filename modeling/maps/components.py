@@ -62,13 +62,13 @@ edgeon_name = "edgeon"
 # -----------------------------------------------------------------
 
 correct_step = "corrected"
+crop_step = "cropped"
 interpolate_negatives_step = "interpolated_negatives"
 interpolate_step = "interpolated"
 truncate_step = "truncated"
-crop_step = "cropped"
 clip_step = "clipped"
 softened_step = "softened"
-steps = [correct_step, interpolate_negatives_step, interpolate_step, truncate_step, crop_step, clip_step, softened_step]
+steps = [correct_step, crop_step, interpolate_negatives_step, interpolate_step, truncate_step, clip_step, softened_step]
 
 # -----------------------------------------------------------------
 
@@ -133,10 +133,16 @@ def steps_after_and_including(step):
 
 # -----------------------------------------------------------------
 
+cropped_negatives_filename = "cropped_negatives.fits"
 central_ellipse_filename = "central_ellipse.reg"
 negatives_mask_filename = "negatives.fits"
 negatives_dilated_filename = "negatives_dilated.fits"
 negatives_filled_filename = "negatives_filled.fits"
+
+interpolation_mask_filename = "interpolation_mask.fits"
+interpolation_negatives_mask_filename = "interpolation_negatives_mask.fits"
+interpolation_background_filename = "interpolation_background.fits"
+interpolation_negatives_background_filename = "interpolation_negatives_background.fits"
 
 # -----------------------------------------------------------------
 
@@ -2881,10 +2887,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Set metadata
                 for step in steps: self.old_maps[name].metadata[step] = False
 
-            # Get negatives plane
-            if negatives_plane_name in get_plane_names(self.old_map_paths[name]):
-                negatives = Mask.from_file(self.old_map_paths[name], plane=negatives_plane_name)
-                self.old_negative_masks[name] = negatives
+            # Determine path to cropped negatives file
+            cropped_negatives_path = self.old_extra_path_for_map(name, cropped_negatives_filename)
+
+            # Cropped negatives mask has been created
+            if self.is_cropped_old(name) and fs.is_file(cropped_negatives_path): self.old_negative_masks[name] = Mask.from_file(cropped_negatives_path)
+
+            # Not yet cropped
+            else:
+
+                # Get negatives plane
+                if negatives_plane_name in get_plane_names(self.old_map_paths[name]):
+                    negatives = Mask.from_file(self.old_map_paths[name], plane=negatives_plane_name)
+                    self.old_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -2929,10 +2944,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Set metadata
                 for step in steps: self.young_maps[name].metadata[step] = False
 
-            # Get negatives plane
-            if negatives_plane_name in get_plane_names(self.young_map_paths[name]):
-                negatives = Mask.from_file(self.young_map_paths[name], plane=negatives_plane_name)
-                self.young_negative_masks[name] = negatives
+            # Determine the path to the cropped negatives file
+            cropped_negatives_path = self.young_extra_path_for_map(name, cropped_negatives_filename)
+
+            # Cropped mask has been created
+            if self.is_cropped_young(name) and fs.is_file(cropped_negatives_path): self.young_negative_masks[name] = Mask.from_file(cropped_negatives_path)
+
+            # Not cropped yet
+            else:
+
+                # Get negatives plane
+                if negatives_plane_name in get_plane_names(self.young_map_paths[name]):
+                    negatives = Mask.from_file(self.young_map_paths[name], plane=negatives_plane_name)
+                    self.young_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -2982,11 +3006,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             #    negatives = Mask.from_file(self.ionizing_map_paths[name], plane=negatives_plane_name)
             #    self.ionizing_negative_masks[name] = negatives
 
-            # Get negatives plane of the HOT DUST (not the negatives of the H-alpha map)
-            hot_negatives_plane_name = "hot_negatives"
-            if hot_negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
-                negatives = Mask.from_file(self.ionizing_map_paths[name], plane=hot_negatives_plane_name)
-                self.ionizing_negative_masks[name] = negatives
+            # Determine the path to the cropped negatives file
+            cropped_negatives_path = self.ionizing_extra_path_for_map(name, cropped_negatives_filename)
+
+            # Cropped negatives mask has been created
+            if self.is_cropped_ionizing(name) and fs.is_file(cropped_negatives_path): self.ionizing_negative_masks[name] = Mask.from_file(cropped_negatives_path)
+
+            # Not yet cropped
+            else:
+
+                # Get negatives plane of the HOT DUST (not the negatives of the H-alpha map)
+                hot_negatives_plane_name = "hot_negatives"
+                if hot_negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
+                    negatives = Mask.from_file(self.ionizing_map_paths[name], plane=hot_negatives_plane_name)
+                    self.ionizing_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -3031,10 +3064,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Set metadata
                 for step in steps: self.dust_maps[name].metadata[step] = False
 
-            # Get negatives plane
-            if negatives_plane_name in get_plane_names(self.dust_map_paths[name]):
-                negatives = Mask.from_file(self.dust_map_paths[name], plane=negatives_plane_name)
-                self.dust_negative_masks[name] = negatives
+            # Determine the path to the cropped negatives file
+            cropped_negatives_path = self.dust_extra_path_for_map(name, cropped_negatives_filename)
+
+            # Cropped negatives mask has already been created
+            if self.is_cropped_dust(name) and fs.is_file(cropped_negatives_path): self.dust_negative_masks[name] = Mask.from_file(cropped_negatives_path)
+
+            # Not cropped yet
+            else:
+
+                # Get negatives plane
+                if negatives_plane_name in get_plane_names(self.dust_map_paths[name]):
+                    negatives = Mask.from_file(self.dust_map_paths[name], plane=negatives_plane_name)
+                    self.dust_negative_masks[name] = negatives
 
     # -----------------------------------------------------------------
 
@@ -3059,6 +3101,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def old_extra_directory_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def old_extra_path_for_map(self, name, filename):
 
         """
@@ -3068,8 +3125,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.old_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Get directory path
+        map_path = self.old_extra_directory_path_for_map(name)
 
         # Return the filepath
         return fs.join(map_path, filename)
@@ -3137,6 +3194,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def young_extra_directory_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def young_extra_path_for_map(self, name, filename):
 
         """
@@ -3146,8 +3218,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.young_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Get the directory path
+        map_path = self.young_extra_directory_path_for_map(name)
 
         # Return the filepath
         return fs.join(map_path, filename)
@@ -3215,6 +3287,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def ionizing_extra_directory_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def ionizing_extra_path_for_map(self, name, filename):
 
         """
@@ -3224,8 +3311,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.ionizing_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Get the directory path
+        map_path = self.ionizing_extra_directory_path_for_map(name)
 
         # Return the filepath
         return fs.join(map_path, filename)
@@ -3293,6 +3380,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def dust_extra_directory_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def dust_extra_path_for_map(self, name, filename):
 
         """
@@ -3302,8 +3404,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.dust_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Get the directory path
+        map_path = self.dust_extra_directory_path_for_map(name)
 
         # Return the filepath
         return fs.join(map_path, filename)
@@ -3542,6 +3644,90 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def stop_after_correction(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.stop_after == correct_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_cropping(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.stop_after == crop_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_interpolation_negatives(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.stop_after == interpolate_negatives_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_interpolation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.stop_after == interpolate_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_truncation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.stop_after == truncate_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_clipping(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.stop_after == clip_step
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stop_after_softening(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.stop_after == softened_step
+
+    # -----------------------------------------------------------------
+
     def process_maps(self):
 
         """
@@ -3555,30 +3741,37 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # 1. Correct
         if self.config.correct: self.correct_maps()
         else: self.flag_corrected()
+        if self.stop_after_correction: exit()
 
-        # 2. Interpolate negatives
-        if self.config.interpolate_negatives: self.interpolate_negatives_maps()
-        else: self.flag_interpolated_negatives()
-
-        # 3. Interpolate
-        if self.config.interpolate: self.interpolate_maps()
-        else: self.flag_interpolated()
-
-        # 4. Truncate
-        if self.config.truncate: self.truncate_maps()
-        else: self.flag_truncated()
-
-        # 5. Crop
+        # 2. Crop
         if self.config.crop: self.crop_maps()
         else: self.flag_cropped()
+        if self.stop_after_cropping: exit()
+
+        # 3. Interpolate negatives
+        if self.config.interpolate_negatives: self.interpolate_negatives_maps()
+        else: self.flag_interpolated_negatives()
+        if self.stop_after_interpolation_negatives: exit()
+
+        # 4. Interpolate
+        if self.config.interpolate: self.interpolate_maps()
+        else: self.flag_interpolated()
+        if self.stop_after_interpolation: exit()
+
+        # 5. Truncate
+        if self.config.truncate: self.truncate_maps()
+        else: self.flag_truncated()
+        if self.stop_after_truncation: exit()
 
         # 6. Clip
         if self.config.clip: self.clip_maps()
         else: self.flag_clipped()
+        if self.stop_after_clipping: exit()
 
         # 7. Soften the edges
         if self.config.soften: self.soften_edges()
         else: self.flag_softened()
+        if self.stop_after_softening: exit()
 
     # -----------------------------------------------------------------
 
@@ -4068,9 +4261,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         settings["sigma_clip"] = self.config.sigma_clip
         settings["interpolation_softening_range"] = self.interpolation_softening_range
         settings["plot"] = self.config.plot_interpolation_old
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_interpolation_old
+        settings["return_background"] = True
 
         # Return the settings
         return settings
+
+    # -----------------------------------------------------------------
+
+    def get_negatives_dilation_radius_old(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        return the_map.xsize * self.config.old_negatives_relative_dilation_radius
 
     # -----------------------------------------------------------------
 
@@ -4115,14 +4322,32 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask = self.old_negative_masks[name]
             mask = intersection(mask, central_mask)
 
+            # Check if any
+            if mask.all_unmasked:
+                log.debug("No negatives for the '" + name + "' old stellar map within the central ellipse")
+                self.old_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
             # Save the mask
             if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_mask_filename))
 
-            # Dilate the mask
-            mask.disk_dilate(radius=self.config.old_negatives_dilation_radius)
+            # Dilate?
+            if self.config.dilate_negatives_old:
 
-            # Save the mask again
-            if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_dilated_filename))
+                # Determine the dilation radius
+                dilation_radius = self.get_negatives_dilation_radius_old(the_map)
+
+                # Debugging
+                log.debug("The dilation radius for the negatives mask is " + str(dilation_radius) + " pixels")
+
+                # Debugging
+                log.debug("Dilating the negatives mask ...")
+
+                # Dilate the mask
+                mask.disk_dilate(radius=dilation_radius)
+
+                # Save the mask again
+                if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_dilated_filename))
 
             # Fill holes
             mask.fill_holes()
@@ -4134,7 +4359,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.plot_interpolation_old: plotting.plot_mask(mask, title="negatives mask")
 
             # Interpolate
-            interpolate_map(self.old_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_old)
+            interpolation_mask, interpolation_background = interpolate_map(self.old_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_old)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.old_extra_path_for_map(name, interpolation_negatives_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.old_extra_path_for_map(name, interpolation_negatives_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_old: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.old_maps[name].metadata[interpolate_negatives_step] = True
@@ -4174,9 +4408,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         settings["sigma_clip"] = self.config.sigma_clip
         settings["interpolation_softening_range"] = self.interpolation_softening_range
         settings["plot"] = self.config.plot_interpolation_young
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_interpolation_young
+        settings["return_background"] = True
 
         # Return the settings
         return settings
+
+    # -----------------------------------------------------------------
+
+    def get_negatives_dilation_radius_young(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        return the_map.xsize * self.config.young_negatives_relative_dilation_radius
 
     # -----------------------------------------------------------------
 
@@ -4221,14 +4469,32 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask = self.young_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Check if any
+            if mask.all_unmasked:
+                log.debug("No negatives for the '" + name + "' young stellar map within the central ellipse")
+                self.young_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
             # Save the mask
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_mask_filename))
 
-            # Dilate the mask
-            mask.disk_dilate(radius=self.config.young_negatives_dilation_radius)
+            # Dilate?
+            if self.config.dilate_negatives_young:
 
-            # Save the mask again
-            if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_dilated_filename))
+                # Determine the dilation radius
+                dilation_radius = self.get_negatives_dilation_radius_young(the_map)
+
+                # Debugging
+                log.debug("The dilation radius for the negatives mask is " + str(dilation_radius) + " pixels")
+
+                # Debugging
+                log.debug("Dilating the negatives mask ...")
+
+                # Dilate the mask
+                mask.disk_dilate(radius=dilation_radius)
+
+                # Save the mask again
+                if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_dilated_filename))
 
             # Fill holes
             mask.fill_holes()
@@ -4236,8 +4502,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_filled_filename))
 
+            # Plot?
+            if self.config.plot_interpolation_young: plotting.plot_mask(mask, title="negatives mask")
+
             # Interpolate
-            interpolate_map(self.young_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_young)
+            interpolation_mask, interpolation_background = interpolate_map(self.young_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_young)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.young_extra_path_for_map(name, interpolation_negatives_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.young_extra_path_for_map(name, interpolation_negatives_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_young: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.young_maps[name].metadata[interpolate_negatives_step] = True
@@ -4277,9 +4555,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         settings["sigma_clip"] = self.config.sigma_clip
         settings["interpolation_softening_range"] = self.interpolation_softening_range
         settings["plot"] = self.config.plot_interpolation_ionizing
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_interpolation_ionizing
+        settings["return_background"] = True
 
         # Return the settings
         return settings
+
+    # -----------------------------------------------------------------
+
+    def get_negatives_dilation_radius_ionizing(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        return the_map.xsize * self.config.ionizing_negatives_relative_dilation_radius
 
     # -----------------------------------------------------------------
 
@@ -4324,14 +4616,32 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask = self.ionizing_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Check if any
+            if mask.all_unmasked:
+                log.debug("No negatives for the '" + name + "' ionizing stellar map within the central ellipse")
+                self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
             # Save the mask
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_mask_filename))
 
-            # Dilate the mask
-            mask.disk_dilate(radius=self.config.ionizing_negatives_dilation_radius)
+            # Dilate?
+            if self.config.dilate_negatives_ionizing:
 
-            # Save the mask again
-            if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_dilated_filename))
+                # Determine the dilation radius
+                dilation_radius = self.get_negatives_dilation_radius_ionizing(the_map)
+
+                # Debugging
+                log.debug("Dilating the negatives mask ...")
+
+                # Debugging
+                log.debug("The dilation radius for the negatives mask is " + str(dilation_radius) + " pixels")
+
+                # Dilate the mask
+                mask.disk_dilate(radius=dilation_radius)
+
+                # Save the mask again
+                if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_dilated_filename))
 
             # Fill holes
             mask.fill_holes()
@@ -4339,8 +4649,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_filled_filename))
 
+            # Plot?
+            if self.config.plot_interpolation_ionizing: plotting.plot_mask(mask, title="negatives mask")
+
             # Interpolate
-            interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_ionizing)
+            interpolation_mask, interpolation_background = interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_ionizing)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.ionizing_extra_path_for_map(name, interpolation_negatives_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.ionizing_extra_path_for_map(name, interpolation_negatives_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_ionizing: plotting.plot_box(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_negatives_step] = True
@@ -4380,9 +4702,23 @@ class ComponentMapsMaker(MapsSelectionComponent):
         settings["sigma_clip"] = self.config.sigma_clip
         settings["interpolation_softening_range"] = self.interpolation_softening_range
         settings["plot"] = self.config.plot_interpolation_dust
+        settings["relative_softening_radius"] = self.config.relative_softening_radius_interpolation_dust
+        settings["return_background"] = True
 
         # Return the settings
         return settings
+
+    # -----------------------------------------------------------------
+
+    def get_negatives_dilation_radius_dust(self, the_map):
+
+        """
+        This function ...
+        :param the_map:
+        :return:
+        """
+
+        return the_map.xsize * self.config.dust_negatives_relative_dilation_radius
 
     # -----------------------------------------------------------------
 
@@ -4427,14 +4763,32 @@ class ComponentMapsMaker(MapsSelectionComponent):
             mask = self.dust_negative_masks[name]
             mask = intersection(mask, truncation_mask)
 
+            # Check if any
+            if mask.all_unmasked:
+                log.debug("No negatives for the '" + name + "' dust map within the central ellipse")
+                self.dust_maps[name].metadata[interpolate_negatives_step] = True
+                continue
+
             # Save the mask
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_mask_filename))
 
-            # Dilate the mask
-            mask.disk_dilate(radius=self.config.dust_negatives_dilation_radius)
+            # Dilate?
+            if self.config.dilate_negatives_dust:
 
-            # Save the mask again
-            if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_dilated_filename))
+                # Determine the dilation radius
+                dilation_radius = self.get_negatives_dilation_radius_dust(the_map)
+
+                # Debugging
+                log.debug("The dilation radius for the negatives mask is " + str(dilation_radius) + " pixels")
+
+                # Debugging
+                log.debug("Dilating the negatives mask ...")
+
+                # Dilate the mask
+                mask.disk_dilate(radius=dilation_radius)
+
+                # Save the mask again
+                if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_dilated_filename))
 
             # Fill holes
             mask.fill_holes()
@@ -4442,8 +4796,20 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask again
             if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_filled_filename))
 
+            # Plot?
+            if self.config.plot_interpolation_dust: plotting.plot_mask(mask, title="negatives mask")
+
             # Interpolate
-            interpolate_map(self.dust_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_dust)
+            interpolation_mask, interpolation_background = interpolate_map(self.dust_maps[name], self.config.interpolation_method, mask, **self.interpolation_settings_dust)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.dust_extra_path_for_map(name, interpolation_negatives_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.dust_extra_path_for_map(name, interpolation_negatives_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_dust: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_negatives_step] = True
@@ -4679,7 +5045,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.old_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Interpolate
-            interpolate_map(self.old_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_old)
+            interpolation_mask, interpolation_background = interpolate_map(self.old_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_old)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.old_extra_path_for_map(name, interpolation_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.old_extra_path_for_map(name, interpolation_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_old: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.old_maps[name].metadata[interpolate_step] = True
@@ -4731,7 +5106,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.young_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Interpolate
-            interpolate_map(self.young_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_young)
+            interpolation_mask, interpolation_background = interpolate_map(self.young_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_young)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.young_extra_path_for_map(name, interpolation_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.young_extra_path_for_map(name, interpolation_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_young: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.young_maps[name].metadata[interpolate_step] = True
@@ -4783,7 +5167,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.ionizing_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Interpolate
-            interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_ionizing)
+            interpolation_mask, interpolation_background = interpolate_map(self.ionizing_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_ionizing)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.ionizing_extra_path_for_map(name, interpolation_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.ionizing_extra_path_for_map(name, interpolation_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_ionizing: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.ionizing_maps[name].metadata[interpolate_step] = True
@@ -4835,7 +5228,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: ellipse.saveto(self.dust_extra_path_for_map(name, interpolation_ellipse_filename))
 
             # Interpolate
-            interpolate_map(self.dust_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_dust)
+            interpolation_mask, interpolation_background = interpolate_map(self.dust_maps[name], self.config.interpolation_method, ellipse, **self.interpolation_settings_dust)
+
+            # Save the interpolation mask
+            if self.config.steps: interpolation_mask.saveto(self.dust_extra_path_for_map(name, interpolation_mask_filename))
+
+            # Save the interpolation background
+            if self.config.steps and interpolation_background is not None: interpolation_background.saveto(self.dust_extra_path_for_map(name, interpolation_background_filename))
+
+            # Plot?
+            if self.config.plot_interpolation_dust: plotting.plot_mask(interpolation_mask, title="interpolation mask")
 
             # Set flag
             self.dust_maps[name].metadata[interpolate_step] = True
@@ -5315,7 +5717,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Cropping the '" + name + "' old stellar map ...")
 
             # Crop the map
-            self.crop_map(self.old_maps[name], self.config.cropping_factor)
+            mask = self.old_negative_masks[name] if self.has_negatives_mask_old(name) else None
+            self.crop_map(self.old_maps[name], self.config.cropping_factor, mask=mask)
+
+            # Save the cropped mask
+            if mask is not None and self.config.steps: self.old_negative_masks[name].saveto(self.old_extra_path_for_map(name, cropped_negatives_filename))
 
             # Set flag
             self.old_maps[name].metadata[crop_step] = True
@@ -5347,7 +5753,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Cropping the '" + name + "' young stellar map ...")
 
             # Crop the map
-            self.crop_map(self.young_maps[name], self.config.cropping_factor)
+            mask = self.young_negative_masks[name] if self.has_negatives_mask_young(name) else None
+            self.crop_map(self.young_maps[name], self.config.cropping_factor, mask=mask)
+
+            # Save the cropped mask
+            if mask is not None and self.config.steps: self.young_negative_masks[name].saveto(self.young_extra_path_for_map(name, cropped_negatives_filename))
 
             # Set flag
             self.young_maps[name].metadata[crop_step] = True
@@ -5379,7 +5789,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Cropping the '" + name + "' ionizing stellar map ...")
 
             # Crop the map
-            self.crop_map(self.ionizing_maps[name], self.config.cropping_factor)
+            mask = self.ionizing_negative_masks[name] if self.has_negatives_mask_ionizing(name) else None
+            self.crop_map(self.ionizing_maps[name], self.config.cropping_factor, mask=mask)
+
+            # Save the cropped mask
+            if mask is not None and self.config.steps: self.ionizing_negative_masks[name].saveto(self.ionizing_extra_path_for_map(name, cropped_negatives_filename))
 
             # Set flag
             self.ionizing_maps[name].metadata[crop_step] = True
@@ -5411,7 +5825,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Cropping the '" + name + "' dust map ...")
 
             # Crop the map
-            self.crop_map(self.dust_maps[name], self.config.cropping_factor)
+            mask = self.dust_negative_masks[name] if self.has_negatives_mask_dust(name) else None
+            self.crop_map(self.dust_maps[name], self.config.cropping_factor, mask=mask)
+
+            # Save the cropped mask
+            if mask is not None and self.config.steps: self.dust_negative_masks[name].saveto(self.dust_extra_path_for_map(name, cropped_negatives_filename))
 
             # Set flag
             self.dust_maps[name].metadata[crop_step] = True
@@ -8247,7 +8665,8 @@ def find_factor_max_nnegatives(nnegatives, max_nnegatives):
 # -----------------------------------------------------------------
 
 def interpolate_map(the_map, method, region_or_mask, smoothing_factor=None, source_outer_factor=1.4, sigma_clip=True,
-                    interpolation_softening_range=None, plot=False, in_cutout=True):
+                    interpolation_softening_range=None, plot=False, in_cutout=True, relative_softening_radius=None,
+                    return_background=False):
 
     """
     This function ...
@@ -8260,13 +8679,19 @@ def interpolate_map(the_map, method, region_or_mask, smoothing_factor=None, sour
     :param interpolation_softening_range:
     :param plot:
     :param in_cutout:
+    :param relative_softening_radius:
+    :param return_background:
     :return:
     """
 
+    # Debuggging
+    log.debug("Interpolating the map ...")
+
     # In cutout?
-    if in_cutout: interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=source_outer_factor,
+    if in_cutout: return interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=source_outer_factor,
                                             smoothing_factor=smoothing_factor, sigma_clip=sigma_clip,
-                                            interpolation_softening_range=interpolation_softening_range, plot=plot)
+                                            interpolation_softening_range=interpolation_softening_range, plot=plot,
+                                            relative_softening_radius=relative_softening_radius, return_background=return_background)
 
     # Not in cutout
     else:
@@ -8276,11 +8701,11 @@ def interpolate_map(the_map, method, region_or_mask, smoothing_factor=None, sour
         log.warning("When 'in_cutout' is disabled, interpolation region edges cannot be softened")
 
         # INTERPOLATE IN FRAME
-        interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=smoothing_factor, plot=plot)
+        return interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=smoothing_factor, plot=plot, return_background=return_background)
 
 # -----------------------------------------------------------------
 
-def interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=None, plot=False):
+def interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=None, plot=False, return_background=False):
 
     """
     Thisf unction ...
@@ -8289,8 +8714,12 @@ def interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=N
     :param region_or_mask:
     :param smoothing_factor:
     :param plot:
+    :param return_background:
     :return:
     """
+
+    # Inform the user
+    log.info("Interpolating the map as a frame ...")
 
     # Check interpolation method
     if method != "kernel": raise ValueError("The interpolation method can only be 'kernel'")
@@ -8307,10 +8736,17 @@ def interpolate_map_in_frame(the_map, method, region_or_mask, smoothing_factor=N
     # Plot?
     if plot: plotting.plot_frame(the_map, title="after interpolation")
 
+    # Return mask and background
+    if return_background: return mask, None
+
+    # Return the mask
+    else: return mask
+
 # -----------------------------------------------------------------
 
 def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_factor=1.4, smoothing_factor=None,
-                              sigma_clip=True, interpolation_softening_range=None, plot=False):
+                              sigma_clip=True, interpolation_softening_range=None, plot=False,
+                              relative_softening_radius=None, return_background=False):
 
     """
     This function ...
@@ -8322,8 +8758,13 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
     :param sigma_clip:
     :param interpolation_softening_range:
     :param plot:
+    :param relative_softening_radius:
+    :param return_background:
     :return:
     """
+
+    # Debugging
+    log.debug("Interpolating the map within a cutout ...")
 
     # Create source
     if isinstance(region_or_mask, MaskBase): source = Detection.from_mask(the_map, region_or_mask, source_outer_factor)
@@ -8339,8 +8780,17 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
         if method != "kernel": raise ValueError("Cannot specify smoothing factor for interpolation method other than 'kernel'")
         fwhm = fwhm * smoothing_factor
 
+    # Debugging
+    log.debug("The interpolation method is '" + method + "'")
+
     # Estimate the background, specifying the FWHM for 'kernel' method
-    source.estimate_background(method, sigma_clip=sigma_clip, fwhm=fwhm)
+    interpolation_mask = source.estimate_background(method, sigma_clip=sigma_clip, fwhm=fwhm, plot_interpolation=plot)
+
+    # Plot the interpolation mask
+    if plot: plotting.plot_mask(interpolation_mask, title="interpolation mask")
+
+    # Plot the background
+    if plot: plotting.plot_box(source.background, title="estimated background")
 
     # Plot
     if plot: source.plot(title="after background estimation")
@@ -8348,10 +8798,53 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
     # Replace with background but with soft edge
     if interpolation_softening_range is not None:
 
-        # Create alpha mask
-        region = source.shape
-        shape = (source.ysize, source.xsize)
-        alpha_mask = AlphaMask.from_ellipse(region - source.shift, shape, interpolation_softening_range)
+        # Initialize an alpha mask for the pixels that will be replaced by the estimated background
+        mask = AlphaMask.empty_like(the_map)
+
+        # Debugging
+        log.debug("Creating alpha mask ...")
+
+        # A mask is passed: create alpha mask from this mask by softening instead of taking the source's shape
+        if isinstance(region_or_mask, MaskBase):
+
+            # Create alpha mask by softening the edges of the passed mask
+            # min_radius = interpolation_softening_range.min * source.shape.semimajor
+            # max_radius = interpolation_softening_range.max * source.shape.semimajor
+            # radius = max_radius - min_radius
+            # start = min_radius - radius
+            # nbins = 10
+            #
+            # # Debugging
+            # log.debug("Creating alpha mask ...")
+            # log.debug("Min radius: " + str(min_radius))
+            # log.debug("Max radius: " + str(max_radius))
+            # log.debug("Radius: " + str(radius))
+            # log.debug("Start: " + str(start))
+
+            softening_radius = relative_softening_radius * source.xsize
+            nbins = 10
+            start = 0
+
+            # Debugging
+
+            log.debug("The softening radius is " + str(softening_radius) + " pixels")
+
+            # Get the source mask
+            source_mask = Mask(source.mask)
+
+            # Create softened mask
+            alpha_mask = source_mask.softened(radius=softening_radius, min_radius=start, nbins=nbins, per_level=False)
+
+        # A pixel region is passed
+        elif isinstance(region_or_mask, PixelRegion):
+
+            # Create alpha mask from sources's shape, which would be the shifted version of the passed region
+            region = source.shape
+            shape = (source.ysize, source.xsize)
+            alpha_mask = AlphaMask.from_ellipse(region, shape, interpolation_softening_range, dynamic_max=True)
+
+        # Invalid value
+        else: raise ValueError("Invalid value for 'region_or_mask'")
 
         # Plot the alpha mask
         if plot: plotting.plot_mask(alpha_mask, title="softening mask")
@@ -8359,10 +8852,33 @@ def interpolate_map_in_cutout(the_map, method, region_or_mask, source_outer_fact
         # Replace the pixels by the background
         source.background.replace(the_map, where=alpha_mask)
 
+        # Set alpha mask pixels
+        mask.data[source.y_slice, source.x_slice] = alpha_mask.data
+
     # Replace in regular mask patch
-    else: source.background.replace(the_map)
+    else:
+
+        # Replace
+        source.background.replace(the_map)
+
+        # Initialize a mask for the pixels that will be replaced by the estimated background
+        mask = Mask.empty_like(the_map)
+        mask.data[source.y_slice, source.x_slice] = source.mask
 
     # Plot
     if plot: plotting.plot_box(the_map[source.y_slice, source.x_slice], title="after interpolation")
+
+    # Return mask and background
+    if return_background:
+
+        # Create background frame
+        background = Frame.zeros_like(the_map)
+        background[source.y_slice, source.x_slice] = source.background
+
+        # Return mask and backgroud
+        return mask, background
+
+    # Return the mask in which the interpolation happened
+    else: return mask
 
 # -----------------------------------------------------------------

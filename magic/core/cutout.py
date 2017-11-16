@@ -23,8 +23,10 @@ from ..region.rectangle import PixelRectangleRegion
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.basics.log import log
 from ..basics.coordinate import PixelCoordinate
-from .mask import MaskBase
+from .mask import Mask
 from .alpha import AlphaMask
+from ..basics.mask import Mask as oldMask
+from ..basics.mask import MaskBase
 
 # -----------------------------------------------------------------
 
@@ -588,7 +590,7 @@ class Cutout(np.ndarray):
     # -----------------------------------------------------------------
 
     def interpolated(self, mask, method, no_clip_mask=None, plot=False, sigma=None, fwhm=None, max_iterations=10,
-                     not_converge="keep"):
+                     not_converge="keep", dilation_radius_steps=2):
 
         """
         This function ...
@@ -600,6 +602,7 @@ class Cutout(np.ndarray):
         :param fwhm:
         :param max_iterations:
         :param not_converge:
+        :param dilation_radius_steps:
         :return:
         """
 
@@ -681,7 +684,6 @@ class Cutout(np.ndarray):
         elif method == "kernel":
 
             from ..tools import statistics
-            from astropy.convolution import interpolate_replace_nans
             from astropy.convolution import Gaussian2DKernel
 
             # Get the sigma
@@ -691,54 +693,41 @@ class Cutout(np.ndarray):
                 sigma = sigma_from_fwhm
             elif sigma is None: raise ValueError("Either FWHM or sigma has to be specified")
 
+            # Debugging
+            log.debug("The sigma for kernel interpolation is " + str(sigma) + " pixels")
+
             # We smooth with a Gaussian kernel with stddev passed by the user
             # Create the kernel
             kernel = Gaussian2DKernel(stddev=sigma)
 
             # Create data with NaNs
             data = self.copy()
-            data[mask] = float("NaN")
+
+            # Convert to new mask object
+            if isinstance(mask, oldMask): mask = Mask(mask)
 
             # Interpolate
-            result = interpolate_replace_nans(data, kernel)
-            niterations = 1
+            result = interpolate_kernel(data, mask, kernel, max_iterations=max_iterations, not_converge=not_converge, plot=plot)
 
-            # Get the current number of nans
-            previous_nnans = None  # don't get it for performance
-            nnans = np.sum(np.isnan(result))
+            # Interpolate around the mask
+            previous_mask = mask
+            while True:
 
-            # Debugging
-            log.debug("The number of NaN values after iteration 1 is " + str(nnans))
+                new_data = data.copy()
+                new_mask = previous_mask.disk_dilated(radius=dilation_radius_steps)
+                if new_mask.all_masked: break
 
-            # Are there still NaNs?
-            while nnans > 0:
+                # Interpolate
+                new_result = interpolate_kernel(new_data, new_mask, kernel, max_iterations=max_iterations, not_converge="error", ignore_nans_in=previous_mask, plot=plot)
 
-                # Check number of iterations
-                if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+                # Where new mask and not previous mask
+                where = new_mask * np.logical_not(previous_mask)
 
-                # Debugging
-                log.debug("Interpolation iteration " + str(niterations + 1) + " ...")
+                # Set data
+                result[where] = new_result[where]
 
-                # Perform next interpolation
-                result = interpolate_replace_nans(result, kernel)
-
-                # Increment the niterations counter
-                niterations += 1
-
-                # Get the current number of nans
-                previous_nnans = nnans
-                nnans = np.sum(np.isnan(result))
-
-                # Not converging
-                if nnans >= previous_nnans:
-                    if not_converge == "keep":
-                        log.warning("The number of NaNs could not converge to zero: " + str(nnans) + " NaN values will remain")
-                        break  # break the loop
-                    elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero")
-                    else: raise ValueError("Invalid option for 'not_converge'")
-
-                # Debugging
-                log.debug("The number of NaN values after iteration " + str(niterations) + " is " + str(nnans))
+                # Set previous mask
+                previous_mask = new_mask
 
             # Return the result
             return Cutout(result, self.x_min, self.x_max, self.y_min, self.y_max)
@@ -915,5 +904,112 @@ class Cutout(np.ndarray):
         #from ..tools import plotting
         #plotting.plot_box(frame[self.y_min:self.y_max, self.x_min:self.x_max])
         #plotting.plot_box(np.ma.masked_array(frame[self.y_min:self.y_max, self.x_min:self.x_max], mask=where))
+
+# -----------------------------------------------------------------
+
+def interpolate_kernel(data, mask, kernel, max_iterations=10, not_converge="keep", ignore_nans_in=None, plot=False):
+
+    """
+    Thisf unction ...
+    :param data:
+    :param mask:
+    :param kernel:
+    :param max_iterations:
+    :param not_converge:
+    :param ignore_nans_in:
+    :param plot:
+    :return:
+    """
+
+    # Set Nans
+    data[mask] = float("NaN")
+
+    # Interpolate over nans
+    return interpolate_nans_kernel(data, kernel, max_iterations=max_iterations, not_converge=not_converge, ignore_nans_in=ignore_nans_in, plot=plot)
+
+# -----------------------------------------------------------------
+
+def interpolate_nans_kernel(data, kernel, max_iterations=10, not_converge="keep", ignore_nans_in=None, plot=False):
+
+    """
+    This function ...
+    :param data:
+    :param kernel:
+    :param max_iterations:
+    :param not_converge:
+    :param ignore_nans_in:
+    :param plot:
+    :return:
+    """
+
+    from astropy.convolution import interpolate_replace_nans
+
+    # Debugging
+    nans = np.isnan(data)
+    nnans = np.sum(nans)
+    log.debug("The number of NaNs at the start is " + str(nnans))
+
+    # Plot?
+    if plot: plotting.plot_mask(nans, title="NaNs")
+
+    # Interpolate
+    result = interpolate_replace_nans(data, kernel)
+    niterations = 1
+
+    # Plot?
+    if plot: plotting.plot_mask(result, title="Result after iteration 1")
+
+    # Plot?
+    if plot and ignore_nans_in is not None: plotting.plot_mask(ignore_nans_in, title="ignoring NaNs")
+
+    # Get the current number of nans
+    # previous_nnans = None  # don't get it for performance
+    if ignore_nans_in is not None: nnans = np.sum(np.isnan(result[np.logical_not(ignore_nans_in)]))
+    else: nnans = np.sum(np.isnan(result))
+
+    # Plot?
+    if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration 1")
+
+    # Debugging
+    log.debug("The number of NaN values after iteration 1 is " + str(nnans))
+
+    # Are there still NaNs?
+    while nnans > 0:
+
+        # Check number of iterations
+        if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+
+        # Debugging
+        log.debug("Interpolation iteration " + str(niterations + 1) + " ...")
+
+        # Perform next interpolation
+        result = interpolate_replace_nans(result, kernel)
+
+        # Increment the niterations counter
+        niterations += 1
+
+        # Get the current number of nans
+        previous_nnans = nnans
+        if ignore_nans_in is not None: nnans = np.sum(np.isnan(result[np.logical_not(ignore_nans_in)]))
+        else: nnans = np.sum(np.isnan(result))
+
+        # Plot?
+        if plot: plotting.plot_mask(np.isnan(result), title="NaNs after iteration " + str(niterations))
+
+        condition = nnans > previous_nnans if ignore_nans_in else nnans >= previous_nnans
+
+        # Not converging
+        if condition:
+            if not_converge == "keep":
+                log.warning("The number of NaNs could not converge to zero: " + str(nnans) + " NaN values will remain")
+                break  # break the loop
+            elif not_converge == "error": raise RuntimeError("The number of NaNs is not converging to zero (nnans = " + str(nnans) + ", previous nnans = " + str(previous_nnans) + ")")
+            else: raise ValueError("Invalid option for 'not_converge'")
+
+        # Debugging
+        log.debug("The number of NaN values after iteration " + str(niterations) + " is " + str(nnans))
+
+    # Return the resulting data
+    return result
 
 # -----------------------------------------------------------------
