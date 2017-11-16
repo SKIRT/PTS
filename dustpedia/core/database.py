@@ -115,6 +115,23 @@ def get_cigale_dust_mass(galaxy_name):
 
 # -----------------------------------------------------------------
 
+def get_cigale_parameters(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    username, password = get_account()
+
+    database = DustPediaDatabase()
+    database.login(username, password)
+
+    return database.get_cigale_parameters(galaxy_name)
+
+# -----------------------------------------------------------------
+
 class DustPediaDatabase(object):
 
     """

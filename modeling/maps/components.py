@@ -6585,6 +6585,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save info
             settings.pop("remote")
+            settings.pop("boundary")
             if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6691,6 +6692,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save info
             settings.pop("remote")
+            settings.pop("boundary")
             if self.config.steps: self.write_young_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6797,6 +6799,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save info
             settings.pop("remote")
+            settings.pop("boundary")
             if self.config.steps: self.write_ionizing_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6903,6 +6906,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save info
             settings.pop("remote")
+            settings.pop("boundary")
             if self.config.steps: self.write_dust_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------

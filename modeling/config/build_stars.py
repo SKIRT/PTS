@@ -20,9 +20,13 @@ selection = ComponentMapsSelection.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
+solar_metallicity = 0.02
+
+# -----------------------------------------------------------------
+
 default_sfr = 1.
 default_fuv_attenuation = -2.5 * np.log(1./2.) # half of the light in the FUV band is attenuated
-default_ionizing_contribution = 0.5
+default_ionizing_contribution = 0.3
 
 # -----------------------------------------------------------------
 
@@ -67,10 +71,10 @@ definition.add_optional("default_old_disk_template", "string", "SED template for
 definition.add_optional("default_young_template", "string", "SED template for the young stellar population", default_stellar_template)
 
 # Metallicities
-definition.add_optional("default_old_bulge_metallicity", "real", "default metallicity for the old stellar bulge", 0.03)
-definition.add_optional("default_old_disk_metallicity", "real", "default metallicity for the old stellar disk", 0.03)
-definition.add_optional("default_young_metallicity", "real", "default metallicity for the young stellar component", 0.03)
-definition.add_optional("default_ionizing_metallicity", "real", "default metallicity for the ionizing stellar component", 0.03) # XU KONG et al. 2000
+definition.add_optional("default_old_bulge_metallicity", "real", "default metallicity for the old stellar bulge", solar_metallicity)
+definition.add_optional("default_old_disk_metallicity", "real", "default metallicity for the old stellar disk", solar_metallicity)
+definition.add_optional("default_young_metallicity", "real", "default metallicity for the young stellar component", solar_metallicity)
+definition.add_optional("default_ionizing_metallicity", "real", "default metallicity for the ionizing stellar component", solar_metallicity)
 
 # Ages
 definition.add_optional("default_old_bulge_age", "positive_real", "default age of the old stellar bulge (in Gyr)", 8.)

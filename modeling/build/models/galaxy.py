@@ -26,6 +26,7 @@ from .general import write_component
 from ....core.tools import formatting as fmt
 from ....core.tools import filesystem as fs
 from ....core.tools.stringify import tostr
+from ....dustpedia.core.database import get_cigale_parameters
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,14 @@ dust_default_parameters = ["default_hydrocarbon_pops", "default_silicate_pops", 
 # -----------------------------------------------------------------
 
 general_stellar_default_parameters = ["scalelength_to_scaleheight", "use_defaults"]
+
+# -----------------------------------------------------------------
+
+solar_metallicity = 0.02
+
+# Metallicities for a few galaxies
+metallicities = dict()
+metallicities["NGC3031"] = 0.03 # XU KONG ET AL. 2000
 
 # -----------------------------------------------------------------
 
@@ -59,6 +68,9 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         #super(ModelBuilder, self).__init__(*args, **kwargs)
         ModelBuilderBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
+
+        # Global SED fitting parameters
+        self.parameters = None
 
         # The scaleheight of the old stars
         self.old_scaleheight = None
@@ -105,16 +117,19 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         # 3. Adjust dust components from previous model
         if self.from_previous: self.adjust_dust()
 
-        # 4. Build stars
+        # 4. Get SED fitting parameters
+        self.get_parameters()
+
+        # 5. Build stars
         self.build_stars()
 
-        # 5. Build dust component
+        # 6. Build dust component
         self.build_dust()
 
-        # 6. Write
+        # 7. Write
         self.write()
 
-        # 7. Show
+        # 8. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -421,6 +436,71 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the global SED fitting results ...")
+
+        # Get the parameters from the DustPedia database
+        self.parameters = get_cigale_parameters(self.ngc_name_nospaces)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters["dust_mass"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters["sfr"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters["fuv_attenuation"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def metallicity(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.config.metallicity is not None: return self.config.metallicity
+        elif self.ngc_name_nospaces in metallicities: return metallicities[self.ngc_name_nospaces]
+        else: return solar_metallicity
+
+    # -----------------------------------------------------------------
+
     @property
     def has_bulge(self):
 
@@ -495,7 +575,12 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config = dict()
         config["name"] = self.model_name
         config["output"] = self.model_stellar_path
-        config["default_sfr"] = self.config.sfr
+        config["default_sfr"] = self.sfr
+        config["fuv_attenuation"] = self.fuv_attenuation
+        config["default_old_bulge_metallicity"] = self.metallicity
+        config["default_old_disk_metallicity"] = self.metallicity
+        config["default_young_metallicity"] = self.metallicity
+        config["default_ionizing_metallicity"] = self.metallicity
 
         # Set options to build different components
         config["bulge"] = not self.has_bulge
@@ -616,13 +701,13 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config = dict()
         config["name"] = self.model_name
         config["output"] = self.model_dust_path
-        config["default_dust_mass"] = self.config.dust_mass
+        config["default_dust_mass"] = self.dust_mass
 
         # Set options to build different components
         config["disk"] = not self.has_dust
         config["additional"] = self.config.additional
 
-        # Set default options for components thare are already present so they won't be prompted for anymore
+        # Set default options for components that are already present so they won't be prompted for anymore
         use_default = None
         if self.has_dust:
             if use_default is None: use_default = dust_default_parameters
