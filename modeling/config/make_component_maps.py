@@ -181,8 +181,8 @@ default_core_region_factor = 0.06
 
 # INTERPOLATION OF CORE OF THE MAPS
 definition.add_flag("interpolate_old", "interpolate core region of old stellar maps", True)
-definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", False)
-definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", False)
+definition.add_flag("interpolate_young", "interpolate core region of young stellar maps", True)
+definition.add_flag("interpolate_ionizing", "interpolate core region of ionizing stellar maps", True)
 definition.add_flag("interpolate_dust", "interpolate core region of dust maps", False)
 
 # Plot?

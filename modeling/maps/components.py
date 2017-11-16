@@ -3728,6 +3728,89 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def write_old_info(self, name, step, **info):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :param info:
+        :return:
+        """
+
+        # Determine the filename
+        filename = step + ".dat"
+
+        # Determine the path
+        path = self.old_extra_path_for_map(name, filename)
+
+        # Write the info
+        write_dict(info, path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_info(self, name, step, **info):
+
+        """
+        Thisn function ...
+        :param step:
+        :param info:
+        :return:
+        """
+
+        # Determine the filename
+        filename = step + ".dat"
+
+        # Determine the path
+        path = self.young_extra_path_for_map(name, filename)
+
+        # Write the info
+        write_dict(info, path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_info(self, name, step, **info):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :param info:
+        :return:
+        """
+
+        # Determine the filename
+        filename = step + ".dat"
+
+        # Determine the path
+        path = self.ionizing_extra_path_for_map(name, filename)
+
+        # Write the info
+        write_dict(info, path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_info(self, name, step, **info):
+
+        """
+        This function ...
+        :param name:
+        :param step:
+        :param info:
+        :return:
+        """
+
+        # Determine the filename
+        filename = step + ".dat"
+
+        # Determine the path
+        path = self.dust_extra_path_for_map(name, filename)
+
+        # Write the info
+        write_dict(info, path)
+
+    # -----------------------------------------------------------------
+
     def process_maps(self):
 
         """
@@ -3738,39 +3821,151 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Inform the user
         log.info("Processing the maps ...")
 
-        # 1. Correct
+        # 1. Apply corrections
+        self.correction()
+
+        # 2. Apply cropping
+        self.cropping()
+
+        # 3. Apply interpolation of negatives
+        self.interpolation_negatives()
+
+        # 4. Apply interpolation
+        self.interpolation()
+
+        # 5. Truncation
+        self.truncation()
+
+        # 6. Clipping
+        self.clipping()
+
+        # 7. Softening
+        self.softening()
+
+    # -----------------------------------------------------------------
+
+    def correction(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Correct
         if self.config.correct: self.correct_maps()
+
+        # Flag
         else: self.flag_corrected()
+
+        # Stop?
         if self.stop_after_correction: exit()
 
-        # 2. Crop
+    # -----------------------------------------------------------------
+
+    def cropping(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Crop
         if self.config.crop: self.crop_maps()
+
+        # Flag
         else: self.flag_cropped()
+
+        # Stop?
         if self.stop_after_cropping: exit()
 
-        # 3. Interpolate negatives
+    # -----------------------------------------------------------------
+
+    def interpolation_negatives(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Interpolate negatives
         if self.config.interpolate_negatives: self.interpolate_negatives_maps()
+
+        # Flag
         else: self.flag_interpolated_negatives()
+
+        # Stop?
         if self.stop_after_interpolation_negatives: exit()
 
-        # 4. Interpolate
+    # -----------------------------------------------------------------
+
+    def interpolation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Interpolate
         if self.config.interpolate: self.interpolate_maps()
+
+        # Flag
         else: self.flag_interpolated()
+
+        # Stop?
         if self.stop_after_interpolation: exit()
 
-        # 5. Truncate
+    # -----------------------------------------------------------------
+
+    def truncation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Truncate
         if self.config.truncate: self.truncate_maps()
+
+        # Flag
         else: self.flag_truncated()
+
+        # Stop?
         if self.stop_after_truncation: exit()
 
-        # 6. Clip
+    # -----------------------------------------------------------------
+
+    def clipping(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Clip
         if self.config.clip: self.clip_maps()
+
+        # Flag
         else: self.flag_clipped()
+
+        # Stop?
         if self.stop_after_clipping: exit()
 
-        # 7. Soften the edges
+    # -----------------------------------------------------------------
+
+    def softening(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Soften the edges
         if self.config.soften: self.soften_edges()
+
+        # Flag
         else: self.flag_softened()
+
+        # Stop?
         if self.stop_after_softening: exit()
 
     # -----------------------------------------------------------------
@@ -3953,13 +4148,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Correcting the '" + name + "' old stellar map ...")
 
             # Correct the map
-            self.correct_map(self.old_maps[name])
+            ninfs, nnans, nnegatives = self.correct_map(self.old_maps[name])
 
             # Set flag
             self.old_maps[name].metadata[correct_step] = True
 
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, correct_step))
+
+            # Save info
+            if self.config.steps: self.write_old_info(name, correct_step, ninfs=ninfs, nnans=nnans, nnegatives=nnegatives)
 
     # -----------------------------------------------------------------
 
@@ -3985,13 +4183,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Correcting the '" + name + "' young stellar map ...")
 
             # Correct the map
-            self.correct_map(self.young_maps[name])
+            ninfs, nnans, nnegatives = self.correct_map(self.young_maps[name])
 
             # Set flag
             self.young_maps[name].metadata[correct_step] = True
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, correct_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, correct_step, ninfs=ninfs, nnans=nnans, nnegatives=nnegatives)
 
     # -----------------------------------------------------------------
 
@@ -4017,13 +4218,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Correcting the '" + name + "' ionizing stellar map ...")
 
             # Correct the map
-            self.correct_map(self.ionizing_maps[name])
+            ninfs, nnans, nnegatives = self.correct_map(self.ionizing_maps[name])
 
             # Set flag
             self.ionizing_maps[name].metadata[correct_step] = True
 
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, correct_step))
+
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, correct_step, ninfs=ninfs, nnans=nnans, nnegatives=nnegatives)
 
     # -----------------------------------------------------------------
 
@@ -4049,13 +4253,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Correcting the '" + name + "' dust map ...")
 
             # Correct the map
-            self.correct_map(self.dust_maps[name])
+            ninfs, nnans, nnegatives = self.correct_map(self.dust_maps[name])
 
             # Set flag
             self.dust_maps[name].metadata[correct_step] = True
 
             # Save intermediate result
             if self.config.step: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, correct_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, correct_step, ninfs=ninfs, nnans=nnans, nnegatives=nnegatives)
 
     # -----------------------------------------------------------------
 
@@ -4349,6 +4556,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Save the mask again
                 if self.config.steps: mask.saveto(self.old_extra_path_for_map(name, negatives_dilated_filename))
 
+            # No dilation
+            else: dilation_radius = None
+
             # Fill holes
             mask.fill_holes()
 
@@ -4375,6 +4585,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, interpolate_negatives_step))
+
+            # Save info
+            if self.config.steps: self.write_old_info(name, interpolate_negatives_step, dilation_radius=dilation_radius,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_old)
 
     # -----------------------------------------------------------------
 
@@ -4496,6 +4711,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Save the mask again
                 if self.config.steps: mask.saveto(self.young_extra_path_for_map(name, negatives_dilated_filename))
 
+            # No dilation
+            else: dilation_radius = None
+
             # Fill holes
             mask.fill_holes()
 
@@ -4522,6 +4740,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, interpolate_negatives_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, interpolate_negatives_step, dilation_radius=dilation_radius,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_young)
 
     # -----------------------------------------------------------------
 
@@ -4643,6 +4866,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Save the mask again
                 if self.config.steps: mask.saveto(self.ionizing_extra_path_for_map(name, negatives_dilated_filename))
 
+            # No dilation
+            else: dilation_radius = None
+
             # Fill holes
             mask.fill_holes()
 
@@ -4669,6 +4895,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, interpolate_negatives_step))
+
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, interpolate_negatives_step, dilation_radius=dilation_radius,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_ionizing)
 
     # -----------------------------------------------------------------
 
@@ -4790,6 +5021,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Save the mask again
                 if self.config.steps: mask.saveto(self.dust_extra_path_for_map(name, negatives_dilated_filename))
 
+            # No dilation
+            else: dilation_radius = None
+
             # Fill holes
             mask.fill_holes()
 
@@ -4816,6 +5050,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, interpolate_negatives_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, interpolate_negatives_step, dilation_radius=dilation_radius,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_dust)
 
     # -----------------------------------------------------------------
 
@@ -5062,6 +5301,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, interpolate_step))
 
+            # Save info
+            if self.config.steps: self.write_old_info(name, interpolate_step,
+                                                      core_region_factor=self.config.old_core_region_factor,
+                                                      region_angle_offset = self.config.interpolation_angle_offset_old,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_old)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -5122,6 +5368,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, interpolate_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, interpolate_step,
+                                                      core_region_factor=self.config.young_core_region_factor,
+                                                      region_angle_offset=self.config.interpolation_angle_offset_young,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_young)
 
     # -----------------------------------------------------------------
 
@@ -5184,6 +5437,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, interpolate_step))
 
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, interpolate_step,
+                                                      core_region_factor=self.config.ionizing_core_region_factor,
+                                                      region_angle_offset=self.config.interpolation_angle_offset_ionizing,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_ionizing)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -5244,6 +5504,13 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, interpolate_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, interpolate_step,
+                                                      core_region_factor=self.config.dust_core_region_factor,
+                                                      region_angle_offset=self.config.interpolation_angle_offset_dust,
+                                                      method=self.config.interpolation_method,
+                                                      **self.interpolation_settings_dust)
 
     # -----------------------------------------------------------------
 
@@ -5429,13 +5696,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Truncating the '" + name + "' old stellar map ...")
 
             # Truncate the map
-            self.truncate_map(self.old_maps[name])
+            npixels = self.truncate_map(self.old_maps[name])
 
             # Set flag
             self.old_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, truncate_step))
+
+            # Save info
+            if self.config.steps: self.write_old_info(name, truncate_step, npixels=npixels)
 
     # -----------------------------------------------------------------
 
@@ -5461,13 +5731,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Truncating the '" + name + "' young stellar map ...")
 
             # Truncate the map
-            self.truncate_map(self.young_maps[name])
+            npixels = self.truncate_map(self.young_maps[name])
 
             # Set flag
             self.young_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, truncate_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, truncate_step, npixels=npixels)
 
     # -----------------------------------------------------------------
 
@@ -5493,13 +5766,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Truncating the '" + name + "' ionizing stellar map ...")
 
             # Truncate the map
-            self.truncate_map(self.ionizing_maps[name])
+            npixels = self.truncate_map(self.ionizing_maps[name])
 
             # Set flag
             self.ionizing_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, truncate_step))
+
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, truncate_step, npixels=npixels)
 
     # -----------------------------------------------------------------
 
@@ -5525,13 +5801,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
             log.debug("Truncating the '" + name + "' dust map ...")
 
             # Truncate the map
-            self.truncate_map(self.dust_maps[name])
+            npixels = self.truncate_map(self.dust_maps[name])
 
             # Set flag
             self.dust_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, truncate_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, truncate_step, npixels=npixels)
 
     # -----------------------------------------------------------------
 
@@ -5729,6 +6008,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save intermediate result
             if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, crop_step))
 
+            # Save info
+            if self.config.steps: self.write_old_info(name, crop_step, cropping_factor=self.config.cropping_factor)
+
     # -----------------------------------------------------------------
 
     def crop_young_maps(self):
@@ -5764,6 +6046,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, crop_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, crop_step, cropping_factor=self.config.cropping_factor)
 
     # -----------------------------------------------------------------
 
@@ -5801,6 +6086,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save intermediate result
             if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, crop_step))
 
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, crop_step, cropping_factor=self.config.cropping_factor)
+
     # -----------------------------------------------------------------
 
     def crop_dust_maps(self):
@@ -5836,6 +6124,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save intermediate result
             if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, crop_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, crop_step, cropping_factor=self.config.cropping_factor)
 
     # -----------------------------------------------------------------
 
@@ -6086,7 +6377,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, **self.get_clip_old_settings(name))
+            settings = self.get_clip_old_settings(name)
+            self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, **settings)
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -6096,6 +6388,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.old_clip_masks[name].saveto(self.old_step_path_for_mask(name, clip_step))
+
+            # Save info
+            if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
 
@@ -6187,7 +6482,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, **self.get_clip_young_settings(name))
+            settings = self.get_clip_young_settings(name)
+            self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, **settings)
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -6197,6 +6493,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.young_clip_masks[name].saveto(self.young_step_path_for_mask(name, clip_step))
+
+            # Save info
+            if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
 
@@ -6288,7 +6587,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, **self.get_clip_ionizing_settings(name))
+            settings = self.get_clip_ionizing_settings(name)
+            self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, **settings)
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -6298,6 +6598,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.ionizing_clip_masks[name].saveto(self.ionizing_step_path_for_mask(name, clip_step))
+
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
 
@@ -6389,7 +6692,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, **self.get_clip_dust_settings(name))
+            settings = self.get_clip_dust_settings(name)
+            self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, **settings)
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True
@@ -6399,6 +6703,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.dust_clip_masks[name].saveto(self.dust_step_path_for_mask(name, clip_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
 
@@ -6692,6 +6999,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask
             if self.config.steps: self.old_softening_masks[name].saveto(self.old_step_path_for_mask(name, softened_step))
 
+            # Save info
+            if self.config.steps: self.write_old_info(name, softened_step, softening_start=self.config.softening_start,
+                                                      softening_range=self.softening_range)
+
     # -----------------------------------------------------------------
 
     def soften_edges_young(self):
@@ -6731,6 +7042,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.young_softening_masks[name].saveto(self.young_step_path_for_mask(name, softened_step))
+
+            # Save info
+            if self.config.steps: self.write_young_info(name, softened_step, softening_start=self.config.softening_start,
+                                                      softening_range=self.softening_range)
 
     # -----------------------------------------------------------------
 
@@ -6772,6 +7087,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save the mask
             if self.config.steps: self.ionizing_softening_masks[name].saveto(self.ionizing_step_path_for_mask(name, softened_step))
 
+            # Save info
+            if self.config.steps: self.write_ionizing_info(name, softened_step, softening_start=self.config.softening_start,
+                                                      softening_range=self.softening_range)
+
     # -----------------------------------------------------------------
 
     def soften_edges_dust(self):
@@ -6811,6 +7130,10 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Save the mask
             if self.config.steps: self.dust_softening_masks[name].saveto(self.dust_step_path_for_mask(name, softened_step))
+
+            # Save info
+            if self.config.steps: self.write_dust_info(name, softened_step, softening_start=self.config.softening_start,
+                                                      softening_range=self.softening_range)
 
     # -----------------------------------------------------------------
 

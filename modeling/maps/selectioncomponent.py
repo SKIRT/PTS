@@ -461,13 +461,16 @@ class MapsSelectionComponent(MapsComponent):
         log.debug("Correcting map ...")
 
         # Infinities
-        self.replace_infinities(the_map)
+        ninfs = self.replace_infinities(the_map)
 
         # NaNs
-        self.replace_nans(the_map)
+        nnans = self.replace_nans(the_map)
 
         # Negatives
-        self.replace_negatives(the_map)
+        nnegatives = self.replace_negatives(the_map)
+
+        # Return
+        return ninfs, nnans, nnegatives
 
     # -----------------------------------------------------------------
 
@@ -489,6 +492,9 @@ class MapsSelectionComponent(MapsComponent):
         ninfs = np.sum(infs)
         log.debug("Map contained " + str(ninfs) + " inifinities")
 
+        # Return the number of infinities
+        return infs
+
     # -----------------------------------------------------------------
 
     def replace_nans(self, the_map):
@@ -509,6 +515,9 @@ class MapsSelectionComponent(MapsComponent):
         nnans = np.sum(nans)
         log.debug("Map contained " + str(nnans) + " NaN values")
 
+        # Return the number of nans
+        return nnans
+
     # -----------------------------------------------------------------
 
     def replace_negatives(self, the_map):
@@ -528,6 +537,9 @@ class MapsSelectionComponent(MapsComponent):
         # Show number of negatives
         nnegatives = np.sum(negatives)
         log.debug("Map contained " + str(nnegatives) + " negative values")
+
+        # Return the number of negatives
+        return nnegatives
 
     # -----------------------------------------------------------------
 
@@ -563,6 +575,9 @@ class MapsSelectionComponent(MapsComponent):
 
         # Mask
         the_map[mask] = 0.0
+
+        # Return the number of leftover pixels in the map
+        return np.sum(np.logical_not(mask))
 
     # -----------------------------------------------------------------
 

@@ -158,9 +158,9 @@ class AlphaMask(object):
         ratio = ellipse.semiminor / ellipse.semimajor
         radius = distance_ellipse(shape, center, ratio, angle) / ellipse.semiminor
 
-        from ..tools import plotting
+        #from ..tools import plotting
         #print("factor:", factor_range)
-        plotting.plot_box(radius)
+        #plotting.plot_box(radius)
 
         max_radius = np.max(radius)
         if dynamic_max and factor_range.max > np.max(radius): max_factor = max_radius
@@ -170,18 +170,18 @@ class AlphaMask(object):
         outside_max = radius > max_factor
         inside_min = radius < min_factor
 
-        plotting.plot_mask(outside_max, title="outside maximum factor")
-        plotting.plot_mask(inside_min, title="inside minimum factor")
+        #plotting.plot_mask(outside_max, title="outside maximum factor")
+        #plotting.plot_mask(inside_min, title="inside minimum factor")
 
         test = (factor_range.max - radius) / factor_range.span
 
-        plotting.plot_box(test, title="test")
+        #plotting.plot_box(test, title="test")
 
         alpha_channel = test
         alpha_channel[inside_min] = 1
         alpha_channel[outside_max] = 0
 
-        plotting.plot_box(alpha_channel, title="final")
+        #plotting.plot_box(alpha_channel, title="final")
 
         # Create alpha mask
         alpha = cls.from_real(alpha_channel, wcs=wcs)
