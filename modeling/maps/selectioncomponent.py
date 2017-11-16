@@ -493,7 +493,7 @@ class MapsSelectionComponent(MapsComponent):
         log.debug("Map contained " + str(ninfs) + " inifinities")
 
         # Return the number of infinities
-        return infs
+        return ninfs
 
     # -----------------------------------------------------------------
 

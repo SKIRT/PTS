@@ -759,6 +759,19 @@ def remove_files_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def remove_directories_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    remove_directories(directories_in_path(*args, **kwargs))
+
+# -----------------------------------------------------------------
+
 def remove_directory_or_file(path):
 
     """

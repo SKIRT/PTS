@@ -241,7 +241,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.set_levels()
 
         # 4. Set rerun
-        if self.rerun: self.set_rerun()
+        if self.rerun or self.rerun_all: self.set_rerun()
 
         # 5. Set redeproject
         if self.redeproject: self.set_redeproject()
@@ -356,6 +356,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             self.config.rerun_young = self.config.rerun
             self.config.rerun_ionizing = self.config.rerun
             self.config.rerun_dust = self.config.rerun
+
+        # Set rerun all options
+        if self.config.rerun_all: self.config.rerun_all_old = self.config.rerun_all_young = self.config.rerun_all_ionizing = self.config.rerun_all_dust = True
 
         # Set redeproject options
         if self.config.redeproject:
@@ -1502,14 +1505,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.old_steps_path, name)
-        if not fs.is_directory(map_path) or fs.is_empty(map_path): return None
-
         for step in reversed(steps):
-            filepath = fs.join(map_path, step + ".fits")
+            filepath = fs.join(self.old_steps_path_for_map(name), step + ".fits")
             if fs.is_file(filepath): return step, filepath
 
-        raise RuntimeError("We shouldn't get here")
+        #raise RuntimeError("We shouldn't get here")
+        return None, None
 
     # -----------------------------------------------------------------
 
@@ -1521,14 +1522,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.young_steps_path, name)
-        if not fs.is_directory(map_path) or fs.is_empty(map_path): return None
-
         for step in reversed(steps):
-            filepath = fs.join(map_path, step + ".fits")
+            filepath = fs.join(self.young_steps_path_for_map(name), step + ".fits")
             if fs.is_file(filepath): return step, filepath
 
-        raise RuntimeError("We shouldn't get here")
+        #raise RuntimeError("We shouldn't get here")
+        return None, None
 
     # -----------------------------------------------------------------
 
@@ -1540,14 +1539,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.ionizing_steps_path, name)
-        if not fs.is_directory(map_path) or fs.is_empty(map_path): return None
-
         for step in reversed(steps):
-            filepath = fs.join(map_path, step + ".fits")
+            filepath = fs.join(self.ionizing_steps_path_for_map(name), step + ".fits")
             if fs.is_file(filepath): return step, filepath
 
-        raise RuntimeError("We shouldn't get here")
+        #raise RuntimeError("We shouldn't get here")
+        return None, None
 
     # -----------------------------------------------------------------
 
@@ -1559,14 +1556,12 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.dust_steps_path, name)
-        if not fs.is_directory(map_path) or fs.is_empty(map_path): return None
-
         for step in reversed(steps):
-            filepath = fs.join(map_path, step + ".fits")
+            filepath = fs.join(self.dust_steps_path_for_map(name), step + ".fits")
             if fs.is_file(filepath): return step, filepath
 
-        raise RuntimeError("We shouldn't get here")
+        #raise RuntimeError("We shouldn't get here")
+        return None, None
 
     # -----------------------------------------------------------------
 
@@ -1615,6 +1610,18 @@ class ComponentMapsMaker(MapsSelectionComponent):
     # -----------------------------------------------------------------
 
     @property
+    def rerun_all(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.config.rerun_all_old or self.config.rerun_all_young or self.config.rerun_all_ionizing or self.config.rerun_all_dust
+
+    # -----------------------------------------------------------------
+
+    @property
     def rerun_old(self):
 
         """
@@ -1622,7 +1629,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.config.rerun_old is not None
+        return self.config.rerun_old is not None or self.config.rerun_all_old
 
     # -----------------------------------------------------------------
 
@@ -1634,7 +1641,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.config.rerun_young is not None
+        return self.config.rerun_young is not None or self.config.rerun_all_young
 
     # -----------------------------------------------------------------
 
@@ -1646,7 +1653,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.config.rerun_ionizing is not None
+        return self.config.rerun_ionizing is not None or self.config.rerun_all_ionizing
 
     # -----------------------------------------------------------------
 
@@ -1658,7 +1665,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        return self.config.rerun_dust is not None
+        return self.config.rerun_dust is not None or self.config.rerun_all_dust
 
     # -----------------------------------------------------------------
 
@@ -1738,6 +1745,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(deprojection_skirt_path): fs.remove_file(deprojection_skirt_path)
                 if fs.is_file(edgeon_path): fs.remove_file(edgeon_path)
 
+            # Rerun all steps output
+            if self.config.rerun_all_old:
+
+                # Determine directory path
+                path = self.old_steps_path_for_map(name)
+
+                # Remove region files
+                fs.remove_files_in_path(path, extension="reg")
+
+                # Remove FITS files
+                fs.remove_files_in_path(path, extension="fits")
+
+                # Remove directories
+                fs.remove_directories_in_path(path)
+
     # -----------------------------------------------------------------
 
     def set_rerun_young(self):
@@ -1791,6 +1813,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
                 if fs.is_file(deprojection_skirt_path): fs.remove_file(deprojection_skirt_path)
                 if fs.is_file(edgeon_path): fs.remove_file(edgeon_path)
+
+            # Rerun all steps output
+            if self.config.rerun_all_young:
+
+                # Determine the directory path
+                path = self.young_steps_path_for_map(name)
+
+                # Remove region files
+                fs.remove_files_in_path(path, extension="reg")
+
+                # Remove FITS files
+                fs.remove_files_in_path(path, extension="fits")
+
+                # Remove directories
+                fs.remove_directories_in_path(path)
 
     # -----------------------------------------------------------------
 
@@ -1846,6 +1883,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(deprojection_skirt_path): fs.remove_file(deprojection_path)
                 if fs.is_file(edgeon_path): fs.remove_file(edgeon_path)
 
+            # Rerun all steps output
+            if self.config.rerun_all_ionizing:
+
+                # Determine the directory path
+                path = self.ionizing_steps_path_for_map(name)
+
+                # Remove region files
+                fs.remove_files_in_path(path, extension="reg")
+
+                # Remove FITS files
+                fs.remove_files_in_path(path, extension="fits")
+
+                # Remove directories
+                fs.remove_directories_in_path(path)
+
     # -----------------------------------------------------------------
 
     def set_rerun_dust(self):
@@ -1899,6 +1951,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if fs.is_file(deprojection_path): fs.remove_file(deprojection_path)
                 if fs.is_file(deprojection_skirt_path): fs.remove_file(deprojection_skirt_path)
                 if fs.is_file(edgeon_path): fs.remove_file(edgeon_path)
+
+            # Rerun all steps output
+            if self.config.rerun_all_dust:
+
+                # Determine the directory path
+                path = self.dust_steps_path_for_map(name)
+
+                # Remove region files
+                fs.remove_files_in_path(path, extension="reg")
+
+                # Remove FITS files
+                fs.remove_files_in_path(path, extension="fits")
+
+                # Remove directories
+                fs.remove_directories_in_path(path)
 
     # -----------------------------------------------------------------
 
@@ -2868,24 +2935,24 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Determine the latest step
                 step, path = self.get_last_old_step(name)
 
-                # Inform
-                log.success("Found a " + step + " '" + name + "' map")
+                # Step is found
+                if step is not None:
 
-                # Load
-                self.old_maps[name] = Frame.from_file(path)
+                    # Inform
+                    log.success("Found a " + step + " '" + name + "' map")
 
-                # Set metadata
-                for step in steps_before_and_including(step): self.old_maps[name].metadata[step] = True
-                for step in steps_after(step): self.old_maps[name].metadata[step] = False
+                    # Load
+                    self.old_maps[name] = Frame.from_file(path)
+
+                    # Set metadata
+                    for step in steps_before_and_including(step): self.old_maps[name].metadata[step] = True
+                    for step in steps_after(step): self.old_maps[name].metadata[step] = False
+
+                # Load raw map
+                else: self.load_raw_old_map(name)
 
             # Load raw map
-            else:
-
-                # Load
-                self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
-
-                # Set metadata
-                for step in steps: self.old_maps[name].metadata[step] = False
+            else: self.load_raw_old_map(name)
 
             # Determine path to cropped negatives file
             cropped_negatives_path = self.old_extra_path_for_map(name, cropped_negatives_filename)
@@ -2900,6 +2967,22 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if negatives_plane_name in get_plane_names(self.old_map_paths[name]):
                     negatives = Mask.from_file(self.old_map_paths[name], plane=negatives_plane_name)
                     self.old_negative_masks[name] = negatives
+
+    # -----------------------------------------------------------------
+
+    def load_raw_old_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Load
+        self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
+
+        # Set metadata
+        for step in steps: self.old_maps[name].metadata[step] = False
 
     # -----------------------------------------------------------------
 
@@ -2925,24 +3008,24 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Determine the last step
                 step, path = self.get_last_young_step(name)
 
-                # Inform
-                log.success("Found a " + step + " '" + name + "' map")
+                # Step is found
+                if step is not None:
 
-                # Load
-                self.young_maps[name] = Frame.from_file(path)
+                    # Inform
+                    log.success("Found a " + step + " '" + name + "' map")
 
-                # Set metadata
-                for step in steps_before_and_including(step): self.young_maps[name].metadata[step] = True
-                for step in steps_after(step): self.young_maps[name].metadata[step] = False
+                    # Load
+                    self.young_maps[name] = Frame.from_file(path)
+
+                    # Set metadata
+                    for step in steps_before_and_including(step): self.young_maps[name].metadata[step] = True
+                    for step in steps_after(step): self.young_maps[name].metadata[step] = False
+
+                # Load raw map
+                else: self.load_raw_young_map(name)
 
             # Load raw map
-            else:
-
-                # Load
-                self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
-
-                # Set metadata
-                for step in steps: self.young_maps[name].metadata[step] = False
+            else: self.load_raw_young_map(name)
 
             # Determine the path to the cropped negatives file
             cropped_negatives_path = self.young_extra_path_for_map(name, cropped_negatives_filename)
@@ -2957,6 +3040,22 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if negatives_plane_name in get_plane_names(self.young_map_paths[name]):
                     negatives = Mask.from_file(self.young_map_paths[name], plane=negatives_plane_name)
                     self.young_negative_masks[name] = negatives
+
+    # -----------------------------------------------------------------
+
+    def load_raw_young_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Load
+        self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
+
+        # Set metadata
+        for step in steps: self.young_maps[name].metadata[step] = False
 
     # -----------------------------------------------------------------
 
@@ -2982,24 +3081,24 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Determine the last step
                 step, path = self.get_last_ionizing_step(name)
 
-                # Inform
-                log.success("Found a " + step + " '" + name + "' map")
+                # Step is found
+                if step is not None:
 
-                # Load
-                self.ionizing_maps[name] = Frame.from_file(path)
+                    # Inform
+                    log.success("Found a " + step + " '" + name + "' map")
 
-                # Set metadata
-                for step in steps_before_and_including(step): self.ionizing_maps[name].metadata[step] = True
-                for step in steps_after(step): self.ionizing_maps[name].metadata[step] = False
+                    # Load
+                    self.ionizing_maps[name] = Frame.from_file(path)
+
+                    # Set metadata
+                    for step in steps_before_and_including(step): self.ionizing_maps[name].metadata[step] = True
+                    for step in steps_after(step): self.ionizing_maps[name].metadata[step] = False
+
+                # Load raw map
+                else: self.load_raw_ionizing_map(name)
 
             # Load raw map
-            else:
-
-                # Load
-                self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
-
-                # Set metadata
-                for step in steps: self.ionizing_maps[name].metadata[step] = False
+            else: self.load_raw_ionizing_map(name)
 
             # Get negatives plane
             #if negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
@@ -3020,6 +3119,22 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if hot_negatives_plane_name in get_plane_names(self.ionizing_map_paths[name]):
                     negatives = Mask.from_file(self.ionizing_map_paths[name], plane=hot_negatives_plane_name)
                     self.ionizing_negative_masks[name] = negatives
+
+    # -----------------------------------------------------------------
+
+    def load_raw_ionizing_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Load
+        self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
+
+        # Set metadata
+        for step in steps: self.ionizing_maps[name].metadata[step] = False
 
     # -----------------------------------------------------------------
 
@@ -3045,24 +3160,24 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 # Determine the last step
                 step, path = self.get_last_dust_step(name)
 
-                # Inform
-                log.success("Found a " + step + " '" + name + "' map")
+                # Step is found
+                if step is not None:
 
-                # Load
-                self.dust_maps[name] = Frame.from_file(path)
+                    # Inform
+                    log.success("Found a " + step + " '" + name + "' map")
 
-                # Set metadata
-                for step in steps_before_and_including(step): self.dust_maps[name].metadata[step] = True
-                for step in steps_after(step): self.dust_maps[name].metadata[step] = False
+                    # Load
+                    self.dust_maps[name] = Frame.from_file(path)
+
+                    # Set metadata
+                    for step in steps_before_and_including(step): self.dust_maps[name].metadata[step] = True
+                    for step in steps_after(step): self.dust_maps[name].metadata[step] = False
+
+                # Load raw map
+                else: self.load_raw_dust_map(name)
 
             # Load raw map
-            else:
-
-                # Load
-                self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
-
-                # Set metadata
-                for step in steps: self.dust_maps[name].metadata[step] = False
+            else: self.load_raw_dust_map(name)
 
             # Determine the path to the cropped negatives file
             cropped_negatives_path = self.dust_extra_path_for_map(name, cropped_negatives_filename)
@@ -3077,6 +3192,22 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 if negatives_plane_name in get_plane_names(self.dust_map_paths[name]):
                     negatives = Mask.from_file(self.dust_map_paths[name], plane=negatives_plane_name)
                     self.dust_negative_masks[name] = negatives
+
+    # -----------------------------------------------------------------
+
+    def load_raw_dust_map(self, name):
+
+        """
+        Thisf ucntion ...
+        :param name:
+        :return:
+        """
+
+        # Load
+        self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
+
+        # Set metadata
+        for step in steps: self.dust_maps[name].metadata[step] = False
 
     # -----------------------------------------------------------------
 
@@ -3133,6 +3264,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def old_steps_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.old_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def old_step_path_for_map(self, name, step):
 
         """
@@ -3142,8 +3288,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.old_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Determine the directory path
+        map_path = self.old_steps_path_for_map(name)
 
         # Check the step
         if step not in steps: raise ValueError("Invalid step: '" + step + "'")
@@ -3226,6 +3372,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def young_steps_path_for_map(self, name, create=True):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.young_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def young_step_path_for_map(self, name, step):
 
         """
@@ -3235,8 +3396,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.young_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Determine the directory path
+        map_path = self.young_steps_path_for_map(name)
 
         # Check the step
         if step not in steps: raise ValueError("Invalid step: '" + step + "'")
@@ -3319,6 +3480,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def ionizing_steps_path_for_map(self, name, create=True):
+
+        """
+        Thisn function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.ionizing_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def ionizing_step_path_for_map(self, name, step):
 
         """
@@ -3328,8 +3504,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.ionizing_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Determine the directory path
+        map_path = self.ionizing_steps_path_for_map(name)
 
         # Check the step
         if step not in steps: raise ValueError("Invalid step: '" + step + "'")
@@ -3412,6 +3588,21 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    def dust_steps_path_for_map(self, name, create=True):
+
+        """
+        This function ...
+        :param name:
+        :param create:
+        :return:
+        """
+
+        map_path = fs.join(self.dust_steps_path, name)
+        if create and not fs.is_directory(map_path): fs.create_directory(map_path)
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def dust_step_path_for_map(self, name, step):
 
         """
@@ -3421,8 +3612,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
         :return:
         """
 
-        map_path = fs.join(self.dust_steps_path, name)
-        if not fs.is_directory(map_path): fs.create_directory(map_path)
+        # Determine the directory path
+        map_path = self.dust_steps_path_for_map(name)
 
         # Check the step
         if step not in steps: raise ValueError("Invalid step: '" + step + "'")
@@ -3841,6 +4032,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # 7. Softening
         self.softening()
+
+        # Stop?
+        if self.config.stop_after_all: exit()
 
     # -----------------------------------------------------------------
 
@@ -6390,6 +6584,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: self.old_clip_masks[name].saveto(self.old_step_path_for_mask(name, clip_step))
 
             # Save info
+            settings.pop("remote")
             if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6495,7 +6690,8 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: self.young_clip_masks[name].saveto(self.young_step_path_for_mask(name, clip_step))
 
             # Save info
-            if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
+            settings.pop("remote")
+            if self.config.steps: self.write_young_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
 
@@ -6600,6 +6796,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: self.ionizing_clip_masks[name].saveto(self.ionizing_step_path_for_mask(name, clip_step))
 
             # Save info
+            settings.pop("remote")
             if self.config.steps: self.write_ionizing_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6705,6 +6902,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             if self.config.steps: self.dust_clip_masks[name].saveto(self.dust_step_path_for_mask(name, clip_step))
 
             # Save info
+            settings.pop("remote")
             if self.config.steps: self.write_dust_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------

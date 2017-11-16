@@ -123,6 +123,12 @@ definition.add_optional("relative_softening_radius_dust", "positive_real", "soft
 
 # -----------------------------------------------------------------
 
+definition.add_flag("rerun_all", "rerun all of the map processing")
+definition.add_flag("rerun_all_old", "rerun all of the old stellar maps processing")
+definition.add_flag("rerun_all_young", "rerun all of the young stellar maps processing")
+definition.add_flag("rerun_all_ionizing", "rerun all of the ionizing stellar maps processing")
+definition.add_flag("rerun_all_dust", "rerun all of the dust maps processing")
+
 # ADVANCED
 definition.add_optional("rerun", "string", "rerun the map processing (for all maps) from this step", choices=steps)
 definition.add_optional("rerun_old", "string", "rerun the map processing (for all old stellar maps) from this step", choices=steps)
@@ -132,6 +138,7 @@ definition.add_optional("rerun_dust", "string", "rerun the map processing (for a
 
 # Stop after a step?
 definition.add_optional("stop_after", "string", "stop after this map processing step has been completed", choices=steps)
+definition.add_flag("stop_after_all", "stop after all map processing steps have been completed")
 
 # ADVANCED
 # to save space
@@ -170,10 +177,6 @@ definition.add_flag("reproject_dust", "reproject the dust maps")
 # -----------------------------------------------------------------
 
 default_interpolation_method = "kernel"
-
-# -----------------------------------------------------------------
-
-default_core_region_factor = 0.06
 
 # -----------------------------------------------------------------
 
@@ -243,10 +246,11 @@ definition.add_optional("ionizing_negatives_relative_dilation_radius", "real", "
 definition.add_optional("dust_negatives_relative_dilation_radius", "real", "dust negatives dilation radius relative to dust map xsize", 1./100.)
 
 # Interpolation core
-definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
-definition.add_optional("young_core_region_factor", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
-definition.add_optional("ionizing_core_region_factor", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse", default=default_core_region_factor)
-definition.add_optional("dust_core_region_factor", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse", default=default_core_region_factor)
+#default_core_region_factor = 0.06
+definition.add_optional("old_core_region_factor", "real", "interpolation core boundary for the old stellar maps, relative to the truncation ellipse", default=0.06)
+definition.add_optional("young_core_region_factor", "real", "interpolation core boundary for the young stellar maps, relative to the truncation ellipse", default=0.075)
+definition.add_optional("ionizing_core_region_factor", "real", "interpolation core boundary for the ionizing stellar maps, relative to the truncation ellipse", default=0.06)
+definition.add_optional("dust_core_region_factor", "real", "interpolation core boundary for the dust maps, relative to the truncation ellipse", default=0.06)
 
 # Interpolation settings
 default_source_outer_factor = 2.
