@@ -1548,6 +1548,21 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # git 11dc773: replace numCycles by min/maxIterations (parameters controlling self-absorption)
+    ('''//PanDustSystem/@numCycles''',
+    '''
+    <xsl:template match="//PanDustSystem/@numCycles">
+        <xsl:if test="number()>0">
+             <xsl:attribute name="minIterations">
+                <xsl:value-of select="."/>
+            </xsl:attribute>
+            <xsl:attribute name="maxIterations">
+               <xsl:value-of select="."/>
+           </xsl:attribute>
+        </xsl:if>
+    </xsl:template>
+    '''),
+
     # terminate the list of SKIRT 8 definitions
     ]
 
