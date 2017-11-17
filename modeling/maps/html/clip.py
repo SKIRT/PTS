@@ -1099,7 +1099,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Get the origins
-        origins = self.old_map_origins[name]
+        #origins = self.old_map_origins[name]
+        origins = self.filtered_old_map_origins[name]
 
         # Get image names
         names = [str(fltr) for fltr in origins]
@@ -1255,7 +1256,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Get the origins
-        origins = self.young_map_origins[name]
+        #origins = self.young_map_origins[name]
+        origins = self.filtered_young_map_origins[name]
 
         # Get image names
         names = [str(fltr) for fltr in origins]
@@ -1411,7 +1413,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Get the origins
-        origins = self.ionizing_map_origins[name]
+        #origins = self.ionizing_map_origins[name]
+        origins = self.filtered_ionizing_map_origins[name]
 
         # Get image names
         names = [str(fltr) for fltr in origins]
@@ -1567,7 +1570,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         """
 
         # Get the origins
-        origins = self.dust_map_origins[name]
+        #origins = self.dust_map_origins[name]
+        origins = self.filtered_dust_map_origins[name]
 
         # Get image names
         names = [str(fltr) for fltr in origins]
@@ -2480,7 +2484,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Clipping the '" + name + "' old stellar map ...")
 
             # Get the origins
-            origins = self.old_map_origins[name]
+            #origins = self.old_map_origins[name]
+            origins = self.filtered_old_map_origins[name]
 
             # Get the sigma levels
             sigma_levels = self.get_sigma_levels_for_origins(origins)
@@ -2669,7 +2674,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Clipping the '" + name + "' young stellar map ...")
 
             # Get the origins
-            origins = self.young_map_origins[name]
+            #origins = self.young_map_origins[name]
+            origins = self.filtered_young_map_origins[name]
 
             # Get the sigma levels
             sigma_levels = self.get_sigma_levels_for_origins(origins)
@@ -2858,7 +2864,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Clipping the '" + name + "' ionizing stellar map ...")
 
             # Get the origins
-            origins = self.ionizing_map_origins[name]
+            #origins = self.ionizing_map_origins[name]
+            origins = self.filtered_ionizing_map_origins[name]
 
             # Get the sigma levels
             sigma_levels = self.get_sigma_levels_for_origins(origins)
@@ -3047,7 +3054,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("Clipping the '" + name + "' dust map ...")
 
             # Get the origins
-            origins = self.dust_map_origins[name]
+            #origins = self.dust_map_origins[name]
+            origins = self.filtered_dust_map_origins[name]
 
             # Get the sigma levels
             sigma_levels = self.get_sigma_levels_for_origins(origins)
@@ -3162,6 +3170,28 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def filtered_old_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No filters to be ignored
+        if self.config.ignore_filters is None: return self.old_map_origins
+
+        # Some filters should be ignored
+        else:
+
+            origins = dict()
+            for name in self.old_map_origins:
+                origins_name = sequences.removed(self.old_map_origins[name], self.config.ignore_filters)
+                origins[name] = origins_name
+            return origins
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_maps_image_names(self):
 
         """
@@ -3177,10 +3207,35 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
         for map_name in self.old_selection:
-            origins = self.old_map_origins[map_name]
+
+            origins = self.filtered_old_map_origins[map_name]
             filter_names = [str(origin) for origin in origins]
             names.update(filter_names)
+
+        # Return the list of image names
         return list(names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filtered_young_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No filters to be ignored
+        if self.config.ignore_filters is None: return self.young_map_origins
+
+        # Some filters should be ignored
+        else:
+
+            origins = dict()
+            for name in self.young_map_origins:
+                origins_name = sequences.removed(self.young_map_origins[name], self.config.ignore_filters)
+                origins[name] = origins_name
+            return origins
 
     # -----------------------------------------------------------------
 
@@ -3200,10 +3255,35 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
         for map_name in self.young_selection:
-            origins = self.young_map_origins[map_name]
+
+            origins = self.filtered_young_map_origins[map_name]
             filter_names = [str(origin) for origin in origins]
             names.update(filter_names)
+
+        # Return the list of image names
         return list(names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filtered_ionizing_map_origins(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # No filters to be ignored
+        if self.config.ignore_filters is None: return self.ionizing_map_origins
+
+        # Some filters should be ignored
+        else:
+
+            origins = dict()
+            for name in self.ionizing_map_origins:
+                origins_name = sequences.removed(self.ionizing_map_origins[name], self.config.ignore_filters)
+                origins[name] = origins_name
+            return origins
 
     # -----------------------------------------------------------------
 
@@ -3223,10 +3303,35 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
         for map_name in self.ionizing_selection:
-            origins = self.ionizing_map_origins[map_name]
+
+            origins = self.filtered_ionizing_map_origins[map_name]
             filter_names = [str(origin) for origin in origins]
             names.update(filter_names)
+
+        # Return the list of image names
         return list(names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filtered_dust_map_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No filters to be ignored
+        if self.config.ignore_filters is None: return self.dust_map_origins
+
+        # Some filters should be ignored
+        else:
+
+            origins = dict()
+            for name in self.dust_map_origins:
+                origins_name = sequences.removed(self.dust_map_origins[name], self.config.ignore_filters)
+                origins[name] = origins_name
+            return origins
 
     # -----------------------------------------------------------------
 
@@ -3246,9 +3351,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # WORKS BEFORE MAPS HAVE BEEN ADDED
         names = set()
         for map_name in self.dust_selection:
-            origins = self.dust_map_origins[map_name]
+
+            origins = self.filtered_dust_map_origins[map_name]
             filter_names = [str(origin) for origin in origins]
             names.update(filter_names)
+
+        # Return the list of image names
         return list(names)
 
     # -----------------------------------------------------------------

@@ -1306,3 +1306,23 @@ def contains_all(lst, other):
     return True
 
 # -----------------------------------------------------------------
+
+def removed(sequence, remove):
+
+    """
+    Thisf unction ...
+    :param sequence:
+    :param remove:
+    :return:
+    """
+
+    new = []
+
+    for item in sequence:
+
+        if item in remove: continue
+        new.append(item)
+
+    return new
+
+# -----------------------------------------------------------------

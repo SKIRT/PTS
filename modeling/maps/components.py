@@ -6570,6 +6570,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.old_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_old_settings(name)
             self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, **settings)
@@ -6676,6 +6679,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Get the origins
             origins = self.young_map_origins[name]
+
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
 
             # Clip the map (returns the mask)
             settings = self.get_clip_young_settings(name)
@@ -6784,6 +6790,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.ionizing_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_ionizing_settings(name)
             self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, **settings)
@@ -6890,6 +6899,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Get the origins
             origins = self.dust_map_origins[name]
+
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
 
             # Clip the map (returns the mask)
             settings = self.get_clip_dust_settings(name)
