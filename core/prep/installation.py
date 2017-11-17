@@ -674,6 +674,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of C++ and MPI compilers ...")
 
+        if not self.modules.has_cpp: raise RuntimeError("C++ compiler could not be found")
+
         # C++ compiler
         cpp_path = self.modules.paths["cpp"]
         cpp_version = self.modules.versions["cpp"]
@@ -698,13 +700,13 @@ class SKIRTInstaller(Installer):
             # Set the path
             self.compiler_path = cpp_path
 
-        # MPI compiler
-        mpi_path = self.modules.paths["mpi"]
-        mpi_version = self.modules.versions["mpi"]
-        mpi_module = self.modules.names["mpi"]
-
         # Check if MPI compiler is present
-        if mpi_path is not None:
+        if self.modules.has_mpi:
+
+            # MPI compiler
+            mpi_path = self.modules.paths["mpi"]
+            mpi_version = self.modules.versions["mpi"]
+            mpi_module = self.modules.names["mpi"]
 
             # Check if module has to be loaded
             if mpi_module is not None:
@@ -741,7 +743,7 @@ class SKIRTInstaller(Installer):
         log.info("Checking for Qt installation on remote ...")
 
         # Qt is present
-        if self.modules.paths["qmake"] is not None:
+        if self.modules.has_qmake:
 
             # Get the version
             version = self.modules.versions["qmake"]
@@ -779,12 +781,12 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of git on the remote host ...")
 
+        if not self.modules.has_git: raise RuntimeError("Git could not be found")
+
         # Get info
         path = self.modules.paths["git"]
         version = self.modules.versions["git"]
         module = self.modules.names["git"]
-
-        if path is None: raise RuntimeError("Git could not be found")
 
         # Set path and module name
         self.git_path = path

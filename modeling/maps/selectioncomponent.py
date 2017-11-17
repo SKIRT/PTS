@@ -874,27 +874,39 @@ class MapsSelectionComponent(MapsComponent):
                         log.success("The clip mask for the '" + name + "' image with a sigma level of " + str(level) + " has already been created")
                         ignore.append(name)
 
-            # Convolve
-            if convolve:
+            # All can be ignored?
+            ignore_all_frames = sequences.same_contents(ignore, frames.names)
+            if ignore_all_frames: log.debug("All frames can be ignored")
 
-                frames.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
-                errors.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
+            # Some frames should be convolved and rebinned
+            if not ignore_all_frames:
 
-            # WCS is specified: rebin to this WCS
-            if wcs is not None:
+                # Convolve
+                if convolve:
 
-                frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
-                errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    frames.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
+                    errors.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
 
-            # Otherwise, rebin to the highest pixelscale WCS
-            else:
+                # WCS is specified: rebin to this WCS
+                if wcs is not None:
 
-                # Rebin the frames to the same pixelgrid
-                frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
-                errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
 
-            # Get the common WCS of all the frames
-            if wcs is None: wcs = frames[0].wcs
+                # Otherwise, rebin to the highest pixelscale WCS
+                else:
+
+                    # Rebin the frames to the same pixelgrid
+                    frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+
+                # Get the common WCS of all the frames
+                first_not_ignored_name = sequences.find_first_not_in(frames.names, ignore)
+                if wcs is None: wcs = frames[first_not_ignored_name].wcs #wcs = frames.wcs #wcs = frames[0].wcs
+
+                # Debugging
+                log.debug("Coordinate system of the frames:")
+                if log.is_debug(): print(wcs)
 
             # Set softening radius from relative softening radius
             if relative_softening_radius is not None:
@@ -3119,8 +3131,8 @@ def load_single_mask(output_path, name, level, fuzzy):
     mask_path = get_single_mask_path(output_path, name, level, fuzzy=fuzzy)
 
     # Check
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    if fuzzy: return AlphaMask.from_file(mask_path, no_wcs=True)
+    else: return Mask.from_file(mask_path, no_wcs=True)
 
 # -----------------------------------------------------------------
 

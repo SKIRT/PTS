@@ -77,6 +77,66 @@ class Modules(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_cpp(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return "cpp" in self.paths and self.paths["cpp"] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mpi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "mpi" in self.paths and self.paths["mpi"] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_qmake(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "qmake" in self.paths and self.paths["qmake"] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_git(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "git" in self.paths and self.paths["git"] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_python(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "python" in self.paths and self.paths["python"] is not None
+
+    # -----------------------------------------------------------------
+
     def check_compilers(self):
 
         """
@@ -91,19 +151,33 @@ class Modules(object):
         compiler_path, cpp_module = self.remote.find_and_load_cpp_compiler(return_module=True, show_output=log.is_debug())
         mpi_compiler_path, mpi_module = self.remote.find_and_load_mpi_compiler(return_module=True, show_output=log.is_debug())
 
-        # Debugging
-        log.debug("The C++ compiler path is '" + compiler_path)
-        log.debug("The MPI compiler path is '" + mpi_compiler_path)
+        # Compiler is found
+        if compiler_path is not None:
 
-        # CPP
-        self.names["cpp"] = cpp_module
-        self.paths["cpp"] = compiler_path
-        self.versions["cpp"] = self.remote.version_of(compiler_path)
+            # Debugging
+            log.debug("The C++ compiler path is '" + compiler_path + "'")
 
-        # MPI
-        self.names["mpi"] = mpi_module
-        self.paths["mpi"] = mpi_compiler_path
-        self.versions["mpi"] = self.remote.version_of(mpi_compiler_path)
+            # CPP
+            self.names["cpp"] = cpp_module
+            self.paths["cpp"] = compiler_path
+            self.versions["cpp"] = self.remote.version_of(compiler_path)
+
+        # Compiler is not found
+        else: log.debug("C++ compiler is not found on the remote")
+
+        # MPI is found
+        if mpi_compiler_path is not None:
+
+            # Debugging
+            log.debug("The MPI compiler path is '" + mpi_compiler_path + "'")
+
+            # MPI
+            self.names["mpi"] = mpi_module
+            self.paths["mpi"] = mpi_compiler_path
+            self.versions["mpi"] = self.remote.version_of(mpi_compiler_path)
+
+        # MPI is not found
+        else: log.debug("MPI compiler is not found on the remote")
 
         # Unload all modules to avoid conflicts with the other modules
         self.remote.unload_all_modules()
@@ -123,13 +197,23 @@ class Modules(object):
         # Load Qt module, find the qmake path
         qmake_path, module = self.remote.find_and_load_qmake(return_module=True, show_output=log.is_debug())
 
-        # Debugging
-        log.debug("The qmake path is '" + qmake_path + "'")
+        # Qmake is found
+        if qmake_path is not None:
 
-        # Add module info
-        self.names["qmake"] = module
-        self.paths["qmake"] = qmake_path
-        self.versions["qmake"] = self.remote.version_of(qmake_path)
+            # Get the version
+            version = self.remote.version_of(qmake_path)
+
+            # Debugging
+            log.debug("The qmake path is '" + qmake_path + "'")
+            log.debug("The qmake version is '" + version + "'")
+
+            # Add module info
+            self.names["qmake"] = module
+            self.paths["qmake"] = qmake_path
+            self.versions["qmake"] = version
+
+        # Qmake is not found
+        else: log.debug("Qt installation is not found on the remote")
 
         # Unload all modules to avoid conflicts with the other modules
         self.remote.unload_all_modules()
@@ -149,14 +233,20 @@ class Modules(object):
         # Find and load git
         path, version, module = self.remote.find_and_load_git(return_module=True, show_output=log.is_debug())
 
-        # Debugging
-        log.debug("The path of the git installation is '" + path)
-        log.debug("The version of git is '" + version + "'")
+        # Git is found
+        if path is not None:
 
-        # Add module version
-        self.names["git"] = module
-        self.paths["git"] = path
-        self.versions["git"] = version
+            # Debugging
+            log.debug("The path of the git installation is '" + path + "'")
+            log.debug("The version of git is '" + version + "'")
+
+            # Add module version
+            self.names["git"] = module
+            self.paths["git"] = path
+            self.versions["git"] = version
+
+        # Git is not found
+        else: log.debug("Git installation is not found on the remote")
 
         # Unload all modules to avoid conflicts with the other modules
         self.remote.unload_all_modules()
@@ -173,13 +263,26 @@ class Modules(object):
         # Inform the user
         log.info("Checking the presence of Python ...")
 
+        # Find and load python
         path, module = self.remote.find_and_load_python(return_module=True)
 
-        version = self.remote.custom_python_version_long(path)
+        # Python is found
+        if path is not None:
 
-        self.names["python"] = module
-        self.paths["python"] = path
-        self.versions["python"] = version
+            # Get the version
+            version = self.remote.custom_python_version_long(path)
+
+            # Debugging
+            log.debug("The path of the Python installation is '" + path + "'")
+            log.debug("The version of Python is '" + version + "'")
+
+            # Add module path and version
+            self.names["python"] = module
+            self.paths["python"] = path
+            self.versions["python"] = version
+
+        # Python is not found
+        else: log.debug("Python installation is not found on the remote")
 
         # Unload all modules to avoid conflicts
         self.remote.unload_all_modules()
