@@ -27,6 +27,28 @@ from .map import Map
 
 # -----------------------------------------------------------------
 
+def load_composite(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import introspection
+    from ..tools import filesystem as fs
+
+    first_line = fs.get_first_line(path)
+    class_name = first_line.split("Type: ")[1].strip()
+
+    # Get the PTS composite class
+    cls = introspection.load_class(class_name)
+
+    # Load the object
+    return cls.from_file(path)
+
+# -----------------------------------------------------------------
+
 class SimplePropertyComposite(object):
 
     """

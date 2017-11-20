@@ -31,7 +31,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.configuration import prompt_string_list
 from ...magic.core.mask import Mask
 from ...magic.basics.mask import MaskBase
-from ...magic.core.alpha import AlphaMask
+from ...magic.core.alpha import AlphaMask, load_mask_or_alpha_mask
 from ...core.basics.range import RealRange
 from ...magic.tools import plotting
 from ...core.basics import containers
@@ -2360,6 +2360,83 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_components_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the radial profiles of the maps ...")
+
+        # Old
+        self.plot_old_component_radial_profiles(format=format)
+
+        # Young
+        self.plot_young_component_radial_profiles(format=format)
+
+        # Ionizing
+        self.plot_ionizing_component_radial_profiles(format=format)
+
+        # Dust
+        self.plot_dust_component_radial_profiles(format=format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_component_radial_profiles(self, format="pdf"):
+
+        """
+        Thisf unction ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of old stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of young stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of ionizing stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of dust component maps ...")
+
+    # -----------------------------------------------------------------
+
     def plot_components_masks(self, format="pdf"):
 
         """
@@ -3131,8 +3208,9 @@ def load_single_mask(output_path, name, level, fuzzy):
     mask_path = get_single_mask_path(output_path, name, level, fuzzy=fuzzy)
 
     # Check
-    if fuzzy: return AlphaMask.from_file(mask_path, no_wcs=True)
-    else: return Mask.from_file(mask_path, no_wcs=True)
+    #if fuzzy: return AlphaMask.from_file(mask_path, no_wcs=True)
+    #else: return Mask.from_file(mask_path, no_wcs=True)
+    return load_mask_or_alpha_mask(mask_path, no_wcs=True)
 
 # -----------------------------------------------------------------
 
@@ -3188,8 +3266,9 @@ def load_combination_mask(output_path, levels, fuzzy):
     mask_path = get_combination_mask_path(output_path, levels, fuzzy)
 
     # Load and return
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    #if fuzzy: return AlphaMask.from_file(mask_path)
+    #else: return Mask.from_file(mask_path)
+    return load_mask_or_alpha_mask(mask_path)
 
 # -----------------------------------------------------------------
 
@@ -3245,7 +3324,8 @@ def load_resulting_mask(output_path, levels, fuzzy):
     mask_path = get_resulting_mask_path(output_path, levels, fuzzy)
 
     # Load and return
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    #if fuzzy: return AlphaMask.from_file(mask_path)
+    #else: return Mask.from_file(mask_path)
+    return load_mask_or_alpha_mask(mask_path)
 
 # -----------------------------------------------------------------

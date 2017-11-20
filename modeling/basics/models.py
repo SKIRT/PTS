@@ -241,8 +241,7 @@ def load_3d_model(path):
     :return:
     """
 
-    # Get the first line of the file
-    with open(path, 'r') as f: first_line = f.readline()
+    first_line = fs.get_first_line(path)
 
     # Create the appropriate model
     if "SersicModel3D" in first_line: return SersicModel3D.from_file(path)

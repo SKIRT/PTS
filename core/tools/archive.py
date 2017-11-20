@@ -252,6 +252,7 @@ def decompress_file(path, new_path):
 
     if path.endswith(".bz2"): decompress_bz2(path, new_path)
     elif path.endswith(".gz"): decompress_gz(path, new_path)
+    elif path.endswith(".xz"): decompress_xz(path, new_path)
     elif path.endswith(".zip"): decompress_zip(path, new_path)
     else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
 
@@ -334,6 +335,28 @@ def decompress_gz(gz_path, new_path):
 
     # Decompress
     with gzip.open(gz_path, 'rb') as f_in:
+        with open(new_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+# -----------------------------------------------------------------
+
+def decompress_xz(xz_path, new_path):
+
+    """
+    This function ...
+    :param xz_path:
+    :param new_path:
+    :return:
+    """
+
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(xz_path).rstrip(".xz")
+        if name.endswith(".tar"): name = name.split(".tar")[0]
+        new_path = fs.join(new_path, name)
+
+    # Decompress
+    with gzip.open(xz_path, 'rb') as f_in:
         with open(new_path, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 

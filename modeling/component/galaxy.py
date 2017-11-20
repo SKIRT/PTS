@@ -1722,6 +1722,9 @@ class GalaxyModelingComponent(ModelingComponent):
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
 
+        # Set modeling path
+        deprojector.config.path = self.config.path
+
         # Set settings
         deprojector.config.method = method
         deprojector.config.writing.deprojections = write
@@ -1760,6 +1763,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
+
+        # Set the modeling path
+        deprojector.config.path = self.config.path
 
         # Set settings
         deprojector.config.method = method
@@ -1803,6 +1809,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Get the center pixel
         center = get_center(npixels)
+
+        # Set the modeling path
+        projector.config.path = self.config.path
 
         # Set settings
         projector.config.writing.projections = write
@@ -1850,6 +1859,9 @@ class GalaxyModelingComponent(ModelingComponent):
         # Get the center pixel
         center = get_center(npixels)
 
+        # Set the modeling path
+        projector.config.path = self.config.path
+
         # Set settings
         projector.config.writing.projections = write
         projector.config.faceon = False
@@ -1888,6 +1900,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Create the projector
         projector = Projector(cwd=root_path)
+
+        # Set the modeling path
+        projector.config.path = self.config.path
 
         # Set settings
         projector.config.writing.projections = write

@@ -2117,7 +2117,7 @@ class SimpleTable(object):
         :return:
         """
 
-        return cls(composite.as_tuples(), header=[key_label, value_label], css_class=css_class)
+        return cls(composite.as_tuples(), header=[key_label, value_label], css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
 
     # -----------------------------------------------------------------
 

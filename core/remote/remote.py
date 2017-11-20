@@ -2979,6 +2979,7 @@ class Remote(object):
             output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done", cwd=path)
             #print(output)
             if "cannot access */" in output[0]: return []
+            elif "cannot access '*/'" in output[0]: return []
             paths = [fs.join(path, name) for name in output]
 
         if returns == "dict":
@@ -3559,6 +3560,7 @@ class Remote(object):
 
         if path.endswith(".bz2"): self.decompress_bz2(path, new_path)
         elif path.endswith(".gz"): self.decompress_gz(path, new_path)
+        elif path.endswith(".xz"): self.decompress_xz(path, new_path)
         elif path.endswith(".zip"): self.decompress_zip(path, new_path)
         else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
 
@@ -3588,6 +3590,20 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def decompress_xz(self, path, new_path):
+
+        """
+        This function ...
+        :param path:
+        :param new_path:
+        :return:
+        """
+
+        command = "tar -xvf " + path + " -C " + new_path
+        self.execute(command, show_output=True)
+
+    # -----------------------------------------------------------------
+
     def decompress_zip(self, path, new_path):
 
         """
@@ -3611,8 +3627,12 @@ class Remote(object):
         :return:
         """
 
-        if "'" in line: command = 'echo "' + line + '" > ' + filepath
+        #if "'" in line: command = 'echo "' + line + '" > ' + filepath
+        #else: command = "echo '" + line + "' > " + filepath
+
+        if line.contains_single_quotes(line): command = 'echo "' + line.replace("$", "\$").replace('"', r'\"') + '" > ' + filepath
         else: command = "echo '" + line + "' > " + filepath
+
         output = self.execute(command)
 
         for line in output:
