@@ -43,7 +43,7 @@ view_maps | -- | maps.viewer.MapsViewer | arguments | View a page where maps can
 photometry | -- | photometry.photometry.PhotoMeter | arguments | Calculate the photometry of the different input images
 
 # MODEL BUILDING
-build_model_galaxy | -- | build.models.galaxy.GalaxyModelBuilder | interactive | Build the model for galaxy modeling
+build_model_galaxy | -- | build.models.galaxy.GalaxyModelBuilder | arguments | Build the model for galaxy modeling
 build_model_sed | -- | build.models.sed.SEDModelBuilder | arguments | Build the model for SED modeling
 build_model_images | -- | build.models.images.ImagesModelBuilder | arguments | Build the model for images modeling
 *build_stars | -- | build.models.stars.StarsBuilder | interactive | Build stellar components of model

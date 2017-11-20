@@ -45,3 +45,7 @@ definition.add_flag("overwrite", "overwrite possibly existing model with this na
 definition.add_flag("show", "show the components after the model is built", True)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("use_defaults", "use default parameter values", False)
+
+# -----------------------------------------------------------------
