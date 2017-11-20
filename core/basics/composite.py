@@ -830,6 +830,11 @@ class SimplePropertyComposite(object):
 
         #print(properties)
 
+        # Add directory path
+        from ..tools import filesystem as fs
+        dirpath = fs.directory_of(path)
+        properties["dirpath"] = dirpath
+
         # Create the class instance
         composite = cls(**properties)
 

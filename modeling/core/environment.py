@@ -1473,6 +1473,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    def get_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.dataset.get_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dataset.get_frame(name)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def named_frame_list(self):
 
