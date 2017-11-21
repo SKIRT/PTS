@@ -1524,6 +1524,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    def get_frame_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dataset.get_frame_path(name)
+
+    # -----------------------------------------------------------------
+
     def get_frame_for_filter(self, fltr):
 
         """
@@ -1533,6 +1545,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.dataset.get_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.dataset.get_frame_path_for_filter(fltr)
 
     # -----------------------------------------------------------------
 

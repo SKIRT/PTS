@@ -536,7 +536,7 @@ class SKIRTRemote(Remote):
         else: script_file = open(local_script_path, 'w')
 
         # If no screen output path is set, create a directory
-        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name)
+        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name, recursive=True)
 
         # Write a general header to the batch script
         remote_script_file_name = screen_name + ".sh"

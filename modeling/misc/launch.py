@@ -33,6 +33,7 @@ from ...core.simulation.output import output_types as ot
 from ...core.launch.options import AnalysisOptions
 from ...core.tools import formatting as fmt
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.simulation.tree import DustGridTree
 
 # -----------------------------------------------------------------
 
@@ -78,6 +79,9 @@ class ModelLauncher(ModelSimulationInterface):
 
         # Reference deprojection
         self.reference_deprojection_name = None
+
+        # The number of dust cells
+        self.ndust_cells = None
 
         # The SKIRT launcher
         self.launcher = SKIRTLauncher()
@@ -142,6 +146,9 @@ class ModelLauncher(ModelSimulationInterface):
 
         # 9. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         if not self.has_dust_grid_tree: self.build_dust_grid()
+
+        # Set ski file dust grid
+        self.set_dust_grid()
 
         # 10. Set the input
         self.set_input()
@@ -697,8 +704,14 @@ class ModelLauncher(ModelSimulationInterface):
         if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
         else: self.ski.set_grey_body_dust_emissivity()
 
+        # Debugging
+        log.debug("Setting the wavelength grid ...")
+
         # Set wavelength grid for ski file
         self.ski.set_file_wavelength_grid(wavelengths_filename)
+
+        # Debugging
+        log.debug("Adding the instruments ...")
 
         # Set the instruments
         self.set_instruments()
@@ -748,6 +761,12 @@ class ModelLauncher(ModelSimulationInterface):
         # Run the dust grid builder
         builder.run(definition=self.definition, dust_grid=self.dust_grid)
 
+        # Set the number of dust cells
+        self.ndust_cells = builder.ncells
+
+        # Show the number of dust cells
+        log.debug("The total number of dust cells for the simulation is " + str(self.ndust_cells))
+
     # -----------------------------------------------------------------
 
     @property
@@ -763,6 +782,18 @@ class ModelLauncher(ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DustGridTree.from_file(self.dust_grid_tree_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def use_file_tree_dust_grid(self):
 
         """
@@ -772,8 +803,24 @@ class ModelLauncher(ModelSimulationInterface):
 
         smile = SKIRTSmileSchema()
         if not smile.supports_file_tree_grids: raise RuntimeError("A version of SKIRT that supports file tree grids is necessary")
-        if not self.has_dust_grid_tree: raise RuntimeError("The dust grid tree is not present at '"  + self.dust_grid_tree_path + "'")
+        if not self.has_dust_grid_tree: raise RuntimeError("The dust grid tree is not present at '" + self.dust_grid_tree_path + "'")
         return True
+
+    # -----------------------------------------------------------------
+
+    def set_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Setting the simulation dust grid ...")
+
+        # Set the dust grid
+        if self.use_file_tree_dust_grid: self.ski.set_filetree_dust_grid(dustgridtree_filename)
+        else: self.ski.set_dust_grid(self.dust_grid)
 
     # -----------------------------------------------------------------
 
@@ -1111,6 +1158,6 @@ class ModelLauncher(ModelSimulationInterface):
 
         # Run the simulation
         self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization,
-                          nprocesses=nprocesses)
+                          nprocesses=nprocesses, ncells=self.ndust_cells)
 
 # -----------------------------------------------------------------

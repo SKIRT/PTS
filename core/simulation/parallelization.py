@@ -243,7 +243,12 @@ class Parallelization(object):
 
             # Determine the number of processes
             cores_per_process = threads_per_process / threads_per_core
-            assert(cores_per_process == int(cores_per_process))
+
+            # Check
+            if cores_per_process != int(cores_per_process):
+                raise ValueError("Cannot set parallelization: number of threads per process (" + str(threads_per_process) + ") must be a multiple of the number of threads per core (" + str(threads_per_core) + ")")
+
+            # Set number of processes
             cores_per_process = int(cores_per_process)
             processes = cores // cores_per_process
 

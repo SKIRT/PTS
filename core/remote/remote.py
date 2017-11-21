@@ -3450,18 +3450,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def create_directory_in(self, base_path, name, show_output=False):
+    def create_directory_in(self, base_path, name, show_output=False, recursive=False):
 
         """
         This function ...
         :param base_path:
         :param name:
         :param show_output:
+        :param recursive:
         :return:
         """
 
         directory_path = fs.join(base_path, name)
-        self.create_directory(directory_path, show_output=show_output)
+        self.create_directory(directory_path, show_output=show_output, recursive=recursive)
         return directory_path
 
     # -----------------------------------------------------------------
@@ -5262,17 +5263,45 @@ class Remote(object):
     def free_memory(self):
 
         """
-        This function ...
+        This function uses the 'free' command to get information about the virtual memory usage
         :return:
         """
 
-        # Use the 'free' command to get information about the virtual memory usage
-        #output = self.execute("free -t | grep 'Total'")
-        output = self.execute("free -t | grep buffers/cache")
-        splitted = output[0].split(":")[1].split()
+        # Works on some systems
+        output = self.execute("free -t | grep '+ buffers/cache'")
 
-        # Calculate the free amount of memory in gigabytes
-        free = float(splitted[1]) / 1e6
+        # There is output
+        if len(output) != 0:
+
+            splitted = output[0].split(":")[1].split()
+            free = splitted[1]
+            # Calculate the free amount of memory in gigabytes
+            free = float(free) / 1e6
+
+        else:
+
+            output = self.execute("free -t | grep ^Mem")
+            free_without_buffers_cache = float(output[0].split(":")[1].strip().split()[2])
+
+            output = self.execute("free -t | grep 'buffers '")
+            if len(output) != 0:
+
+                output = self.execute("free -t | grep ^Mem")
+                splitted = output[0].split(":")[1].strip().split()
+                buffers = float(splitted[4])
+                cache = float(splitted[5])
+                free = free_without_buffers_cache + buffers + cache
+                free = free / 1e6
+
+            else:
+
+                output = self.execute("free -t | grep buff/cache")
+                if len(output) == 0: raise RuntimeError("Unexpected output")
+
+                output = self.execute("free -t | grep ^Mem")
+                buffers_and_cache = float(output[0].split(":")[1].strip().split()[4])
+                free = free_without_buffers_cache + buffers_and_cache
+                free = free / 1e6
 
         # Return the free amount of virtual memory in gigabytes
         return free * u("GB")
@@ -5687,7 +5716,7 @@ class Remote(object):
         # Calculate the total and used amount of memory in gigabytes
         total = float(splitted[0]) / 1e6
         used = float(splitted[1]) / 1e6
-        free = float(splitted[2]) / 1e6
+        #free = float(splitted[2]) / 1e6
 
         # Return the fraction of virtual memory that is currently in use
         return used / total
