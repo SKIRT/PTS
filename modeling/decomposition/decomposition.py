@@ -773,7 +773,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the bulge image
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
+        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name)
 
         # Check WCS
         if self.bulge_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
@@ -820,7 +820,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the disk image
         fluxdensity = self.components["disk"].fluxdensity
-        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
+        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name)
 
         # Check WCS
         if self.disk_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
@@ -874,7 +874,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the model image
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
-        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, show_progress=True)
+        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name)
 
         # Check WCS
         if self.model_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")

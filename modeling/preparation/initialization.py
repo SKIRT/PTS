@@ -618,7 +618,7 @@ class PreparationInitializer(PreparationComponent):
         log.info("Finding sources in the images ...")
 
         # Don't look for stars in the Halpha image
-        ignore_stars = ["Mosaic Halpha", "Halpha"]
+        ignore_stars = ["Mosaic Halpha", "Halpha", "Ha"]
 
         # Don't look for other sources in the IRAC images
         ignore_other_sources = ["IRAC I1", "IRAC I2", "IRAC I3", "IRAC I4"]
