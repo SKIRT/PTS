@@ -246,20 +246,24 @@ class SimplePropertyComposite(object):
         elif isinstance(value, dict):  # elif isinstance(value, Map):
 
             # There is a subsection with this name: fill in the attributes for that subsection
-            if name in self._descriptions:
+            #if name in self._descriptions:
 
-                #assert name in self._descriptions
-                #print(value)
-                #print(getattr(self, name))
-                #print(name in self.__dict__)
-                for key in value:
-                    keyvalue = value[key]
-                    #print(self.__dict__)
-                    self.__dict__[name].__setattr__(key, keyvalue)
-                return
+            assert name in self._descriptions
+            #print(value)
+            #print(getattr(self, name))
+            #print(name in self.__dict__)
+
+            # Add the section if not yet present or if None
+            if name not in self.__dict__ or self.__dict__[name] is None: self.__dict__[name] = SimplePropertyComposite()
+
+            for key in value:
+                keyvalue = value[key]
+                #print(self.__dict__)
+                self.__dict__[name].__setattr__(key, keyvalue)
+            return
 
             # Just set the whole dictionary as an attribute
-            else: pass #self.__dict__[name] = value
+            #else: pass #self.__dict__[name] = value
 
         else:
 
