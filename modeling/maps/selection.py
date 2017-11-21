@@ -299,6 +299,106 @@ class ComponentMapsSelection(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_steps_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        from .components import steps_name
+        return fs.join(self.old_component_path, steps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_steps_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .components import steps_name
+        return fs.join(self.young_component_path, steps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_steps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .components import steps_name
+        return fs.join(self.ionizing_component_path, steps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_steps_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .components import steps_name
+        return fs.join(self.dust_component_path, steps_name)
+
+    # -----------------------------------------------------------------
+
+    def get_old_steps_path_for_map(self, name):
+
+        """
+        Thisf unction ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.old_steps_path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_young_steps_path_for_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.young_steps_path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_steps_path_for_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.ionizing_steps_path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_steps_path_for_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.dust_steps_path, name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_map_names(self):
 
         """

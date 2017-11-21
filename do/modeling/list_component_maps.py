@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
@@ -19,6 +22,8 @@ from pts.core.tools import formatting as fmt
 from pts.magic.tools.info import get_image_info_from_header_file
 from pts.core.basics.composite import SimplePropertyComposite
 from pts.core.tools.stringify import tostr
+from pts.core.tools.serialization import load_dict
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -79,12 +84,41 @@ def get_highest_pixelscale_filter(filters):
 
 # -----------------------------------------------------------------
 
-def show_info(filepath, origins=None):
+def get_highest_fwhm_filter(filters):
+
+    """
+    Thisf unction ...
+    :param filters:
+    :return:
+    """
+
+    highest_fwhm = None
+    highest_fwhm_filter = None
+
+    for fltr in filters:
+
+        image_name = str(fltr)
+
+        path = environment.get_frame_path(image_name)
+
+        info = get_image_info_from_header_file(image_name, path, name=False, filter=False, wavelength=False, unit=False, fwhm=True, psf_filter=True, xsize=False, ysize=False, filesize=False, pixelscale=False)
+        fwhm = info["FWHM"]
+
+        if highest_fwhm is None or fwhm > highest_fwhm:
+            highest_fwhm = fwhm
+            highest_fwhm_filter = fltr
+
+    return highest_fwhm_filter
+
+# -----------------------------------------------------------------
+
+def show_info(filepath, origins=None, steps_path=None):
 
     """
     This function ...
     :param filepath:
     :param origins:
+    :param steps_path:
     :return:
     """
 
@@ -102,10 +136,34 @@ def show_info(filepath, origins=None):
 
     # Show origin with highest pixelscale
     highest_pixelscale_filter = get_highest_pixelscale_filter(origins)
-
     print("    * " + fmt.bold + "pixelgrid reference" + fmt.reset + ": " + str(highest_pixelscale_filter))
 
     # Show origin with poorest resolution
+    highest_fwhm_filter = get_highest_fwhm_filter(origins)
+    print("    * " + fmt.bold + "PSF reference" + fmt.reset + ": " + str(highest_fwhm_filter))
+
+    # Load clip info
+    clip_info_path = fs.join(steps_path, "clipped.dat")
+    clip_info = load_dict(clip_info_path)
+
+    # Show clip image references
+    clip_origins = clip_info["origins"]
+    print("    * " + fmt.bold + "clipping image references" + fmt.reset + ": " + tostr(clip_origins, delimiter=", "))
+
+    # Show levels
+    clipping_path = fs.join(steps_path, "clipping")
+    levels = OrderedDict()
+    for origin in clip_origins:
+        mask_filename = "mask__" + tostr(origin).replace(" ", "_")
+        mask_filename = fs.find_file_in_path(clipping_path, extension="fits", startswith=mask_filename, returns="name")
+        level = float(mask_filename.split("__")[2])
+        levels[origin] = level
+    print("    * " + fmt.bold + "signal-to-noise levels" + fmt.reset + ":")
+    for origin in levels: print("       " + str(origin) + ": " + str(levels[origin]))
+
+    # Show
+    softened = clip_info["soften"]
+    print("    * " + fmt.bold + "softened clip mask" + fmt.reset + ": " + str(softened))
 
 # -----------------------------------------------------------------
 
@@ -125,8 +183,11 @@ for name in selection.old_map_names:
     # Get origins
     origins = collection.get_old_stellar_disk_origins()[name]
 
+    # Get steps path
+    steps_path = selection.get_old_steps_path_for_map(name)
+
     # Show the info
-    show_info(path, origins)
+    show_info(path, origins, steps_path)
     print("")
 
 # -----------------------------------------------------------------
@@ -145,8 +206,11 @@ for name in selection.young_map_names:
     # Get origins
     origins = collection.young_origins_flat[name]
 
+    # Get steps path
+    steps_path = selection.get_young_steps_path_for_map(name)
+
     # Show the info
-    show_info(path, origins)
+    show_info(path, origins, steps_path)
     print("")
 
 # -----------------------------------------------------------------
@@ -165,8 +229,11 @@ for name in selection.ionizing_map_names:
     # Get origins
     origins = collection.ionizing_origins_flat[name]
 
+    # Get steps path
+    steps_path = selection.get_ionizing_steps_path_for_map(name)
+
     # Show the info
-    show_info(path, origins)
+    show_info(path, origins, steps_path)
     print("")
 
 # -----------------------------------------------------------------
@@ -185,8 +252,11 @@ for name in selection.dust_map_names:
     # Get origins
     origins = collection.dust_origins_flat[name]
 
+    # Get steps path
+    steps_path = selection.get_dust_steps_path_for_map(name)
+
     # Show the info
-    show_info(path, origins)
+    show_info(path, origins, steps_path)
     print("")
 
 # -----------------------------------------------------------------

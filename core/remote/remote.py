@@ -3631,7 +3631,7 @@ class Remote(object):
         #if "'" in line: command = 'echo "' + line + '" > ' + filepath
         #else: command = "echo '" + line + "' > " + filepath
 
-        if line.contains_single_quotes(line): command = 'echo "' + line.replace("$", "\$").replace('"', r'\"') + '" > ' + filepath
+        if strings.contains_single_quotes(line): command = 'echo "' + line.replace("$", "\$").replace('"', r'\"') + '" > ' + filepath
         else: command = "echo '" + line + "' > " + filepath
 
         output = self.execute(command)
