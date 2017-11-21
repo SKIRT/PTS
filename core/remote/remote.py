@@ -2537,7 +2537,8 @@ class Remote(object):
         # Retrieve the output if requested
         if expect is None:
 
-            matched = self.ssh.prompt(timeout=timeout)
+            try: matched = self.ssh.prompt(timeout=timeout)
+            except pexpect.EOF: raise RuntimeError("End-of-file encountered")
 
             # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
             if contains_extra_eof: matched = self.ssh.prompt()
@@ -2548,7 +2549,8 @@ class Remote(object):
         # Check for expected characters
         else:
 
-            index = self.ssh.expect(expect, timeout=timeout)
+            try: index = self.ssh.expect(expect, timeout=timeout)
+            except pexpect.EOF: raise RuntimeError("End-of-file encountered")
             assert index == 0
 
         # Set the log file back to 'None'
@@ -3697,7 +3699,15 @@ class Remote(object):
 
         #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done" # DOES WEIRD THINGS
         command = 'while IFS= read -r LINE; do     echo "$LINE"; done < "' + path + '"'
-        for line in self.execute(command):
+
+        # 2 tries
+        try: output = self.execute(command)
+        except RuntimeError:
+            log.warning("A runtime error was encountered. Trying again ...")
+            output = self.execute(command)
+
+        # Loop over the output lines
+        for line in output:
             if add_sep: yield line + "\n"
             else: yield line
 
