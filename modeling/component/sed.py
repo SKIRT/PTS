@@ -18,7 +18,9 @@ from abc import ABCMeta
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile7 import LabeledSkiFile7
+from ...core.simulation.skifile8 import LabeledSkiFile8
+from ...core.tools.introspection import skirt_main_version, has_skirt
 from ...core.data.sed import ObservedSED
 
 # -----------------------------------------------------------------
@@ -117,7 +119,12 @@ def get_ski_template(modeling_path):
     :return:
     """
 
-    return LabeledSkiFile(get_ski_template_path(modeling_path))
+    if not has_skirt(): version_number = 8
+    else: version_number = skirt_main_version()
+
+    if version_number == 8: return LabeledSkiFile8(get_ski_template_path(modeling_path))
+    elif version_number == 7: return LabeledSkiFile7(get_ski_template_path(modeling_path))
+    else: raise ValueError("Invalid SKIRT version: " + str(version_number))
 
 # -----------------------------------------------------------------
 

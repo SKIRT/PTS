@@ -15,7 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ...component.sed import SEDModelingComponent
-from ....core.simulation.skifile import LabeledSkiFile
+from ....core.simulation.skifile7 import LabeledSkiFile7
+from ....core.simulation.skifile8 import LabeledSkiFile8
+from ....core.tools.introspection import skirt_main_version, has_skirt
 from .base import FittingInitializerBase
 
 # -----------------------------------------------------------------
@@ -100,7 +102,12 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         log.info("Loading the ski file template ...")
 
         # Load the ski file
-        self.ski = LabeledSkiFile(self.environment.ski_path)
+        if not has_skirt(): version_number = 8
+        else: version_number = skirt_main_version()
+
+        if version_number == 8: self.ski = LabeledSkiFile8(self.environment.ski_path)
+        elif version_number == 7: self.ski = LabeledSkiFile7(self.environment.ski_path)
+        else: raise ValueError("Invalid SKIRT version: " + str(version_number))
 
     # -----------------------------------------------------------------
 

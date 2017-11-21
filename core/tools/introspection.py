@@ -1289,6 +1289,18 @@ def skirt_version():
 
 # -----------------------------------------------------------------
 
+def skirt_main_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    full_version = skirt_version()
+    return int(float(full_version.split("SKIRT v")[1].split(" ")[0]))
+
+# -----------------------------------------------------------------
+
 def get_pip_versions():
 
     """

@@ -17,7 +17,9 @@ from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile7 import LabeledSkiFile7
+from ...core.simulation.skifile8 import LabeledSkiFile8
+from ...core.tools.introspection import skirt_main_version, has_skirt
 from ...core.basics.distribution import Distribution
 from ..core.model import Model
 from ...core.simulation.skifile import SkiFile
@@ -1465,7 +1467,12 @@ class FittingRun(object):
         :return:
         """
 
-        return LabeledSkiFile(self.template_ski_path)
+        if not has_skirt(): version_number = 8
+        else: version_number = skirt_main_version()
+
+        if version_number == 8: return LabeledSkiFile8(self.template_ski_path)
+        elif version_number == 7: return LabeledSkiFile7(self.template_ski_path)
+        else: raise ValueError("Invalid SKIRT version: " + str(version_number))
 
     # -----------------------------------------------------------------
 
