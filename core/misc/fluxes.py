@@ -101,6 +101,9 @@ class ObservedFluxCalculator(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Create the images
+        if self.config.from_images: self.create_images()
+
         # 3. Calculate the observed fluxes
         self.calculate()
 
@@ -161,6 +164,20 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    def create_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating images from the simulated datacubes ...")
+
+
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def filters(self):
 
@@ -208,6 +225,36 @@ class ObservedFluxCalculator(Configurable):
         # Inform the user
         log.info("Calculating the observed fluxes ...")
 
+        # From images
+        if self.config.from_images: self.calculate_from_images()
+
+        # From SEDs
+        else: self.calculate_from_seds()
+
+    # -----------------------------------------------------------------
+
+    def calculate_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating fluxes from images ...")
+
+    # -----------------------------------------------------------------
+
+    def calculate_from_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating fluxes from SEDs ...")
+
         # Loop over the different SEDs
         for sed_path in self.sed_paths:
 
@@ -254,6 +301,9 @@ class ObservedFluxCalculator(Configurable):
         # Write the mock SEDs
         self.write_mock_seds()
 
+        # Write the images
+        if self.config.from_images and self.config.write_images: self.write_images()
+
     # -----------------------------------------------------------------
 
     def write_mock_seds(self):
@@ -280,6 +330,20 @@ class ObservedFluxCalculator(Configurable):
 
             # Set the path
             self.paths[name] = path
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mock observed images ...")
+
+
 
 # -----------------------------------------------------------------
 

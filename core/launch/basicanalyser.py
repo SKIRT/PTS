@@ -29,7 +29,7 @@ from ..basics.log import log
 from ..tools import filesystem as fs
 from ..plot.simulationseds import SimulationSEDPlotter
 from ..tools import types
-from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, animations_name, fluxes_name, images_name
+from .options import progress_name, timeline_name, memory_name, seds_name, grids_name, rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name
 from ..extract.progress import ProgressTable
 from ..extract.timeline import TimeLineTable
 from ..extract.memory import MemoryUsageTable
@@ -86,8 +86,9 @@ class BasicAnalyser(Configurable):
         self.rgb_maker = None
         self.animations_maker = None
 
-        # The flux calculator and image maker
+        # The flux calculators and image maker
         self.flux_calculator = None
+        self.image_flux_calculator = None
         self.image_maker = None
 
     # -----------------------------------------------------------------
@@ -410,6 +411,18 @@ class BasicAnalyser(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def has_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fluxes_from_images_name in self.simulation.analysed_misc
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_images(self):
 
         """
@@ -444,7 +457,10 @@ class BasicAnalyser(Configurable):
         # If requested, calculate observed fluxes from the output SEDs
         if self.misc_options.fluxes and not self.has_fluxes: self.calculate_observed_fluxes()
 
-        # If requested, create observed imgaes from the output FITS files
+        # If requested, calculate observed fluxes from the output datacubes
+        if self.misc_options.fluxes_from_images and not self.has_fluxes_from_images: self.calculate_observed_fluxes_from_images()
+
+        # If requested, create observed imgaes from the output datacubes
         if self.misc_options.images and not self.has_images: self.make_observed_images()
 
     # -----------------------------------------------------------------
@@ -719,7 +735,7 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Calculating the observed fluxes ...")
 
-        # Create and run a ObservedFluxCalculator object
+        # Create a ObservedFluxCalculator object
         self.flux_calculator = ObservedFluxCalculator()
 
         # Set spectral convolution flag
@@ -734,6 +750,49 @@ class BasicAnalyser(Configurable):
 
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
+        self.simulation.save()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filters_for_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def calculate_observed_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the observed fluxes from the output images ...")
+
+        # Create
+        self.image_flux_calculator = ObservedFluxCalculator()
+
+        # Set spectral convolution flag
+        self.image_flux_calculator.config.spectral_convolution = self.misc_options.fluxes_from_images_spectral_convolution
+
+        # Set from images flag
+        self.image_flux_calculator.config.from_images = True
+        self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
+
+        # Run
+        self.image_flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
+                                       filter_names=self.filters_for_fluxes_from_images,
+                                       instrument_names=self.misc_options.observation_instruments,
+                                       errors=self.misc_options.fluxes_from_images_errrors,
+                                       no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters)
+
+        # Done
+        self.simulation.analysed_misc.append(fluxes_from_images_name)
         self.simulation.save()
 
     # -----------------------------------------------------------------

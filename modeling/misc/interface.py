@@ -162,7 +162,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         log.info("Creating the wavelength grid ...")
 
         # Fixed wavelengths (always in the grid: for normalization)
-        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
+        fixed = self.normalization_wavelengths
 
         # Create the emission lines instance
         if self.config.wg.add_emission_lines: emission_lines = EmissionLines()
@@ -183,7 +183,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
             create_one_subgrid_wavelength_grid(self.config.wg.npoints, emission_lines, fixed,
                                                min_wavelength=min_wavelength,
-                                               max_wavelength=max_wavelength)
+                                               max_wavelength=max_wavelength, adjust_to=self.observed_filter_wavelengths)
 
         # Set the grid
         self.wavelength_grid = grid

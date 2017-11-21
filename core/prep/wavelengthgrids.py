@@ -26,6 +26,7 @@ from ..units.parsing import parse_unit as u
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics.range import IntegerRange
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -358,7 +359,7 @@ class WavelengthGridGenerator(Configurable):
 # -----------------------------------------------------------------
 
 def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None,
-                                       filters=None, min_wavelengths_in_filter=5, min_wavelengths_in_fwhm=3):
+                                       filters=None, min_wavelengths_in_filter=5, min_wavelengths_in_fwhm=3, adjust_to=None):
 
     """
     This function ...
@@ -370,6 +371,7 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
     :param filters:
     :param min_wavelengths_in_filter:
     :param min_wavelengths_in_fwhm:
+    :param adjust_to:
     :return:
     """
 
@@ -498,6 +500,24 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
 
             # Unrecognized filter
             else: raise ValueError("Unrecognized filter object: " + str(fltr))
+
+    # Adjust to passed wavelengths
+    if adjust_to is not None:
+
+        # Debugging
+        log.debug("Adjusting wavelength grid to include exact wavelengths ...")
+
+        # Loop over the wavelengths
+        for wavelength in adjust_to:
+
+            # Debugging
+            log.debug("Adjusting the wavelength grid for " + str(wavelength) + "...")
+
+            # Find closest
+            index = sequences.find_closest_index(wavelengths, wavelength)
+
+            # Replace by adjust_to wavelength
+            wavelengths[index] = wavelength
 
     # Add the emission lines
     emission_npoints = 0

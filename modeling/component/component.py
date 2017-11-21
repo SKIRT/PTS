@@ -331,6 +331,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_filter_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.wavelength for fltr in self.observed_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sed_filters(self):
 
         """

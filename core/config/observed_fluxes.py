@@ -20,3 +20,8 @@ definition.add_optional("output", "string", "output directory")
 definition.add_flag("spectral_convolution", "convolve over the wavelengths to get the most accurate fluxes", True)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("from_images", "calculate observed fluxes from images created from the output datacubes", False)
+definition.add_flag("write_images", "write the images created from the output datacubes", False)
+
+# -----------------------------------------------------------------

@@ -211,6 +211,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def photometry_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_image_paths_for_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths_for_filters
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path(self, name):
 
         """
@@ -1206,6 +1230,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Else, return the mask
         #return Mask.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_filters(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return [self.i1_filter, self.fuv_filter]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self.i1_filter.pivot, self.fuv_filter.pivot]
 
     # -----------------------------------------------------------------
 

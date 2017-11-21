@@ -745,6 +745,45 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def photometry_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.phot_images_path, extension="fits", returns="path")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometry_image_paths_for_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = dict()
+
+        # Loop over the image file names
+        for name in self.photometry_image_names:
+
+            # Get the filter
+            fltr = parse_filter(name)
+
+            # Get the image path
+            path = fs.join(self.phot_images_path, name + ".fits")
+
+            # Add to dictionary
+            paths[fltr] = path
+
+        # Return the dictionary
+        return paths
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path(self, name):
 
         """

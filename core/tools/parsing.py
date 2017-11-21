@@ -1285,6 +1285,26 @@ def filter_real_list_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def filter_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    new = dict()
+    for key, value in d.items():
+        fltr = filter(key)
+        value = file_path(value)
+        new[fltr] = value
+
+    # Return the new dictionary
+    return new
+
+# -----------------------------------------------------------------
+
 def string_filepath_dictionary(argument):
 
     """

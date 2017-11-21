@@ -102,13 +102,14 @@ rgb_name = "rgb"
 #wave_name = "wave"
 animations_name = "animations"
 fluxes_name = "fluxes"
+fluxes_from_images_name = "fluxes_from_images"
 images_name = "images"
 
 # -----------------------------------------------------------------
 
 extraction_names = [progress_name, timeline_name, memory_name]
 plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
-misc_names = [rgb_name, animations_name, fluxes_name, images_name]
+misc_names = [rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name]
 
 # -----------------------------------------------------------------
 
@@ -167,6 +168,14 @@ class AnalysisOptions(Options):
         ## Observed fluxes
         self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
         self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
+        self.misc.add_property("fluxes_from_images", "boolean", "calculate observed fluxes from the SKIRT output datacubes", False)
+        self.misc.add_property("fluxes_from_images_instrument", "string", "calculate observed fluxes from images of this instrument", None)
+        self.misc.add_property("fluxes_from_images_wcs", "file_path", "file containing the coordinate system of the instrument's coordinate system (necessary when masks are specified)")
+        self.misc.add_property("fluxes_from_images_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
+        self.misc.add_property("fluxes_from_images_masks", "filter_filepath_dictionary", "filepaths of the FITS files that contain the image masks (with coordinate system!)")
+        self.misc.add_property("fluxes_from_images_mask_from_nans", "boolean", "load masks as the NaN pixels in the specified plane (or primary frame if not specified)")
+        self.misc.add_property("fluxes_from_images_mask_plane", "string", "name of the image mask plane")
+        self.misc.add_property("write_fluxes_images", "boolean", "write out the images created to calculate the fluxes", False)
 
         ## Observed images
         self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
@@ -200,8 +209,10 @@ class AnalysisOptions(Options):
         self.misc.add_property("group_images", "boolean", "group the images per instrument", False)
         self.misc.add_property("images_spectral_convolution", "boolean", "use spectral convolution to create observed images", True)
         self.misc.add_property("fluxes_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes", True)
+        self.misc.add_property("fluxes_from_images_spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes from the images", False)
         self.misc.add_property("no_images_spectral_convolution_filters", "filter_list", "don't spectrally convolve to create the observed images for these filters", [])
         self.misc.add_property("no_fluxes_spectral_convolution_filters", "filter_list", "don't spectrally convolve to calculate the observed fluxes for these filters", [])
+        self.misc.add_property("no_fluxes_from_images_spectral_convolution_filters", "filter_list", "don't spectrally convolve to calculate the observed fluxes from images for these filters", [])
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)

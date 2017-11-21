@@ -31,6 +31,8 @@ from ...core.simulation.grids import OctTreeDustGrid, BinaryTreeDustGrid
 from ..config.launch_model import make_images, make_seds
 from ...core.simulation.output import output_types as ot
 from ...core.launch.options import AnalysisOptions
+from ...core.tools import formatting as fmt
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -73,6 +75,9 @@ class ModelLauncher(ModelSimulationInterface):
         self.projections_path = None
         self.instruments_path = None
         self.input_file_path = None
+
+        # Reference deprojection
+        self.reference_deprojection_name = None
 
         # The SKIRT launcher
         self.launcher = SKIRTLauncher()
@@ -442,7 +447,7 @@ class ModelLauncher(ModelSimulationInterface):
             print("")
             print("Model parameter values:")
             print("")
-            for label in self.parameter_values: print(" - " + label + ": " + tostr(self.parameter_values[label]))
+            for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
             print("")
         else: log.info("Using the standard parameter values of the model")
 
@@ -459,7 +464,115 @@ class ModelLauncher(ModelSimulationInterface):
         log.info("Creating the projections ...")
 
         # Create
-        self.create_projection_systems(make_edgeon=self.config.edgeon, make_faceon=self.config.faceon)
+        self.reference_deprojection_name = self.create_projection_systems(make_edgeon=self.config.edgeon, make_faceon=self.config.faceon)
+
+        # Check
+        if self.reference_deprojection_name == "grid" and self.config.make_image_seds: raise ValueError("Cannot use grid resolution when image SEDs have to be produced")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_grid_resolution(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.reference_deprojection_name == "grid"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_stellar_reference_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_deprojection_name == "grid": raise ValueError("This function shouldn't be called")
+        #if self.uses_grid_resolution: raise ValueError("This function shouldn't be called")
+        return self.reference_deprojection_name in self.model_suite.get_stellar_component_names(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_dust_reference_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_deprojection_name == "grid": raise ValueError("This function shouldn't be called")
+        #if self.uses_grid_resolution: raise ValueError("This function shouldn't be called")
+        return self.reference_deprojection_name in self.model_suite.get_dust_component_names(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #if self.reference_deprojection_name is None: return None
+        #else:
+        # From grid
+        if self.reference_deprojection_name == "grid": return None
+
+        # Find the stellar or dust component
+        if self.is_stellar_reference_deprojection: return self.model_suite.load_stellar_component_map(self.model_name, self.reference_deprojection_name)
+        elif self.is_dust_reference_deprojection: return self.model_suite.load_dust_component_map(self.model_name, self.reference_deprojection_name)
+        else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #if self.reference_deprojection_component_name is None: return None
+        #else:
+        # From grid
+        if self.reference_deprojection_name == "grid": return None
+
+        # Find the stellar or dust component
+        if self.is_stellar_reference_deprojection: return self.model_suite.get_stellar_component_map_path(self.model_name, self.reference_deprojection_name)
+        elif self.is_dust_reference_deprojection: return self.model_suite.get_dust_component_map_path(self.model_name, self.reference_deprojection_name)
+        else: raise ValueError("Reference deprojection component name '" + self.reference_deprojection_name + "' not recognized as either stellar or dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.reference_map_path is None: return None
+        else: return CoordinateSystem.from_file(self.reference_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_wcs_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.reference_map_path
 
     # -----------------------------------------------------------------
 
@@ -908,16 +1021,37 @@ class ModelLauncher(ModelSimulationInterface):
         analysis_options.plotting.seds = True  # plot SEDs
         analysis_options.plotting.reference_seds = [self.observed_sed_path]
 
-        # Set misc analysis options
-        analysis_options.misc.spectral_convolution = self.config.spectral_convolution
+        # Set spectral convolution flags
+        analysis_options.misc.images_spectral_convolution = self.config.spectral_convolution
+        analysis_options.misc.fluxes_spectral_convolution = self.config.spectral_convolution
+        analysis_options.misc.fluxes_from_images_spectral_convolution = False
+
+        # Make SEDs, images?
         if self.make_seds: analysis_options.misc.fluxes = True
         if self.make_images: analysis_options.misc.images = True
+
+        # Set filters and instruments
         analysis_options.misc.observation_filters = self.observed_filter_names
         instruments = [earth_name]
         if self.config.faceon: instruments.append(faceon_name)
         if self.config.edgeon: instruments.append(edgeon_name)
+
         analysis_options.misc.observation_instruments = instruments
         analysis_options.misc.group_images = True
+
+        # Make SEDs from images?
+        if self.config.make_image_seds:
+
+            # Set instrument and coordinate system path
+            analysis_options.misc.fluxes_from_images_instrument = earth_name
+            analysis_options.misc.fluxes_from_images_wcs = self.reference_wcs_path
+
+            # Set mask paths
+            analysis_options.misc.fluxes_from_images_masks = self.photometry_image_paths_for_filters
+            analysis_options.misc.fluxes_from_images_mask_from_nans = True
+
+            # Write the fluxes images
+            analysis_options.misc.write_fluxes_images = True
 
         # Return the analysis options
         return analysis_options
