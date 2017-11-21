@@ -755,6 +755,18 @@ class BasicAnalyser(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def fluxes_from_images_instruments(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return [self.misc_options.fluxes_from_images_instrument]
+
+    # -----------------------------------------------------------------
+
+    @property
     def filters_for_fluxes_from_images(self):
 
         """
@@ -787,7 +799,7 @@ class BasicAnalyser(Configurable):
         # Run
         self.image_flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
                                        filter_names=self.filters_for_fluxes_from_images,
-                                       instrument_names=self.misc_options.observation_instruments,
+                                       instrument_names=self.fluxes_from_images_instruments,
                                        errors=self.misc_options.fluxes_from_images_errrors,
                                        no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters)
 

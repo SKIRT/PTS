@@ -1047,7 +1047,7 @@ class ModelLauncher(ModelSimulationInterface):
             analysis_options.misc.fluxes_from_images_wcs = self.reference_wcs_path
 
             # Set mask paths
-            analysis_options.misc.fluxes_from_images_masks = self.photometry_image_paths_for_filters
+            analysis_options.misc.fluxes_from_images_masks = self.photometry_image_paths_for_filter_names
             analysis_options.misc.fluxes_from_images_mask_from_nans = True
 
             # Write the fluxes images

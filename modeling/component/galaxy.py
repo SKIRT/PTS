@@ -235,6 +235,18 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def photometry_image_paths_for_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths_for_filter_names
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path(self, name):
 
         """

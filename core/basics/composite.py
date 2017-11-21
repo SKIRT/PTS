@@ -242,16 +242,25 @@ class SimplePropertyComposite(object):
         # Set 'simple' property
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
+
         elif isinstance(value, dict):  # elif isinstance(value, Map):
-            assert name in self._descriptions
-            #print(value)
-            #print(getattr(self, name))
-            #print(name in self.__dict__)
-            for key in value:
-                keyvalue = value[key]
-                #print(self.__dict__)
-                self.__dict__[name].__setattr__(key, keyvalue)
-            return
+
+            # There is a subsection with this name: fill in the attributes for that subsection
+            if name in self._descriptions:
+
+                #assert name in self._descriptions
+                #print(value)
+                #print(getattr(self, name))
+                #print(name in self.__dict__)
+                for key in value:
+                    keyvalue = value[key]
+                    #print(self.__dict__)
+                    self.__dict__[name].__setattr__(key, keyvalue)
+                return
+
+            # Just set the whole dictionary as an attribute
+            else: pass #self.__dict__[name] = value
+
         else:
 
             # Check the type

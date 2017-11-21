@@ -172,7 +172,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("fluxes_from_images_instrument", "string", "calculate observed fluxes from images of this instrument", None)
         self.misc.add_property("fluxes_from_images_wcs", "file_path", "file containing the coordinate system of the instrument's coordinate system (necessary when masks are specified)")
         self.misc.add_property("fluxes_from_images_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
-        self.misc.add_property("fluxes_from_images_masks", "filter_filepath_dictionary", "filepaths of the FITS files that contain the image masks (with coordinate system!)")
+        self.misc.add_property("fluxes_from_images_masks", "string_filepath_dictionary", "filepaths of the FITS files that contain the image masks (with coordinate system!), keys must be filter names")
         self.misc.add_property("fluxes_from_images_mask_from_nans", "boolean", "load masks as the NaN pixels in the specified plane (or primary frame if not specified)")
         self.misc.add_property("fluxes_from_images_mask_plane", "string", "name of the image mask plane")
         self.misc.add_property("write_fluxes_images", "boolean", "write out the images created to calculate the fluxes", False)

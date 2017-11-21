@@ -83,7 +83,7 @@ definition.sections["wg"].add_optional("range", "quantity_range", "range of wave
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")
 definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
-definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 5.) # was 0.5
+definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 2.) # was 0.5
 definition.sections["dg"].add_optional("bintree_min_level", "integer", "minimum depth level for binary trees", 9)
 definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum depth level for octrees", 3)
 definition.sections["dg"].add_optional("max_mass_fraction", "real", "maximum mass fraction in each cell", 1e-6)
