@@ -45,14 +45,21 @@ pts_directories = ["pts", "run", "doc", "temp", "remotes", "user", "ext"]
 # -----------------------------------------------f------------------
 
 # Qt URL
-# link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
-#url = "http://download.qt.io/official_releases/qt/5.7/5.7.0/single/qt-everywhere-opensource-src-5.7.0.tar.gz"
-qt_url = "http://download.qt.io/official_releases/qt/5.7/5.7.1/single/qt-everywhere-opensource-src-5.7.1.tar.gz" # latest
+qt_55_url = "https://download.qt.io/archive/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
+qt_56_url = "https://download.qt.io/archive/qt/5.6/5.6.3/single/qt-everywhere-opensource-src-5.6.3.tar.xz"
+qt_57_url = "https://download.qt.io/archive/qt/5.7/5.7.1/single/qt-everywhere-opensource-src-5.7.1.tar.gz"
+qt_58_url = "https://download.qt.io/archive/qt/5.8/5.8.0/single/qt-everywhere-opensource-src-5.8.0.tar.gz"
+qt_59_url = "https://download.qt.io/archive/qt/5.9/5.9.2/single/qt-everywhere-opensource-src-5.9.2.tar.xz"
+qt_url = qt_59_url
 
 # -----------------------------------------------------------------
 
 # The approximate size for a full installation of Qt
 full_qt_installation_size = 1.5 * u("GB")
+
+# -----------------------------------------------------------------
+
+qt_installation_dirname = "Qt"
 
 # -----------------------------------------------------------------
 
@@ -352,6 +359,24 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def qt_url(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.qt_version is None: return qt_url
+        elif self.config.qt_version == "5.5": return qt_55_url
+        elif self.config.qt_version == "5.6": return qt_56_url
+        elif self.config.qt_version == "5.7": return qt_57_url
+        elif self.config.qt_version == "5.8": return qt_58_url
+        elif self.config.qt_version == "5.9": return qt_59_url
+        else: raise ValueError("Invalid version indicator")
+
+    # -----------------------------------------------------------------
+
     def create_directories_local(self):
 
         """
@@ -370,10 +395,11 @@ class SKIRTInstaller(Installer):
         # Check if already present
         if fs.is_directory(self.skirt_root_path):
             if self.config.force: fs.remove_directory(self.skirt_root_path)
+            elif self.config.finish: pass
             else: raise RuntimeError("SKIRT is already installed (or partly present)")
 
         # Make the root directory
-        fs.create_directory(self.skirt_root_path)
+        if not self.config.finish: fs.create_directory(self.skirt_root_path)
 
         # Create the other directories
         for name in skirt_directories:
@@ -382,7 +408,7 @@ class SKIRTInstaller(Installer):
             path = fs.join(self.skirt_root_path, name)
 
             # Create the directory
-            fs.create_directory(path)
+            if not fs.is_directory(path): fs.create_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -404,10 +430,11 @@ class SKIRTInstaller(Installer):
         # Check if already present
         if self.remote.is_directory(self.skirt_root_path):
             if self.config.force: self.remote.remove_directory(self.skirt_root_path)
+            elif self.config.finish: pass
             else: raise RuntimeError("SKIRT is already installed (or partly present) on the remote host")
 
         # Make the root directory
-        self.remote.create_directory(self.skirt_root_path)
+        if not self.config.finish: self.remote.create_directory(self.skirt_root_path)
 
         # Create the other directories
         for name in skirt_directories:
@@ -416,7 +443,36 @@ class SKIRTInstaller(Installer):
             path = fs.join(self.skirt_root_path, name)
 
             # Create the directory
-            self.remote.create_directory(path)
+            if not self.remote.is_directory(path): self.remote.create_directory(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_skirt_source_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        has_source = not fs.is_empty(self.skirt_repo_path)
+        if not has_source: return False
+
+        # Get git version
+        self.git_version = git.get_short_git_version(self.skirt_repo_path)
+
+        # Determine path of SKIRT and FitSKIRT main directories with executable
+        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
+        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        if skirt_main_path in terminal.paths_in_path_variable(): terminal.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
+        if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+
+        # Set the path to the main SKIRT executable
+        self.skirt_path = fs.join(skirt_main_path, "skirt")
+
+        # Return
+        return True
 
     # -----------------------------------------------------------------
 
@@ -440,7 +496,7 @@ class SKIRTInstaller(Installer):
         if not self.has_qt: self.install_qt_local()
 
         # Get the SKIRT code
-        self.get_skirt_local()
+        if not self.has_skirt_source_local: self.get_skirt_local()
 
         # Build SKIRT
         self.build_skirt_local()
@@ -479,7 +535,26 @@ class SKIRTInstaller(Installer):
         """
 
         # Find qmake path
-        self.qmake_path = find_qmake()
+        path = find_qmake()
+
+        if self.config.reinstall_qt:
+
+            # Debugging
+            log.debug("Removing files and directories for re-installation of Qt ...")
+
+            source_path = fs.join(fs.home(), "qt.tar.gz")
+            other_source_path = fs.join(fs.home(), "qt.tar.xz")
+
+            decompress_path = fs.join(fs.home(), "Qt-install")
+            installation_path = fs.join(fs.home(), "Qt")
+
+            if fs.is_file(source_path): fs.remove_file(source_path)
+            if fs.is_file(other_source_path): fs.remove_file(other_source_path)
+
+            if fs.is_directory(decompress_path): fs.remove_directory(decompress_path)
+            if fs.is_directory(installation_path): fs.remove_directory(installation_path)
+
+        elif path is not None: self.qmake_path = path
 
     # -----------------------------------------------------------------
 
@@ -493,29 +568,40 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing Qt ...")
 
+        # Get the extension of the file
+        extension = fs.get_extension(self.qt_url, double=True)
+
         # Determine the path for the Qt source code
-        path = fs.join(fs.home(), "qt.tar.gz")
+        path = fs.join(fs.home(), "qt." + extension)
 
         # Download tar.gz file
-        network.download_file(qt_url, path)
+        network.download_file(self.qt_url, path)
 
         # Decompress tar.gz file
         decompress_path = fs.join(fs.home(), "Qt-install")
+        fs.create_directory(decompress_path)
         archive.decompress_file(path, decompress_path)
 
+        installation_path = fs.join(fs.home(), "Qt")
+        configure_options = qt_configure_options[:]
+        configure_options[0] = configure_options[0].replace("$INSTALLATION_PATH", installation_path)
+
         # Determine commands
-        configure_command = "./configure " + " ".join(qt_configure_options)
+        configure_command = "./configure " + " ".join(configure_options)
         make_command = "make"
         install_command = "make install"
 
+        # Get the only directory in the Qt-install directory
+        qt_everywhere_opensource_path = fs.directories_in_path(decompress_path)[0]
+
         # Configure
-        terminal.execute(configure_command, cwd=decompress_path, show_output=log.is_debug())
+        terminal.execute(configure_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
 
         # Make
-        terminal.execute(make_command, cwd=decompress_path, show_output=log.is_debug())
+        terminal.execute(make_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
 
         # Install
-        terminal.execute(install_command, cwd=decompress_path, show_output=log.is_debug())
+        terminal.execute(install_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
 
         # Remove the tar.gz file and the temporary directory
         fs.remove_file(path)
@@ -612,6 +698,37 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_skirt_source_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        has_source = not self.remote.is_empty(self.skirt_repo_path)
+        if not has_source: return False
+
+        # Get the git version
+        self.git_version = git.get_short_git_version(self.skirt_repo_path, self.remote)
+
+        # Determine SKIRT and FitSKIRT main paths
+        skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
+        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+
+        # Add to environment variables
+        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        if skirt_main_path not in self.remote.paths_in_path_variable: self.remote.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
+        if fitskirt_main_path not in self.remote.paths_in_path_variable: self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+
+        # Set the path to the main SKIRT executable
+        self.skirt_path = fs.join(skirt_main_path, "skirt")
+
+        # Return
+        return True
+
+    # -----------------------------------------------------------------
+
     def install_remote(self):
 
         """
@@ -633,7 +750,7 @@ class SKIRTInstaller(Installer):
         self.check_git_remote()
 
         # Get the SKIRT code
-        self.get_skirt_remote()
+        if not self.has_skirt_source_remote: self.get_skirt_remote()
 
         # Build SKIRT
         self.build_skirt_remote()
@@ -674,6 +791,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of C++ and MPI compilers ...")
 
+        if not self.modules.has_cpp: raise RuntimeError("C++ compiler could not be found")
+
         # C++ compiler
         cpp_path = self.modules.paths["cpp"]
         cpp_version = self.modules.versions["cpp"]
@@ -698,13 +817,13 @@ class SKIRTInstaller(Installer):
             # Set the path
             self.compiler_path = cpp_path
 
-        # MPI compiler
-        mpi_path = self.modules.paths["mpi"]
-        mpi_version = self.modules.versions["mpi"]
-        mpi_module = self.modules.names["mpi"]
-
         # Check if MPI compiler is present
-        if mpi_path is not None:
+        if self.modules.has_mpi:
+
+            # MPI compiler
+            mpi_path = self.modules.paths["mpi"]
+            mpi_version = self.modules.versions["mpi"]
+            mpi_module = self.modules.names["mpi"]
 
             # Check if module has to be loaded
             if mpi_module is not None:
@@ -740,8 +859,41 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking for Qt installation on remote ...")
 
+        # Re-install?
+        if self.config.reinstall_qt:
+
+            # Debugging
+            log.debug("Removing remote files and directories for re-installation of Qt ...")
+
+            # Get qmake path
+            if self.modules.has_qmake: qmake_path = self.modules.paths["qmake"]
+            else: qmake_path = None
+
+            temp_path = self.remote.home_directory
+            alternative_temp_path = self.remote.scratch_path
+
+            source_path = fs.join(temp_path, "qt.tar.gz")
+            other_source_path = fs.join(temp_path, "qt.tar.xz")
+
+            installation_path = fs.join(temp_path, qt_installation_dirname)
+            if alternative_temp_path is not None: alternative_installation_path = fs.join(alternative_temp_path, qt_installation_dirname)
+            else: alternative_installation_path = None
+
+            decompress_path = fs.join(temp_path, "Qt-install")
+            if alternative_temp_path is not None: alternative_decompress_path = fs.join(alternative_temp_path, "Qt-install")
+            else: alternative_decompress_path = None
+
+            if self.remote.is_file(source_path): self.remote.remove_file(source_path)
+            if self.remote.is_file(other_source_path): self.remote.remove_file(other_source_path)
+
+            if self.remote.is_directory(decompress_path): self.remote.remove_directory(decompress_path)
+            if alternative_decompress_path is not None and self.remote.is_directory(alternative_decompress_path): self.remote.remove_directory(alternative_decompress_path)
+
+            if self.remote.is_directory(installation_path): self.remote.remove_directory(installation_path)
+            if alternative_installation_path is not None and self.remote.is_directory(alternative_installation_path): self.remote.remove_directory(alternative_installation_path)
+
         # Qt is present
-        if self.modules.paths["qmake"] is not None:
+        elif self.modules.has_qmake:
 
             # Get the version
             version = self.modules.versions["qmake"]
@@ -779,12 +931,12 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of git on the remote host ...")
 
+        if not self.modules.has_git: raise RuntimeError("Git could not be found")
+
         # Get info
         path = self.modules.paths["git"]
         version = self.modules.versions["git"]
         module = self.modules.names["git"]
-
-        if path is None: raise RuntimeError("Git could not be found")
 
         # Set path and module name
         self.git_path = path
@@ -802,8 +954,6 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing Qt ...")
 
-        installation_name = "Qt"
-
         # Load compiler modules
         if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
         if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
@@ -817,44 +967,53 @@ class SKIRTInstaller(Installer):
             if self.remote.scratch_path is None: raise RuntimeError("Not enough space on home directory for installing Qt and scratch path not defined")
             else:
                 temp_path = self.remote.scratch_path
-                installation_path = fs.join(self.remote.scratch_path, installation_name)
+                installation_path = fs.join(self.remote.scratch_path, qt_installation_dirname)
         else:
 
             # Debugging
             log.debug("Installing Qt in the home directory ...")
 
             temp_path = self.remote.home_directory
-            installation_path = fs.join(self.remote.home_directory, installation_name)
+            installation_path = fs.join(self.remote.home_directory, qt_installation_dirname)
+
+        # Get the extension of the file
+        extension = fs.get_extension(self.qt_url, double=True)
 
         # Determine the path for the Qt source code
-        path = fs.join(temp_path, "qt.tar.gz")
+        path = fs.join(temp_path, "qt." + extension)
 
         # Download Qt
-        self.remote.download_from_url_to(qt_url, path)
+        if not self.remote.is_file(path): self.remote.download_from_url_to(self.qt_url, path)
 
         # Unarchive
         decompress_path = self.remote.create_directory_in(temp_path, "Qt-install", show_output=log.is_debug())
-        self.remote.decompress_file(path, decompress_path)
 
-        decompress_path = fs.join(temp_path, "Qt-install")
+        if not self.remote.is_directory(decompress_path) or self.remote.is_empty(decompress_path):
 
-        # Get the only directory in the Qt-install directory
-        qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
+            self.remote.decompress_file(path, decompress_path)
 
-        # Set the installation path
-        qt_configure_options[0].replace("$INSTALLATION_PATH", installation_path)
+            if not self.remote.is_directory(installation_path) or self.remote.is_empty(installation_path):
 
-        # Determine commands
-        configure_command = "./configure " + " ".join(qt_configure_options)
-        make_command = "make"
-        install_command = "make install"
+                # Get the only directory in the Qt-install directory
+                qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
 
-        # Execute the commands
-        self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
+                # Take a copy of the Qt configure options
+                configure_options = qt_configure_options[:]
+
+                # Set the installation path
+                configure_options[0] = configure_options[0].replace("$INSTALLATION_PATH", installation_path)
+
+                # Determine commands
+                configure_command = "./configure " + " ".join(configure_options)
+                make_command = "make"
+                install_command = "make install"
+
+                # Execute the commands
+                self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
 
         # Remove decompressed folder and the tar.gz file
-        self.remote.remove_file(path)
-        self.remote.remove_directory(decompress_path)
+        if self.remote.is_file(path): self.remote.remove_file(path)
+        if self.remote.is_directory(decompress_path): self.remote.remove_directory(decompress_path)
 
         # Success
         log.success("Qt was succesfully installed")

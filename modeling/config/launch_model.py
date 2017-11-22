@@ -53,8 +53,11 @@ definition.add_flag("contributions", "make output for the contributions to the f
 definition.add_flag("faceon", "include face-on maps and SEDs", True)
 definition.add_flag("edgeon", "include edge-on maps and SEDs", True)
 
+# USE IMAGES TO MAKE SEDs?
+definition.add_flag("make_image_seds", "make SEDs based on the (masked) output images", False)
+
 # Full instrument properties
-definition.add_flag("scattering_levels", "record scattering levels", 0)
+definition.add_optional("scattering_levels", "positive_integer" ,"record scattering levels", 0)
 definition.add_flag("counts", "record photon counts for the earth instrument", False)
 
 # To create the output
@@ -80,7 +83,7 @@ definition.sections["wg"].add_optional("range", "quantity_range", "range of wave
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")
 definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
-definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 5.) # was 0.5
+definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 2.) # was 0.5
 definition.sections["dg"].add_optional("bintree_min_level", "integer", "minimum depth level for binary trees", 9)
 definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum depth level for octrees", 3)
 definition.sections["dg"].add_optional("max_mass_fraction", "real", "maximum mass fraction in each cell", 1e-6)
@@ -104,5 +107,10 @@ definition.add_optional("nprocesses_local", "positive_integer", "number of paral
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
 definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
+
+# -----------------------------------------------------------------
+
+# Vertical extent of the total model
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
 
 # -----------------------------------------------------------------

@@ -1561,6 +1561,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Mdust__Mo"][index] * Unit("Msun")
         return value
 
@@ -1575,6 +1576,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Mdust_err"][index] * Unit("Msun")
         return value
 
@@ -1589,6 +1591,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["SFR__Mo_per_yr"][index] * Unit("Msun/yr")
         return value
 
@@ -1603,6 +1606,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["SFR_err"][index] * Unit("Msun/yr")
         return value
 
@@ -1617,6 +1621,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Mstar__Mo"][index] * Unit("Msun")
         return value
 
@@ -1631,6 +1636,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Mstar_err"][index] * Unit("Msun")
         return value
 
@@ -1645,6 +1651,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Lstar__W"][index] * Unit("W")
         return value
 
@@ -1659,6 +1666,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Lstar_err"][index] * Unit("W")
         return value
 
@@ -1673,6 +1681,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Ldust__W"][index] * Unit("W")
         return value
 
@@ -1687,6 +1696,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["Ldust_err"][index] * Unit("W")
         return value
 
@@ -1701,6 +1711,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["FUV_att"][index]
         return value
 
@@ -1715,6 +1726,7 @@ class DustPediaDatabase(object):
         """
 
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["FUV_att_err"][index]
         return value
 
@@ -1730,6 +1742,7 @@ class DustPediaDatabase(object):
 
         # Get the index of the galaxy in the Cigale results table
         index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: raise ValueError("Invalid galaxy name")
 
         # Get the parameters
         dust_mass = self.cigale_table["Mdust__Mo"][index] * Unit("Msun")

@@ -31,7 +31,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.configuration import prompt_string_list
 from ...magic.core.mask import Mask
 from ...magic.basics.mask import MaskBase
-from ...magic.core.alpha import AlphaMask
+from ...magic.core.alpha import AlphaMask, load_mask_or_alpha_mask
 from ...core.basics.range import RealRange
 from ...magic.tools import plotting
 from ...core.basics import containers
@@ -874,27 +874,39 @@ class MapsSelectionComponent(MapsComponent):
                         log.success("The clip mask for the '" + name + "' image with a sigma level of " + str(level) + " has already been created")
                         ignore.append(name)
 
-            # Convolve
-            if convolve:
+            # All can be ignored?
+            ignore_all_frames = sequences.same_contents(ignore, frames.names)
+            if ignore_all_frames: log.debug("All frames can be ignored")
 
-                frames.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
-                errors.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
+            # Some frames should be convolved and rebinned
+            if not ignore_all_frames:
 
-            # WCS is specified: rebin to this WCS
-            if wcs is not None:
+                # Convolve
+                if convolve:
 
-                frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
-                errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    frames.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
+                    errors.convolve_to_highest_fwhm(remote=remote, ignore=ignore)
 
-            # Otherwise, rebin to the highest pixelscale WCS
-            else:
+                # WCS is specified: rebin to this WCS
+                if wcs is not None:
 
-                # Rebin the frames to the same pixelgrid
-                frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
-                errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
 
-            # Get the common WCS of all the frames
-            if wcs is None: wcs = frames[0].wcs
+                # Otherwise, rebin to the highest pixelscale WCS
+                else:
+
+                    # Rebin the frames to the same pixelgrid
+                    frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+                    errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold, ignore=ignore)
+
+                # Get the common WCS of all the frames
+                first_not_ignored_name = sequences.find_first_not_in(frames.names, ignore)
+                if wcs is None: wcs = frames[first_not_ignored_name].wcs #wcs = frames.wcs #wcs = frames[0].wcs
+
+                # Debugging
+                log.debug("Coordinate system of the frames:")
+                if log.is_debug(): print(wcs)
 
             # Set softening radius from relative softening radius
             if relative_softening_radius is not None:
@@ -2348,6 +2360,83 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_components_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the radial profiles of the maps ...")
+
+        # Old
+        self.plot_old_component_radial_profiles(format=format)
+
+        # Young
+        self.plot_young_component_radial_profiles(format=format)
+
+        # Ionizing
+        self.plot_ionizing_component_radial_profiles(format=format)
+
+        # Dust
+        self.plot_dust_component_radial_profiles(format=format)
+
+    # -----------------------------------------------------------------
+
+    def plot_old_component_radial_profiles(self, format="pdf"):
+
+        """
+        Thisf unction ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of old stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of young stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_ionizing_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of ionizing stellar component maps ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_component_radial_profiles(self, format="pdf"):
+
+        """
+        This function ...
+        :param format:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting radial profiles of dust component maps ...")
+
+    # -----------------------------------------------------------------
+
     def plot_components_masks(self, format="pdf"):
 
         """
@@ -3119,8 +3208,9 @@ def load_single_mask(output_path, name, level, fuzzy):
     mask_path = get_single_mask_path(output_path, name, level, fuzzy=fuzzy)
 
     # Check
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    #if fuzzy: return AlphaMask.from_file(mask_path, no_wcs=True)
+    #else: return Mask.from_file(mask_path, no_wcs=True)
+    return load_mask_or_alpha_mask(mask_path, no_wcs=True)
 
 # -----------------------------------------------------------------
 
@@ -3176,8 +3266,9 @@ def load_combination_mask(output_path, levels, fuzzy):
     mask_path = get_combination_mask_path(output_path, levels, fuzzy)
 
     # Load and return
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    #if fuzzy: return AlphaMask.from_file(mask_path)
+    #else: return Mask.from_file(mask_path)
+    return load_mask_or_alpha_mask(mask_path)
 
 # -----------------------------------------------------------------
 
@@ -3233,7 +3324,8 @@ def load_resulting_mask(output_path, levels, fuzzy):
     mask_path = get_resulting_mask_path(output_path, levels, fuzzy)
 
     # Load and return
-    if fuzzy: return AlphaMask.from_file(mask_path)
-    else: return Mask.from_file(mask_path)
+    #if fuzzy: return AlphaMask.from_file(mask_path)
+    #else: return Mask.from_file(mask_path)
+    return load_mask_or_alpha_mask(mask_path)
 
 # -----------------------------------------------------------------

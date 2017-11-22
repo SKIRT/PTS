@@ -886,7 +886,7 @@ class SpawnSimulationStatus(SimulationStatus):
                 #print(list(line))
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 #log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
-                print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_suffix + message + skirt_debug_output_suffix + fmt.reset)
+                print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + message + skirt_debug_output_suffix + fmt.reset)
 
             # Add the line
             self.log_lines.append(line)

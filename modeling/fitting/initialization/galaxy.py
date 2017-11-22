@@ -139,7 +139,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         log.info("Creating the wavelength grids ...")
 
         # Fixed wavelengths (always in the grid)
-        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
+        fixed = self.normalization_wavelengths
 
         # Set options
         self.wg_generator.config.show = False

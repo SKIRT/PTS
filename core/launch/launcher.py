@@ -835,12 +835,12 @@ class SKIRTLauncher(Configurable):
         log.info("Launching the simulation remotely ...")
 
         # Resolve the remote screen output directory path
-        screen_output_path = self.screen_output_path.replace("$HOME", self.remote.home_directory).replace("$SKIRT", self.remote.skirt_root_path)
+        screen_output_path = self.screen_output_path.replace("$HOME", self.remote.home_directory).replace("$SKIRT", self.remote.skirt_root_path) if self.screen_output_path is not None else None
 
         # Create the necessary directories for the screen output file
         #screen_output_dirpath = fs.directory_of(screen_output_path)
         #if not self.remote.is_directory(screen_output_dirpath): self.remote.create_directory(screen_output_dirpath, recursive=True)
-        if not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
+        if screen_output_path is not None and not self.remote.is_directory(screen_output_path): self.remote.create_directory(screen_output_path, recursive=True)
 
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,

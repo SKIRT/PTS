@@ -106,6 +106,36 @@ def real_or_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def real_or_angle_or_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return real(argument)
+    except ValueError:
+        try: return angle(argument)
+        except ValueError: return quantity(argument)
+
+# -----------------------------------------------------------------
+
+def real_or_angle_or_length_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return real(argument)
+    except ValueError:
+        try: return angle(argument)
+        except ValueError: return length_quantity(argument)
+
+# -----------------------------------------------------------------
+
 def real_list_or_quantity_list(argument):
 
     """
@@ -758,6 +788,19 @@ def real_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def real_or_real_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return real(argument)
+    except ValueError: return real_tuple(argument)
+
+# -----------------------------------------------------------------
+
 def quantity_tuple(argument):
 
     """
@@ -773,6 +816,19 @@ def quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def quantity_or_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return quantity(argument)
+    except ValueError: return quantity_tuple(argument)
+
+# -----------------------------------------------------------------
+
 def angle_tuple(argument):
 
     """
@@ -785,6 +841,19 @@ def angle_tuple(argument):
         a, b = map(angle, argument.split(","))
         return a, b
     except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
+
+# -----------------------------------------------------------------
+
+def angle_or_angle_tuple(argument):
+
+    """
+    Thisj function ...
+    :param argument:
+    :return:
+    """
+
+    try: return angle(argument)
+    except ValueError: return angle_tuple(argument)
 
 # -----------------------------------------------------------------
 
@@ -1216,6 +1285,26 @@ def filter_real_list_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def filter_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    new = dict()
+    for key, value in d.items():
+        fltr = filter(key)
+        value = file_path(value)
+        new[fltr] = value
+
+    # Return the new dictionary
+    return new
+
+# -----------------------------------------------------------------
+
 def string_filepath_dictionary(argument):
 
     """
@@ -1454,6 +1543,19 @@ def length_quantity_tuple(argument):
         a, b = map(length_quantity, argument.split(','))
         return a, b
     except: raise ValueError("Tuple must be of format a length_unit_a, b length_unit_b")
+
+# -----------------------------------------------------------------
+
+def length_quantity_or_length_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return length_quantity(argument)
+    except ValueError: return length_quantity_tuple(argument)
 
 # -----------------------------------------------------------------
 
@@ -2123,6 +2225,38 @@ def pixel_shape(argument):
     from ...magic.basics.vector import PixelShape
     shape = integer_tuple(argument)
     return PixelShape.from_xy_tuple(shape)
+
+# -----------------------------------------------------------------
+
+def pixelscale(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.pixelscale import Pixelscale
+    result = angle_or_angle_tuple(argument)
+
+    if types.is_tuple(result): return Pixelscale(result[0], result[1])
+    else: return Pixelscale(result)
+
+# -----------------------------------------------------------------
+
+def physical_pixelscale(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.pixelscale import PhysicalPixelscale
+    result = length_quantity_or_length_quantity_tuple(argument)
+
+    if types.is_tuple(result): return PhysicalPixelscale(result[0], result[1])
+    else: return PhysicalPixelscale(result)
 
 # -----------------------------------------------------------------
 

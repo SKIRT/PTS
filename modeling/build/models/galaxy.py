@@ -476,6 +476,18 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_msun_per_year(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.sfr.to("Msun/yr").value
+
+    # -----------------------------------------------------------------
+
+    @property
     def fuv_attenuation(self):
 
         """
@@ -575,7 +587,7 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config = dict()
         config["name"] = self.model_name
         config["output"] = self.model_stellar_path
-        config["default_sfr"] = self.sfr
+        config["default_sfr"] = self.sfr_msun_per_year
         config["fuv_attenuation"] = self.fuv_attenuation
         config["default_old_bulge_metallicity"] = self.metallicity
         config["default_old_disk_metallicity"] = self.metallicity
@@ -590,7 +602,9 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["additional"] = self.config.additional
 
         # Set default options for components thare are already present so they won't be prompted for anymore
-        use_default = None
+        #use_default = None
+        use_default = ["name", "output", "default_sfr", "fuv_attenuation", "default_old_bulge_metallicity", "default_old_disk_metallicity", "default_young_metallicity", "default_ionizing_metallicity"]
+        use_default += ["bulge", "old", "young", "ionizing", "additional"]
         if self.has_bulge:
             if use_default is None: use_default = bulge_default_parameters
             else: use_default.extend(bulge_default_parameters)
@@ -606,6 +620,11 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         if self.has_all_basic_stellar:
             if use_default is None: use_default = general_stellar_default_parameters
             else: use_default.extend(general_stellar_default_parameters)
+
+        # Use defaults?
+        if self.config.use_defaults:
+            config["use_defaults"] = True
+            use_default.append("use_defaults")
 
         # Create the builder
         builder = StarsBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True, use_default=use_default)
@@ -708,10 +727,18 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         config["additional"] = self.config.additional
 
         # Set default options for components that are already present so they won't be prompted for anymore
-        use_default = None
+        #use_default = None
+        use_default = ["name", "output", "default_dust_mass"]
+        use_default += ["disk", "additional"]
         if self.has_dust:
             if use_default is None: use_default = dust_default_parameters
             else: use_default.extend(dust_default_parameters)
+        #print(use_default)
+
+        # Use defaults?
+        if self.config.use_defaults:
+            config["use_defaults"] = True
+            use_default.append("use_defaults")
 
         # Create the builder
         builder = DustBuilder(interactive=True, cwd=self.config.path, config=config, prompt_optional=True, use_default=use_default)

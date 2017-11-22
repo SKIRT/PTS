@@ -23,6 +23,7 @@ from .memoryestimator import MemoryEstimator, estimate_memory
 from ..simulation.skifile import SkiFile
 from ..simulation.parallelization import Parallelization
 from ..tools.utils import lazyproperty
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -79,6 +80,22 @@ def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, nc
     :param nwavelengths:
     :return:
     """
+
+    # Debug
+    prefix = fs.strip_extension(fs.name(ski_path))
+    log.debug("Determining parallelization scheme for the '" + prefix + "' simulation with the following parameters:")
+    log.debug("")
+    if memory is not None: log.debug(" - memory requirement: " + str(memory))
+    log.debug(" - nnodes: " + str(nnodes))
+    log.debug(" - nsockets: " + str(nsockets))
+    log.debug(" - ncores: " + str(ncores))
+    log.debug(" - host memory: " + str(host_memory))
+    log.debug(" - mpi: " + str(mpi))
+    log.debug(" - hyperthreading: " + str(hyperthreading))
+    log.debug(" - threads per core: " + str(threads_per_core))
+    if ncells is not None: log.debug(" - ncells: " + str(ncells))
+    if nwavelengths is not None: log.debug(" - nwavelengths: " + str(nwavelengths))
+    log.debug("")
 
     # Create the parallelization tool
     tool = ParallelizationTool()
@@ -155,13 +172,13 @@ class ParallelizationTool(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get additional properties from the ski file
+        # 2. Get additional properties from the ski file
         self.get_properties()
 
-        # 2. Set the parallelization scheme
+        # 3. Set the parallelization scheme
         self.set_parallelization()
 
-        # 3. Show the parallelization scheme
+        # 4. Show the parallelization scheme
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -307,13 +324,23 @@ class ParallelizationTool(Configurable):
 
                 #nthreads = ppn / nprocesses_per_node
                 ncores_per_process = ppn / nprocesses_per_node
+                #ncores_per_process = int(math.ceil(ncores_per_process)) -> this leads to total_ncores that is larger than self.config.nnodes * self.config.nsockets * self.config.ncores
+                ncores_per_process = int(ncores_per_process)
 
                 # Determine number of threads per core
                 threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
 
+                # Threads per process
                 threads_per_process = threads_per_core * ncores_per_process
 
-                total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+                # Total number of cores
+                #total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+                total_ncores = nprocesses * ncores_per_process
+
+                #print("ncores per process: " + str(ncores_per_process))
+                #print("threads per core: " + str(threads_per_core))
+                #print("threads per process: " + str(threads_per_process))
+                #print("total ncores: " + str(total_ncores))
 
                 # Nlambda >= 10 * Np?
                 #nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()

@@ -27,6 +27,28 @@ from .map import Map
 
 # -----------------------------------------------------------------
 
+def load_composite(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import introspection
+    from ..tools import filesystem as fs
+
+    first_line = fs.get_first_line(path)
+    class_name = first_line.split("Type: ")[1].strip()
+
+    # Get the PTS composite class
+    cls = introspection.load_class(class_name)
+
+    # Load the object
+    return cls.from_file(path)
+
+# -----------------------------------------------------------------
+
 class SimplePropertyComposite(object):
 
     """
@@ -47,8 +69,8 @@ class SimplePropertyComposite(object):
         # The path
         self._path = None
 
-        # The descriptions
-        self._descriptions = dict()
+        # The descriptions: ordered to remember the order
+        self._descriptions = OrderedDict()
 
         # The parsing types
         self._ptypes = dict()
@@ -220,16 +242,41 @@ class SimplePropertyComposite(object):
         # Set 'simple' property
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
+
         elif isinstance(value, dict):  # elif isinstance(value, Map):
+
+            # There is a subsection with this name: fill in the attributes for that subsection
+            #if name in self._descriptions:
+
             assert name in self._descriptions
             #print(value)
             #print(getattr(self, name))
             #print(name in self.__dict__)
-            for key in value:
-                keyvalue = value[key]
-                #print(self.__dict__)
-                self.__dict__[name].__setattr__(key, keyvalue)
-            return
+
+            # Add the section if not yet present or if None
+            if name not in self.__dict__ or self.__dict__[name] is None:
+
+                # Set dict
+                self.__dict__[name] = value
+
+            # Fill in sub-section properties
+            elif isinstance(self.__dict__[name], SimplePropertyComposite):
+
+                for key in value:
+                    keyvalue = value[key]
+                    # print(self.__dict__)
+                    self.__dict__[name].__setattr__(key, keyvalue)
+                return
+
+            # Set already existing dictionary's items
+            elif isinstance(self, dict):
+
+                for key in value: self.__dict__[name][key] = value
+                return
+
+            # Just set the whole dictionary as an attribute
+            #else: pass #self.__dict__[name] = value
+
         else:
 
             # Check the type
@@ -511,6 +558,29 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     @property
+    def ordered_property_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in self._descriptions:
+
+            if name not in self._ptypes:
+                if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Property '" + name + "' doesn't have its type defined")
+                else: continue
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def section_names(self):
 
         """
@@ -692,20 +762,21 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def to_lines(self, line_prefix="", ignore=None, ignore_none=False):
+    def to_lines(self, line_prefix="", ignore=None, ignore_none=False, bullet="-"):
 
         """
         This function ...
         :param line_prefix:
         :param ignore:
         :param ignore_none:
+        :param bullet:
         :return:
         """
 
         lines = []
 
         # The simple properties
-        for name in self.property_names:
+        for name in self.ordered_property_names:
 
             # Get the value
             value = getattr(self, name)
@@ -716,7 +787,7 @@ class SimplePropertyComposite(object):
 
             # Generate line
             dtype, value = stringify(value)
-            line = " - " + fmt.bold + name + fmt.reset + ": " + value
+            line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": " + value
             lines.append(line_prefix + line)
 
         # Sections
@@ -735,7 +806,7 @@ class SimplePropertyComposite(object):
                 section = getattr(self, name)
                 for key in section:
 
-                    line = line_prefix + "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+                    line = line_prefix + "    " + " " + bullet + " " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
                     section_lines.append(line)
 
             else: raise ValueError("Unknown type for section: " + str(type(getattr(self, name))))
@@ -747,18 +818,19 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix="", ignore=None, ignore_none=False):
+    def to_string(self, line_prefix="", ignore=None, ignore_none=False, bullet="-"):
 
         """
         This function ...
         :param line_prefix:
         :param ignore:
         :param ignore_none:
+        :param bullet:
         :return:
         """
 
         # Return
-        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none))
+        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none, bullet=bullet))
 
     # -----------------------------------------------------------------
 
@@ -807,6 +879,11 @@ class SimplePropertyComposite(object):
             load_properties(properties, f)
 
         #print(properties)
+
+        # Add directory path
+        from ..tools import filesystem as fs
+        dirpath = fs.directory_of(path)
+        properties["dirpath"] = dirpath
 
         # Create the class instance
         composite = cls(**properties)

@@ -17,6 +17,8 @@ from ..tools import filesystem as fs
 from ..tools import types
 from .skifile7 import SkiFile7
 from .skifile8 import SkiFile8
+from .skifile7 import LabeledSkiFile7
+from .skifile8 import LabeledSkiFile8
 from ..tools.introspection import skirt_main_version, has_skirt
 
 # -----------------------------------------------------------------
@@ -26,8 +28,12 @@ else: version_number = skirt_main_version()
 
 # -----------------------------------------------------------------
 
-if version_number == 8: SkiFile = SkiFile8
-elif version_number == 7 : SkiFile = SkiFile7
+if version_number == 8:
+    SkiFile = SkiFile8
+    LabeledSkiFile = LabeledSkiFile8
+elif version_number == 7:
+    SkiFile = SkiFile7
+    LabeledSkiFile = LabeledSkiFile7
 else: raise ValueError("Invalid SKIRT version: " + str(version_number))
 
 # -----------------------------------------------------------------

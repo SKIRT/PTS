@@ -535,7 +535,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
         # Use default values
-        if self.config.use_default:
+        if self.config.use_defaults:
 
             setter = PassiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
             config = setter.run(definition)

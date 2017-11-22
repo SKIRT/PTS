@@ -884,12 +884,23 @@ def is_single_quoted(string):
     :return:
     """
 
-
     if "'" in string:
         if '"' in string: raise ValueError("String (" + string + ") contains both kinds of quote characters")
         else: return True
     elif '"' in string: return False
     else: return False
+
+# -----------------------------------------------------------------
+
+def contains_single_quotes(string):
+
+    """
+    Thisf unction ...
+    :param string:
+    :return:
+    """
+
+    return "'" in string
 
 # -----------------------------------------------------------------
 
@@ -906,6 +917,18 @@ def is_double_quoted(string):
         else: return True
     elif "'" in string: return False
     else: return False
+
+# -----------------------------------------------------------------
+
+def contains_double_quotes(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return '"' in string
 
 # -----------------------------------------------------------------
 

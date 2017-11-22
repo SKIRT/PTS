@@ -27,7 +27,7 @@ from ...core.basics.range import RealRange
 from ...core.tools import sequences
 from ...core.remote.remote import Remote
 from ...magic.core.mask import Mask, intersection
-from ...magic.core.alpha import AlphaMask
+from ...magic.core.alpha import AlphaMask, load_mask_or_alpha_mask
 from ...magic.core.detection import Detection
 from ...core.tools.stringify import tostr
 from ...core.basics.range import QuantityRange
@@ -3693,7 +3693,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.old_step_path_for_mask(name, clip_step)
 
                 # Load the mask
-                self.old_clip_masks[name] = Mask.from_file(path)
+                self.old_clip_masks[name] = load_mask_or_alpha_mask(path)
 
             # Check whether the softening step output is present
             if self.has_old_step(name, softened_step):
@@ -3705,7 +3705,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.old_step_path_for_mask(name, softened_step)
 
                 # Load the mask
-                self.old_softening_masks[name] = Mask.from_file(path)
+                self.old_softening_masks[name] = load_mask_or_alpha_mask(path)
 
     # -----------------------------------------------------------------
 
@@ -3735,7 +3735,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.young_step_path_for_mask(name, clip_step)
 
                 # Load the mask
-                self.young_clip_masks[name] = Mask.from_file(path)
+                self.young_clip_masks[name] = load_mask_or_alpha_mask(path)
 
             # Check whether the softening step output is present
             if self.has_young_step(name, softened_step):
@@ -3747,7 +3747,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.young_step_path_for_mask(name, softened_step)
 
                 # Load the mask
-                self.young_softening_masks[name] = Mask.from_file(path)
+                self.young_softening_masks[name] = load_mask_or_alpha_mask(path)
 
     # -----------------------------------------------------------------
 
@@ -3777,7 +3777,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.ionizing_step_path_for_mask(name, clip_step)
 
                 # Load the mask
-                self.ionizing_clip_masks[name] = Mask.from_file(path)
+                self.ionizing_clip_masks[name] = load_mask_or_alpha_mask(path)
 
             # Check whether the softening step output is present
             if self.has_ionizing_step(name, softened_step):
@@ -3789,7 +3789,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.ionizing_step_path_for_mask(name, softened_step)
 
                 # Load the mask
-                self.ionizing_softening_masks[name] = Mask.from_file(path)
+                self.ionizing_softening_masks[name] = load_mask_or_alpha_mask(path)
 
     # -----------------------------------------------------------------
 
@@ -3819,7 +3819,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.dust_step_path_for_mask(name, clip_step)
 
                 # Load the mask
-                self.dust_clip_masks[name] = Mask.from_file(path)
+                self.dust_clip_masks[name] = load_mask_or_alpha_mask(path)
 
             # Check whether the softening step output is present
             if self.has_dust_step(name, softened_step):
@@ -3831,7 +3831,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
                 path = self.dust_step_path_for_mask(name, softened_step)
 
                 # Load the mask
-                self.dust_softening_masks[name] = Mask.from_file(path)
+                self.dust_softening_masks[name] = load_mask_or_alpha_mask(path)
 
     # -----------------------------------------------------------------
 
@@ -6570,6 +6570,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.old_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_old_settings(name)
             self.old_clip_masks[name] = self.clip_map(self.old_maps[name], origins, **settings)
@@ -6586,6 +6589,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save info
             settings.pop("remote")
             settings.pop("boundary")
+            settings["ignore_filters_clipping"] = self.config.ignore_filters_clipping
             if self.config.steps: self.write_old_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6677,6 +6681,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.young_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_young_settings(name)
             self.young_clip_masks[name] = self.clip_map(self.young_maps[name], origins, **settings)
@@ -6693,6 +6700,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save info
             settings.pop("remote")
             settings.pop("boundary")
+            settings["ignore_filters_clipping"] = self.config.ignore_filters_clipping
             if self.config.steps: self.write_young_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6784,6 +6792,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.ionizing_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_ionizing_settings(name)
             self.ionizing_clip_masks[name] = self.clip_map(self.ionizing_maps[name], origins, **settings)
@@ -6800,6 +6811,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save info
             settings.pop("remote")
             settings.pop("boundary")
+            settings["ignore_filters_clipping"] = self.config.ignore_filters_clipping
             if self.config.steps: self.write_ionizing_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -6891,6 +6903,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Get the origins
             origins = self.dust_map_origins[name]
 
+            # Remove filters to be ignored
+            if self.config.ignore_filters_clipping is not None: origins = sequences.removed(origins, self.config.ignore_filters_clipping)
+
             # Clip the map (returns the mask)
             settings = self.get_clip_dust_settings(name)
             self.dust_clip_masks[name] = self.clip_map(self.dust_maps[name], origins, **settings)
@@ -6907,6 +6922,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
             # Save info
             settings.pop("remote")
             settings.pop("boundary")
+            settings["ignore_filters_clipping"] = self.config.ignore_filters_clipping
             if self.config.steps: self.write_dust_info(name, clip_step, origins=origins, **settings)
 
     # -----------------------------------------------------------------
@@ -9119,6 +9135,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Maps
         self.plot_components_maps(format=self.config.plotting_format)
+
+        # Radial profiles
+        self.plot_components_radial_profiles(format=self.config.plotting_format)
 
         # Masks
         self.plot_components_masks(format=self.config.plotting_format)

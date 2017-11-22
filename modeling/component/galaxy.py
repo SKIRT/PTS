@@ -211,6 +211,42 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def photometry_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_image_paths_for_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths_for_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def photometry_image_paths_for_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.photometry_image_paths_for_filter_names
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path(self, name):
 
         """
@@ -1210,6 +1246,30 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def normalization_filters(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return [self.i1_filter, self.fuv_filter]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self.i1_filter.pivot, self.fuv_filter.pivot]
+
+    # -----------------------------------------------------------------
+
+    @property
     def galaxy_properties(self):
 
         """
@@ -1722,6 +1782,9 @@ class GalaxyModelingComponent(ModelingComponent):
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
 
+        # Set modeling path
+        deprojector.config.path = self.config.path
+
         # Set settings
         deprojector.config.method = method
         deprojector.config.writing.deprojections = write
@@ -1760,6 +1823,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Check edgeon setting
         if edgeon and method != "skirt": raise ValueError("Edgeon is not possible when method is not 'skirt'")
+
+        # Set the modeling path
+        deprojector.config.path = self.config.path
 
         # Set settings
         deprojector.config.method = method
@@ -1803,6 +1869,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Get the center pixel
         center = get_center(npixels)
+
+        # Set the modeling path
+        projector.config.path = self.config.path
 
         # Set settings
         projector.config.writing.projections = write
@@ -1850,6 +1919,9 @@ class GalaxyModelingComponent(ModelingComponent):
         # Get the center pixel
         center = get_center(npixels)
 
+        # Set the modeling path
+        projector.config.path = self.config.path
+
         # Set settings
         projector.config.writing.projections = write
         projector.config.faceon = False
@@ -1888,6 +1960,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Create the projector
         projector = Projector(cwd=root_path)
+
+        # Set the modeling path
+        projector.config.path = self.config.path
 
         # Set settings
         projector.config.writing.projections = write

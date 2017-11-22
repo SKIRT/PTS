@@ -224,6 +224,9 @@ definition.add_flag("plot_clipping_young", "plot clipping of young stellar maps"
 definition.add_flag("plot_clipping_ionizing", "plot clipping of ionizing stellar maps")
 definition.add_flag("plot_clipping_dust", "plot clipping of dust maps")
 
+# Ignore filters
+definition.add_optional("ignore_filters_clipping", "filter_list", "ignore these filters for making the clip maps")
+
 # Soften edges
 definition.add_flag("soften_old", "soften edges of old stellar maps", True)
 definition.add_flag("soften_young", "soften edges of young stellar maps", True)

@@ -190,3 +190,8 @@ definition.add_flag("plot_clipping_ionizing", "plot clipping steps for ionizing 
 definition.add_flag("plot_clipping_dust", "plot clipping steps for dust maps")
 
 # -----------------------------------------------------------------
+
+# Ignore filters
+definition.add_optional("ignore_filters", "filter_list", "ignore these filters for making the clip maps")
+
+# -----------------------------------------------------------------

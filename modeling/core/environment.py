@@ -745,6 +745,57 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def photometry_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.phot_images_path, extension="fits", returns="path")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometry_image_paths_for_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = dict()
+
+        # Loop over the image file names
+        for name in self.photometry_image_names:
+
+            # Get the filter
+            fltr = parse_filter(name)
+
+            # Get the image path
+            path = fs.join(self.phot_images_path, name + ".fits")
+
+            # Add to dictionary
+            paths[fltr] = path
+
+        # Return the dictionary
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometry_image_paths_for_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {str(fltr): path for fltr, path in self.photometry_image_paths_for_filters.items()}
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path(self, name):
 
         """
@@ -1470,6 +1521,54 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         if framelist: return self.dataset.get_framelist_for_filters(filters, named=named)
         else: return self.dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dataset.get_frame_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.dataset.get_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return self.dataset.get_frame_path_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dataset.get_frame(name)
 
     # -----------------------------------------------------------------
 

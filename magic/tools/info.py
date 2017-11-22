@@ -23,8 +23,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools.stringify import tostr
 from . import headers
 from ..basics.coordinatesystem import CoordinateSystem
-from ...core.tools import types
-from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
 from ...core.units.unit import parse_unit as u
 from ...core.units.unit import parse_quantity
@@ -52,7 +50,7 @@ def get_image_info(image_name, frame, **kwargs):
 
     """
     This function ...
-    :param name:
+    :param image_name:
     :param frame:
     :param kwargs:
     :return:
@@ -171,6 +169,11 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session_or_re
     if strings.unquote(fwhm_string) == "None": fwhm = None
     else: fwhm = parse_quantity(fwhm_string)
 
+    session.send_line("psf_filter = headers.get_psf_filter(header)")
+    psf_filter_string = session.get_simple_variable('str(psf_filter)')
+    if strings.unquote(psf_filter_string) == "None": psf_filter_name = None
+    else: psf_filter_name = psf_filter_string
+
     # Set the info
     info = OrderedDict()
 
@@ -181,6 +184,7 @@ def get_image_info_from_remote_header_file(image_name, frame_path, session_or_re
     if kwargs.pop("unit", True): info["Unit"] = unit
     if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
+    if kwargs.pop("psf_filter", True): info["PSF filter"] = psf_filter_name
     if kwargs.pop("xsize", True): info["xsize"] = nxpixels
     if kwargs.pop("ysize", True): info["ysize"] = nypixels
     if kwargs.pop("filesize", True): info["File size"] = session.file_size(frame_path)
@@ -223,13 +227,19 @@ def get_image_info_from_header(image_name, header, **kwargs):
     unit = headers.get_unit(header)
     pixelscale = headers.get_pixelscale(header)
     if pixelscale is None:
-        wcs = CoordinateSystem(header)
+        # Get flattened form of the header
+        flattened_header = headers.flattened(header)
+        wcs = CoordinateSystem(flattened_header)
+        #print(wcs)
         pixelscale = wcs.average_pixelscale
     else:
         pixelscale = pixelscale.average
     fwhm = headers.get_fwhm(header)
     nxpixels = header["NAXIS1"]
     nypixels = header["NAXIS2"]
+
+    psf_filter = headers.get_psf_filter(header)
+    psf_filter_name = str(psf_filter)
 
     path = kwargs.pop("image_path", None)
 
@@ -244,6 +254,7 @@ def get_image_info_from_header(image_name, header, **kwargs):
     if kwargs.pop("unit", True): info["Unit"] = unit
     if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
+    if kwargs.pop("psf_filter", True): info["PSF filter"] = psf_filter_name
     if kwargs.pop("xsize", True): info["xsize"] = nxpixels
     if kwargs.pop("ysize", True): info["ysize"] = nypixels
 

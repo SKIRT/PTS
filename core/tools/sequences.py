@@ -1306,3 +1306,53 @@ def contains_all(lst, other):
     return True
 
 # -----------------------------------------------------------------
+
+def removed(sequence, remove):
+
+    """
+    Thisf unction ...
+    :param sequence:
+    :param remove:
+    :return:
+    """
+
+    new = []
+
+    for item in sequence:
+
+        if item in remove: continue
+        new.append(item)
+
+    return new
+
+# -----------------------------------------------------------------
+
+def find_first_in_both(seq_a, seq_b):
+
+    """
+    This function ...
+    :param seq_a:
+    :param seq_b:
+    :return:
+    """
+
+    for item in seq_a:
+        if item in seq_b: return item
+    return None
+
+# -----------------------------------------------------------------
+
+def find_first_not_in(seq_a, seq_b):
+
+    """
+    This function ...
+    :param seq_a:
+    :param seq_b:
+    :return:
+    """
+
+    for item in seq_a:
+        if item not in seq_b: return item
+    return None
+
+# -----------------------------------------------------------------
