@@ -34,6 +34,10 @@ from ..extract.progress import ProgressTable
 from ..extract.timeline import TimeLineTable
 from ..extract.memory import MemoryUsageTable
 from ..tools import sequences
+from ..tools.utils import lazyproperty
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ..filter.filter import parse_filter
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -666,6 +670,18 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def rgb_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.misc_options.path, "rgb", recursive=True)
+
+    # -----------------------------------------------------------------
+
     def make_rgb(self):
 
         """
@@ -680,11 +696,23 @@ class BasicAnalyser(Configurable):
         self.rgb_maker = RGBImageMaker()
 
         # Run the maker
-        self.rgb_maker.run(simulation=self.simulation, output_path=self.misc_options.path)
+        self.rgb_maker.run(simulation=self.simulation, output_path=self.rgb_output_path)
 
         # Done
         self.simulation.analysed_misc.append(rgb_name)
         self.simulation.save()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def animations_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.misc_options.path, "animations", recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -705,7 +733,7 @@ class BasicAnalyser(Configurable):
         self.animations_maker.config.write_frames = self.misc_options.write_animation_frames
 
         # Run the maker
-        self.animations_maker.run(simulation=self.simulation, output_path=self.misc_options.path)
+        self.animations_maker.run(simulation=self.simulation, output_path=self.animations_output_path)
 
         # Done
         self.simulation.analysed_misc.append(animations_name)
@@ -722,6 +750,18 @@ class BasicAnalyser(Configurable):
         """
 
         return self.misc_options.observation_filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fluxes_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.misc_options.path, "fluxes", recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -742,7 +782,7 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.config.spectral_convolution = self.misc_options.fluxes_spectral_convolution
 
         # Run
-        self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
+        self.flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_output_path,
                                  filter_names=self.filters_for_fluxes,
                                  instrument_names=self.misc_options.observation_instruments,
                                  errors=self.misc_options.flux_errors,
@@ -754,7 +794,7 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def fluxes_from_images_instruments(self):
 
         """
@@ -762,7 +802,78 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
-        return [self.misc_options.fluxes_from_images_instrument]
+        if self.misc_options.fluxes_from_images_instrument is not None: return [self.misc_options.fluxes_from_images_instrument]
+        else: return self.misc_options.observation_instruments
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_fluxes_from_images_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_fluxes_from_images_instrument: raise ValueError("Not a single instrument")
+        else: return self.fluxes_from_images_instruments[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nfluxes_from_images_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.fluxes_from_images_instruments)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_single_fluxes_from_images_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nfluxes_from_images_instruments == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fluxes_from_images_coordinate_systems(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No WCS is specified
+        if self.misc_options.fluxes_from_images_wcs is None:
+
+            # Masks are given: WCS has to be specified
+            if self.has_fluxes_from_images_masks: raise ValueError("When masks are specified for the images, coordinate system of the simulated datacube must also be specified")
+            else: return None
+
+        # Wcs is specified, but multiple instruments: fail
+        elif not self.has_single_fluxes_from_images_instrument: raise ValueError("Cannot specifify coordinate system when multiple instruments should be used for creating image fluxes")
+
+        # Return the coordinate system
+        else:
+
+            # Load the coordinate system
+            wcs = CoordinateSystem.from_file(self.misc_options.fluxes_from_images_wcs)
+
+            # Create dictionary for the sole instruments
+            coordinate_systems = dict()
+            coordinate_systems[self.single_fluxes_from_images_instrument] = wcs
+
+            # Return the dictionary
+            return coordinate_systems
 
     # -----------------------------------------------------------------
 
@@ -773,6 +884,86 @@ class BasicAnalyser(Configurable):
         This function ...
         :return:
         """
+
+        if self.has_fluxes_from_images_masks: return self.fluxes_from_images_masks.keys()
+        else: return self.misc_options.observation_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_from_images_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.fluxes_from_images_masks is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fluxes_from_images_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No mask paths specified
+        if self.misc_options.fluxes_from_images_masks is None: return None
+
+        # Check whether only one instrument is specified
+        if not self.has_single_fluxes_from_images_instrument: raise ValueError("When masks are specified, only one instrument can be used")
+
+        # Initialize a dictionary for the masks per filter
+        masks_instrument = dict()
+
+        # Loop over the filter names
+        for filter_name in self.misc_options.fluxes_from_images_masks:
+
+            # Get filter
+            fltr = parse_filter(filter_name)
+
+            # Load the mask from frame
+            if self.misc_options.fluxes_from_images_mask_from_nans:
+
+                # Determine path
+                frame_path = self.misc_options.fluxes_from_images_masks[filter_name]
+
+                # Load mask
+                mask = Mask.nans_from_file(frame_path, plane=self.misc_options.fluxes_from_images_mask_plane)
+
+            # Load mask directly
+            else:
+
+                # Determine path
+                mask_path = self.misc_options.fluxes_from_images_masks[filter_name]
+
+                # Load mask
+                mask = Mask.from_file(mask_path, plane=self.misc_options.fluxes_from_images_mask_plane)
+
+            # Set the mask
+            masks_instrument[fltr] = mask
+
+        # Create dictionary with the masks for the sole instrument
+        masks = dict()
+        masks[self.single_fluxes_from_images_instrument] = masks_instrument
+
+        # Return the dictionary of masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fluxes_from_images_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.misc_options.path, "image fluxes", recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -797,11 +988,13 @@ class BasicAnalyser(Configurable):
         self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
 
         # Run
-        self.image_flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
+        self.image_flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_from_images_output_path,
                                        filter_names=self.filters_for_fluxes_from_images,
                                        instrument_names=self.fluxes_from_images_instruments,
                                        errors=self.misc_options.fluxes_from_images_errrors,
-                                       no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters)
+                                       no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters,
+                                       coordinate_systems=self.fluxes_from_images_coordinate_systems,
+                                       masks=self.fluxes_from_images_masks)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_from_images_name)
@@ -818,6 +1011,18 @@ class BasicAnalyser(Configurable):
         """
 
         return sequences.elements_not_in_other(self.misc_options.observation_filters, self.misc_options.no_images_filters, check_existing=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.misc_options.path, "images", recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -854,7 +1059,7 @@ class BasicAnalyser(Configurable):
 
         # General things
         input_dict["simulation"] = self.simulation
-        input_dict["output_path"] = self.misc_options.path
+        input_dict["output_path"] = self.images_output_path
 
         # Filters and instruments
         input_dict["filter_names"] = self.filters_for_images

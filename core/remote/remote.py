@@ -3924,6 +3924,8 @@ class Remote(object):
 
             origin_type = "files"
 
+            copy_command += self.host.user + "@" + self.host.name + ":"
+
             # Escape possible space characters
             #origin = [path.replace(" ", "\\\ ") for path in origin]
             origin_strings = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
@@ -3958,7 +3960,7 @@ class Remote(object):
         if new_name is not None: copy_command += new_name + "'"
 
         # Debugging
-        self.debug("Copy command: " + copy_command)
+        self.debug("Download command: " + copy_command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
@@ -4260,7 +4262,7 @@ class Remote(object):
         if new_name is not None: copy_command += new_name + "'"
 
         # Debugging
-        self.debug("Copy command: " + copy_command)
+        self.debug("Upload command: " + copy_command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)

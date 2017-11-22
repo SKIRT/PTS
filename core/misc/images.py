@@ -1014,7 +1014,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
         for path in self.total_datacube_paths:
 
             # Get the name of the instrument
-            instr_name = instrument_name(path, self.simulation_prefix)
+            instr_name = get_datacube_instrument_name(path, self.simulation_prefix)
 
             # Make for this instrument?
             if not self.make_for_instrument(instr_name): continue
@@ -2075,7 +2075,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
 # -----------------------------------------------------------------
 
-def instrument_name(datacube_path, prefix):
+def get_datacube_instrument_name(datacube_path, prefix):
 
     """
     This function ...

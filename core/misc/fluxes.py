@@ -35,6 +35,7 @@ from ..tools import parsing
 from ..tools import types
 from ..tools import numbers
 from ..tools.utils import lazyproperty
+from .images import get_datacube_instrument_name
 
 # -----------------------------------------------------------------
 
@@ -66,6 +67,9 @@ class ObservedFluxCalculator(Configurable):
         # The paths to the SED files produced by SKIRT
         self.sed_paths = None
 
+        # The paths to the total datacube files produced by SKIRT
+        self.datacube_paths = None
+
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
                              "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
@@ -87,6 +91,12 @@ class ObservedFluxCalculator(Configurable):
 
         # The SED paths
         self.paths = dict()
+
+        # The masks
+        self.masks = None
+
+        # The coordinate systems
+        self.coordinate_systems = None
 
     # -----------------------------------------------------------------
 
@@ -132,8 +142,11 @@ class ObservedFluxCalculator(Configurable):
         instrument_names = kwargs.pop("instrument_names", None)
         errors = kwargs.pop("errors", None)
 
+        # Obtain the paths to the datacubes created by the simulation
+        if self.config.from_images: self.datacube_paths = simulation.totalfitspaths()
+
         # Obtain the paths to the SED files created by the simulation
-        self.sed_paths = simulation.seddatpaths()
+        else: self.sed_paths = simulation.seddatpaths()
 
         # Get the simulation prefix
         self.simulation_prefix = simulation.prefix()
@@ -162,6 +175,12 @@ class ObservedFluxCalculator(Configurable):
         # Set output path
         self.config.output = output_path
 
+        # Get the masks
+        self.masks = kwargs.pop("masks", None)
+
+        # Get the coordinate systems
+        self.coordinate_systems = kwargs.pop("coordinate_systems", None)
+
     # -----------------------------------------------------------------
 
     def create_images(self):
@@ -173,6 +192,15 @@ class ObservedFluxCalculator(Configurable):
 
         # Inform the user
         log.info("Creating images from the simulated datacubes ...")
+
+        # Loop over the different SEDs
+        for datacube_path in self.datacube_paths:
+
+            # Get the name of the instrument
+            instr_name = get_datacube_instrument_name(datacube_path, self.simulation_prefix)
+
+            # If a list of instruments is defined an this instrument is not in this list, skip it
+            if self.instrument_names is not None and instr_name not in self.instrument_names: continue
 
 
 
@@ -259,7 +287,7 @@ class ObservedFluxCalculator(Configurable):
         for sed_path in self.sed_paths:
 
             # Get the name of the instrument
-            instr_name = instrument_name(sed_path, self.simulation_prefix)
+            instr_name = get_sed_instrument_name(sed_path, self.simulation_prefix)
 
             # If a list of instruments is defined an this instrument is not in this list, skip it
             if self.instrument_names is not None and instr_name not in self.instrument_names: continue
@@ -347,7 +375,7 @@ class ObservedFluxCalculator(Configurable):
 
 # -----------------------------------------------------------------
 
-def instrument_name(sed_path, prefix):
+def get_sed_instrument_name(sed_path, prefix):
 
     """
     This function ...

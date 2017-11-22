@@ -556,20 +556,21 @@ def create_directory(path, recursive=False):
 
 # -----------------------------------------------------------------
 
-def create_directory_in(base_path, name, clear=False):
+def create_directory_in(base_path, name, clear=False, recursive=False):
 
     """
     This function ...
     :param base_path:
     :param name:
     :param clear:
+    :param recursive:
     :return:
     """
 
     directory_path = join(base_path, name)
     if is_directory(directory_path):
         if clear: clear_directory(directory_path)
-    else: create_directory(directory_path)
+    else: create_directory(directory_path, recursive=recursive)
     return directory_path
 
 # -----------------------------------------------------------------
