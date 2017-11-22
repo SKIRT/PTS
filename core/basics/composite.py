@@ -390,7 +390,7 @@ class SimplePropertyComposite(object):
                 # Set the new value
                 self.set_property(name, value)
 
-        # Recursive: also loop over the settings
+        # Recursive: also loop over the sections
         if recursive:
 
             # Loop over the sections

@@ -34,6 +34,20 @@ from . import types
 
 # -----------------------------------------------------------------
 
+def any(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if types.is_string_type(argument) and len(argument) == 0: return None
+    try: return eval(argument)
+    except NameError: return argument
+
+# -----------------------------------------------------------------
+
 def integer_or_real_or_string(argument):
 
     """
