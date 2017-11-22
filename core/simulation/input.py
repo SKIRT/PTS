@@ -96,6 +96,30 @@ class SimulationInput(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.paths.keys()
+
+    # -----------------------------------------------------------------
+
+    def get_filepath(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.paths[name]
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """

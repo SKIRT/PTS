@@ -83,6 +83,10 @@ class ModelLauncher(ModelSimulationInterface):
         # The number of dust cells
         self.ndust_cells = None
 
+        # Simulation paths
+        self.simulation_plot_path = None
+        self.simulation_misc_path = None
+
         # The SKIRT launcher
         self.launcher = SKIRTLauncher()
 
@@ -236,6 +240,10 @@ class ModelLauncher(ModelSimulationInterface):
         # Set remote
         self.launcher.config.remote = self.config.remote
         self.launcher.config.attached = self.config.attached
+
+        # Set options
+        self.launcher.config.keep = self.config.keep_remote_input_and_output
+        self.launcher.config.keep_input = self.config.keep_remote_input or self.config.keep_remote_input_and_output
 
     # -----------------------------------------------------------------
 

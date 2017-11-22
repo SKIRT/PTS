@@ -45,6 +45,10 @@ definition.add_required("name", "string_no_spaces", "name for the simulation")
 definition.add_positional_optional("remote", "string", "remote host ID for running the simulation", choices=find_host_ids())
 definition.add_flag("attached", "launch remote executions in attached mode", True)
 
+# Keep?
+definition.add_flag("keep_remote_input", "keep the remote input directory after the simulation is retrieved", False)
+definition.add_flag("keep_remote_input_and_output", "keep the remote input and output after the simulation is retrieved", False)
+
 # -----------------------------------------------------------------
 
 # Type of output

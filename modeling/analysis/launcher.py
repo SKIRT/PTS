@@ -709,7 +709,7 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.launcher.config.cluster_name = self.config.cluster_name
         self.launcher.config.attached = self.config.attached
         self.launcher.config.keep = self.config.keep_remote_input_and_output
-        self.launcher.config.keep_input = self.config.keep_remote_input
+        self.launcher.config.keep_input = self.config.keep_remote_input or self.config.keep_remote_input_and_output
 
         # Clear remotes
         if self.has_any_host_id and self.config.clear_remotes: self.clear_all_hosts()

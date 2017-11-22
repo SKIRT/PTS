@@ -61,11 +61,20 @@ for host_id in config.host_ids:
         print("")
 
         # Show basic info
+        print(fmt.green + "   BASIC INFO" + fmt.reset)
+        print("")
         print("   - " + fmt.bold + "name: " + fmt.reset + simulation.name)
         print("   - " + fmt.bold + "prefix: " + fmt.reset + simulation.prefix())
         print("   - " + fmt.bold + "ski path: " + fmt.reset + simulation.ski_path)
-        print("   - " + fmt.bold + "input path(s): " + fmt.reset + tostr(simulation.input_path))
+        if simulation.has_input:
+            print("   - " + fmt.bold + "input files: " + fmt.reset)
+            input = simulation.input
+            print("")
+            for name in input.names:
+                print("      * " + fmt.bold + name + ": " + fmt.reset + input.get_filepath(name))
+            print("")
         print("   - " + fmt.bold + "output path: " + fmt.reset + simulation.output_path)
+        print("   - " + fmt.bold + "submitted at: " + fmt.reset + simulation.submitted_at)
         print("")
 
         # More info
@@ -74,9 +83,27 @@ for host_id in config.host_ids:
         print("   - " + fmt.bold + "remote output path: " + fmt.reset + simulation.remote_output_path)
         print("")
 
+        # More info
+        print(fmt.green + "   RETRIEVAL" + fmt.reset)
+        print("")
+        print("   - " + fmt.bold + "remove_remote_input: " + fmt.reset + str(simulation.remove_remote_input))
+        print("   - " + fmt.bold + "remove_remote_output: " + fmt.reset + str(simulation.remove_remote_output))
+        print("   - " + fmt.bold + "remove_remote_simulation_directory: " + fmt.reset + str(simulation.remove_remote_simulation_directory))
+        print("   - " + fmt.bold + "remove_local_output: " + fmt.reset + str(simulation.remove_local_output))
+        if simulation.retrieve_types is not None: print("   - " + fmt.bold + "retrieve_types: " + fmt.reset + tostr(simulation.retrieve_types, delimiter=", "))
+        print("")
+
+        if simulation.handle is not None:
+            print(fmt.green + "   EXECUTION" + fmt.reset)
+            print("")
+            for line in simulation.handle.to_lines(line_prefix="   - ", fancy=True): print(line)
+            print("")
+
         # Show analysis info
         if config.analysis:
-            print(simulation.analysis)
+            print(fmt.green + "   ANALYSIS" + fmt.reset)
+            print("")
+            for line in simulation.analysis.to_lines(line_prefix="  "): print(line)
             print("")
 
 # -----------------------------------------------------------------

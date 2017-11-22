@@ -22,7 +22,7 @@ from abc import ABCMeta
 from ..tools import parsing
 from ..basics.log import log
 from ..tools import formatting as fmt
-from ..tools.stringify import stringify, tostr
+from ..tools.stringify import stringify, tostr, stringify_list_fancy
 from .map import Map
 
 # -----------------------------------------------------------------
@@ -616,6 +616,30 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     @property
+    def ordered_section_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+        for name in self._descriptions:
+
+            # Skip simple properties
+            if name in self._ptypes: continue
+            if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Section '" + name + "' is not a property composite or mapping")
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def property_types(self):
 
         """
@@ -773,6 +797,8 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        from ..tools import types
+
         lines = []
 
         # The simple properties
@@ -785,13 +811,37 @@ class SimplePropertyComposite(object):
             if ignore is not None and name in ignore: continue
             if ignore_none and value is None: continue
 
-            # Generate line
-            dtype, value = stringify(value)
-            line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": " + value
-            lines.append(line_prefix + line)
+            # Multiline sequences
+            if types.is_sequence(value):
+
+                line =  " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+                lines.append(line_prefix + line)
+
+                if len(value) > 0:
+                    #lines.append("")
+                    dtype, string = stringify_list_fancy(value)
+                    for line in string.split("\n"): lines.append(line_prefix + "    " + line)
+                    #lines.append("")
+
+            # Multiline dictionaries
+            elif types.is_dictionary(value):
+                line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+                lines.append(line_prefix + line)
+                if len(value) > 0:
+                    for key in value:
+                        line = line_prefix + "    * " + key + ": " + tostr(value[key])
+                        lines.append(line)
+
+            # Single-line
+            else:
+
+                # Generate line
+                dtype, value = stringify(value)
+                line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": " + value
+                lines.append(line_prefix + line)
 
         # Sections
-        for name in self.section_names:
+        for name in self.ordered_section_names:
 
             # Check ignore
             if ignore is not None and name in ignore: continue
