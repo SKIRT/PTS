@@ -14,10 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict, OrderedDict
 from scipy.interpolate import interp1d
 
 # Import astronomical modules
-from astropy.units import spectral_density, spectral
+from astropy.units import spectral_density, spectral, Unit
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
@@ -810,7 +811,7 @@ def calculate_spectral_indices(model_sed, return_frequencies=False):
 
 # -----------------------------------------------------------------
 
-def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=None):
+def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=None, return_wavelength_grid=False):
 
     """
     This function ...
@@ -820,6 +821,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral
     :param spectral_indices:
     :param spire:
     :param errors:
+    :param return_wavelength_grid:
     :return: 
     """
 
@@ -827,7 +829,8 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral
     log.debug("Calculating the observed flux for the " + str(fltr) + " filter by convolving spectrally ...")
 
     # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-    fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
+    value, wavelength_grid = fltr.convolve(wavelengths, fluxdensities, return_grid=True)
+    fluxdensity = float(value) * u("W / (m2 * micron)")
     fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value  # convert back to Jy
 
     # For SPIRE, also multiply with Kbeam correction factor
@@ -852,11 +855,12 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral
     error = errors[filter_name] if errors is not None and filter_name in errors else None
 
     # Return the fluxdensity and error
-    return fluxdensity_value * u("Jy"), error
+    if return_wavelength_grid: return fluxdensity_value * u("Jy"), error, wavelength_grid
+    else: return fluxdensity_value * u("Jy"), error
 
 # -----------------------------------------------------------------
 
-def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=None):
+def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=None, return_wavelength=False):
 
     """
     This function ...
@@ -864,6 +868,7 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=None)
     :param wavelengths: 
     :param fluxdensities: 
     :param errors:
+    :param return_wavelength:
     :return: 
     """
 
@@ -883,8 +888,12 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=None)
     # Add a point to the mock SED
     error = errors[filter_name] if errors is not None and filter_name in errors else None
 
+    # Get the actual wavelength
+    wavelength = wavelengths[index]
+
     # Return the fluxdensity and error
-    return fluxdensity, error
+    if return_wavelength: return fluxdensity, error, wavelength
+    else: return fluxdensity, error
 
 # -----------------------------------------------------------------
 
@@ -909,6 +918,12 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
     # Create an observed SED for the mock fluxes
     mock_sed = ObservedSED(photometry_unit="Jy")
 
+    # Keep track of the wavelengths that have already been used to
+    used_wavelengths = defaultdict(list)
+
+    # Wavelengths used for each filter
+    wavelengths_for_filters = OrderedDict()
+
     # Loop over the different filters
     for fltr in filters:
 
@@ -918,13 +933,54 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
             continue
 
         # Needs spectral convolution?
-        if needs_spectral_convolution(fltr, spectral_convolution): fluxdensity, error = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=errors)
+        if needs_spectral_convolution(fltr, spectral_convolution):
+
+            # Calculate
+            fluxdensity, error, wavelength_grid = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=errors, return_wavelength_grid=True)
+
+            # Create list of wavelengths
+            filter_wavelengths = [value * Unit("micron") for value in wavelength_grid]
+
+            # Add
+            wavelengths_for_filters[fltr] = filter_wavelengths
 
         # No spectral convolution
-        else: fluxdensity, error = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=errors)
+        else:
+
+            # Get the flux density
+            fluxdensity, error, wavelength = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=errors, return_wavelength=True)
+
+            # Check the wavelength
+            wavelength_micron = wavelength.to("micron").value
+            if wavelength_micron in used_wavelengths:
+
+                filters = used_wavelengths[wavelength_micron]
+                filter_names = [str(f) for f in filters]
+                log.warning("The simulated flux for the wavelength '" + str(wavelength) + "' has already been used to create SED point(s) for the " + ", ".join(filter_names) + " filter(s)")
+
+            # Add the filter for the wavelength
+            used_wavelengths[wavelength_micron].append(fltr)
 
         # Add a data point to the mock SED
         mock_sed.add_point(fltr, fluxdensity, error)
+
+    # Show which wavelengths are used to create filter frames
+    log.debug("Used the following wavelengths of the simulated SED to create mock observed flux points without spectral convolution:")
+    log.debug("")
+    for wavelength_micron in used_wavelengths:
+        filters = used_wavelengths[wavelength_micron]
+        filter_names = [str(f) for f in filters]
+        log.debug(" - " + str(wavelength_micron) + " micron: " + ", ".join(filter_names))
+    log.debug("")
+
+    # Show which wavelengths are used to create filter frames
+    log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+    log.debug("")
+    for fltr in wavelengths_for_filters:
+        filter_name = str(fltr)
+        wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+        log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+    log.debug("")
 
     # Return the mock observed SED
     return mock_sed
