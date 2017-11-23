@@ -1217,8 +1217,17 @@ class PhotometricUnit(CompositeUnit):
         # From brightness
         elif self.is_brightness:
 
-            new_unit = self * self.extent_unit
-            new_unit_string = str(new_unit)
+            if self.is_per_angular_area:
+
+                new_unit = self * self.solid_angle_unit
+                new_unit_string = str(new_unit)
+
+            elif self.is_per_intrinsic_area:
+
+                new_unit = self * self.extent_unit
+                new_unit_string = str(new_unit)
+
+            else: raise ValueError("Invalid state")
 
         # Invalid
         else: raise ValueError("Invalid unit")

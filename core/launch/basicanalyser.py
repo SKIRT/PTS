@@ -987,15 +987,15 @@ class BasicAnalyser(Configurable):
         self.image_flux_calculator.config.from_images = True
         self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
 
-        print("instruments:", self.fluxes_from_images_instruments)
-        print("masks:" , self.fluxes_from_images_masks)
-        print("wcs:", self.fluxes_from_images_coordinate_systems)
+        #print("instruments:", self.fluxes_from_images_instruments)
+        #print("masks:" , self.fluxes_from_images_masks)
+        #print("wcs:", self.fluxes_from_images_coordinate_systems)
 
         # Run
         self.image_flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_from_images_output_path,
                                        filter_names=self.filters_for_fluxes_from_images,
                                        instrument_names=self.fluxes_from_images_instruments,
-                                       errors=self.misc_options.fluxes_from_images_errrors,
+                                       errors=self.misc_options.fluxes_from_images_errors,
                                        no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters,
                                        coordinate_systems=self.fluxes_from_images_coordinate_systems,
                                        masks=self.fluxes_from_images_masks)
