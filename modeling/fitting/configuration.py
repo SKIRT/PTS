@@ -296,7 +296,6 @@ class FittingConfigurer(FittingComponent):
         # Inform the user
         log.info("Loading the ski file template ...")
 
-        # Load the labeled ski template file
         self.ski = LabeledSkiFile(template_ski_path)
 
     # -----------------------------------------------------------------
