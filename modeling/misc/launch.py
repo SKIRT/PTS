@@ -1179,6 +1179,9 @@ class ModelLauncher(ModelSimulationInterface):
         # Make SEDs from images?
         if self.config.make_image_seds:
 
+            # Enable flag
+            analysis_options.misc.fluxes_from_images = True
+
             # Set instrument and coordinate system path
             analysis_options.misc.fluxes_from_images_instrument = earth_name
             analysis_options.misc.fluxes_from_images_wcs = self.reference_wcs_path

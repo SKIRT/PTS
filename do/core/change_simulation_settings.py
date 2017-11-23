@@ -101,6 +101,7 @@ for name in properties:
 
     # Ask for the new value
     value = prompt_variable(name, ptype, description, default=default, required=True)
+    if default is None and value == "": continue
 
     # Set the property
     if value != default:

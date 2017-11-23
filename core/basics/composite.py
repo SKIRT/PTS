@@ -380,6 +380,7 @@ class SimplePropertyComposite(object):
 
             # Ask for the new value
             value = prompt_variable(name, ptype, description, choices=choices, default=default, required=True)
+            if default is None and value == "": continue
 
             # Set the property
             if value != default:

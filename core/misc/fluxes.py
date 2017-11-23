@@ -37,7 +37,6 @@ from ..tools import numbers
 from ..tools.utils import lazyproperty
 from .images import get_datacube_instrument_name
 from ...magic.core.datacube import DataCube
-from ...magic.core.remote import RemoteDataCube
 from ...magic.core import fits
 from ..simulation.wavelengthgrid import WavelengthGrid
 
