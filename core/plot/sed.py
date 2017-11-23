@@ -1719,7 +1719,8 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        self.figure.close()
+        # Close the figure
+        if self.figure is not None: self.figure.close()
 
     # -----------------------------------------------------------------
 

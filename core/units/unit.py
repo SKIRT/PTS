@@ -23,7 +23,7 @@ from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ...magic.basics.pixelscale import Pixelscale
+from ...magic.basics.pixelscale import Pixelscale, PhysicalPixelscale
 from .quantity import PhotometricQuantity
 from .utils import analyse_unit, divide_units_reverse, clean_unit_string, get_physical_type, interpret_physical_type
 from .parsing import parse_unit, parse_quantity
@@ -1651,6 +1651,9 @@ class PhotometricUnit(CompositeUnit):
         if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
         elif isinstance(pixelscale, Pixelscale): pass
         elif pixelscale is None: pass
+        elif isinstance(pixelscale, PhysicalPixelscale):
+            if distance is None: raise ValueError("Distance should be defined when passing a physical pixelscale")
+            pixelscale = Pixelscale.from_physical(pixelscale, distance=distance)
         else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
 
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)

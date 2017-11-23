@@ -74,6 +74,9 @@ definition.add_optional("npackages", "real", "the number of photon packages per 
 definition.add_flag("selfabsorption", "dust self-absorption", False)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", False)
 
+# Adjust the number of packages?
+definition.add_flag("adjust_npackages", "adjust the number of photon packages to the dust grid and instruments", True)
+
 # -----------------------------------------------------------------
 
 # Settings for the wavelength grid generation

@@ -686,17 +686,84 @@ class ModelLauncher(ModelSimulationInterface):
         # Inform the user
         log.info("Adapting the ski file ...")
 
+        # Set options
+        self.set_options()
+
+        # Set number of photon packages
+        self.set_npackages()
+
+        # Set selfabsorption
+        self.set_selfabsorption()
+
+        # Set transient heating
+        self.set_transient_heating()
+
+        # Set wavelength grid
+        self.set_wavelength_grid()
+
+        # Set the instruments
+        self.set_instruments()
+
+    # -----------------------------------------------------------------
+
+    def set_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Disabling all writing settings ...")
 
         # Disable all writing settings
         self.ski.disable_all_writing_options()
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Adjust upwards
+        if self.config.adjust_npackages:
+
+            # Make images: base on largest instrument
+            if self.make_images: return max(self.largest_instrument_npixels * 10, self.config.npackages)
+
+            # Base on dust grid
+            else: return max(self.ndust_cells, self.config.npackages)
+
+        # Return the specified number of packages
+        else: return self.config.npackages
+
+    # -----------------------------------------------------------------
+
+    def set_npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
-        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+        log.debug("Setting the number of photon packages to " + str(self.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
-        self.ski.setpackages(self.config.npackages)
+        self.ski.setpackages(self.npackages)
+
+    # -----------------------------------------------------------------
+
+    def set_selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
@@ -705,6 +772,15 @@ class ModelLauncher(ModelSimulationInterface):
         if self.config.selfabsorption: self.ski.enable_selfabsorption()
         else: self.ski.disable_selfabsorption()
 
+    # -----------------------------------------------------------------
+
+    def set_transient_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
 
@@ -712,17 +788,20 @@ class ModelLauncher(ModelSimulationInterface):
         if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
         else: self.ski.set_grey_body_dust_emissivity()
 
+    # -----------------------------------------------------------------
+
+    def set_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Setting the wavelength grid ...")
 
         # Set wavelength grid for ski file
         self.ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Debugging
-        log.debug("Adding the instruments ...")
-
-        # Set the instruments
-        self.set_instruments()
 
     # -----------------------------------------------------------------
 
@@ -732,6 +811,9 @@ class ModelLauncher(ModelSimulationInterface):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.debug("Adding the instruments ...")
 
         # Remove the existing instruments
         self.ski.remove_all_instruments()
@@ -1132,7 +1214,7 @@ class ModelLauncher(ModelSimulationInterface):
 
         # Set retrieval options
         retrieve_types = []
-        if self.make_images:
+        if self.make_images or self.config.make_image_seds:
             retrieve_types.append(ot.total_images)
             if self.make_contributions:
                 retrieve_types.append(ot.direct_images)

@@ -14,7 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
@@ -143,6 +143,18 @@ class Instrument(SimplePropertyComposite):
         # Create and return
         return cls.from_projection(projection)
 
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
 # -----------------------------------------------------------------
 
 class SEDInstrument(Instrument):
@@ -177,6 +189,18 @@ class SEDInstrument(Instrument):
         """
 
         return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth, position_angle=projection.position_angle)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1
 
 # -----------------------------------------------------------------
 
@@ -223,6 +247,18 @@ class FrameInstrument(Instrument):
                    field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
                    center_x=projection.center_x, center_y=projection.center_y)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixels_x * self.pixels_y
+
 # -----------------------------------------------------------------
 
 class SimpleInstrument(Instrument):
@@ -268,6 +304,18 @@ class SimpleInstrument(Instrument):
                    position_angle=projection.position_angle, field_x=projection.field_x_physical,
                    field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
                    center_x=projection.center_x, center_y=projection.center_y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixels_x * self.pixels_y
 
 # -----------------------------------------------------------------
 
@@ -318,6 +366,18 @@ class FullInstrument(Instrument):
                    position_angle=projection.position_angle, field_x=projection.field_x_physical,
                    field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
                    center_x=projection.center_x, center_y=projection.center_y, scattering_levels=scattering_levels, counts=counts)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixels_x * self.pixels_y
 
 # -----------------------------------------------------------------
 
@@ -376,6 +436,18 @@ class MultiFrameInstrument(Instrument):
         # Add the frame
         self.frames.append(frame)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise ValueError("The number of pixels cannot be determined")
+
 # -----------------------------------------------------------------
 
 class InstrumentFrame(SimplePropertyComposite):
@@ -402,5 +474,17 @@ class InstrumentFrame(SimplePropertyComposite):
 
         # Set properties
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixels_x * self.pixels_y
 
 # -----------------------------------------------------------------

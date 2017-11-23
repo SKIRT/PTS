@@ -530,7 +530,7 @@ class ObservedFluxCalculator(Configurable):
             path = self.output_path_file(instr_name + "_fluxes.dat")
 
             # Debugging
-            log.debug("Writing the mock SED '" + name + "' to '" + path + "' ...")
+            log.debug("Writing the mock SED '" + instr_name + "' to '" + path + "' ...")
 
             # Write out the flux table
             self.mock_seds[instr_name].saveto(path)

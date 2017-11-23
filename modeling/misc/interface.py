@@ -533,4 +533,23 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
         return edgeon_name in self.instruments
 
+    # -----------------------------------------------------------------
+
+    @property
+    def largest_instrument_npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        largest = None
+
+        for name in self.instruments:
+
+            npixels = self.instruments[name].npixels
+            if npixels > largest: largest = npixels
+
+        return largest
+
 # -----------------------------------------------------------------
