@@ -36,6 +36,10 @@ from ..tools import types
 from ..tools import numbers
 from ..tools.utils import lazyproperty
 from .images import get_datacube_instrument_name
+from ...magic.core.datacube import DataCube
+from ...magic.core.remote import RemoteDataCube
+from ...magic.core import fits
+from ..simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -70,6 +74,9 @@ class ObservedFluxCalculator(Configurable):
         # The paths to the total datacube files produced by SKIRT
         self.datacube_paths = None
 
+        # The wavelengths of the simulation
+        self.wavelengths = None
+
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
                              "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
@@ -97,6 +104,9 @@ class ObservedFluxCalculator(Configurable):
 
         # The coordinate systems
         self.coordinate_systems = None
+
+        # The images, per instrument
+        self.images = dict()
 
     # -----------------------------------------------------------------
 
@@ -148,6 +158,9 @@ class ObservedFluxCalculator(Configurable):
         # Obtain the paths to the SED files created by the simulation
         else: self.sed_paths = simulation.seddatpaths()
 
+        # Get the list of wavelengths for the simulation
+        self.wavelengths = simulation.wavelengths()
+
         # Get the simulation prefix
         self.simulation_prefix = simulation.prefix()
 
@@ -183,6 +196,44 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_wavelengths(self.wavelengths, "micron")
+
+    # -----------------------------------------------------------------
+
+    def has_mask(self, instr_name, fltr):
+
+        """
+        This function ...
+        :param instr_name:
+        :param fltr:
+        :return:
+        """
+
+        return instr_name in self.masks and fltr in self.masks[instr_name] and self.masks[instr_name][fltr] is not None
+
+    # -----------------------------------------------------------------
+
+    def get_mask(self, instr_name, fltr):
+
+        """
+        This function ...
+        :param instr_name:
+        :param fltr:
+        :return:
+        """
+
+        return self.masks[instr_name][fltr]
+
+    # -----------------------------------------------------------------
+
     def create_images(self):
 
         """
@@ -202,7 +253,103 @@ class ObservedFluxCalculator(Configurable):
             # If a list of instruments is defined an this instrument is not in this list, skip it
             if self.instrument_names is not None and instr_name not in self.instrument_names: continue
 
+            # Check if already encountered this instrument
+            if instr_name in self.images: raise ValueError("Already encountered datacube for '" + instr_name + "' instrument")
 
+            # Load the datacube
+            datacube = self.load_datacube_local(datacube_path)
+
+            # Get the instrument distance
+            distance = self.ski.get_instrument_distance(instr_name)
+
+            # If the distance is defined, set the distance
+            if distance is not None: datacube.distance = distance
+
+            # Convert the datacube from neutral flux density to wavelength flux density
+            datacube.convert_to_corresponding_wavelength_density_unit()
+
+            # Add the datacube to the dictionary
+            #self.datacubes[instr_name] = datacube
+
+            # Debugging
+            log.debug("Setting the coordinate system of the '" + instr_name + "' instrument ...")
+
+            # Set the coordinate system for this datacube
+            #self.datacubes[instr_name].wcs = self.coordinate_systems[instr_name]
+            datacube.wcs = self.coordinate_systems[instr_name]
+
+            # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
+            nprocesses = 1
+            frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,
+                                                 nprocesses=nprocesses, check_previous_sessions=True, as_dict=True)
+
+            # Mask the images
+            #for fltr, frame in zip(self.filters)
+            for fltr in frames:
+
+                # Check if should be masked
+                if not self.has_mask(instr_name, fltr): continue
+
+                # Get the frame
+                frame = frames[fltr]
+
+                # Get mask
+                mask = self.get_mask(instr_name, fltr)
+
+                # Rebin the frame
+                frame.rebin(mask.wcs)
+
+                # Mask
+                frame.apply_mask_nans(mask)
+
+            # Add the frames for this instrument
+            self.images[instr_name] = frames
+
+    # -----------------------------------------------------------------
+
+    def load_datacube_local(self, path):
+
+        """
+        Thisj function ...
+        :param self:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Trying to load the datacube '" + path + "' locally ...")
+
+        # Load
+        try: datacube = DataCube.from_file(path, self.wavelength_grid)
+        except fits.DamagedFITSFileError as e:
+            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+            datacube = None
+
+        # Return the datacube
+        return datacube
+
+    # -----------------------------------------------------------------
+
+    def load_datacube_remote(self, path):
+
+        """
+        This function ...
+        :param self:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Trying to load the datacube '" + path + "' remotely ...")
+
+        # Load
+        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
+        except fits.DamagedFITSFileError as e:
+            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+            datacube = None
+
+        # Return
+        return datacube
 
     # -----------------------------------------------------------------
 

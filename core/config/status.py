@@ -35,3 +35,7 @@ definition.add_optional("retrieve_crashed", "string_integer_list_dictionary", "r
 definition.add_flag("check_data", "for crashed simulations, check whether the simulation data is valid")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("offline", "run in offline mode: only analyse already retrieved simulations and tasks, don't try to connect to remotes")
+
+# -----------------------------------------------------------------

@@ -711,7 +711,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False):
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False):
 
         """
         This function ...
@@ -719,6 +719,7 @@ class DataCube(Image):
         :param convolve:
         :param nprocesses:
         :param check_previous_sessions:
+        :param as_dict:
         :return:
         """
 
@@ -785,7 +786,8 @@ class DataCube(Image):
             frames[index] = frame
 
         # Return the list of frames
-        return frames
+        if as_dict: return {fltr: frame for fltr, frame in zip(filters, frames)}
+        else: return frames
 
     # -----------------------------------------------------------------
 
@@ -1486,10 +1488,11 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_wavelength_density_unit(self):
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None):
 
         """
         This function ...
+        :param distance:
         :return:
         """
 
@@ -1502,6 +1505,9 @@ class DataCube(Image):
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
+        # Set the distance
+        if distance is None: distance = self.distance
+
         # Loop over the frames
         for i in range(self.nframes):
 
@@ -1509,7 +1515,7 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength)
+            self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance)
 
     # -----------------------------------------------------------------
 

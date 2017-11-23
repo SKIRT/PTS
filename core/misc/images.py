@@ -1042,7 +1042,8 @@ class ObservedImageMaker(DatacubesMiscMaker):
             if self.has_distance(instr_name): datacube.distance = self.distances[instr_name]
 
             # Convert the datacube from neutral flux density to wavelength flux density
-            datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
+            #datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
+            datacube.convert_to_corresponding_wavelength_density_unit()
 
             # Add the datacube to the dictionary
             self.datacubes[instr_name] = datacube

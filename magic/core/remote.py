@@ -865,6 +865,28 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None):
+
+        """
+        This function ...
+        :param distance:
+        :return:
+        """
+
+        from ...core.tools.stringify import tostr
+
+        # Determine distance string
+        if distance is not None:
+            distance_string = tostr(distance)
+            self.session.import_package("parse_quantity", from_name="pts.core.units.parsing")
+            parse_distance_string = "parse_quantity('" + distance_string + "')"
+        else: parse_distance_string = "None"
+
+        # Send command
+        self.session.send_line_and_raise(self.label + ".convert_to_corresponding_wavelength_density_unit(distance=" + parse_distance_string +")")
+
+    # -----------------------------------------------------------------
+
     def sum(self):
 
         """
