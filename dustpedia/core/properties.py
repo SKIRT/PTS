@@ -220,8 +220,8 @@ def get_calibration_uncertainty_frame_from_magnitude(image, calibration_magn):
     from ...core.units.utils import jansky_to_ab, ab_mag_zero_point
 
     # Convert the frame into AB magnitudes
-    invalid = oldMask.is_zero_or_less(image.primary)
-    ab_frame = jansky_to_ab(image.primary)
+    invalid = oldMask.is_zero_or_less(image)
+    ab_frame = jansky_to_ab(image)
     # Set infinites to zero
     ab_frame[invalid] = 0.0
 
@@ -244,11 +244,11 @@ def get_calibration_uncertainty_frame_from_magnitude(image, calibration_magn):
 
     # c = a[Jy] - image[Jy]
     # c = a - jansky_frame
-    c = a - image.primary
+    c = a - image
 
     # d = image[Jy] - b[Jy]
     # d = jansky_frame - b
-    d = image.primary - b
+    d = image - b
 
     # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
 

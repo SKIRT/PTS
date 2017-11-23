@@ -17,10 +17,10 @@ from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
-from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..core.model import Model
 from ...core.simulation.skifile import SkiFile
+from ...core.simulation.skifile import LabeledSkiFile
 from ...core.simulation.simulation import SkirtSimulation
 from .tables import ModelProbabilitiesTable
 from ...core.basics.configuration import Configuration

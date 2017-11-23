@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
-from ...core.filter.broad import BroadBandFilter
 from ...core.basics.curve import FilterCurve
 from ...core.units.parsing import parse_unit as u
 from ...core.filter.filter import parse_filter
@@ -230,7 +229,7 @@ class StarTable(SmartTable):
                 filter_name = name.split(" FWHM")[0]
 
                 # Filter
-                fltr = BroadBandFilter(filter_name)
+                fltr = parse_filter(filter_name)
                 #filter_name = str(fltr)
 
                 #print(star.fwhms)

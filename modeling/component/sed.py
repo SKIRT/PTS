@@ -116,7 +116,6 @@ def get_ski_template(modeling_path):
     :param modeling_path:
     :return:
     """
-
     return LabeledSkiFile(get_ski_template_path(modeling_path))
 
 # -----------------------------------------------------------------
