@@ -887,14 +887,17 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def sum(self):
+    def sum(self, add_unit=False):
 
         """
         This function ...
+        :param add_unit:
         :return:
         """
 
-        return self.session.get_simple_property(self.label, "sum()")
+        from ...core.units.parsing import parse_quantity
+        if add_unit: return parse_quantity(self.session.get_simple_variable("str(" + self.label + ".sum(add_unit=True))"))
+        else: return self.session.get_simple_property(self.label, "sum(add_unit=False)")
 
     # -----------------------------------------------------------------
 

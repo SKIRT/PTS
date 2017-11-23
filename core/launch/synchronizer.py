@@ -26,6 +26,7 @@ from ..tools import formatting as fmt
 from ..tools import introspection
 from ..simulation.status import LogSimulationStatus
 from ..basics.log import no_debugging
+from ..simulation.remote import get_retrieved_simulations, get_retrieved_tasks, get_status_simulations, get_status_tasks
 
 # -----------------------------------------------------------------
 
@@ -51,6 +52,9 @@ class RemoteSynchronizer(Configurable):
 
         # Initialize a list to contain different SKIRTRemote instances for the different remote hosts
         self.remotes = []
+
+        # List of host IDs (when remotes are not necessary)
+        self._host_ids = None
 
         # The simulation results analyser
         self.analyser = SimulationAnalyser()
@@ -79,8 +83,8 @@ class RemoteSynchronizer(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Retrieve the simulations and tasks
-        if self.config.retrieve: self.retrieve()
+        # 2. Gather the simulations and tasks
+        self.gather()
 
         # 3. Analyse
         if self.config.analyse: self.analyse()
@@ -89,7 +93,7 @@ class RemoteSynchronizer(Configurable):
         self.announce()
 
         # 5. Show the progress of the simulation
-        if self.config.show_progress: self.show_progress()
+        if self.config.show_progress and not self.config.offline: self.show_progress()
 
     # -----------------------------------------------------------------
 
@@ -106,31 +110,113 @@ class RemoteSynchronizer(Configurable):
         # Check flags
         if not self.config.retrieve and self.config.analyse: raise ValueError("Cannot analyse when retrieve is disabled")
 
-        # Load the remote instances
-        if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
+        # Offline?
+        if self.config.offline:
+
+            # Set host IDS
+            if "remotes" in kwargs: self.host_ids = [remote.host_id for remote in kwargs.pop("remotes")]
+            elif "host_ids" in kwargs: self.host_ids = kwargs.pop("host_ids")
+            elif self.config.host_ids is not None: self.host_ids = self.config.host_ids
+            else: self.host_ids = find_host_ids()
+
+        # Not offline
         else:
 
-            # Determine the host IDs
-            if self.config.host_ids is not None: host_ids = self.config.host_ids
-            else: host_ids = find_host_ids()
+            # Load the remote instances
+            if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
+            elif "host_ids" in kwargs: self.remotes = [Remote(host_id=host_id) for host_id in kwargs.pop("host_id")]
+            else:
 
-            # Loop over the host IDs
-            for host_id in host_ids:
+                # Determine the host IDs
+                if self.config.host_ids is not None: host_ids = self.config.host_ids
+                else: host_ids = find_host_ids()
 
-                # If there are currently no simulations corresponding to this host, skip it
-                if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
+                # Loop over the host IDs
+                for host_id in host_ids:
 
-                # Create and setup a remote execution context
-                remote = Remote()
-                if not remote.setup(host_id):
-                    log.warning("Remote host '" + host_id + "' is not available: skipping ...")
-                    continue
+                    # If there are currently no simulations corresponding to this host, skip it
+                    if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
-                # Setup SKIRT remote environment
-                if introspection.skirt_is_present() and remote.has_skirt: remote = SKIRTRemote.from_remote(remote)
+                    # Create and setup a remote execution context
+                    remote = Remote()
+                    if not remote.setup(host_id):
+                        log.warning("Remote host '" + host_id + "' is not available: skipping ...")
+                        continue
 
-                # Add the remote to the list of remote objects
-                self.remotes.append(remote)
+                    # Setup SKIRT remote environment
+                    if introspection.skirt_is_present() and remote.has_skirt: remote = SKIRTRemote.from_remote(remote)
+
+                    # Add the remote to the list of remote objects
+                    self.remotes.append(remote)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nremotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remotes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nremotes > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._host_ids is not None: return self._host_ids
+        else: return [remote.host_id for remote in self.remotes]
+
+    # -----------------------------------------------------------------
+
+    @host_ids.setter
+    def host_ids(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if self.has_remotes: raise ValueError("Cannot set host IDS when there are remote instances")
+        self._host_ids = value
+
+    # -----------------------------------------------------------------
+
+    def get_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        #if not self.has_remotes: raise ValueError("No remotes")
+        for remote in self.remotes:
+            if remote.host_id == host_id: return remote
+        #raise ValueError("Remote for host '" + host_id + "' not found")
+
+        # Create new remote (shouldn't happen)
+        return Remote(host_id=host_id)
 
     # -----------------------------------------------------------------
 
@@ -320,6 +406,84 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def gather(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Gathering the SKIRT simulations and PTS tasks ...")
+
+        # Retrieve
+        if self.config.retrieve and not self.config.offline: self.retrieve()
+
+        # Just load with current status
+        else: self.load()
+
+    # -----------------------------------------------------------------
+
+    def load(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading finished SKIRT simulations and PTS tasks ...")
+
+        # Load SKIRT simulations
+        if introspection.skirt_is_present(): self.load_simulations()
+
+        # Load PTS tasks
+        self.load_tasks()
+
+    # -----------------------------------------------------------------
+
+    def load_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading SKIRT simulations ...")
+
+        # Loop over the host IDS
+        for host_id in self.host_ids:
+
+            # Inform the user
+            log.debug("Loading the retrieved simulations of remote host '" + host_id + "' ...")
+
+            # Get retrieved simulations
+            self.simulations += get_retrieved_simulations(host_id)
+
+    # -----------------------------------------------------------------
+
+    def load_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading PTS tasks ...")
+
+        # Loop over the host IDS
+        for host_id in self.host_ids:
+
+            # Inform the user
+            log.debug("Loading the retrieved tasks of remote host '" + host_id + "' ...")
+
+            # Get retrieved tasks
+            self.tasks += get_retrieved_tasks(host_id)
+
+    # -----------------------------------------------------------------
+
     def get_retrieve_crashed_ids_for_host(self, host_id):
 
         """
@@ -482,17 +646,29 @@ class RemoteSynchronizer(Configurable):
 
         first = True
 
-        # Loop over the different remotes
-        for remote in self.remotes:
+        # Loop over the different hosts
+        for host_id in self.host_ids:
 
-            # Check whether SKIRT is present
-            if not remote.has_skirt: continue
+            # Offline?
+            if self.config.offline:
 
-            # Get the status of the different simulations
-            status = remote.get_status()
+                status = get_status_simulations(host_id)
+                remote = None
+
+            # Online
+            else:
+
+                # Get remote
+                remote = self.get_remote(host_id)
+
+                # Check whether SKIRT is present
+                if not remote.has_skirt: continue
+
+                # Get the status of the different simulations
+                status = remote.get_status()
 
             # Show the name of the current remote
-            if len(status) > 0: log.info("Simulations on remote '" + remote.host_id + "':")
+            if len(status) > 0: log.info("Simulations on remote '" + host_id + "':")
             print()
 
             # Get the status of the different simulations
@@ -513,7 +689,7 @@ class RemoteSynchronizer(Configurable):
                 if simulation_status == "analysed":
 
                     if (self.config.ids is not None and (
-                            remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
+                            host_id in self.config.ids and simulation.id in self.config.ids[host_id])) \
                             or (self.config.statuses is not None and "retrieved" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -526,7 +702,7 @@ class RemoteSynchronizer(Configurable):
                 # Finished and retrieved simulation (remote output has already been removed, if requested)
                 elif simulation_status == "retrieved":
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "retrieved" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -540,7 +716,7 @@ class RemoteSynchronizer(Configurable):
                 elif simulation_status == "finished":
 
                     if (self.config.ids is not None and (
-                            remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
+                            host_id in self.config.ids and simulation.id in self.config.ids[host_id])) \
                             or (self.config.statuses is not None and "finished" in self.config.statuses):
                         log.warning(
                             "The simulation with ID " + str(simulation.id) + " has finished, but has not been"
@@ -557,7 +733,7 @@ class RemoteSynchronizer(Configurable):
                     # ADD TO RUNNNING SIMULATIONS
                     self.running_simulations.append(simulation)
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "running" in self.config.statuses):
 
                         if remote.host.scheduler:
@@ -581,15 +757,20 @@ class RemoteSynchronizer(Configurable):
 
                     formatter = fmt.reset
 
-                # Tasks with invalid state
+                # Simulations with invalid state
                 elif "invalid" in simulation_status:
 
                     formatter = fmt.red + fmt.bold
 
+                # Simulations with unknown status (because offline)
+                elif simulation_status == "unknown":
+
+                    formatter = fmt.lightyellow
+
                 # Crashed simulation
                 elif "crashed" in simulation_status:
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "crashed" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -607,7 +788,7 @@ class RemoteSynchronizer(Configurable):
                 # Cancelled simulation
                 elif simulation_status == "cancelled":
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "cancelled" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -625,7 +806,7 @@ class RemoteSynchronizer(Configurable):
                 # Aborted simulation
                 elif simulation_status == "aborted":
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "aborted" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -643,7 +824,7 @@ class RemoteSynchronizer(Configurable):
                 # Queued simulation
                 elif simulation_status == "queued":
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
+                    if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
                             or (self.config.statuses is not None and "queued" in self.config.statuses):
 
                         if remote.host.scheduler:
@@ -690,14 +871,26 @@ class RemoteSynchronizer(Configurable):
 
         first = True
 
-        # Loop over the different remotes
-        for remote in self.remotes:
+        # Loop over the different hosts
+        for host_id in self.host_ids:
 
-            # Get the status of the different tasks
-            status = remote.get_task_status()
+            # Offline?
+            if self.config.offline:
+
+                status = get_status_tasks(host_id)
+                remote = None
+
+            # Online?
+            else:
+
+                # Get remote
+                remote = self.get_remote(host_id)
+
+                # Get the status of the different tasks
+                status = remote.get_task_status()
 
             # Show the name of the current remote
-            if len(status) > 0: log.info("Tasks on remote '" + remote.host_id + "':")
+            if len(status) > 0: log.info("Tasks on remote '" + host_id + "':")
             print()
 
             # Get the status of the different tasks
@@ -718,6 +911,11 @@ class RemoteSynchronizer(Configurable):
                 if "invalid" in task_status:
 
                     formatter = fmt.red + fmt.bold
+
+                # Simulations with unknown status (because offline)
+                elif task_status == "unknown":
+
+                    formatter = fmt.lightyellow
 
                 elif "crashed" in task_status:
 
@@ -779,23 +977,6 @@ class RemoteSynchronizer(Configurable):
                 print(formatter + prefix + tag + " " + task.name + ": " + task_status + fmt.reset)
 
             print()
-
-    # -----------------------------------------------------------------
-
-    def get_remote(self, host_id):
-
-        """
-        This function ...
-        :param host_id:
-        :return:
-        """
-
-        # Search in remotes
-        for remote in self.remotes:
-            if remote.host_id == host_id: return remote
-
-        # Create new remote (shouldn't happen)
-        return Remote(host_id=host_id)
 
     # -----------------------------------------------------------------
 

@@ -90,7 +90,7 @@ class ObservedFluxCalculator(Configurable):
         # No spectral convolution for certain filters?
         self.no_spectral_convolution_filters = []
 
-        # The output observed SEDs
+        # The output observed SEDs, per instrument
         self.mock_seds = dict()
 
         # The SPIRE instance
@@ -265,12 +265,6 @@ class ObservedFluxCalculator(Configurable):
             # If the distance is defined, set the distance
             if distance is not None: datacube.distance = distance
 
-            # Convert the datacube from neutral flux density to wavelength flux density
-            datacube.convert_to_corresponding_wavelength_density_unit()
-
-            # Add the datacube to the dictionary
-            #self.datacubes[instr_name] = datacube
-
             # Debugging
             log.debug("Setting the coordinate system of the '" + instr_name + "' instrument ...")
 
@@ -278,13 +272,21 @@ class ObservedFluxCalculator(Configurable):
             #self.datacubes[instr_name].wcs = self.coordinate_systems[instr_name]
             datacube.wcs = self.coordinate_systems[instr_name]
 
+            # Debugging
+            log.debug("Checking the units of the image ...")
+
+            # Convert the datacube from neutral flux density to wavelength flux density
+            datacube.convert_to_corresponding_wavelength_density_unit() # why?
+
+            # Convert to non- angular or intrinsic area unit
+            if datacube.is_per_angular_or_intrinsic_area: datacube.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             nprocesses = 1
             frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,
                                                  nprocesses=nprocesses, check_previous_sessions=True, as_dict=True)
 
             # Mask the images
-            #for fltr, frame in zip(self.filters)
             for fltr in frames:
 
                 # Check if should be masked
@@ -330,26 +332,26 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_datacube_remote(self, path):
-
-        """
-        This function ...
-        :param self:
-        :param path:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Trying to load the datacube '" + path + "' remotely ...")
-
-        # Load
-        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
-        except fits.DamagedFITSFileError as e:
-            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
-            datacube = None
-
-        # Return
-        return datacube
+    # def load_datacube_remote(self, path):
+    #
+    #     """
+    #     This function ...
+    #     :param self:
+    #     :param path:
+    #     :return:
+    #     """
+    #
+    #     # Debugging
+    #     log.debug("Trying to load the datacube '" + path + "' remotely ...")
+    #
+    #     # Load
+    #     try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
+    #     except fits.DamagedFITSFileError as e:
+    #         log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+    #         datacube = None
+    #
+    #     # Return
+    #     return datacube
 
     # -----------------------------------------------------------------
 
@@ -418,6 +420,36 @@ class ObservedFluxCalculator(Configurable):
         # Inform the user
         log.info("Calculating fluxes from images ...")
 
+        # Loop over the different instruments
+        #for instr_name in self.instrument_names:
+        for instr_name in self.images:
+
+            # Initialize an SED
+            # Create an observed SED for the mock fluxes
+            mock_sed = ObservedSED(photometry_unit="Jy")
+
+            # Loop over the filters
+            for fltr in self.images[instr_name]:
+
+                # Set filter name
+                filter_name = str(fltr)
+
+                # Get the image frame
+                frame = self.images[instr_name][fltr]
+
+                # Calculate proper flux
+                flux = frame.sum(add_unit=True)
+
+                # Is there an error?
+                # Add a point to the mock SED
+                error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
+
+                # Add this entry to the SED
+                mock_sed.add_point(fltr, flux, error)
+
+            # Add the mock SED for this instrument
+            self.mock_seds[instr_name] = mock_sed
+
     # -----------------------------------------------------------------
 
     def calculate_from_seds(self):
@@ -447,19 +479,19 @@ class ObservedFluxCalculator(Configurable):
             log.debug("Loading the modelled SED ...")
 
             # Get the name of the SED
-            sed_name = fs.name(sed_path).split("_sed")[0]
+            #sed_name = fs.name(sed_path).split("_sed")[0]
 
             # Load the modelled SED
             model_sed = SED.from_skirt(sed_path)
 
             # Debugging
-            log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
+            log.debug("Calculating the observed fluxes for the " + instr_name + " SED ...")
 
             # Convert model sed into observed SED
             mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.spectral_convolution_filters, errors=self.errors)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
-            self.mock_seds[sed_name] = mock_sed
+            self.mock_seds[instr_name] = mock_sed
 
     # -----------------------------------------------------------------
 
@@ -492,19 +524,31 @@ class ObservedFluxCalculator(Configurable):
         log.info("Writing the mock observed SED ...")
 
         # Loop over the different flux tables
-        for name in self.mock_seds:
+        for instr_name in self.mock_seds:
 
             # Determine the path to the output flux table
-            path = self.output_path_file(name + "_fluxes.dat")
+            path = self.output_path_file(instr_name + "_fluxes.dat")
 
             # Debugging
             log.debug("Writing the mock SED '" + name + "' to '" + path + "' ...")
 
             # Write out the flux table
-            self.mock_seds[name].saveto(path)
+            self.mock_seds[instr_name].saveto(path)
 
             # Set the path
-            self.paths[name] = path
+            self.paths[instr_name] = path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("images", create=True)
 
     # -----------------------------------------------------------------
 
@@ -518,7 +562,29 @@ class ObservedFluxCalculator(Configurable):
         # Inform the user
         log.info("Writing the mock observed images ...")
 
+        # Loop over the instruments
+        for instr_name in self.images:
 
+            # Debugging
+            log.debug("Writing mock observed images for the '" + instr_name + "' instrument ...")
+
+            # Create directory for this instrument
+            instr_path = fs.create_directory_in(self.images_output_path, instr_name)
+
+            # Loop over the filters
+            for fltr in self.images[instr_name]:
+
+                # Debugging
+                log.debug("Writing mock observed '" + str(fltr) + "' image ...")
+
+                # Get the image frame
+                frame = self.images[instr_name][fltr]
+
+                # Determine path
+                path = fs.join(instr_path, str(fltr) + ".fits")
+
+                # Save the image
+                frame.saveto(path)
 
 # -----------------------------------------------------------------
 

@@ -80,6 +80,178 @@ def needs_retrieval(filename, types):
 
 # -----------------------------------------------------------------
 
+def get_status_simulations(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    from ..basics.configuration import prompt_proceed
+
+    # Initialize a list to contain the statuses
+    entries = []
+
+    # Detemrine directory path
+    local_skirt_host_run_dir = fs.join(introspection.skirt_run_dir, host_id)
+
+    # Search for simulation files in the local SKIRT run/host_id directory
+    for path in fs.files_in_path(local_skirt_host_run_dir, extension="sim", sort=int):
+
+        # Open the simulation file
+        try: simulation = RemoteSimulation.from_file(path)
+        except EOFError:
+            log.error("The simulation file '" + path + "' is not readable: perhaps serialization has failed")
+            remove = prompt_proceed("remove the simulation file?")
+            if remove: fs.remove_file(path)
+            log.error("Skipping this simulation ...")
+            continue
+
+        # Check whether the handle is defined
+        if simulation.handle is None:
+
+            # Warning to get attention
+            log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
+            entries.append((path, "running"))
+
+        # Handle is defined
+        else:
+
+            # GET STATUS
+
+            # The name of the ski file (the simulation prefix)
+            #ski_name = simulation.prefix()
+
+            # Determine the path to the remote log file
+            #remote_log_file_path = simulation.remote_log_file_path
+
+            # Check whether the simulation has already been analysed
+            if simulation.analysed: simulation_status = "analysed"
+
+            # Check whether the simulation has already been retrieved
+            elif simulation.retrieved: simulation_status = "retrieved"
+
+            # Get the simulation status from the remote log file if not yet retrieved
+            else: simulation_status = "unknown"
+
+            # Add the simulation properties to the list
+            entries.append((path, simulation_status))
+
+    # Return the list of simulation properties
+    return entries
+
+# -----------------------------------------------------------------
+
+def get_retrieved_simulations(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    # Initialize a list to contain the simulations that have been retrieved
+    simulations = []
+
+    # Loop over the different entries of the status list
+    for path, simulation_status in get_status_simulations(host_id):
+
+        # Skip already retrieved and analysed simulations
+        #if simulation_status == "analysed": continue
+        if simulation_status != "retrieved": continue
+
+        # If a simulation has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
+        # simulations (again) so that its results can be analysed
+        #elif simulation_status == "retrieved":
+
+        # Open the simulation file
+        simulation = RemoteSimulation.from_file(path)
+
+        # Add the retrieved simulation to the list
+        simulations.append(simulation)
+
+        # Finished simulations
+        #elif simulation_status == "finished":
+
+    # Return the list of retrieved simulations
+    return simulations
+
+# -----------------------------------------------------------------
+
+def get_status_tasks(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    from ..basics.task import Task
+
+    # Initialize a list to contain the statuses
+    entries = []
+
+    # Determine directory path
+    local_pts_host_run_dir = fs.join(introspection.pts_run_dir, host_id)
+
+    # Search for task files in the local PTS run/host_id directory
+    for path in fs.files_in_path(local_pts_host_run_dir, extension="task", sort=int):
+
+        # Open the task file
+        task = Task.from_file(path)
+
+        # Check whether the task has already been analysed
+        if task.analysed: task_status = "analysed"
+
+        # Check whether the task has already been retrieved
+        elif task.retrieved: task_status = "retrieved"
+
+        # Unknown
+        else: task_status = "unknown"
+
+        # Add the task properties to the list
+        entries.append((path, task_status))
+
+    # Return the list of task properties
+    return entries
+
+# -----------------------------------------------------------------
+
+def get_retrieved_tasks(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    from ..basics.task import Task
+
+    # Initialize a list to contain the tasks that have been retrieved
+    tasks = []
+
+    # Loop over the different entries of the status list
+    for path, task_status in get_status_tasks(host_id):
+
+        # Check status
+        if task_status != "retrieved": continue
+
+        # If a task has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
+        # tasks (again) so that its results can be analysed
+        #if task_status == "retrieved":
+
+        # Open the task file
+        task = Task.from_file(path)
+
+        # Add the task to the list
+        tasks.append(task)
+
+    # Return the list of retrieved tasks
+    return tasks
+
+# -----------------------------------------------------------------
+
 class SKIRTRemote(Remote):
 
     """
