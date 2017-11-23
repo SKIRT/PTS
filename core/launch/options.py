@@ -176,6 +176,10 @@ class AnalysisOptions(Options):
         self.misc.add_property("fluxes_from_images_mask_from_nans", "boolean", "load masks as the NaN pixels in the specified plane (or primary frame if not specified)")
         self.misc.add_property("fluxes_from_images_mask_plane", "string", "name of the image mask plane")
         self.misc.add_property("write_fluxes_images", "boolean", "write out the images created to calculate the fluxes", False)
+        self.misc.add_property("plot_fluxes", "boolean", "plot the fluxes", False)
+        self.misc.add_property("plot_fluxes_from_images", "boolean", "plot the fluxes from images", False)
+        self.misc.add_property("plot_fluxes_reference_sed", "file_path", "reference SED for plotting fluxes")
+        self.misc.add_property("plot_fluxes_from_images_reference_sed", "file_path", "reference SED for plotting fluxes")
 
         ## Observed images
         self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)

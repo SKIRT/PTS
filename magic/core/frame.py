@@ -280,6 +280,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fwhm is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def data(self):
 
         """
@@ -366,6 +378,18 @@ class Frame(NDDataArray):
 
         if fltr is None: self._filter = None
         else: self._filter = parse_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_filter(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.filter is not None
 
     # -----------------------------------------------------------------
 
@@ -2387,8 +2411,13 @@ class Frame(NDDataArray):
         """
 
         # Return the wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.wavelength
-        else: return self._wavelength # return the wavelength (if defined, is None otherwise)
+        #if self.filter is not None: return self.filter.wavelength
+        #else: return self._wavelength # return the wavelength (if defined, is None otherwise)
+
+        # First return the wavelength, if set
+        if self._wavelength is not None: return self._wavelength
+        elif self.has_filter: return self.filter.wavelength
+        else: return None
 
     # -----------------------------------------------------------------
 

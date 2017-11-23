@@ -1176,6 +1176,10 @@ class ModelLauncher(ModelSimulationInterface):
         analysis_options.misc.observation_instruments = instruments
         analysis_options.misc.group_images = True
 
+        # Plot fluxes
+        analysis_options.misc.plot_fluxes = True
+        analysis_options.misc.plot_fluxes_reference_sed = self.observed_sed_path
+
         # Make SEDs from images?
         if self.config.make_image_seds:
 
@@ -1192,6 +1196,10 @@ class ModelLauncher(ModelSimulationInterface):
 
             # Write the fluxes images
             analysis_options.misc.write_fluxes_images = True
+
+            # Plot fluxes
+            analysis_options.misc.plot_fluxes_from_images = True
+            analysis_options.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
 
         # Return the analysis options
         return analysis_options

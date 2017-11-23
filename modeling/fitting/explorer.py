@@ -248,7 +248,7 @@ class ParameterExplorer(FittingComponent):
         #    raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
         # Check whether initialize_fit has been called
-        if self.modeling_type == "galaxy":
+        if self.is_galaxy_modeling:
             if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
             #if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration") # doesn't exist anymore: incorporated in the representations
 
@@ -256,6 +256,49 @@ class ParameterExplorer(FittingComponent):
         self.scales = kwargs.pop("scales", None)
         self.most_sampled_parameters = kwargs.pop("most_sampled_parameters", None)
         self.sampling_weights = kwargs.pop("sampling_weigths", None)
+
+        # Deploy SKIRT and PTS
+        if self.has_any_host_id and self.config.deploy: self.deploy()
+
+    # -----------------------------------------------------------------
+
+    def deploy(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deploying SKIRT and PTS where necessary ...")
+
+        # Create the deployer
+        deployer = Deployer()
+
+        # Don't do anything locally
+        deployer.config.local = False
+
+        # Set the host ids
+        deployer.config.host_ids = self.all_host_ids
+
+        # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
+        # that have a scheduling system to launch the pts run_queue command)
+        #if self.uses_images_remote: deployer.config.pts_on = self.images_host_id #self.moderator.all_host_ids
+
+        # Check versions between local and remote
+        deployer.config.check = self.config.check_versions
+
+        # Update PTS dependencies
+        deployer.config.update_dependencies = self.config.update_dependencies
+
+        # Do clean install
+        deployer.config.clean = self.config.deploy_clean
+
+        # Pubkey pass
+        deployer.config.pubkey_password = self.config.pubkey_password
+
+        # Run the deployer
+        deployer.run()
 
     # -----------------------------------------------------------------
 

@@ -1115,7 +1115,7 @@ class BroadBandFilter(Filter):
     #   per unit of wavelength. This can be an array with the same length as \em wavelengths, or a multi-dimensional
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
-    def convolve(self, wavelengths, densities):
+    def convolve(self, wavelengths, densities, return_grid=False):
 
         # define short names for the involved wavelength grids
         wa = wavelengths
@@ -1125,7 +1125,9 @@ class BroadBandFilter(Filter):
         w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]
         w2 = wb[ (wb>=wa[0]) & (wb<=wa[-1]) ]
         w = np.unique(np.hstack((w1,w2)))
-        if len(w) < 2: return 0
+        if len(w) < 2:
+            if return_grid: return 0, w
+            else: return 0
 
         # log-log interpolate SED and transmission on the combined wavelength grid
         # (use scipy interpolation function for SED because np.interp does not support broadcasting)
@@ -1133,8 +1135,12 @@ class BroadBandFilter(Filter):
         T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
 
         # perform the integration
-        if self._PhotonCounter: return np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
-        else: return np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+        if self._PhotonCounter:  convolved = np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
+        else: convolved = np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+
+        # Return
+        if return_grid: return convolved, w
+        else: return convolved
 
     ## This function calculates and returns the integrated value for a given spectral energy distribution over the
     #  filter's wavelength range,

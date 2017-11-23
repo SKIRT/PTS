@@ -765,6 +765,20 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fluxes_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..data.sed import ObservedSED
+        if self.misc_options.plot_fluxes_reference_sed is None: return None
+        else: return ObservedSED.from_file(self.misc_options.plot_fluxes_reference_sed)
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes(self):
 
         """
@@ -781,12 +795,16 @@ class BasicAnalyser(Configurable):
         # Set spectral convolution flag
         self.flux_calculator.config.spectral_convolution = self.misc_options.fluxes_spectral_convolution
 
+        # Set plot flag
+        self.flux_calculator.config.plot = self.misc_options.plot_fluxes
+
         # Run
         self.flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_output_path,
                                  filter_names=self.filters_for_fluxes,
                                  instrument_names=self.misc_options.observation_instruments,
                                  errors=self.misc_options.flux_errors,
-                                 no_spectral_convolution_filters=self.misc_options.no_fluxes_spectral_convolution_filters)
+                                 no_spectral_convolution_filters=self.misc_options.no_fluxes_spectral_convolution_filters,
+                                 reference_sed=self.fluxes_reference_sed)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
@@ -967,6 +985,20 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fluxes_from_images_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..data.sed import ObservedSED
+        if self.misc_options.plot_fluxes_from_images_reference_sed is None: return None
+        else: return ObservedSED.from_file(self.misc_options.plot_fluxes_from_images_reference_sed)
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes_from_images(self):
 
         """
@@ -983,6 +1015,9 @@ class BasicAnalyser(Configurable):
         # Set spectral convolution flag
         self.image_flux_calculator.config.spectral_convolution = self.misc_options.fluxes_from_images_spectral_convolution
 
+        # Set plot flag
+        self.image_flux_calculator.config.plot = self.misc_options.plot_fluxes_from_images
+
         # Set from images flag
         self.image_flux_calculator.config.from_images = True
         self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
@@ -998,7 +1033,7 @@ class BasicAnalyser(Configurable):
                                        errors=self.misc_options.fluxes_from_images_errors,
                                        no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters,
                                        coordinate_systems=self.fluxes_from_images_coordinate_systems,
-                                       masks=self.fluxes_from_images_masks)
+                                       masks=self.fluxes_from_images_masks, reference_sed=self.fluxes_from_images_reference_sed)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_from_images_name)

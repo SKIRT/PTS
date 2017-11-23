@@ -39,6 +39,7 @@ from .images import get_datacube_instrument_name
 from ...magic.core.datacube import DataCube
 from ...magic.core import fits
 from ..simulation.wavelengthgrid import WavelengthGrid
+from ..plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -107,6 +108,9 @@ class ObservedFluxCalculator(Configurable):
         # The images, per instrument
         self.images = dict()
 
+        # For plotting, reference SED
+        self.reference_sed = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -128,6 +132,9 @@ class ObservedFluxCalculator(Configurable):
 
         # 4. Write the results
         if self.config.output is not None: self.write()
+
+        # 5. Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -192,6 +199,21 @@ class ObservedFluxCalculator(Configurable):
 
         # Get the coordinate systems
         self.coordinate_systems = kwargs.pop("coordinate_systems", None)
+
+        # Reference SED
+        self.reference_sed = kwargs.pop("reference_sed", None)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.reference_sed is not None
 
     # -----------------------------------------------------------------
 
@@ -476,9 +498,6 @@ class ObservedFluxCalculator(Configurable):
             # Debugging
             log.debug("Loading the modelled SED ...")
 
-            # Get the name of the SED
-            #sed_name = fs.name(sed_path).split("_sed")[0]
-
             # Load the modelled SED
             model_sed = SED.from_skirt(sed_path)
 
@@ -490,6 +509,40 @@ class ObservedFluxCalculator(Configurable):
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[instr_name] = mock_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sed_paths is not None
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_sed(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        # Loop over the different SEDs
+        for sed_path in self.sed_paths:
+
+            # Get the name of the instrument
+            instrument_name = get_sed_instrument_name(sed_path, self.simulation_prefix)
+
+            # Load the SED
+            if instrument_name == instr_name: return SED.from_skirt(sed_path)
+
+        # Error
+        raise ValueError("Cannot find simulated SED for the '" + instr_name + "' instrument")
 
     # -----------------------------------------------------------------
 
@@ -583,6 +636,80 @@ class ObservedFluxCalculator(Configurable):
 
                 # Save the image
                 frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the mock observed SEDs
+        self.plot_seds()
+
+    # -----------------------------------------------------------------
+
+    def plot_seds(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SEDs ...")
+
+        # Loop over the different flux tables
+        for instr_name in self.mock_seds:
+
+            # Determine the path to the plot file
+            path = self.output_path_file(instr_name + "_fluxes.pdf")
+
+            # Debugging
+            log.debug("Plotting the mock SED '" + instr_name + "' to '" + path + "' ...")
+
+            # Plot
+            self.plot_sed(instr_name, path)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed(self, instr_name, path):
+
+        """
+        This function ...
+        :param instr_name:
+        :param path:
+        :return:
+        """
+
+        # Initialize the plotter
+        plotter = SEDPlotter()
+
+        # Get the mock observed sed
+        sed = self.mock_seds[instr_name]
+
+        # Add the SED
+        plotter.add_sed(sed, "Mock observation")
+
+        # Add simulated SED?
+        if self.has_simulated_seds:
+
+            # Get the SED
+            simulated_sed = self.get_simulated_sed(instr_name)
+
+            # Add
+            plotter.add_sed(simulated_sed, "Simulation")
+
+        # Add reference?
+        if self.has_reference_sed: plotter.add_sed(self.reference_sed, "Observation")
+
+        # Run the plotter
+        plotter.run(output=path)
 
 # -----------------------------------------------------------------
 

@@ -28,6 +28,7 @@ environment = find_modeling_environment_up_cwd()
 # Create the definition
 definition = ConfigurationDefinition()
 definition.add_required("sed", "file_path", "path to the sed file")
+definition.add_positional_optional("outfile_path", "string", "output file path")
 definition.add_optional("library", "string", "plotting library", mpl, choices=plotting_libraries)
 
 # Get the confguration
@@ -41,13 +42,19 @@ plotter.config.library = config.library
 
 # -----------------------------------------------------------------
 
-# Load the modeled SED or mock observed SED
+# Load the modeled SED
 if is_from_skirt(config.sed):
+
     sed = SED.from_skirt(config.sed)
     label = "Simulation"
+
+# Load the mock observed SED
 else:
+
     sed = ObservedSED.from_file(config.sed)
     label = "Mock observation"
+
+# -----------------------------------------------------------------
 
 # Add the SEDS
 plotter.add_sed(environment.observed_sed, "Observation")
@@ -56,6 +63,6 @@ plotter.add_sed(sed, label)
 # -----------------------------------------------------------------
 
 # Plot
-plotter.run()
+plotter.run(output=config.outfile_path)
 
 # -----------------------------------------------------------------

@@ -19,26 +19,6 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Model generation methods
-#generation_methods = ["genetic", "grid", "instinctive"]
-
-# Default model generation method
-#default_generation_method = "genetic"
-
-# -----------------------------------------------------------------
-
-# Get the fitting method
-#fitting_method = get_fitting_method(modeling_path)
-
-# Set generation methods and default generation method, based on the fitting method
-#if fitting_method == "genetic":
-#    default_generation_method = "genetic"
-#    generation_methods = ["genetic", "grid"]
-#elif fitting_method == "grid":
-#    default_generation_method = "grid"
-#    generation_methods = ["grid"]
-#else: raise ValueError("Fitting method has an invalid value: " + fitting_method + " (must be 'genetic' or 'grid'")
-
 default_generation_method = "genetic"
 generation_methods = ["genetic", "grid"]
 
@@ -48,7 +28,6 @@ generation_methods = ["genetic", "grid"]
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # The fitting run for which to explore the parameter space
-# FITTING RUN
 if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
 else: definition.add_required("name", "string", "name of the fitting run", choices=runs.names)
@@ -56,13 +35,21 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 # Positional optional parameter
 definition.add_positional_optional("generation_method", "string", "model generation method", default_generation_method, choices=generation_methods)
 
-# Optional parameters
+# -----------------------------------------------------------------
+
+# Remote execution
+
+# Remote hosts
 if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
 else: definition.add_fixed("remotes", "remote hosts", [])
+
+# Options
 definition.add_flag("attached", "run remote simulations in attached mode")
 definition.add_optional("nsimulations", "even_positive_integer", "the number of simulations to launch in one batch/generation", 100)
 definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
+
+# -----------------------------------------------------------------
 
 # Flags
 definition.add_flag("visualise", "make visualisations")
@@ -109,5 +96,8 @@ definition.add_optional("restart_from_generation", "string", "restart everything
 definition.add_flag("check_recurrence", "check for recurrence of models that have been simulated previously", True)
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
+
+# Deploy on remote hosts
+definition.add_flag("deploy", "deploy SKIRT on remote hosts", False)
 
 # -----------------------------------------------------------------

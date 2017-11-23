@@ -13,8 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import numpy as np
+
+# Import astronomical modules
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from .image import Image
@@ -711,6 +714,18 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def get_wavelength(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.wavelength_grid[index]
+
+    # -----------------------------------------------------------------
+
     def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False):
 
         """
@@ -731,6 +746,9 @@ class DataCube(Image):
 
         frames = []
         for_convolution = []
+
+        # Rem
+        used_wavelength_indices = defaultdict(list)
 
         # Loop over the filters
         for fltr in filters:
@@ -756,20 +774,59 @@ class DataCube(Image):
                 # Get the index of the wavelength closest to that of the filter
                 index = self.get_frame_index_for_wavelength(fltr.pivot)
 
+                # Get the wavelength
+                wavelength = self.get_wavelength(index)
+
+                # Check the wavelength index
+                if index in used_wavelength_indices:
+                    filters = used_wavelength_indices[index]
+                    filter_names = [str(f) for f in filters]
+                    log.warning("The frame for the wavelength '" + str(wavelength) + "' has already been used to create the " + ", ".join(filter_names) + " frame(s)")
+
+                # Add the filter for the wavelength index
+                used_wavelength_indices[index].append(fltr)
+
                 # Make a copy of the frame
                 frame = self.frames[index].copy()
 
                 # Set the filter
                 frame.filter = fltr
 
+                # Set the exact frame wavelength
+                frame.wavelength = wavelength
+
                 # Get the frame
                 frames.append(frame)
 
+        # Show which wavelengths are used to create filter frames
+        log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")
+        log.debug("")
+        for index in used_wavelength_indices:
+            wavelength = self.get_wavelength(index)
+            filters = used_wavelength_indices[index]
+            filter_names = [str(f) for f in filters]
+            log.debug(" - " + str(wavelength) + ": " + ", ".join(filter_names))
+        log.debug("")
+
         # Calculate convolved frames
         if len(for_convolution) > 0:
+
             # Debugging
             log.debug(str(len(for_convolution)) + " filters require spectral convolution")
-            convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+
+            # Make the frames by convolution
+            convolved_frames, wavelengths_for_filters = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions, return_wavelengths=True)
+
+            # Show which wavelengths are used to create filter frames
+            log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+            log.debug("")
+            for fltr in wavelengths_for_filters:
+                filter_name = str(fltr)
+                wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+                log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+            log.debug("")
+
+        # No spectral convolution
         else:
             # Debugging
             log.debug("Spectral convolution will be used for none of the filters")
@@ -791,13 +848,14 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, nprocesses=8, check_previous_sessions=False):
+    def convolve_with_filters(self, filters, nprocesses=8, check_previous_sessions=False, return_wavelengths=False):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
         :param check_previous_sessions:
+        :param return_wavelengths:
         :return:
         """
 
@@ -808,18 +866,19 @@ class DataCube(Image):
         nprocesses = min(nprocesses, len(filters))
 
         # PARALLEL EXECUTION
-        if nprocesses > 1: return self.convolve_with_filters_parallel(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+        if nprocesses > 1: return self.convolve_with_filters_parallel(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions, return_wavelengths=return_wavelengths)
 
         # SERIAL EXECUTION
-        else: return self.convolve_with_filters_serial(filters)
+        else: return self.convolve_with_filters_serial(filters, return_wavelengths=return_wavelengths)
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters_serial(self, filters):
+    def convolve_with_filters_serial(self, filters, return_wavelengths=False):
 
         """
         Thisj function ...
         :param filters:
+        :param return_wavelengths:
         :return:
         """
 
@@ -839,6 +898,9 @@ class DataCube(Image):
         # Get the array of wavelengths
         wavelengths = self.wavelengths(asarray=True, unit="micron")
 
+        # Wavelengths used for each filter
+        wavelengths_for_filters = OrderedDict()
+
         # Loop over the filters
         for index in range(nfilters):
 
@@ -846,10 +908,15 @@ class DataCube(Image):
             fltr = filters[index]
 
             # Do the filter convolution, put frame in the frames list
-            _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
+            filter_wavelengths = _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
+
+            # Add the wavelengths
+            filter_wavelengths = [value * Unit("micron") for value in filter_wavelengths]
+            wavelengths_for_filters[fltr] = filter_wavelengths
 
         # Return the list of resulting frames
-        return frames
+        if return_wavelengths: return frames, wavelengths_for_filters
+        else: return frames
 
     # -----------------------------------------------------------------
 
@@ -892,13 +959,14 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters_parallel(self, filters, nprocesses=8, check_previous_sessions=False):
+    def convolve_with_filters_parallel(self, filters, nprocesses=8, check_previous_sessions=False, return_wavelengths=False):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
         :param check_previous_sessions:
+        :param return_wavelengths:
         :return:
         """
 
@@ -1038,7 +1106,32 @@ class DataCube(Image):
             frames[index] = Frame.from_file(result_path)
 
         # Return the list of resulting frames
-        return frames
+        if return_wavelengths:
+
+            wavelengths_for_filters = OrderedDict()
+
+            # Loop over the filters, set the wavelength grid used for convolution
+            for fltr in filters:
+
+                # Get the array of wavelengths
+                wa = self.wavelengths(asarray=True, unit="micron")
+                wb = fltr._Wavelengths
+
+                # create a combined wavelength grid, restricted to the overlapping interval
+                w1 = wa[(wa >= wb[0]) & (wa <= wb[-1])]
+                w2 = wb[(wb >= wa[0]) & (wb <= wa[-1])]
+                w = np.unique(np.hstack((w1, w2)))
+                filter_wavelengths = w
+
+                # Add the list of wavelengths
+                filter_wavelengths = [value * Unit("micron") for value in filter_wavelengths]
+                wavelengths_for_filters[fltr] = filter_wavelengths
+
+            # Return
+            return frames, wavelengths_for_filters
+
+        # Return the list of resulting frames
+        else: return frames
 
     # -----------------------------------------------------------------
 
@@ -1794,7 +1887,7 @@ def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wc
     log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
 
     # Calculate the observed image frame
-    data = fltr.convolve(wavelengths, array)
+    data, wavelength_grid = fltr.convolve(wavelengths, array, return_grid=True)
     frame = Frame(data)
 
     # Debugging
@@ -1811,6 +1904,9 @@ def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wc
 
     # Add the frame to the list
     frames[index] = frame
+
+    # Return the wavelength grid array
+    return wavelength_grid
 
 # -----------------------------------------------------------------
 

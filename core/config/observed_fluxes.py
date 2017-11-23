@@ -25,3 +25,8 @@ definition.add_flag("from_images", "calculate observed fluxes from images create
 definition.add_flag("write_images", "write the images created from the output datacubes", False)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "plot the mock observed SEDs", False)
+
+# -----------------------------------------------------------------
