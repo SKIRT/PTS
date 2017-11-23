@@ -885,7 +885,7 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
-        if self.has_fluxes_from_images_masks: return self.fluxes_from_images_masks.keys()
+        if self.has_fluxes_from_images_masks: return self.fluxes_from_images_masks[self.single_fluxes_from_images_instrument].keys()
         else: return self.misc_options.observation_filters
 
     # -----------------------------------------------------------------

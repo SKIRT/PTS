@@ -1439,15 +1439,11 @@ class GalaxyModeler(ModelerBase):
         # Set model name
         config["name"] = self.model_name
 
-        ###### NEW ######
-
         # Get the estimated SFR
         config["sfr"] = SFRs[self.hyperleda_name] if self.hyperleda_name in SFRs else 1.0
 
         # Get the dust mass estimated by black body fitting (DustPedia)
         config["dust_mass"] = get_mbb_dust_mass(self.hyperleda_name)
-
-        #################
 
         # Create the builder
         builder = GalaxyModelBuilder(config)

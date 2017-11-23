@@ -64,6 +64,17 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.counts)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_probabilities(cls, probabilities, values, name=None):
 
@@ -1129,6 +1140,17 @@ class Distribution2D(object):
 
         # The path
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.counts)
 
     # -----------------------------------------------------------------
 

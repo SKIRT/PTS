@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import math
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
@@ -22,7 +19,8 @@ from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjec
 from ...core.simulation.grids import load_grid
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.simulation.tree import DustGridTreeDistribution
 
 # -----------------------------------------------------------------
 
@@ -158,6 +156,42 @@ class Representation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def earth_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_projection.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edgeon_projection.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.faceon_projection.pixelscale
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sed_instrument(self):
 
@@ -203,5 +237,109 @@ class Representation(object):
         """
 
         return load_grid(self.dust_grid_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return type(self.dust_grid).__name__
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_tree_distribution_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.grid_path, "tree_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grid_tree_distribution(self):
+
+        """
+        Thisf ucntion ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_grid_tree_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DustGridTreeDistribution.from_file(self.dust_grid_tree_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_min_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_grid_tree_distribution.min_level
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_max_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_grid_tree_distribution.max_level
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_grid_tree_distribution.ncells
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        properties = dict()
+        properties["pixelscale"] = self.pixelscale
+        properties["dust_grid_type"] = self.dust_grid_type
+        if self.has_dust_grid_tree_distribution:
+            properties["dust_grid_min_level"] = self.dust_grid_min_level
+            properties["dust_grid_max_level"] = self.dust_grid_max_level
+        properties["dust_grid_ncells"] = self.ndust_cells
+
+        return properties
 
 # -----------------------------------------------------------------

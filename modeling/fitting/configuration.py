@@ -25,9 +25,9 @@ from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 from .run import FittingRun
 from ...core.basics.configuration import prompt_string
-from ..build.component import get_representations_for_model, get_representation_path, get_pixelscale_for_representation
+from ..build.component import get_representations_for_model, get_representation_path, get_representation
 from ..build.representation import Representation
-from ...core.units.stringify import represent_quantity
+from ...core.tools.stringify import tostr
 from ...evolve.solve.extremizer import genetic_definition
 
 # -----------------------------------------------------------------
@@ -214,14 +214,21 @@ class FittingConfigurer(FittingComponent):
         for name in get_representations_for_model(self.config.path, self.model_name):
 
             # Get the pixelscale
-            pixelscale = get_pixelscale_for_representation(self.config.path, name).average
+            #pixelscale = get_pixelscale_for_representation(self.config.path, name).average
+
+            # Get the representation
+            representation = get_representation(self.config.path, name)
+            pixelscale = representation.earth_pixelscale.average
 
             # Determine name and description
             option = name
             if highest_pixelscale is None or pixelscale > highest_pixelscale:
                 highest_pixelscale = pixelscale
                 highest_pixelscale_name = name
-            description = "representation '" + highest_pixelscale_name + "' with a pixelscale of '" + represent_quantity(highest_pixelscale) + "'"
+            #description = "representation '" + name + "' with: " + tostr(representation.properties)
+            description = "representation with instrument resolution of " + tostr(representation.earth_pixelscale.average.to("arcsec"), round=True, ndigits=3) + " with a " + representation.dust_grid_type + " dust grid"
+            if representation.has_dust_grid_tree_distribution:
+                description += " with " + str(representation.ndust_cells) + " dust cells (min level = " + str(representation.dust_grid_min_level) + ", max level = " + str(representation.dust_grid_max_level) + ")"
 
             # Add the option
             options[option] = description
@@ -296,6 +303,7 @@ class FittingConfigurer(FittingComponent):
         # Inform the user
         log.info("Loading the ski file template ...")
 
+        # Load ski file template
         self.ski = LabeledSkiFile(template_ski_path)
 
     # -----------------------------------------------------------------
@@ -852,7 +860,8 @@ class FittingConfigurer(FittingComponent):
         self.fitting_config.initial_representation = self.initial_representation.name
 
         # Set additional settings
-        for label in self.settings: self.fitting_config[label] = self.settings[label]
+        if self.settings is not None:
+            for label in self.settings: self.fitting_config[label] = self.settings[label]
 
     # -----------------------------------------------------------------
 

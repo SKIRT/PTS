@@ -298,7 +298,7 @@ class ObservedFluxCalculator(Configurable):
                 mask = self.get_mask(instr_name, fltr)
 
                 # Rebin the frame
-                frame.rebin(mask.wcs)
+                frame.rebin(mask.wcs, convert=True)
 
                 # Mask
                 frame.apply_mask_nans(mask)
@@ -420,7 +420,6 @@ class ObservedFluxCalculator(Configurable):
         log.info("Calculating fluxes from images ...")
 
         # Loop over the different instruments
-        #for instr_name in self.instrument_names:
         for instr_name in self.images:
 
             # Initialize an SED

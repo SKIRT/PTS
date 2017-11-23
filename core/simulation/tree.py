@@ -17,6 +17,7 @@ from ..tools import tables
 from . import textfile
 from ..basics.range import QuantityRange
 from ..tools.utils import lazyproperty
+from ..basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -424,7 +425,78 @@ class DustGridTree(object):
         :return: 
         """
 
-        # Save the path
+        # Save the pathc
         self.saveto(self.path)
+
+# -----------------------------------------------------------------
+
+class DustGridTreeDistribution(Distribution):
+
+    """
+    This class ...
+    """
+
+    @property
+    def min_level_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for index in range(len(self)):
+            if self.counts[index] != 0: return index
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_level_index(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        for index in reversed(range(len(self))):
+            if self.counts[index] != 0: return index
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.centers[self.min_level_index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.centers[self.max_level_index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total = 0
+        for index in range(self.min_level_index, self.max_level_index+1):
+            total += self.counts[index]
+        return total
 
 # -----------------------------------------------------------------

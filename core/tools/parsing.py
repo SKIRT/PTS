@@ -1633,6 +1633,20 @@ def mass_quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def mass_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = mass_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
 def mass_density_quantity(argument):
 
     """
