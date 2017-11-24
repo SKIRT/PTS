@@ -85,6 +85,13 @@ max_dust_mass = parse_quantity("5.e7 Msun")
 
 # -----------------------------------------------------------------
 
+# Magnitude of fitting ranges
+dust_mass_magnitudes = 1
+fuv_young_magnitudes = 2
+fuv_ionizing_magnitudes = 4
+
+# -----------------------------------------------------------------
+
 parameter_grid_scales = dict()
 parameter_grid_scales["DL14"] = {"fuv_young": "logarithmic",
                                  "dust_mass": "logarithmic",
@@ -1559,16 +1566,19 @@ class GalaxyModeler(ModelerBase):
         # Define ranges
         for label in parameter_labels:
             if label == "fuv_young":
-                young_range = QuantityRange.around_magnitude(fuv_young, 3)
-                young_range.max = max_fuv_young
+                #young_range = QuantityRange.around_magnitude(fuv_young, 3)
+                #young_range.max = max_fuv_young
+                young_range = QuantityRange.within_magnitude(fuv_young, fuv_young_magnitudes)
                 free_parameter_ranges[label] = young_range
             elif label == "fuv_ionizing":
-                ionizing_range = QuantityRange.around_magnitude(fuv_ionizing, 3)
-                ionizing_range.max = max_fuv_ionizing
+                #ionizing_range = QuantityRange.around_magnitude(fuv_ionizing, 3)
+                #ionizing_range.max = max_fuv_ionizing
+                ionizing_range = QuantityRange.within_magnitude(fuv_ionizing, fuv_ionizing_magnitudes)
                 free_parameter_ranges[label] = ionizing_range
             elif label == "dust_mass":
-                mass_range = QuantityRange.around_magnitude(dust_mass, 2)
-                mass_range.max = max_dust_mass
+                #mass_range = QuantityRange.around_magnitude(dust_mass, 2)
+                #mass_range.max = max_dust_mass
+                mass_range = QuantityRange.within_magnitude(dust_mass, dust_mass_magnitudes)
                 free_parameter_ranges[label] = mass_range
             else: raise ValueError("Free parameter label not recognized: '" + label + "'")
 

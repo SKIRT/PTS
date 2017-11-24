@@ -1009,6 +1009,54 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def ionizing_stars_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters["sfr"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_pressure(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters["pressure"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_covering_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters["covering_factor"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_compactness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters["compactness"]
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_parameters(self):
 
         """
@@ -1161,6 +1209,54 @@ class ModelDefinition(object):
         """
 
         return fs.join(self.dust_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_deprojection.galaxy_distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_deprojection.inclination
+
+    # -----------------------------------------------------------------
+
+    @property
+    def position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_deprojection.position_angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def metallicity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.metallicity
 
     # -----------------------------------------------------------------
 

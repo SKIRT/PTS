@@ -65,6 +65,7 @@ class Range(object):
         :param inclusive:
         """
 
+        # Set min and max value
         self._min = min_value
         self._max = max_value
 
@@ -112,6 +113,22 @@ class Range(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def around_factor(cls, value, factor, inclusive=True, invert=False):
+
+        """
+        This function ...
+        :param value:
+        :param factor:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        return cls.around(value, 1./factor, factor, inclusive=inclusive, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def around_magnitudes(cls, value, min_magnitude, max_magnitude, inclusive=True, invert=False):
 
         """
@@ -148,6 +165,39 @@ class Range(object):
         """
 
         return cls.around_magnitudes(value, -magnitude, magnitude, inclusive=inclusive, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def within_factor(cls, value, factor, inclusive=True, invert=False):
+
+        """
+        This function ...
+        :param value:
+        :param factor:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        return cls.around_factor(value, math.sqrt(factor), inclusive=inclusive, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def within_magnitude(cls, value, magnitude, inclusive=True, invert=False):
+
+        """
+        This function ...
+        :param value:
+        :param magnitude:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        factor = 10**float(magnitude)
+        return cls.within_factor(value, factor, inclusive=inclusive, invert=invert)
 
     # -----------------------------------------------------------------
 

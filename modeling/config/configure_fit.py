@@ -63,6 +63,9 @@ definition.add_optional("filters", "string_list", "fit to the observed data of t
 definition.add_optional("genetic", "dictionary", "options for the genetic algorithm")
 definition.add_optional("grid", "dictionary", "options for the grid fitting")
 
+# Free ranges?
+definition.add_flag("free_ranges", "use free ranges, instead of using initial values and a certain magnitude range around it", False)
+
 # Sections
 definition.add_section("ranges", "parameter ranges")
 

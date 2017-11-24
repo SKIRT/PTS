@@ -29,10 +29,36 @@ from ..build.component import get_representations_for_model, get_representation_
 from ..build.representation import Representation
 from ...core.tools.stringify import tostr
 from ...evolve.solve.extremizer import genetic_definition
+from ...core.tools.utils import lazyproperty
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
 template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+
+# -----------------------------------------------------------------
+
+# Default magnitude ranges
+magnitude_ranges = dict()
+#magnitude_ranges["distance"] = None
+#magnitude_ranges["ionizing_scaleheight"] = None
+#magnitude_ranges["sfr_compactness"] = None
+magnitude_ranges["fuv_young"] = 2
+#magnitude_ranges["old_scaleheight"] = None
+#magnitude_ranges["position_angle"] = None
+magnitude_ranges["dust_mass"] = 1
+magnitude_ranges["fuv_ionizing"] = 4
+#magnitude_ranges["metallicity"] = None
+#magnitude_ranges["young_scaleheight"] = None
+#magnitude_ranges["sfr_covering"] = None
+#magnitude_ranges["dust_scaleheight"] = None
+#magnitude_ranges["i1_old"] = None
+#magnitude_ranges["sfr_pressure"] = None
+#magnitude_ranges["inclination"] =  None
+
+# -----------------------------------------------------------------
+
+default_magnitude_range = 2
 
 # -----------------------------------------------------------------
 
@@ -263,6 +289,226 @@ class FittingConfigurer(FittingComponent):
         """
 
         return self.fitting_run.model_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..build.component import get_model_definition
+        return get_model_definition(self.config.path, self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_fuv_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.young_stars_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_fuv_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_stars_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.distance
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_old_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.old_stars_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_young_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.young_stars_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_ionizing_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_stars_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_dust_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.dust_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_sfr_compactness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_stars_compactness
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.position_angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_metallicity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.metallicity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_sfr_covering(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_stars_covering_factor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_i1_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.old_stars_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_sfr_pressure(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_stars_pressure
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.inclination
+
+    # -----------------------------------------------------------------
+
+    def get_initial_value(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        if label == "distance": return self.initial_distance
+        elif label == "ionizing_scaleheight": return self.initial_ionizing_scaleheight
+        elif label == "sfr_compactness": return self.initial_sfr_compactness
+        elif label == "fuv_young": return self.initial_fuv_young
+        elif label == "old_scaleheight": return self.initial_old_scaleheight
+        elif label == "position_angle": return self.initial_position_angle
+        elif label == "dust_mass": return self.initial_dust_mass
+        elif label == "fuv_ionizing": return self.initial_fuv_ionizing
+        elif label == "metallicity": return self.initial_metallicity
+        elif label == "young_scaleheight": return self.initial_young_scaleheight
+        elif label == "sfr_covering": return self.initial_sfr_covering
+        elif label == "dust_scaleheight": return self.initial_dust_scaleheight
+        elif label == "i1_old": return self.initial_i1_old
+        elif label == "sfr_pressure": return self.initial_sfr_pressure
+        elif label == "inclination": return self.initial_inclination
+        else: raise ValueError("Unrecognized parameter label")
 
     # -----------------------------------------------------------------
 
@@ -532,29 +778,59 @@ class FittingConfigurer(FittingComponent):
         # Add the options for the ranges
         for label in self.parameter_labels:
 
-            # Get the unit
-            unit = self.units_config.units[label]
-            #in_units_string = " (in " + unit + ")" if unit is not None else " (dimensionless)"
-            units_info_string = " (don't forget the units!) " if unit is not None else " (dimensionless)"
+            # Use free ranges
+            if self.config.free_ranges:
 
-            # Get the default range
-            default_range = self.default_ranges[label] if label in self.default_ranges else None
+                # Get the unit
+                unit = self.units_config.units[label]
+                units_info_string = " (don't forget the units!) " if unit is not None else " (dimensionless)"
 
-            # Get the parsing type
-            parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
+                # Get the parsing type
+                parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
 
-            # Get the description
-            description = "range of " + self.description_for_parameter(label) + units_info_string
+                # Get the description
+                description = "range of " + self.description_for_parameter(label) + units_info_string
 
-            # Make optional or required depending on whether default is given
-            if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
-            else: definition.add_required(label + "_range", parsing_type + "_range", description)
+                # Get the default range
+                default_range = self.default_ranges[label] if label in self.default_ranges else None
+
+                # Make optional or required depending on whether default is given
+                if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
+                else: definition.add_required(label + "_range", parsing_type + "_range", description)
+
+            # Use magnitudes
+            else:
+
+                # Get default magnitude
+                if label in magnitude_ranges and magnitude_ranges[label] is not None: default_magnitude = magnitude_ranges[label]
+                else: default_magnitude = default_magnitude_range
+
+                # Make optional setting
+                definition.add_optional(label + "_magnitude", "real", "magnitude range for " + self.description_for_parameter(label), default=default_magnitude)
 
         # Create configuration setter
         setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
 
         # Create config, get the range for each chosen free parameter
         self.ranges_config = setter.run(definition, prompt_optional=False)
+
+        # If not free, add actual ranges, ranges are now only defined as magnitude around the initial value
+        if not self.config.free_ranges:
+
+            # Loop over the ranges
+            for label in self.parameter_labels:
+
+                # Get the magnitude
+                magnitude = self.ranges_config[label + "_magnitude"]
+
+                # Get the initial value for this parameter
+                value = self.get_initial_value(label)
+
+                # Construct the actual range
+                parameter_range = QuantityRange.within_magnitude(value, magnitude)
+
+                # Set the range
+                self.ranges_config[label + "_range"] = parameter_range
 
     # -----------------------------------------------------------------
 
