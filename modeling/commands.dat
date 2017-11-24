@@ -115,6 +115,7 @@ make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the ga
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
+build_wavelengths | -- | build.wavelengthgrid.WavelengthGridBuilder | arguments | Build wavelength grid
 launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
 launch_contributions | -- | misc.contributions.ModelContributionsLauncher | arguments | Launch simulations for the different contributions of a model
 generate_truncation_ellipse_page | -- | truncation.html.ellipse.TruncationEllipsePageGenerator | arguments | Generate the truncation ellipse page

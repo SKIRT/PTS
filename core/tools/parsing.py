@@ -1545,6 +1545,20 @@ def length_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def length_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    quantities = []
+    for item in string_list(argument): quantities.append(length_quantity(item))
+    return quantities
+
+# -----------------------------------------------------------------
+
 def length_quantity_tuple(argument):
 
     """

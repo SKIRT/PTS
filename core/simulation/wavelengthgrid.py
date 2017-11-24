@@ -105,12 +105,13 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_wavelengths(cls, wavelengths, unit=None):
+    def from_wavelengths(cls, wavelengths, unit=None, sort=False):
 
         """
         This function ...
         :param wavelengths:
         :param unit:
+        :param sort:
         :return:
         """
 
@@ -134,6 +135,9 @@ class WavelengthGrid(object):
         grid.table = Table()
         grid.table["Wavelength"] = wavelengths
         grid.table["Wavelength"].unit = unit
+
+        # Sort?
+        if sort: grid.sort()
 
         # Return the new instance
         return grid
@@ -487,6 +491,17 @@ class WavelengthGrid(object):
         """
 
         raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    def sort(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.table.sort()
 
     # -----------------------------------------------------------------
 

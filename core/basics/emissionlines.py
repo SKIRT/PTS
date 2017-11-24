@@ -82,12 +82,25 @@ class EmissionLine(object):
         This function ...
         """
 
+        # Set attributes
         self.group = group
         self.specification = specification
         self.center = center
         self.left = left
         self.right = right
         self.label = label
+
+    # -----------------------------------------------------------------
+
+    @property
+    def identifier(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.group, self.specification)
 
     # -----------------------------------------------------------------
 

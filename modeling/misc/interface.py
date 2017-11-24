@@ -18,12 +18,11 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.basics.log import log
-from ...core.basics.emissionlines import EmissionLines
-from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from .select import select_from_model_suite, select_from_fitting_context
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
 from ..build.representations.galaxy import create_projections_from_dust_grid, create_projections_from_deprojections
 from ...core.basics.configuration import prompt_yn
+from ..build.wavelengthgrid import WavelengthGridBuilder
 
 # -----------------------------------------------------------------
 
@@ -150,58 +149,44 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grid(self, check_filters=True):
+    def create_wavelength_grid(self, check_filters=True, output_path=None, plot=False):
 
         """
         This function ...
         :param check_filters:
+        :param output_path:
+        :param plot:
         :return:
         """
 
         # Inform the user
         log.info("Creating the wavelength grid ...")
 
-        # Fixed wavelengths (always in the grid: for normalization)
-        fixed = self.normalization_wavelengths
+        # Create wavelength grid builder
+        builder = WavelengthGridBuilder()
 
-        # Create the emission lines instance
-        if self.config.wg.add_emission_lines: emission_lines = EmissionLines()
-        else: emission_lines = None
+        # Set options
+        builder.config.add_emission_lines = self.config.wg.add_emission_lines
+        builder.config.min_wavelength = self.config.wg.range.min
+        builder.config.max_wavelength = self.config.wg.range.max
+        builder.config.check_filters = self.observed_filters if check_filters else None
+        builder.config.npoints = self.config.wg.npoints
+        builder.config.adjust_to = self.observed_filter_wavelengths
+        builder.config.fixed = self.normalization_wavelengths
 
-        # Get the min and max wavelength
-        min_wavelength = self.config.wg.range.min
-        max_wavelength = self.config.wg.range.max
+        # Set output path
+        if output_path is not None: builder.config.write = True
+        builder.config.output = output_path
+        #builder.config.write_grid = False # DO write the grid in table format
 
-        # Check the range
-        if check_filters:
-            for fltr in self.observed_filters:
-                if fltr.wavelength < min_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
-                if fltr.wavelength > max_wavelength: log.warning("The wavelength grid range does not contain the wavelength of the '" + str(fltr) + "' filter")
+        # Plot?
+        builder.config.plot = plot
 
-        # Create the grid
-        # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
-        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
-            create_one_subgrid_wavelength_grid(self.config.wg.npoints, emission_lines, fixed,
-                                               min_wavelength=min_wavelength,
-                                               max_wavelength=max_wavelength, adjust_to=self.observed_filter_wavelengths)
+        # Run the wavelength grid builder
+        builder.run()
 
-        # Set the grid
-        self.wavelength_grid = grid
-
-        # Debugging
-        log.debug("Created a wavelength grid with:")
-        log.debug("")
-        log.debug(" - number of points: " + str(len(grid)))
-        log.debug(" - number of points in subgrids: " + str(subgrid_npoints))
-        log.debug(" - number of emission points: " + str(emission_npoints))
-        log.debug(" - number of fixed points: " + str(fixed_npoints))
-        log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
-        log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
-        log.debug("")
-        if log.is_debug():
-            print("")
-            print(self.wavelength_grid)
-            print("")
+        # Get the wavelength grid
+        self.wavelength_grid = builder.wavelength_grid
 
     # -----------------------------------------------------------------
 

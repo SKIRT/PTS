@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
@@ -27,6 +28,7 @@ from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics.range import IntegerRange
 from ..tools import sequences
+from ..basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
@@ -34,7 +36,7 @@ from ..tools import sequences
 subgrids = ["UV", "optical", "PAH", "dust", "extension"]
 
 # Define the ranges of the subgrids
-ranges = dict()
+ranges = OrderedDict()
 ranges["UV"] = QuantityRange(0.02, 0.085, unit="micron")
 ranges["optical"] = QuantityRange(0.085, 3., unit="micron")
 ranges["PAH"] = QuantityRange(3., 27., unit="micron")
@@ -42,12 +44,12 @@ ranges["dust"] = QuantityRange(27., 1000., unit="micron")
 ranges["extension"] = QuantityRange(1000., 2000, unit="micron")
 
 # Define the relative fineness (the number of points) of the subgrids
-relpoints = dict()
-relpoints["UV"] = 25./325.    # 25
+relpoints = OrderedDict()
+relpoints["UV"] = 25./325.           # 25
 relpoints["optical"] = 100./325.     # 100
-relpoints["PAH"] = 125./325.  # 125
-relpoints["dust"] = 50./325.  # 50
-relpoints["extension"] = 25./325.  # 25
+relpoints["PAH"] = 125./325.         # 125
+relpoints["dust"] = 50./325.         # 50
+relpoints["extension"] = 25./325.    # 25
 
 # -----------------------------------------------------------------
 
@@ -358,37 +360,23 @@ class WavelengthGridGenerator(Configurable):
 
 # -----------------------------------------------------------------
 
-def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None,
-                                       filters=None, min_wavelengths_in_filter=5, min_wavelengths_in_fwhm=3, adjust_to=None):
+def get_subgrid_wavelengths(npoints, min_wavelength=None, max_wavelength=None):
 
     """
     This function ...
-    :param npoints:
-    :param emission_lines:
-    :param fixed:
     :param min_wavelength:
     :param max_wavelength:
-    :param filters:
-    :param min_wavelengths_in_filter:
-    :param min_wavelengths_in_fwhm:
-    :param adjust_to:
+    :param npoints:
     :return:
     """
 
-    # Debugging
-    log.debug("Creating wavelength grid with " + str(npoints) + " points ...")
-
-    # A list of the wavelength points
-    wavelengths = []
-
-    # Keep track of the number of points per subgrid
-    subgrid_npoints = dict()
+    subgrid_wavelengths = OrderedDict()
 
     # Loop over the subgrids
     for subgrid in subgrids:
 
         # Debugging
-        log.debug("Adding the " + subgrid + " subgrid ...")
+        log.debug("Checking " + subgrid + " subgrid wavelengths ...")
 
         # Determine minimum, maximum
         min_lambda = ranges[subgrid].min
@@ -401,10 +389,6 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         # Determine the normal number of wavelength points for this subgrid
         points = int(round(relpoints[subgrid] * npoints))
 
-        # Correct the number of wavelengths based on the given min and max wavelength
-        #if min_wavelength is not None: min_lambda = max(min_lambda, min_wavelength)
-        #if max_wavelength is not None: max_lambda = min(max_lambda, max_wavelength)
-
         # Generate and add the wavelength points
         wavelengths_subgrid_original = make_grid(min_lambda, max_lambda, points)
 
@@ -415,130 +399,270 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
             if max_wavelength is not None and wav > max_wavelength: continue
             wavelengths_subgrid.append(wav)
 
-        # Set the number of points for this subgrid
-        subgrid_npoints[subgrid] = len(wavelengths_subgrid)
+        # Add the sequence of wavelengths
+        subgrid_wavelengths[subgrid] = wavelengths_subgrid
 
-        # Add the wavelength points
-        wavelengths += wavelengths_subgrid
+    # Return
+    return subgrid_wavelengths
+
+# -----------------------------------------------------------------
+
+def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=5, min_wavelengths_in_fwhm=3):
+
+    """
+    This function ...
+    :param wavelengths:
+    :param filters:
+    :param min_wavelengths_in_filter:
+    :param min_wavelengths_in_fwhm:
+    :return:
+    """
+
+    # Initialize dictionary for the wavelengths for each filter
+    filter_wavelengths = DefaultOrderedDict(list)
+
+    # Debugging
+    log.debug("Adding wavelengths for sampling filter bandpasses ...")
 
     # Loop over the filters
-    #broad_resampled = 0
-    #narrow_added = 0
-    broad_resampled = []
-    narrow_added = []
-    if filters is not None:
+    for fltr in filters:
 
         # Debugging
-        log.debug("Adding wavelengths for sampling filter bandpasses ...")
+        log.debug("Adding wavelength(s) for the " + str(fltr) + " filter ...")
 
-        # Loop over the filters
-        for fltr in filters:
+        # Broad band filter: make sure there are at least 10 wavelength points in the range min_wavelength > max_wavelength
+        if isinstance(fltr, BroadBandFilter):
 
-            # Debugging
-            log.debug("Adding wavelength(s) for the " + str(fltr) + " filter ...")
+            # Get filter minimum and maximum wavelength
+            min_wavelength = fltr.min
+            max_wavelength = fltr.max
 
-            # Broad band filter: make sure there are at least 10 wavelength points in the range min_wavelength > max_wavelength
-            if isinstance(fltr, BroadBandFilter):
+            # Check that at least 5 wavelength points sample the range of the filter
+            # Get the indices of the wavelengths that fall within this range in the current list of wavelengths
+            current_indices = [i for i in range(len(wavelengths)) if min_wavelength < wavelengths[i] < max_wavelength]
 
-                min_wavelength = fltr.min
-                max_wavelength = fltr.max
+            # Check if there at least ..
+            if len(current_indices) >= min_wavelengths_in_filter: continue
 
-                # Check that at least 5 wavelength points sample the range of the filter
-                # Get the indices of the wavelengths that fall within this range in the current list of wavelengths
-                current_indices = [i for i in range(len(wavelengths)) if min_wavelength < wavelengths[i] < max_wavelength]
+            # Otherwise, delete the current wavelengths and add 10 new ones
+            for index in sorted(current_indices, reverse=True): del wavelengths[index]
 
-                # Check if there at least 10
-                if len(current_indices) >= min_wavelengths_in_filter: continue
+            # One more filter for which we have resampled
+            #broad_resampled.append(str(fltr))
 
-                # Otherwise, delete the current wavelengths and add 10 new ones
+            # Generate new wavelengths for sampling the filter range on a logarithmic grid
+            new_wavelengths = fltr.range.log(min_wavelengths_in_filter, as_list=True)
+
+            # Add the new wavelengths
+            wavelengths += new_wavelengths
+
+            # Sort the wavelength points
+            # SORTING IS DONE AT THE END
+            #wavelengths = sorted(wavelengths)
+
+            # Add the wavelengths
+            filter_wavelengths[fltr].extend(new_wavelengths)
+
+            # If FWHM of the filter is defined
+            if fltr.fwhm is not None:
+
+                min_wavelength_fwhm = fltr.mean - fltr.fwhm
+                max_wavelength_fwhm = fltr.mean + fltr.fwhm
+
+                # Check that at least 3 wavelength points sample the inner range of the filter
+                current_indices = [i for i in range(len(wavelengths)) if min_wavelength_fwhm < wavelengths[i] < max_wavelength_fwhm]
+                current_indices_new = [i for i in range(len(new_wavelengths)) if min_wavelength_fwhm < new_wavelengths[i] < max_wavelength_fwhm]
+
+                # Check if there are at least 3
+                if len(current_indices) >= min_wavelengths_in_fwhm: continue
+
+                # Otherwise, delete the current wavelengths and add 3 new ones
                 for index in sorted(current_indices, reverse=True): del wavelengths[index]
 
-                # One more filter for which we have resampled
-                broad_resampled.append(str(fltr))
-
-                # Generate new wavelengths for sampling the filter range on a logarithmic grid
-                new_wavelengths = fltr.range.log(min_wavelengths_in_filter, as_list=True)
+                # Generate new wavelengths for sampling the inner filter range on a logarithmic grid
+                new_wavelengths = fltr.fwhm_range.log(min_wavelengths_in_fwhm, as_list=True)
 
                 # Add the new wavelengths
                 wavelengths += new_wavelengths
 
-                # Sort the wavelength points
-                wavelengths = sorted(wavelengths)
+                # SORTING IS DONE AT THE END
 
-                # If FWHM of the filter is defined
-                if fltr.fwhm is not None:
+                # Add to dictionary
+                for index in sorted(current_indices_new, reverse=True): del filter_wavelengths[fltr][index]
+                filter_wavelengths[fltr].extend(new_wavelengths)
 
-                    min_wavelength_fwhm = fltr.mean - fltr.fwhm
-                    max_wavelength_fwhm = fltr.mean + fltr.fwhm
+        # For a narrow band filter, add the exact wavelength of the filter to the wavelength grid
+        elif isinstance(fltr, NarrowBandFilter):
 
-                    # Check that at least 3 wavelength points sample the inner range of the filter
-                    current_indices = [i for i in range(len(wavelengths)) if min_wavelength_fwhm < wavelengths[i] < max_wavelength_fwhm]
+            # Add the wavelength
+            wavelengths.append(fltr.wavelength)
 
-                    # Check if there are at least 3
-                    if len(current_indices) >= min_wavelengths_in_fwhm: continue
+            # One more filter for which we have added a wavelength
+            #narrow_added.append(str(fltr))
 
-                    # Otherwise, delete the current wavelengths and add 3 new ones
-                    for index in sorted(current_indices, reverse=True): del wavelengths[index]
+            # Add the wavelength
+            filter_wavelengths[fltr].append(fltr.wavelength)
 
-                    # Generate new wavelengths for sampling the inner filter range on a logarithmic grid
-                    new_wavelengths = fltr.fwhm_range.log(min_wavelengths_in_fwhm, as_list=True)
+        # Unrecognized filter
+        else: raise ValueError("Unrecognized filter object: " + str(fltr))
 
-                    # Add the new wavelengths
-                    wavelengths += new_wavelengths
+    # Return the filter wavelengths
+    return filter_wavelengths
 
-                    # Sorting is done at the end
+# -----------------------------------------------------------------
 
-            # For a narrow band filter, add the exact wavelength of the filter to the wavelength grid
-            elif isinstance(fltr, NarrowBandFilter):
+def adjust_to_wavelengths(wavelengths, adjust_to):
 
-                # Add the wavelength
-                wavelengths.append(fltr.wavelength)
+    """
+    This function ...
+    :param wavelengths:
+    :param adjust_to:
+    :return:
+    """
 
-                # One more filter for which we have added a wavelength
-                #narrow_added += 1
-                narrow_added.append(str(fltr))
+    # Debugging
+    log.debug("Adjusting wavelength grid to include exact wavelengths ...")
 
-            # Unrecognized filter
-            else: raise ValueError("Unrecognized filter object: " + str(fltr))
+    # Replace dict
+    replace_dict = defaultdict(list)
 
-    # Adjust to passed wavelengths
-    if adjust_to is not None:
+    # Original wavelengths with replaced
+    replaced = []
+
+    # New wavelengths
+    new = []
+
+    # Loop over the wavelengths
+    for wavelength in adjust_to:
 
         # Debugging
-        log.debug("Adjusting wavelength grid to include exact wavelengths ...")
+        log.debug("Adjusting the wavelength grid for " + str(wavelength) + "...")
 
-        # Loop over the wavelengths
-        for wavelength in adjust_to:
+        # Find closest
+        index = sequences.find_closest_index(wavelengths, wavelength)
 
-            # Debugging
-            log.debug("Adjusting the wavelength grid for " + str(wavelength) + "...")
+        # Add wavelength
+        replace_dict[index].append(wavelength)
 
-            # Find closest
-            index = sequences.find_closest_index(wavelengths, wavelength)
+    # Loop over the indices for which a replacement will be performed
+    for index in replace_dict:
 
-            # Replace by adjust_to wavelength
+        # Only one replacement
+        if len(replace_dict[index]) == 1:
+
+            # Get the new wavelength
+            wavelength = replace_dict[index]
+
+            # Set
+            replaced.append((wavelengths[index], wavelength))
+
+            # Replace the wavelength
             wavelengths[index] = wavelength
 
+        # Multiple wavelengths for one index
+        else:
+
+            # Get the wavelengths
+            adjust_wavelengths = replace_dict[index]
+
+            # Get the closest wavelength to the previous wavelength
+            previous_wavelength = wavelengths[index]
+
+            # Find closest
+            adjust_index = sequences.find_closest_index(adjust_wavelengths, previous_wavelength)
+
+            # Set
+            replaced.append((wavelengths[index], adjust_wavelengths[adjust_index]))
+
+            # Replace closest
+            wavelengths[index] = adjust_wavelengths[adjust_index]
+
+            # Add other
+            for j in range(len(adjust_wavelengths)):
+
+                # Already added
+                if j == adjust_index: continue
+
+                # Add the wavelength
+                wavelengths.append(adjust_wavelengths[j])
+
+                # Add to new
+                new.append(adjust_wavelengths[j])
+
+    # Return
+    return replaced, new
+
+# -----------------------------------------------------------------
+
+def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None,
+                                       filters=None, min_wavelengths_in_filter=5, min_wavelengths_in_fwhm=3, adjust_to=None,
+                                       return_elements=False):
+
+    """
+    This function ...
+    :param npoints:
+    :param emission_lines:
+    :param fixed:
+    :param min_wavelength:
+    :param max_wavelength:
+    :param filters:
+    :param min_wavelengths_in_filter:
+    :param min_wavelengths_in_fwhm:
+    :param adjust_to:
+    :param return_elements:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Creating wavelength grid with " + str(npoints) + " points ...")
+
+    # A list of the wavelength points
+    wavelengths = []
+
+    # Get subgrid wavelength sequences
+    subgrid_wavelengths = get_subgrid_wavelengths(npoints, min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+
+    # Loop over the subgrids
+    for subgrid in subgrid_wavelengths:
+
+        # Debugging
+        log.debug("Adding the " + subgrid + " subgrid ...")
+
+        # Add the wavelength points
+        wavelengths += subgrid_wavelengths[subgrid]
+
+    # Loop over the filters
+    if filters is not None: filter_wavelengths = resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=min_wavelengths_in_filter, min_wavelengths_in_fwhm=min_wavelengths_in_fwhm)
+    else: filter_wavelengths = dict()
+
+    # Adjust to passed wavelengths
+    if adjust_to is not None: replaced, new = adjust_to_wavelengths(wavelengths, adjust_to)
+    else: replaced = new = []
+
     # Add the emission lines
-    emission_npoints = 0
     if emission_lines is not None:
 
         # Debugging
         log.debug("Adding the emission lines ...")
 
         # Add the mission lines
-        wavelengths = add_emission_lines(wavelengths, emission_lines, min_wavelength, max_wavelength)
-        emission_npoints = len(emission_lines)
+        wavelengths, line_wavelengths = added_emission_lines(wavelengths, emission_lines, min_wavelength, max_wavelength, return_added=True)
+
+    # No emission lines
+    else: line_wavelengths = dict()
 
     # Add fixed wavelength points
-    fixed_npoints = 0
+    new_fixed = []
     if fixed is not None:
 
         # Debugging
         log.debug("Adding the fixed points to the grid ...")
 
-        fixed_npoints = len(fixed)
+        # Loop over the wavelengths
         for wavelength in fixed:
+
+            # Check if not already there (e.g. from adjust_to)
+            if wavelength in wavelengths: continue
 
             # Debugging
             log.debug("Adding fixed wavelength " + str(wavelength) + " ...")
@@ -547,6 +671,9 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
             if max_wavelength is not None and wavelength > max_wavelength: continue
             wavelengths.append(wavelength)
 
+            # Add to fixed
+            new_fixed.append(wavelength)
+
     # Sort the wavelength points
     wavelengths = sorted(wavelengths)
 
@@ -554,7 +681,36 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
     grid = WavelengthGrid.from_wavelengths(wavelengths)
 
     # Return the grid and some information about the subgrids
-    return grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
+    if return_elements: return grid, subgrid_wavelengths, filter_wavelengths, replaced, new, line_wavelengths, new_fixed
+    else:
+
+        # Keep track of the number of points per subgrid
+        subgrid_npoints = OrderedDict()
+        for subgrid in subgrid_wavelengths:
+            subgrid_npoints[subgrid] = len(subgrid_wavelengths[subgrid])
+
+        # Set broad resampled nwavelengths
+        broad_resampled = []
+        for fltr in filter_wavelengths:
+            if not isinstance(fltr, BroadBandFilter): continue
+            broad_resampled.append(fltr)
+
+        # Set narrow band filter added nwavelengths
+        narrow_added = []
+        for fltr in filter_wavelengths:
+            if not isinstance(fltr, NarrowBandFilter): continue
+            narrow_added.append(fltr)
+
+        # Set emission npoints
+        emission_npoints = 0
+        for line_identifier in line_wavelengths:
+            emission_npoints += len(line_wavelengths[line_identifier])
+
+        # Set fixed npoints
+        fixed_npoints = len(new_fixed)
+
+        # Return
+        return grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
 
 # -----------------------------------------------------------------
 
@@ -585,7 +741,7 @@ def create_one_logarithmic_wavelength_grid(wrange, npoints, emission_lines=None,
     if emission_lines is not None:
 
         # Add the mission lines
-        wavelengths = add_emission_lines(wavelengths, emission_lines)
+        wavelengths = added_emission_lines(wavelengths, emission_lines)
         emission_npoints = len(emission_lines)
 
     # Add fixed wavelength points
@@ -655,7 +811,7 @@ def create_one_nested_log_wavelength_grid(wrange, npoints, wrange_zoom, npoints_
     if emission_lines is not None:
 
         # Add the mission lines
-        wavelengths = add_emission_lines(wavelengths, emission_lines)
+        wavelengths = added_emission_lines(wavelengths, emission_lines)
         emission_npoints = len(emission_lines)
 
     # Add fixed wavelength points
@@ -675,7 +831,7 @@ def create_one_nested_log_wavelength_grid(wrange, npoints, wrange_zoom, npoints_
 
 # -----------------------------------------------------------------
 
-def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wavelength=None):
+def added_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wavelength=None, return_added=False):
 
     """
     This function ...
@@ -683,8 +839,12 @@ def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wav
     :param emission_lines:
     :param min_wavelength:
     :param max_wavelength:
+    :param return_added:
     :return:
     """
+
+    # Initialize dictionary to contain the wavelengths added to the grid for each emission line
+    line_wavelengths = DefaultOrderedDict(list)
 
     # Add emission line grid points
     logdelta = 0.001
@@ -700,20 +860,30 @@ def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wav
         # logcenter = np.log10(center)
         logleft = np.log10(left_micron if left_micron > 0 else center_micron) - logdelta
         logright = np.log10(right_micron if right_micron > 0 else center_micron) + logdelta
+
         newgrid = []
+
         for w in wavelengths:
+
             logw = np.log10(w.to("micron").value)
-            if logw < logleft or logw > logright:
-                newgrid.append(w)
+            if logw < logleft or logw > logright: newgrid.append(w)
+
         newgrid.append(line.center)
+        line_wavelengths[line.identifier].append(line.center)
+
         if left_micron > 0:
             newgrid.append(line.left)
+            line_wavelengths[line.identifier].append(line.left)
+
         if right_micron > 0:
             newgrid.append(line.right)
+            line_wavelengths[line.identifier].append(line.right)
+
         wavelengths = newgrid
 
     # Return the new wavelength list
-    return wavelengths
+    if return_added: return wavelengths, line_wavelengths
+    else: return wavelengths
 
 # -----------------------------------------------------------------
 

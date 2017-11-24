@@ -71,6 +71,7 @@ class ModelLauncher(ModelSimulationInterface):
         self.dust_grid_path = None
         self.wavelength_grid_path = None
         self.dust_grid_build_path = None
+        self.wavelength_grid_build_path = None
         self.dust_grid_simulation_out_path = None
         self.dust_grid_tree_path = None
         self.projections_path = None
@@ -131,7 +132,7 @@ class ModelLauncher(ModelSimulationInterface):
         self.get_model()
 
         # 3. Create the wavelength grid
-        if not self.has_wavelength_grid: self.create_wavelength_grid()
+        if not self.has_wavelength_grid: self.create_wavelength_grid(output_path=self.wavelength_grid_build_path, plot=True)
 
         # 4. Create the dust grid
         if not self.has_dust_grid: self.create_dust_grid()
@@ -218,6 +219,7 @@ class ModelLauncher(ModelSimulationInterface):
         self.out_path = fs.create_directory_in(self.simulation_path, "out")
         self.dust_grid_path = fs.join(self.simulation_path, "dust_grid.dg")
         self.wavelength_grid_path = fs.join(self.simulation_path, "wavelength_grid.dat")
+        self.wavelength_grid_build_path = fs.create_directory_in(self.simulation_path, "wavelength grid")
         self.dust_grid_build_path = fs.create_directory_in(self.simulation_path, "dust grid")
         self.dust_grid_simulation_out_path = fs.create_directory_in(self.dust_grid_build_path, "out")
         self.dust_grid_tree_path = fs.join(self.dust_grid_build_path, "tree.dat")
