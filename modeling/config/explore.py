@@ -37,7 +37,7 @@ definition.add_positional_optional("generation_method", "string", "model generat
 
 # -----------------------------------------------------------------
 
-# Remote execution
+## Remote execution
 
 # Remote hosts
 if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
@@ -97,7 +97,13 @@ definition.add_flag("check_recurrence", "check for recurrence of models that hav
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
 
+# -----------------------------------------------------------------
+
 # Deploy on remote hosts
-definition.add_flag("deploy", "deploy SKIRT on remote hosts", False)
+definition.add_flag("deploy", "deploy SKIRT where necessary", False)
+definition.add_flag("check_versions", "check versions of SKIRT where necessary", True)
+#definition.add_flag("update_dependencies", "update PTS dependencies", False)
+definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
+definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
 # -----------------------------------------------------------------

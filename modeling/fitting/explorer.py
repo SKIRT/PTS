@@ -36,7 +36,8 @@ from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import prompt_proceed
 from ...core.prep.smile import SKIRTSmileSchema
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 
@@ -257,8 +258,8 @@ class ParameterExplorer(FittingComponent):
         self.most_sampled_parameters = kwargs.pop("most_sampled_parameters", None)
         self.sampling_weights = kwargs.pop("sampling_weigths", None)
 
-        # Deploy SKIRT and PTS
-        if self.has_any_host_id and self.config.deploy: self.deploy()
+        # Deploy SKIRT
+        if self.has_host_ids and self.config.deploy: self.deploy()
 
     # -----------------------------------------------------------------
 
@@ -270,20 +271,19 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Deploying SKIRT and PTS where necessary ...")
+        log.info("Deploying SKIRT where necessary ...")
 
         # Create the deployer
         deployer = Deployer()
+
+        # Don't deploy PTS
+        deployer.config.pts = False
 
         # Don't do anything locally
         deployer.config.local = False
 
         # Set the host ids
-        deployer.config.host_ids = self.all_host_ids
-
-        # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
-        # that have a scheduling system to launch the pts run_queue command)
-        #if self.uses_images_remote: deployer.config.pts_on = self.images_host_id #self.moderator.all_host_ids
+        deployer.config.host_ids = self.remote_host_ids
 
         # Check versions between local and remote
         deployer.config.check = self.config.check_versions
@@ -294,7 +294,7 @@ class ParameterExplorer(FittingComponent):
         # Do clean install
         deployer.config.clean = self.config.deploy_clean
 
-        # Pubkey pass
+        # Pubkey password
         deployer.config.pubkey_password = self.config.pubkey_password
 
         # Run the deployer
@@ -319,7 +319,32 @@ class ParameterExplorer(FittingComponent):
                 else: remote_host_ids.append(host_id)
         else: remote_host_ids = self.config.remotes
 
+        # Return the host IDs
         return remote_host_ids
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nhost_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remote_host_ids)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nhost_ids > 0
 
     # -----------------------------------------------------------------
 
