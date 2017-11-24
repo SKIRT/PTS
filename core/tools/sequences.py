@@ -1356,3 +1356,42 @@ def find_first_not_in(seq_a, seq_b):
     return None
 
 # -----------------------------------------------------------------
+
+def sort_with_first_last(sequence, first=None, last=None):
+
+    """
+    This function ...
+    :param sequence:
+    :param first:
+    :param last:
+    :return:
+    """
+
+    firsts = []
+    between = []
+    lasts = []
+
+    used_indices = []
+
+    if first is not None:
+        for item in first:
+            if item in sequence:
+                index = sequence.index(item)
+                used_indices.append(index)
+                firsts.append(item)
+
+    if last is not None:
+        for item in last:
+            if item in sequence:
+                index = sequence.index(item)
+                used_indices.append(index)
+                lasts.append(item)
+
+    for index in range(len(sequence)):
+        if index in used_indices: continue
+        between.append(sequence[index])
+
+    # Return the combined new list
+    return firsts + between + lasts
+
+# -----------------------------------------------------------------

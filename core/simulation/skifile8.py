@@ -595,8 +595,9 @@ class SkiFile8:
             elif dustmix.tag == "ConfigurableDustMix":
                 npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
             elif dustmix.tag == "ThemisDustMix":
-                npops += int(dustmix.attrib["hydrocarbonPops"])
-                npops += int(dustmix.attrib["silicatePops"])
+                npops += int(dustmix.attrib["numHydrocarbonSizes"])
+                npops += int(dustmix.attrib["numEnstatiteSizes"])
+                npops += int(dustmix.attrib["numForsteriteSizes"])
             elif dustmix.tag == "ZubkoDustMix":
                 npops += int(dustmix.attrib["graphitePops"])
                 npops += int(dustmix.attrib["silicatePops"])
@@ -835,10 +836,10 @@ class SkiFile8:
             type = instrument.tag
             name = instrument.attrib["instrumentName"]
             if type == "SimpleInstrument" or type == "FrameInstrument":
-                datacube = int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"]) * nwavelengths
+                datacube = int(instrument.attrib["numPixelsX"]) * int(instrument.attrib["numPixelsY"]) * nwavelengths
                 pixels.append([name, type, datacube])
             elif type == "FullInstrument":
-                datacube = int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"]) * nwavelengths
+                datacube = int(instrument.attrib["numPixelsX"]) * int(instrument.attrib["numPixelsY"]) * nwavelengths
                 try: scattlevels = int(instrument.attrib["scatteringLevels"])
                 except KeyError: scattlevels = 0
                 scattering = scattlevels + 1 if scattlevels > 0 else 0
@@ -857,7 +858,7 @@ class SkiFile8:
             # Count SEDInstrument as one pixel, get the number of x and y pixels for other types of instrument and calculate the area
             instrument_type = instrument.tag
             if instrument_type == "SEDInstrument": npixels += 1
-            else: npixels += int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"])
+            else: npixels += int(instrument.attrib["numPixelsX"]) * int(instrument.attrib["numPixelsY"])
         # Return the total amount of spatial pixels
         return npixels
 
@@ -895,8 +896,8 @@ class SkiFile8:
         instruments = self.tree.xpath("//instruments/*[1]")
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
         # get its shape (for SKIRT7 and SKIRT8)
-        return ( int(instruments[0].get("pixelsX", instruments[0].get("numPixelsX"))),
-                 int(instruments[0].get("pixelsY", instruments[0].get("numPixelsY"))) )
+        return ( int(instruments[0].get("numPixelsX", instruments[0].get("numPixelsX"))),
+                 int(instruments[0].get("numPixelsY", instruments[0].get("numPixelsY"))) )
 
     ## This function returns the angular area (in sr) of a single pixel in the first instrument's frame.
     def angularpixelarea(self):
@@ -910,8 +911,8 @@ class SkiFile8:
         fovx = self.units().convert(instrument.get("fieldOfViewX"), to_unit='m', quantity='length')
         fovy = self.units().convert(instrument.get("fieldOfViewY"), to_unit='m', quantity='length')
         # get the number of pixels (for SKIRT7 and SKIRT8)
-        nx = int(instrument.get("pixelsX", instrument.get("numPixelsX")))
-        ny = int(instrument.get("pixelsY", instrument.get("numPixelsY")))
+        nx = int(instrument.get("numPixelsX", instrument.get("numPixelsX")))
+        ny = int(instrument.get("numPixelsY", instrument.get("numPixelsY")))
         # calculate the angular pixel area
         sx = 2 * arctan(fovx / nx / d / 2)
         sy = 2 * arctan(fovy / ny / d / 2)
@@ -1656,7 +1657,7 @@ class SkiFile8:
     def create_new_dust_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
                                   mix=None, mix_type=None, mix_properties=None, normalization_type=None,
                                   normalization_value=None, normalization_properties=None, mass=None,
-                                  hydrocarbon_pops=25, silicate_pops=25, # for THEMIS
+                                  hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, # for THEMIS
                                   graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, # for Zubko
                                   write_mean_mix=True, write_size=True):
 
@@ -1719,7 +1720,7 @@ class SkiFile8:
 
         # Set mix
         if mix is not None:
-            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, silicate_pops=silicate_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
+            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops, forsterite_pops=forsterite_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             elif mix == "zubko": self.set_dust_component_zubko_mix(component_id, graphite_populations=graphite_populations, silicate_populations=silicate_populations, pah_populations=pah_populations, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             else: raise ValueError("Invalid mix: '" + str(mix) + "': must be 'themis' or 'zubko' (for now)")
 
@@ -1943,15 +1944,15 @@ class SkiFile8:
         return parent
 
     ## This functions sets a THEMIS dust mix model for the dust component with the specified id
-    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, silicate_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
 
         # Remove current mix, return the parent
         parent = self.remove_dust_component_mix(component_id)
 
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
-                 "writeSize": str_from_bool(write_size, lower=True), "hydrocarbonPops": str(hydrocarbon_pops),
-                 "silicatePops": str(silicate_pops)}
+                 "writeSize": str_from_bool(write_size, lower=True), "numHydrocarbonSizes": str(hydrocarbon_pops),
+                 "numEnstatiteSizes": str(enstatite_pops), "numForsteriteSizes": str(forsterite_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
@@ -2268,7 +2269,7 @@ class SkiFile8:
         parent.remove(geometry)
 
         # Create the new rotated geometry
-        attrs = {"euleralpha": str_from_angle(alpha), "eulerbeta": str_from_angle(beta), "eulergamma": str_from_angle(gamma)}
+        attrs = {"eulerAlpha": str_from_angle(alpha), "eulerBeta": str_from_angle(beta), "eulerGamma": str_from_angle(gamma)}
         new_geometry = parent.makeelement("RotateGeometryDecorator", attrs)
 
         attrs = {"type": "Geometry"}
@@ -2298,7 +2299,7 @@ class SkiFile8:
         parent.remove(geometry)
 
         # Create the new rotated geometry
-        attrs = {"euleralpha": str_from_angle(alpha), "eulerbeta": str_from_angle(beta), "eulergamma": str_from_angle(gamma)}
+        attrs = {"eulerAlpha": str_from_angle(alpha), "eulerBeta": str_from_angle(beta), "eulerGamma": str_from_angle(gamma)}
         new_geometry = parent.makeelement("RotateGeometryDecorator", attrs)
 
         attrs = {"type": "Geometry"}
@@ -2321,8 +2322,8 @@ class SkiFile8:
 
         # Create and add the new geometry
         attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
-                 "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
-                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": represent_quantity(scale_height)}
+                 "inclination": str_from_angle(inclination), "numPixelsX": str(x_size), "numPixelsY": str(y_size),
+                 "centerX": str(x_center), "centerY": str(y_center), "scaleHeight": represent_quantity(scale_height)}
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
 
@@ -2345,8 +2346,8 @@ class SkiFile8:
 
         # Create and add the new geometry
         attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
-                 "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
-                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": represent_quantity(scale_height)}
+                 "inclination": str_from_angle(inclination), "numPixelsX": str(x_size), "numPixelsY": str(y_size),
+                 "centerX": str(x_center), "centerY": str(y_center), "scaleHeight": represent_quantity(scale_height)}
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
 
@@ -2845,7 +2846,7 @@ class SkiFile8:
         parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new geometry
-        attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
+        attrs = {"flatteningY": str(y_flattening), "flatteningZ": str(z_flattening)}
         new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
 
         attrs = {"type": "SpheGeometry"}
@@ -2853,7 +2854,7 @@ class SkiFile8:
         new_geometry.append(geometry_of_new_geometry)
 
         # Add sersic profile to the geometry
-        attrs = {"index": str(index), "radius": str(radius)}
+        attrs = {"index": str(index), "effectiveRadius": str(radius)}
         sersic_geometry = geometry_of_new_geometry.makeelement("SersicGeometry", attrs)
         geometry_of_new_geometry.append(sersic_geometry)
 
@@ -2867,7 +2868,7 @@ class SkiFile8:
         parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new geometry
-        attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
+        attrs = {"flatteningY": str(y_flattening), "flatteningZ": str(z_flattening)}
         new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
 
         attrs = {"type": "SpheGeometry"}
@@ -2875,7 +2876,7 @@ class SkiFile8:
         new_geometry.append(geometry_of_new_geometry)
 
         # Add sersic profile to the geometry
-        attrs = {"index": str(index), "radius": str(radius)}
+        attrs = {"index": str(index), "effectiveRadius": str(radius)}
         sersic_geometry = geometry_of_new_geometry.makeelement("SersicGeometry", attrs)
         geometry_of_new_geometry.append(sersic_geometry)
 
@@ -2889,7 +2890,7 @@ class SkiFile8:
         parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new exponential disk geometry
-        attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
+        attrs = {"scaleLength": str(radial_scale), "scaleHeight": str(axial_scale), "maxRadius": str(radial_truncation), "maxZ": str(axial_truncation), "minRadius": str(inner_radius)}
         new_geometry = parent.makeelement("ExpDiskGeometry", attrs)
 
         # Add the new geometry
@@ -2902,7 +2903,7 @@ class SkiFile8:
         parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new exponential disk geometry
-        attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
+        attrs = {"scaleLength": str(radial_scale), "scaleHeight": str(axial_scale), "maxRadius": str(radial_truncation), "maxZ": str(axial_truncation), "minRadius": str(inner_radius)}
         new_geometry = parent.makeelement("ExpDiskGeometry", attrs)
 
         # Add the new geometry
@@ -3162,10 +3163,10 @@ class SkiFile8:
             min_level = int(grid.get("minLevel"))
             max_level = int(grid.get("maxLevel"))
             search_method =  grid.get("searchMethod")
-            sample_count = int(grid.get("sampleCount"))
+            sample_count = int(grid.get("numSamples"))
             maxoptdepth = float(grid.get("maxOpticalDepth"))
             maxmassfraction = float(grid.get("maxMassFraction"))
-            maxdensdispfraction = float(grid.get("maxDensDispFraction"))
+            maxdensdispfraction = float(grid.get("maxDensityDispersion"))
             directionmethod = grid.get("directionMethod")
 
             # Create and return the grid
@@ -3358,9 +3359,9 @@ class SkiFile8:
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
-                 "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
+                 "maxLevel": str(max_level), "searchMethod": search_method, "numSamples": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method} #"writeTree": str_from_bool(write_tree, lower=True)}
+                 "maxDensityDispersion": str(max_dens_disp_fraction), "directionMethod": direction_method} #"writeTree": str_from_bool(write_tree, lower=True)}
 
         from ..prep.smile import SKIRTSmileSchema
         smile = SKIRTSmileSchema()
@@ -3401,9 +3402,9 @@ class SkiFile8:
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
-                 "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
+                 "maxLevel": str(max_level), "searchMethod": search_method, "numSamples": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True)}
+                 "maxDensityDispersion": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True)}
                  #"writeTree": str_from_bool(write_tree, lower=True)}
 
         from ..prep.smile import SKIRTSmileSchema
@@ -3649,7 +3650,7 @@ class SkiFile8:
             # Loop over the frames
             for frame in instrument.frames:
 
-                fr_attrs = {"pixelsX": str(frame.pixels_x), "pixelsY": str(frame.pixels_y), "fieldOfViewX": represent_quantity(frame.field_x), "fieldOfViewY": represent_quantity(frame.field_y)}
+                fr_attrs = {"numPixelsX": str(frame.pixels_x), "numPixelsY": str(frame.pixels_y), "fieldOfViewX": represent_quantity(frame.field_x), "fieldOfViewY": represent_quantity(frame.field_y)}
 
                 fr = frames.makeelement("InstrumentFrame", fr_attrs)
 
@@ -3674,8 +3675,8 @@ class SkiFile8:
         # Make and add the new FrameInstrument
         attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle),
-                 "fieldOfViewX": represent_quantity(field_x), "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x),
-                 "pixelsY": str(pixels_y), "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y)}
+                 "fieldOfViewX": represent_quantity(field_x), "fieldOfViewY": represent_quantity(field_y), "numPixelsX": str(pixels_x),
+                 "numPixelsY": str(pixels_y), "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y)}
         instruments.append(instruments.makeelement("FrameInstrument", attrs))
 
     ## This function adds a FullInstrument to the instrument system
@@ -3690,7 +3691,7 @@ class SkiFile8:
         # Make and add the new FullInstrument
         attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
-                 "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "fieldOfViewY": represent_quantity(field_y), "numPixelsX": str(pixels_x), "numPixelsY": str(pixels_y),
                  "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y), "scatteringLevels": str(scattering_levels)}
         if counts: attrs["counts"] = "true"
         instruments.append(instruments.makeelement("FullInstrument", attrs))
@@ -3707,7 +3708,7 @@ class SkiFile8:
         # Make and add the new SimpleInstrument
         attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": represent_quantity(field_x),
-                 "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "fieldOfViewY": represent_quantity(field_y), "numPixelsX": str(pixels_x), "numPixelsY": str(pixels_y),
                  "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y)}
         instruments.append(instruments.makeelement("SimpleInstrument", attrs))
 
@@ -3750,8 +3751,8 @@ class SkiFile8:
             pa = self.get_angle(instrument, "positionAngle")
             fieldx = self.get_quantity(instrument, "fieldOfViewX")
             fieldy = self.get_quantity(instrument, "fieldOfViewY")
-            pixelsx = instrument.get("pixelsX")
-            pixelsy = instrument.get("pixelsY")
+            pixelsx = instrument.get("numPixelsX")
+            pixelsy = instrument.get("numPixelsY")
             centerx = self.get_quantity(instrument, "centerX")
             centery = self.get_quantity(instrument, "centerY")
 
@@ -3783,8 +3784,8 @@ class SkiFile8:
             pa = self.get_angle(instrument, "positionAngle")
             fieldx = self.get_quantity(instrument, "fieldOfViewX")
             fieldy = self.get_quantity(instrument, "fieldOfViewY")
-            pixelsx = instrument.get("pixelsX")
-            pixelsy = instrument.get("pixelsY")
+            pixelsx = instrument.get("numPixelsX")
+            pixelsy = instrument.get("numPixelsY")
             centerx = self.get_quantity(instrument, "centerX")
             centery = self.get_quantity(instrument, "centerY")
 
@@ -3804,8 +3805,8 @@ class SkiFile8:
             pa = self.get_angle(instrument, "positionAngle")
             fieldx = self.get_quantity(instrument, "fieldOfViewX")
             fieldy = self.get_quantity(instrument, "fieldOfViewY")
-            pixelsx = instrument.get("pixelsX")
-            pixelsy = instrument.get("pixelsY")
+            pixelsx = instrument.get("numPixelsX")
+            pixelsy = instrument.get("numPixelsY")
             centerx = self.get_quantity(instrument, "centerX")
             centery = self.get_quantity(instrument, "centerY")
             scattlevels = int(instrument.get("scatteringLevels"))
@@ -3839,8 +3840,8 @@ class SkiFile8:
             for frame in frames.getchildren():
 
                 # Get properties
-                pixelsx = int(self.get_value(frame, "pixelsX"))
-                pixelsy = int(self.get_value(frame, "pixelsY"))
+                pixelsx = int(self.get_value(frame, "numPixelsX"))
+                pixelsy = int(self.get_value(frame, "numPixelsY"))
                 fieldx = self.get_quantity(frame, "fieldOfViewX")
                 fieldy = self.get_quantity(frame, "fieldOfViewY")
 
@@ -4005,7 +4006,7 @@ class SkiFile8:
         instrument = self.get_instrument(name)
 
         # Return the size
-        return int(instrument.get("pixelsX")), int(instrument.get("pixelsY"))
+        return int(instrument.get("numPixelsX")), int(instrument.get("numPixelsY"))
 
     ## This function sets the size of the specified instrument
     def set_instrument_size(self, name, x_size, y_size):
@@ -4014,8 +4015,8 @@ class SkiFile8:
         instrument = self.get_instrument(name)
 
         # Set the size
-        instrument.set("pixelsX", str(x_size))
-        instrument.set("pixelsY", str(y_size))
+        instrument.set("numPixelsX", str(x_size))
+        instrument.set("numPixelsY", str(y_size))
 
     ## This function returns the field of view of the specified instrument as a tuple (field_x, field_y)
     def get_instrument_field(self, name):
@@ -4070,10 +4071,9 @@ class SkiFile8:
 
         direct_children = []
 
-        children = dict()
-        children_types = dict()
-
-        attrs = {}
+        children = OrderedDict()
+        children_types = OrderedDict()
+        attrs = OrderedDict()
 
         #print(properties)
 

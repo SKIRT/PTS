@@ -4070,10 +4070,9 @@ class SkiFile7:
 
         direct_children = []
 
-        children = dict()
-        children_types = dict()
-
-        attrs = {}
+        children = OrderedDict()
+        children_types = OrderedDict()
+        attrs = OrderedDict()
 
         #print(properties)
 
