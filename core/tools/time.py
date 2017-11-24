@@ -219,7 +219,10 @@ def get_name_and_time_from_unique_name(name):
 
     splitted = name.split("_")
     if len(splitted) > 2:
-        return "_".join(splitted[:-1]), time_from_timestamp(splitted[-1])
+        first = "_".join(splitted[:-1])
+        first = first.strip("_") # remove leading or trailing
+        last = splitted[-1]
+        return first, time_from_timestamp(last)
     elif len(splitted) == 2: return splitted[0], time_from_timestamp(splitted[1])
     else: raise ValueError("Not a timestamped unique name")
 

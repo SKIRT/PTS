@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.analysis.run import AnalysisRuns
 

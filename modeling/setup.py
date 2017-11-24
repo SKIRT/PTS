@@ -18,6 +18,8 @@ import sys
 # Import the relevant PTS classes and modules
 from ..core.tools import introspection
 from ..core.tools.strings import add_quotes_if_spaces
+from ..core.basics.log import log
+from ..core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -129,17 +131,21 @@ def add_command(command_name, cwd, configuration_method_argument=None):
 
 # -----------------------------------------------------------------
 
-def finish(command_name, cwd):
+def finish(command_name, cwd, config_path=None):
 
     """
     This function ...
     :param command_name: 
     :param cwd:
+    :param config_path:
     :return: 
     """
 
     # Mark end in history
     mark_end(command_name, cwd)
+
+    # Tag the configuration file as succesful
+    if config_path is not None: tag_config(config_path)
 
 # -----------------------------------------------------------------
 
@@ -161,5 +167,22 @@ def mark_end(command_name, cwd):
 
     # Mark end
     history.mark_end_and_save()
+
+# -----------------------------------------------------------------
+
+def tag_config(config_path, tag="*"):
+
+    """
+    This function ...
+    :param config_path:
+    :param tag:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Tagging configuration file as succesful ...")
+
+    # Rename by adding the tag
+    fs.add_suffix(config_path, tag)
 
 # -----------------------------------------------------------------

@@ -869,6 +869,38 @@ def load_modeling_commands(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_configuration_file_paths(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the config path
+    config_path = fs.join(modeling_path, "config")
+
+    # Return the file paths
+    return fs.files_in_path(config_path, extension="cfg")
+
+# -----------------------------------------------------------------
+
+def get_log_file_paths(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the log path
+    log_path = fs.join(modeling_path, "log")
+
+    # Return the file paths
+    return fs.files_in_path(log_path, extension="txt")
+
+# -----------------------------------------------------------------
+
 #def get_spectral_convolution_flag(modeling_path):
 
     #"""

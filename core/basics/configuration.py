@@ -193,6 +193,8 @@ def prompt_yn(name, description, default=None):
 
     """
     This function ...
+    :param name:
+    :param description:
     :param default:
     :return:
     """
@@ -903,7 +905,19 @@ class Configuration(Map):
 
             # Determine filepath
             dirpath = self.output_path()
-            filename = command_name + ".cfg" if command_name is not None else "config.cfg"
+
+            # Determine the filename
+            if command_name is not None: base_filename = command_name
+            else: base_filename = "config"
+
+            # Add timestamp?
+            if "add_timestamp" in self and self["add_timestamp"]:
+                from ..tools import time
+                timestamp = time.filename_timestamp()
+                filename = base_filename + "__" + timestamp + ".cfg"
+            else: filename = base_filename + ".cfg"
+
+            # Determine the full filepath
             filepath = fs.join(dirpath, filename)
 
             # Return the config file path
@@ -1259,7 +1273,7 @@ class ConfigurationDefinition(object):
     This function ...
     """
 
-    def __init__(self, prefix=None, log_path=None, config_path=None, write_config=True):
+    def __init__(self, prefix=None, log_path=None, config_path=None, write_config=True, add_timestamp=False):
 
         """
         This function ...
@@ -1267,6 +1281,7 @@ class ConfigurationDefinition(object):
         :param log_path:
         :param config_path:
         :param write_config:
+        :param add_timestamp:
         """
 
         # Prefix
@@ -1276,6 +1291,7 @@ class ConfigurationDefinition(object):
         self.log_path = log_path
         self.config_path = config_path
         self.write_config = write_config
+        self.add_timestamp = add_timestamp
 
         # Dictionary of sections
         self.sections = OrderedDict()
@@ -1299,19 +1315,20 @@ class ConfigurationDefinition(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, log_path=None, config_path=None, write_config=True):
+    def from_file(cls, path, log_path=None, config_path=None, write_config=True, add_timestamp=False):
 
         """
         This function ...
         :param path:
         :param log_path:
-        :parma config_path:
+        :param config_path:
         :param write_config:
+        :param add_timestamp:
         :return:
         """
 
         # Create the definition
-        definition = cls(log_path=log_path, config_path=config_path, write_config=write_config)
+        definition = cls(log_path=log_path, config_path=config_path, write_config=write_config, add_timestamp=add_timestamp)
 
         # Load the definition
         with open(path, 'r') as configfile: load_definition(configfile, definition)
@@ -2042,6 +2059,9 @@ class ConfigurationSetter(object):
             # Write config?
             if self.definition.config_path is not None: self.definition.add_fixed("write_config", "write the configuration", True) # if config path is defined in the definition, always write
             else: self.definition.add_flag("write_config", "write the configuration") # otherwise, ask
+
+        # Add timestamp?
+        if self.definition.write_config and self.definition.add_timestamp: self.definition.add_fixed("add_timestamp", "add timestamp to configuration file", True)
 
         # Add the path to the current working directory
         if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)

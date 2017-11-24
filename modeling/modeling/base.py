@@ -366,7 +366,7 @@ class ModelerBase(Configurable):
         """
 
         command_name = cls_or_instance.command_name()
-        config_path = fs.join(self.environment.config_path, command_name + "_" + self.timestamp + ".cfg")
+        config_path = fs.join(self.environment.config_path, command_name + "__" + self.timestamp + ".cfg")
         return config_path
 
     # -----------------------------------------------------------------
@@ -398,7 +398,8 @@ class ModelerBase(Configurable):
         :return:
         """
 
-        return keep_latest_succesful_config(instance, self.config_path_for_component(instance))
+        #return keep_latest_succesful_config(instance, self.config_path_for_component(instance))
+        return tag_latest_succesful_config(instance, self.config_path_for_component(instance))
 
     # -----------------------------------------------------------------
 
@@ -980,6 +981,116 @@ class ModelerBase(Configurable):
 
         # Inform the user
         log.info("Writing ...")
+
+# -----------------------------------------------------------------
+
+class tag_latest_succesful_config(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, instance, config_path, tag="*"):
+
+        """
+        Thisn function ...
+        :param instance:
+        :param config_path:
+        :param tag:
+        """
+
+        # Set
+        self.instance = instance
+        self.config_path = config_path
+        self.tag = tag
+
+    # -----------------------------------------------------------------
+
+    @property
+    def command_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.instance.command_name()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.config_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.config_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.strip_extension(self.config_filename)
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the config path to the instance configuration
+        self.instance.config.write_config = True
+        self.instance.config.config_path = self.config_path
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+
+        # Error occured
+        if exc_type is not None:
+
+            # Warning
+            log.error("A " + str(exc_type.__name__) + " occured")
+
+        # No error: tag
+        else:
+
+            # Debugging
+            log.debug("Tagging configuration file as succesful ...")
+
+            # Rename by adding the tag
+            fs.add_suffix(self.config_path, self.tag)
 
 # -----------------------------------------------------------------
 

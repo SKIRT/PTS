@@ -201,7 +201,10 @@ def run_configurable(table_matches, args, tables):
     config = create_configuration(definition, command_name, description, configuration_method)
 
     ## SAVE THE CONFIG if requested
-    if config.write_config: config.saveto(config.config_file_path(command_name))
+    if config.write_config:
+        config_filepath = config.config_file_path(command_name)
+        config.saveto(config_filepath)
+    else: config_filepath = None
 
     # If this is not a re-run
     if not args.rerun:
@@ -229,7 +232,7 @@ def run_configurable(table_matches, args, tables):
     else: run_locally(exact_command_name, module_path, class_name, config, args.input_files, args.output_files, args.output, log)
 
     # Finish function
-    if subproject == "modeling": finish_modeling(command_name, fs.cwd())
+    if subproject == "modeling": finish_modeling(command_name, fs.cwd(), config_path=config_filepath)
     elif subproject == "magic": finish_magic(command_name, fs.cwd())
     elif subproject == "dustpedia": finish_dustpedia(command_name, fs.cwd())
     elif subproject == "evolve": finish_evolve(command_name, fs.cwd())
@@ -283,7 +286,7 @@ def initialize_log(config, remote=None, command_name=None):
     else: filename = "log"
 
     # Determine the log file path
-    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name(filename) + ".txt") if config.report else None
+    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name(filename, separator="__") + ".txt") if config.report else None
     else: logfile_path = None
 
     # Initialize the logger

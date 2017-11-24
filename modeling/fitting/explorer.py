@@ -277,6 +277,7 @@ class ParameterExplorer(FittingComponent):
         deployer = Deployer()
 
         # Don't deploy PTS
+        deployer.config.skirt = True
         deployer.config.pts = False
 
         # Don't do anything locally
