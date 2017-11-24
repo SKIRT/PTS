@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="Python Toolkit for SKIRT (SkiFile class)" time="2016-03-02T17:08:04">
+  <OligoMonteCarloSimulation numPackages="1e8" minWeightReduction="1e4" minScattEvents="0" scattBias="0.5" continuousScattering="false">
+    <random type="Random">
+      <Random seed="4357"/>
+    </random>
+    <units type="Units">
+      <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+    </units>
+    <instrumentSystem type="InstrumentSystem">
+      <InstrumentSystem>
+        <instruments type="Instrument">
+          <SimpleInstrument instrumentName="earth" distance="3.6 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="157 deg" numPixelsX="600" numPixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="face-on" distance="3.6 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" numPixelsX="600" numPixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="edge-on" distance="3.6 Mpc" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" numPixelsX="600" numPixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+        </instruments>
+      </InstrumentSystem>
+    </instrumentSystem>
+    <wavelengthGrid type="OligoWavelengthGrid">
+      <OligoWavelengthGrid wavelengths="1"/>
+    </wavelengthGrid>
+    <stellarSystem type="StellarSystem">
+      <StellarSystem>
+        <components type="StellarComp">
+          <OligoStellarComp luminosities="1">
+            <geometry type="Geometry">
+              <ExpDiskGeometry scaleLength="0" scaleHeight="0" maxRadius="0" maxZ="0" minRadius="0"/>
+            </geometry>
+          </OligoStellarComp>
+        </components>
+      </StellarSystem>
+    </stellarSystem>
+  </OligoMonteCarloSimulation>
+</skirt-simulation-hierarchy>
