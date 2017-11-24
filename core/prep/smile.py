@@ -105,16 +105,20 @@ class SKIRTSmileSchema(object):
         temp_path = introspection.pts_temp_dir
 
         # Create the command
-        command = ["skirt", "-x"]
+        command = [introspection.skirt_path, "-x"]
 
         # Run SKIRT
         if log.is_debug(): subprocess.call(command, cwd=temp_path)
         else: subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'), cwd=temp_path)
 
-        # Load the smile scheme
-        smile_path = fs.join(temp_path, "skirt.smile")
+        # Get the SKIRT version
+        self.skirt_version = introspection.skirt_version_number() + " " + introspection.skirt_git_version()
 
-        # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+        # Load the smile scheme
+        filename = "skirt " + self.skirt_version + ".smile"
+        smile_path = fs.join(temp_path, filename)
+
+        # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
         self.tree = etree.parse(smile_path, parser=etree.XMLParser(remove_blank_text=True))
 
     # -----------------------------------------------------------------

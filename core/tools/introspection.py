@@ -1301,6 +1301,28 @@ def skirt_main_version():
 
 # -----------------------------------------------------------------
 
+def skirt_version_number():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return skirt_version().split("v")[1].split()[0]
+
+# -----------------------------------------------------------------
+
+def skirt_git_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return skirt_version().split("git ")[1].split(")")[0]
+
+# -----------------------------------------------------------------
+
 def get_pip_versions():
 
     """
