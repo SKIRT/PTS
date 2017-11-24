@@ -15,6 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
+from pts.core.tools.introspection import skirt_main_version, has_skirt
+
+# -----------------------------------------------------------------
+
+if not has_skirt(): version_number = 8
+else: version_number = skirt_main_version()
 
 # -----------------------------------------------------------------
 
@@ -428,6 +434,8 @@ def add_new_dust_component(ski, name, component, title=None):
     # For THEMIS mix
     hydrocarbon_pops = None
     silicate_pops = None
+    enstatite_pops = None
+    forsterite_pops = None
 
     # For Zubko mix
     graphite_populations = None
@@ -464,9 +472,15 @@ def add_new_dust_component(ski, name, component, title=None):
             mix = "themis"
 
             # Get parameters
-            mass = component.parameters.mass
-            hydrocarbon_pops = component.parameters.hydrocarbon_pops
-            silicate_pops = component.parameters.silicate_pops
+            if version_number == 8:
+                mass = component.parameters.mass
+                hydrocarbon_pops = component.parameters.hydrocarbon_pops
+                enstatite_pops = component.parameters.enstatite_pops
+                forsterite_pops = component.parameters.forsterite_pops
+            else:
+                mass = component.parameters.mass
+                hydrocarbon_pops = component.parameters.hydrocarbon_pops
+                silicate_pops = component.parameters.silicate_pops
 
         # Existing component (geometry defined above), Zubko dust mix
         elif "graphite_populations" in component.parameters:
@@ -487,7 +501,17 @@ def add_new_dust_component(ski, name, component, title=None):
     if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
 
     # Create new component
-    ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
+    if version_number == 8:
+        ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
+                                      geometry_properties=geometry_properties,
+                                      mix_type=mix_type, mix_properties=mix_properties,
+                                      normalization_type=normalization_type,
+                                      normalization_properties=normalization_properties, mix=mix, mass=mass,
+                                      hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops,
+                                      forsterite_pops=forsterite_pops, graphite_populations=graphite_populations,
+                                      silicate_populations=silicate_populations, pah_populations=pah_populations)
+    else:
+        ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
                                      geometry_properties=geometry_properties,
                                      mix_type=mix_type, mix_properties=mix_properties,
                                      normalization_type=normalization_type,
