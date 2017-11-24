@@ -272,6 +272,22 @@ def pts_dat_dir(subproject): return fs.join(pts_package_dir, subproject, "dat")
 
 # -----------------------------------------------------------------
 
+def pts_modeling_ski_templates_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    if not has_skirt(): version_number = 8
+    else: version_number = skirt_main_version()
+
+    # The path to the template ski files directory
+    if version_number == 8: fs.join(pts_dat_dir("modeling"), "ski8")
+    else: fs.join(pts_dat_dir("modeling"), "ski7")
+
+# -----------------------------------------------------------------
+
 def clear_temp():
 
     """

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="SKIRT v7.3 (git 704-c937b9c built on Mar 9 2016 at 11:00:14)" time="2016-03-09T20:00:42">
+    <PanMonteCarloSimulation packages="1e4" minWeightReduction="1e4" minScattEvents="0" scattBias="0.5" continuousScattering="false">
+        <random type="Random">
+            <Random seed="4357"/>
+        </random>
+        <units type="Units">
+            <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+        </units>
+        <stellarSystem type="StellarSystem">
+            <StellarSystem emissionBias="0.5">
+                <components type="StellarComp">
+                </components>
+            </StellarSystem>
+        </stellarSystem>
+        <dustSystem type="PanDustSystem">
+            <PanDustSystem sampleCount="100" writeConvergence="true" writeDensity="true" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBias="0.5" emissionBoost="1" selfAbsorption="true" cycles="2" writeEmissivity="false" writeTemperature="true" writeISRF="false">
+                <dustDistribution type="DustDistribution">
+                    <CompDustDistribution>
+                        <components type="DustComp">
+                        </components>
+                    </CompDustDistribution>
+                </dustDistribution>
+            </PanDustSystem>
+        </dustSystem>
+    </PanMonteCarloSimulation>
+</skirt-simulation-hierarchy>

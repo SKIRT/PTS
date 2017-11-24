@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="FitScheme" format="6.1" producer="FitSKIRT v7 (git 109-fbb9c3b-dirty built on Oct 21 2014 at 11:13:01)" time="2014-10-22T16:52:40">
+    <OligoFitScheme fixedSeed="true">
+        <units type="Units">
+            <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+        </units>
+        <simulation type="AdjustableSkirtSimulation">
+            <AdjustableSkirtSimulation skiName="2comp.ski"/>
+        </simulation>
+        <parameterRanges type="ParameterRanges">
+            <ParameterRanges>
+                <ranges type="ParameterRange">
+                    <ParameterRange label="inclination" quantityType="posangle" minimumValue="88" maximumValue="92"/>
+                    <ParameterRange label="stellar_length" quantityType="length" minimumValue="500 pc" maximumValue="8000 pc"/>
+                    <ParameterRange label="stellar_height" quantityType="length" minimumValue="100 pc" maximumValue="1000 pc"/>
+                    <ParameterRange label="flattening" quantityType="dimless" minimumValue="0.01" maximumValue="1"/>
+                    <ParameterRange label="sersic_index" quantityType="dimless" minimumValue="0.51" maximumValue="6.99"/>
+                    <ParameterRange label="bulge_radius" quantityType="length" minimumValue="200 pc" maximumValue="5000 pc"/>
+                    <ParameterRange label="dust_length" quantityType="length" minimumValue="1000 pc" maximumValue="12000 pc"/>
+                    <ParameterRange label="dust_height" quantityType="length" minimumValue="50 pc" maximumValue="800 pc"/>
+                    <ParameterRange label="dust_mass" quantityType="mass" minimumValue="1e6 Msun" maximumValue="1e8 Msun"/>
+                </ranges>
+            </ParameterRanges>
+        </parameterRanges>
+        <referenceImages type="ReferenceImages">
+            <ReferenceImages>
+                <images type="ReferenceImage">
+                    <ReferenceImage path="./reference/u.fits" minLuminosities="1e5, 1e5" maxLuminosities="1e7, 1e7">
+                        <convolution type="Convolution">
+                            <Convolution fwhm="1.7" dimension="6"/>
+                        </convolution>
+                    </ReferenceImage>
+                    <ReferenceImage path="./reference/g.fits" minLuminosities="1e5, 1e5" maxLuminosities="1e7, 1e7">
+                        <convolution type="Convolution">
+                            <Convolution fwhm="1.6" dimension="6"/>
+                        </convolution>
+                    </ReferenceImage>
+                </images>
+            </ReferenceImages>
+        </referenceImages>
+        <optim type="Optimization">
+            <Optimization popsize="10" generations="5" pmut="0.03" pcross="0.65"/>
+        </optim>
+    </OligoFitScheme>
+</skirt-simulation-hierarchy>

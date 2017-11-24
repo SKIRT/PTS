@@ -36,17 +36,10 @@ from .s4g import S4GDecomposer
 from ...core.launch.launcher import SingleImageSKIRTLauncher
 from ...magic.core.frame import Frame
 from ...core.filter.filter import parse_filter
-from ...core.tools.introspection import skirt_main_version, has_skirt
 
 # -----------------------------------------------------------------
 
-if not has_skirt(): version_number = 8
-else: version_number = skirt_main_version()
-
-# -----------------------------------------------------------------
-
-# The path to the template ski files directory
-template_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
+template_path = introspection.pts_modeling_ski_templates_path
 
 # -----------------------------------------------------------------
 
@@ -679,9 +672,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge image ...")
 
         # Load the bulge ski file template
-        if version_number == 8: bulge_template_path = fs.join(template_path, "bulge8.ski")
-        else: bulge_template_path = fs.join(template_path, "bulge.ski") #For SKIRT v7
-
+        bulge_template_path = fs.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
         # Set the number of photon packages
@@ -752,9 +743,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge image ...")
 
         # Load the bulge ski file template
-        if version_number == 8: bulge_template_path = fs.join(template_path, "bulge8.ski")
-        else: bulge_template_path = fs.join(template_path, "bulge.ski") #For SKIRT v7
-
+        bulge_template_path = fs.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
         # Set the number of photon packages
@@ -801,8 +790,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the disk image ...")
 
         # Load the disk ski file template
-        if version_number == 8: disk_template_path = fs.join(template_path, "disk8.ski")
-        else: disk_template_path = fs.join(template_path, "disk.ski") #For SKIRT v7
+        disk_template_path = fs.join(template_path, "disk.ski")
 
         ski = SkiFile(disk_template_path)
 
@@ -849,9 +837,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge+disk model image ...")
 
         # Load the disk ski file template
-        if version_number == 8: model_template_path = fs.join(template_path, "model8.ski")
-        else: model_template_path = fs.join(template_path, "model.ski") #For SKIRT v7
-
+        model_template_path = fs.join(template_path, "model.ski")
         ski = SkiFile(model_template_path)
 
         # Set the number of photon packages

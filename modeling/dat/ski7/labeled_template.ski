@@ -1,0 +1,117 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="Python Toolkit for SKIRT (SkiFile class)" time="2016-08-19T16:47:47">
+  <PanMonteCarloSimulation packages="200000.0" continuousScattering="false">
+    <random type="Random">
+      <Random seed="4357"/>
+    </random>
+    <units type="Units">
+      <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+    </units>
+    <instrumentSystem type="InstrumentSystem">
+      <InstrumentSystem>
+        <instruments type="Instrument">
+          <SimpleInstrument instrumentName="earth" distance="[distance:3.6 Mpc]" inclination="[inclination:59 deg]" azimuth="0 deg" positionAngle="[position_angle:67 deg]" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="face-on" distance="[distance:3.6 Mpc]" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="edge-on" distance="[distance:3.6 Mpc]" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+        </instruments>
+      </InstrumentSystem>
+    </instrumentSystem>
+    <wavelengthGrid type="PanWavelengthGrid">
+      <FileWavelengthGrid filename="wavelengths.txt"/>
+    </wavelengthGrid>
+    <stellarSystem type="StellarSystem">
+      <StellarSystem>
+        <components type="StellarComp">
+          <!-- Evolved stellar bulge -->
+          <PanStellarComp>
+            <geometry type="Geometry">
+              <RotateGeometryDecorator euleralpha="180.0 deg" eulerbeta="9.8177446017 deg" eulergamma="0.0 deg">
+                <geometry type="Geometry">
+                  <TriaxialGeometryDecorator yFlattening="1" zFlattening="0.486779895504">
+                    <geometry type="SpheGeometry">
+                      <SersicGeometry index="3.557" radius="1381.82755659 pc"/>
+                    </geometry>
+                  </TriaxialGeometryDecorator>
+                </geometry>
+              </RotateGeometryDecorator>
+            </geometry>
+            <sed type="StellarSED">
+              <BruzualCharlotSED age="12" metallicity="[metallicity:0.02]"/>
+            </sed>
+            <normalization type="StellarCompNormalization">
+              <SpectralLuminosityStellarCompNormalization luminosity="1" wavelength="3.5465616067 micron"/>
+            </normalization>
+          </PanStellarComp>
+          <!-- Evolved stellar disk -->
+          <PanStellarComp>
+            <geometry type="Geometry">
+              <ReadFitsGeometry filename="old_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:67 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[old_scaleheight:521 pc]"/>
+            </geometry>
+            <sed type="StellarSED">
+              <BruzualCharlotSED age="8" metallicity="[metallicity:0.02]"/>
+            </sed>
+            <normalization type="StellarCompNormalization">
+              <SpectralLuminosityStellarCompNormalization luminosity="[i1_old:1]" wavelength="3.5465616067 micron"/>
+            </normalization>
+          </PanStellarComp>
+          <!-- Young stars -->
+          <PanStellarComp>
+            <geometry type="Geometry">
+              <ReadFitsGeometry filename="young_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[young_scaleheight:150 pc]"/>
+            </geometry>
+            <sed type="StellarSED">
+              <BruzualCharlotSED age="0.1" metallicity="[metallicity:0.02]"/>
+            </sed>
+            <normalization type="StellarCompNormalization">
+              <SpectralLuminosityStellarCompNormalization luminosity="[fuv_young:1]" wavelength="0.152583134605 micron"/>
+            </normalization>
+          </PanStellarComp>
+          <!-- Ionizing stars -->
+          <PanStellarComp>
+            <geometry type="Geometry">
+              <ReadFitsGeometry filename="ionizing_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[ionizing_scaleheight:150 pc]"/>
+            </geometry>
+            <sed type="StellarSED">
+              <MappingsSED metallicity="[metallicity:0.02]" compactness="[sfr_compactness:6]" pressure="[sfr_pressure:1e12 K/m3]" coveringFactor="[sfr_covering:0.2]"/>
+            </sed>
+            <normalization type="StellarCompNormalization">
+              <SpectralLuminosityStellarCompNormalization luminosity="[fuv_ionizing:1]" wavelength="0.152583134605 micron"/>
+            </normalization>
+          </PanStellarComp>
+        </components>
+      </StellarSystem>
+    </stellarSystem>
+    <dustSystem type="PanDustSystem">
+      <PanDustSystem sampleCount="100" writeConvergence="false" writeDensity="false" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBoost="1" selfAbsorption="false" writeEmissivity="false" writeTemperature="false" writeISRF="false" writeAbsorption="false" writeStellarDensity="false">
+        <dustDistribution type="DustDistribution">
+          <CompDustDistribution>
+            <components type="DustComp">
+              <!-- Dust disk -->
+              <DustComp>
+                <geometry type="Geometry">
+                  <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[dust_scaleheight:260.5 pc]"/>
+                </geometry>
+                <mix type="DustMix">
+                  <ThemisDustMix silicatePops="25" hydrocarbonPops="25" writeMeanMix="false" writeMix="false" writeSize="false"/>
+                </mix>
+                <normalization type="DustCompNormalization">
+                  <DustMassDustCompNormalization dustMass="[dust_mass:1 Msun]"/>
+                </normalization>
+              </DustComp>
+            </components>
+          </CompDustDistribution>
+        </dustDistribution>
+        <dustGrid type="DustGrid">
+          <BinTreeDustGrid directionMethod="Alternating" maxDensDispFraction="0" maxLevel="18" maxMassFraction="1e-05" maxOpticalDepth="0" maxX="11868.1445777 pc" maxY="11868.1445777 pc" maxZ="3.0 kpc" minLevel="8" minX="-11868.1445777 pc" minY="-11868.1445777 pc" minZ="-3.0 kpc" sampleCount="100" searchMethod="Neighbor" writeGrid="false"/>
+        </dustGrid>
+        <dustEmissivity type="DustEmissivity">
+          <TransientDustEmissivity/>
+        </dustEmissivity>
+        <dustLib type="DustLib">
+          <AllCellsDustLib/>
+        </dustLib>
+      </PanDustSystem>
+    </dustSystem>
+  </PanMonteCarloSimulation>
+</skirt-simulation-hierarchy>

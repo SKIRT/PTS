@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="Python Toolkit for SKIRT (SkiFile class)" time="2016-03-02T17:08:04">
+  <OligoMonteCarloSimulation packages="1e8" continuousScattering="false">
+    <random type="Random">
+      <Random seed="4357"/>
+    </random>
+    <units type="Units">
+      <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+    </units>
+    <instrumentSystem type="InstrumentSystem">
+      <InstrumentSystem>
+        <instruments type="Instrument">
+          <SimpleInstrument instrumentName="earth" distance="3.6 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="157 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="face-on" distance="3.6 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="edge-on" distance="3.6 Mpc" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+        </instruments>
+      </InstrumentSystem>
+    </instrumentSystem>
+    <wavelengthGrid type="OligoWavelengthGrid">
+      <OligoWavelengthGrid wavelengths="1"/>
+    </wavelengthGrid>
+    <stellarSystem type="StellarSystem">
+      <StellarSystem>
+        <components type="StellarComp">
+          <OligoStellarComp luminosities="1">
+            <geometry type="Geometry">
+              <ExpDiskGeometry radialScale="0" axialScale="0" radialTrunc="0" axialTrunc="0" innerRadius="0"/>
+            </geometry>
+          </OligoStellarComp>
+          <OligoStellarComp luminosities="1">
+            <geometry type="Geometry">
+              <TriaxialGeometryDecorator yFlattening="0.58" zFlattening="1">
+                <geometry type="SpheGeometry">
+                  <SersicGeometry index="3.5566" radius="1594 pc"/>
+                </geometry>
+              </TriaxialGeometryDecorator>
+            </geometry>
+          </OligoStellarComp>
+        </components>
+      </StellarSystem>
+    </stellarSystem>
+  </OligoMonteCarloSimulation>
+</skirt-simulation-hierarchy>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1">
+    <PanMonteCarloSimulation packages="1" minWeightReduction="1e4" minScattEvents="0" scattBias="0" continuousScattering="false">
+        <units type="Units">
+            <ExtragalacticUnits fluxOutputStyle="Frequency"/>
+        </units>
+        <instrumentSystem type="InstrumentSystem">
+            <InstrumentSystem>
+                <instruments type="Instrument">
+                    <SEDInstrument instrumentName="xy" distance="20 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="90 deg"/>
+                </instruments>
+            </InstrumentSystem>
+        </instrumentSystem>
+        <wavelengthGrid type="PanWavelengthGrid">
+            <LogWavelengthGrid writeWavelengths="false" minWavelength="0.1 micron" maxWavelength="1000 micron" points="100000"/>
+        </wavelengthGrid>
+        <stellarSystem type="StellarSystem">
+            <StellarSystem>
+                <components type="StellarComp">
+                    <SPHStellarComp filename="oneparticle.dat" velocity="false" writeLuminosities="false">
+                        <sedFamily type="SEDFamily">
+                            <MappingsSEDFamily/>
+                        </sedFamily>
+                    </SPHStellarComp>
+                </components>
+            </StellarSystem>
+        </stellarSystem>
+    </PanMonteCarloSimulation>
+</skirt-simulation-hierarchy>
