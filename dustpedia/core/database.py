@@ -75,7 +75,7 @@ all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustp
 
 # -----------------------------------------------------------------
 
-all_cigale_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/cigale/dustpedia_cigale_results_v4.dat"
+all_cigale_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/cigale/dustpedia_cigale_results_v5.dat"
 
 # -----------------------------------------------------------------
 

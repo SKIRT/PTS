@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import subprocess
 from lxml import etree
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -32,6 +33,8 @@ from ..tools import stringify
 from ..simulation.skifile import SkiFile
 from ..tools import types
 from pts.core.tools.utils import lazyproperty
+from ..tools import sequences
+from ..basics import containers
 
 # -----------------------------------------------------------------
 
@@ -584,8 +587,8 @@ class SKIRTSmileSchema(object):
                 parser = getattr(parsing, ptype)
                 default = parser(default) if default is not None else None
 
-                min_value = property.get("min") if "min" in property.attrib else None
-                max_value = property.get("max") if "max" in property.attrib else None
+                min_value = None#property.get("min") if "min" in property.attrib else None
+                max_value = None#property.get("max") if "max" in property.attrib else None
 
                 min_value = parser(min_value) if min_value is not None else None
                 max_value = parser(max_value) if max_value is not None else None
@@ -682,12 +685,14 @@ class SKIRTSmileSchema(object):
 
     # -----------------------------------------------------------------
 
-    def default_parameters_for_type(self, name, merge=False):
+    def default_parameters_for_type(self, name, merge=False, first=None, last=None):
 
         """
         This function ...
         :param name: 
-        :param merge: 
+        :param merge:
+        :param first:
+        :param last:
         :return: 
         """
 
@@ -698,13 +703,19 @@ class SKIRTSmileSchema(object):
         setter = PassiveConfigurationSetter("configuration of " + name + " simulation item", add_cwd=False, add_logging=False)
         config = setter.run(definition)
 
-        children = dict()
+        children = OrderedDict()
 
         #print(config)
         #print(simulation_items)
 
+        #print(simulation_items)
+
+        sorted_names = sequences.sort_with_first_last(simulation_items, first=first, last=last)
+
+        #print(sorted_names)
+
         # Create parameters of simulation item properties
-        for prop_name in simulation_items:
+        for prop_name in sorted_names:
 
             #print(type(config[prop_name]))
 
@@ -740,7 +751,11 @@ class SKIRTSmileSchema(object):
                 child_parameters, child_children = self.default_parameters_for_type(item_name)
                 children[item_name] = child_parameters, child_children
 
+        config = containers.ordered_by_first_last(config, first=first, last=last)
+
         # Return the parameters of this item and of its children
+        #print("config keys:", config.keys())
+        #print("children keys:", children.keys())
         if merge: return merge_parameters(config, children)
         else: return config, children
 
@@ -989,7 +1004,8 @@ class SKIRTSmileSchema(object):
         root.addprevious(comment)
 
         # default_parameters_for_type
-        parameters = self.default_parameters_for_type("OligoMonteCarloSimulation", merge=True)
+        parameters = self.default_parameters_for_type("OligoMonteCarloSimulation", merge=True, first=["random", "units", "wavelengthGrid"])
+        #print(parameters)
 
         # Create ski
         ski = SkiFile(tree=tree)
@@ -1200,7 +1216,7 @@ def merge_parameters(parameters, children):
     :return:
     """
 
-    new = dict()
+    new = OrderedDict()
 
     children_names = children.keys()
 
@@ -1212,7 +1228,7 @@ def merge_parameters(parameters, children):
 
         if isinstance(value, list):
 
-            new[name] = dict()
+            new[name] = OrderedDict()
 
             for val in value:
 

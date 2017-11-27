@@ -1101,6 +1101,53 @@ def ordered_by_value(dictionary):
 
 # -----------------------------------------------------------------
 
+def ordered_by_first_last(dictionary, first=None, last=None):
+
+    """
+    gegeg
+    :param dictionary:
+    :return:
+    """
+
+    firsts_keys = []
+    firsts_values = []
+    between_keys = []
+    between_values = []
+    lasts_keys = []
+    lasts_values = []
+
+    used_indices = []
+
+    if first is not None:
+        for key in first:
+            if key in dictionary:
+                index = dictionary.keys().index(key)
+                used_indices.append(index)
+                firsts_keys.append(key)
+                firsts_values.append(dictionary[key])
+
+    if last is not None:
+        for key in last:
+            if key in dictionary:
+                index = dictionary.keys().index(key)
+                used_indices.append(index)
+                lasts_keys.append(key)
+                lasts_values.append(dictionary[key])
+
+    for index in range(len(dictionary)):
+        if index in used_indices: continue
+        between_keys.append(dictionary.keys()[index])
+        between_values.append(dictionary.values()[index])
+
+    # Combine the keys and the values
+    keys = firsts_keys + between_keys + lasts_keys
+    values = firsts_values + between_values + lasts_values
+
+    # Return
+    return OrderedDict(zip(keys, values))
+
+# -----------------------------------------------------------------
+
 def equal_dicts(dict_a, dict_b):
 
     """

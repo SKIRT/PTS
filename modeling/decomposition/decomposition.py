@@ -39,8 +39,7 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
-# The path to the template ski files directory
-template_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
+template_path = introspection.pts_modeling_ski_templates_path
 
 # -----------------------------------------------------------------
 
@@ -792,6 +791,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Load the disk ski file template
         disk_template_path = fs.join(template_path, "disk.ski")
+
         ski = SkiFile(disk_template_path)
 
         # Set the number of photon packages
