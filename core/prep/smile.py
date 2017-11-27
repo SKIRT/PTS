@@ -107,6 +107,10 @@ class SKIRTSmileSchema(object):
         # Determine path to PTS temporary directory
         temp_path = introspection.pts_temp_dir
 
+        # Check
+        original_smile_path = fs.join(temp_path, "skirt.smile")
+        if fs.is_file(original_smile_path): fs.remove_file(original_smile_path)
+
         # Create the command
         command = [introspection.skirt_path, "-x"]
 
@@ -119,6 +123,7 @@ class SKIRTSmileSchema(object):
 
         # Load the smile scheme
         filename = "skirt " + self.skirt_version + ".smile"
+        fs.rename_file_path(original_smile_path, filename)
         smile_path = fs.join(temp_path, filename)
 
         # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)

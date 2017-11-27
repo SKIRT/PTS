@@ -25,6 +25,7 @@ from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.serialization import write_dict, write_list
+from ...core.tools.stringify import tostr, stringify_list_fancy
 
 # -----------------------------------------------------------------
 
@@ -463,11 +464,16 @@ class WavelengthGridBuilder(Configurable):
         log.debug("Created a wavelength grid with:")
         log.debug("")
         log.debug(" - number of points: " + str(self.nwavelengths))
-        log.debug(" - number of points in subgrids: " + str(self.subgrid_npoints))
+        log.debug(" - number of points in subgrids:")
+        for subgrid in self.subgrid_npoints: log.debug("    * " + subgrid + ": " + str(self.subgrid_npoints[subgrid]))
         log.debug(" - number of emission points: " + str(self.emission_npoints))
         log.debug(" - number of fixed points: " + str(self.fixed_npoints))
         log.debug(" - filters for which extra sampling was performed: " + str(self.broad_resampled))
         log.debug(" - narrow band filters for which wavelength was added: " + str(self.narrow_added))
+        log.debug(" - replaced wavelengths:")
+        for old, new in self.replaced: log.debug("    * " + str(old) + " -> " + str(new))
+        log.debug(" - new wavelengths:")
+        for line in stringify_list_fancy(self.new)[1].split("\n"): log.debug("    " + line)
         log.debug("")
 
         if log.is_debug():

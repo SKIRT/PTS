@@ -501,7 +501,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        self.table.sort()
+        self.table.sort("Wavelength")
 
     # -----------------------------------------------------------------
 
