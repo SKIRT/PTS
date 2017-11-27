@@ -1338,6 +1338,46 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_defaults(cls, defaults, log_path=None, config_path=None, write_config=True, add_timestamp=False, positional=False, positional_flags=False):
+
+        """
+        This function ...
+        :param defaults:
+        :param log_path:
+        :param config_path:
+        :param write_config:
+        :param add_timestamp:
+        :param positional:
+        :param positional_flags:
+        :return:
+        """
+
+        # Create the definition
+        definition = cls(log_path=log_path, config_path=config_path, write_config=write_config, add_timestamp=add_timestamp)
+
+        # Add settings
+        for name in defaults:
+
+            # Get the value
+            value = defaults[name]
+
+            # Get the type
+            ptype, string = stringify.stringify(value)
+
+            # Add setting
+            if ptype == "boolean":
+                if positional and positional_flags: definition.add_positional_optional(name, ptype, "no description", default=value)
+                else: definition.add_flag(name, "no description", default=value)
+            else:
+                if positional: definition.add_positional_optional(name, ptype, "no description", default=value)
+                else: definition.add_optional(name, ptype, "no description", default=value)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
     def __len__(self):
 
         """

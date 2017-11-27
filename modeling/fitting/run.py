@@ -2476,6 +2476,18 @@ class FittingRuns(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_any(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self) > 0
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def single_name(self):
 
