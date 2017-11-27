@@ -368,7 +368,7 @@ class WavelengthGridBuilder(Configurable):
 
         grids = OrderedDict()
         for name in self.subgrid_wavelengths:
-            grid = WavelengthGrid.from_wavelengths(self.subgrid_wavelengths, sort=True)
+            grid = WavelengthGrid.from_wavelengths(self.subgrid_wavelengths[name], sort=True)
             grids[name] = grid
         return grids
 

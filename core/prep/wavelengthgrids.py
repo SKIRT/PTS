@@ -551,7 +551,7 @@ def adjust_to_wavelengths(wavelengths, adjust_to):
         if len(replace_dict[index]) == 1:
 
             # Get the new wavelength
-            wavelength = replace_dict[index]
+            wavelength = replace_dict[index][0]
 
             # Set
             replaced.append((wavelengths[index], wavelength))
@@ -673,6 +673,8 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
 
             # Add to fixed
             new_fixed.append(wavelength)
+
+    #print(wavelengths)
 
     # Sort the wavelength points
     wavelengths = sorted(wavelengths)
