@@ -645,6 +645,7 @@ class ModelLauncher(ModelSimulationInterface):
             else: return FrameInstrument
         elif self.make_seds:
             if self.make_contributions: return FullInstrument
+            elif self.config.make_image_seds: return SimpleInstrument
             else: return SEDInstrument
         else: raise ValueError("Either SEDs or images should be made")
 
@@ -821,7 +822,13 @@ class ModelLauncher(ModelSimulationInterface):
         self.ski.remove_all_instruments()
 
         # Add the instruments
-        for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
+        for name in self.instruments:
+
+            # Debug
+            log.debug("Adding '" + name + "' instrument of type " + str(type(self.instruments[name]).__name__) + " ...")
+
+            # Add
+            self.ski.add_instrument(name, self.instruments[name])
 
     # -----------------------------------------------------------------
 

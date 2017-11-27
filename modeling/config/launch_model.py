@@ -17,7 +17,8 @@ modeling_path = verify_modeling_cwd()
 make_seds = "seds"
 make_images = "images"
 make_choices = [make_seds, make_images]
-default_make = make_choices
+#default_make = make_choices
+default_make = [make_seds]
 default_make_contributions = False
 
 # -----------------------------------------------------------------
