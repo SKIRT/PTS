@@ -459,8 +459,6 @@ def add_new_dust_component(ski, name, component, title=None):
     # For THEMIS mix
     hydrocarbon_pops = None
     silicate_pops = None
-    enstatite_pops = None
-    forsterite_pops = None
 
     # For Zubko mix
     graphite_populations = None
@@ -497,15 +495,9 @@ def add_new_dust_component(ski, name, component, title=None):
             mix = "themis"
 
             # Get parameters
-            if skirt8:
-                mass = component.parameters.mass
-                hydrocarbon_pops = component.parameters.hydrocarbon_pops
-                enstatite_pops = component.parameters.enstatite_pops
-                forsterite_pops = component.parameters.forsterite_pops
-            elif skirt7:
-                mass = component.parameters.mass
-                hydrocarbon_pops = component.parameters.hydrocarbon_pops
-                silicate_pops = component.parameters.silicate_pops
+            mass = component.parameters.mass
+            hydrocarbon_pops = component.parameters.hydrocarbon_pops
+            silicate_pops = component.parameters.silicate_pops
 
         # Existing component (geometry defined above), Zubko dust mix
         elif "graphite_populations" in component.parameters:
@@ -537,9 +529,7 @@ def add_new_dust_component(ski, name, component, title=None):
     properties["mix"] = mix
     properties["mass"] = mass
     properties["hydrocarbon_pops"] = hydrocarbon_pops
-    if skirt8: properties["enstatite_pops"] = enstatite_pops
-    if skirt8: properties["forsterite_pops"] = forsterite_pops
-    if skirt7: properties["silicate_pops"] = silicate_pops
+    properties["silicate_pops"] = silicate_pops
     properties["graphite_populations"] = graphite_populations
     properties["silicate_populations"] = silicate_populations
     properties["pah_populations"] = pah_populations
