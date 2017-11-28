@@ -288,6 +288,18 @@ class Range(object):
     # -----------------------------------------------------------------
 
     @property
+    def geometric_mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sqrt(self.min * self.max)
+
+    # -----------------------------------------------------------------
+
+    @property
     def center(self):
 
         """

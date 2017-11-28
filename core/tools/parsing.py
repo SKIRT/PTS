@@ -1449,6 +1449,21 @@ def photometric_brightness_unit(argument):
 
 # -----------------------------------------------------------------
 
+def time_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+    if unit.physical_type != "time": raise ValueError("Not a time unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
 def length_unit(argument):
 
     """
@@ -1531,6 +1546,21 @@ def photometric_density_quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def time_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "time": raise ValueError("Not a time")
+    return qty
+
+# -----------------------------------------------------------------
+
 def length_quantity(argument):
 
     """
@@ -1543,6 +1573,20 @@ def length_quantity(argument):
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "length": raise ValueError("Not a length")
     return qty
+
+# -----------------------------------------------------------------
+
+def time_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    quantities = []
+    for item in string_list(argument): quantities.append(time_quantity(item))
+    return quantities
 
 # -----------------------------------------------------------------
 

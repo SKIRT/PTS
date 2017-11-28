@@ -189,6 +189,27 @@ class Curve(SmartTable):
 
         return "Error-" in self.colnames and "Error+" in self.colnames
 
+    # -----------------------------------------------------------------
+
+    def normalize(self, value=1.0, method="integral"):
+
+        """
+        This function ...
+        :param value:
+        :param method:
+        :return:
+        """
+
+        if method == "max":
+
+            max_value = np.max(self[self.y_name])
+            factor = value / max_value
+            self[self.y_name] *= factor
+            self[self.y_name].unit = None
+
+        elif method == "integral": raise NotImplementedError("Not implemented yet")
+        else: raise ValueError("Invalid option for 'method'")
+
 # -----------------------------------------------------------------
 
 class WavelengthCurve(Curve):

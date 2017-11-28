@@ -1068,6 +1068,23 @@ def equal_dictionaries(dict_a, dict_b):
 
 # -----------------------------------------------------------------
 
+def argsort(seq, key=None):
+
+    """
+    This function ...
+    :param seq:
+    :param key:
+    :return:
+    """
+
+    if key is None: sortkey = seq.__getitem__
+    else: sortkey = lambda index: key(seq[index]) #print(seq[index])
+
+    # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
+    return sorted(range(len(seq)), key=sortkey)
+
+# -----------------------------------------------------------------
+
 def ordered_by_key(dictionary):
 
     """
@@ -1077,23 +1094,24 @@ def ordered_by_key(dictionary):
     """
 
     new = OrderedDict()
-    for key in sorted(dictionary.keys()): new[key] = dictionary[key]
+    for k in sorted(dictionary.keys()): new[k] = dictionary[k]
     return new
 
 # -----------------------------------------------------------------
 
-def ordered_by_value(dictionary):
+def ordered_by_value(dictionary, key=None):
 
     """
     Thisf unction ...
     :param dictionary:
+    :param key:
     :return:
     """
 
     keys = dictionary.keys()
     values = dictionary.values()
 
-    sorted_indices = np.argsort(values)
+    sorted_indices = argsort(values, key=key)
 
     new = OrderedDict()
     for index in sorted_indices: new[keys[index]] = values[index]

@@ -19,16 +19,24 @@ from io import BytesIO
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import matplotlib.patches as patches
-from collections import OrderedDict
+#import matplotlib.patches as patches
+#from collections import OrderedDict
 from textwrap import wrap
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.gridspec as gridspec
-from matplotlib import rc
-from scipy.interpolate import interp1d
+#from matplotlib import rc
+#from scipy.interpolate import interp1d
+from matplotlib.ticker import ScalarFormatter
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
+
+# -----------------------------------------------------------------
+
+class ScalarFormatterForceFormat(ScalarFormatter):
+    def _set_format(self, vmin, vmax):  # Override function that finds format to use.
+        #print(vmin, vmax)
+        self.format = "%1.1f"  # Give format here
 
 # -----------------------------------------------------------------
 
@@ -318,6 +326,87 @@ class BokehPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def scatter(self, x, y, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param kwargs:
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented for Bokeh")
+
+    # -----------------------------------------------------------------
+
+    def text(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
+    def horizontal_arrow(self, min_x, max_x, y):
+
+        """
+        This function ...
+        :param min_x:
+        :param max_x:
+        :param y:
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    #
+
+    def vertical_arrow(self, x, min_y, max_y):
+
+        """
+        This function ...
+        :param x:
+        :param min_y:
+        :param max_y:
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    def vlines(self, x, ymin, ymax, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param ymin:
+        :param ymax:
+        :param kwargs:
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
+    def fill(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
     def errorbar(self, x, y, xerr=None, yerr=None, color='red', point_kwargs=None, error_kwargs=None, **kwargs):
 
         """
@@ -386,6 +475,18 @@ class BokehPlot(Plot):
         """
 
         return None
+
+    # -----------------------------------------------------------------
+
+    # def create_legends(self, nlegends):
+    #
+    #     """
+    #     This function ...
+    #     :param nlegends:
+    #     :return:
+    #     """
+    #
+    #     return None
 
     # -----------------------------------------------------------------
 
@@ -1134,10 +1235,8 @@ class MPLPlot(Plot):
         :return:
         """
 
-        #print(x, y)
-
         # Plot
-        self._plot.plot(x, y, **kwargs)
+        return self._plot.plot(x, y, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1151,10 +1250,97 @@ class MPLPlot(Plot):
         :return:
         """
 
-        #print(x, y)
+        # Plot
+        return self._plot.errorbar(x, y, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def scatter(self, x, y, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.scatter(x, y, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def text(self, x, y, s, *args, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param s:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.text(x, y, s, *args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def horizontal_arrow(self, x_min, x_max, y, **kwargs):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.annotate(s='', xy=(x_max, y), xytext=(x_min, y), arrowprops=dict(arrowstyle='<->', shrinkA=0, shrinkB=0), **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def vertical_arrow(self, x, y_min, y_max, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param y_min:
+        :param y_max:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.annotate(s='', xy=(x, y_max), xytext=(x, y_min), arrowprops=dict(arrowstyle='<->', shrinkA=0, shrinkB=0), **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def vlines(self, x, ymin, ymax, **kwargs):
+
+        """
+        This function ...
+        :param x:
+        :param ymin:
+        :param ymax:
+        :param kwargs:
+        :return:
+        """
 
         # Plot
-        self._plot.errorbar(x, y, **kwargs)
+        return self._plot.vlines(x, ymin, ymax, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def fill(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.fill(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1168,6 +1354,44 @@ class MPLPlot(Plot):
         """
 
         return self._plot.legend(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    # def create_legends(self, nlegends):
+    #
+    #     """
+    #     This function ...
+    #     :param nlegends:
+    #     :return:
+    #     """
+    #
+    #     # Create a legend for the first line.
+    #     #first_legend = plt.legend(handles=[line1], loc=1)
+    #
+    #     # Add the legend manually to the current Axes.
+    #     #ax = plt.gca().add_artist(first_legend)
+    #
+    #     # Create another legend for the second line.
+    #     #plt.legend(handles=[line2], loc=4)
+    #
+    #     legends = []
+    #
+    #     # Create legends
+    #     for index in range(nlegends):
+    #
+    #         legendi = self.axes.legend()
+    #
+    #         print(legendi)
+    #
+    #         # Add to plot?
+    #         last = index == nlegends - 1
+    #         if not last: self.axes.add_artist(legendi)
+    #
+    #         # Add the legend to the list
+    #         legends.append(legendi)
+    #
+    #     # Return the legends
+    #     return legends
 
     # -----------------------------------------------------------------
 
@@ -1211,6 +1435,72 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def disable_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscale_on(False)
+
+    # -----------------------------------------------------------------
+
+    def enable_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscale_on(True)
+
+    # -----------------------------------------------------------------
+
+    def disable_x_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscalex_on(False)
+
+    # -----------------------------------------------------------------
+
+    def enable_x_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscalex_on(True)
+
+    # -----------------------------------------------------------------
+
+    def disable_y_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscaley_on(False)
+
+    # -----------------------------------------------------------------
+
+    def enable_y_auto_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.axes.set_autoscaley_on(True)
+
+    # -----------------------------------------------------------------
+
     def set_xlim(self, *args, **kwargs):
 
         """
@@ -1221,6 +1511,7 @@ class MPLPlot(Plot):
         """
 
         self._plot.set_xlim(*args, **kwargs)
+        self.disable_x_auto_scaling()
 
     # -----------------------------------------------------------------
 
@@ -1234,6 +1525,43 @@ class MPLPlot(Plot):
         """
 
         self._plot.set_ylim(*args, **kwargs)
+        self.disable_y_auto_scaling()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._plot.axes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xaxis(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.axes.get_xaxis()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.axes.get_yaxis()
 
     # -----------------------------------------------------------------
 
@@ -1326,6 +1654,82 @@ class MPLPlot(Plot):
 
         self._plot.set_ylabel(*args, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    def set_x_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.xaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+
+    # -----------------------------------------------------------------
+
+    def set_y_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.yaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+
+    # -----------------------------------------------------------------
+
+    def hide_xticks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No ticks
+        self.xaxis.set_ticks([])
+
+    # -----------------------------------------------------------------
+
+    def hide_yticks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No ticks
+        self.yaxis.set_ticks([])
+
+    # -----------------------------------------------------------------
+
+    def hide_xaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Not visible
+        self.xaxis.set_visible(False)
+
+        # No ticks
+        self.xaxis.set_ticks([])
+
+    # -----------------------------------------------------------------
+
+    def hide_yaxis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Not visible
+        self.yaxis.set_visible(False)
+
+        # No ticks
+        self.yaxis.set_ticks([])
+
 # -----------------------------------------------------------------
 
 class MPLFigure(Figure):
@@ -1357,32 +1761,157 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_column(self, size, share_axis=False, height_ratios=None):
+    def create_column(self, size, share_axis=False, height_ratios=None, x_label=None, x_label_fontsize="small",
+                      x_labels=None, y_labels=None, y_label_fontsize="small", x_scale="linear", x_scales=None, y_scales=None,
+                      x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False):
 
         """
         This function ...
         :param size:
         :param share_axis:
         :param height_ratios:
+        :param x_label:
+        :param x_label_fontsize:
+        :param x_labels:
+        :param y_labels:
+        :param y_label_fontsize:
+        :param x_scale:
+        :param x_scales
+        :param y_scales:
+        :param x_limits:
+        :param y_limits:
+        :param x_log_scalar:
+        :param y_log_scalar:
         :return:
         """
 
+        # Define hspace
+        wspace = 0.0
+        if share_axis:
+            hspace = 0.0
+        else: hspace = 0.05
+
         # Make the grid
-        gs = gridspec.GridSpec(size, 1, height_ratios=height_ratios)
+        gs = gridspec.GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace)
 
         # Create the (sub)plots
         plots = []
         if share_axis:
 
-            first_plot = plt.subplot(gs[0])
-            plots.append(MPLPlot(plot=first_plot))
+            if x_labels is not None: raise ValueError("Cannot specify different x labels when sharing axis")
+            if x_scales is not None: raise ValueError("Cannot specify different x scales when sharing axis")
+
+            first_mpl_plot = plt.subplot(gs[0])
+            first_plot = MPLPlot(plot=first_mpl_plot)
+
+            if y_labels is not None:
+                label = y_labels[0]
+                if label is not None: first_plot.set_ylabel(label, fontsize=y_label_fontsize)
+                else: first_plot.hide_yaxis()
+
+            if y_scales is not None:
+                scale = y_scales[0]
+                first_plot.set_yscale(scale)
+
+            # Scalar?
+            if y_log_scalar: first_plot.set_y_scalar()
+
+            # Set shared x scale
+            first_plot.set_xscale(x_scale)
+
+            # Scalar?
+            if x_log_scalar: first_plot.set_x_scalar()
+
+            if x_limits is not None:
+                lower, upper = x_limits
+                first_plot.set_xlim(lower, upper)
+
+            if y_limits is not None:
+                limits = y_limits[0]
+                first_plot.set_ylim(*limits)
+
+            # Hide x axis
+            #first_plot.hide_xticks()
+
+            plots.append(first_plot)
+
+            # Create next plots
             for index in range(1, size):
-                next_plot = plt.subplot(gs[index], sharex=first_plot)
-                plots.append(MPLPlot(plot=next_plot))
+
+                next_plot = plt.subplot(gs[index], sharex=first_mpl_plot)
+                next_plot = MPLPlot(plot=next_plot)
+
+                # Set y label
+                if y_labels is not None:
+                    label = y_labels[index]
+                    if label is not None: next_plot.set_ylabel(label, fontsize=y_label_fontsize)
+                    else: next_plot.hide_yaxis()
+
+                # Set y scale
+                if y_scales is not None:
+                    scale = y_scales[index]
+                    next_plot.set_yscale(scale)
+
+                # Scalar?
+                if y_log_scalar: next_plot.set_y_scalar()
+
+                # Set y limits
+                if y_limits is not None:
+                    limits = y_limits[index]
+                    next_plot.set_ylim(*limits)
+
+                plots.append(next_plot)
+
+            last_plot = plots[-1]
+
+            # Set shared x label
+            if x_label is not None:
+                last_plot.set_xlabel(x_label, fontsize=x_label_fontsize)
+
+            # Set shared x scale
+            #last_plot.set_xscale(x_scale)
+
         else:
 
+            if x_label is not None: raise ValueError("Cannot specify one x label when not sharing axis")
+            #if x_scale is not None:
+
             for index in range(size):
+
                 plot = plt.subplot(gs[index])
+
+                if x_labels is not None:
+                    label = x_labels[index]
+                    if label is not None: plot.set_xlabel(label, fontsize=x_label_fontsize)
+                    else: plot.hide_xaxis()
+
+                if y_labels is not None:
+                    label = y_labels[index]
+                    if label is not None: plot.set_ylabel(label, fontsize=y_label_fontsize)
+                    else: plot.hide_yaxis()
+
+                if x_scales is not None:
+                    scale = x_scales[index]
+                    plot.set_xscale(scale)
+
+                # Scalar?
+                if x_log_scalar: plot.set_x_scalar()
+
+                if y_scales is not None:
+                    scale = y_scales[index]
+                    plot.set_yscale(scale)
+
+                # Scalar?
+                if y_log_scalar: plot.set_y_scalar()
+
+                if x_limits is not None:
+                    limits = x_limits[index]
+                    plot.set_xlim(*limits)
+
+                if y_limits is not None:
+                    limits = y_limits[index]
+                    plot.set_ylim(*limits)
+
                 plots.append(MPLPlot(plot=plot))
 
         # Return the plots
@@ -1399,6 +1928,30 @@ class MPLFigure(Figure):
 
         plot = MPLPlot(plot=self.ax)
         return plot
+
+    # -----------------------------------------------------------------
+
+    def set_xscale(self, scale):
+
+        """
+        This function ...
+        :param scale:
+        :return:
+        """
+
+        plt.xscale(scale)
+
+    # -----------------------------------------------------------------
+
+    def set_yscale(self, scale):
+
+        """
+        This function ...
+        :param scale:
+        :return:
+        """
+
+        plt.yscale(scale)
 
     # -----------------------------------------------------------------
 
@@ -1460,8 +2013,7 @@ class MPLFigure(Figure):
 
         # Shrink current axis's height by a certain percentage on the bottom
         box = ax.get_position()
-        ax.set_position(
-            [box.x0, box.y0 + box.height * percentage / 100., box.width, box.height * (100 - percentage) / 100.])
+        ax.set_position([box.x0, box.y0 + box.height * percentage / 100., box.width, box.height * (100 - percentage) / 100.])
 
         # Plot legend
         legend_title = r"\underline{" + legend_title + "}"

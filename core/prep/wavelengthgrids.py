@@ -34,23 +34,24 @@ from ..tools.stringify import stringify_list_fancy
 # -----------------------------------------------------------------
 
 # The names of the subgrids
-subgrids = ["UV", "optical", "PAH", "dust", "extension"]
+#subgrids = ["UV", "optical", "PAH", "dust", "extension"]
+subgrids = ["EUV", "stellar", "aromatic", "thermal", "microwave"]
 
 # Define the ranges of the subgrids
 ranges = OrderedDict()
-ranges["UV"] = QuantityRange(0.02, 0.085, unit="micron")
-ranges["optical"] = QuantityRange(0.085, 3., unit="micron")
-ranges["PAH"] = QuantityRange(3., 27., unit="micron")
-ranges["dust"] = QuantityRange(27., 1000., unit="micron")
-ranges["extension"] = QuantityRange(1000., 2000, unit="micron")
+ranges["EUV"] = QuantityRange(0.02, 0.085, unit="micron")
+ranges["stellar"] = QuantityRange(0.085, 3., unit="micron")
+ranges["aromatic"] = QuantityRange(3., 27., unit="micron")
+ranges["thermal"] = QuantityRange(27., 1000., unit="micron")
+ranges["microwave"] = QuantityRange(1000., 2000, unit="micron")
 
 # Define the relative fineness (the number of points) of the subgrids
 relpoints = OrderedDict()
-relpoints["UV"] = 25./325.           # 25
-relpoints["optical"] = 100./325.     # 100
-relpoints["PAH"] = 125./325.         # 125
-relpoints["dust"] = 50./325.         # 50
-relpoints["extension"] = 25./325.    # 25
+relpoints["EUV"] = 25./325.           # 25
+relpoints["stellar"] = 100./325.     # 100
+relpoints["aromatic"] = 125./325.         # 125
+relpoints["thermal"] = 50./325.         # 50
+relpoints["microwave"] = 25./325.    # 25
 
 # -----------------------------------------------------------------
 

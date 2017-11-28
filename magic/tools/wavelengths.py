@@ -46,7 +46,15 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
                                    (("IR", "MIR"), (5.0, 25.0)),
                                    (("IR", "FIR"), (25.0, 350.0)),
                                    (("Submm", "Submm"), (350.0, 1000.)),
-                                   (("Radio", "Radio"), (1000., 1e9))])
+                                   (("Radio", "Microwave"), (1000., 1e6))]) #, # 1 mm to 1 m
+                                   # (("Radio", "VHF"), (1e6, 1e7)), # 1 m to 10 m
+                                   # (("Radio", "HF"), (1e7, 1e8)), # 10 m to 100 m
+                                   # (("Radio", "MF"), (1e8, 1e9)), # 100 m to 1 km
+                                   # (("Radio", "LF"), (1e9, 1e10)), # 1 km to 10 km
+                                   # (("Radio", "VLF"), (1e10, 1e11)), # 10 km to 100 km
+                                   # (("Radio", "ULF"), (1e11, 1e12)),  # 100 km to 1,000 km
+                                   # (("Radio", "SLF"), (1e11, 1e12)),  # 1,000 km to 10,000 km
+                                   # (("Radio", "ELF"), (1e12, 1e13))]) # 1,000 km to 100,000 km
 
 # -----------------------------------------------------------------
 
@@ -381,6 +389,30 @@ def find_wavelength_range(regime):
 
 # -----------------------------------------------------------------
 
+def find_single_wavelength_range(regime, return_string=False):
+
+    """
+    This function ...
+    :param regime:
+    :param return_string:
+    :return:
+    """
+
+    regime, subregime = find_single_key(regime)
+
+    if subregime is None:
+        wavelength_range = wavelength_range_for_regime(regime)
+        string = regime
+    else:
+        wavelength_range = wavelength_range_for_regime(regime, subregime)
+        string = regime + "/" + subregime
+
+    # Return the wavelength range
+    if return_string: return wavelength_range, string
+    else: return wavelength_range
+
+# -----------------------------------------------------------------
+
 def find_keys(regime):
 
     """
@@ -420,6 +452,28 @@ def find_key_indices(regime):
         if key[1].lower() == regime.lower(): indices.append(index)
 
     return indices
+
+# -----------------------------------------------------------------
+
+def find_single_key(regime):
+
+    """
+    This function ...
+    :param regime:
+    :return:
+    """
+
+    results = []
+
+    for key in spectrum_wavelengths:
+
+        if key == regime: return results.append(key)
+        if key[0].lower() == regime.lower(): return key[0], None #results.append((key[0], None)) # here it's OK!
+        if key[1].lower() == regime.lower(): results.append((key[0], key[1]))
+
+    if len(results) == 0: raise ValueError("Invalid regime: " + regime)
+    elif len(results) > 1: raise ValueError("Multiple matching keys for '" + str(regime) + "': " + ", ".join(str(r) for r in results))
+    else: return results[0]
 
 # -----------------------------------------------------------------
 

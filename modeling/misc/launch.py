@@ -152,16 +152,16 @@ class ModelLauncher(ModelSimulationInterface):
         # 9. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         if not self.has_dust_grid_tree: self.build_dust_grid()
 
-        # Set ski file dust grid
+        # 10. Set ski file dust grid
         self.set_dust_grid()
 
-        # 10. Set the input
+        # 11. Set the input
         self.set_input()
 
-        # 11. Write
+        # 12. Write
         self.write()
 
-        # 12. Launch (and analyse) the simulation
+        # 13. Launch (and analyse) the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -214,7 +214,9 @@ class ModelLauncher(ModelSimulationInterface):
         super(ModelLauncher, self).setup(**kwargs)
 
         # Set and create paths
-        self.simulation_path = fs.create_directory_in(self.playground_path, self.simulation_name)
+        self.simulation_path = fs.join(self.playground_path, self.simulation_name)
+        if fs.is_directory(self.simulation_path) and self.config.clear: fs.clear_directory(self.simulation_path)
+        elif not fs.is_directory(self.simulation_path): fs.create_directory(self.simulation_path)
         self.ski_path = fs.join(self.simulation_path, self.galaxy_name + ".ski")
         self.out_path = fs.create_directory_in(self.simulation_path, "out")
         self.dust_grid_path = fs.join(self.simulation_path, "dust_grid.dg")

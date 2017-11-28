@@ -197,6 +197,69 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def normalize_at_wavelength(self, wavelength, value=1.):
+
+        """
+        This function ...
+        :param wavelength:
+        :param value:
+        :return:
+        """
+
+        value_for_wavelength = self.photometry_at(wavelength, unit=self.unit, add_unit=False)
+        self[self.y_name] /= value_for_wavelength * value
+        self[self.y_name].unit = None
+
+    # -----------------------------------------------------------------
+
+    def normalized_photometry(self, value=1.0, method="integral"):
+
+        """
+        This function ...
+        :param value:
+        :param method:
+        :return:
+        """
+
+        # Max method
+        if method == "max":
+
+            # Get array
+            photometry = self.photometry(self.unit, asarray=True)
+            max_value = np.max(photometry)
+            factor = value / max_value
+
+            # Return the normalized data
+            return photometry * factor
+
+        # Integral method
+        elif method == "integral": raise NotImplementedError("Not implemented yet")
+
+        # Invalid method
+        else: raise ValueError("Invalid option for 'method'")
+
+    # -----------------------------------------------------------------
+
+    def normalized_photometry_at_wavelength(self, wavelength, value=1.):
+
+        """
+        This function ...
+        :param wavelength:
+        :param value:
+        :return:
+        """
+
+        value_for_wavelength = self.photometry_at(wavelength, unit=self.unit, add_unit=False)
+
+        # Get array
+        photometry = self.photometry(self.unit, asarray=True)
+        factor = value / value_for_wavelength
+
+        # Return the normalized data
+        return photometry * factor
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_arrays(cls, wavelengths, photometry, wavelength_unit, photometry_unit, density=False, brightness=False):
 

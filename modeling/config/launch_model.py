@@ -39,6 +39,7 @@ definition.add_required("origin", "string", "origin of the analysis model", choi
 # -----------------------------------------------------------------
 
 definition.add_required("name", "string_no_spaces", "name for the simulation")
+definition.add_flag("clear", "clear launch directory when existing")
 
 # -----------------------------------------------------------------
 
@@ -84,7 +85,7 @@ definition.add_flag("adjust_npackages", "adjust the number of photon packages to
 definition.add_section("wg", "settings for the wavelength grids")
 definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", 100)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
-definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.05 micron > 2000 micron", convert_default=True)
+definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.02 micron > 2000 micron", convert_default=True)
 
 # -----------------------------------------------------------------
 

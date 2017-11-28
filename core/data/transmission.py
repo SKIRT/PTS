@@ -32,12 +32,13 @@ class TransmissionCurve(object):
     This class ...
     """
 
-    def __init__(self, wavelengths=None, transmissions=None):
+    def __init__(self, wavelengths=None, transmissions=None, unit="micron"):
 
         """
         This function ...
         :param wavelengths:
         :param transmissions:
+        :param unit:
         :return:
         """
 
@@ -49,7 +50,7 @@ class TransmissionCurve(object):
         else: self.table = tables.new([wavelengths, transmissions], names)
 
         # Set column units
-        self.table["Wavelength"].unit = u("micron")
+        self.table["Wavelength"].unit = u(unit)
 
     # -----------------------------------------------------------------
 
@@ -62,7 +63,7 @@ class TransmissionCurve(object):
         :return:
         """
 
-        # Get the wavelengths and transmissions
+        # Get the wavelengths and transmissions, in micron
         wavelengths = fltr._Wavelengths
         transmissions = fltr._Transmission
 
@@ -71,7 +72,7 @@ class TransmissionCurve(object):
         transmissions[-1] = 0.0
 
         # Create a new TransmissionCurve instance
-        return cls(wavelengths, transmissions)
+        return cls(wavelengths, transmissions, unit="micron")
 
     # -----------------------------------------------------------------
 

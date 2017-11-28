@@ -34,6 +34,7 @@ plot_simulation_seds | -- | plot.simulationseds.SimulationSEDPlotter | arguments
 plot_scaling | -- | plot.scaling.ScalingPlotter | arguments | Plot the performance and or memory scaling of a (batch of) simulation(s)
 plot_timelines | -- | plot.timeline.TimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
 plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plot transmission curves of a set of photometric filters
+plot_wavelengths | -- | plot.wavelengthgrid.WavelengthGridPlotter | arguments | Plot wavelength grids
 
 # SKIRT SIMULATIONS
 discover | -- | simulation.discover.SimulationDiscoverer | arguments | Discover simulations in current working directory (and subdirectories)
