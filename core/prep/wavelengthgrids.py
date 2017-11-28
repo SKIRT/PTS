@@ -29,6 +29,7 @@ from ..filter.narrow import NarrowBandFilter
 from ..basics.range import IntegerRange
 from ..tools import sequences
 from ..basics.containers import DefaultOrderedDict
+from ..tools.stringify import stringify_list_fancy
 
 # -----------------------------------------------------------------
 
@@ -142,6 +143,7 @@ class WavelengthGridGenerator(Configurable):
         self.min_wavelength = None
         self.max_wavelength = None
         self.filters = None
+        self.adjust_to = None
 
         # The wavelength grids
         self.grids = []
@@ -209,6 +211,7 @@ class WavelengthGridGenerator(Configurable):
         self.min_wavelength = kwargs.pop("min_wavelength", None)
         self.max_wavelength = kwargs.pop("max_wavelength", None)
         self.filters = kwargs.pop("filters", None)
+        self.adjust_to = kwargs.pop("adjust_to", None)
 
         # Create the emission lines instance
         if self.add_emission_lines:
@@ -255,21 +258,26 @@ class WavelengthGridGenerator(Configurable):
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
         # Generate the grid
-        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
+        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added, replaced, new = \
             create_one_subgrid_wavelength_grid(npoints, self.emission_lines, fixed=self.fixed,
                                                min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
                                                filters=self.filters, min_wavelengths_in_filter=self.config.min_wavelengths_in_filter,
-                                               min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm)
+                                               min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm, adjust_to=self.adjust_to)
 
         # Debugging
         log.debug("Generated a wavelength grid with:")
         log.debug("")
         log.debug(" - number of points: " + str(len(grid)))
-        log.debug(" - number of points in subgrids: " + str(subgrid_npoints))
+        log.debug(" - number of points in subgrids: ")
+        for subgrid in subgrid_npoints: log.debug("     * " + subgrid + ": " + str(subgrid_npoints[subgrid]))
         log.debug(" - number of emission points: " + str(emission_npoints))
         log.debug(" - number of fixed points: " + str(fixed_npoints))
         log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
         log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
+        log.debug(" - replaced wavelengths:")
+        for old, new in replaced: log.debug("    * " + str(old) + " -> " + str(new))
+        log.debug(" - new wavelengths:")
+        for line in stringify_list_fancy(new)[1].split("\n"): log.debug("    " + line)
         log.debug("")
 
         # Add the grid
@@ -551,7 +559,7 @@ def adjust_to_wavelengths(wavelengths, adjust_to):
         if len(replace_dict[index]) == 1:
 
             # Get the new wavelength
-            wavelength = replace_dict[index]
+            wavelength = replace_dict[index][0]
 
             # Set
             replaced.append((wavelengths[index], wavelength))
@@ -674,6 +682,8 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
             # Add to fixed
             new_fixed.append(wavelength)
 
+    #print(wavelengths)
+
     # Sort the wavelength points
     wavelengths = sorted(wavelengths)
 
@@ -710,7 +720,7 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         fixed_npoints = len(new_fixed)
 
         # Return
-        return grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
+        return grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added, replaced, new
 
 # -----------------------------------------------------------------
 

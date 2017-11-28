@@ -50,7 +50,35 @@ else: definition.add_optional("model_name", "string", "name of the model to use 
 
 # -----------------------------------------------------------------
 
-# NEW: FITTING METHOD
+# From configuration of other fitting run
+if runs.has_any: definition.add_optional("from_run", "string", "adapt configuration of other fitting run", choices=runs.names)
+else: definition.add_fixed("from_run", "no previous fitting run", None)
+
+# Adapt certain things from the other fitting run
+definition.add_flag("adapt_parameters", "adapt the free parameters from the other fitting run")
+definition.add_flag("adapt_descriptions", "adapt the descriptions from the other fitting run")
+definition.add_flag("adapt_types", "adapt the types from the other fitting run")
+definition.add_flag("adapt_units", "adapt the units from the other fitting run")
+definition.add_flag("adapt_ranges", "adapt the parameter ranges from the other fitting run")
+definition.add_flag("adapt_ndigits", "adapt the ndigits from the other fitting run")
+definition.add_flag("adapt_filters", "adapt the filters from the other fitting run")
+definition.add_flag("adapt_genetic", "adapt the genetic settings from the other fitting run")
+definition.add_flag("adapt_grid", "adapt settings for the grid fitting from the other fitting run")
+
+# Don't use from other fitting run
+definition.add_flag("except_parameters", "don't use parameters from other fitting run")
+definition.add_flag("except_descriptions", "don't use descriptions from other fitting run")
+definition.add_flag("except_types", "don't use types from other fitting run")
+definition.add_flag("except_units", "don't use units from other fitting run")
+definition.add_flag("except_ranges", "don't use ranges from the other fitting run")
+definition.add_flag("except_ndigits", "don't use ndigits from other fitting run")
+definition.add_flag("except_filters", "don't use filters from other fitting run")
+definition.add_flag("except_genetic", "don't use genetic settings from other fitting run")
+definition.add_flag("except_grid", "don't use grid settings from other fitting run")
+
+# -----------------------------------------------------------------
+
+# FITTING METHOD
 definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, fitting_methods)
 
 # Add optional

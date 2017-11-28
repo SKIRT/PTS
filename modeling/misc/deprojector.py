@@ -31,7 +31,7 @@ from ...core.tools.numbers import round_to_int
 
 # -----------------------------------------------------------------
 
-template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+template_ski_path = fs.join(introspection.pts_modeling_ski_templates_path(), "labeled_template_ski")
 
 # -----------------------------------------------------------------
 

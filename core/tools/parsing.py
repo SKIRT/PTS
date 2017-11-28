@@ -18,6 +18,7 @@ import warnings
 from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
 #import numpy as np
+_range = range
 
 # Import the relevant PTS classes and modules
 #from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
@@ -1053,7 +1054,7 @@ def integer_list(argument):
     elif len(splitted) == 2:
 
         if not (splitted[0].isdigit() and splitted[1].isdigit()): ValueError("Not a valid integer range")
-        return range(int(splitted[0]), int(splitted[1])+1)
+        return _range(int(splitted[0]), int(splitted[1])+1)
 
     else: raise ValueError("Values must be seperated by commas or by a '-' in the case of a range")
 

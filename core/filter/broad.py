@@ -133,7 +133,15 @@ planck_info["Planck_4260"] = ("070", "LFI")
 planck_info["Planck_6810"] = ("044", "LFI")
 planck_info["Planck_10600"] = ("030", "LFI")
 
+# -----------------------------------------------------------------
+
 number_of_hfi_bands = 6
+number_of_lfi_bands = 3
+
+# -----------------------------------------------------------------
+
+hfi_central_wavelengths = [0.3, 0.5, 0.9, 1.5, 2., 3.]
+lfi_central_wavelengths = [4., 7., 10.]
 
 # -----------------------------------------------------------------
 
@@ -662,6 +670,8 @@ class BroadBandFilter(Filter):
             # Planck filters have to be handled seperately
             if isinstance(filterspec, types.StringTypes) and "planck" in filterspec.lower():
 
+                from astropy.units import Unit, spectral
+
                 # Load properties
                 wavelengths, transmissions, instrument, frequency_string = load_planck(filterspec)
 
@@ -674,20 +684,30 @@ class BroadBandFilter(Filter):
                 # Initialize
                 self._initialize2(wavelengths, transmissions)
 
-                # Set central wavelength
-                # HFI: 3, 2, 1.5, 0.9, 0.5, 0.3 mm
-                # LFI: 10, 7, 4 mm
+                # HFI properties
                 if instrument == "HFI":
 
-                    central_wavelengths = [0.3, 0.5, 0.9, 1.5, 2., 3.]
+                    # Set central wavelength
                     index = find_planck_index_instrument(instrument, frequency_string)
-                    self._WavelengthCen = central_wavelengths[index] * 1000.
+                    self._WavelengthCen = hfi_central_wavelengths[index] * 1000.
 
+                    # Set effective wavelength
+                    effective_frequency = float(frequency_string) * Unit("GHz")
+                    self._WavelengthEff = effective_frequency.to("micron", equivalencies=spectral()).value
+
+                # LFI properties
                 elif instrument == "LFI":
 
-                    central_wavelengths = [4., 7., 10.]
+                    # Set central wavelength
                     index = find_planck_index_instrument(instrument, frequency_string)
-                    self._WavelengthCen = central_wavelengths[index] * 1000.
+                    self._WavelengthCen = lfi_central_wavelengths[index] * 1000.
+
+                    # Set effective wavelength
+                    effective_frequency = float(frequency_string) * Unit("GHz")
+                    self._WavelengthEff = effective_frequency.to("micron", equivalencies=spectral()).value
+
+                # Invalid
+                else: raise RuntimeError("Invalid Planck instrument")
 
             # ALMA filters have to be handled seperately
             elif isinstance(filterspec, types.StringTypes) and "alma" in filterspec.lower():

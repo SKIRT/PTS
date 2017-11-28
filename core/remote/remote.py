@@ -5321,7 +5321,7 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def free_space(self):
+    def total_space(self):
 
         """
         This function ...
@@ -5332,7 +5332,71 @@ class Remote(object):
         output = self.execute("df -lh")
 
         total = 0.0
+
+        for entry in output[1:]:
+
+            if not entry.startswith("/dev/"): continue
+
+            splitted = entry.split()
+
+            if "G" in splitted[1]: total += float(splitted[1].split("G")[0])
+            elif "T" in splitted[1]: total += float(splitted[1].split("T")[0]) * 1e3
+            elif "M" in splitted[1]: total += float(splitted[1].split("M")[0]) * 1e-3
+            elif splitted[1].strip() == "0": pass
+            else: raise ValueError("Could not parse line: '" + entry)
+
+        # Return the amount of total memory
+        total = total * u("GB")
+        if total.value > 999: total = total.to("TB")
+        elif total.value < 1: total = total.to("MB")
+        return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def used_space(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        # Use the 'df' command to obtain information about the free disk space
+        output = self.execute("df -lh")
+
         used = 0.0
+
+        for entry in output[1:]:
+
+            if not entry.startswith("/dev/"): continue
+
+            splitted = entry.split()
+
+            if "G" in splitted[2]: used += float(splitted[2].split("G")[0])
+            elif "T" in splitted[2]: used += float(splitted[2].split("T")[0]) * 1e3
+            elif "M" in splitted[2]: used += float(splitted[2].split("M")[0]) * 1e-3
+            elif splitted[2].strip() == "0": pass
+            else: raise ValueError("Could not parse line: '" + entry)
+
+        # Return the amount of used memory
+        used = used * u("GB")
+        if used.value > 999: used = used.to("TB")
+        elif used.value < 1: used = used.to("MB")
+        return used
+
+    # -----------------------------------------------------------------
+
+    @property
+    def free_space(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Use the 'df' command to obtain information about the free disk space
+        output = self.execute("df -lh")
+
         free = 0.0
 
         for entry in output[1:]:
@@ -5341,12 +5405,17 @@ class Remote(object):
 
             splitted = entry.split()
 
-            total += float(splitted[1].split("G")[0]) if "G" in splitted[1] else float(splitted[1].split("T")[0]) * 1e3
-            used += float(splitted[2].split("G")[0]) if "G" in splitted[2] else float(splitted[2].split("T")[0]) * 1e3
-            free += float(splitted[3].split("G")[0]) if "G" in splitted[3] else float(splitted[3].split("T")[0]) * 1e3
+            if "G" in splitted[3]: free += float(splitted[3].split("G")[0])
+            elif "T" in splitted[3]: free += float(splitted[3].split("T")[0]) * 1e3
+            elif "M" in splitted[3]: free += float(splitted[3].split("M")[0]) * 1e-3
+            elif splitted[3].strip() == "0": pass
+            else: raise ValueError("Could not parse line: '" + entry)
 
-        # Return the amount of free memory in gigabytes
-        return free * u("GB")
+        # Return the amount of free memory
+        free = free * u("GB")
+        if free.value > 999: free = free.to("TB")
+        elif free.value < 1: free = free.to("MB")
+        return free
 
     # -----------------------------------------------------------------
 
@@ -5528,7 +5597,11 @@ class Remote(object):
 
             lines = self.execute("lscpu")
             for line in lines:
-                if "cpu(s)" in line.lower(): return int(line.split(": ")[1]) / self.threads_per_core
+                if "cpu(s)" in line.lower():
+                    value = int(line.split(": ")[1]) / self.threads_per_core
+                    from ..tools import numbers
+                    if not numbers.is_integer(value): raise ValueError("Something is wrong")
+                    return int(value)
             raise RuntimeError("Could not determine the number of cores per node")
 
     # -----------------------------------------------------------------

@@ -19,8 +19,18 @@ from pts.core.tools.introspection import skirt_main_version, has_skirt
 
 # -----------------------------------------------------------------
 
+# Check SKIRT version
 if not has_skirt(): version_number = 8
 else: version_number = skirt_main_version()
+
+# Set flags
+if version_number == 7:
+    skirt7 = True
+    skirt8 = False
+elif version_number == 8:
+    skirt7 = False
+    skirt8 = True
+else: raise RuntimeError("Invalid SKIRT version number")
 
 # -----------------------------------------------------------------
 
@@ -152,12 +162,27 @@ def add_new_stellar_component(ski, name, component, title=None):
     # Check whether title is defined
     if title is None: log.warning("Title for the component '" + name + "' is not defined")
 
+    # Set stellar component properties
+    properties = dict()
+    properties["geometry"] = geometry
+    properties["geometry_type"] = geometry_type
+    properties["geometry_properties"] = geometry_properties
+    properties["sed_type"] = sed_type
+    properties["sed_properties"] = sed_properties
+    properties["normalization_type"] = normalization_type
+    properties["normalization_properties"] = normalization_properties
+    properties["luminosities"] = luminosities
+    properties["sed_template"] = sed_template
+    properties["age"] = age
+    properties["metallicity"] = metallicity
+    properties["compactness"] = compactness
+    properties["pressure"] = pressure
+    properties["covering_factor"] = covering_factor
+    properties["luminosity"] = luminosity
+    properties["filter_or_wavelength"] = filter_or_wavelength
+
     # Create new component
-    ski.create_new_stellar_component(title, geometry=geometry, geometry_type=geometry_type, geometry_properties=geometry_properties,
-                                     sed_type=sed_type, sed_properties=sed_properties, normalization_type=normalization_type,
-                                     normalization_properties=normalization_properties, luminosities=luminosities,
-                                     sed_template=sed_template, age=age, metallicity=metallicity, compactness=compactness, pressure=pressure,
-                                     covering_factor=covering_factor, luminosity=luminosity, filter_or_wavelength=filter_or_wavelength)
+    ski.create_new_stellar_component(title, **properties)
 
 # -----------------------------------------------------------------
 
@@ -492,15 +517,25 @@ def add_new_dust_component(ski, name, component, title=None):
     # Check whether the title is defined
     if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
 
-    # Create new component
-    ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
-                                     geometry_properties=geometry_properties,
-                                     mix_type=mix_type, mix_properties=mix_properties,
-                                     normalization_type=normalization_type,
-                                     normalization_properties=normalization_properties, mix=mix, mass=mass,
-                                     hydrocarbon_pops=hydrocarbon_pops, silicate_pops=silicate_pops,
-                                     graphite_populations=graphite_populations,
-                                     silicate_populations=silicate_populations, pah_populations=pah_populations)
+    # Set dust component properties
+    properties = dict()
+    properties["geometry"] = geometry
+    properties["geometry_type"] = geometry_type
+    properties["geometry_properties"] = geometry_properties
+    properties["mix_type"] = mix_type
+    properties["mix_properties"] = mix_properties
+    properties["normalization_type"] = normalization_type
+    properties["normalization_properties"] = normalization_properties
+    properties["mix"] = mix
+    properties["mass"] = mass
+    properties["hydrocarbon_pops"] = hydrocarbon_pops
+    properties["silicate_pops"] = silicate_pops
+    properties["graphite_populations"] = graphite_populations
+    properties["silicate_populations"] = silicate_populations
+    properties["pah_populations"] = pah_populations
+
+    # Add the new component
+    ski.create_new_dust_component(title, **properties)
 
 # -----------------------------------------------------------------
 

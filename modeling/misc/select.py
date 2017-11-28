@@ -21,11 +21,10 @@ from ..config.parameters import types as parameter_types
 from ...core.basics.configuration import prompt_string, prompt_string_list, prompt_variable
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools import introspection
-from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
-template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+template_ski_path = fs.join(introspection.pts_modeling_ski_templates_path(), "labeled_template.ski")
 
 # -----------------------------------------------------------------
 

@@ -35,7 +35,7 @@ def make_map(**kwargs):
     """
 
     # Get smoothing factor
-    smoothing_factor = kwargs.get("smoothing_factor", None)
+    smoothing_factor = kwargs.pop("smoothing_factor", None)
 
     # Create the sSFR map maker
     maker = ColoursSSFRMapsMaker()

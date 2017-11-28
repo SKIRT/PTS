@@ -283,8 +283,8 @@ def pts_modeling_ski_templates_path():
     else: version_number = skirt_main_version()
 
     # The path to the template ski files directory
-    if version_number == 8: fs.join(pts_dat_dir("modeling"), "ski8")
-    else: fs.join(pts_dat_dir("modeling"), "ski7")
+    if version_number == 8: return fs.join(pts_dat_dir("modeling"), "ski8")
+    else: return fs.join(pts_dat_dir("modeling"), "ski7")
 
 # -----------------------------------------------------------------
 

@@ -253,7 +253,7 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
         jk = (1.0 - fPDR) * j0 + fPDR * j1
         jv[k] = jk
 
-    wavelength_column = lambdav
+    wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in lambdav]
     luminosity_column = jv * sfr
 
     # Create the SED
