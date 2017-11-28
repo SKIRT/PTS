@@ -589,19 +589,18 @@ class SkiFile8:
             if dustmix.tag in ["InterstellarDustMix", "Benchmark1DDustMix", "Benchmark2DDustMix", "DraineLiDustMix"]:
                 npops += 1
             elif dustmix.tag == "TrustDustMix":
-                npops += int(dustmix.attrib["graphitePops"])
-                npops += int(dustmix.attrib["silicatePops"])
-                npops += int(dustmix.attrib["PAHPops"])
+                npops += int(dustmix.attrib["numGraphiteSizes"])
+                npops += int(dustmix.attrib["numSilicateSizes"])
+                npops += int(dustmix.attrib["numPAHSizes"])
             elif dustmix.tag == "ConfigurableDustMix":
                 npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
             elif dustmix.tag == "ThemisDustMix":
                 npops += int(dustmix.attrib["numHydrocarbonSizes"])
-                npops += int(dustmix.attrib["numEnstatiteSizes"])
-                npops += int(dustmix.attrib["numForsteriteSizes"])
+                npops += int(dustmix.attrib["numSilicateSizes"])
             elif dustmix.tag == "ZubkoDustMix":
-                npops += int(dustmix.attrib["graphitePops"])
-                npops += int(dustmix.attrib["silicatePops"])
-                npops += int(dustmix.attrib["PAHPops"])*2
+                npops += int(dustmix.attrib["numGraphiteSizes"])
+                npops += int(dustmix.attrib["numSilicateSizes"])
+                npops += int(dustmix.attrib["numPAHSizes"])*2
         return npops
 
     ## This function returns the number of simple instruments
@@ -840,7 +839,7 @@ class SkiFile8:
                 pixels.append([name, type, datacube])
             elif type == "FullInstrument":
                 datacube = int(instrument.attrib["numPixelsX"]) * int(instrument.attrib["numPixelsY"]) * nwavelengths
-                try: scattlevels = int(instrument.attrib["scatteringLevels"])
+                try: scattlevels = int(instrument.attrib["numScatteringLevels"])
                 except KeyError: scattlevels = 0
                 scattering = scattlevels + 1 if scattlevels > 0 else 0
                 dustemission = 1 if self.dustemission() else 0
@@ -1147,7 +1146,7 @@ class SkiFile8:
         index = 0
         for pixels,size,view,cross,up,focal in frames:
             attrs = { "instrumentName" : str(index),
-                      "pixelsX" : str(pixels[0]), "pixelsY" : str(pixels[1]), "width" : str(size[0]),
+                      "numPixelsX" : str(pixels[0]), "numPixelsY" : str(pixels[1]), "width" : str(size[0]),
                       "viewX" : str(view[0]),  "viewY" : str(view[1]), "viewZ" : str(view[2]),
                       "crossX" : str(cross[0]), "crossY" : str(cross[1]), "crossZ" : str(cross[2]),
                       "upX" : str(up[0]), "upY" : str(up[1]),  "upZ" : str(up[2]), "focal" : str(focal) }
@@ -1657,7 +1656,7 @@ class SkiFile8:
     def create_new_dust_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
                                   mix=None, mix_type=None, mix_properties=None, normalization_type=None,
                                   normalization_value=None, normalization_properties=None, mass=None,
-                                  hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, # for THEMIS
+                                  hydrocarbon_pops=25, silicate_pops=25, # for THEMIS
                                   graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, # for Zubko
                                   write_mean_mix=True, write_size=True):
 
@@ -1720,7 +1719,7 @@ class SkiFile8:
 
         # Set mix
         if mix is not None:
-            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops, forsterite_pops=forsterite_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
+            if mix == "themis": self.set_dust_component_themis_mix(component_id, hydrocarbon_pops=hydrocarbon_pops, silicate_pops=silicate_pops, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             elif mix == "zubko": self.set_dust_component_zubko_mix(component_id, graphite_populations=graphite_populations, silicate_populations=silicate_populations, pah_populations=pah_populations, write_mix=write_mix, write_mean_mix=write_mean_mix, write_size=write_size)
             else: raise ValueError("Invalid mix: '" + str(mix) + "': must be 'themis' or 'zubko' (for now)")
 
@@ -1944,7 +1943,7 @@ class SkiFile8:
         return parent
 
     ## This functions sets a THEMIS dust mix model for the dust component with the specified id
-    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, silicate_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
 
         # Remove current mix, return the parent
         parent = self.remove_dust_component_mix(component_id)
@@ -1952,7 +1951,7 @@ class SkiFile8:
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
                  "writeSize": str_from_bool(write_size, lower=True), "numHydrocarbonSizes": str(hydrocarbon_pops),
-                 "numEnstatiteSizes": str(enstatite_pops), "numForsteriteSizes": str(forsterite_pops)}
+                 "numSilicateSizes": str(silicate_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
@@ -1963,7 +1962,7 @@ class SkiFile8:
 
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
-                 "writeSize": str_from_bool(write_size, lower=True), "graphitePops": str(graphite_populations), "silicatePops": str(silicate_populations), "PAHPops": str(pah_populations)}
+                 "writeSize": str_from_bool(write_size, lower=True), "numGraphiteSizes": str(graphite_populations), "numSilicateSizes": str(silicate_populations), "numPAHSizes": str(pah_populations)}
         parent.append(parent.makeelement("ZubkoDustMix", attrs))
 
     ## This function returns the mass of the dust component with the specified id, as an Astropy quantity
@@ -2172,9 +2171,9 @@ class SkiFile8:
         parent = self.remove_wavelength_grid()
 
         # Make and add the new wavelength grid
-        attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
-                 "points": str(points), "minWavelengthSubGrid": represent_quantity(min_lambda_sub),
-                 "maxWavelengthSubGrid": represent_quantity(max_lambda_sub), "pointsSubGrid": str(points_sub),
+        attrs = {"minWavelengthBaseGrid": represent_quantity(min_lambda), "maxWavelengthBaseGrid": represent_quantity(max_lambda),
+                 "numWavelengthsBaseGrid": str(points), "minWavelengthSubGrid": represent_quantity(min_lambda_sub),
+                 "maxWavelengthSubGrid": represent_quantity(max_lambda_sub), "numWavelengthsSubGrid": str(points_sub),
                  "writeWavelengths": str_from_bool(write, lower=True)}
         parent.append(parent.makeelement("NestedLogWavelengthGrid", attrs))
 
@@ -2187,7 +2186,7 @@ class SkiFile8:
 
         # Make and add the new wavelength grid
         attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
-                 "points": str(points), "writeWavelengths": str_from_bool(write, lower=True)}
+                 "numWavelengths": str(points), "writeWavelengths": str_from_bool(write, lower=True)}
         parent.append(parent.makeelement("LogWavelengthGrid", attrs))
 
     ## This function returns the geometry of the stellar component with the specified id
@@ -2369,7 +2368,7 @@ class SkiFile8:
         parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new geometry
-        attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width), "height": represent_quantity(height)}
+        attrs = {"ringRadius": represent_quantity(radius), "width": represent_quantity(width), "height": represent_quantity(height)}
         new_geometry = parent.makeelement("RingGeometry", attrs)
         parent.append(new_geometry)
 
@@ -2382,7 +2381,7 @@ class SkiFile8:
         parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new geometry
-        attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width),
+        attrs = {"ringRadius": represent_quantity(radius), "width": represent_quantity(width),
                  "height": represent_quantity(height)}
         new_geometry = parent.makeelement("RingGeometry", attrs)
         parent.append(new_geometry)
@@ -2649,9 +2648,9 @@ class SkiFile8:
         # Set attributes dictionary
         attrs = dict()
         attrs["clumpFraction"] = repr(fraction) # min: 0, max: 1
-        attrs["clumpCount"] = str(count) # min: 1
+        attrs["numClumps"] = str(count) # min: 1
         attrs["clumpRadius"] = represent_quantity(radius) # min: 0 m
-        attrs["cutoff"] = "true" if cutoff else "false" # default: false
+        attrs["cutoffClumps"] = "true" if cutoff else "false" # default: false
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
         # Add smoothing kernel
@@ -2688,9 +2687,9 @@ class SkiFile8:
         # Set attributes dictionary
         attrs = dict()
         attrs["clumpFraction"] = repr(fraction)  # min: 0, max: 1
-        attrs["clumpCount"] = str(count)  # min: 1
+        attrs["numClumps"] = str(count)  # min: 1
         attrs["clumpRadius"] = represent_quantity(radius)  # min: 0 m
-        attrs["cutoff"] = "true" if cutoff else "false"  # default: false
+        attrs["cutoffClumps"] = "true" if cutoff else "false"  # default: false
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
         # Add smoothing kernel
@@ -2727,11 +2726,11 @@ class SkiFile8:
         attrs = dict()
 
         # Set the properties
-        attrs["arms"] = str(arms)
-        attrs["pitch"] = str_from_angle(pitch) # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
-        attrs["radius"] = represent_quantity(radius) # min: 0 m
-        attrs["phase"] = str_from_angle(phase) # min: 0 rad, max: 6.283185307 rad, default: 0 rad
-        attrs["perturbWeight"] = repr(perturbation_weight) # min: 0, max: 1
+        attrs["numArms"] = str(arms)
+        attrs["pitchAngle"] = str_from_angle(pitch) # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
+        attrs["radiusZeroPoint"] = represent_quantity(radius) # min: 0 m
+        attrs["phaseZeroPoint"] = str_from_angle(phase) # min: 0 rad, max: 6.283185307 rad, default: 0 rad
+        attrs["perturbationWeight"] = repr(perturbation_weight) # min: 0, max: 1
         attrs["index"] = str(index) # min: 0, max: 10, default: 1
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
@@ -2761,11 +2760,11 @@ class SkiFile8:
         attrs = dict()
 
         # Set the properties
-        attrs["arms"] = str(arms)
-        attrs["pitch"] = str_from_angle(pitch)  # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
-        attrs["radius"] = represent_quantity(radius)  # min: 0 m
-        attrs["phase"] = str_from_angle(phase)  # min: 0 rad, max: 6.283185307 rad, default: 0 rad
-        attrs["perturbWeight"] = repr(perturbation_weight)  # min: 0, max: 1
+        attrs["numArms"] = str(arms)
+        attrs["pitchAngle"] = str_from_angle(pitch)  # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
+        attrs["radiusZeroPoint"] = represent_quantity(radius)  # min: 0 m
+        attrs["phaseZeroPoint"] = str_from_angle(phase)  # min: 0 rad, max: 6.283185307 rad, default: 0 rad
+        attrs["perturbationWeight"] = repr(perturbation_weight)  # min: 0, max: 1
         attrs["index"] = str(index)  # min: 0, max: 10, default: 1
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
@@ -3085,7 +3084,7 @@ class SkiFile8:
         parent = self.remove_dust_lib()
 
         # Create and add the new library
-        attrs = {"pointsTemperature": str(temperature_points), "pointsWavelength": str(wavelength_points)}
+        attrs = {"numTemperatures": str(temperature_points), "numWavelengths": str(wavelength_points)}
         parent.append(parent.makeelement("Dim2DustLib", attrs))
 
     ## This function sets the dust library to a 1D dust library
@@ -3094,7 +3093,7 @@ class SkiFile8:
         parent = self.remove_dust_lib()
 
         # Create and add the new library
-        attrs = {"entries": str(points)}
+        attrs = {"numFieldStrengths": str(points)}
         parent.append(parent.makeelement("Dim1DustLib", attrs))
 
     ## This function returns the dust grid
@@ -3190,10 +3189,10 @@ class SkiFile8:
             min_level = int(grid.get("minLevel"))
             max_level = int(grid.get("maxLevel"))
             search_method = grid.get("searchMethod")
-            sample_count = int(grid.get("sampleCount"))
+            sample_count = int(grid.get("numSamples"))
             maxoptdepth = float(grid.get("maxOpticalDepth"))
             maxmassfraction = float(grid.get("maxMassFraction"))
-            maxdensdispfraction = float(grid.get("maxDensDispFraction"))
+            maxdensdispfraction = float(grid.get("maxDensityDispersion"))
             barycentric = self.get_boolean(grid, "barycentric")
 
             # Create and return the grid
@@ -3423,14 +3422,14 @@ class SkiFile8:
         parent = self.remove_dust_grid()
 
         # Set attrs
-        attrs = {"writeGrid": str_from_bool(write_grid, lower=True), "maxR": represent_quantity(max_r), "minZ": represent_quantity(min_z),
+        attrs = {"writeGrid": str_from_bool(write_grid, lower=True), "maxRadius": represent_quantity(max_r), "minZ": represent_quantity(min_z),
                  "maxZ": represent_quantity(max_z)}
 
         # Create new grid
         grid = parent.makeelement("Cylinder2DDustGrid", attrs)
 
         # Mesh r
-        mesh_r = grid.makeelement("meshR", {"type": "Mesh"})
+        mesh_r = grid.makeelement("meshRadial", {"type": "Mesh"})
         mesh_r_log = mesh_r.makeelement("LogMesh", {"numBins": str(nbins_r), "centralBinFraction": repr(fraction_r)})
         mesh_r.append(mesh_r_log)
         grid.append(mesh_r)
@@ -3692,7 +3691,7 @@ class SkiFile8:
         attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
                  "fieldOfViewY": represent_quantity(field_y), "numPixelsX": str(pixels_x), "numPixelsY": str(pixels_y),
-                 "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y), "scatteringLevels": str(scattering_levels)}
+                 "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y), "numScatteringLevels": str(scattering_levels)}
         if counts: attrs["counts"] = "true"
         instruments.append(instruments.makeelement("FullInstrument", attrs))
 
@@ -3809,7 +3808,7 @@ class SkiFile8:
             pixelsy = instrument.get("numPixelsY")
             centerx = self.get_quantity(instrument, "centerX")
             centery = self.get_quantity(instrument, "centerY")
-            scattlevels = int(instrument.get("scatteringLevels"))
+            scattlevels = int(instrument.get("numScatteringLevels"))
 
             # Creaet and return the instrument
             return FullInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
@@ -4143,7 +4142,7 @@ class SkiFile8:
         # Make element
         # example of attrs:
         #attrs = {"instrumentName": str(index),
-        #         "pixelsX": str(pixels[0]), "pixelsY": str(pixels[1]), "width": str(size[0]),
+        #         "numPixelsX": str(pixels[0]), "numPixelsY": str(pixels[1]), "width": str(size[0]),
         #         "viewX": str(view[0]), "viewY": str(view[1]), "viewZ": str(view[2]),
         #         "crossX": str(cross[0]), "crossY": str(cross[1]), "crossZ": str(cross[2]),
         #         "upX": str(up[0]), "upY": str(up[1]), "upZ": str(up[2]), "focal": str(focal)}
