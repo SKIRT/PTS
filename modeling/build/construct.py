@@ -434,8 +434,6 @@ def add_new_dust_component(ski, name, component, title=None):
     # For THEMIS mix
     hydrocarbon_pops = None
     silicate_pops = None
-    enstatite_pops = None
-    forsterite_pops = None
 
     # For Zubko mix
     graphite_populations = None
@@ -472,15 +470,9 @@ def add_new_dust_component(ski, name, component, title=None):
             mix = "themis"
 
             # Get parameters
-            if version_number == 8:
-                mass = component.parameters.mass
-                hydrocarbon_pops = component.parameters.hydrocarbon_pops
-                enstatite_pops = component.parameters.enstatite_pops
-                forsterite_pops = component.parameters.forsterite_pops
-            else:
-                mass = component.parameters.mass
-                hydrocarbon_pops = component.parameters.hydrocarbon_pops
-                silicate_pops = component.parameters.silicate_pops
+            mass = component.parameters.mass
+            hydrocarbon_pops = component.parameters.hydrocarbon_pops
+            silicate_pops = component.parameters.silicate_pops
 
         # Existing component (geometry defined above), Zubko dust mix
         elif "graphite_populations" in component.parameters:
@@ -501,17 +493,7 @@ def add_new_dust_component(ski, name, component, title=None):
     if title is None: log.warning("The title for the '" + name + "' dust component is not specified")
 
     # Create new component
-    if version_number == 8:
-        ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
-                                      geometry_properties=geometry_properties,
-                                      mix_type=mix_type, mix_properties=mix_properties,
-                                      normalization_type=normalization_type,
-                                      normalization_properties=normalization_properties, mix=mix, mass=mass,
-                                      hydrocarbon_pops=hydrocarbon_pops, enstatite_pops=enstatite_pops,
-                                      forsterite_pops=forsterite_pops, graphite_populations=graphite_populations,
-                                      silicate_populations=silicate_populations, pah_populations=pah_populations)
-    else:
-        ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
+    ski.create_new_dust_component(title, geometry=geometry, geometry_type=geometry_type,
                                      geometry_properties=geometry_properties,
                                      mix_type=mix_type, mix_properties=mix_properties,
                                      normalization_type=normalization_type,
