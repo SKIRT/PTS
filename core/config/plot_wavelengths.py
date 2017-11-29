@@ -85,16 +85,12 @@ definition.sections["plot"].optional["figsize"].default = (11,5)
 # The unit in which to plot
 definition.add_optional("wavelength_unit", "length_unit", "unit of wavelength", "micron", convert_default=True)
 
-# Residual reference
-#definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
-
 # The plotting library to use
 definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)
 
 # -----------------------------------------------------------------
 
-# Ignore these filters
-#definition.add_optional("ignore_filters", "filter_list", "ignore these filters from the observed SEDs")
+definition.add_flag("plot_complete_grid", "plot the complete grid", True)
 
 # -----------------------------------------------------------------
 

@@ -265,6 +265,9 @@ class WavelengthGridGenerator(Configurable):
                                                filters=self.filters, min_wavelengths_in_filter=self.config.min_wavelengths_in_filter,
                                                min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm, adjust_to=self.adjust_to)
 
+        has_replaced = len(replaced) > 0
+        has_new = len(new) > 0
+
         # Debugging
         log.debug("Generated a wavelength grid with:")
         log.debug("")
@@ -275,9 +278,9 @@ class WavelengthGridGenerator(Configurable):
         log.debug(" - number of fixed points: " + str(fixed_npoints))
         log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
         log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
-        log.debug(" - replaced wavelengths:")
+        if has_replaced: log.debug(" - replaced wavelengths:")
         for old, new in replaced: log.debug("    * " + str(old) + " -> " + str(new))
-        log.debug(" - new wavelengths:")
+        if has_new: log.debug(" - new wavelengths:")
         for line in stringify_list_fancy(new)[1].split("\n"): log.debug("    " + line)
         log.debug("")
 

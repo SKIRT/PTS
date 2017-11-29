@@ -110,6 +110,30 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def is_stellar_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    def is_dust_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.dust_component_names
+
+    # -----------------------------------------------------------------
+
     def get_stellar_component_path(self, name):
 
         """

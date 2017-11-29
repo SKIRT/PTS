@@ -46,6 +46,7 @@ photometry | -- | photometry.photometry.PhotoMeter | arguments | Calculate the p
 build_model_galaxy | -- | build.models.galaxy.GalaxyModelBuilder | arguments | Build the model for galaxy modeling
 build_model_sed | -- | build.models.sed.SEDModelBuilder | arguments | Build the model for SED modeling
 build_model_images | -- | build.models.images.ImagesModelBuilder | arguments | Build the model for images modeling
+adapt_model | -- | build.adapter.GalaxyModelAdapter | arguments | Adapt a galaxy model that has previously been built
 *build_stars | -- | build.models.stars.StarsBuilder | interactive | Build stellar components of model
 *build_dust | -- | build.models.dust.DustBuilder | interactive | Build dust components of model
 build_representation_galaxy | -- | build.representations.galaxy.GalaxyRepresentationBuilder | interactive | Build galaxy model representation
