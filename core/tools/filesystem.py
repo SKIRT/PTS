@@ -1711,11 +1711,12 @@ def move_files(file_paths, directory_path):
 
 # -----------------------------------------------------------------
 
-def read_lines(path):
+def read_lines(path, newlines=False):
 
     """
     This function ...
     :param path:
+    :param newlines:
     :return:
     """
 
@@ -1726,7 +1727,33 @@ def read_lines(path):
     with open(path, 'r') as fh:
 
         # Loop over the lines, cut off the end-of-line characters
-        for line in fh.readlines(): yield line[:-1]
+        for line in fh.readlines():
+            if newlines: yield line
+            else: yield line[:-1]
+
+# -----------------------------------------------------------------
+
+def read_words(path, newlines=False):
+
+    """
+    This function ...
+    :param path:
+    :param newlines:
+    :return:
+    """
+
+    for line in read_lines(path, newlines=newlines):
+        for part in line.split(" "):
+            if "\n" in part:
+                before, after = part.split("\n")
+                before = before.strip()
+                after = after.strip()
+                if before: yield before
+                yield "\n"
+                if after: yield after
+            else:
+                part = part.strip()
+                if part: yield part
 
 # -----------------------------------------------------------------
 

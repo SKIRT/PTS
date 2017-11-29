@@ -14,8 +14,8 @@ from pts.magic.tools import wavelengths
 
 # -----------------------------------------------------------------
 
-#seds = ["mappings", "bruzual_charlot"]
-seds = ["mappings"]
+seds = ["mappings", "bruzual_charlot"]
+#seds = ["mappings"]
 default_ages = "8.0 Gyr,0.1 Gyr"
 
 # -----------------------------------------------------------------

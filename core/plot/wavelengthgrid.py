@@ -37,13 +37,12 @@ from ..basics import containers
 from ..basics.range import RealRange, QuantityRange
 from ..basics.emissionlines import EmissionLines
 from ...magic.tools.wavelengths import find_single_wavelength_range
+from ..basics.plot import pretty_colors_no_yellows
 
 # -----------------------------------------------------------------
 
 line_styles = ['-', '--', '-.', ':']
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
-pretty_colors_no_yellow = [x for x in pretty_colors if x != 'yellow']
 
 # -----------------------------------------------------------------
 
@@ -56,7 +55,7 @@ def get_sed_template(name, **kwargs):
     """
 
     from ...modeling.core.mappings import create_mappings_sed
-    #from ...modeling.core.bruzualcharlot import create_bruzual_charlot_sed
+    from ...modeling.core.bruzualcharlot import create_bruzual_charlot_sed
 
     # Mappings
     if name == "mappings": return create_mappings_sed(**kwargs)
@@ -720,8 +719,11 @@ class WavelengthGridPlotter(Configurable):
                 properties["pressure"] = self.config.pressure
                 properties["covering_factor"] = self.config.covering_factor
 
+                # Set label
+                label = "MAPPINGS"
+
                 sed = get_sed_template(name, **properties)
-                self.add_sed(sed, label=name)
+                self.add_sed(sed, label=label)
 
             # Stellar Bruzual Charlot
             elif name == "bruzual_charlot":
@@ -731,11 +733,13 @@ class WavelengthGridPlotter(Configurable):
 
                 # Loop over the ages
                 for age in self.config.ages:
+
                     properties = dict()
                     properties["metallicity"] = self.config.metallicity
                     properties["age"] = age
 
-                    label = name + "_" + str(age).replace(" ", "")
+                    #label = name + "_" + str(age).replace(" ", "")
+                    label = "Bruzual-Charlot " + str(age)
                     sed = get_sed_template(name, **properties)
                     self.add_sed(sed, label=label)
 
@@ -1254,6 +1258,7 @@ class WavelengthGridPlotter(Configurable):
         legend_properties["shadow"] = False
         legend_properties["frameon"] = True
         legend_properties["facecolor"] = None
+        legend_properties["fontsize"] = "smaller"
 
         return legend_properties
 
@@ -1279,7 +1284,7 @@ class WavelengthGridPlotter(Configurable):
         """
 
         # Make iterable from distinct colors
-        different_colors = iter(pretty_colors_no_yellow)
+        different_colors = iter(pretty_colors_no_yellows)
 
         handles = []
 
@@ -1353,10 +1358,11 @@ class WavelengthGridPlotter(Configurable):
         legend_properties = dict()
 
         legend_properties["loc"] = 9
-        legend_properties["ncol"] = 2
+        legend_properties["ncol"] = 1
         legend_properties["shadow"] = False
         legend_properties["frameon"] = True
         legend_properties["facecolor"] = None
+        legend_properties["fontsize"] = "smaller"
 
         return legend_properties
 
@@ -1394,7 +1400,33 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return 0.3
+        #return 0.3
+        #return 1.
+        return 1.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_linealpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.7
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def seds_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return pretty_colors_no_yellows[-4:]
 
     # -----------------------------------------------------------------
 
@@ -1410,6 +1442,9 @@ class WavelengthGridPlotter(Configurable):
 
         handles = []
 
+        #line_styles_iterator = iter(line_styles)
+        colours = iter(self.seds_colours)
+
         # Loop over the SEDs
         for label in self.seds:
 
@@ -1420,13 +1455,18 @@ class WavelengthGridPlotter(Configurable):
             wavelengths = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
             fluxes = self.seds[label].normalized_photometry(method="max")
 
+            #print(wavelengths)
+            #print(fluxes)
+
             nonzero = fluxes != 0
             wavelengths = wavelengths[nonzero]
             fluxes = fluxes[nonzero]
 
             # Calculate minlogflux here, before removing outside min and max wavelength
             logfluxes = np.log10(fluxes)
-            minlogflux = np.mean(logfluxes)
+            #minlogflux = np.mean(logfluxes)
+            maxlogflux = np.max(logfluxes)
+            minlogflux = maxlogflux - 3
 
             min_wavelength = 0.90 * self.grid_min_wavelength
             max_wavelength = 1.1 * self.grid_max_wavelength
@@ -1458,8 +1498,16 @@ class WavelengthGridPlotter(Configurable):
             #print(wavelengths)
             #print(log_fluxes)
 
+            # Get line style
+            #line_style = next(line_styles_iterator)
+            line_style = "-"
+
+            #color = "c"
+            #color = "grey"
+            color = next(colours)
+
             # Plot the SED
-            h = self.main.plot(wavelengths, log_fluxes, color='c', lw=self.sed_linewidth, label=label)
+            h = self.main.plot(wavelengths, log_fluxes, color=color, lw=self.sed_linewidth, label=label, ls=line_style, alpha=self.sed_linealpha)
             handle = h[0]
 
             # Add handle
@@ -1536,6 +1584,7 @@ class WavelengthGridPlotter(Configurable):
         legend_properties["shadow"] = False
         legend_properties["frameon"] = True
         legend_properties["facecolor"] = None
+        legend_properties["fontsize"] = "smaller"
 
         return legend_properties
 
@@ -1711,7 +1760,7 @@ class WavelengthGridPlotter(Configurable):
         """
 
         #return ['m', 'r', 'y', 'g']
-        return pretty_colors_no_yellow[-4:]
+        return pretty_colors_no_yellows[-4:]
 
     # -----------------------------------------------------------------
 

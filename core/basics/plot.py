@@ -65,6 +65,8 @@ pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow
                  "lightcoral", "crimson", "saddlebrown", "mediumslateblue", "lightslategrey", "firebrick",
                  "orange", "darkcyan", "hotpink", "indianred", "aqua"]
 
+pretty_colors_no_yellows = [x for x in pretty_colors if x != 'yellow']
+
 # -----------------------------------------------------------------
 
 mpl = "matplotlib"

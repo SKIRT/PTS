@@ -25,6 +25,8 @@ from ...core.tools import formatting as fmt
 from .models.galaxy import show_component
 from .models.galaxy import metallicities, solar_metallicity
 from ..core.mappings import Mappings
+from .models.stars import bulge_component_name, old_component_name, young_component_name, ionizing_component_name
+from .models.dust import disk_component_name
 
 # -----------------------------------------------------------------
 
@@ -384,22 +386,15 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Loop over
         for name in self.stellar_component_names:
 
-            print(name)
-
-            if name == "ionizing":
-
-                # Get the parameters
-                #metallicity = config.metallicity
-                #compactness = config.compactness
-                #pressure = config.pressure
-                #covering_factor = config.covering_factor
-                #sfr = config.sfr
+            if name == ionizing_component_name:
 
                 metallicity = self.metallicity
                 compactness = self.config.default_ionizing_compactness
                 pressure = self.config.default_ionizing_pressure
                 covering_factor = self.config.default_covering_factor
                 sfr = self.sfr_msun_per_year
+
+                #print("SFR", sfr)
 
                 # Generate Mappings template for the specified parameters
                 mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
