@@ -70,6 +70,42 @@ linedefs = [(0.1215, 0.1198, 0     , r"A$\mathrm{1}$", ("A", "1")),
 
 # -----------------------------------------------------------------
 
+def get_identifiers():
+
+    """
+    This function ...
+    :return:
+    """
+
+    ids = []
+
+    # Create the lines
+    for center, left, right, label, definition in linedefs:
+
+        if definition is None: continue
+
+        # Get ID
+        group = definition[0]
+        spec = definition[1]
+        id = (group, spec)
+        ids.append(id)
+
+    # Return the IDs
+    return ids
+
+# -----------------------------------------------------------------
+
+def get_id_strings():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return [group + spec for group, spec in get_identifiers()]
+
+# -----------------------------------------------------------------
+
 class EmissionLine(object):
 
     """

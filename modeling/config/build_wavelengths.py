@@ -7,6 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.emissionlines import get_id_strings
+
+# -----------------------------------------------------------------
+
+# Emission lines
+all_lines = get_id_strings()
+#default_lines = ["Halpha", "Hbeta", "Hgamma", "Hdelta", "A1", "A2"]
+default_lines = None # no default: means all
 
 # -----------------------------------------------------------------
 
@@ -28,6 +36,7 @@ definition.add_required("npoints", "positive_integer", "number of aimed points i
 # -----------------------------------------------------------------
 
 definition.add_flag("add_emission_lines", "add emission lines", False)
+definition.add_optional("emission_lines", "string_list", "emission lines to use for building the grid", default=default_lines, choices=all_lines)
 definition.add_optional("min_wavelength", "length_quantity", "minimum wavelength", "0.05 micron", convert_default=True)
 definition.add_optional("max_wavelength", "length_quantity", "maximum wavelength", "2000 micron", convert_default=True)
 definition.add_optional("check_filters", "filter_list", "check coverage for these filters")

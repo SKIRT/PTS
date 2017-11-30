@@ -38,17 +38,19 @@ class BruzualCharlot(object):
     This class ...
     """
 
-    def __init__(self, metallicity, age):
+    def __init__(self, metallicity, age, mass=1.):
 
         """
         The constructor ...
         :param metallicity:
         :param age:
+        :param mass:
         """
 
         # Set properties
         self.metallicity = metallicity
         self.age = age
+        self.mass = mass
 
     # -----------------------------------------------------------------
 
@@ -61,19 +63,17 @@ class BruzualCharlot(object):
         """
 
         # Create the intrinsic SED and return it
-        return create_bruzual_charlot_sed(self.metallicity, self.age)
+        return create_bruzual_charlot_sed(self.metallicity, self.age, self.mass)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def dust_mass_for_luminosity(cls, metallicity, compactness, pressure, covering_factor, luminosity, wavelength):
+    def stellar_mass_for_luminosity(cls, metallicity, age, luminosity, wavelength):
 
         """
         This function ...
         :param metallicity:
-        :param compactness:
-        :param pressure:
-        :param covering_factor:
+        :param age:
         :param luminosity:
         :param wavelength:
         :return:
@@ -218,57 +218,51 @@ def create_bruzual_charlot_sed(metallicity, age, mass=1.):
     #    dlambdav[ell] = lambdamax(ell)-lambdamin(ell);
     #}
 
-    # In micrometers
-    wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in _lambdav]
+    min_wavelength = _lambdav[0]
+    max_wavelength = _lambdav[-1]
+    #print(min_wavelength * 1e6, "micron", max_wavelength * 1e6, "micron")
 
-    dlambdas = []
-    for index in range(nlambda):
-        dlambda = lambdamax(wavelength_column, index) - lambdamin(wavelength_column, index)
-        dlambdas.append(dlambda)
+    from ...core.basics.range import RealRange
+    nwavelength_points = int(round(nlambda * 1.5))
+    wavelength_range = RealRange(min_wavelength, max_wavelength)
+    new_wavelengths = wavelength_range.log(nwavelength_points)
+
+    #dlambdas = []
+    #for index in range(nwavelength_points):
+    #    dlambda = lambdamax(wavelength_column, index) - lambdamin(wavelength_column, index)
+    #    dlambdas.append(dlambda)
+
+    from ...core.simulation.wavelengthgrid import WavelengthGrid
+    new_wavelength_grid = WavelengthGrid.from_wavelengths(new_wavelengths, unit="m")
+    #new_wavelength_grid.plot()
+    #new_wavelength_grid.plot
+
+    # WEIRD SPACING OF BRUZUAL-CHARLOT TEMPLATE WAVELENGTHS!
+    #bc_wavelength_grid = WavelengthGrid.from_wavelengths(_lambdav, unit="m")
+    #bc_wavelength_grid.plot()
+    #bc_wavelength_grid.plot_logdeltas()
+
+    # Interpolate Bruzual-Charlot j's to the new wavelength grid
+    new_jv = resample_log_log(new_wavelengths, _lambdav, jv)
+
+    # In micrometers
+    #wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in _lambdav]
+    #wavelength_column =
 
     if hasattr(mass, "unit"): mass_in_solar = mass.to("Msun").value
     else: mass_in_solar = mass
 
-    # Create luminosities
-    luminosity_column = [None] * nlambda
-    for index in range(nlambda):
-        j = jv[index]
-        dlambda = dlambdas[index]
-        lum = j * dlambda * mass_in_solar
-        luminosity_column[index] = lum
+    # Get the delta lambdas, in meter
+    deltas = new_wavelength_grid.deltas(unit="m", asarray=True)
+
+    # Create luminositites
+    luminosity_column = np.array(new_jv) * deltas * mass_in_solar
 
     # Create the SED
-    sed = SED.from_arrays(wavelength_column, luminosity_column, wavelength_unit="micron", photometry_unit="W/micron")
+    sed = SED.from_arrays(new_wavelengths, luminosity_column, wavelength_unit="m", photometry_unit="W") # ACTUALLY WHAT IS THE LUMINOSITY UNIT?
 
     # Return the SED
     return sed
-
-# -----------------------------------------------------------------
-
-def lambdamin(wavelengths, ell):
-
-    """
-    This function ...
-    :param wavelengths:
-    :param ell:
-    :return:
-    """
-
-    return wavelengths[0] if ell == 0 else math.sqrt(wavelengths[ell-1]*wavelengths[ell])
-
-# -----------------------------------------------------------------
-
-def lambdamax(wavelengths, ell):
-
-    """
-    This function ...
-    :param wavelengths:
-    :param ell:
-    :return:
-    """
-
-    Nlambda = len(wavelengths)
-    return wavelengths[-1] if ell == Nlambda - 1 else math.sqrt(wavelengths[ell]*wavelengths[ell+1])
 
 # -----------------------------------------------------------------
 
@@ -289,17 +283,8 @@ def load_bruzual_charlot_data():
     solar_luminosity = 3.846e26 * u("W")
     Lsun = solar_luminosity.to("W").value
 
-    #// Prepare the vectors for the Bruzual & Charlot library SEDs
-    #_lambdav.resize(Nlambda)
-    #_tv.resize(Nt)
-    #_Zv.resize(NZ)
-    #_jvv.resize(Nt, NZ, Nlambda)
-
     _lambdav = [None] * nlambda
     _tv = [None] * nt
-    #_zv = [None] * nz
-    #_jvv = [[None] * ]
-
     _zv = [0.0001, 0.0004, 0.004, 0.008, 0.02, 0.05]
     zcodev = ["m22", "m32", "m42", "m52", "m62", "m72"]
 
@@ -329,8 +314,6 @@ def load_bruzual_charlot_data():
             t = float(word)
             _tv[p] = t    # // age in file in yr, we want in yr
             p += 1
-
-        #print(_tv)
 
         # skip six lines...
         nlines = 0
@@ -370,12 +353,6 @@ def load_bruzual_charlot_data():
 
         p = 0
         while p < nt:
-        #for p in range(nt):
-
-            #Array& jv = _jvv(p,m);
-            #bcfile >> iNlambda;
-            #if (iNlambda != Nlambda)
-            #    throw FATALERROR("iNlambda is not equal to Nlambda");
 
             word = next(fh)
             if word == "\n": word = next(fh)
@@ -476,5 +453,97 @@ def locate_basic_impl(xv, x, n):
         else: jl = jm
 
     return jl
+
+# -----------------------------------------------------------------
+
+def locate(xv, x):
+
+    """
+    This function ...
+    :param xv:
+    :param x:
+    :return:
+    """
+
+    n = len(xv)
+    if (x == xv[-1]): return n-2
+    else: return locate_basic_impl(xv, x, n)
+
+# -----------------------------------------------------------------
+
+# This function resamples the function values \f$y_k\f$ defined on a grid \f$x_k\f$
+# (both specified as arrays of the same length) onto an new grid \f$x_l^*\f$. The result is
+# returned as an array of function values \f$y_l^*\f$ with the same length as the target
+# grid. For new grid points that fall beyond the original grid, the function value is set to
+# zero. For new grid points inside the original grid, the function value is interpolated
+# using the function specified as template argument. The interpolation functions provided by
+# this class can be passed as a template argument for this purpose. */
+def resample_log_log(xresv, xoriv, yoriv):
+
+    """
+    This function ...
+    :param xresv:
+    :param xoriv:
+    :param yoriv:
+    :return:
+    """
+
+    Nori = len(xoriv)
+    xmin = xoriv[0]
+    xmax = xoriv[Nori-1]
+    Nres = len(xresv)
+    yresv = [None] * Nres
+
+    # Loop over
+    for l in range(Nres):
+
+        x = xresv[l]
+        if abs(1.0 - x/xmin) < 1e-5: yresv[l] = yoriv[0]
+        elif abs(1.0 - x/xmax) < 1e-5: yresv[l] = yoriv[Nori-1]
+        elif x < xmin or x > xmax: yresv[l] = 0.0
+        else:
+
+            k = locate(xoriv,x)
+            yresv[l] = interpolate_log_log(x, xoriv[k], xoriv[k+1], yoriv[k], yoriv[k+1])
+
+    # Return the interpolated values
+    return yresv
+
+# -----------------------------------------------------------------
+
+def interpolate_log_log(x, x1, x2, f1, f2):
+
+    """
+    This function ...
+    :param x:
+    :param x1:
+    :param x2:
+    :param f1:
+    :param f2:
+    :return:
+    """
+
+    # Compute logarithm of coordinate values
+    x  = np.log10(x)
+    x1 = np.log10(x1)
+    x2 = np.log10(x2)
+
+    # Turn off logarithmic interpolation of function value if not all given values are positive
+    logf = f1 > 0 and f2 > 0
+
+    # Compute logarithm of function values if required
+    if (logf):
+
+        f1 = np.log10(f1)
+        f2 = np.log10(f2)
+
+    # Perform the interpolation
+    fx = f1 + ((x-x1) / (x2-x1)) * (f2-f1)
+
+    # Compute the inverse logarithm of the resulting function value if required
+    if logf: fx = pow(10,fx)
+
+    # Return the interpolated value
+    return fx
 
 # -----------------------------------------------------------------

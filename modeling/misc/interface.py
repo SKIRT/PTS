@@ -169,9 +169,10 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         builder.config.add_emission_lines = self.config.wg.add_emission_lines
         builder.config.min_wavelength = self.config.wg.range.min
         builder.config.max_wavelength = self.config.wg.range.max
-        builder.config.check_filters = self.observed_filters if check_filters else None
+        #builder.config.check_filters = self.observed_filters if check_filters else None
+        builder.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
         builder.config.npoints = self.config.wg.npoints
-        builder.config.adjust_to = self.observed_filter_wavelengths
+        builder.config.adjust_to = self.observed_filter_wavelengths_no_iras_planck #self.observed_filter_wavelengths
         builder.config.fixed = self.normalization_wavelengths
 
         # Set output path

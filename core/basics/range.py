@@ -333,16 +333,20 @@ class Range(object):
 
         # If only one point, return the arithmetic mean
         if npoints == 1:
+
             if as_list: return [0.5 * (self._min + self._max)]
             else: return np.array([0.5 * (self._min + self._max)])
 
         if fancy:
+
             span = self.max - self.min
             maxnpoints = npoints
             ticksize = best_tick(span, maxnpoints)
             fancy_min = round_to_1(self.min)
             values = np.arange(fancy_min, self.max, step=ticksize)
+
         else: values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
+
         if self.invert: values = np.flipud(values)
 
         values = sorted(list(set(values)))

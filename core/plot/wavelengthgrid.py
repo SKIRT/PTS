@@ -25,7 +25,6 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.configurable import Configurable
-from ..tools import types
 from ..tools import filesystem as fs
 from ..tools.serialization import load_list, load_dict
 from ..basics.plot import MPLFigure, BokehFigure, mpl, bokeh
@@ -35,9 +34,10 @@ from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics import containers
 from ..basics.range import RealRange, QuantityRange
-from ..basics.emissionlines import EmissionLines
+from ..basics.emissionlines import EmissionLine
 from ...magic.tools.wavelengths import find_single_wavelength_range
-from ..basics.plot import pretty_colors_no_yellows
+from ..basics.plot import dark_pretty_colors
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -107,6 +107,9 @@ class WavelengthGridPlotter(Configurable):
         # Single wavelengths
         self.wavelengths = []
 
+        # Single wavelengths to be removed from the complete grid
+        self.remove = []
+
         # Wavelength ranges
         self.wavelength_ranges = []
 
@@ -119,12 +122,19 @@ class WavelengthGridPlotter(Configurable):
 
         # Subplots
         self.main = None
+        self.complete = None
         self.delta = None
 
         # Legends of the main plot
         self.grids_legend = None
         self.filters_legend = None
         self.seds_legend = None
+
+        # The grid scatter handles
+        self.grid_handles = []
+
+        # Shared labels with their colors
+        self.shared_labels = dict()
 
     # -----------------------------------------------------------------
 
@@ -140,7 +150,8 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_wavelength_grid(self, grid, label, pointsize=15, linewidth=0.5, linealpha=0.5, color=None, in_legend=True, y_value=None, copy_grid=True):
+    def add_wavelength_grid(self, grid, label, pointsize=None, linewidth=None, linealpha=None, color=None,
+                            in_legend=True, y_value=None, copy_grid=True, shared_label=None):
 
         """
         This function ...
@@ -153,6 +164,7 @@ class WavelengthGridPlotter(Configurable):
         :param in_legend:
         :param y_value:
         :param copy_grid:
+        :param shared_label:
         :return:
         """
 
@@ -168,13 +180,15 @@ class WavelengthGridPlotter(Configurable):
         props.color = color
         props.in_legend = in_legend
         props.y_value = y_value
+        props.shared_label = shared_label
 
         # Add grid
         self.grids[label] = props
 
     # -----------------------------------------------------------------
 
-    def add_grid_from_file(self, path, label=None, pointsize=15, linewidth=0.5, linealpha=0.5, color=None, in_legend=True, y_value=None):
+    def add_grid_from_file(self, path, label=None, pointsize=None, linewidth=None, linealpha=None, color=None,
+                           in_legend=True, y_value=None, shared_label=None):
 
         """
         Thisf unction ...
@@ -186,17 +200,21 @@ class WavelengthGridPlotter(Configurable):
         :param color:
         :param in_legend:
         :param y_value:
+        :param shared_label:
         :return:
         """
 
         from ..simulation.wavelengthgrid import WavelengthGrid
         if label is None: label = fs.strip_extension(fs.name(path))
         grid = WavelengthGrid.from_file(path)
-        self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha, color=color, in_legend=in_legend, y_value=y_value, copy_grid=False)
+        self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha,
+                                 color=color, in_legend=in_legend, y_value=y_value, copy_grid=False,
+                                 shared_label=shared_label)
 
     # -----------------------------------------------------------------
 
-    def add_wavelengths(self, wavelengths, label, unit=None, pointsize=15, linewidth=0.5, linealpha=0.5, color=None, in_legend=True, y_value=None):
+    def add_wavelengths(self, wavelengths, label, unit=None, pointsize=None, linewidth=None, linealpha=None,
+                        color=None, in_legend=True, y_value=None, shared_label=None):
 
         """
         This function ...
@@ -209,12 +227,15 @@ class WavelengthGridPlotter(Configurable):
         :param color:
         :param in_legend:
         :param y_value:
+        :param shared_label:
         :return:
         """
 
         from ..simulation.wavelengthgrid import WavelengthGrid
         grid = WavelengthGrid.from_wavelengths(wavelengths, unit=unit)
-        self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha, color=color, in_legend=in_legend, y_value=y_value, copy_grid=False)
+        self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha,
+                                 color=color, in_legend=in_legend, y_value=y_value, copy_grid=False,
+                                 shared_label=shared_label)
 
     # -----------------------------------------------------------------
 
@@ -236,6 +257,19 @@ class WavelengthGridPlotter(Configurable):
 
         # Add
         self.wavelengths.append(props)
+
+    # -----------------------------------------------------------------
+
+    def remove_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        # Remove
+        self.remove.append(wavelength)
 
     # -----------------------------------------------------------------
 
@@ -357,6 +391,9 @@ class WavelengthGridPlotter(Configurable):
         # Generate subgrids
         elif self.config.create_subgrids: self.create_subgrids()
 
+        # Are there grids
+        if not self.has_grids: raise RuntimeError("No wavelength grids are added")
+
         # Add filters
         if self.config.add_filters: self.add_filters()
 
@@ -424,6 +461,120 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def main_y_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.min_y, self.max_y)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def main_y_span(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.max_y - self.min_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_y_delta(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        radius = 0.5 * self.complete_grid_logdelta_span
+        center = self.complete_grid_center_logdelta
+        min_logdelta = center - 1.1 * radius
+        return min_logdelta
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_y_delta(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        radius = 0.5 * self.complete_grid_logdelta_span
+        center = self.complete_grid_center_logdelta
+        max_logdelta = center + 1.1 * radius
+        return max_logdelta
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def delta_y_limits(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return (self.min_y_delta, self.max_y_delta)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def delta_y_span(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.max_y_delta - self.min_y_delta
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_y_complete_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_y_complete_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_y_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self.min_y_complete_grid, self.max_y_complete_grid]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def y_limits(self):
 
 
@@ -432,7 +583,8 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return [(self.min_y, self.max_y), (0, self.max_delta * 1.1)]
+        if self.config.separate_complete_grid: return [self.main_y_limits, self.complete_y_limits, self.delta_y_limits]
+        else: return [self.main_y_limits, self.delta_y_limits]
 
     # -----------------------------------------------------------------
 
@@ -449,17 +601,36 @@ class WavelengthGridPlotter(Configurable):
         # max_delta = 0.1 # was 0.05
         # max_delta = None
 
-        nplots = 2
-        height_ratios = (4, 1)
-        x_label = '$\lambda/\mu$m'
-        y_labels = [None, r"$\Delta\lambda\,(\mathrm{dex})$"]
-        x_scale = "log"
-        # y_scales =
+        if self.config.separate_complete_grid:
 
-        # Create subplots
-        self.main, self.delta = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios,
-                                                          x_label=x_label, y_labels=y_labels, x_limits=self.x_limits,
-                                                          x_scale=x_scale, y_limits=self.y_limits, x_log_scalar=True)
+            nplots = 3
+            height_ratios = (4, 0.3, 1)
+            x_label = '$\lambda/\mu$m'
+            y_labels = [None, None, r"$\Delta\lambda\,(\mathrm{dex})$"]
+            x_scale = "log"
+
+            # Create subplots
+            self.main, self.complete, self.delta = self.figure.create_column(nplots, share_axis=True,
+                                                                             height_ratios=height_ratios,
+                                                                             x_label=x_label, y_labels=y_labels,
+                                                                             x_limits=self.x_limits,
+                                                                             x_scale=x_scale, y_limits=self.y_limits,
+                                                                             x_log_scalar=True)
+
+        else:
+
+            nplots = 2
+            height_ratios = (4, 1)
+            x_label = '$\lambda/\mu$m'
+            y_labels = [None, r"$\Delta\lambda\,(\mathrm{dex})$"]
+            x_scale = "log"
+
+            # Create subplots
+            self.main, self.delta = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios,
+                                                              x_label=x_label, y_labels=y_labels,
+                                                              x_limits=self.x_limits,
+                                                              x_scale=x_scale, y_limits=self.y_limits,
+                                                              x_log_scalar=True)
 
     # -----------------------------------------------------------------
 
@@ -512,7 +683,7 @@ class WavelengthGridPlotter(Configurable):
 
             # Add wavelengths
             new = load_list(new_path)
-            self.add_wavelengths(new, label="new")
+            self.add_wavelengths(new, label="new", color="b")
 
         # Replaced?
         if fs.is_file(replaced_path):
@@ -525,6 +696,9 @@ class WavelengthGridPlotter(Configurable):
             for old, replacement in replaced:
                 self.add_wavelength(old, colour="red")
                 self.add_wavelength(replacement, colour="green")
+
+                # Remove the old wavelength from the complete grid
+                self.remove_wavelength(old)
 
         # Filter
         if fs.is_file(filter_wavelengths_path):
@@ -548,7 +722,7 @@ class WavelengthGridPlotter(Configurable):
             line_wavelengths = load_dict(line_wavelengths_path)
             for identifier in line_wavelengths:
                 wavelengths = line_wavelengths[identifier]
-                self.add_wavelengths(wavelengths, label=identifier, color="grey", in_legend=False, y_value=0.6)
+                self.add_wavelengths(wavelengths, label=identifier, color="grey", shared_label="lines", y_value=0.6)
 
     # -----------------------------------------------------------------
 
@@ -570,6 +744,7 @@ class WavelengthGridPlotter(Configurable):
 
         # Set options
         builder.config.add_emission_lines = self.config.wg.add_emission_lines
+        builder.config.emission_lines = self.config.wg.emission_lines
         builder.config.min_wavelength = self.config.wg.range.min
         builder.config.max_wavelength = self.config.wg.range.max
         builder.config.check_filters = self.config.wg.check_filters
@@ -597,6 +772,9 @@ class WavelengthGridPlotter(Configurable):
         # Grid of fixed wavelengths
         if builder.has_fixed:
 
+            # Debugging
+            log.debug("Adding fixed wavelengths ...")
+
             # Add
             fixed_grid = WavelengthGrid.from_wavelengths(builder.fixed)
             self.add_wavelength_grid(fixed_grid, label="fixed", linewidth=1., pointsize=20)
@@ -610,6 +788,7 @@ class WavelengthGridPlotter(Configurable):
             # Get
             filter_wavelengths = builder.filter_wavelengths
 
+            # Loop over the filters
             for fltr in filter_wavelengths:
 
                 wavelengths = filter_wavelengths[fltr]
@@ -629,6 +808,9 @@ class WavelengthGridPlotter(Configurable):
                 self.add_wavelength(old, colour="red")
                 self.add_wavelength(replacement, colour="green")
 
+                # Remove the old wavelength from the complete grid
+                self.remove_wavelength(old)
+
         # Get new
         if builder.has_new:
 
@@ -638,7 +820,7 @@ class WavelengthGridPlotter(Configurable):
             log.debug("Adding new wavelengths ...")
 
             # Add wavelengths
-            self.add_wavelengths(new, label="new")
+            self.add_wavelengths(new, label="new", color="b")
 
         # Get emission line wavelengths
         if builder.has_line_wavelengths:
@@ -648,12 +830,13 @@ class WavelengthGridPlotter(Configurable):
             # Debugging
             log.debug("Adding emission lines ...")
 
+            # Loop over the lines
             for identifier in line_wavelengths:
                 wavelengths = line_wavelengths[identifier]
                 if identifier[0] is None: continue
                 #print(identifier)
                 label = identifier[0] + identifier[1]
-                self.add_wavelengths(wavelengths, label=label, color="grey", in_legend=False, y_value=0.6)
+                self.add_wavelengths(wavelengths, label=label, color="grey", y_value=0.6, shared_label="lines")
 
     # -----------------------------------------------------------------
 
@@ -689,8 +872,13 @@ class WavelengthGridPlotter(Configurable):
         log.info("Adding emission lines ...")
 
         # Add
-        lines = EmissionLines()
-        for line in lines: self.add_emission_line(line)
+        for line_id in self.config.lines:
+
+            # Create line
+            line = EmissionLine.from_string(line_id)
+
+            # Add line
+            self.add_emission_line(line)
 
     # -----------------------------------------------------------------
 
@@ -765,7 +953,7 @@ class WavelengthGridPlotter(Configurable):
             log.debug("Adding '" + regime + "' wavelength regime ...")
 
             # Determine wavelength range
-            wavelength_range, string = find_single_wavelength_range(regime, return_string=True)
+            wavelength_range, string = find_single_wavelength_range(regime, return_string=True, only_subregime_string=self.config.only_subregimes)
             wavelength_range.adjust_inwards(self.grid_wavelength_range_with_unit)
             self.add_wavelength_range(wavelength_range, label=string)
 
@@ -799,6 +987,54 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nremove(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remove)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remove(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nremove > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remove_no_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [wav.to(self.config.wavelength_unit).value for wav in self.remove]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths_no_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [props.wavelength.to(self.config.wavelength_unit).value for props in self.wavelengths]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def all_grid_wavelengths(self):
 
@@ -816,11 +1052,124 @@ class WavelengthGridPlotter(Configurable):
             wavelengths = grid.wavelengths(self.config.wavelength_unit, asarray=True)
 
             # Add wavelengths
-            all_grid_wavelengths.extend(wavelengths)
+            #all_grid_wavelengths.extend(wavelengths)
+
+            # Add wavelengths but not those to remove from complete grid
+            for wavelength in wavelengths:
+
+                # NO: DON'T REMOVE HERE: CAN BE RE-ADDED IF SOME WAVELENGTHS ARE ADDED AS SINGLE WAVELENGTHS
+                # BUT THEN ALSO ADDED TO REMOVE
+                #if self.has_remove:
+                    #wavelength in self.remove_no_unit: continue
+                    #fw = sequences.find_closest_value(self.remove_no_unit, wavelength)
+                    #print(wavelength, fw)
+                    #if np.isclose(fw, wavelength): print(wavelength in self.remove_no_unit)
+                    #if wavelength in self.remove_no_unit:
+                    #    print(wavelength)
+                    #    continue
+                all_grid_wavelengths.append(wavelength)
+
+        # Add single wavelengths
+        if self.has_wavelengths:
+            # Loop over the wavelengths
+            for wavelength in self.wavelengths_no_unit: all_grid_wavelengths.append(wavelength)
+
+        # Remove wavelengths?
+        if self.has_remove:
+            remove_indices = []
+            for index in range(len(all_grid_wavelengths)):
+                wavelength = all_grid_wavelengths[index]
+                if wavelength in self.remove_no_unit: remove_indices.append(index)
+            sequences.remove_indices(all_grid_wavelengths, remove_indices)
 
         # Sort all wavelengths and create array
         all_grid_wavelengths = np.array(sorted(all_grid_wavelengths))
         return all_grid_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..simulation.wavelengthgrid import WavelengthGrid
+        return WavelengthGrid.from_wavelengths(self.all_grid_wavelengths, unit=self.config.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_deltas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.complete_grid.deltas(unit=self.config.wavelength_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_logdeltas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.complete_grid.logdeltas(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_min_logdelta(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_max_logdelta(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.complete_grid_logdeltas)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_logdelta_span(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.complete_grid_max_logdelta - self.complete_grid_min_logdelta
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def complete_grid_center_logdelta(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return 0.5 * (self.complete_grid_min_logdelta + self.complete_grid_max_logdelta)
 
     # -----------------------------------------------------------------
 
@@ -884,51 +1233,51 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def delta_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.all_grid_wavelengths[1:]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def deltas(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.log10(self.all_grid_wavelengths[1:]) - np.log10(self.all_grid_wavelengths[:-1])
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_delta(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.max(self.deltas)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_delta(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.min(self.deltas)
+    # @lazyproperty
+    # def delta_wavelengths(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.all_grid_wavelengths[1:]
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def deltas(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return np.log10(self.all_grid_wavelengths[1:]) - np.log10(self.all_grid_wavelengths[:-1])
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def max_delta(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return np.max(self.deltas)
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def min_delta(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return np.min(self.deltas)
 
     # -----------------------------------------------------------------
 
@@ -1071,6 +1420,15 @@ class WavelengthGridPlotter(Configurable):
         # Grids
         self.plot_grids()
 
+        # Plot complete grid
+        if self.config.plot_complete_grid: self.plot_complete_grid()
+
+        # Plot legend
+        self.plot_legend()
+
+        # Plot complete grid deltas
+        self.plot_deltas()
+
         # Emission lines
         if self.has_lines: self.plot_lines()
 
@@ -1106,6 +1464,18 @@ class WavelengthGridPlotter(Configurable):
         """
 
         return len(self.grids)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ngrids > 0
 
     # -----------------------------------------------------------------
 
@@ -1218,6 +1588,30 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def complete_grid_linewidth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.8
+
+    # -----------------------------------------------------------------
+
+    @property
+    def complete_grid_linealpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.8
+
+    # -----------------------------------------------------------------
+
+    @property
     def main_axes(self):
 
         """
@@ -1283,11 +1677,13 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the grids ...")
+
         # Make iterable from distinct colors
-        different_colors = iter(pretty_colors_no_yellows)
+        different_colors = iter(dark_pretty_colors)
 
-        handles = []
-
+        # Get y values iterator
         y_values = iter(self.grid_y_values)
 
         # Loop over the wavelength grids
@@ -1308,9 +1704,29 @@ class WavelengthGridPlotter(Configurable):
             color = self.grids[label].color
             in_legend = self.grids[label].in_legend
             y_value = self.grids[label].y_value
+            shared_label = self.grids[label].shared_label
+
+            # Check
+            if shared_label is not None and not in_legend: raise ValueError("in_legend is disabled but shared label is specified")
+
+            add_label = True
+            if shared_label is not None:
+                if shared_label in self.shared_labels:
+                    if color is None: color = self.shared_labels[shared_label]
+                    elif color != self.shared_labels[shared_label]: raise ValueError("Shared label but colours are not the same")
+                    add_label = False # not a new (shared) label
+                else:
+                    if color is None: color = next(different_colors)
+                    self.shared_labels[shared_label] = color
+                    add_label = True # a new (shared) label
 
             # Get next color, if needed
             if color is None: color = next(different_colors)
+
+            # Set line width and line alpha
+            if pointsize is None: pointsize = self.config.pointsize
+            if linewidth is None: linewidth = self.config.linewidth
+            if linealpha is None: linealpha = self.config.linealpha
 
             # Get next y value, if needed
             if y_value is None: y_value = next(y_values)
@@ -1319,31 +1735,86 @@ class WavelengthGridPlotter(Configurable):
             y = [y_value for _ in wavelengths]
 
             # Plot points
-            legend_label = label + " (" + str(nwavelengths) + " points)"
+            if add_label:
+                if shared_label is not None: legend_label = shared_label
+                else: legend_label = label + " (" + str(nwavelengths) + " points)"
+            else: legend_label = None
             sc = self.main.scatter(wavelengths, y, s=pointsize, marker='.', color=color, linewidths=0, label=legend_label)
 
             # Plot a vertical line for each grid point
             for w in wavelengths: self.main.vlines(w, self.min_y, self.max_y, color=color, lw=linewidth, alpha=linealpha)
 
             # Add the handle
-            if in_legend: handles.append(sc)
+            if in_legend and add_label: self.grid_handles.append(sc)
 
-        # Plot as one complete grid
-        if self.config.plot_complete_grid:
+    # -----------------------------------------------------------------
+
+    def plot_complete_grid(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the complete grid ...")
+
+        # Set legend label
+        legend_label = "all (" + str(self.all_grid_nwavelengths) + " points)"
+
+        # Plot the complete grid in a seperate subplot
+        if self.config.separate_complete_grid:
+
+            linewidth = self.complete_grid_linewidth
+            linealpha = self.complete_grid_linealpha
+
+            # Plot points
+            complete_y = [0.5 for _ in self.all_grid_wavelengths]
+            sc = self.complete.scatter(self.all_grid_wavelengths, complete_y, s=self.complete_grid_pointsize, marker='.', color=self.complete_grid_color, linewidths=0, label=legend_label)
+            self.grid_handles.append(sc)
+
+            # Add grid lines
+            for w in self.all_grid_wavelengths: self.complete.vlines(w, self.min_y_complete_grid, self.max_y_complete_grid, color=self.complete_grid_color, lw=linewidth, alpha=linealpha)
+
+        # Plot the complete grid in the main plot
+        else:
+
+            # Plot as one complete grid
             complete_y = [self.complete_grid_y_value for _ in self.all_grid_wavelengths]
-            legend_label = "all (" + str(self.all_grid_nwavelengths) + " points)"
             sc = self.main.scatter(self.all_grid_wavelengths, complete_y, s=self.complete_grid_pointsize, marker='.', color=self.complete_grid_color, linewidths=0, label=legend_label)
-            handles.append(sc)
+            self.grid_handles.append(sc)
+
+    # -----------------------------------------------------------------
+
+    def plot_legend(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Create the legend
-        labels = [handle.get_label() for handle in handles]
-        self.grids_legend = Legend(self.main_axes, handles, labels, **self.grids_legend_properties)
+        labels = [handle.get_label() for handle in self.grid_handles]
+        self.grids_legend = Legend(self.main_axes, self.grid_handles, labels, **self.grids_legend_properties)
 
         # Add the legend
         self.main_axes.add_artist(self.grids_legend)
 
+    # -----------------------------------------------------------------
+
+    def plot_deltas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the grid deltas ...")
+
         # Plot the deltas
-        self.delta.plot(self.delta_wavelengths, self.deltas, color="m", linestyle="solid", lw=self.delta_linewidth)
+        #self.delta.plot(self.delta_wavelengths, self.deltas, color="m", linestyle="solid", lw=self.delta_linewidth)
+        self.delta.plot(self.all_grid_wavelengths, self.complete_grid_logdeltas, color="m", linestyle="solid", lw=self.delta_linewidth) # (correct) log delta calculation with minimas and maximas like how SKIRT calculates them
 
     # -----------------------------------------------------------------
 
@@ -1426,7 +1897,55 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return pretty_colors_no_yellows[-4:]
+        return dark_pretty_colors[-4:]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_min_wavelength_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.9
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_max_wavelength_scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1.1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.seds_min_wavelength_scaling * self.grid_min_wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds_max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.seds_max_wavelength_scaling * self.grid_max_wavelength
 
     # -----------------------------------------------------------------
 
@@ -1455,9 +1974,6 @@ class WavelengthGridPlotter(Configurable):
             wavelengths = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
             fluxes = self.seds[label].normalized_photometry(method="max")
 
-            #print(wavelengths)
-            #print(fluxes)
-
             nonzero = fluxes != 0
             wavelengths = wavelengths[nonzero]
             fluxes = fluxes[nonzero]
@@ -1466,14 +1982,11 @@ class WavelengthGridPlotter(Configurable):
             logfluxes = np.log10(fluxes)
             #minlogflux = np.mean(logfluxes)
             maxlogflux = np.max(logfluxes)
-            minlogflux = maxlogflux - 3
-
-            min_wavelength = 0.90 * self.grid_min_wavelength
-            max_wavelength = 1.1 * self.grid_max_wavelength
+            minlogflux = maxlogflux - 3 # set zero point to be 3 magitudes lower than the maximum
 
             # Remove below min and above max
-            below_min = wavelengths < min_wavelength
-            above_max = wavelengths > max_wavelength
+            below_min = wavelengths < self.seds_min_wavelength
+            above_max = wavelengths > self.seds_max_wavelength
             outside = below_min + above_max
             not_outside = np.logical_not(outside)
             wavelengths = wavelengths[not_outside]
@@ -1484,19 +1997,10 @@ class WavelengthGridPlotter(Configurable):
             #minlogflux = np.mean(logfluxes)
             logfluxes = logfluxes - minlogflux
 
-            #below_cutoff = logfluxes < 0
-            #above_cutoff = logfluxes > 0
-
-            #wavelengths = wavelengths[above_cutoff]
-            #logfluxes = logfluxes[above_cutoff]
-
             logfluxes = logfluxes / np.max(logfluxes)
 
             log_fluxes = self.seds_min_y + logfluxes  # normalized
             #log_fluxes = logfluxes
-
-            #print(wavelengths)
-            #print(log_fluxes)
 
             # Get line style
             #line_style = next(line_styles_iterator)
@@ -1580,7 +2084,7 @@ class WavelengthGridPlotter(Configurable):
         legend_properties["loc"] = 2
         #legend_properties["numpoints"] = 4
         #legend_properties["scatterpoints"] = 4
-        legend_properties["ncol"] = 3
+        legend_properties["ncol"] = 4
         legend_properties["shadow"] = False
         legend_properties["frameon"] = True
         legend_properties["facecolor"] = None
@@ -1711,7 +2215,7 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return 1
+        return 0.9
 
     # -----------------------------------------------------------------
 
@@ -1760,7 +2264,7 @@ class WavelengthGridPlotter(Configurable):
         """
 
         #return ['m', 'r', 'y', 'g']
-        return pretty_colors_no_yellows[-4:]
+        return dark_pretty_colors[-4:]
 
     # -----------------------------------------------------------------
 
@@ -1772,7 +2276,8 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return RealRange(1.15, 1.6, inclusive=True)
+        #return RealRange(1.15, 1.6, inclusive=True)
+        return RealRange(1., 1.5, inclusive=True)
 
     # -----------------------------------------------------------------
 
@@ -1926,7 +2431,11 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return RealRange(1.8, 2.2, inclusive=True) # above emission line labels (to 1.6)
+        #return RealRange(1.8, 2.2, inclusive=True) # above emission line labels (to 1.6)
+
+        #print(self.max_y_delta)
+        if self.config.ranges_on_deltas: return RealRange(0.7 * self.max_y_delta, 0.8 * self.max_y_delta)
+        else: return RealRange(1.8, 2., inclusive=True)
 
     # -----------------------------------------------------------------
 
@@ -1938,7 +2447,7 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
-        return 3
+        return self.config.ranges_nsteps
 
     # -----------------------------------------------------------------
 
@@ -1965,6 +2474,7 @@ class WavelengthGridPlotter(Configurable):
         log.info("Plotting wavelength ranges ...")
 
         index = 0
+        label_position = self.config.ranges_label_position
 
         # Loop over the wavelength ranges
         for properties in self.wavelength_ranges:
@@ -1979,7 +2489,8 @@ class WavelengthGridPlotter(Configurable):
             y = self.ranges_y_values[index]
 
             # Plot arrow
-            self.main.horizontal_arrow(wavelength_range.min, wavelength_range.max, y)
+            if self.config.ranges_on_deltas: self.delta.horizontal_arrow(wavelength_range.min, wavelength_range.max, y)
+            else: self.main.horizontal_arrow(wavelength_range.min, wavelength_range.max, y)
 
             #average_wavelength = wavelength_range.mean
             average_wavelength = wavelength_range.geometric_mean
@@ -1988,13 +2499,30 @@ class WavelengthGridPlotter(Configurable):
 
             # Plot label
             if label is not None:
-                label_y = y + 0.05
-                t = self.main.text(average_wavelength, label_y, label, horizontalalignment='center',
-                                   fontsize='xx-small', color=color)  # backgroundcolor='w'
-                #t.set_bbox(dict(color='w', alpha=self.wavelengths_label_alpha, edgecolor='w'))
+
+                if self.config.ranges_on_deltas:
+
+                    if label_position == "above": label_y = y + 0.05 * self.delta_y_span
+                    elif label_position == "below": label_y = y - 0.15 * self.delta_y_span
+                    else: raise ValueError("Invalid label position")
+                    self.delta.text(average_wavelength, label_y, label, horizontalalignment='center', fontsize='xx-small', color=color)
+
+                else:
+
+                    if label_position == "above": label_y = y + 0.05 * self.main_y_span
+                    elif label_position == "below": label_y = y - 0.15 * self.main_y_span
+                    else: raise ValueError("Invalid label position")
+                    self.main.text(average_wavelength, label_y, label, horizontalalignment='center', fontsize='xx-small', color=color)
 
             # Increment or reset the index
             index = (index + 1) % self.ranges_nsteps
+
+            # Flip position
+            if self.config.ranges_alternate_labels:
+
+                if label_position == "above": label_position = "below"
+                elif label_position == "below": label_position = "above"
+                else: raise ValueError("Invalid label position")
 
     # -----------------------------------------------------------------
 

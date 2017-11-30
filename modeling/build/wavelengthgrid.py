@@ -19,7 +19,7 @@ from collections import OrderedDict
 from ...core.basics.log import log
 from ...core.basics.configurable import Configurable
 from ...core.tools.utils import lazyproperty
-from ...core.basics.emissionlines import EmissionLines
+from ...core.basics.emissionlines import EmissionLines, EmissionLine
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
@@ -178,7 +178,29 @@ class WavelengthGridBuilder(Configurable):
         """
 
         # Create the emission lines instance
-        if self.config.add_emission_lines: return EmissionLines()
+        if self.config.add_emission_lines:
+
+            # Line IDs are specified
+            if self.config.emission_lines is not None:
+
+                lines = []
+
+                # Loop over the line IDS
+                for line_id in self.config.emission_lines:
+
+                    # Create line
+                    line = EmissionLine.from_string(line_id)
+
+                    # Add line
+                    lines.append(line)
+
+                # Return the lines
+                return lines
+
+            # No lines are specified: take all
+            else: return EmissionLines()
+
+        # No emission lines to be used
         else: return None
 
     # -----------------------------------------------------------------

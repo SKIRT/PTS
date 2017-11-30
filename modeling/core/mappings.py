@@ -124,6 +124,24 @@ class Mappings(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def stellar_mass_for_luminosity(cls, metallicity, compactness, pressure, covering_factor, luminosity, wavelength):
+
+        """
+        This function ...
+        :param metallicity:
+        :param compactness:
+        :param pressure:
+        :param covering_factor:
+        :param luminosity:
+        :param wavelength:
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
     def luminosity_at(self, wavelength, unit="W/micron"):
 
         """

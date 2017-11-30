@@ -1327,6 +1327,20 @@ def removed(sequence, remove):
 
 # -----------------------------------------------------------------
 
+def remove_indices(sequence, indices):
+
+    """
+    This function ...
+    :param sequence:
+    :param indices:
+    :return:
+    """
+
+    for index in sorted(indices, reverse=True):
+        del sequence[index]
+
+# -----------------------------------------------------------------
+
 def find_first_in_both(seq_a, seq_b):
 
     """

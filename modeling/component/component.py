@@ -623,6 +623,43 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_filters_no_iras_planck(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the filters
+        return [fltr for fltr in self.observed_filters if fltr not in self.iras_and_planck_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_no_iras_planck(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters_no_iras_planck]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_wavelengths_no_iras_planck(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.wavelength for fltr in self.observed_filters_no_iras_planck]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def v_band_wavelength(self):
 
         """

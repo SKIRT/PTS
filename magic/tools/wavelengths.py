@@ -390,12 +390,13 @@ def find_wavelength_range(regime):
 
 # -----------------------------------------------------------------
 
-def find_single_wavelength_range(regime, return_string=False):
+def find_single_wavelength_range(regime, return_string=False, only_subregime_string=False):
 
     """
     This function ...
     :param regime:
     :param return_string:
+    :param only_subregime_string:
     :return:
     """
 
@@ -406,7 +407,8 @@ def find_single_wavelength_range(regime, return_string=False):
         string = regime
     else:
         wavelength_range = wavelength_range_for_regime(regime, subregime)
-        string = regime + "/" + subregime
+        if only_subregime_string: string = subregime
+        else: string = regime + "/" + subregime
 
     # Return the wavelength range
     if return_string: return wavelength_range, string

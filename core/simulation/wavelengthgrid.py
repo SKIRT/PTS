@@ -11,6 +11,7 @@
 
 # Import standard modules
 import numpy as np
+import math
 import copy
 
 # Import astronomical modules
@@ -63,18 +64,6 @@ class WavelengthGrid(object):
 
         # Return the new instance
         return grid
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_deltas(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "Delta" in self.table.colnames
 
     # -----------------------------------------------------------------
 
@@ -226,11 +215,12 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt_output(cls, path):
+    def from_skirt_output(cls, path, ignore_deltas=False):
 
         """
         This function ...
         :param path:
+        :param ignore_deltas:
         :return:
         """
 
@@ -243,11 +233,28 @@ class WavelengthGrid(object):
         # Set the column names and units
         table.rename_column("col1", "Wavelength")
         table.rename_column("col2", "Delta")
+
         table["Wavelength"].unit = "micron"
-        table["Delta"].unit = "micron"
+        #table["Delta"].unit = "micron"
+
+        # Get delta values
+        deltas_skirt = np.array(table["Delta"])
+
+        # Remove delta column
+        table.remove_column("Delta")
 
         # Set the table
         grid.table = table
+
+        # Compare deltas
+        deltas = grid.deltas(unit="micron", asarray=True)
+
+        # Get absolute and relative differences
+        #absdiff = abs(deltas_skirt - deltas)
+        #reldiff = absdiff / deltas
+        #print("max abs:", np.max(absdiff))
+        #print("max rel:", np.max(reldiff))
+        if not ignore_deltas and not np.all(np.isclose(deltas_skirt, deltas, atol=1e-5, rtol=1e-6)): raise IOError("The delta wavelengths are not consistent with the wavelength points. Call with ignore_deltas=True to ignore this and to use re-computed delta values.")
 
         # Return the new instance
         return grid
@@ -451,6 +458,96 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Wavelength"].unit
+
+    # -----------------------------------------------------------------
+
+    def minima(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        # Initialize a list to contain the values
+        values = []
+
+        # Check
+        if asarray and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specify the target unit")
+        if not add_unit and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specifiy the target unit and you put add_unit to False")
+
+        # Loop over the wavelengths
+        for index in range(self.nwavelengths):
+
+            # Get the value for the minimum
+            if index == 0: value = self.table["Wavelength"][0] * self.unit
+            else: value = math.sqrt(self.table["Wavelength"][index - 1] * self.table["Wavelength"][index]) * self.unit
+
+            # Convert to specified unit
+            if unit is not None: value = value.to(unit)
+
+            # Add unit?
+            if not add_unit or asarray: value = value.value
+
+            # Add
+            values.append(value)
+
+        # Return
+        if asarray: return np.array(values)
+        else: return values
+
+    # -----------------------------------------------------------------
+
+    def maxima(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        # Initialize a list to contain the values
+        values = []
+
+        # Check
+        if asarray and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specify the target unit")
+        if not add_unit and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specifiy the target unit and you put add_unit to False")
+
+        # Loop over the wavelengths
+        for index in range(self.nwavelengths):
+
+            # Get the value for the maximum
+            if index == self.nwavelengths - 1: value = self.table["Wavelength"][-1] * self.unit
+            else: value = math.sqrt(self.table["Wavelength"][index] * self.table["Wavelength"][index + 1]) * self.unit
+
+            # Convert to specified unit
+            if unit is not None: value = value.to(unit)
+
+            # Add unit?
+            if not add_unit or asarray: value = value.value
+
+            # Add
+            values.append(value)
+
+        # Return
+        if asarray: return np.array(values)
+        else: return values
+
+    # -----------------------------------------------------------------
+
     def deltas(self, unit=None, asarray=False, add_unit=True):
 
         """
@@ -461,8 +558,92 @@ class WavelengthGrid(object):
         :return:
         """
 
-        if asarray: return arrays.plain_array(self.table["Delta"], unit=unit, array_unit=self.table["Delta"].unit)
-        else: return arrays.array_as_list(self.table["Delta"], unit=unit, add_unit=add_unit, array_unit=self.table["Delta"].unit)
+        values = []
+        minima = self.minima()
+        maxima = self.maxima()
+
+        # Check
+        if asarray and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specify the target unit")
+        if not add_unit and unit is None: raise ValueError("You cannot know which units the values are going to be if you don't specifiy the target unit and you put add_unit to False")
+
+        # Loop over the wavelengths
+        for index in range(self.nwavelengths):
+
+            # Calcualte delta
+            value = maxima[index] - minima[index]
+
+            # Convert to specified unit
+            if unit is not None: value = value.to(unit)
+
+            # Add unit?
+            if not add_unit or asarray: value = value.value
+
+            # Add
+            values.append(value)
+
+        # Return
+        if asarray: return np.array(values)
+        else: return values
+
+    # -----------------------------------------------------------------
+
+    def logminima(self, unit, asarray=False):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :return:
+        """
+
+        minima = self.minima(unit=unit, asarray=True)
+        logminima = np.log10(minima)
+        if asarray: return logminima
+        else: return list(logminima)
+
+    # -----------------------------------------------------------------
+
+    def logmaxima(self, unit, asarray=False):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :return:
+        """
+
+        maxima = self.maxima(unit=unit, asarray=True)
+        logminima = np.log10(maxima)
+        if asarray: return logminima
+        else: return list(logminima)
+
+    # -----------------------------------------------------------------
+
+    def logdeltas(self, asarray=False):
+
+        """
+        Thisf unction ...
+        :param asarray:
+        :return:
+        """
+
+        values = []
+        # Unit do not matter as long as they're the same
+        logminima = self.logminima(unit=self.unit)
+        logmaxima = self.logmaxima(unit=self.unit)
+
+        # Loop over the wavelengths
+        for index in range(self.nwavelengths):
+
+            # Calculate log delta
+            value = logmaxima[index] - logminima[index]
+
+            # Add value
+            values.append(value)
+
+        # Return
+        if asarray: return np.array(values)
+        else: return values
 
     # -----------------------------------------------------------------
 
@@ -533,5 +714,160 @@ class WavelengthGrid(object):
 
         # Update the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def plot(self, min_y=0, max_y=1, y_value=0.5, unit=None, size=(10,2), color="b", marker="o", markersize=2):
+
+        """
+        This function ...
+        :param min_y:
+        :param max_y:
+        :param y_value:
+        :param unit:
+        :param size:
+        :param color:
+        :param marker:
+        :param markersize:
+        :return:
+        """
+
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=size)
+
+        if unit is None: unit = self.unit
+        wavelengths = self.wavelengths(unit=unit, asarray=True)
+        y_values = [y_value for _ in wavelengths]
+        plt.scatter(wavelengths, y_values, c=color, marker=marker, s=markersize)
+
+        # Labels
+        plt.xlabel("Wavelength (" + str(unit) + ")")
+
+        # Set limits and scaling
+        min_wavelength = 0.9 * np.min(wavelengths)
+        max_wavelength = 1.1 * np.max(wavelengths)
+        axes = plt.gca()
+        axes.set_xlim(min_wavelength, max_wavelength)
+        axes.set_ylim(min_y, max_y)
+        axes.set_xscale("log")
+
+        from ..basics.plot import ScalarFormatterForceFormat
+
+        # Set scalar formatting
+        xaxis = axes.get_xaxis()
+        xaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+
+        # Hide y axis
+        yaxis = axes.get_yaxis()
+        yaxis.set_visible(False)
+        yaxis.set_ticks([])
+
+        # Fix
+        plt.tight_layout()
+
+        # Show
+        plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_deltas(self, unit=None, color="b"):
+
+        """
+        This function ...
+        :param unit:
+        :param color:
+        :return:
+        """
+
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+
+        # Get wavelengths and deltas
+        if unit is None: unit = self.unit
+        wavelengths = self.wavelengths(unit=unit, asarray=True)
+        deltas = self.deltas(unit=unit, asarray=True)
+
+        # Plot
+        plt.plot(wavelengths, deltas, c=color)
+
+        # Labels
+        plt.ylabel("Delta wavelength (" + str(unit) + ")")
+        plt.xlabel("Wavelength (" + str(unit) + ")")
+
+        # Set limits and scaling
+        min_wavelength = 0.9 * np.min(wavelengths)
+        max_wavelength = 1.1 * np.max(wavelengths)
+        axes = plt.gca()
+        axes.set_xlim(min_wavelength, max_wavelength)
+        #axes.set_ylim(min_y, max_y)
+        axes.set_xscale("log")
+        axes.set_yscale("log")
+
+        from ..basics.plot import ScalarFormatterForceFormat
+
+        # Set scalar formatting
+        xaxis = axes.get_xaxis()
+        xaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+        yaxis = axes.get_yaxis()
+        yaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+
+        # Fix
+        plt.tight_layout()
+
+        # Show
+        plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_logdeltas(self, unit=None, color="b"):
+
+        """
+        This function ...
+        :param unit:
+        :param color:
+        :return:
+        """
+
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+
+        # Get wavelengths and log-deltas
+        if unit is None: unit = self.unit
+        wavelengths = self.wavelengths(unit=unit, asarray=True)
+        logdeltas = self.logdeltas(asarray=True)
+
+        # Plot
+        plt.plot(wavelengths, logdeltas, c=color)
+
+        # Labels
+        plt.ylabel("Log-delta wavelength (dex)")
+        plt.xlabel("Wavelength (" + str(unit) + ")")
+
+        # Set limits and scaling
+        min_wavelength = 0.9 * np.min(wavelengths)
+        max_wavelength = 1.1 * np.max(wavelengths)
+        axes = plt.gca()
+        axes.set_xlim(min_wavelength, max_wavelength)
+        # axes.set_ylim(min_y, max_y)
+        axes.set_xscale("log")
+        #axes.set_yscale("log")
+
+        from ..basics.plot import ScalarFormatterForceFormat
+
+        # Set scalar formatting
+        xaxis = axes.get_xaxis()
+        xaxis.set_major_formatter(ScalarFormatterForceFormat(useOffset=True, useMathText=True))
+
+        # Fix
+        plt.tight_layout()
+
+        # Show
+        plt.show()
+        plt.close()
 
 # -----------------------------------------------------------------
