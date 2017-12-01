@@ -7519,7 +7519,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected old stellar maps
         if not self.has_old_deprojected:
             self.old_deprojections, self.old_deprojected = self.deproject_maps(self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
-            self.set_old_deprojection_aliases()
+            #self.set_old_deprojection_aliases()
 
         # Create deprojected old stellar maps with SKIRT
         if not self.has_old_deprojected_skirt:
@@ -7622,7 +7622,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected young stellar maps
         if not self.has_young_deprojected:
             self.young_deprojections, self.young_deprojected = self.deproject_maps(self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
-            self.set_young_deprojection_aliases()
+            #self.set_young_deprojection_aliases()
 
         # Create deprojected young stellar maps with SKIRT
         if not self.has_young_deprojected_skirt:
@@ -7725,7 +7725,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deprojected ionizing stellar maps
         if not self.has_ionizing_deprojected:
             self.ionizing_deprojections, self.ionizing_deprojected = self.deproject_maps(self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
-            self.set_ionizing_deprojection_aliases()
+            #self.set_ionizing_deprojection_aliases()
 
         # Create deprojected ionizing stellar maps with SKIRT
         if not self.has_ionizing_deprojected_skirt:
@@ -7828,7 +7828,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         # Create deproejcted dust maps
         if not self.has_dust_deprojected:
             self.dust_deprojections, self.dust_deprojected = self.deproject_maps(self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path, return_deprojections=True, downsample_factor=self.config.downsample_factor)
-            self.set_dust_deprojection_aliases()
+            #self.set_dust_deprojection_aliases()
 
         # Create deprojected dust maps with SKIRT
         if not self.has_dust_deprojected_skirt:

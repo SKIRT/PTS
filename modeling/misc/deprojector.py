@@ -660,7 +660,7 @@ class Deprojector(GalaxyModelingComponent):
         ski.remove_all_instruments()
 
         # Remove the stellar system
-        ski.remove_stellar_system()
+        #ski.remove_stellar_system()
 
         # Set the number of photon packages
         ski.setpackages(0)
@@ -770,6 +770,9 @@ class Deprojector(GalaxyModelingComponent):
 
             # Set the dust grid
             ski.set_dust_grid(dust_grid)
+
+            # Add stellar component
+            ski.create_new_stellar_component(title, geometry=deprojection, luminosities=[1])
 
             # Enable writing options
             ski.enable_all_writing_options()
@@ -883,7 +886,7 @@ class Deprojector(GalaxyModelingComponent):
         log.info("Clearing ...")
 
         # Clear maps if not desired as output
-        if not self.config.writing.maps: self.clear_maps()
+        #if not self.config.writing.maps: self.clear_maps()
 
     # -----------------------------------------------------------------
 

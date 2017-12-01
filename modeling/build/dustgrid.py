@@ -20,7 +20,7 @@ from ...core.basics.log import log
 from ...core.basics.configurable import Configurable
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.launch.launcher import SKIRTLauncher
-from .construct import add_dust_component
+from .construct import add_dust_component, add_stellar_component
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
@@ -197,7 +197,7 @@ class DustGridBuilder(Configurable):
         ski.remove_all_instruments()
 
         # Remove the stellar system
-        ski.remove_stellar_system()
+        #ski.remove_stellar_system()
 
         # Set the number of photon packages
         ski.setpackages(0)
@@ -239,7 +239,7 @@ class DustGridBuilder(Configurable):
         log.info("Setting the stellar and dust components ...")
 
         # 1. Set stellar components
-        #self.set_stellar_components()
+        self.set_stellar_components()
 
         # 2. Set dust components
         self.set_dust_components()
@@ -255,6 +255,23 @@ class DustGridBuilder(Configurable):
 
         # Inform the user
         log.info("Setting the stellar components ...")
+
+        from .models.stars import titles
+
+        # Loop over the stellar components
+        for name in self.definition.stellar_component_names:
+
+            # Load the component
+            component = self.definition.get_stellar_component(name)
+
+            # Try to get the title
+            title = titles[name] if name in titles else None
+
+            # Add the stellar component
+            map_filename = add_stellar_component(self.ski, name, component, title=title)
+
+            # If map filename is defined, set path in dictionary
+            if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
 
     # -----------------------------------------------------------------
 

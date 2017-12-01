@@ -94,7 +94,7 @@ def add_new_stellar_component(ski, name, component, title=None):
     sed_properties = None
     normalization_type = None
     normalization_properties = None
-    luminosities = None
+    luminosities = [1]
 
     sed_template = None
     age = None

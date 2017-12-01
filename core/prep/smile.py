@@ -1009,7 +1009,7 @@ class SKIRTSmileSchema(object):
         root.addprevious(comment)
 
         # default_parameters_for_type
-        parameters = self.default_parameters_for_type("OligoMonteCarloSimulation", merge=True, first=["random", "units", "wavelengthGrid"])
+        parameters = self.default_parameters_for_type("OligoMonteCarloSimulation", merge=True, first=["random", "units", "instrumentSystem", "wavelengthGrid", "stellarSystem"])
         #print(parameters)
 
         # Create ski
