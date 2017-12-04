@@ -48,6 +48,15 @@ config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosit
 # 3.53e14 Lsun^FUV MAPPINGS 1 SFR
 # 7.7e34W if Lsun(FUV) is 1.425e21 W
 
+
+seba_lum_solar = 3.53e14 * u("Lsun") # Lsun as neutral luminosity density (lambda * Lambda) put into Lsun or Lsun_FUV?
+seba_lum = 7.7e34 * u("W")
+solar_fuv = 1.425e21 * u("W") # Where does this come from?
+
+log.info("seba_lum_solar: " + tostr(seba_lum_solar))
+log.info("seba_lum: " + tostr(seba_lum))
+log.info("solar_fuv: " + tostr(solar_fuv))
+
 # AB magnitude sun: 16.42
 
 #fuv = parse_filter("FUV")
@@ -148,6 +157,8 @@ config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosit
 
 # -----------------------------------------------------------------
 
+print("")
+
 sfr_scalar = config.sfr.to("Msun/yr").value
 
 #ski = get_oligochromatic_template()
@@ -164,6 +175,10 @@ sfr_scalar = config.sfr.to("Msun/yr").value
 # Perform the SKIRT simulation
 #simulation = SkirtExec().execute(ski_path, inpath=in_path, outpath=out_path)[0]
 
+# -----------------------------------------------------------------
+
+print("")
+
 fltr = config.filter
 fltr_wavelength = fltr.wavelength
 
@@ -171,7 +186,7 @@ playground = MappingsPlayground()
 
 logp = np.log10(config.pressure.to("K/cm3").value)
 
-sed = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor)
+sed_skirt = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor)
 
 #plotter = SEDPlotter()
 #plotter.config.unit = u("W", density=True)
@@ -179,9 +194,16 @@ sed = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compa
 ##plotter.add_sed(sed2, "simulation2")
 #plotter.run()
 
-lum_skirt = sed.photometry_at(fltr_wavelength, unit="W/micron")
-lum_skirt2 = sed.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
+lum_skirt = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron")
+lum_skirt2 = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
 #lum3 = sed.luminosity_for_filter(fuv)
+
+print("")
+print("2 different methods:")
+
+print("")
+print("USING SKIRT:")
+print("")
 
 log.info("Luminosity: " + tostr(lum_skirt))
 log.info("No interpolation: " + tostr(lum_skirt2))
@@ -210,5 +232,33 @@ log.info("Luminosity in solar units: " + tostr(lum_skirt_solar))
 #
 # log.info("Luminosity in neutral units [SFR = 1]: " + tostr(lum_skirt_neutral))
 # log.info("Luminosity in solar units [SFR = 1]: " + tostr(lum_skirt_solar))
+
+# -----------------------------------------------------------------
+
+print("")
+print("USING PTS:")
+print("")
+
+# Mappings SED
+mappings = Mappings(config.metallicity, config.compactness, config.pressure, config.covering_factor, sfr_scalar)
+sed = mappings.sed
+
+lum = sed.photometry_at(fltr_wavelength, unit="W/micron")
+lum2 = sed.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
+
+log.info("Luminosity: " + tostr(lum))
+log.info("No interpolation: " + tostr(lum2))
+
+# Convert to neutral
+lum_neutral = lum.to("W", density=True, wavelength=fltr_wavelength)
+lum_solar = lum.to("Lsun", density=True, wavelength=fltr_wavelength)
+
+log.info("Luminosity in neutral units: " + tostr(lum_neutral))
+log.info("Luminosity in solar units: " + tostr(lum_solar))
+
+# Luminosity for FUV (wavelength)
+#lum = mappings.luminosity_at(fuv_wavelength)
+#lum2 = mappings.luminosity_at(fuv_wavelength, interpolate=False)
+#lum3 = mappings.luminosity_for_filter(fuv)
 
 # -----------------------------------------------------------------
