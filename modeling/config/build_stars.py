@@ -12,6 +12,7 @@ import numpy as np
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.maps.selection import ComponentMapsSelection
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.decomposition.decomposition import scalelength_scaleheight_ratios, degeyter_ratio
 
 # -----------------------------------------------------------------
 
@@ -27,19 +28,6 @@ solar_metallicity = 0.02
 default_sfr = 1.
 default_fuv_attenuation = -2.5 * np.log(1./2.) # half of the light in the FUV band is attenuated
 default_ionizing_contribution = 0.3
-
-# -----------------------------------------------------------------
-
-kregel_ratio = 8.21
-degeyter_ratio = 8.26
-mosenkov_ratio = 9.06
-
-# -----------------------------------------------------------------
-
-scalelength_scaleheight_ratios = dict()
-scalelength_scaleheight_ratios[degeyter_ratio] = "De Geyter et al. (2014)"
-scalelength_scaleheight_ratios[kregel_ratio] = "Kregel et al. (2002)"
-scalelength_scaleheight_ratios[mosenkov_ratio] = "Mosenkov et al. (2015)"
 
 # -----------------------------------------------------------------
 

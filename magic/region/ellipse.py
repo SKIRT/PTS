@@ -145,6 +145,30 @@ class EllipseRegion(Region):
 
     # -----------------------------------------------------------------
 
+    @property
+    def axial_ratio(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.semiminor / self.semimajor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ellipticity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1. - self.axial_ratio
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """

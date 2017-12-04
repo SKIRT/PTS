@@ -50,6 +50,25 @@ instrument_name = "earth"
 
 # -----------------------------------------------------------------
 
+# Slightly varying values
+kregel_ratio = 8.21
+degeyter_ratio = 8.26
+mosenkov_ratio = 9.06
+
+# Values and descriptions
+scalelength_scaleheight_ratios = dict()
+scalelength_scaleheight_ratios[degeyter_ratio] = "De Geyter et al. (2014)"
+scalelength_scaleheight_ratios[kregel_ratio] = "Kregel et al. (2002)"
+scalelength_scaleheight_ratios[mosenkov_ratio] = "Mosenkov et al. (2015)"
+
+# -----------------------------------------------------------------
+
+q_kregel = 1./kregel_ratio
+q_degeyter = 1./degeyter_ratio
+q_mosenkov = 1./mosenkov_ratio
+
+# -----------------------------------------------------------------
+
 def get_logq0_mosenkov(hubble_stage):
 
     """
@@ -108,6 +127,18 @@ def ellipticity_to_axial_ratio(ellipticity):
 
 # -----------------------------------------------------------------
 
+def axial_ratio_to_ellipticity(axial_ratio):
+
+    """
+    This function ...
+    :param axial_ratio:
+    :return:
+    """
+
+    return 1. - axial_ratio
+
+# -----------------------------------------------------------------
+
 def ellipticity_to_inclination_mosenkov(ellipticity, hubble_stage):
 
     """
@@ -119,6 +150,35 @@ def ellipticity_to_inclination_mosenkov(ellipticity, hubble_stage):
 
     axial_ratio = ellipticity_to_axial_ratio(ellipticity)
     return axial_ratio_to_inclination_mosenkov(axial_ratio, hubble_stage)
+
+# -----------------------------------------------------------------
+
+def axial_ratio_to_inclination_with_intrinsic(ratio, intrinsic_ratio):
+
+    """
+    This function ...
+    :param ratio:
+    :param intrinsic_ratio:
+    :return:
+    """
+
+    # Check ratios
+    if ratio >= 1.: raise ValueError("Axial ratio must be ratio of minor axis to major axis length")
+    if intrinsic_ratio >= 1: raise ValueError("Intrinsic axial ratio must be ratio of scale height (smaller) to scale length (larger)")
+
+    # Calculate logq and logq0
+    logq = np.log10(ratio)
+    logq0 = np.log10(intrinsic_ratio)
+
+    # Calculate numerator and denominator of the formula
+    numerator = 1. - 10 ** (2. * logq)
+    denominator = 1. - 10 ** (2. * logq0)
+
+    # Calculate the inclination angle
+    sin2i = numerator / denominator
+    inclination_radians = np.arcsin(np.sqrt(sin2i))
+    inclination = Angle(inclination_radians, unit="rad")
+    return inclination.to("deg")
 
 # -----------------------------------------------------------------
 
@@ -147,12 +207,6 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # The 2D components
         self.components = None
-
-        # The position angle of the disk of the galaxy (used as the position angle of the galaxy)
-        self.disk_pa = None
-
-        # The axial ratio of the disk of the galaxy (used for the inclination angle of the galaxy plane)
-        self.disk_q = None
 
         # The bulge and disk model
         self.bulge = None
@@ -313,11 +367,53 @@ class GalaxyDecomposer(DecompositionComponent):
         # Add the models
         self.components = decomposer.components
 
-        # Set the disk position angle
-        self.disk_pa = self.components["disk"].position_angle
+    # -----------------------------------------------------------------
 
-        # Set the disk axial ratio
-        self.disk_q = self.components["disk"].axial_ratio
+    @lazyproperty
+    def disk_pa(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.components["disk"].position_angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_q(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.components["disk"].axial_ratio
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_scalelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.components["disk"].scalelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_ratio(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return 1. / self.config.scalelength_to_scaleheight
 
     # -----------------------------------------------------------------
 
@@ -329,7 +425,20 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
-        return axial_ratio_to_inclination_mosenkov(self.disk_q, self.hubble_stage)
+        #return axial_ratio_to_inclination_mosenkov(self.disk_q, self.hubble_stage)
+        return axial_ratio_to_inclination_with_intrinsic(self.disk_q, intrinsic_ratio=self.intrinsic_ratio)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_ellipticity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return axial_ratio_to_ellipticity(self.disk_q)
 
     # -----------------------------------------------------------------
 
@@ -1132,8 +1241,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Writing regions file with disk ellipse ...")
 
-        # Determine minor axis length
-        minor = (1.0 - self.galaxy_properties.ellipticity) * self.galaxy_properties.major_arcsec
+        # Determine minor axis length: NO GALAXY PROPERTIES NOT ENTIRELY CONSISTENT WITH DECOMPOSITION!!
+        #minor = (1.0 - self.galaxy_properties.ellipticity) * self.galaxy_properties.major_arcsec
+        minor = self.disk_q * self.galaxy_properties.major_arcsec
 
         # Ellipse radius
         radius = SkyStretch(self.galaxy_properties.major_arcsec, minor)

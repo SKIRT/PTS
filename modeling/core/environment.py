@@ -1719,7 +1719,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return self.galaxy_info["Hubble Type"][0]
+        return self.galaxy_info["Hubble Type"]
 
     # -----------------------------------------------------------------
 
@@ -1731,7 +1731,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return self.galaxy_info["Hubble Stage"][0]
+        return self.galaxy_info["Hubble Stage"]
 
     # -----------------------------------------------------------------
 
@@ -1789,12 +1789,12 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     @lazyproperty
     def galaxy_inclination(self):
 
-        """
-        This function ...
-        :return:
-        """
+         """
+         This function ...
+         :return:
+         """
 
-        return self.galaxy_properties.inclination
+         return self.galaxy_properties.inclination
 
     # -----------------------------------------------------------------
 
@@ -1847,6 +1847,43 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.disk_ellipse.angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_axial_ratio(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return self.disk_ellipse.axial_ratio
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_ellipticity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_ellipse.ellipticity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..decomposition.decomposition import axial_ratio_to_inclination_mosenkov
+        return axial_ratio_to_inclination_mosenkov(self.disk_axial_ratio, self.hubble_stage)
 
     # -----------------------------------------------------------------
 
