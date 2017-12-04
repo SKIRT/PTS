@@ -110,12 +110,6 @@ class S4G(Configurable):
         self.vizier = Vizier(columns=['Name', 'RAJ2000', 'DEJ2000', 'Dmean','e_Dmean', 'amaj', 'ell','[3.6]', '[4.5]', 'e_[3.6]', 'e_[4.5]', 'PA'])
         self.vizier.ROW_LIMIT = -1
 
-        # The DustPedia database
-        #self.database = DustPediaDatabase()
-
-        # The path for the S4G decomposition models
-        #self.components_2d_s4g_path = None
-
         # The galaxy properties object
         self.properties = None
 
@@ -209,9 +203,6 @@ class S4G(Configurable):
         # S4G
         self.get_s4g_properties()
 
-        #self.get_inclination()
-
-
         # To first order, cos i = b/a where a & b
         # are the observed major and minor
         # axes (assume disk is intrinsically
@@ -231,21 +222,21 @@ class S4G(Configurable):
 
         # Ellipticity (1-b/a)
 
-        b_to_a = 1. - self.properties.ellipticity
-
-        # Calculate the inclination
-        inclination_deg = 90. - math.degrees(math.acos(b_to_a))
-        inclination = Angle(inclination_deg, "deg")
-
-        # Check the inclination
-        if self.inclination is not None:
-            difference = abs(self.inclination - inclination)
-            rel_difference = difference / self.inclination
-            if rel_difference > 0.1:
-                log.warning("The inclination angle calculated based on the decomposition differs by " + str(rel_difference*100) + "% from the specified inclination")
-
-        # Set the incliantion
-        self.properties.inclination = inclination
+        # b_to_a = 1. - self.properties.ellipticity
+        #
+        # # Calculate the inclination
+        # inclination_deg = 90. - math.degrees(math.acos(b_to_a))
+        # inclination = Angle(inclination_deg, "deg")
+        #
+        # # Check the inclination
+        # if self.inclination is not None:
+        #     difference = abs(self.inclination - inclination)
+        #     rel_difference = difference / self.inclination
+        #     if rel_difference > 0.1:
+        #         log.warning("The inclination angle calculated based on the decomposition differs by " + str(rel_difference*100) + "% from the specified inclination")
+        #
+        # # Set the incliantion
+        # self.properties.inclination = inclination
 
     # -----------------------------------------------------------------
 
@@ -262,21 +253,6 @@ class S4G(Configurable):
         # Set ...
         self.ngc_name = self.properties.ngc_name
         self.ngc_name_nospaces = self.ngc_name.replace(" ", "")
-
-    # -----------------------------------------------------------------
-
-    def get_dustpedia_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Fetching galaxy info from the DustPedia database ...")
-
-        # Get the info
-        self.info = self.database.get_galaxy_info(self.ngc_name_nospaces)
 
     # -----------------------------------------------------------------
 
@@ -348,27 +324,6 @@ class S4G(Configurable):
         # absolute_magnitude_i1 = table["M3.6"][0]
         # absolute_magnitude_i2 = table["M4.5"][0]
         # stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
-
-    # -----------------------------------------------------------------
-
-    def get_inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
-
-        # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
-        radial_profiles_result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/658/1006")
-
-        distance = float(radial_profiles_result[0][0]["Dist"])
-        inclination = Angle(float(radial_profiles_result[0][0]["i"]), "deg")
-
-        # Set the inclination
-        self.properties.inclination = inclination
 
     # -----------------------------------------------------------------
 
@@ -680,34 +635,6 @@ class S4G(Configurable):
 
         # Set the disk position angle
         self.disk_pa = self.components["disk"].position_angle
-
-    # -----------------------------------------------------------------
-
-    def create_bulge_model(self):
-
-        """
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the bulge model ...")
-
-        # Create a Sersic model for the bulge
-        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.properties.inclination, self.disk_pa)
-
-    # -----------------------------------------------------------------
-
-    def create_disk_model(self):
-
-        """
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the disk model ...")
-
-        # Create an exponential disk model for the disk
-        self.disk = ExponentialDiskModel3D.from_2d(self.components["disk"], self.properties.inclination, self.disk_pa)
 
     # -----------------------------------------------------------------
 
