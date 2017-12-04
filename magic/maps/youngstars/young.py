@@ -27,7 +27,7 @@ from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
-def make_map(fuv, fuv_atttenuation, old, factor):
+def make_map(fuv, fuv_atttenuation, old, factor, dont_correct_negatives):
 
     """
     This function ...
@@ -42,14 +42,14 @@ def make_map(fuv, fuv_atttenuation, old, factor):
     fuv_attenuations = {"standard": fuv_atttenuation}
 
     # Run the map maker
-    maker.run(fuv=fuv, fuv_attenuations=fuv_attenuations, old=old, factors=factors)
+    maker.run(fuv=fuv, fuv_attenuations=fuv_attenuations, old=old, factors=factors, dont_correct_negatives=dont_correct_negatives)
 
     # Return the map
     return maker.single_map
 
 # -----------------------------------------------------------------
 
-def make_maps(fuv, fuv_attenuation, old, factors):
+def make_maps(fuv, fuv_attenuation, old, factors, dont_correct_negatives):
 
     """
     THis function ...
@@ -67,7 +67,7 @@ def make_maps(fuv, fuv_attenuation, old, factors):
     fuv_attenuations = {"standard": fuv_attenuation}
 
     # Run the map maker
-    maker.run(fuv=fuv, fuv_attenuations=fuv_attenuations, old=old, factors=factors)
+    maker.run(fuv=fuv, fuv_attenuations=fuv_attenuations, old=old, factors=factors, dont_correct_negatives=dont_correct_negatives)
 
     # Return the maps
     return maker.maps
@@ -127,6 +127,9 @@ class YoungStellarMapsMaker(Configurable):
         # The methods
         self.methods = dict()
 
+        # Optional negative pixel correction
+        self.dont_correct_negatives = None # Default
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -180,6 +183,9 @@ class YoungStellarMapsMaker(Configurable):
 
         # Get region of interest
         self.region_of_interest = kwargs.pop("region_of_interest", None)
+
+        # negative pixel correction preference
+        self.dont_correct_negatives = kwargs.pop("dont_correct_negatives", None)
 
     # -----------------------------------------------------------------
 
@@ -409,9 +415,12 @@ class YoungStellarMapsMaker(Configurable):
 
                 # Calculate the non ionizing young stars map from the FUV data
                 young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
-
                 # Interpolate negatives
-                negatives = young_stars.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
+                if self.dont_correct_negatives:
+                    negatives = None
+                else:
+                    negatives = young_stars.interpolate_negatives_if_below(min_max_in=self.region_of_interest)
+
                 young_stars.replace_negatives(0.0) # if any left
 
                 # Normalize
