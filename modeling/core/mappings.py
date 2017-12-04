@@ -178,6 +178,11 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
 
     """
     This function ...
+    :param metallicity:
+    :param pressure:
+    :param compactness:
+    :param covering_factor:
+    :param sfr:
     :return:
     """
 
@@ -273,7 +278,7 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
         jv[k] = jk
 
     wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in lambdav]
-    luminosity_column = jv * sfr
+    luminosity_column = jv * sfr * 1e-6 # 1e-6 is to go from per meter to per micron
 
     # Create the SED
     sed = SED.from_arrays(wavelength_column, luminosity_column, wavelength_unit="micron", photometry_unit="W/micron")
@@ -341,6 +346,7 @@ def load_mappings_data():
                 else:
                     _lambdav = wavelengths
 
+    # Return teh values
     return _lambdav, _Zrelv, _logCv, _logpv, j0_dict, j1_dict
 
 # -----------------------------------------------------------------

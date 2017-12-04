@@ -39,6 +39,7 @@ definition.add_positional_optional("metallicity", "positive_real", "metallicity"
 definition.add_positional_optional("compactness", "positive_real", "compactness", 6)
 definition.add_positional_optional("pressure", "quantity", "pressure", 1e12 * u("K/m3"))
 definition.add_positional_optional("covering_factor", "positive_real", "covering factor", 0.2) # fPDR
+definition.add_flag("plot", "plot the SEDs", False)
 
 # Get the arguments
 config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosity in a certain band")
@@ -284,5 +285,16 @@ log.info("Luminosity in solar units: " + tostr(lum_solar))
 #lum = mappings.luminosity_at(fuv_wavelength)
 #lum2 = mappings.luminosity_at(fuv_wavelength, interpolate=False)
 #lum3 = mappings.luminosity_for_filter(fuv)
+
+# -----------------------------------------------------------------
+
+# Plot?
+if config.plot:
+
+    plotter = SEDPlotter()
+    plotter.config.unit = u("W/micron", density=True)
+    plotter.add_sed(sed, "PTS")
+    plotter.add_sed(sed_skirt, "SKIRT")
+    plotter.run()
 
 # -----------------------------------------------------------------
