@@ -36,6 +36,10 @@ from ..basics.log import log
 lambda_symbol = "λ"
 nu_symbol = "ν"
 
+# Latex symbols
+lambda_latex_symbol = r"\lambda"
+nu_latex_symbol = r"\nu"
+
 # -----------------------------------------------------------------
 
 # LUMINOSITY: W
@@ -1645,6 +1649,56 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    @property
+    def latex_symbol(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #$F_\nu$$[Jy]$
+
+        # Spectral density
+        if self.is_spectral_density:
+
+            if self.is_neutral_density:
+
+                prefix = lambda_latex_symbol + " "
+                suffix = "_" + lambda_latex_symbol
+
+            elif self.is_frequency_density:
+
+                prefix = ""
+                suffix = "_" + nu_latex_symbol
+
+            elif self.is_wavelength_density:
+
+                prefix = ""
+                suffix = "_" + lambda_latex_symbol
+
+            else: raise RuntimeError("Something went wrong")
+
+        # Not a spectral density
+        else: prefix = suffix = ""
+
+        # Return the symbol
+        return prefix + self.base_symbol + suffix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def latex_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.latex_symbol + " [" + str(self) + "]"
+
+    # -----------------------------------------------------------------
+
     def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
                           fltr=None, pixelscale=None, brightness=False, brightness_strict=False, density_strict=False):
 
@@ -1839,7 +1893,7 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+            #print("after physical type conversion calculation:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -1905,7 +1959,7 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+            #print("after physical type conversion calculation:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -1968,7 +2022,7 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+            #print("after physical type conversion calculation:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -2035,7 +2089,7 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+            #print("after physical type conversion calculation:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -2111,7 +2165,7 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+            #print("after physical type conversion calculation:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor

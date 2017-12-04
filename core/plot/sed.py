@@ -1661,7 +1661,13 @@ class SEDPlotter(Configurable):
         #plt.setp(self.main_plot.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Add axis labels and a legend
-        self.main_plot.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
+        #self.main_plot.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
+        from ..tools.stringify import tostr
+        #unit_string = r"Log $" + self.config.unit.latex_symbol + "$$[" + tostr(self.config.unit) + "]$"
+        y_label = r"Log $" + self.config.unit.latex_string + r"$"
+        #print(y_label)
+        #print(list(y_label))
+        self.main_plot.set_ylabel(y_label, fontsize='large')
 
         # Set grid
         self.figure.set_grid(self.config.plot, which="both")
