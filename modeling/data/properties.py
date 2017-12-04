@@ -265,6 +265,42 @@ class PropertyFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
+    # BASED ON FUV/NUV!
+    # def get_inclination(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
+    #
+    #     # The Vizier querying object
+    #     vizier = Vizier()
+    #     vizier.ROW_LIMIT = -1
+    #
+    #     # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
+    #     radial_profiles_result = vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
+    #
+    #     # Catalog doesnt contain data for a lot of galaxies
+    #     # If it doesnt, use DustPedia galaxy info as a backup solution
+    #     if len(radial_profiles_result) == 0 or len(radial_profiles_result[0]) == 0:
+    #
+    #         inclination = Angle(self.info["Inclination"][0], "deg")
+    #
+    #     # We have a table and it is not empty
+    #     else:
+    #
+    #         table = radial_profiles_result[0]
+    #         # distance = float(table[0]["Dist"])
+    #         inclination = Angle(float(table[0]["i"]), "deg")
+    #
+    #     # Set the inclination
+    #     self.properties.inclination = inclination
+
+    # -----------------------------------------------------------------
+
     def get_inclination(self):
 
         """
@@ -273,29 +309,12 @@ class PropertyFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
+        log.info("Getting the estimated galaxy inlination ...")
 
-        # The Vizier querying object
-        vizier = Vizier()
-        vizier.ROW_LIMIT = -1
+        # Take the inclination from the DustPedia info (HYPERLEDA)
+        inclination = Angle(self.info["Inclination"][0], "deg")
 
-        # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
-        radial_profiles_result = vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
-
-        # Catalog doesnt contain data for a lot of galaxies
-        # If it doesnt, use DustPedia galaxy info as a backup solution
-        if len(radial_profiles_result) == 0 or len(radial_profiles_result[0]) == 0:
-
-            inclination = Angle(self.info["Inclination"][0], "deg")
-
-        # We have a table and it is not empty
-        else:
-
-            table = radial_profiles_result[0]
-            # distance = float(table[0]["Dist"])
-            inclination = Angle(float(table[0]["i"]), "deg")
-
-        # Set the inclination
+        # Set
         self.properties.inclination = inclination
 
     # -----------------------------------------------------------------

@@ -27,6 +27,7 @@ from pts.core.prep.smile import get_oligochromatic_template
 from pts.modeling.misc.playground import MappingsPlayground
 from pts.core.plot.sed import SEDPlotter
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
+from pts.core.data.sun import Sun
 
 # -----------------------------------------------------------------
 
@@ -44,18 +45,39 @@ config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosit
 
 # -----------------------------------------------------------------
 
+fltr = config.filter
+fltr_wavelength = fltr.wavelength
+
+sun = Sun()
+
+solar_neutral_density = sun.luminosity_for_wavelength(fltr_wavelength, unit="W", density=True)
+solar_wavelength_density = sun.luminosity_for_wavelength(fltr_wavelength, unit="W/micron")
+log.info("solar in neutral density: " + tostr(solar_neutral_density))
+log.info("solar in wavelength density: " + tostr(solar_wavelength_density))
+
+print("")
+
+# -----------------------------------------------------------------
+
 # Séba:
 # 3.53e14 Lsun^FUV MAPPINGS 1 SFR
 # 7.7e34W if Lsun(FUV) is 1.425e21 W
 
+# FOR FUV:
 
 seba_lum_solar = 3.53e14 * u("Lsun") # Lsun as neutral luminosity density (lambda * Lambda) put into Lsun or Lsun_FUV?
-seba_lum = 7.7e34 * u("W")
-solar_fuv = 1.425e21 * u("W") # Where does this come from?
+#seba_lum = 7.7e34 * u("W/micron") # WRONG
+#seba_solar = 1.425e21 * u("W") # Where does this come from?
+seba_solar = 1.425e21 * u("W/micron")
+# I GET 1.57e21 W/micron
 
-log.info("seba_lum_solar: " + tostr(seba_lum_solar))
-log.info("seba_lum: " + tostr(seba_lum))
-log.info("solar_fuv: " + tostr(solar_fuv))
+seba_lum = seba_lum_solar.value * seba_solar
+
+log.info("seba_lum_solar (FUV): " + tostr(seba_lum_solar))
+log.info("seba_solar (FUV): " + tostr(seba_solar))
+log.info("seba_lum (FUV): " + tostr(seba_lum))
+
+# -----------------------------------------------------------------
 
 # AB magnitude sun: 16.42
 
@@ -179,9 +201,6 @@ sfr_scalar = config.sfr.to("Msun/yr").value
 
 print("")
 
-fltr = config.filter
-fltr_wavelength = fltr.wavelength
-
 playground = MappingsPlayground()
 
 logp = np.log10(config.pressure.to("K/cm3").value)
@@ -212,8 +231,12 @@ log.info("No interpolation: " + tostr(lum_skirt2))
 lum_skirt_neutral = lum_skirt.to("W", density=True, wavelength=fltr_wavelength)
 lum_skirt_solar = lum_skirt.to("Lsun", density=True, wavelength=fltr_wavelength)
 
+print("")
 log.info("Luminosity in neutral units: " + tostr(lum_skirt_neutral))
 log.info("Luminosity in solar units: " + tostr(lum_skirt_solar))
+
+#test = lum_skirt_neutral.value * fltr_wavelength.value
+#print(test)
 
 # -----------------------------------------------------------------
 
@@ -253,6 +276,7 @@ log.info("No interpolation: " + tostr(lum2))
 lum_neutral = lum.to("W", density=True, wavelength=fltr_wavelength)
 lum_solar = lum.to("Lsun", density=True, wavelength=fltr_wavelength)
 
+print("")
 log.info("Luminosity in neutral units: " + tostr(lum_neutral))
 log.info("Luminosity in solar units: " + tostr(lum_solar))
 

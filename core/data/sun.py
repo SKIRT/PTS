@@ -206,12 +206,14 @@ class Sun(object):
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_wavelength(self, wavelength, unit="W/micron"):
+    def luminosity_for_wavelength(self, wavelength, unit="W/micron", density=False, density_strict=False):
 
         """
         This function ...
         :param wavelength: 
-        :param unit: 
+        :param unit:
+        :param density:
+        :param density_strict:
         :return: 
         """
 
@@ -222,16 +224,18 @@ class Sun(object):
         value = interpolated(wavelength.to("micron").value) * u("W/micron")
 
         # Return the spectral luminosity
-        return value.to(unit, wavelength=wavelength) #, equivalencies=spectral()) # using equivalencies invokes an error because astropy sees conversion between W/micron and W/Hz, which it sees as an ENERGY
+        return value.to(unit, wavelength=wavelength, density=density, density_strict=density_strict) #, equivalencies=spectral()) # using equivalencies invokes an error because astropy sees conversion between W/micron and W/Hz, which it sees as an ENERGY
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_filter(self, fltr, unit="W/micron"):
+    def luminosity_for_filter(self, fltr, unit="W/micron", density=False, density_strict=False):
 
         """
         This function ...
         :param fltr:
         :param unit:
+        :param density:
+        :param density_strict:
         :return:
         """
 
@@ -240,15 +244,17 @@ class Sun(object):
         luminosity = luminosity * u("W/micron")
 
         # Return the spectral luminosity
-        return luminosity.to(unit, wavelength=fltr.wavelength) #, equivalencies=spectral()) # using equivalencies invokes an error because astropy sees conversion between W/micron and W/Hz, which it sees as an ENERGY
+        return luminosity.to(unit, wavelength=fltr.wavelength, density=density, density_strict=density_strict) #, equivalencies=spectral()) # using equivalencies invokes an error because astropy sees conversion between W/micron and W/Hz, which it sees as an ENERGY
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_filter_as_unit(self, fltr):
+    def luminosity_for_filter_as_unit(self, fltr, density=False, density_strict=False):
 
         """
         This function ...
         :param fltr:
+        :param density:
+        :param density_strict:
         :return:
         """
 
@@ -257,6 +263,6 @@ class Sun(object):
 
         # Create and return the new unit
         from astropy.units import Unit
-        return Unit(unit_name, represents=self.luminosity_for_filter(fltr))
+        return Unit(unit_name, represents=self.luminosity_for_filter(fltr, density=density, density_strict=density_strict))
 
 # -----------------------------------------------------------------

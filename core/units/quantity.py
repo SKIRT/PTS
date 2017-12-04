@@ -319,6 +319,9 @@ class PhotometricQuantity(Quantity):
         # Get properties
         unit = args[0]
         density = kwargs.pop("density", False)
+        density_strict = kwargs.pop("density_strict", False)
+        brightness = kwargs.pop("brightness", False)
+        brightness_strict = kwargs.pop("brightness_strict", False)
         wavelength = kwargs.pop("wavelength", None)
         frequency = kwargs.pop("frequency", None)
         distance = kwargs.pop("distance", None)
@@ -338,15 +341,11 @@ class PhotometricQuantity(Quantity):
         # Import
         from .unit import PhotometricUnit
 
-        #print(unit)
-
         # Parse the new photometric unit
-        unit = PhotometricUnit(unit, density=density)
-
-        #print(unit)
+        unit = PhotometricUnit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Determine conversion factor
-        factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
+        factor = self.unit.conversion_factor(unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
 
         # Return new quantity
         return PhotometricQuantity(self.value * factor, unit)
