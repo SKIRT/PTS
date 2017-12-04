@@ -281,6 +281,10 @@ def clean_unit_string(string):
 
     if "[" in string and "]" in string: string = string.split("[")[0]
 
+    # Remove hash words (#density and #brightness)
+    from ..tools import strings
+    string = strings.remove_hash_words(string)
+
     for key in input_replacements:
         string = string.replace(key, input_replacements[key])
     if string.count("(") == 1 and string.count(")") == 1 and string.startswith("(") and string.endswith(")"): string = string[1:-1]

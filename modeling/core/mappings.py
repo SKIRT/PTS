@@ -142,16 +142,17 @@ class Mappings(object):
 
     # -----------------------------------------------------------------
 
-    def luminosity_at(self, wavelength, unit="W/micron"):
+    def luminosity_at(self, wavelength, unit="W/micron", interpolate=True):
 
         """
         This function ...
         :param wavelength:
         :param unit:
+        :param interpolate:
         :return:
         """
 
-        return self.sed.photometry_at(wavelength).to(unit)
+        return self.sed.photometry_at(wavelength, interpolate=interpolate).to(unit)
 
     # -----------------------------------------------------------------
 

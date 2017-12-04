@@ -76,6 +76,14 @@ all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustp
 # -----------------------------------------------------------------
 
 all_cigale_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/cigale/dustpedia_cigale_results_v5.dat"
+cigale_results_filename = fs.name(all_cigale_results_url)
+
+# -----------------------------------------------------------------
+
+# The path to the PTS kernels directory
+if not fs.is_directory(introspection.pts_ext_dir): fs.create_directory(introspection.pts_ext_dir)
+dustpedia_path = fs.join(introspection.pts_ext_dir, "dustpedia")
+if not fs.is_directory(dustpedia_path): fs.create_directory(dustpedia_path)
 
 # -----------------------------------------------------------------
 
@@ -126,8 +134,13 @@ def get_cigale_parameters(galaxy_name):
     username, password = get_account()
 
     database = DustPediaDatabase()
-    database.login(username, password)
 
+    # Log-in
+    try: database.login(username, password)
+    except requests.ConnectionError:
+        log.warning("The database in unavailable. Check your network connection.")
+
+    # Still try to get the parameters
     return database.get_cigale_parameters(galaxy_name)
 
 # -----------------------------------------------------------------
@@ -230,11 +243,14 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        # Inform the user
-        log.info("Logging out from the DustPedia database ...")
-
         # Disconnect
-        if self.connected: self.session.close()
+        if self.connected:
+
+            # Inform the user
+            log.info("Logging out from the DustPedia database ...")
+
+            # Close the session
+            self.session.close()
 
     # -----------------------------------------------------------------
 
@@ -1521,7 +1537,10 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        filepath = self.download_cigale_table(self.temp_path)
+        filepath = fs.join(dustpedia_path, cigale_results_filename)
+        if not fs.is_file(filepath): filepath = self.download_cigale_table(dustpedia_path)
+
+        # Load the table and return it
         return tables.from_file(filepath, format="ascii")
 
     # -----------------------------------------------------------------

@@ -1271,3 +1271,15 @@ def alphabetize(strings, index=0, splitted_index=None, split_at=" ", include_all
     return result
 
 # -----------------------------------------------------------------
+
+def remove_hash_words(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return " ".join(filter(lambda x: x[0] != '#', string.split()))
+
+# -----------------------------------------------------------------

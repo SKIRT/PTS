@@ -203,6 +203,10 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
                         # Add equivalencies
                         if equivalencies is not None: conversion_info["equivalencies"] = equivalencies
 
+                        #print(value, value.physical_type)
+                        #print(unit, unit.physical_type)
+                        #print(conversion_info)
+
                         # If a target unit is specified, convert
                         value = value.to(unit, **conversion_info).value * unit  # If converted, do not add any unit
 
@@ -226,7 +230,8 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
 
 # -----------------------------------------------------------------
 
-def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False, equivalencies=None, mask=None):
+def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False,
+                equivalencies=None, mask=None):
 
     """
     This function ...

@@ -1051,22 +1051,8 @@ class WavelengthGridPlotter(Configurable):
             grid = self.grids[label].grid
             wavelengths = grid.wavelengths(self.config.wavelength_unit, asarray=True)
 
-            # Add wavelengths
-            #all_grid_wavelengths.extend(wavelengths)
-
             # Add wavelengths but not those to remove from complete grid
             for wavelength in wavelengths:
-
-                # NO: DON'T REMOVE HERE: CAN BE RE-ADDED IF SOME WAVELENGTHS ARE ADDED AS SINGLE WAVELENGTHS
-                # BUT THEN ALSO ADDED TO REMOVE
-                #if self.has_remove:
-                    #wavelength in self.remove_no_unit: continue
-                    #fw = sequences.find_closest_value(self.remove_no_unit, wavelength)
-                    #print(wavelength, fw)
-                    #if np.isclose(fw, wavelength): print(wavelength in self.remove_no_unit)
-                    #if wavelength in self.remove_no_unit:
-                    #    print(wavelength)
-                    #    continue
                 all_grid_wavelengths.append(wavelength)
 
         # Add single wavelengths
@@ -1075,6 +1061,7 @@ class WavelengthGridPlotter(Configurable):
             for wavelength in self.wavelengths_no_unit: all_grid_wavelengths.append(wavelength)
 
         # Remove wavelengths?
+        # SOME WAVELENGTHS IN SELF.WAVELENGTHS CAN ALSO BE ADDED TO REMOVE
         if self.has_remove:
             remove_indices = []
             for index in range(len(all_grid_wavelengths)):

@@ -441,6 +441,21 @@ def has_not_none(lst):
 
 # -----------------------------------------------------------------
 
+def has_other(seq, test):
+
+    """
+    This function ...
+    :param seq:
+    :param test:
+    :return:
+    """
+
+    for item in seq:
+        if item not in test: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def equal_sizes(*lsts):
 
     """

@@ -161,7 +161,8 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False, min_wavelength=None, max_wavelength=None):
+    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False,
+                   min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
@@ -181,7 +182,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True):
 
         """
         This function ...
@@ -190,10 +191,11 @@ class SED(WavelengthCurve):
         :param add_unit:
         :param density:
         :param brightness:
+        :param interpolate:
         :return:
         """
 
-        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, interpolate=interpolate)
 
     # -----------------------------------------------------------------
 
@@ -261,7 +263,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_arrays(cls, wavelengths, photometry, wavelength_unit, photometry_unit, density=False, brightness=False):
+    def from_arrays(cls, wavelengths, photometry, wavelength_unit, photometry_unit, density=False, brightness=False, distance=None):
 
         """
         This function ...
@@ -271,6 +273,7 @@ class SED(WavelengthCurve):
         :param photometry_unit:
         :param density:
         :param brightness:
+        :param distance:
         :return:
         """
 
@@ -278,7 +281,7 @@ class SED(WavelengthCurve):
         photometry_unit = PhotometricUnit(photometry_unit, density=density, brightness=brightness)
 
         # Create new SED
-        sed = cls(photometry_unit=photometry_unit, density=density, brightness=brightness)
+        sed = cls(photometry_unit=photometry_unit, density=density, brightness=brightness, distance=distance)
 
         # Parse units
         wavelength_unit = u(wavelength_unit)
@@ -300,7 +303,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt(cls, path, skiprows=0, contribution="total", unit=None, remote=None):
+    def from_skirt(cls, path, skiprows=0, contribution="total", unit=None, remote=None, distance=None):
 
         """
         This function ...
@@ -309,6 +312,7 @@ class SED(WavelengthCurve):
         :param contribution:
         :param unit: define the unit for the photometry for the SED
         :param remote:
+        :param distance:
         :return:
         """
 
@@ -361,7 +365,7 @@ class SED(WavelengthCurve):
         if unit is None: unit = photometry_unit
 
         # Create a new SED
-        sed = cls(photometry_unit=unit)
+        sed = cls(photometry_unit=unit, distance=distance)
 
         # Add the entries
         for index in range(len(wavelength_column)):

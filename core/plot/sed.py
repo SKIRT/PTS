@@ -672,7 +672,14 @@ class SEDPlotter(Configurable):
         log.debug("Plotting only model SEDs ...")
 
         # Setup the figure
-        self.main_plot = self.figure.ax
+        #self.main_plot = self.figure.ax
+
+        #plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+        #self.main_plot = plots[0]
+        #self.residual_plots = plots[1:]
+
+        # Create the main plot
+        self.main_plot = self.figure.create_one_plot()
 
         # Add model SEDs
 
@@ -682,6 +689,7 @@ class SEDPlotter(Configurable):
         line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
         line_styles_models_no_residuals = ["-"] * len(self.models)
 
+        # Loop over the model SEDs
         for model_label, sed, plot_residuals, ghost in self.models:
 
             if ghost:
@@ -694,6 +702,9 @@ class SEDPlotter(Configurable):
                 self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey")
 
             elif plot_residuals:
+
+                #print(self.config.unit.density)
+                #print(sed.unit)
 
                 # Get fluxes, wavelengths and errors
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False)

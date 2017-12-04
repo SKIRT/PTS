@@ -211,6 +211,102 @@ class PhotometricQuantity(Quantity):
 
     # -----------------------------------------------------------------
 
+    @property
+    def density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_density_type(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.unit.spectral_density_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_spectral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_spectral_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_bolometric(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return self.unit.is_bolometric
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_wavelength_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_wavelength_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_frequency_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_frequency_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_neutral_density(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return self.unit.is_neutral_density
+
+    # -----------------------------------------------------------------
+
     def to(self, *args, **kwargs):
 
         """

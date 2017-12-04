@@ -26,7 +26,7 @@ from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
-dat_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
+dat_ski_path = introspection.pts_modeling_ski_templates_path()
 
 # -----------------------------------------------------------------
 

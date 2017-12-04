@@ -161,6 +161,7 @@ class PhotometricUnit(CompositeUnit):
             else:
                 if not self.brightness and brightness: log.warning("brightness flag has been enabled, but photometric unit passed has brightness = False")
 
+            # Set properties
             self.scale_factor = unit.scale_factor
             self.base_unit = unit.base_unit
             self.wavelength_unit = unit.wavelength_unit
@@ -169,17 +170,56 @@ class PhotometricUnit(CompositeUnit):
             self.extent_unit = unit.extent_unit
             self.solid_angle_unit = unit.solid_angle_unit
 
+        # Make a unit from a photometric quantity
+        elif isinstance(unit, PhotometricQuantity):
+
+            # For more understandable notation
+            quantity = unit
+
+            # Set flags
+            self.density = quantity.density
+            self.brightness = quantity.brightness
+
+            # Check density and brightness flag with what was passed
+            if density_strict:
+                if self.density and not density: raise ValueError("Unit passed was spectral density but density=False and density_strict=True")
+                if not self.density and density: raise ValueError("Unit passed was not spectral density but density")
+            else:
+                if not self.density and density: log.warning("density flag has been enabled, but photometric unit passed has density = False")
+            if brightness_strict:
+                if self.brightness and not brightness: raise ValueError("Unit passed was brightness but brightness=False and brightness_strict=True")
+                if not self.brightness and brightness: raise ValueError("Unit passed was not brightness but brightness=True and brightness_strict=True")
+            else:
+                if not self.brightness and brightness: log.warning("brightness flag has been enabled, but photometric unit passed has brightness = False")
+
+            # Take into account the quantity's value!
+            self.scale_factor = quantity.unit.scale_factor * quantity.value
+            self.base_unit = quantity.unit.base_unit
+            self.wavelength_unit = quantity.unit.wavelength_unit
+            self.frequency_unit = quantity.unit.frequency_unit
+            self.distance_unit = quantity.unit.distance_unit
+            self.extent_unit = quantity.unit.extent_unit
+            self.solid_angle_unit = quantity.unit.solid_angle_unit
+
+            # For astropy's constructor
+            #unit = unit * quantity.value
+            # Create composite unit
+            unit = CompositeUnit(quantity.unit.scale * quantity.value, quantity.unit.bases, quantity.unit.powers)
+
         # Regular unit
         else:
 
             # Clean unit string
+            original_string = None
             if types.is_string_type(unit):
                 physical_type = get_physical_type(unit)
+                original_string = unit
                 unit = clean_unit_string(unit)
             else: physical_type = None
 
             # Check whether physical type string is compatible with function arguments
             if physical_type is not None:
+
                 found_density, found_brightness = interpret_physical_type(physical_type)
                 if density_strict:
                     if found_density and not density: raise ValueError("Unit string passed indicated a spectral density but density=False and density_strict=True")
@@ -192,6 +232,24 @@ class PhotometricUnit(CompositeUnit):
                 brightness = found_brightness
                 density_strict = True
                 brightness_strict = True
+
+            elif original_string is not None:
+
+                if "#density" in original_string: found_density = True
+                else: found_density = False
+                if "#brightness" in original_string: found_brightness = True
+                else: found_brightness = False
+
+                if density_strict:
+                    if found_density and not density: raise ValueError("Unit string passed indicated a spectral density but density=False and density_strict=True")
+                if brightness_strict:
+                    if found_brightness and not brightness: raise ValueError("Unit string passed indicated a surface brightness but brightness=False and brightness_strict=True")
+                if found_density:
+                    density = True
+                    density_strict = True
+                if found_brightness:
+                    brightness = True
+                    brightness_strict = True
 
             # Parse the unit
             try: unit = Unit(unit)
@@ -1721,7 +1779,7 @@ class PhotometricUnit(CompositeUnit):
             else: new_unit = self.copy()
 
         #print(self, self.physical_type, self.base_physical_type)
-        #print(new_unit, new_unit.physical_type, new_unit.base_physical_type)
+        #print("after spectral conversion calculation:", new_unit, new_unit.physical_type)
 
         # Same base type
         if self.base_physical_type == to_unit.base_physical_type:
@@ -1781,6 +1839,8 @@ class PhotometricUnit(CompositeUnit):
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
+            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
+
             # Return the conversion factor
             return factor
 
@@ -1794,6 +1854,8 @@ class PhotometricUnit(CompositeUnit):
 
                 # Multiply by 4 pi distance**2
                 new_unit *= (4.0 * math.pi * distance ** 2)
+
+                #print("NEW UNIT", new_unit, new_unit.physical_type)
 
                 # Determine factor
                 factor = new_unit.to(to_unit).value
@@ -1842,6 +1904,8 @@ class PhotometricUnit(CompositeUnit):
 
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
+
+            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -1903,6 +1967,8 @@ class PhotometricUnit(CompositeUnit):
 
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
+
+            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -1968,6 +2034,8 @@ class PhotometricUnit(CompositeUnit):
 
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
+
+            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -2042,6 +2110,8 @@ class PhotometricUnit(CompositeUnit):
 
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
+
+            #print("after physical type conversion calcualtion:", new_unit, new_unit.physical_type)
 
             # Return the conversion factor
             return factor
@@ -2329,6 +2399,11 @@ def photometric_unit_from_multiply_unit_and_quantity(unit, quantity):
     :param quantity:
     :return:
     """
+
+    #print(unit, unit.physical_type)
+    #print(quantity)
+    #result = unit * quantity
+    #print("RESULT", result, type(result), result.physical_type)
 
     return PhotometricUnit(unit * quantity)
 

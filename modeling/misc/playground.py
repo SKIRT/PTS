@@ -20,9 +20,10 @@ import matplotlib.pyplot as plt
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.simulation.execute import SkirtExec
-from ...core.simulation.simulation import SkirtSimulation
 from ...core.data.sed import SED
 from ...core.prep.templates import get_oneparticle_template
+from ...core.basics.log import log
+from ...core.units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -229,6 +230,10 @@ class MappingsPlayground(object):
         :return:
         """
 
+        # Log debug
+        log.info("Simulating SED in temporary directory '" + self.temp_path + "' ...")
+
+        # Parameter string
         parameter_string = "SFR{} Z{} logC{} logP{} fPDR{}".format(sfr, met/Zsun, logc, logp, fpdr)
 
         # Create a directory within the temporary directory
@@ -257,14 +262,21 @@ class MappingsPlayground(object):
 
         # Load the fluxes, convert them to luminosities in erg/s
         sedpath = simulation.seddatpaths()[0]
-        lambdav, fv = np.loadtxt(sedpath, usecols=(0, 1), unpack=True)
-        lambdav = simulation.convert(lambdav, to_unit='micron', quantity='wavelength')
-        lambdaLlambdav = simulation.luminosityforflux(fv, simulation.instrumentdistance(unit='m'), distance_unit='m',
-                                                      luminositydensity_unit='W/micron',
-                                                      wavelength=lambdav) * lambdav * 1e7
 
-        # Create the SED
-        sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s")
+        # Get distance
+        distance = simulation.instrumentdistance(unit='m') * u("m")
+
+        # lambdav, fv = np.loadtxt(sedpath, usecols=(0, 1), unpack=True)
+        # lambdav = simulation.convert(lambdav, to_unit='micron', quantity='wavelength')
+        # lambdaLlambdav = simulation.luminosityforflux(fv, simulation.instrumentdistance(unit='m'), distance_unit='m',
+        #                                               luminositydensity_unit='W/micron',
+        #                                               wavelength=lambdav) * lambdav * 1e7
+        #
+        # # Create the SED
+        # sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s", density=True, distance=distance)
+
+        # Simpler
+        sed = SED.from_skirt(sedpath, distance=distance)
 
         # Return the SED
         return sed

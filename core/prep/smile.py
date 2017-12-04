@@ -92,6 +92,42 @@ expected_types["dustGrid"] = "DustGrid"
 
 # -----------------------------------------------------------------
 
+def get_oligochromatic_template():
+
+    """
+    Thisn function ...
+    :return:
+    """
+
+    # Create SMILE schema
+    smile = SKIRTSmileSchema()
+
+    # Create
+    ski = smile.create_oligochromatic_template()
+
+    # Return the ski file
+    return ski
+
+# -----------------------------------------------------------------
+
+def get_panchromatic_template():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create SMILE schema
+    smile = SKIRTSmileSchema()
+
+    # Create
+    ski = smile.create_panchromatic_template()
+
+    # Return the ski file
+    return ski
+
+# -----------------------------------------------------------------
+
 class SKIRTSmileSchema(object):
 
     """

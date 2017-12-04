@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-from scipy import interpolate
+from scipy.interpolate import interp1d
 
 # Import astronomical modules
 from astropy.units import spectral
@@ -250,6 +250,12 @@ class WavelengthCurve(Curve):
             kwargs["x_description"] = x_description
             kwargs["y_description"] = y_description
 
+            # Set distance
+            self.distance = kwargs.pop("distance", None)
+
+        # From astropy call ...
+        else: self.distance = None
+
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)
 
@@ -268,6 +274,7 @@ class WavelengthCurve(Curve):
         # Set conversion info
         conversion_info_value = dict()
         conversion_info_value["wavelength"] = wavelength
+        if self.distance is not None: conversion_info_value["distance"] = self.distance
         conversion_info = {self.value_name: conversion_info_value}
 
         # Add the point, passing the conversion info
@@ -354,10 +361,9 @@ class WavelengthCurve(Curve):
             # Create conversion info
             if conversion_info is None: conversion_info = dict()
             conversion_info["wavelength"] = self.wavelength_for_index(index)
-            #print(value)
-            #print(type(value))
-            #print(value.unit)
-            #print(type(value.unit))
+            if self.distance is not None: conversion_info["distance"] = self.distance
+
+            # Create converted value
             value = value.to(unit, **conversion_info)
 
         # Remove unit if requested
@@ -368,7 +374,7 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
+    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True, conversion_info=None):
 
         """
         This function ...
@@ -377,16 +383,29 @@ class WavelengthCurve(Curve):
         :param add_unit:
         :param density:
         :param brightness:
+        :param interpolate:
+        :param conversion_info:
         :return:
         """
 
-        interpolated = interpolate.interp1d(self.wavelengths(unit="micron", asarray=True), self.values(self.unit, asarray=True), kind='linear')
-        value = interpolated(wavelength.to("micron").value) * self.unit
+        if interpolate:
+            interpolated = interp1d(self.wavelengths(unit="micron", asarray=True), self.values(self.unit, asarray=True), kind='linear')
+            value = interpolated(wavelength.to("micron").value) * self.unit
+        else:
+            from ..tools import sequences
+            index = sequences.find_closest_index(self.wavelengths(unit="micron", add_unit=False), wavelength.to("micron").value)
+            value = self[self.value_name][index] * self.unit
 
         # Convert unit if necessary
         if unit is not None:
+
+            # Create conversion info
+            if conversion_info is None: conversion_info = dict()
+            conversion_info["wavelength"] = wavelength
+            if self.distance is not None: conversion_info["distance"] = self.distance
+
             unit = u(unit, density=density, brightness=brightness)
-            value = value.to(unit, wavelength=wavelength)
+            value = value.to(unit, **conversion_info)
 
         # Remove unit if requested
         if not add_unit: value = value.value
@@ -496,7 +515,8 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False, min_wavelength=None, max_wavelength=None):
+    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False,
+               min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
@@ -518,6 +538,7 @@ class WavelengthCurve(Curve):
         # Create conversion info
         if conversion_info is None: conversion_info = dict()
         conversion_info["wavelengths"] = self.wavelengths()
+        if self.distance is not None: conversion_info["distance"] = self.distance
 
         # Create and return
         if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name),

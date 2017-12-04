@@ -25,8 +25,10 @@ from ...core.tools import formatting as fmt
 from .models.galaxy import show_component
 from .models.galaxy import metallicities, solar_metallicity
 from ..core.mappings import Mappings
-from .models.stars import bulge_component_name, old_component_name, young_component_name, ionizing_component_name
-from .models.dust import disk_component_name
+from .models.stars import bulge_component_name, old_component_name, young_component_name, ionizing_component_name, basic_stellar_component_names
+from .models.dust import disk_component_name, basic_dust_component_names
+from ...core.tools import sequences
+from ...magic.tools import extinction
 
 # -----------------------------------------------------------------
 
@@ -373,6 +375,66 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return bulge_component_name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return old_component_name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return young_component_name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        return ionizing_component_name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.has_other(self.stellar_component_names, basic_stellar_component_names)
+
+    # -----------------------------------------------------------------
+
     def adapt_stellar(self):
 
         """
@@ -383,37 +445,138 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting stellar components ...")
 
-        # Loop over
-        for name in self.stellar_component_names:
+        # Bulge
+        if self.has_bulge: self.adapt_bulge()
 
-            if name == ionizing_component_name:
+        # Old
+        if self.has_old: self.adapt_old()
 
-                metallicity = self.metallicity
-                compactness = self.config.default_ionizing_compactness
-                pressure = self.config.default_ionizing_pressure
-                covering_factor = self.config.default_covering_factor
-                sfr = self.sfr_msun_per_year
+        # Young
+        if self.has_young: self.adapt_young()
 
-                #print("SFR", sfr)
+        # Ionizing
+        if self.has_ionizing: self.adapt_ionizing()
 
-                # Generate Mappings template for the specified parameters
-                mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
-                # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
+        # Extra
+        if self.has_extra_stellar: self.adapt_extra_stellar()
 
-                # Get the spectral luminosity at the FUV wavelength
-                luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
+    # -----------------------------------------------------------------
 
-                print(luminosity)
+    def adapt_bulge(self):
 
-                # Set the luminosity
-                #config.filter = str(self.fuv_filter)
-                #config.luminosity = luminosity
+        """
+        This function ...
+        :return:
+        """
 
-                # Set title
-                #config.title = titles[ionizing_component_name]
+    # -----------------------------------------------------------------
 
-                # Set the parameters
-                #self.parameters[ionizing_component_name] = config
+    def adapt_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def adapt_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting the young stellar component ...")
+
+        fuv_attenuation = self.fuv_attenuation
+
+        fuv_ionizing_contribution = 0.3
+        factor = extinction.observed_to_intrinsic_factor(fuv_attenuation)
+        unattenuated_fuv_flux = self.observed_flux(self.fuv_filter, unit="Jy") * factor
+
+        unattenuated_fuv_flux_young_stars = fuv_ionizing_contribution * unattenuated_fuv_flux
+
+        # Get the FUV flux density
+        fluxdensity = unattenuated_fuv_flux_young_stars
+
+    # -----------------------------------------------------------------
+
+    def adapt_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting the ionizing stellar component ...")
+
+        metallicity = self.metallicity
+        compactness = self.config.default_ionizing_compactness
+        pressure = self.config.default_ionizing_pressure
+        covering_factor = self.config.default_covering_factor
+        sfr = self.sfr_msun_per_year
+
+        print("SFR", sfr)
+
+        # Generate Mappings template for the specified parameters
+        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
+        # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
+
+        # Get the spectral luminosity at the FUV wavelength
+        luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
+
+        print(luminosity)
+
+        print(luminosity.to("W", density=True, wavelength=self.fuv_filter.pivot))
+
+        # Set the luminosity
+        #config.filter = str(self.fuv_filter)
+        #config.luminosity = luminosity
+
+        # Set title
+        #config.title = titles[ionizing_component_name]
+
+        # Set the parameters
+        #self.parameters[ionizing_component_name] = config
+
+    # -----------------------------------------------------------------
+
+    def adapt_extra_stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting extra stellar components ...")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return disk_component_name in self.dust_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.has_other(self.dust_component_names, basic_dust_component_names)
 
     # -----------------------------------------------------------------
 
@@ -427,10 +590,35 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting dust components ...")
 
-        # Loop over
-        for name in self.dust_component_names:
+        # Dust disk
+        if self.has_disk: self.adapt_disk()
 
-            print(name)
+        # Extra
+        if self.has_extra_dust: self.adapt_extra_dust()
+
+    # -----------------------------------------------------------------
+
+    def adapt_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting dust disk component ...")
+
+    # -----------------------------------------------------------------
+
+    def adapt_extra_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting extra dust components ...")
 
     # -----------------------------------------------------------------
 
