@@ -456,6 +456,22 @@ def has_other(seq, test):
 
 # -----------------------------------------------------------------
 
+def get_other(seq, test):
+
+    """
+    This function ...
+    :param seq:
+    :param test:
+    :return:
+    """
+
+    other = []
+    for item in seq:
+        if item not in test: other.append(item)
+    return other
+
+# -----------------------------------------------------------------
+
 def equal_sizes(*lsts):
 
     """

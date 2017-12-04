@@ -1835,6 +1835,44 @@ def read_last_lines(path, nlines):
 
 # -----------------------------------------------------------------
 
+def tail(filepath, window=20):
+
+    """
+    Returns the last `window` lines of file `f` as a list.
+    """
+
+    fh = open(filepath)
+
+    if window == 0: return []
+    BUFSIZ = 1024
+    fh.seek(0, 2)
+    bytes = fh.tell()
+    size = window + 1
+    block = -1
+    data = []
+
+    while size > 0 and bytes > 0:
+
+        if bytes - BUFSIZ > 0:
+            # Seek back one whole BUFSIZ
+            fh.seek(block * BUFSIZ, 2)
+            # read BUFFER
+            data.insert(0, fh.read(BUFSIZ))
+        else:
+            # file too small, start from begining
+            fh.seek(0,0)
+            # only read what was not read
+            data.insert(0, fh.read(bytes))
+        linesFound = data[0].count('\n')
+        size -= linesFound
+        bytes -= BUFSIZ
+        block -= 1
+
+    # Return
+    return ''.join(data).splitlines()[-window:]
+
+# -----------------------------------------------------------------
+
 def get_last_lines(path, nlines):
 
     """
@@ -1964,6 +2002,62 @@ def remove_first_lines(filepath, startswith):
 
     # Write
     write_lines(filepath, reversed(lines))
+
+# -----------------------------------------------------------------
+
+def get_header_lines(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    lines = []
+
+    for line in read_lines(filepath):
+
+        # We are no longer at the header
+        if not line.startswith("#"): break
+
+        line = line.split("#", 1)[1].strip()
+        lines.append(line)
+
+    # Return the lines
+    return lines
+
+# -----------------------------------------------------------------
+
+def get_first_header_line(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    for line in read_lines(filepath):
+
+        # We are no longer at the header
+        if line.startswith("#"):
+
+            line = line.split("#", 1)[1].strip()
+            return line
+
+    # No header
+    raise IOError("No header")
+
+# -----------------------------------------------------------------
+
+def get_header_labels(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    return get_first_header_line(filepath).split()
 
 # -----------------------------------------------------------------
 

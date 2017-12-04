@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.io.ascii.core import InconsistentTableError
+
 # Import the relevant PTS classes and modules
 from ..basics.curve import WavelengthCurve, FilterCurve
 from ..units.unit import PhotometricUnit
@@ -53,7 +56,102 @@ def is_from_skirt(path):
 
 # -----------------------------------------------------------------
 
-def load_sed(path):
+def load_sed(path, wavelength_unit=None, photometry_unit=None):
+
+    """
+    This function ...
+    :param path:
+    :param wavelength_unit:
+    :param photometry_unit:
+    :return:
+    """
+
+    if is_from_skirt(path): return SED.from_skirt(path)
+    else:
+
+        # Try PTS (or at least ECSV) format
+        try:
+
+            # Try loading the table as ECSV format
+            table = tables.from_file(path)
+
+            # Observed SED or SED?
+            if "Observatory" in table.colnames and "Instrument" in table.colnames: return ObservedSED.from_file(path)
+            else: return SED.from_file(path)
+
+        # Not readable as ECSV table, try reading as data file (wavelength and photometry columns)
+        except InconsistentTableError:  return SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+
+# -----------------------------------------------------------------
+
+def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict=False):
+
+    """
+    This function ...
+    :param path:
+    :param wavelength_unit:
+    :param photometry_unit:
+    :param as_dict:
+    :return:
+    """
+
+    from pts.core.tools import filesystem as fs
+
+    seds = []
+    names = []
+
+    # From SKIRT
+    if is_from_skirt(path):
+
+        ncols = get_ncolumns(path)
+        if ncols == 2:
+            sed = SED.from_skirt(path)
+            seds.append(sed)
+            names.append('total')
+        else:
+            contributions = ['total', 'direct', 'scattered', 'dust', 'dustscattered', 'transparent']
+            for contribution in contributions:
+                sed = SED.from_skirt(path, contribution=contribution)
+                seds.append(sed)
+                names.append(contribution)
+
+    # Not from SKIRT
+    else:
+
+        # Try PTS (or at least ECSV) format
+        try:
+
+            # Try loading the table as ECSV format
+            table = tables.from_file(path)
+
+            # Observed SED or SED?
+            if "Observatory" in table.colnames and "Instrument" in table.colnames: sed = ObservedSED.from_file(path)
+            else: sed = SED.from_file(path)
+
+            seds.append(sed)
+            names.append(fs.strip_extension(fs.name(path)))
+
+        # Not readable as ECSV table, try reading as data file (wavelength and photometry columns)
+        except InconsistentTableError:
+
+            ncols = get_ncolumns(path)
+            nphotometry_cols = ncols - 1
+            column_names = fs.get_header_labels(path)
+
+            for index in range(nphotometry_cols):
+
+                name = column_names[index+1]
+                sed = SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, photometry_column=index+1)
+                seds.append(sed)
+                names.append(name)
+
+    # Return the SEDs
+    if as_dict: return dict(zip(names, seds))
+    else: return seds
+
+# -----------------------------------------------------------------
+
+def get_ncolumns(path):
 
     """
     This function ...
@@ -61,14 +159,13 @@ def load_sed(path):
     :return:
     """
 
-    if is_from_skirt(path): return SED.from_skirt(path)
-    else:
+    from ..tools import filesystem as fs
 
-        table = tables.from_file(path)
+    # Load last 2 lines
+    lines = fs.tail(path, 2)
 
-        # Observed SED or SED?
-        if "Observatory" in table.colnames and "Instrument" in table.colnames: return ObservedSED.from_file(path)
-        else: return SED.from_file(path)
+    # Interpret
+    return np.loadtxt(lines, dtype='str').shape[1]
 
 # -----------------------------------------------------------------
 
@@ -107,7 +204,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_text_file(cls, path, wavelength_unit, photometry_unit, skiprows=None, density=False):
+    def from_text_file(cls, path, wavelength_unit, photometry_unit, skiprows=0, density=False, photometry_column=1):
 
         """
         This function ...
@@ -116,14 +213,18 @@ class SED(WavelengthCurve):
         :param photometry_unit:
         :param skiprows:
         :param density:
+        :param photometry_column:
         :return:
         """
 
+        # Determine the columns to use
+        columns = (0, photometry_column)
+
         # Load the data
-        wavelength_column, luminosity_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows)
+        wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
 
         # Create the SED
-        return cls.from_arrays(wavelength_column, luminosity_column, wavelength_unit, photometry_unit, density=density)
+        return cls.from_arrays(wavelength_column, photometry_column, wavelength_unit, photometry_unit, density=density)
 
     # -----------------------------------------------------------------
 
@@ -466,13 +567,14 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, fltr, photometry, error=None, sort=True):
+    def add_point(self, fltr, photometry, error=None, conversion_info=None, sort=True):
 
         """
         This function ...
         :param fltr:
         :param photometry:
         :param error:
+        :param conversion_info:
         :param sort:
         :return:
         """
@@ -486,9 +588,10 @@ class ObservedSED(FilterCurve):
         else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, None, None]
 
         # Set conversion info
-        conversion_info_photometry = dict()
-        conversion_info_photometry["wavelength"] = fltr.pivot
-        conversion_info = {self.value_name: conversion_info_photometry}
+        if conversion_info is None:
+            conversion_info_photometry = dict()
+            conversion_info_photometry["wavelength"] = fltr.pivot
+            conversion_info = {self.value_name: conversion_info_photometry}
 
         # Add the row
         self.add_row(values, conversion_info=conversion_info)

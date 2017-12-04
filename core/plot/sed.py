@@ -30,8 +30,7 @@ from operator import itemgetter
 from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
-from ..data.sed import ObservedSED, SED
-from ..basics.range import RealRange
+from ..data.sed import ObservedSED, SED, load_sed, load_multiple_seds
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools import types
 from ..filter.broad import BroadBandFilter
@@ -277,6 +276,57 @@ class SEDPlotter(Configurable):
         """
 
         # Inform the user
+        log.info("Loading SEDs ...")
+
+        # From file paths
+        if self.config.seds is not None: self.load_sed_files()
+
+        # From files in working directory
+        else: self.load_seds_cwd()
+
+    # -----------------------------------------------------------------
+
+    def load_sed_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading SED files ...")
+
+        # Loop over the sed files
+        for path in self.config.seds:
+
+            # Get the SED name
+            name = fs.strip_extension(fs.name(path))
+
+            # Try getting multiple SEDs
+            if self.config.multi:
+
+                seds = load_multiple_seds(path, as_dict=True, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
+                for label in seds: self.add_sed(seds[label], label=label)
+
+            # One SED per file
+            else:
+
+                # Load SED
+                sed = load_sed(path, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
+
+                # Add the SED
+                self.add_sed(sed, label=name)
+
+    # -----------------------------------------------------------------
+
+    def load_seds_cwd(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
         log.info("Loading SED files in the current working directory ...")
 
         # Create simulation definitions from the working directory and add them to the queue
@@ -285,11 +335,20 @@ class SEDPlotter(Configurable):
             # Skip emission lines
             if "Lines" in name: continue
 
-            # Load the SED
-            sed = ObservedSED.from_file(path)
+            # Try getting multiple SEDs
+            if self.config.multi:
 
-            # Add the definition to the queue
-            self.add_sed(sed, label=name)
+                seds = load_multiple_seds(path, as_dict=True, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
+                for label in seds: self.add_sed(seds[label], label=label)
+
+            # One SED per file
+            else:
+
+                # Load SED
+                sed = load_sed(path, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
+
+                # Add the SED
+                self.add_sed(sed, label=name)
 
     # -----------------------------------------------------------------
 
