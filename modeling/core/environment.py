@@ -1882,8 +1882,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        from ..decomposition.decomposition import axial_ratio_to_inclination_mosenkov
-        return axial_ratio_to_inclination_mosenkov(self.disk_axial_ratio, self.hubble_stage)
+        #from ..decomposition.decomposition import axial_ratio_to_inclination_mosenkov
+        #return axial_ratio_to_inclination_mosenkov(self.disk_axial_ratio, self.hubble_stage)
+        from ..decomposition.decomposition import axial_ratio_to_inclination_with_intrinsic, q_degeyter
+        return axial_ratio_to_inclination_with_intrinsic(self.disk_axial_ratio, q_degeyter)
 
     # -----------------------------------------------------------------
 
