@@ -1294,6 +1294,30 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def hubble_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.hubble_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def hubble_stage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.hubble_stage
+
+    # -----------------------------------------------------------------
+
+    @property
     def galaxy_ellipse(self): # from properties
 
         """

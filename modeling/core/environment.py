@@ -1712,6 +1712,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def hubble_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Type"][0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_stage(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Stage"][0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def galaxy_ellipse(self):  # from properties
 
         """

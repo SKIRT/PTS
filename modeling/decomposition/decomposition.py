@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
@@ -35,7 +38,7 @@ from .s4g import S4GDecomposer
 #from .imfit import ImfitDecomposer
 from ...core.launch.launcher import SingleImageSKIRTLauncher
 from ...magic.core.frame import Frame
-from ...core.filter.filter import parse_filter
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -44,6 +47,78 @@ template_path = introspection.pts_modeling_ski_templates_path
 # -----------------------------------------------------------------
 
 instrument_name = "earth"
+
+# -----------------------------------------------------------------
+
+def get_logq0_mosenkov(hubble_stage):
+
+    """
+    Thisn function ...
+    :param hubble_stage:
+    :return:
+    """
+
+    # Below or equal to 7
+    if hubble_stage <= 7: return -0.026 * float(hubble_stage) - 0.774
+
+    # Above 7
+    else: return 0.107 * float(hubble_stage) - 1.705
+
+# -----------------------------------------------------------------
+
+def axial_ratio_to_inclination_mosenkov(ratio, hubble_stage):
+
+    """
+    This function ...
+    :param ratio:
+    :param hubble_stage:
+    :return:
+    """
+
+    # Check that axial ratio is smaller than one!
+    if ratio >= 1.: raise ValueError("Axial ratio must be ratio of minor axis to major axis length")
+
+    # From Mosenkov et al., 2017 (Appendix)
+
+    # Calculate logq and logq0
+    logq = np.log10(ratio)
+    logq0 = get_logq0_mosenkov(hubble_stage)
+
+    # Calculate numerator and denominator of the formula
+    numerator = 1. - 10**(2. * logq)
+    denominator = 1. - 10**(2. * logq0)
+
+    # Calculate the inclination angle
+    sin2i = numerator / denominator
+    inclination_radians = np.arcsin(np.sqrt(sin2i))
+    inclination = Angle(inclination_radians, unit="rad")
+    return inclination.to("deg")
+
+# -----------------------------------------------------------------
+
+def ellipticity_to_axial_ratio(ellipticity):
+
+    """
+    This function ...
+    :param ellipticity:
+    :return:
+    """
+
+    return 1. - ellipticity
+
+# -----------------------------------------------------------------
+
+def ellipticity_to_inclination_mosenkov(ellipticity, hubble_stage):
+
+    """
+    This function ...
+    :param ellipticity:
+    :param hubble_stage:
+    :return:
+    """
+
+    axial_ratio = ellipticity_to_axial_ratio(ellipticity)
+    return axial_ratio_to_inclination_mosenkov(axial_ratio, hubble_stage)
 
 # -----------------------------------------------------------------
 
@@ -75,6 +150,9 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # The position angle of the disk of the galaxy (used as the position angle of the galaxy)
         self.disk_pa = None
+
+        # The axial ratio of the disk of the galaxy (used for the inclination angle of the galaxy plane)
+        self.disk_q = None
 
         # The bulge and disk model
         self.bulge = None
@@ -238,6 +316,21 @@ class GalaxyDecomposer(DecompositionComponent):
         # Set the disk position angle
         self.disk_pa = self.components["disk"].position_angle
 
+        # Set the disk axial ratio
+        self.disk_q = self.components["disk"].axial_ratio
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return axial_ratio_to_inclination_mosenkov(self.disk_q, self.hubble_stage)
+
     # -----------------------------------------------------------------
 
     def decompose_fit(self):
@@ -304,7 +397,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the bulge model ...")
 
         # Create a Sersic model for the bulge
-        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.galaxy_properties.inclination, self.disk_pa, azimuth_or_tilt=self.config.bulge_deprojection_method)
+        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.disk_inclination, self.disk_pa, azimuth_or_tilt=self.config.bulge_deprojection_method)
 
     # -----------------------------------------------------------------
 
@@ -318,7 +411,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the disk model ...")
 
         # Create an exponential disk model for the disk
-        self.disk = ExponentialDiskModel3D.from_2d(self.components["disk"], self.galaxy_properties.inclination, self.disk_pa)
+        self.disk = ExponentialDiskModel3D.from_2d(self.components["disk"], self.disk_inclination, self.disk_pa)
 
     # -----------------------------------------------------------------
 
@@ -334,7 +427,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the 'earth' projection system
         azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_wcs(self.wcs, self.galaxy_properties.center, self.galaxy_properties.distance, self.galaxy_properties.inclination, azimuth, self.disk_pa)
+        self.projections["earth"] = GalaxyProjection.from_wcs(self.wcs, self.galaxy_properties.center, self.galaxy_properties.distance, self.disk_inclination, azimuth, self.disk_pa)
 
         # Create the face-on projection system
         self.projections["faceon"] = FaceOnProjection.from_wcs(self.wcs, self.galaxy_properties.center, self.galaxy_properties.distance)
