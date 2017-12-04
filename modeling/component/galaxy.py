@@ -914,6 +914,42 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def disk_axial_ratio(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.disk_axial_ratio
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_ellipticity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.disk_ellipticity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.disk_inclination
+
+    # -----------------------------------------------------------------
+
+    @property
     def significance_levels_path(self):
 
         """
@@ -1996,9 +2032,9 @@ class GalaxyModelingComponent(ModelingComponent):
         projector.config.center = self.galaxy_center.to_sky(wcs)
         #projector.config.npixels = npixels # only for creating edgeon and faceon
         #projector.config.field = field # only for creating edgeon and faceon
-        projector.config.inclination = self.galaxy_inclination
+        projector.config.inclination = self.disk_inclination
         projector.config.azimuth = azimuth
-        projector.config.position_angle = self.galaxy_position_angle
+        projector.config.position_angle = self.disk_position_angle
         projector.config.npackages = npackages
 
         # Name for the projection

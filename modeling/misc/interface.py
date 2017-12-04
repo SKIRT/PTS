@@ -328,7 +328,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         if use_grid:
 
             earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
-                                                                      self.galaxy_inclination, azimuth,
+                                                                      self.disk_inclination, azimuth,
                                                                       self.disk_position_angle)
             deprojection_name = "grid"
 

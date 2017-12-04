@@ -181,7 +181,7 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
 
             # Create the projections
             # dust_grid, galaxy_distance, galaxy_inclination, azimuth, disk_position_angle
-            earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance, self.galaxy_inclination, azimuth, self.disk_position_angle)
+            earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance, self.disk_inclination, azimuth, self.disk_position_angle)
 
         # Use deprojections
         # galaxy_distance, azimuth
