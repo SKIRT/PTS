@@ -107,7 +107,6 @@ class SEDPlotter(Configurable):
         self.out_path = None
 
         # Properties
-        self.format = None
         self.transparent = False
 
         # The figure
@@ -246,6 +245,13 @@ class SEDPlotter(Configurable):
 
         # Set the output path
         self.out_path = kwargs.pop("output", None)
+        if self.out_path is None and "output" in self.config and self.config.output is not None:
+            full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
+            if fs.has_extension(full_output_path):
+                directory_path = fs.directory_of(full_output_path)
+                if not fs.is_directory(directory_path): fs.create_directory(directory_path)
+            elif not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
+            self.out_path = full_output_path
 
         # Add SED files present in the current working directory (if nothing is added manually)
         if self.nseds == 0: self.load_seds()
@@ -1809,7 +1815,7 @@ class SEDPlotter(Configurable):
 
         if types.is_string_type(self.out_path):
 
-            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds" + self.format)
+            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds" + self.config.format)
             else: path = self.out_path
 
         else: path = self.out_path

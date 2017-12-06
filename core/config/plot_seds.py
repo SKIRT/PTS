@@ -12,6 +12,11 @@ from pts.core.basics.plot import plotting_libraries, mpl
 
 # -----------------------------------------------------------------
 
+formats = ["pdf", "png"]
+default_format = "pdf"
+
+# -----------------------------------------------------------------
+
 default_residual_reference = "models"
 residual_references = ["models", "observations"]
 
@@ -29,6 +34,12 @@ definition.add_optional("distance", "length_quantity", "object distance (for flu
 
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
+
+# Add optional
+definition.add_optional("output", "string", "output directory")
+definition.add_optional("format", "string", "plotting format", default=default_format, choices=formats)
+
+# -----------------------------------------------------------------
 
 # The unit in which to plot
 definition.add_optional("wavelength_unit", "length_unit", "unit of wavelength", "micron", convert_default=True)
