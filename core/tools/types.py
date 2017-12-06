@@ -222,6 +222,96 @@ def is_real_sequence(value):
 
 # -----------------------------------------------------------------
 
+def is_string_array(value):
+
+    """
+    Thisn function ...
+    :param value:
+    :return:
+    """
+
+    if not is_array_like(value): return False
+    for element in value:
+        if not is_string_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_integer_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_array_like(value): return False
+    for element in value:
+        if not is_integer_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_real_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_array_like(value): return False
+    for element in value:
+        if not is_real_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_string_column(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_astropy_column(value): return False
+    for element in value:
+        if not is_string_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_integer_column(value):
+
+    """
+    Thisn function ...
+    :param value:
+    :return:
+    """
+
+    if not is_astropy_column(value): return False
+    for element in value:
+        if not is_integer_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_real_column(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_astropy_column(value): return False
+    for element in value:
+        if not is_real_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
 def is_tuple(value):
 
     """

@@ -519,7 +519,9 @@ class SmartTable(Table):
 
                 #print(self.column_info)
 
-                column_unit = self.column_info[i][2]
+                column_unit = self.column_unit(colname)
+                #print(colname, column_unit)
+                #column_unit = self.column_info[i][2]
                 assert column_unit is not None
 
                 # Quantity with photometric unit

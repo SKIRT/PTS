@@ -236,12 +236,16 @@ class WavelengthCurve(Curve):
 
         if not from_astropy:
 
-            # Get properties
+            # Get x properties
+            wavelength_unit = kwargs.pop("wavelength_unit", "micron")
+            if wavelength_unit is None: wavelength_unit = "micron"
+
+            # Get y properties
             name = kwargs.pop("y_name")
             description = kwargs.pop("y_description")
             unit = kwargs.pop("y_unit", None)
 
-            x_unit = "micron"
+            x_unit = wavelength_unit
             y_unit = unit
             x_name = "Wavelength"
             y_name = name

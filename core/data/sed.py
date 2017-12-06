@@ -32,6 +32,28 @@ from ..simulation import textfile
 
 # -----------------------------------------------------------------
 
+class NotRealColumn(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, column_name):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param column_name:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(NotRealColumn, self).__init__(message)
+
+        # The column name
+        self.column_name = column_name
+
+# -----------------------------------------------------------------
+
 def is_from_skirt(path):
 
     """
@@ -80,7 +102,13 @@ def load_sed(path, wavelength_unit=None, photometry_unit=None):
             else: return SED.from_file(path)
 
         # Not readable as ECSV table, try reading as data file (wavelength and photometry columns)
-        except InconsistentTableError:  return SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+        except InconsistentTableError:
+
+            # Try loading as regular SED
+            try: return SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+
+            # ValueError: could not convert string to float: try as observed SED with string column
+            except NotRealColumn: return ObservedSED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
 
 # -----------------------------------------------------------------
 
@@ -134,16 +162,26 @@ def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict
         # Not readable as ECSV table, try reading as data file (wavelength and photometry columns)
         except InconsistentTableError:
 
-            ncols = get_ncolumns(path)
-            nphotometry_cols = ncols - 1
-            column_names = fs.get_header_labels(path)
+            try:
 
-            for index in range(nphotometry_cols):
+                ncols = get_ncolumns(path)
+                nphotometry_cols = ncols - 1
+                column_names = fs.get_header_labels(path)
 
-                name = column_names[index+1]
-                sed = SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, photometry_column=index+1)
+                for index in range(nphotometry_cols):
+
+                    name = column_names[index+1]
+                    sed = SED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, photometry_column=index+1)
+                    seds.append(sed)
+                    names.append(name)
+
+            # There is a string column
+            except NotRealColumn:
+
+                #print(path)
+                sed = ObservedSED.from_text_file(path, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
                 seds.append(sed)
-                names.append(name)
+                names.append(fs.strip_extension(fs.name(path)))
 
     # Return the SEDs
     if as_dict: return dict(zip(names, seds))
@@ -204,27 +242,73 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_text_file(cls, path, wavelength_unit, photometry_unit, skiprows=0, density=False, photometry_column=1):
+    def from_text_file(cls, path, wavelength_unit=None, photometry_unit=None, density=False, wavelength_column=0, photometry_column=1):
 
         """
         This function ...
         :param path:
         :param wavelength_unit:
         :param photometry_unit:
-        :param skiprows:
         :param density:
+        :param wavelength_column:
         :param photometry_column:
         :return:
         """
 
-        # Determine the columns to use
-        columns = (0, photometry_column)
+        # OLD IMPLEMENTATION WITH NUMPY
+        # # Check whether units are passed
+        # if wavelength_unit is None: raise ValueError("Wavelength unit has to be specified")
+        # if photometry_unit is None: raise ValueError("Photometry unit has to be specified")
+        #
+        # # Determine the columns to use
+        # columns = (0, photometry_column)
+        #
+        # # Load the data
+        # wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+        #
+        # # Create the SED
+        # return cls.from_arrays(wavelength_column, photometry_column, wavelength_unit, photometry_unit, density=density)
 
-        # Load the data
-        wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+        from ..tools import types
 
-        # Create the SED
-        return cls.from_arrays(wavelength_column, photometry_column, wavelength_unit, photometry_unit, density=density)
+        # Load as table
+        table = tables.from_file(path, format="ascii")
+
+        # Find wavelength column
+        wavelength_column_name = table.colnames[wavelength_column]
+        if not types.is_real_column(table[wavelength_column_name]): raise NotRealColumn("Wavelength column a re not real numbers", wavelength_column_name)
+
+        # Find photometry column
+        photometry_column_name = table.colnames[photometry_column]
+        if not types.is_real_column(table[photometry_column_name]): raise NotRealColumn("Photometry column are not real numbers", photometry_column_name)
+
+        # Get wavelength unit
+        if table[wavelength_column_name].unit is not None:
+            wavelength_unit_table = table[wavelength_column_name].unit
+            if wavelength_unit is not None:
+                if wavelength_unit != wavelength_unit_table: raise ValueError("Wavelength unit does not correspond that found in file")
+            else: wavelength_unit = wavelength_unit_table
+        else:
+            if wavelength_unit is None: raise ValueError("Wavelength unit must be specified")
+
+        # Get photometry unit
+        if table[photometry_column_name].unit is not None:
+            photometry_unit_table = PhotometricUnit(table[photometry_column_name].unit)
+            if photometry_unit is not None:
+                photometry_unit = PhotometricUnit(photometry_unit, density=density)
+                if photometry_unit != photometry_unit_table: raise ValueError("Photometric unit does not correspond that found in file")
+            else: photometry_unit = photometry_unit_table
+        else:
+            if photometry_unit is None: raise ValueError("Photometry unit must be specified")
+            photometry_unit = PhotometricUnit(photometry_unit, density=density)
+
+        # Create sed
+        wavelengths = table[wavelength_column_name]
+        photometry = table[photometry_column_name]
+        sed = cls.from_arrays(wavelengths, photometry, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+
+        # Return the SED
+        return sed
 
     # -----------------------------------------------------------------
 
@@ -550,6 +634,108 @@ class ObservedSED(FilterCurve):
             # Add columns
             self.add_column_info("Error-", float, unit, "Lower bound error")
             self.add_column_info("Error+", float, unit, "Upper bound error")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_text_file(cls, path, photometry_unit=None, density=False, photometry_column=None, wavelength_unit="micron"):
+
+        """
+        Thisn function ...
+        :param path:
+        :param photometry_unit:
+        :param density:
+        :param photometry_column:
+        :param wavelength_unit:
+        :return:
+        """
+
+        from ..tools import types
+
+        # Load as table
+        table = tables.from_file(path, format="ascii")
+
+        # Find string column for the filters
+        filter_column_name = None
+        for name in table.colnames:
+            if types.is_string_column(table[name]):
+                filter_column_name = name
+                break
+        if filter_column_name is None: raise ValueError("Cannot find filter column")
+
+        # Find photometry column
+        if photometry_column is not None: photometry_column_name = table.colnames[photometry_column]
+        else:
+
+            photometry_column_name = None
+            first_real_column_name = None
+            for name in table.colnames:
+                if name == filter_column_name: continue
+                if not types.is_real_column(table[name]): continue
+                if first_real_column_name is None: first_real_column_name = name
+                if "flux" in name.lower() or "lum" in name.lower():
+                    photometry_column_name = name
+                    break
+            if photometry_column_name is None and first_real_column_name is not None: photometry_column_name = first_real_column_name
+            if photometry_column_name is None: raise ValueError("Cannot find photometry column")
+
+        # Find error column
+        error_column_name = None
+        for name in table.colnames:
+            if name == filter_column_name: continue
+            if name == photometry_column_name: continue
+            if "err" in name.lower():
+                error_column_name = name
+                break
+
+        # Get photometry unit
+        if table[photometry_column_name].unit is not None:
+            photometry_unit_table = PhotometricUnit(table[photometry_column_name].unit)
+            if photometry_unit is not None:
+                photometry_unit = PhotometricUnit(photometry_unit, density=density)
+                if photometry_unit != photometry_unit_table: raise ValueError("Photometric unit does not correspond that found in file")
+            else: photometry_unit = photometry_unit_table
+        else:
+            if photometry_unit is None: raise ValueError("Photometry unit must be specified")
+            photometry_unit = PhotometricUnit(photometry_unit, density=density)
+
+        # Get error unit
+        if error_column_name is not None:
+            if table[error_column_name].unit is not None:
+                error_unit = PhotometricUnit(table[error_column_name].unit)
+            else:
+                if photometry_unit is None: raise ValueError("Photometry unit must be specified")
+                error_unit = PhotometricUnit(photometry_unit, density=density)
+        else: error_unit = None
+
+        # Create sed
+        sed = cls(wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+        sed.setup()
+
+        # Add points
+        nrows = len(table)
+        for index in range(nrows):
+
+            filter_name = table[filter_column_name][index]
+            photometry = table[photometry_column_name][index]
+            error = table[error_column_name][index] if error_column_name is not None else None
+            if np.isnan(error): error = None
+
+            # Add units
+            photometry = photometry * photometry_unit
+            if error is not None: error = error * error_unit
+
+            # Parse filter
+            fltr = parse_filter(filter_name)
+
+            # Add point
+            sed.add_point(fltr, photometry, error=error, sort=False)
+
+        # Sort the SED on wavelength
+        sed.sort("Wavelength")
+
+        # Return the SED
+        return sed
 
     # -----------------------------------------------------------------
 
