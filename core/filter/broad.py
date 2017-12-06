@@ -108,6 +108,8 @@ identifiers["NICS.H"] = Map(observatories=["TNG"], instruments=["Nics"], bands=[
 identifiers["NICS.J"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["J"])
 #identifiers["NICS.Js"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["Js"]) we removed this because the spec was ambigious ...
 identifiers["NICS.K"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["K"])
+identifiers["SCUBA2.450"] = Map(observatories=["JCMT"], instruments=["SCUBA-2"], wavelength="450 micron")
+identifiers["SCUBA2.850"] = Map(observatories=["JCMT"], instruments=["SCUBA-2"], wavelength="850 micron")
 
 # -----------------------------------------------------------------
 
