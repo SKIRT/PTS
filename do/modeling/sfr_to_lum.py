@@ -13,21 +13,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import inspect
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.modeling.preparation.unitconversion import ab_to_jansky
 from pts.core.units.parsing import parse_unit as u
-from pts.core.filter.filter import parse_filter
 from pts.modeling.core.mappings import Mappings
 from pts.core.basics.log import log
 from pts.core.tools.stringify import tostr
-from pts.core.basics.range import RealRange
-from pts.core.prep.smile import get_oligochromatic_template
 from pts.modeling.misc.playground import MappingsPlayground
 from pts.core.plot.sed import SEDPlotter
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.data.sun import Sun
+from pts.core.tools import filesystem as fs
+from pts.core.data.sed import SED
+from pts.core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -40,6 +40,9 @@ definition.add_positional_optional("compactness", "positive_real", "compactness"
 definition.add_positional_optional("pressure", "quantity", "pressure", 1e12 * u("K/m3"))
 definition.add_positional_optional("covering_factor", "positive_real", "covering factor", 0.2) # fPDR
 definition.add_flag("plot", "plot the SEDs", False)
+definition.add_flag("skirt", "use SKIRT", True)
+definition.add_flag("pts", "use PTS", True)
+definition.add_flag("sampled", "use SKIRT luminosities already sampled on a wavelength grid", True)
 
 # Get the arguments
 config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosity in a certain band")
@@ -51,54 +54,138 @@ fltr_wavelength = fltr.wavelength
 
 sun = Sun()
 
+print("")
 solar_neutral_density = sun.luminosity_for_wavelength(fltr_wavelength, unit="W", density=True)
 solar_wavelength_density = sun.luminosity_for_wavelength(fltr_wavelength, unit="W/micron")
 log.info("solar in neutral density: " + tostr(solar_neutral_density))
 log.info("solar in wavelength density: " + tostr(solar_wavelength_density))
-
+log.info("bolometric solar luminosity: " + tostr(sun.total_luminosity()))
 print("")
 
 # -----------------------------------------------------------------
 
-# Séba:
-# 3.53e14 Lsun^FUV MAPPINGS 1 SFR
-# 7.7e34W if Lsun(FUV) is 1.425e21 W
-
-# FOR FUV:
-
-seba_lum_solar = 3.53e14 * u("Lsun") # Lsun as neutral luminosity density (lambda * Lambda) put into Lsun or Lsun_FUV?
-#seba_lum = 7.7e34 * u("W/micron") # WRONG
-#seba_solar = 1.425e21 * u("W") # Where does this come from?
-seba_solar = 1.425e21 * u("W/micron")
-# I GET 1.57e21 W/micron
-
-seba_lum = seba_lum_solar.value * seba_solar
-
-log.info("seba_lum_solar (FUV): " + tostr(seba_lum_solar))
-log.info("seba_solar (FUV): " + tostr(seba_solar))
-log.info("seba_lum (FUV): " + tostr(seba_lum))
+sfr_scalar = config.sfr.to("Msun/yr").value
 
 # -----------------------------------------------------------------
 
-# AB magnitude sun: 16.42
+def show_luminosities(sed):
 
-#fuv = parse_filter("FUV")
-#fuv_wavelength = fuv.wavelength
+    """
+    This function ...
+    :param sed:
+    :return:
+    """
 
-#jansky = ab_to_jansky(16.42) * u("Jy")
-#print(jansky)
-#solar_distance = 149597870700 * u("m")
-#wmicron = jansky.to("W/micron", wavelength=fuv.pivot, distance=solar_distance)
-#print(wmicron)
-#watts = wmicron.to("W", density=True, wavelength=fuv.pivot)
-#print(watts)
+    # Get spectral luminosity density
+    lum = sed.photometry_at(fltr_wavelength, unit="W/micron")
+    lum2 = sed.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
 
-#SFR: 0.351
+    #
+    log.info("Luminosity: " + tostr(lum))
+    log.info("No interpolation: " + tostr(lum2))
 
-#sfr = 0.351 * u("Msun/yr")
+    # Convert to solar SPECTRAL luminosity DENSITY at wavelength
+    lum_spectral_solar = lum.to("W/micron").value / solar_wavelength_density.to("W/micron").value
 
-# 1.63849785244e+42 W / micron
-# 2.51522448305e+41 W
+    # Convert to neutral
+    lum_neutral = lum.to("W", density=True, wavelength=fltr_wavelength)
+    lum_solar = lum.to("Lsun", density=True, wavelength=fltr_wavelength)
+
+    # Neutral and solar
+    log.info("Luminosity in spectral solar units: " + tostr(lum_spectral_solar) + " Lsun_" + fltr.band)
+    log.info("Luminosity in neutral units: " + tostr(lum_neutral))
+    log.info("Luminosity in solar units: " + tostr(lum_solar))
+
+# -----------------------------------------------------------------
+
+# Calculate from file with sampled luminosituies
+if config.sampled:
+
+    # Determine the path to this directory
+    this_filepath = fs.absolute_or_in_cwd(inspect.getfile(inspect.currentframe()))
+    directory_path = fs.directory_of(this_filepath)
+
+    # Determine the filepath
+    filepath = fs.join(directory_path, "MappingsTemplate.dat")
+
+    # Get wavelength grid, calculate luminosities in W
+    wg = WavelengthGrid.from_text_file(filepath, "m")
+    deltas = wg.deltas(asarray=True, unit="m")
+    lums = np.loadtxt(filepath, skiprows=0, unpack=True, usecols=(1))
+    lums *= sfr_scalar # CORRECT FOR SFR
+
+    # Construct the SED
+    spectrallums = lums / deltas
+    sampled_sed = SED.from_arrays(wg.wavelengths(asarray=True, unit="m"), spectrallums, "m", "W/m")
+
+    print("FROM SAMPLED LUMINOSITIES:")
+    print("")
+
+    # Show
+    show_luminosities(sampled_sed)
+
+    print("")
+
+# Don't calculate
+else: sampled_sed = None
+
+# -----------------------------------------------------------------
+
+# Calculate with PTS
+if config.pts:
+
+    # Mappings SED
+    mappings = Mappings(config.metallicity, config.compactness, config.pressure, config.covering_factor, sfr_scalar)
+    sed = mappings.sed
+
+    print("USING PTS:")
+    print("")
+
+    # Show
+    show_luminosities(sed)
+
+    print("")
+
+# Don't calculate with PTS
+else: sed = None
+
+# -----------------------------------------------------------------
+
+# Calculate with SKIRT
+if config.skirt:
+
+    logp = np.log10(config.pressure.to("K/cm3").value)
+
+    # Get the SED
+    playground = MappingsPlayground()
+    sed_skirt = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor)
+
+    lum_skirt = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron")
+    lum_skirt2 = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
+
+    print("USING SKIRT:")
+    print("")
+
+    # Show
+    show_luminosities(sed)
+    print("")
+
+# Don't calculate with SKIRT
+else: sed_skirt = None
+
+# -----------------------------------------------------------------
+
+# Plot?
+if config.plot:
+
+    plotter = SEDPlotter()
+    plotter.config.unit = u("W/micron", density=True)
+    if sed is not None: plotter.add_sed(sed, "PTS")
+    if sed_skirt is not None: plotter.add_sed(sed_skirt, "SKIRT")
+    if sampled_sed is not None: plotter.add_sed(sampled_sed, "Sampled")
+    plotter.run()
+
+# -----------------------------------------------------------------
 
 #metallicity = 0.03
 #compactness = 6 # logC
@@ -180,10 +267,6 @@ log.info("seba_lum (FUV): " + tostr(seba_lum))
 
 # -----------------------------------------------------------------
 
-print("")
-
-sfr_scalar = config.sfr.to("Msun/yr").value
-
 #ski = get_oligochromatic_template()
 
 # Remove all stellar components except the ionizing stars
@@ -197,47 +280,6 @@ sfr_scalar = config.sfr.to("Msun/yr").value
 
 # Perform the SKIRT simulation
 #simulation = SkirtExec().execute(ski_path, inpath=in_path, outpath=out_path)[0]
-
-# -----------------------------------------------------------------
-
-print("")
-
-playground = MappingsPlayground()
-
-logp = np.log10(config.pressure.to("K/cm3").value)
-
-sed_skirt = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor)
-
-#plotter = SEDPlotter()
-#plotter.config.unit = u("W", density=True)
-#plotter.add_sed(sed, "simulation")
-##plotter.add_sed(sed2, "simulation2")
-#plotter.run()
-
-lum_skirt = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron")
-lum_skirt2 = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
-#lum3 = sed.luminosity_for_filter(fuv)
-
-print("")
-print("2 different methods:")
-
-print("")
-print("USING SKIRT:")
-print("")
-
-log.info("Luminosity: " + tostr(lum_skirt))
-log.info("No interpolation: " + tostr(lum_skirt2))
-
-# Convert to neutral
-lum_skirt_neutral = lum_skirt.to("W", density=True, wavelength=fltr_wavelength)
-lum_skirt_solar = lum_skirt.to("Lsun", density=True, wavelength=fltr_wavelength)
-
-print("")
-log.info("Luminosity in neutral units: " + tostr(lum_skirt_neutral))
-log.info("Luminosity in solar units: " + tostr(lum_skirt_solar))
-
-#test = lum_skirt_neutral.value * fltr_wavelength.value
-#print(test)
 
 # -----------------------------------------------------------------
 
@@ -256,45 +298,5 @@ log.info("Luminosity in solar units: " + tostr(lum_skirt_solar))
 #
 # log.info("Luminosity in neutral units [SFR = 1]: " + tostr(lum_skirt_neutral))
 # log.info("Luminosity in solar units [SFR = 1]: " + tostr(lum_skirt_solar))
-
-# -----------------------------------------------------------------
-
-print("")
-print("USING PTS:")
-print("")
-
-# Mappings SED
-mappings = Mappings(config.metallicity, config.compactness, config.pressure, config.covering_factor, sfr_scalar)
-sed = mappings.sed
-
-lum = sed.photometry_at(fltr_wavelength, unit="W/micron")
-lum2 = sed.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
-
-log.info("Luminosity: " + tostr(lum))
-log.info("No interpolation: " + tostr(lum2))
-
-# Convert to neutral
-lum_neutral = lum.to("W", density=True, wavelength=fltr_wavelength)
-lum_solar = lum.to("Lsun", density=True, wavelength=fltr_wavelength)
-
-print("")
-log.info("Luminosity in neutral units: " + tostr(lum_neutral))
-log.info("Luminosity in solar units: " + tostr(lum_solar))
-
-# Luminosity for FUV (wavelength)
-#lum = mappings.luminosity_at(fuv_wavelength)
-#lum2 = mappings.luminosity_at(fuv_wavelength, interpolate=False)
-#lum3 = mappings.luminosity_for_filter(fuv)
-
-# -----------------------------------------------------------------
-
-# Plot?
-if config.plot:
-
-    plotter = SEDPlotter()
-    plotter.config.unit = u("W/micron", density=True)
-    plotter.add_sed(sed, "PTS")
-    plotter.add_sed(sed_skirt, "SKIRT")
-    plotter.run()
 
 # -----------------------------------------------------------------

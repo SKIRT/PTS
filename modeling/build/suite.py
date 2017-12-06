@@ -1177,6 +1177,7 @@ def load_component(path, add_map=False):
 
     """
     This function ...
+    :param path:
     :param add_map:
     :return:
     """

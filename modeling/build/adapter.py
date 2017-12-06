@@ -29,6 +29,7 @@ from .models.stars import bulge_component_name, old_component_name, young_compon
 from .models.dust import disk_component_name, basic_dust_component_names
 from ...core.tools import sequences
 from ...magic.tools import extinction
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -58,6 +59,9 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # The model definition
         self.definition = None
 
+        # The representations
+        self.model_representations = OrderedDict()
+
         # Global SED fitting parameters
         self.parameters = None
 
@@ -83,10 +87,10 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # 2. Get parameters
         self.get_parameters()
 
-        # Load stellar components
+        # 3. Load stellar components
         if self.stellar: self.load_stellar()
 
-        # Load dust components
+        # 4. Load dust components
         if self.dust: self.load_dust()
 
         # 5. Adapt stellar
@@ -95,7 +99,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # 6. Adapt dust
         if self.dust: self.adapt_dust()
 
-        # 7. Write
+        # Load representations
+        if self.representations: self.load_representations()
+
+        # 7. Adapt representations
+        if self.representations: self.adapt_representations()
+
+        # 8. Write
         self.write()
 
         # 8. Show
@@ -256,6 +266,30 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.representations is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.representations
+
+    # -----------------------------------------------------------------
+
     def get_parameters(self):
 
         """
@@ -388,6 +422,42 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def bulge(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return self.stellar_components[bulge_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge.model
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_old(self):
 
         """
@@ -396,6 +466,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return old_component_name in self.stellar_component_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar_components[old_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old.deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.old.map_path
 
     # -----------------------------------------------------------------
 
@@ -412,6 +530,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def young(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.stellar_components[young_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_deprojection(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.young.deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young.map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ionizing(self):
 
         """
@@ -424,6 +590,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar_components[ionizing_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_deprojection(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.ionizing.deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing.map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_extra_stellar(self):
 
         """
@@ -432,6 +646,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return sequences.has_other(self.stellar_component_names, basic_stellar_component_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_stellar_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.get_other(self.stellar_component_names, basic_stellar_component_names)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_stellar(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.stellar_components[name]
+
+    # -----------------------------------------------------------------
+
+    def get_extra_stellar_parameters(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.stellar_components[name].parameters
+
+    # -----------------------------------------------------------------
+
+    def get_extra_stellar_properties(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return self.stellar_components[name].properties
 
     # -----------------------------------------------------------------
 
@@ -469,6 +731,12 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Adapting the old stellar bulge component ...")
+
+        for label in self.bulge_parameters: print(label, tostr(self.bulge_parameters[label]))
+        print(self.bulge_model)
+
     # -----------------------------------------------------------------
 
     def adapt_old(self):
@@ -477,6 +745,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Adapting the old stellar disk component ...")
+
+        for label in self.old_parameters: print(label, tostr(self.old_parameters[label]))
+        print(self.old_deprojection)
+        print(self.old_map_path)
 
     # -----------------------------------------------------------------
 
@@ -490,16 +765,39 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting the young stellar component ...")
 
+        #for label in self.young_parameters: print(label, tostr(self.young_parameters[label]))
+        #print(self.young_deprojection)
+        #print(self.young_map_path)
+
         fuv_attenuation = self.fuv_attenuation
 
-        fuv_ionizing_contribution = 0.3
+        #fuv_ionizing_contribution = 0.3
         factor = extinction.observed_to_intrinsic_factor(fuv_attenuation)
         unattenuated_fuv_flux = self.observed_flux(self.fuv_filter, unit="Jy") * factor
 
-        unattenuated_fuv_flux_young_stars = fuv_ionizing_contribution * unattenuated_fuv_flux
+        #unattenuated_fuv_flux_young_stars = fuv_ionizing_contribution * unattenuated_fuv_flux
+
+        print(unattenuated_fuv_flux)
+        #print(self.young_parameters["fluxdensity"])
+
+        unattenuated_fuv_luminosity = unattenuated_fuv_flux.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_distance)
+
+        print(unattenuated_fuv_luminosity)
 
         # Get the FUV flux density
-        fluxdensity = unattenuated_fuv_flux_young_stars
+        #fluxdensity = unattenuated_fuv_flux_young_stars
+
+        # Convert the flux density into a spectral luminosity
+        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
+        #luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
+        ##assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+
+        # Set the luminosi
+        #config.filter = str(self.fuv_filter)
+        #config.luminosity = luminosity
+
+        # Set the title
+        #config.title = titles[young_component_name]
 
     # -----------------------------------------------------------------
 
@@ -513,6 +811,11 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting the ionizing stellar component ...")
 
+        for label in self.ionizing_parameters: print(label, tostr(self.ionizing_parameters[label]))
+        print(self.ionizing_deprojection)
+        print(self.ionizing_map_path)
+
+        # Get relevant parameters
         metallicity = self.metallicity
         compactness = self.config.default_ionizing_compactness
         pressure = self.config.default_ionizing_pressure
@@ -554,6 +857,14 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting extra stellar components ...")
 
+        for name in self.extra_stellar_component_names:
+
+            parameters = self.get_extra_stellar_parameters(name)
+            properties = self.get_extra_stellar_properties(name)
+
+            for label in parameters: print(label, tostr(parameters[label]))
+            print(properties)
+
     # -----------------------------------------------------------------
 
     @property
@@ -569,6 +880,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_components[disk_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk.deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk.map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_extra_dust(self):
 
         """
@@ -577,6 +936,54 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return sequences.has_other(self.dust_component_names, basic_dust_component_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_dust_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.get_other(self.dust_component_names, basic_dust_component_names)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_dust(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_components[name]
+
+    # -----------------------------------------------------------------
+
+    def get_extra_dust_parameters(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_components[name].parameters
+
+    # -----------------------------------------------------------------
+
+    def get_extra_dust_properties(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_components[name].properties
 
     # -----------------------------------------------------------------
 
@@ -608,6 +1015,10 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting dust disk component ...")
 
+        for label in self.disk_parameters: print(label, tostr(self.disk_parameters[label]))
+        print(self.disk_deprojection)
+        print(self.disk_map_path)
+
     # -----------------------------------------------------------------
 
     def adapt_extra_dust(self):
@@ -619,6 +1030,52 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
         # Inform the user
         log.info("Adapting extra dust components ...")
+
+        for name in self.extra_dust_component_names:
+
+            parameters = self.get_extra_dust_parameters(name)
+            properties = self.get_extra_dust_properties(name)
+
+            for label in parameters: print(label, tostr(parameters[label]))
+            print(properties)
+
+    # -----------------------------------------------------------------
+
+    def load_representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading model representations ...")
+
+        # Loop over the representation names
+        for name in self.representation_names:
+
+            # Load the representation
+            representation = self.suite.get_representation(name)
+
+            # Add
+            self.model_representations[name] = representation
+
+    # -----------------------------------------------------------------
+
+    def adapt_representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting model representations ...")
+
+        # Loop over the representations
+        for name in self.representation_names:
+
+            pass
 
     # -----------------------------------------------------------------
 

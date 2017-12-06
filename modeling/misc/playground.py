@@ -223,10 +223,16 @@ class MappingsPlayground(object):
 
     # -----------------------------------------------------------------
 
-    def simulate_sed(self, logp, sfr, met, logc, fpdr):
+    def simulate_sed(self, logp, sfr, met, logc, fpdr, silent=True):
 
         """
         This function ...
+        :param logp:
+        :param sfr:
+        :param met:
+        :param logc:
+        :param fpdr:
+        :param silent:
         :return:
         """
 
@@ -258,7 +264,7 @@ class MappingsPlayground(object):
         self.ski.saveto(ski_path)
 
         # Perform the SKIRT simulation
-        simulation = SkirtExec().execute(ski_path, brief=True, inpath=outpath, outpath=outpath)[0]
+        simulation = SkirtExec().execute(ski_path, brief=True, inpath=outpath, outpath=outpath, silent=silent)[0]
 
         # Load the fluxes, convert them to luminosities in erg/s
         sedpath = simulation.seddatpaths()[0]

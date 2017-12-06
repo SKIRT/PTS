@@ -36,6 +36,15 @@ definition.add_positional_optional("dust_or_stellar", "string_list", "adapt dust
 # Name of dust or stellar component to adapt
 definition.add_positional_optional("component_name", "string", "name of the dust/stellar component to adapt (only when either 'stellar' or 'dust' is selected)")
 
+# Property name
+definition.add_positional_optional("matching", "string", "only adapt properties with a name matching this string")
+
+# -----------------------------------------------------------------
+
+# Also adapt representations
+if suite.has_representations: definition.add_optional("representations", "string_list", "adapt properties of these representations", choices=suite.representation_names)
+else: definition.add_fixed("representations", "adapt properties of these representations", None)
+
 # -----------------------------------------------------------------
 
 # Show after adapting

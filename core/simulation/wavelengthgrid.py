@@ -67,6 +67,29 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_text_file(cls, path, unit, column=0, skiprows=0):
+
+        """
+        This function ...
+        :param path:
+        :param unit:
+        :param column:
+        :param skiprows:
+        :return:
+        """
+
+        # Determine the columns to use
+        columns = (column)
+
+        # Load the data
+        wavelength_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+
+        # Create the SED
+        return cls.from_wavelengths(wavelength_column, unit=unit)
+
+    # -----------------------------------------------------------------
+
     @property
     def nwavelengths(self):
 

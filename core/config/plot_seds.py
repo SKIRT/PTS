@@ -25,6 +25,7 @@ definition.add_positional_optional("seds", "filepath_list", "SED files to be plo
 definition.add_flag("multi", "look for multiple SEDs per file")
 definition.add_optional("wavelength_unit_file", "length_unit", "wavelength unit in SED file")
 definition.add_optional("unit_file", "photometric_unit", "photometric unit in SED file")
+definition.add_optional("distance", "length_quantity", "object distance (for flux <> luminosity unit conversion")
 
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
