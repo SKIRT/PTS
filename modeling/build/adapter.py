@@ -1151,7 +1151,15 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
             # Loop over the projections
             for label in projections:
 
-                pass
+                # Get the projection
+                projection = projections[label]
+
+                # Propt
+                projection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                             startswith=self.config.startswith, endswith=self.config.endswith)
+
+                # Save
 
     # -----------------------------------------------------------------
 

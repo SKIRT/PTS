@@ -307,6 +307,31 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
 
 # -----------------------------------------------------------------
 
+def prompt_fixed(name, description, value):
+
+    """
+    This function is just to show a fixed variable to the user
+    :param name:
+    :param description:
+    :param value:
+    :return:
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+
+    # Add setting
+    definition.add_fixed(name, description, value)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False)
+
+    # Get the answer
+    config = setter.run(definition, prompt_optional=False)
+    return config[name]
+
+# -----------------------------------------------------------------
+
 def prompt_string_list(name, description, choices=None, default=None, required=True, all_default=False, default_alias=None):
 
     """
@@ -1567,7 +1592,7 @@ class ConfigurationDefinition(object):
                 parser.add_argument("--" + name2, action="store_true", help=description2)
 
             # Invalid option
-            else: raise ValueError("Invalid option for default of flag '" + name + "': " + str(default))
+            else: raise ValueError("Invalid option for default of flag '" + name + "': " + tostr(default))
 
         # Add arguments of sections
         for section_name in self.sections:
@@ -1724,7 +1749,7 @@ class ConfigurationDefinition(object):
                     else: settings[name] = None
 
             # Invalid option
-            else: raise ValueError("Invalid value for default of flag '" + name + "': " + str(default))
+            else: raise ValueError("Invalid value for default of flag '" + name + "': " + tostr(default))
 
         # Add the configuration settings of the various sections
         for name in self.sections:
@@ -3277,7 +3302,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         log.success(name + ": " + description)
 
         # Inform the user
-        log.info("Using fixed value '" + str(value) + "' for " + name)
+        log.info("Using fixed value '" + tostr(value) + "' for " + name)
 
         # Set the value
         config[name] = value
@@ -3670,14 +3695,12 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 if isinstance(choices, dict):
-                    log.info("Only one option: automatically using a list of this value '[" + str(
-                        choices.keys()[0]) + "]' for " + name)
+                    log.info("Only one option: automatically using a list of this value '[" + tostr(choices.keys()[0]) + "]' for " + name)
                     value = [choices.keys()[0]]
                     assert value == default
                 else:
                     # Inform the user
-                    log.info("Only one option: automatically using a list of this value '[" + str(
-                        choices[0]) + "]' for " + name)
+                    log.info("Only one option: automatically using a list of this value '[" + tostr(choices[0]) + "]' for " + name)
                     value = [choices[0]]
                     assert value == default
 
@@ -3687,12 +3710,12 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 if isinstance(choices, dict):
                     # Inform the user
                     log.info(
-                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                        "Only one option: automatically using value of '" + tostr(choices.keys()[0]) + "' for " + name)
                     value = choices.keys()[0]
                     assert value == default
                 else:
                     # Inform the user
-                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    log.info("Only one option: automatically using value of '" + tostr(choices[0]) + "' for " + name)
                     value = choices[0]
                     assert value == default
 
@@ -3905,14 +3928,12 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 if isinstance(choices, dict):
-                    log.info("Only one option: automatically using a list of this value '[" + str(
-                        choices.keys()[0]) + "]' for " + name)
+                    log.info("Only one option: automatically using a list of this value '[" + tostr(choices.keys()[0]) + "]' for " + name)
                     value = [choices.keys()[0]]
                     assert value == default
                 else:
                     # Inform the user
-                    log.info("Only one option: automatically using a list of this value '[" + str(
-                        choices[0]) + "]' for " + name)
+                    log.info("Only one option: automatically using a list of this value '[" + tostr(choices[0]) + "]' for " + name)
                     value = [choices[0]]
                     assert value == default
 
@@ -3922,12 +3943,12 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 if isinstance(choices, dict):
                     # Inform the user
                     log.info(
-                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                        "Only one option: automatically using value of '" + tostr(choices.keys()[0]) + "' for " + name)
                     value = choices.keys()[0]
                     assert value == default
                 else:
                     # Inform the user
-                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    log.info("Only one option: automatically using value of '" + tostr(choices[0]) + "' for " + name)
                     value = choices[0]
                     assert value == default
 
@@ -3962,7 +3983,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
         log.success(name + ": " + description)
 
         # Ask the question
-        log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + str(default) + ")")
+        log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + tostr(default) + ")")
 
         value = default  # to remove warning from IDE that value could be referenced (below) without assignment
         while True:
@@ -4158,7 +4179,7 @@ def check_default(default, user_type):
                     #print(value, type(value), base_type)
                     value = check_default_single_value(value, base_type)
                     new_default.append(value)
-                except ValueError: raise ValueError("Default value '" + str(default) + "' is not of the right type '" + user_type + "'")
+                except ValueError: raise ValueError("Default value '" + tostr(default) + "' is not of the right type '" + user_type + "'")
             default = new_default
 
             # Check if ascending or descending
@@ -4209,7 +4230,7 @@ def try_to_convert_to_type(default, user_type):
     else:
         #raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
         try: return try_to_convert_from_string(tostr(default), user_type)
-        except ValueError: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
+        except ValueError: raise ValueError("Default value '" + tostr(default) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------
 
@@ -4228,6 +4249,6 @@ def try_to_convert_from_string(string, user_type):
     try:
         value = parsing_function(string)
         return value
-    except ValueError: raise ValueError("String '" + str(string) + "' could not be converted to the right type '" + user_type + "'")
+    except ValueError: raise ValueError("String '" + tostr(string) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------

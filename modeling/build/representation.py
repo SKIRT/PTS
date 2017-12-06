@@ -18,7 +18,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, load_instrument
-from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
+from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection, load_projection
 from ...core.simulation.grids import load_grid
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
@@ -143,7 +143,7 @@ class Representation(object):
 
         projections = OrderedDict()
         paths = self.get_projection_paths()
-        for name in paths: projections[name] = GalaxyProjection.from_file(paths[name])
+        for name in paths: projections[name] = load_projection(paths[name])
         return projections
 
     # -----------------------------------------------------------------

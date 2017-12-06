@@ -382,7 +382,7 @@ class SimplePropertyComposite(object):
         :return:
         """
 
-        from .configuration import prompt_variable
+        from .configuration import prompt_variable, prompt_fixed
 
         has_changed = False
 
@@ -401,6 +401,11 @@ class SimplePropertyComposite(object):
             ptype = self.get_ptype(name)
             default = self.get_value(name)
             choices = self.get_choices(name)
+
+            # Fixed variable: show value and description
+            if self.get_fixed(name):
+                value = prompt_fixed(name, description, self.get_value(name))
+                continue
 
             # Ask for the new value
             value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required)

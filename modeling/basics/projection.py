@@ -49,7 +49,8 @@ def load_projection(path):
     if "GalaxyProjection" in first_line: return GalaxyProjection.from_file(path)
     elif "FaceOnProjection" in first_line: return FaceOnProjection.from_file(path)
     elif "EdgeOnProjection" in first_line: return EdgeOnProjection.from_file(path)
-    else: raise ValueError("Unrecognized instrument file")
+    else: return GalaxyProjection.from_old_file(path)
+    #raise ValueError("Unrecognized instrument file")
 
 # -----------------------------------------------------------------
 
