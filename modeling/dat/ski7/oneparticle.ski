@@ -18,7 +18,7 @@
         <stellarSystem type="StellarSystem">
             <StellarSystem>
                 <components type="StellarComp">
-                    <SPHStellarComp filename="oneparticle.dat" velocity="false" writeLuminosities="false">
+                    <SPHStellarComp filename="oneparticle.dat" velocity="false" writeLuminosities="true">
                         <sedFamily type="SEDFamily">
                             <MappingsSEDFamily/>
                         </sedFamily>

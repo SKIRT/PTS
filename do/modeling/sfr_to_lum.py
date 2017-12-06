@@ -43,9 +43,26 @@ definition.add_flag("plot", "plot the SEDs", False)
 definition.add_flag("skirt", "use SKIRT", True)
 definition.add_flag("pts", "use PTS", True)
 definition.add_flag("sampled", "use SKIRT luminosities already sampled on a wavelength grid", True)
+definition.add_flag("only_skirt", "only SKIRT", False)
+definition.add_flag("only_pts", "only PTS", False)
+definition.add_flag("only_sampled", "only sampled", False)
+definition.add_optional("output", "directory_path", "output path")
 
 # Get the arguments
 config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosity in a certain band")
+
+# -----------------------------------------------------------------
+
+# Check
+if config.only_skirt:
+    config.pts = config.sampled = False
+    config.skirt = True
+elif config.only_pts:
+    config.skirt = config.sampled = False
+    config.pts = True
+elif config.only_sampled:
+    config.skirt = config.pts = False
+    config.sampled = True
 
 # -----------------------------------------------------------------
 
@@ -158,7 +175,7 @@ if config.skirt:
 
     # Get the SED
     playground = MappingsPlayground()
-    sed_skirt = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor)
+    sed_skirt = playground.simulate_sed(logp, sfr_scalar, config.metallicity, config.compactness, config.covering_factor, output_path=config.output)
 
     lum_skirt = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron")
     lum_skirt2 = sed_skirt.photometry_at(fltr_wavelength, unit="W/micron", interpolate=False)
@@ -167,8 +184,36 @@ if config.skirt:
     print("")
 
     # Show
-    show_luminosities(sed)
+    show_luminosities(sed_skirt)
     print("")
+
+    # EXTRA CHECK:
+    if config.output is not None:
+
+        # Determine path to SKIRT output file
+        luminosities_path = fs.join(config.output, "oneparticle_hii_luminosities.dat")
+
+        # Load the SED
+        sed_luminosities_skirt = SED.from_skirt(luminosities_path)
+
+        # Get the deltas
+        deltas = sed_luminosities_skirt.wavelength_deltas(unit="micron", asarray=True)
+
+        # Get the spectral luminosities
+        luminosities = sed_luminosities_skirt.photometry(unit="W", asarray=True)
+        spectral_luminosities = luminosities / deltas
+
+        # Create SED with wavelength luminosity densities
+        wavelengths = sed_luminosities_skirt.wavelengths(unit="micron", asarray=True)
+        extra_sed = SED.from_arrays(wavelengths, spectral_luminosities, wavelength_unit="micron", photometry_unit="W/micron")
+
+        print("EXTRA:")
+        print("")
+
+        # Show
+        show_luminosities(extra_sed)
+
+        print("")
 
 # Don't calculate with SKIRT
 else: sed_skirt = None

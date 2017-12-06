@@ -223,7 +223,7 @@ class MappingsPlayground(object):
 
     # -----------------------------------------------------------------
 
-    def simulate_sed(self, logp, sfr, met, logc, fpdr, silent=True):
+    def simulate_sed(self, logp, sfr, met, logc, fpdr, silent=True, output_path=None):
 
         """
         This function ...
@@ -233,24 +233,27 @@ class MappingsPlayground(object):
         :param logc:
         :param fpdr:
         :param silent:
+        :param output_path:
         :return:
         """
 
-        # Log debug
-        log.info("Simulating SED in temporary directory '" + self.temp_path + "' ...")
-
         # Parameter string
-        parameter_string = "SFR{} Z{} logC{} logP{} fPDR{}".format(sfr, met/Zsun, logc, logp, fpdr)
+        parameter_string = "SFR{} Z{} logC{} logP{} fPDR{}".format(sfr, met / Zsun, logc, logp, fpdr)
 
-        # Create a directory within the temporary directory
-        outpath = fs.join(self.temp_path, parameter_string)
-        fs.create_directory(outpath)
+        # Create output path
+        if output_path is None:
+            # Create a directory within the temporary directory
+            outpath = fs.join(self.temp_path, parameter_string)
+            fs.create_directory(outpath)
+
+        # Log debug
+        log.info("Simulating SED in temporary directory '" + output_path + "' ...")
 
         # Convert pressure to Pascal
         pressure = 10. ** logp * k * 1e6
 
         # Determine the path to the temporary data file
-        particle_path = fs.join(outpath, "oneparticle.dat")
+        particle_path = fs.join(output_path, "oneparticle.dat")
 
         # Output an appropriate particle data file
         datafile = open(particle_path, 'w')
@@ -258,28 +261,19 @@ class MappingsPlayground(object):
         datafile.close()
 
         # Determine the path to the ski file
-        ski_path = fs.join(outpath, "oneparticle.ski")
+        ski_path = fs.join(output_path, "oneparticle.ski")
 
         # Save the ski file to the temporary directory
         self.ski.saveto(ski_path)
 
         # Perform the SKIRT simulation
-        simulation = SkirtExec().execute(ski_path, brief=True, inpath=outpath, outpath=outpath, silent=silent)[0]
+        simulation = SkirtExec().execute(ski_path, brief=True, inpath=output_path, outpath=output_path, silent=silent)[0]
 
         # Load the fluxes, convert them to luminosities in erg/s
         sedpath = simulation.seddatpaths()[0]
 
         # Get distance
         distance = simulation.instrumentdistance(unit='m') * u("m")
-
-        # lambdav, fv = np.loadtxt(sedpath, usecols=(0, 1), unpack=True)
-        # lambdav = simulation.convert(lambdav, to_unit='micron', quantity='wavelength')
-        # lambdaLlambdav = simulation.luminosityforflux(fv, simulation.instrumentdistance(unit='m'), distance_unit='m',
-        #                                               luminositydensity_unit='W/micron',
-        #                                               wavelength=lambdav) * lambdav * 1e7
-        #
-        # # Create the SED
-        # sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s", density=True, distance=distance)
 
         # Simpler
         sed = SED.from_skirt(sedpath, distance=distance)

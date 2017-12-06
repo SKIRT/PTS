@@ -500,6 +500,37 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
+    def wavelength_grid(self, unit=None, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param unit:
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        from ..simulation.wavelengthgrid import WavelengthGrid
+        return WavelengthGrid.from_wavelengths(self.wavelengths(unit=unit, min_wavelength=min_wavelength, max_wavelength=max_wavelength))
+
+    # -----------------------------------------------------------------
+
+    def wavelength_deltas(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
+
+        """
+        Thisn function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        return self.wavelength_grid(unit=unit, min_wavelength=min_wavelength, max_wavelength=max_wavelength).deltas(unit=unit, asarray=asarray, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
     def frequencies(self, unit="Hz", asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
 
         """
