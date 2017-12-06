@@ -99,16 +99,16 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # 6. Adapt dust
         if self.dust: self.adapt_dust()
 
-        # Load representations
+        # 7. Load representations
         if self.representations: self.load_representations()
 
-        # 7. Adapt representations
+        # 8. Adapt representations
         if self.representations: self.adapt_representations()
 
-        # 8. Write
+        # 9. Write
         self.write()
 
-        # 8. Show
+        # 10. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -127,6 +127,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
         # Load the model
         self.definition = self.get_model_definition(self.model_name)
+
+        # Check
+        if self.config.no_components and self.config.representations is None: raise ValueError("If not adapting components, select representations to adapt")
+        if self.config.no_components and self.config.component_name is not None: raise ValueError("Not adapting components but component name is specified")
+
+        # Set
+        if self.config.no_components: self.config.dust_or_stellar = []
 
         # Check configuration
         if self.config.component_name is not None:
@@ -1054,11 +1061,50 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Loop over the representation names
         for name in self.representation_names:
 
+            # Debugging
+            log.debug("Loading the '" + name + "' model representation ...")
+
             # Load the representation
             representation = self.suite.get_representation(name)
 
             # Add
             self.model_representations[name] = representation
+
+    # -----------------------------------------------------------------
+
+    def get_projections(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        return self.model_representations[representation_name].get_projections()
+
+    # -----------------------------------------------------------------
+
+    def get_instruments(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        return self.model_representations[representation_name].get_instruments()
+
+    # -----------------------------------------------------------------
+
+    def get_dust_grid(self, representation_name):
+
+        """
+        This function ....
+        :param representation_name:
+        :return:
+        """
+
+        return self.model_representations[representation_name].dust_grid
 
     # -----------------------------------------------------------------
 
@@ -1072,10 +1118,95 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting model representations ...")
 
+        # Projections
+        self.adapt_projections()
+
+        # Instruments
+        self.adapt_instruments()
+
+        # Dust grids
+        self.adapt_dust_grids()
+
+    # -----------------------------------------------------------------
+
+    def adapt_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting projections ...")
+
         # Loop over the representations
         for name in self.representation_names:
 
-            pass
+            # Debugging
+            log.debug("Adapting the '" + name + "' projections ...")
+
+            # Get projections
+            projections = self.get_projections(name)
+
+            # Loop over the projections
+            for label in projections:
+
+                pass
+
+    # -----------------------------------------------------------------
+
+    def adapt_instruments(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting instruments ...")
+
+        # Loop over the representations
+        for name in self.representation_names:
+
+            # Debugging
+            log.debug("Adapting the '" + name + "' instruments ...")
+
+            # Get instruments
+            instruments = self.get_instruments(name)
+
+            # Loop over the instruments
+            for label in instruments:
+
+                # Get the instrument
+                instrument = instruments[label]
+
+                # Prompt
+                instrument.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                             startswith=self.config.startswith, endswith=self.config.endswith)
+
+                # Save
+
+    # -----------------------------------------------------------------
+
+    def adapt_dust_grids(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting dust grids ...")
+
+        # Loop over the representations
+        for name in self.representation_names:
+
+            # Debugging
+            log.debug("Adapting the '" + name + "' dust grid ...")
+
+            # Get dust grid
+            grid = self.get_dust_grid(name)
 
     # -----------------------------------------------------------------
 

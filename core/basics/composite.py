@@ -72,6 +72,9 @@ class SimplePropertyComposite(object):
         # The descriptions: ordered to remember the order
         self._descriptions = OrderedDict()
 
+        # The fixed flags
+        self._fixed = dict()
+
         # The parsing types
         self._ptypes = dict()
 
@@ -80,7 +83,7 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def add_property(self, name, ptype, description, default_value=None, choices=None, convert_default=False):
+    def add_property(self, name, ptype, description, default_value=None, choices=None, convert_default=False, fixed=False):
 
         """
         This function ...
@@ -90,6 +93,7 @@ class SimplePropertyComposite(object):
         :param default_value:
         :param choices:
         :param convert_default:
+        :param fixed:
         :return:
         """
 
@@ -107,6 +111,9 @@ class SimplePropertyComposite(object):
 
         # Set the choices
         self._choices[name] = choices
+
+        # Set the fixed flag
+        self._fixed[name] = fixed
 
         # Convert default
         if default_value is not None and convert_default:
@@ -178,18 +185,22 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def add_section(self, name, description, dynamic=False):
+    def add_section(self, name, description, dynamic=False, fixed=False):
 
         """
         This function ...
         :param name:
         :param description:
         :param dynamic:
+        :param fixed:
         :return:
         """
 
         # Set the description
         self._descriptions[name] = description
+
+        # Set fixed flag
+        self._fixed[name] = fixed
 
         # Set an attribute that is a nested SimplePropertyComposite (or a Map)
         if dynamic: self.__dict__[name] = Map() #setattr(self, name, Map())
@@ -249,6 +260,9 @@ class SimplePropertyComposite(object):
             #if name in self._descriptions:
 
             assert name in self._descriptions
+
+            if self.get_fixed(name): raise ValueError("This is a fixed section")
+
             #print(value)
             #print(getattr(self, name))
             #print(name in self.__dict__)
@@ -297,6 +311,9 @@ class SimplePropertyComposite(object):
                 parsing_function = getattr(parsing, the_type)
                 try: value = parsing_function(string)
                 except ValueError: raise ValueError("The value of '" + str(value) + "' for '" + name +  "' given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
+
+        # Check whether not fixed
+        if self.get_fixed(name): raise ValueError("This is a fixed property or section")
 
         # Set the attribute
         self.__dict__[name] = value
@@ -349,7 +366,8 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None, required=False):
+    def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
+                          startswith=None, endswith=None, required=True):
 
         """
         This function ...
@@ -358,11 +376,15 @@ class SimplePropertyComposite(object):
         :param not_contains:
         :param exact_name:
         :param exact_not_name:
+        :param startswith:
+        :param endswith:
         :param required:
         :return:
         """
 
         from .configuration import prompt_variable
+
+        has_changed = False
 
         # Loop over the properties
         for name in self.property_names:
@@ -372,6 +394,8 @@ class SimplePropertyComposite(object):
             if not_contains is not None and not_contains in name: continue
             if exact_name is not None and name != exact_name: continue
             if exact_not_name is not None and name == exact_not_name: continue
+            if startswith is not None and not name.startswith(startswith): continue
+            if endswith is not None and not name.endswith(endswith): continue
 
             description = self.get_description(name)
             ptype = self.get_ptype(name)
@@ -379,7 +403,7 @@ class SimplePropertyComposite(object):
             choices = self.get_choices(name)
 
             # Ask for the new value
-            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=True)
+            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required)
             if default is None and value == "": continue
 
             # Set the property
@@ -391,6 +415,9 @@ class SimplePropertyComposite(object):
                 # Set the new value
                 self.set_property(name, value)
 
+                # Set flag
+                has_changed = True
+
         # Recursive: also loop over the sections
         if recursive:
 
@@ -398,7 +425,11 @@ class SimplePropertyComposite(object):
             for name in self.section_names:
 
                 # Prompt the settings of the section
-                self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
+                has_changed_section = self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
+                if has_changed_section: has_changed = True
+
+        # Return whether any property changed
+        return has_changed
 
     # -----------------------------------------------------------------
 
@@ -520,6 +551,34 @@ class SimplePropertyComposite(object):
         """
 
         return self._choices[name]
+
+    # -----------------------------------------------------------------
+
+    def get_fixed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._fixed[name]
+
+    # -----------------------------------------------------------------
+
+    def set_fixed(self, name, value=None):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        if value is not None:
+            self._fixed[name] = False # to be able to set value
+            self.set_property(name, value)
+        self._fixed[name] = True
 
     # -----------------------------------------------------------------
 

@@ -23,6 +23,7 @@ from ...magic.basics.vector import Extent
 from ...magic.basics.stretch import PhysicalExtent
 from ...magic.basics.coordinate import PixelCoordinate, PhysicalCoordinate
 from ...core.tools import types
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
@@ -33,43 +34,154 @@ from ...core.tools import types
 
 # -----------------------------------------------------------------
 
-# TODO: make this derived from SimplePropertyComposite
-class GalaxyProjection(object):
+def load_projection(path):
 
     """
     This function ...
+    :param path:
+    :return:
     """
 
-    def __init__(self, distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+    # Get the first line of the file
+    with open(path, 'r') as f: first_line = f.readline()
+
+    # Create the appropriate model
+    if "GalaxyProjection" in first_line: return GalaxyProjection.from_file(path)
+    elif "FaceOnProjection" in first_line: return FaceOnProjection.from_file(path)
+    elif "EdgeOnProjection" in first_line: return EdgeOnProjection.from_file(path)
+    else: raise ValueError("Unrecognized instrument file")
+
+# -----------------------------------------------------------------
+
+class GalaxyProjection(SimplePropertyComposite):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
 
         """
         This function ...
-        :param distance:
-        :param inclination:
-        :param azimuth:
-        :param position_angle:
-        :param pixels_x:
-        :param pixels_y:
-        :param center_x:
-        :param center_y:
-        :param field_x:
-        :param field_y:
+        :param kwargs:
         """
 
-        # Set properties
-        self.distance = distance
-        self.inclination = Angle(inclination, "deg")
-        self.azimuth = Angle(azimuth, "deg")
-        self.position_angle = Angle(position_angle, "deg")
-        self.pixels_x = pixels_x
-        self.pixels_y = pixels_y
-        self.center_x = center_x
-        self.center_y = center_y
-        self.field_x_physical = field_x
-        self.field_y_physical = field_y
+        # Call the constructor of the base class
+        super(GalaxyProjection, self).__init__()
 
-        # The path
-        self.path = None
+        # Define properties
+        self.add_property("distance", "quantity", "distance", None)
+        self.add_property("inclination", "angle", "inclination", None)
+        self.add_property("azimuth", "angle", "azimuth", None)
+        self.add_property("position_angle", "angle", "position angle", None)
+        self.add_property("pixels_x", "positive_integer", "number of pixels along the horizontal axis", None)
+        self.add_property("pixels_y", "positive_integer", "number of pixels along the vertical axis", None)
+        self.add_property("center_x", "length_quantity", "x position of the galaxy center in the frame", None)
+        self.add_property("center_y", "length_quantity", "y position of the galaxy center in the frame", None)
+        self.add_property("field_x", "length_quantity", "x field of view", None)
+        self.add_property("field_y", "length_quantity", "y field of view", None)
+
+        # Set values
+        self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    # compatibility
+    @classmethod
+    def from_file(cls, path, remote=None):
+
+        """
+        Thisf unction ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        try: return super(GalaxyProjection, cls).from_file(path, remote=remote)
+        except ValueError: return cls.from_old_file(path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_old_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        distance = None
+        inclination = None
+        azimuth = None
+        position_angle = None
+        pixels_x = None
+        pixels_y = None
+        center_x = None
+        center_y = None
+        field_x = None
+        field_y = None
+
+        # Read the projection file
+        with open(path, 'r') as projection_file:
+
+             # Loop over all lines in the file
+             for line in projection_file:
+
+                 splitted = line.split(": ")
+
+                 if splitted[0] == "Distance": distance = get_quantity(splitted[1])
+                 elif splitted[0] == "Inclination": inclination = get_angle(splitted[1])
+                 elif splitted[0] == "Azimuth": azimuth = get_angle(splitted[1])
+                 elif splitted[0] == "Position angle": position_angle = get_angle(splitted[1])
+                 elif splitted[0] == "Pixels x": pixels_x = int(splitted[1])
+                 elif splitted[0] == "Pixels y": pixels_y = int(splitted[1])
+                 elif splitted[0] == "Center x": center_x = get_quantity(splitted[1])
+                 elif splitted[0] == "Center y": center_y = get_quantity(splitted[1])
+                 elif splitted[0] == "Field x": field_x = get_quantity(splitted[1])
+                 elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
+
+        # Check if all defined
+        assert distance is not None
+        assert inclination is not None
+        assert azimuth is not None
+        assert position_angle is not None
+        assert pixels_x is not None
+        assert pixels_y is not None
+        assert center_x is not None
+        assert center_y is not None
+        assert field_x is not None
+        assert field_y is not None
+
+        # Create and return
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
+
+    # -----------------------------------------------------------------
+
+    # compatibility
+    @property
+    def field_x_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.field_x
+
+    # -----------------------------------------------------------------
+
+    # compatibility
+    @property
+    def field_y_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.field_y
 
     # -----------------------------------------------------------------
 
@@ -126,7 +238,8 @@ class GalaxyProjection(object):
         if isinstance(center, PixelCoordinate): center = PhysicalCoordinate(center.x * pixelscale.x, center.y * pixelscale.y)
 
         # Create and return
-        return cls(distance, inclination, azimuth, position_angle, npixels.x, npixels.y, center.x, center.y, field.x, field.y)
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   pixels_x=npixels.x, pixels_y=npixels.y, center_x=center.x, center_y=center.y, field_x=field.x, field_y=field.y)
 
     # -----------------------------------------------------------------
 
@@ -182,7 +295,8 @@ class GalaxyProjection(object):
         pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -227,7 +341,9 @@ class GalaxyProjection(object):
         position_angle = deprojection.position_angle
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_physical.x, center_physical.y, field.x, field.y)
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_physical.x, center_y=center_physical.y,
+                   field_x=field.x, field_y=field.y)
 
     # -----------------------------------------------------------------
 
@@ -291,57 +407,8 @@ class GalaxyProjection(object):
         else: raise ValueError("Unrecognized instrument object")
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        distance = None
-        inclination = None
-        azimuth = None
-        position_angle = None
-        pixels_x = None
-        pixels_y = None
-        center_x = None
-        center_y = None
-        field_x = None
-        field_y = None
-
-        # Read the projection file
-        with open(path, 'r') as projection_file:
-
-            # Loop over all lines in the file
-            for line in projection_file:
-
-                splitted = line.split(": ")
-
-                if splitted[0] == "Distance": distance = get_quantity(splitted[1])
-                elif splitted[0] == "Inclination": inclination = get_angle(splitted[1])
-                elif splitted[0] == "Azimuth": azimuth = get_angle(splitted[1])
-                elif splitted[0] == "Position angle": position_angle = get_angle(splitted[1])
-                elif splitted[0] == "Pixels x": pixels_x = int(splitted[1])
-                elif splitted[0] == "Pixels y": pixels_y = int(splitted[1])
-                elif splitted[0] == "Center x": center_x = get_quantity(splitted[1])
-                elif splitted[0] == "Center y": center_y = get_quantity(splitted[1])
-                elif splitted[0] == "Field x": field_x = get_quantity(splitted[1])
-                elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
-
-        # Create and return a new class instance
-        projection = cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
-
-        # Set the path
-        projection.path = path
-
-        # Return the projection
-        return projection
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -354,48 +421,6 @@ class GalaxyProjection(object):
 
         raise NotImplementedError("Not implemented")
 
-    # -----------------------------------------------------------------
-
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether the path is valid
-        if self.path is None: raise RuntimeError("Path is not defined")
-
-        # Save
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Create the projection file
-        with open(path, 'w') as projection_file:
-
-            print("Distance:", str(self.distance), file=projection_file)
-            print("Inclination:", str(self.inclination.to("deg").value) + " deg", file=projection_file)
-            print("Azimuth:", str(self.azimuth.to("deg").value) + " deg", file=projection_file)
-            print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=projection_file)
-            print("Pixels x:", str(self.pixels_x), file=projection_file)
-            print("Pixels y:", str(self.pixels_y), file=projection_file)
-            print("Center x:", str(self.center_x), file=projection_file)
-            print("Center y:", str(self.center_y), file=projection_file)
-            print("Field x:", str(self.field_x_physical), file=projection_file)
-            print("Field y:", str(self.field_y_physical), file=projection_file)
-
-        # Update the path
-        self.path = path
-
 # -----------------------------------------------------------------
 
 class FaceOnProjection(GalaxyProjection):
@@ -404,14 +429,35 @@ class FaceOnProjection(GalaxyProjection):
     This class ...
     """
 
-    def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+    #def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(FaceOnProjection, self).__init__(distance, 0.0, 0.0, 90., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        # inclination, azimuth, position_angle
+        #super(FaceOnProjection, self).__init__(distance, 0.0, 0.0, 90., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+        # Call the constructor of the base class
+        super(FaceOnProjection, self).__init__()
+
+        from ...core.units.quantity import zero_angle, right_angle
+
+        # Checks
+        if "inclination" in kwargs and kwargs.pop("inclination") != zero_angle(): raise ValueError("Inclination is not zero")
+        if "azimuth" in kwargs and kwargs.pop("azimuth") != zero_angle(): raise ValueError("Azimuth is not zero")
+        if "position_angle" in kwargs and kwargs.pop("position_angle") != right_angle(): raise ValueError("Position angle is not 90 degrees")
+
+        # Set fixed properties
+        self.set_fixed("inclination", value=zero_angle())
+        self.set_fixed("azimuth", value=zero_angle())
+        self.set_fixed("position_angle", value=right_angle())
+
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -430,7 +476,7 @@ class FaceOnProjection(GalaxyProjection):
         pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
 
         # Call the constructor
-        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance=distance, pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -462,7 +508,7 @@ class FaceOnProjection(GalaxyProjection):
         field_y = pixelscale * pixels_y
 
         # Create and return
-        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance=distance, pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -476,8 +522,9 @@ class FaceOnProjection(GalaxyProjection):
         """
 
         # Create and return
-        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
-                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
+        return cls(distance=projection.distance, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
+                   center_x=projection.center_x, center_y=projection.center_y, field_x=projection.field_x_physical,
+                   field_y=projection.field_y_physical)
 
 # -----------------------------------------------------------------
 
@@ -487,7 +534,8 @@ class EdgeOnProjection(GalaxyProjection):
     This class ...
     """
 
-    def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+    #def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
@@ -501,7 +549,25 @@ class EdgeOnProjection(GalaxyProjection):
         """
 
         # Call the constructor of the base class
-        super(EdgeOnProjection, self).__init__(distance, 90., 0., 0., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        #super(EdgeOnProjection, self).__init__(distance, 90., 0., 0., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+        # Call the constructor of the base class
+        super(EdgeOnProjection, self).__init__()
+
+        from ...core.units.quantity import zero_angle, right_angle
+
+        # Checks
+        if "inclination" in kwargs and kwargs.pop("inclination") != right_angle(): raise ValueError("Inclination is not 90 degrees")
+        if "azimuth" in kwargs and kwargs.pop("azimuth") != zero_angle(): raise ValueError("Azimuth is not zero")
+        if "position_angle" in kwargs and kwargs.pop("position_angle") != zero_angle(): raise ValueError("Position angle is not zero")
+
+        # Set fixed properties
+        self.set_fixed("inclination", value=right_angle())
+        self.set_fixed("azimuth", value=zero_angle())
+        self.set_fixed("position_angle", value=zero_angle())
+
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -520,7 +586,7 @@ class EdgeOnProjection(GalaxyProjection):
         pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
 
         # Call the constructor
-        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance=distance, pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -552,7 +618,7 @@ class EdgeOnProjection(GalaxyProjection):
         field_y = pixelscale * pixels_y
 
         # Call the constructor
-        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        return cls(distance=distance, pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -566,8 +632,9 @@ class EdgeOnProjection(GalaxyProjection):
         """
 
         # Create and return
-        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
-                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
+        return cls(distance=projection.distance, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
+                   center_x=projection.center_x, center_y=projection.center_y, field_x=projection.field_x_physical,
+                   field_y=projection.field_y_physical)
 
 # -----------------------------------------------------------------
 

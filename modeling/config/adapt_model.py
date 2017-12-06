@@ -30,6 +30,9 @@ if not suite.has_models: raise ValueError("There are currently no models")
 # The model name
 definition.add_required("name", "string", "name of the model to be adapted", choices=suite.model_names)
 
+# No components (only representations)
+definition.add_flag("no_components", "don't adapt model components, only model representation(s)", False)
+
 # Dust or stellar
 definition.add_positional_optional("dust_or_stellar", "string_list", "adapt dust or stellar component(s)", default=dust_and_stellar, choices=dust_and_stellar)
 
@@ -44,6 +47,16 @@ definition.add_positional_optional("matching", "string", "only adapt properties 
 # Also adapt representations
 if suite.has_representations: definition.add_optional("representations", "string_list", "adapt properties of these representations", choices=suite.representation_names)
 else: definition.add_fixed("representations", "adapt properties of these representations", None)
+
+# -----------------------------------------------------------------
+
+# Select certain properties
+definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
+definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
+definition.add_optional("exact_name", "string", "only adapt properties with this exact string as their name")
+definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
+definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
+definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
 
 # -----------------------------------------------------------------
 

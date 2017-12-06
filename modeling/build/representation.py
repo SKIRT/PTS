@@ -12,9 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
+from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, load_instrument
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...core.simulation.grids import load_grid
 from ...core.simulation.grids import FileTreeDustGrid
@@ -120,6 +123,31 @@ class Representation(object):
 
     # -----------------------------------------------------------------
 
+    def get_projection_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.projections_path, extension="proj", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def get_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        projections = OrderedDict()
+        paths = self.get_projection_paths()
+        for name in paths: projections[name] = GalaxyProjection.from_file(paths[name])
+        return projections
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def earth_projection(self):
 
@@ -189,6 +217,31 @@ class Representation(object):
         """
 
         return self.faceon_projection.pixelscale
+
+    # -----------------------------------------------------------------
+
+    def get_instrument_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.instruments_path, extension="instr", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def get_instruments(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        instruments = OrderedDict()
+        paths = self.get_instrument_paths()
+        for name in paths: instruments[name] = load_instrument(paths[name])
+        return instruments
 
     # -----------------------------------------------------------------
 
