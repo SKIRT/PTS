@@ -1527,7 +1527,20 @@ def photometric_density_quantity(argument):
     """
 
     from ..units.parsing import parse_quantity
-    return parse_quantity(argument, density=True)
+    return parse_quantity(argument, density=True, density_strict=True)
+
+# -----------------------------------------------------------------
+
+def photometric_brightness_quantity(argument):
+
+    """
+    THis function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    return parse_quantity(argument, brightness=True, brightness_strict=True)
 
 # -----------------------------------------------------------------
 

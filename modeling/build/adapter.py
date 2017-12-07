@@ -400,10 +400,8 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         :return:
         """
 
-        fuv_attenuation = self.fuv_attenuation
-        factor = extinction.observed_to_intrinsic_factor(fuv_attenuation)
-        unattenuated_fuv_flux = self.observed_flux(self.fuv_filter, unit="Jy") * factor
-        return unattenuated_fuv_flux
+        factor = extinction.observed_to_intrinsic_factor(self.fuv_attenuation)
+        return self.observed_flux(self.fuv_filter, unit="Jy") * factor
 
     # -----------------------------------------------------------------
 
@@ -454,6 +452,30 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def intrinsic_ionizing_fuv_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_ionizing_fuv_luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_ionizing_fuv_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_ionizing_fuv_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def intrinsic_young_fuv_luminosity(self):
 
         """
@@ -463,9 +485,35 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
         # Check
         if self.intrinsic_ionizing_fuv_luminosity >= self.intrinsic_fuv_luminosity: raise ValueError("Cannot determine the initial normalization of young and ionizing component: intrinsic FUV luminosity of ionizing stars based on SFR is larger than the total unattenuated FUV luminosity")
+        if self.intrinsic_ionizing_fuv_luminosity / self.intrinsic_fuv_luminosity > 0.5: log.warning("The contribution of ionizing stars to the intrinsic FUV luminosity is more than 50%")
+        if self.intrinsic_ionizing_fuv_luminosity / self.intrinsic_fuv_luminosity < 0.1: log.warning("The contribution of ionizing stars to the intrinsic FUV luminosity is less than 10%")
 
         # Return the difference fo the total unattenuated FUV luminosity and the intrinsic FUV luminosity of the ionizing stars
         return self.intrinsic_fuv_luminosity - self.intrinsic_ionizing_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_young_fuv_luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_young_fuv_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 

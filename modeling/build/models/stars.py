@@ -88,6 +88,9 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         self.young_map_name = None
         self.ionizing_map_name = None
 
+        # The Mappings template for the ionizing stellar component
+        self.ionizing_mappings = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -107,11 +110,11 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # 3. Set the evolved stellar disk component
         if self.config.old: self.build_old()
 
-        # 4. Set the young stellar component
-        if self.config.young: self.build_young()
-
-        # 5. Set the ionizing stellar component
+        # 4. Set the ionizing stellar component
         if self.config.ionizing: self.build_ionizing()
+
+        # 5. Set the young stellar component
+        if self.config.young: self.build_young()
 
         # 6. Build additional stellar components
         if self.config.additional: self.build_additional()
@@ -148,8 +151,50 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_parameters(self, label, definition):
+
+        """
+        This function ...
+        :param label:
+        :param definition:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Getting parameters for the " + label + " component ...")
+
+        # Use default values
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter(label, add_cwd=False, add_logging=False)
+            config = setter.run(definition)
+
+        # Prompt for the values
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter(label, add_cwd=False, add_logging=False)
+            config = setter.run(definition, prompt_optional=True)
+
+        # Return the parameters mapping
+        return config
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fuv_filter.pivot
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def unattenuated_fuv_flux(self):
+    def intrinsic_fuv_flux(self):
 
         """
         This function ...
@@ -163,26 +208,93 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unattenuated_fuv_flux_young_stars(self):
+    def intrinsic_fuv_luminosity(self):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
-        return self.config.fuv_ionizing_contribution * self.unattenuated_fuv_flux
+        return self.intrinsic_fuv_flux.to("W/micron", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unattenuated_fuv_flux_ionizing_stars(self):
+    def intrinsic_ionizing_fuv_luminosity(self):
 
         """
-        This function ....
-        :return: 
+        This function ...
+        :return:
         """
 
-        return (1. - self.config.fuv_ionizing_contribution) * self.unattenuated_fuv_flux
+        # Get the spectral luminosity at the FUV wavelength
+        return self.ionizing_mappings.luminosity_at(self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_ionizing_fuv_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_ionizing_fuv_luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_ionizing_fuv_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_ionizing_fuv_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if self.intrinsic_ionizing_fuv_luminosity >= self.intrinsic_fuv_luminosity: raise ValueError("Cannot determine the initial normalization of young and ionizing component: intrinsic FUV luminosity of ionizing stars based on SFR is larger than the total unattenuated FUV luminosity")
+        if self.intrinsic_ionizing_fuv_luminosity / self.intrinsic_fuv_luminosity > 0.5: log.warning("The contribution of ionizing stars to the intrinsic FUV luminosity is more than 50%")
+        if self.intrinsic_ionizing_fuv_luminosity / self.intrinsic_fuv_luminosity < 0.1: log.warning("The contribution of ionizing stars to the intrinsic FUV luminosity is less than 10%")
+
+        # Return the difference fo the total unattenuated FUV luminosity and the intrinsic FUV luminosity of the ionizing stars
+        return self.intrinsic_fuv_luminosity - self.intrinsic_ionizing_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_young_fuv_luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_young_fuv_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -197,7 +309,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building the old stellar bulge component ...")
 
         # Get the parameters
-        self.get_bulge_parameters()
+        self.set_bulge_parameters()
 
         # Load the model
         self.load_bulge_model()
@@ -218,7 +330,31 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_bulge_parameters(self):
+    @lazyproperty
+    def bulge_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_fluxdensity.to("W/micron", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.i1_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def set_bulge_parameters(self):
 
         """
         This function ...
@@ -238,29 +374,28 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("template", "string", "template SED family", default=self.config.default_old_bulge_template)
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_old_bulge_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_bulge_metallicity)
-        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
+        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
+        definition.add_optional("neutral_luminosity", "photometric_density_quantity", "intrinsic neutral luminosity density at IRAC 3.6 micron wavelength", default=self.bulge_neutral_luminosity)
 
-        # Use the default values
-        if self.config.use_defaults:
-
-            setter = PassiveConfigurationSetter(bulge_component_name, add_logging=False, add_cwd=False)
-            config = setter.run(definition)
-
-        # Prompt for the values
-        else:
-
-            # Prompt for the values
-            setter = InteractiveConfigurationSetter(bulge_component_name, add_logging=False, add_cwd=False)
-            config = setter.run(definition, prompt_optional=True)
+        # Get the parameters
+        label = bulge_component_name
+        config = self.get_parameters(label, definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
-        luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        #luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
+        #assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+
+        # Convert neutral luminosity to spectral luminosity
+        luminosity = config.neutral_luminosity.to("W/micron", wavelength=self.i1_wavelength)
 
         # Set the luminosity
         config.filter = str(self.i1_filter)
+        config.wavelength = self.i1_wavelength
         config.luminosity = luminosity
+
+        # Calculate flux density
+        config.fluxdensity = luminosity.to("Jy", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
 
         # Set the title
         config.title = titles[bulge_component_name]
@@ -296,7 +431,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building the old stellar disk component ...")
 
         # 1. Get the parameters
-        self.get_old_parameters()
+        self.set_old_parameters()
 
         # 2. Load the map
         self.load_old_map()
@@ -319,6 +454,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def i1_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.i1_filter.pivot
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def old_fluxdensity(self):
 
@@ -338,7 +485,31 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_old_parameters(self):
+    @lazyproperty
+    def old_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_fluxdensity.to("W/micron", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_fluxdensity.to("Lsun", density=True, density_strict=True, wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    def set_old_parameters(self):
 
         """
         This function ...
@@ -359,29 +530,30 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_old_disk_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_disk_metallicity)
         definition.add_optional("scale_height", "quantity", "scale height", default=self.old_scaleheight)
-        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.old_fluxdensity)
+        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.old_fluxdensity)
+        definition.add_optional("neutral_luminosity", "photometric_density_quantity", "intrinsic neutral luminosity density at IRAC 3.6 micron wavelength", default=self.old_neutral_luminosity)
 
-        # Use default values
-        if self.config.use_defaults:
+        # Set the label
+        label = "old stellar disk"
 
-            setter = PassiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition)
-
-        # Prompt for the values
-        else:
-
-            # Prompt for the values
-            setter = InteractiveConfigurationSetter("old stellar disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition, prompt_optional=True)
+        # Get the parameters
+        config = self.get_parameters(label, definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
-        luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        #luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
+        #assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+
+        # Convert neutral luminosity to spectral luminosity
+        luminosity = config.neutral_luminosity.to("W/micron", wavelength=self.i1_wavelength)
 
         # Set the luminosity
         config.filter = str(self.i1_filter)
+        config.wavelength = self.i1_wavelength
         config.luminosity = luminosity
+
+        # Set flux density
+        config.fluxdensity = luminosity.to("Jy", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
 
         # Set title
         config.title = titles[old_component_name]
@@ -486,7 +658,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Building the young stellar component ...")
 
         # 1. Get the parameters
-        self.get_young_parameters()
+        self.set_young_parameters()
 
         # 2. Load the map
         self.load_young_map()
@@ -508,7 +680,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_young_parameters(self):
+    def set_young_parameters(self):
 
         """
         This function ...
@@ -517,9 +689,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Inform the user
         log.info("Configuring the young stellar component ...")
-
-        # Get the FUV flux density
-        fluxdensity = self.unattenuated_fuv_flux_young_stars
 
         # Check defaults
         if self.config.default_young_template is None: raise ValueError("The default young stellar template cannot be undefined")
@@ -532,29 +701,30 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_young_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_young_metallicity)
         definition.add_optional("scale_height", "quantity", "scale height", default=self.young_scaleheight)
-        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+        definition.add_optional("neutral_luminosity", "photometric_density_quantity", "intrinsic neutral luminosity density at FUV wavelength", default=self.intrinsic_young_fuv_luminosity)
 
-        # Use default values
-        if self.config.use_defaults:
+        # Set label
+        label = "young stellar disk"
 
-            setter = PassiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition)
-
-        # Prompt for the values
-        else:
-
-            # Prompt for the values
-            setter = InteractiveConfigurationSetter("young stellar disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition, prompt_optional=True)
+        # Get the parameters
+        config = self.get_parameters(label, definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
-        luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
+        #luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
+        #assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
-        # Set the luminosi
+        # Convert neutral luminosity to spectral luminosity
+        luminosity = config.neutral_luminosity.to("W/micron", wavelength=self.fuv_wavelength)
+
+        # Set the luminosity
         config.filter = str(self.fuv_filter)
+        config.wavelength = self.fuv_wavelength
         config.luminosity = luminosity
+
+        # Set flux density
+        config.fluxdensity = luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
 
         # Set the title
         config.title = titles[young_component_name]
@@ -707,18 +877,11 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("scale_height", "quantity", "scale height", default=self.ionizing_scaleheight)
         definition.add_optional("sfr", "positive_real", "SFR", default=self.config.default_sfr)
 
-        # Use default values
-        if self.config.use_defaults:
+        # Set label
+        label = "ionizing stellar disk"
 
-            setter = PassiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
-            config = setter.run(definition)
-
-        # Prompt for the values
-        else:
-
-            # Prompt for the values
-            setter = InteractiveConfigurationSetter("ionizing stellar disk", add_cwd=False, add_logging=False)
-            config = setter.run(definition, prompt_optional=True)
+        # Get the parameters for this component
+        config = self.get_parameters(label, definition)
 
         # Get the parameters
         metallicity = config.metallicity
@@ -728,15 +891,20 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         sfr = config.sfr
 
         # Generate Mappings template for the specified parameters
-        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
+        self.ionizing_mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
         # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Get the spectral luminosity at the FUV wavelength
-        luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
+        luminosity = self.ionizing_mappings.luminosity_at(self.fuv_filter.pivot)
 
         # Set the luminosity
         config.filter = str(self.fuv_filter)
+        config.wavelength = self.fuv_wavelength
         config.luminosity = luminosity
+
+        # Set neutral luminosity and flux density
+        config.neutral_luminosity = luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
+        config.fluxdensity = luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
 
         # Set title
         config.title = titles[ionizing_component_name]

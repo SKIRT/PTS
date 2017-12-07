@@ -77,7 +77,7 @@ definition.add_optional("ionizing_scaleheight_ratio", "real", "ratio of the ioni
 ## OTHER
 definition.add_optional("default_sfr", "real", "default value for the SFR", default_sfr)
 definition.add_optional("fuv_attenuation", "real", "estimate of the average FUV band attenuation", default_fuv_attenuation)
-definition.add_optional("fuv_ionizing_contribution", "real", "relative contribution to the FUV flux from ionizing stars", default_ionizing_contribution)
+#definition.add_optional("fuv_ionizing_contribution", "real", "relative contribution to the FUV flux from ionizing stars", default_ionizing_contribution)
 
 # Star formation (Mappings)
 definition.add_optional("default_ionizing_compactness", "real", "compactness", 6.)
