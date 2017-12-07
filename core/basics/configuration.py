@@ -3360,7 +3360,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = []
                     while True:
@@ -3386,7 +3386,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = []  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3411,7 +3411,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + tostr(suggestion) + suggestion_description)
+                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -3562,7 +3562,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -3591,7 +3591,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3621,7 +3621,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + tostr(suggestion) + suggestion_description)
+                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -3790,7 +3790,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -3819,7 +3819,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestion, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + tostr(suggestion) + suggestion_description)
+                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -3850,7 +3850,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + tostr(suggestion) + suggestion_description)
+                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:

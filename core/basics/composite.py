@@ -112,6 +112,9 @@ class SimplePropertyComposite(object):
         # Set the choices
         self._choices[name] = choices
 
+        # Set fixed flag to False
+        self._fixed[name] = False  # to be able to set value
+
         # Convert default
         if default_value is not None and convert_default:
             parsing_function = getattr(parsing, ptype)
@@ -149,6 +152,9 @@ class SimplePropertyComposite(object):
 
         # Set the description
         self._descriptions[name] = description
+
+        # Set fixed flag to False
+        self._fixed[name] = False  # to be able to set value
 
         # Set the attribute with the default value
         setattr(self, name, value)
@@ -481,12 +487,17 @@ class SimplePropertyComposite(object):
         # Add suggested
         if suggestions is not None and add_suggestions:
             for name in suggestions:
+
                 if name in used_suggestions: continue
                 values = suggestions[name]
                 if len(values) > 1: raise ValueError("Multiple suggestions")
                 value = values[0]
                 self.add_fixed(name, "no description", value)
                 has_changed = True
+
+                # Show the suggested value
+                description = "no description"
+                value = prompt_fixed(name, description, value)
 
         # Return whether any property changed
         return has_changed

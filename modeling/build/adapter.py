@@ -1076,7 +1076,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: save_mapping(self.bulge_parameters_path, parameters)
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the old stellar bulge parameters ...")
+
+            # Save
+            save_mapping(self.bulge_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1100,7 +1106,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                          startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed and self.config.save: model.save()
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the old stellar bulge model ...")
+
+            # Save
+            model.save()
 
     # -----------------------------------------------------------------
 
@@ -1152,7 +1164,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: save_mapping(self.old_parameters_path, parameters)
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the old stellar disk parameters ...")
+
+            # Save
+            save_mapping(self.old_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1233,7 +1251,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: deprojection.save()
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the old stellar disk deprojection ...")
+
+            # Save
+            deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1285,7 +1309,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: save_mapping(self.young_parameters_path, parameters)
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the young stellar disk parameters ...")
+
+            # Save
+            save_mapping(self.young_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1317,7 +1347,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: deprojection.save()
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the young stellar disk deprojection ...")
+
+            # Save
+            deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1369,7 +1405,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: save_mapping(self.ionizing_parameters_path, parameters)
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the ionizing stellar disk parameters ...")
+
+            # Save
+            save_mapping(self.ionizing_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1401,7 +1443,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: deprojection.save()
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the ionizing stellar disk deprojection ...")
+
+            # Save
+            deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1633,7 +1681,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: save_mapping(self.disk_parameters_path, parameters)
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the dust disk parameters ...")
+
+            # Save
+            save_mapping(self.disk_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1665,7 +1719,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                          suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
-        if changed and self.config.save: deprojection.save()
+        if changed and self.config.save:
+
+            # Debugging
+            log.debug("Saving the dust disk deprojection ...")
+
+            # Save
+            deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1809,7 +1869,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                              startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
                 # Save if changed
-                if changed and self.config.save: projection.save()
+                if changed and self.config.save:
+
+                    # Debugging
+                    log.debug("Saving the " + full_label + " ...")
+
+                    # Save
+                    projection.save()
 
     # -----------------------------------------------------------------
 
@@ -1850,7 +1916,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                              startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
                 # Save if changed
-                if changed and self.config.save: instrument.save()
+                if changed and self.config.save:
+
+                    # Debugging
+                    log.debug("Saving the " + full_label + " ...")
+
+                    # Save
+                    instrument.save()
 
     # -----------------------------------------------------------------
 
@@ -1882,7 +1954,13 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                    startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
             # Save if changed
-            if changed and self.config.save: grid.save()
+            if changed and self.config.save:
+
+                # Debugging
+                log.debug("Saving the dust grid of the " + full_label + " ...")
+
+                # Save
+                grid.save()
 
     # -----------------------------------------------------------------
 
@@ -2089,12 +2167,17 @@ def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=N
     # Add suggested
     if suggestions is not None and add_suggestions:
         for name in suggestions:
+
             if name in used_suggestions: continue
             values = suggestions[name]
             if len(values) > 1: raise ValueError("Multiple suggestions")
             value = values[0]
             parameters[name] = value
             has_changed = True
+
+            # Show the suggested value
+            description = descriptions[name] if descriptions is not None and name in descriptions else "no description"
+            value = prompt_fixed(name, description, value)
 
     # Return flag
     return has_changed
