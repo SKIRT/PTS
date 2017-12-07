@@ -29,7 +29,8 @@ from .models.stars import bulge_component_name, old_component_name, young_compon
 from .models.dust import disk_component_name, basic_dust_component_names
 from ...core.tools import sequences
 from ...magic.tools import extinction
-from ...core.tools.stringify import tostr
+from ...core.tools.stringify import tostr, stringify
+from ...core.basics.configuration import save_mapping
 
 # -----------------------------------------------------------------
 
@@ -152,6 +153,11 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
             # Invalid
             else: raise ValueError("Cannot specifiy component name when both 'stellar' and 'dust' are used")
+
+        # Set matching string
+        if self.config.matching is not None:
+            if self.config.startswith is not None: raise ValueError("Cannot specify 'matching' string if 'startswith' is also specified")
+            self.config.startswith = self.config.matching
 
     # -----------------------------------------------------------------
 
@@ -374,6 +380,95 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fuv_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fuv_filter.pivot
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fuv_attenuation = self.fuv_attenuation
+        factor = extinction.observed_to_intrinsic_factor(fuv_attenuation)
+        unattenuated_fuv_flux = self.observed_flux(self.fuv_filter, unit="Jy") * factor
+        return unattenuated_fuv_flux
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.intrinsic_fuv_flux.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_distance)
+        return self.intrinsic_fuv_flux.to("W/micron", wavelength=self.fuv_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get relevant parameters
+        metallicity = self.metallicity
+        compactness = self.config.default_ionizing_compactness
+        pressure = self.config.default_ionizing_pressure
+        covering_factor = self.config.default_covering_factor
+        sfr = self.sfr_msun_per_year
+
+        # Generate Mappings template for the specified parameters
+        return Mappings(metallicity, compactness, pressure, covering_factor, sfr)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_ionizing_fuv_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the spectral luminosity at the FUV wavelength
+        return self.ionizing_mappings.luminosity_at(self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_young_fuv_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check
+        if self.intrinsic_ionizing_fuv_luminosity >= self.intrinsic_fuv_luminosity: raise ValueError("Cannot determine the initial normalization of young and ionizing component: intrinsic FUV luminosity of ionizing stars based on SFR is larger than the total unattenuated FUV luminosity")
+
+        # Return the difference fo the total unattenuated FUV luminosity and the intrinsic FUV luminosity of the ionizing stars
+        return self.intrinsic_fuv_luminosity - self.intrinsic_ionizing_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
     def load_stellar(self):
 
         """
@@ -453,6 +548,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge.parameters_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def bulge_model(self):
 
         """
@@ -497,6 +604,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return self.old.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old.parameters_path
 
     # -----------------------------------------------------------------
 
@@ -561,6 +680,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def young_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young.parameters_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_deprojection(self):
 
         """
@@ -617,6 +748,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return self.ionizing.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing.parameters_path
 
     # -----------------------------------------------------------------
 
@@ -692,6 +835,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_extra_stellar_parameters_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.stellar_components[name].parameters_path
+
+    # -----------------------------------------------------------------
+
     def get_extra_stellar_properties(self, name):
 
         """
@@ -739,10 +894,61 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Adapting the old stellar bulge component ...")
+        log.info("Adapting old stellar bulge component ...")
 
-        for label in self.bulge_parameters: print(label, tostr(self.bulge_parameters[label]))
-        print(self.bulge_model)
+        # Parameters
+        self.adapt_bulge_parameters()
+
+        # Model
+        self.adapt_bulge_model()
+
+    # -----------------------------------------------------------------
+
+    def adapt_bulge_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting old stellar bulge parameters ...")
+
+        # Set label
+        label = "old stellar bulge parameters"
+
+        # Prompt parameters
+        parameters = self.bulge_parameters
+        changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
+                                    exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: save_mapping(self.bulge_parameters_path, parameters)
+
+    # -----------------------------------------------------------------
+
+    def adapt_bulge_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting old stellar bulge model ...")
+
+        # Set label
+        label = "old stellar bulge model"
+
+        # Adapt model
+        model = self.bulge_model
+        changed = model.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                         exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                         startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: model.save()
 
     # -----------------------------------------------------------------
 
@@ -754,11 +960,61 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Adapting the old stellar disk component ...")
+        log.info("Adapting old stellar disk component ...")
 
-        for label in self.old_parameters: print(label, tostr(self.old_parameters[label]))
-        print(self.old_deprojection)
-        print(self.old_map_path)
+        # Parameters
+        self.adapt_old_parameters()
+
+        # Deprojection
+        self.adapt_old_deprojection()
+
+    # -----------------------------------------------------------------
+
+    def adapt_old_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting old stellar disk parameters ...")
+
+        # Set label
+        label = "old stellar disk parameters"
+
+        # Prompt parameters
+        parameters = self.old_parameters
+        changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
+                                    exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: save_mapping(self.old_parameters_path, parameters)
+
+    # -----------------------------------------------------------------
+
+    def adapt_old_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting old stellar disk deprojection ...")
+
+        # Set label
+        label = "old stellar disk deprojection"
+
+        # Adapt deprojection
+        deprojection = self.old_deprojection
+        changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                                 exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -772,39 +1028,59 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting the young stellar component ...")
 
-        #for label in self.young_parameters: print(label, tostr(self.young_parameters[label]))
-        #print(self.young_deprojection)
-        #print(self.young_map_path)
+        # Parameters
+        self.adapt_young_parameters()
 
-        fuv_attenuation = self.fuv_attenuation
+        # Deprojection
+        self.adapt_young_deprojection()
 
-        #fuv_ionizing_contribution = 0.3
-        factor = extinction.observed_to_intrinsic_factor(fuv_attenuation)
-        unattenuated_fuv_flux = self.observed_flux(self.fuv_filter, unit="Jy") * factor
+    # -----------------------------------------------------------------
 
-        #unattenuated_fuv_flux_young_stars = fuv_ionizing_contribution * unattenuated_fuv_flux
+    def adapt_young_parameters(self):
 
-        print(unattenuated_fuv_flux)
-        #print(self.young_parameters["fluxdensity"])
+        """
+        This function ...
+        :return:
+        """
 
-        unattenuated_fuv_luminosity = unattenuated_fuv_flux.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_distance)
+        # Inform the user
+        log.info("Adapting young stellar disk parameters ...")
 
-        print(unattenuated_fuv_luminosity)
+        # Set label
+        label = "young stellar disk parameters"
 
-        # Get the FUV flux density
-        #fluxdensity = unattenuated_fuv_flux_young_stars
+        # Prompt parameters
+        parameters = self.young_parameters
+        changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
+                                    exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
-        # Convert the flux density into a spectral luminosity
-        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
-        #luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
-        ##assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
+        # Save if changed
+        if changed: save_mapping(self.young_parameters_path, parameters)
 
-        # Set the luminosi
-        #config.filter = str(self.fuv_filter)
-        #config.luminosity = luminosity
+    # -----------------------------------------------------------------
 
-        # Set the title
-        #config.title = titles[young_component_name]
+    def adapt_young_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting young stellar disk deprojection ...")
+
+        # Set label
+        label = "young stellar disk deprojection"
+
+        # Adapt deprojection
+        deprojection = self.young_deprojection
+        changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                                 exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -816,41 +1092,61 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Adapting the ionizing stellar component ...")
+        log.info("Adapting ionizing stellar component ...")
 
-        for label in self.ionizing_parameters: print(label, tostr(self.ionizing_parameters[label]))
-        print(self.ionizing_deprojection)
-        print(self.ionizing_map_path)
+        # Parameters
+        self.adapt_ionizing_parameters()
 
-        # Get relevant parameters
-        metallicity = self.metallicity
-        compactness = self.config.default_ionizing_compactness
-        pressure = self.config.default_ionizing_pressure
-        covering_factor = self.config.default_covering_factor
-        sfr = self.sfr_msun_per_year
+        # Deprojection
+        self.adapt_ionizing_deprojection()
 
-        print("SFR", sfr)
+    # -----------------------------------------------------------------
 
-        # Generate Mappings template for the specified parameters
-        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
-        # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
+    def adapt_ionizing_parameters(self):
 
-        # Get the spectral luminosity at the FUV wavelength
-        luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
+        """
+        This function ...
+        :return:
+        """
 
-        print(luminosity)
+        # Inform the user
+        log.info("Adapting ionizing stellar disk parameters ...")
 
-        print(luminosity.to("W", density=True, wavelength=self.fuv_filter.pivot))
+        # Set label
+        label = "ionizing stellar disk parameters"
 
-        # Set the luminosity
-        #config.filter = str(self.fuv_filter)
-        #config.luminosity = luminosity
+        # Prompt parameters
+        parameters = self.ionizing_parameters
+        changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
+                                    exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
-        # Set title
-        #config.title = titles[ionizing_component_name]
+        # Save if changed
+        if changed: save_mapping(self.ionizing_parameters_path, parameters)
 
-        # Set the parameters
-        #self.parameters[ionizing_component_name] = config
+    # -----------------------------------------------------------------
+
+    def adapt_ionizing_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting ionizing stellar disk deprojection ...")
+
+        # Set label
+        label = "ionizing stellar disk deprojection"
+
+        # Adapt deprojection
+        deprojection = self.ionizing_deprojection
+        changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                                 exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -864,13 +1160,15 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting extra stellar components ...")
 
+        # Loop over the extra stellar components
         for name in self.extra_stellar_component_names:
 
+            # Get parametrs and properties
             parameters = self.get_extra_stellar_parameters(name)
             properties = self.get_extra_stellar_properties(name)
 
-            for label in parameters: print(label, tostr(parameters[label]))
-            print(properties)
+            # Error
+            raise NotImplementedError("Adapting extra stellar components is not yet implemented")
 
     # -----------------------------------------------------------------
 
@@ -907,6 +1205,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return self.disk.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk.parameters_path
 
     # -----------------------------------------------------------------
 
@@ -982,6 +1292,18 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_extra_dust_parameters_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_components[name].parameters_path
+
+    # -----------------------------------------------------------------
+
     def get_extra_dust_properties(self, name):
 
         """
@@ -1022,9 +1344,59 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting dust disk component ...")
 
-        for label in self.disk_parameters: print(label, tostr(self.disk_parameters[label]))
-        print(self.disk_deprojection)
-        print(self.disk_map_path)
+        # Parameters
+        self.adapt_disk_parameters()
+
+        # Deprojection
+        self.adapt_disk_deprojection()
+
+    # -----------------------------------------------------------------
+
+    def adapt_disk_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting dust disk parameters ...")
+
+        # Set label
+        label = "dust disk parameters"
+
+        # Prompt parameters
+        parameters = self.disk_parameters
+        changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
+                                    exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: save_mapping(self.disk_parameters_path, parameters)
+
+    # -----------------------------------------------------------------
+
+    def adapt_disk_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adapting dust disk deprojection ...")
+
+        # Set label
+        label = "dust disk deprojection"
+
+        # Adapt deprojection
+        deprojection = self.disk_deprojection
+        changed = self.disk_deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                             startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+
+        # Save if changed
+        if changed: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1038,13 +1410,15 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Adapting extra dust components ...")
 
+        # Loop over the extra dust components
         for name in self.extra_dust_component_names:
 
+            # Get parameters and properties
             parameters = self.get_extra_dust_parameters(name)
             properties = self.get_extra_dust_properties(name)
 
-            for label in parameters: print(label, tostr(parameters[label]))
-            print(properties)
+            # Error
+            raise NotImplementedError("Adapting extra dust components not implemented")
 
     # -----------------------------------------------------------------
 
@@ -1143,7 +1517,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         for name in self.representation_names:
 
             # Debugging
-            log.debug("Adapting the '" + name + "' projections ...")
+            log.debug("Adapting the projections of the '" + name + "' representation ...")
 
             # Get projections
             projections = self.get_projections(name)
@@ -1151,15 +1525,22 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
             # Loop over the projections
             for label in projections:
 
+                # Debugging
+                log.debug("Adapting the '" + label + "' projection ...")
+
                 # Get the projection
                 projection = projections[label]
 
-                # Propt
-                projection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
-                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                             startswith=self.config.startswith, endswith=self.config.endswith)
+                # Set full label
+                full_label = label + " projection of " + name + " representation"
 
-                # Save
+                # Prompt
+                changed = projection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                             startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
+
+                # Save if changed
+                if changed: projection.save()
 
     # -----------------------------------------------------------------
 
@@ -1177,7 +1558,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         for name in self.representation_names:
 
             # Debugging
-            log.debug("Adapting the '" + name + "' instruments ...")
+            log.debug("Adapting the instruments of the '" + name + "' representation ...")
 
             # Get instruments
             instruments = self.get_instruments(name)
@@ -1185,15 +1566,22 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
             # Loop over the instruments
             for label in instruments:
 
+                # Debugging
+                log.debug("Adapting the '" + label + "' instrument ...")
+
                 # Get the instrument
                 instrument = instruments[label]
 
-                # Prompt
-                instrument.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
-                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                             startswith=self.config.startswith, endswith=self.config.endswith)
+                # Set full label
+                full_label = label + " instrument of " + name + " representation"
 
-                # Save
+                # Prompt
+                changed = instrument.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                             startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
+
+                # Save if changed
+                if changed: instrument.save()
 
     # -----------------------------------------------------------------
 
@@ -1211,10 +1599,21 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         for name in self.representation_names:
 
             # Debugging
-            log.debug("Adapting the '" + name + "' dust grid ...")
+            log.debug("Adapting the dust grid of the '" + name + "' representation ...")
 
             # Get dust grid
             grid = self.get_dust_grid(name)
+
+            # Set full label
+            full_label = name + " representation"
+
+            # Prompt
+            changed = grid.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
+                                   exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                   startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
+
+            # Save if changed
+            if changed: grid.save()
 
     # -----------------------------------------------------------------
 
@@ -1337,5 +1736,79 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
             # Show
             show_component(path, map_path, line_prefix="    ")
             print("")
+
+# -----------------------------------------------------------------
+
+def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=None, exact_not_name=None, startswith=None,
+                      endswith=None, label=None, descriptions=None, choices=None, fixed=None, suggestions=None, required=True):
+
+    """
+    This function ...
+    :param parameters:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :param label:
+    :param descriptions:
+    :param choices:
+    :param fixed:
+    :param suggestions:
+    :param required:
+    :return:
+    """
+
+    from ...core.basics.configuration import prompt_variable, prompt_fixed
+
+    has_changed = False
+
+    # Adapt
+    for name in parameters:
+
+        # print(label, tostr(self.disk_parameters[label]))
+
+        # Checks
+        if contains is not None and contains not in name: continue
+        if not_contains is not None and not_contains in name: continue
+        if exact_name is not None and name != exact_name: continue
+        if exact_not_name is not None and name == exact_not_name: continue
+        if startswith is not None and not name.startswith(startswith): continue
+        if endswith is not None and not name.endswith(endswith): continue
+
+        # Get properties
+        description = descriptions[name] if descriptions is not None and name in descriptions else "no description"
+        choics = choices[name] if choices is not None and name in choices else None
+        suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
+        default = parameters[name]
+        ptype, string = stringify(default)
+
+        # Add label to description
+        if label is not None: description = description + " [" + label + "]"
+
+        # Fixed variable: show value and description
+        if fixed is not None and name in fixed:
+            value = prompt_fixed(name, description, default)
+            continue
+
+        # Ask for the new value
+        value = prompt_variable(name, ptype, description, choices=choics, default=default, required=required, suggestions=suggestns)
+        if default is None and value == "": continue
+
+        # Set the property
+        if value != default:
+
+            # Debugging
+            log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+
+            # Set the new value
+            parameters[name] = value
+
+            # Set flag
+            has_changed = True
+
+    # Return flag
+    return has_changed
 
 # -----------------------------------------------------------------

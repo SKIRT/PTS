@@ -155,8 +155,14 @@ class GalaxyProjection(SimplePropertyComposite):
         assert field_y is not None
 
         # Create and return
-        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+        projection = cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
                    pixels_x=pixels_x, pixels_y=pixels_y, center_x=center_x, center_y=center_y, field_x=field_x, field_y=field_y)
+
+        # Set the path
+        projection._path = path
+
+        # Return the projection
+        return projection
 
     # -----------------------------------------------------------------
 

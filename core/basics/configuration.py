@@ -275,15 +275,16 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
 
 # -----------------------------------------------------------------
 
-def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True, default_alias=None, convert_default=False):
+def prompt_variable(name, parsing_type, description, choices=None, default=None, suggestions=None, required=True, default_alias=None, convert_default=False):
 
     """
     This function ....
     :param name: 
     :param parsing_type: 
     :param description: 
-    :param choices: 
+    :param choices:
     :param default:
+    :param suggestions:
     :param required:
     :param default_alias:
     :param convert_default:
@@ -294,9 +295,9 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     definition = ConfigurationDefinition(write_config=False)
 
     # Add setting
-    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default, default_alias=default_alias, convert_default=convert_default)
-    elif required: definition.add_required(name, parsing_type, description, choices=choices)
-    else: definition.add_optional(name, parsing_type, description, choices=choices)
+    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, suggestions=suggestions, default=default, default_alias=default_alias, convert_default=convert_default)
+    elif required: definition.add_required(name, parsing_type, description, choices=choices, suggestions=suggestions)
+    else: definition.add_optional(name, parsing_type, description, choices=choices, suggestions=suggestions)
 
     # Create setter
     setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False)

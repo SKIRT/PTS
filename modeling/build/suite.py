@@ -1193,6 +1193,7 @@ def load_component(path, add_map=False):
     if fs.is_file(parameters_path):
         parameters = open_mapping(parameters_path)
         component.parameters = parameters
+        component.parameters_path = parameters_path
 
     # Load the deprojection
     deprojection_path = fs.join(path, deprojection_filename)

@@ -367,7 +367,7 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                          startswith=None, endswith=None, required=True):
+                          startswith=None, endswith=None, required=True, label=None):
 
         """
         This function ...
@@ -379,6 +379,7 @@ class SimplePropertyComposite(object):
         :param startswith:
         :param endswith:
         :param required:
+        :param label:
         :return:
         """
 
@@ -401,6 +402,9 @@ class SimplePropertyComposite(object):
             ptype = self.get_ptype(name)
             default = self.get_value(name)
             choices = self.get_choices(name)
+
+            # Add label to description
+            if label is not None: description = description + " [" + label + "]"
 
             # Fixed variable: show value and description
             if self.get_fixed(name):
