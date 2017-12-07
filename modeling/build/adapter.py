@@ -1060,11 +1060,20 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "old stellar bulge parameters"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["luminosity"] = [self.bulge_luminosity]
+        suggestions["neutral_luminosity"] = [self.bulge_neutral_luminosity]
+        suggestions["fluxdensity"] = [self.bulge_fluxdensity]
+        suggestions["filter"] = [str(self.i1_filter)]
+        suggestions["wavelength"] = [self.i1_wavelength]
+
         # Prompt parameters
         parameters = self.bulge_parameters
         changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
                                     exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                    suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: save_mapping(self.bulge_parameters_path, parameters)
@@ -1126,14 +1135,73 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "old stellar disk parameters"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["fluxdensity"] = [self.old_fluxdensity]
+        suggestions["neutral_luminosity"] = [self.old_neutral_luminosity]
+        suggestions["luminosity"] = [self.old_luminosity]
+        suggestions["filter"] = [str(self.i1_filter)]
+        suggestions["wavelength"] = [self.i1_wavelength]
+        suggestions["scale_height"] = [self.old_scaleheight]
+
         # Prompt parameters
         parameters = self.old_parameters
         changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
                                     exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                    suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: save_mapping(self.old_parameters_path, parameters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
+        return scale_height
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.young_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.ionizing_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_scaleheight(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.config.dust_scaleheight_ratio * self.old_scaleheight
 
     # -----------------------------------------------------------------
 
@@ -1150,11 +1218,19 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "old stellar disk deprojection"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["position_angle"] = [self.disk_position_angle]
+        suggestions["inclination"] = [self.disk_inclination]
+        suggestions["distance"] = [self.galaxy_distance]
+        suggestions["scale_height"] = [self.old_scaleheight]
+
         # Adapt deprojection
         deprojection = self.old_deprojection
         changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
                                                  exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                                 suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: deprojection.save()
@@ -1192,11 +1268,21 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "young stellar disk parameters"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["fluxdensity"] = [self.intrinsic_young_fuv_flux]
+        suggestions["neutral_luminosity"] = [self.intrinsic_young_fuv_neutral_luminosity]
+        suggestions["luminosity"] = [self.intrinsic_young_fuv_luminosity]
+        suggestions["filter"] = [str(self.fuv_filter)]
+        suggestions["wavelength"] = [self.fuv_wavelength]
+        suggestions["scale_height"] = [self.young_scaleheight]
+
         # Prompt parameters
         parameters = self.young_parameters
         changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
                                     exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                    suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: save_mapping(self.young_parameters_path, parameters)
@@ -1216,11 +1302,19 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "young stellar disk deprojection"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["position_angle"] = [self.disk_position_angle]
+        suggestions["inclination"] = [self.disk_inclination]
+        suggestions["distance"] = [self.galaxy_distance]
+        suggestions["scale_height"] = [self.young_scaleheight]
+
         # Adapt deprojection
         deprojection = self.young_deprojection
         changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
                                                  exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                                 suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: deprojection.save()
@@ -1258,11 +1352,21 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "ionizing stellar disk parameters"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["fluxdensity"] = [self.intrinsic_ionizing_fuv_flux]
+        suggestions["neutral_luminosity"] = [self.intrinsic_ionizing_fuv_neutral_luminosity]
+        suggestions["luminosity"] = [self.intrinsic_ionizing_fuv_luminosity]
+        suggestions["filter"] = [str(self.fuv_filter)]
+        suggestions["wavelength"] = [self.fuv_wavelength]
+        suggestions["scale_height"] = [self.ionizing_scaleheight]
+
         # Prompt parameters
         parameters = self.ionizing_parameters
         changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
                                     exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                    suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: save_mapping(self.ionizing_parameters_path, parameters)
@@ -1282,11 +1386,19 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "ionizing stellar disk deprojection"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["position_angle"] = [self.disk_position_angle]
+        suggestions["inclination"] = [self.disk_inclination]
+        suggestions["distance"] = [self.galaxy_distance]
+        suggestions["scale_height"] = [self.ionizing_scaleheight]
+
         # Adapt deprojection
         deprojection = self.ionizing_deprojection
         changed = deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
                                                  exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                                 startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                                 suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: deprojection.save()
@@ -1508,11 +1620,17 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "dust disk parameters"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["scale_height"] = [self.dust_scaleheight]
+        suggestions["mass"] = [self.dust_mass]
+
         # Prompt parameters
         parameters = self.disk_parameters
         changed = prompt_parameters(parameters, contains=self.config.contains, not_contains=self.config.not_contains,
                                     exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                    startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                    suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: save_mapping(self.disk_parameters_path, parameters)
@@ -1532,11 +1650,19 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         # Set label
         label = "dust disk deprojection"
 
+        # Create suggestions
+        suggestions = dict()
+        suggestions["position_angle"] = [self.disk_position_angle]
+        suggestions["inclination"] = [self.disk_inclination]
+        suggestions["distance"] = [self.galaxy_distance]
+        suggestions["scale_height"] = [self.dust_scaleheight]
+
         # Adapt deprojection
         deprojection = self.disk_deprojection
         changed = self.disk_deprojection.prompt_properties(recursive=True, contains=self.config.contains, not_contains=self.config.not_contains,
-                                             exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                             startswith=self.config.startswith, endswith=self.config.endswith, label=label)
+                                                         exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                                         startswith=self.config.startswith, endswith=self.config.endswith, label=label,
+                                                         suggestions=suggestions, add_suggestions=True)
 
         # Save if changed
         if changed and self.config.save: deprojection.save()
@@ -1883,7 +2009,8 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 # -----------------------------------------------------------------
 
 def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=None, exact_not_name=None, startswith=None,
-                      endswith=None, label=None, descriptions=None, choices=None, fixed=None, suggestions=None, required=True):
+                      endswith=None, label=None, descriptions=None, choices=None, fixed=None, suggestions=None,
+                      required=True, add_suggestions=False):
 
     """
     This function ...
@@ -1900,20 +2027,22 @@ def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=N
     :param fixed:
     :param suggestions:
     :param required:
+    :param add_suggestions:
     :return:
     """
 
     from ...core.basics.configuration import prompt_variable, prompt_fixed
 
     has_changed = False
+    used_suggestions = []
 
     # Adapt
     for name in parameters:
 
-        # print(label, tostr(self.disk_parameters[label]))
-
         # Skip properties related to configuration
         if name == "config_path": continue
+
+        if suggestions is not None and name in suggestions: used_suggestions.append(name)
 
         # Checks
         if contains is not None and contains not in name: continue
@@ -1955,6 +2084,16 @@ def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=N
             parameters[name] = value
 
             # Set flag
+            has_changed = True
+
+    # Add suggested
+    if suggestions is not None and add_suggestions:
+        for name in suggestions:
+            if name in used_suggestions: continue
+            values = suggestions[name]
+            if len(values) > 1: raise ValueError("Multiple suggestions")
+            value = values[0]
+            parameters[name] = value
             has_changed = True
 
     # Return flag

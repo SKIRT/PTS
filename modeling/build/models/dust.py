@@ -83,13 +83,13 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Build dust
+        # 2. Build dust disk
         if self.config.disk: self.build_dust_disk()
 
-        # Additional
+        # 3. Additional dust components
         if self.config.additional: self.build_additional()
 
-        # Write
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -194,18 +194,11 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("hydrocarbon_pops", "positive_integer", "number of hydrocarbon populations", default=self.config.default_hydrocarbon_pops)
         definition.add_optional("silicate_pops", "positive_integer", "number of silicate populations", default=self.config.default_silicate_pops)
 
-        # Use default settings
-        if self.config.use_defaults:
+        # Set the label
+        label = "dust disk"
 
-            setter = PassiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition)
-
-        # Prompt for the settings
-        else:
-
-            # Prompt for settings
-            setter = InteractiveConfigurationSetter("dust disk", add_logging=False, add_cwd=False)
-            config = setter.run(definition, prompt_optional=True)
+        # Get the parameters
+        config = self.get_parameters(label, definition)
 
         # Set the title
         config.title = titles[disk_component_name]

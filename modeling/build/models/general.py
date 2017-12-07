@@ -23,7 +23,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.serialization import write_dict
 from ..suite import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
 from ....magic.core.frame import Frame
-from ....core.basics.configuration import save_mapping
+from ....core.basics.configuration import save_mapping, PassiveConfigurationSetter, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -91,6 +91,36 @@ class GeneralBuilder(BuildComponent):
 
         # Create the SKIRT smile schema
         self.smile = SKIRTSmileSchema()
+
+    # -----------------------------------------------------------------
+
+    def get_parameters(self, label, definition):
+
+        """
+        This function ...
+        :param label:
+        :param definition:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Getting parameters for the " + label + " component ...")
+
+        # Use default values
+        if self.config.use_defaults:
+
+            setter = PassiveConfigurationSetter(label, add_cwd=False, add_logging=False)
+            config = setter.run(definition)
+
+        # Prompt for the values
+        else:
+
+            # Prompt for the values
+            setter = InteractiveConfigurationSetter(label, add_cwd=False, add_logging=False)
+            config = setter.run(definition, prompt_optional=True)
+
+        # Return the parameters mapping
+        return config
 
     # -----------------------------------------------------------------
 

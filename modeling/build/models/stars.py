@@ -18,7 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ....core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
+from ....core.basics.configuration import ConfigurationDefinition
 from ....core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string, prompt_yn, prompt_filepath
 from ....core.units.parsing import parse_unit as u
 from ...core.mappings import Mappings
@@ -148,36 +148,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         #super(StarsBuilder, self).setup()
         GeneralBuilder.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
-
-    # -----------------------------------------------------------------
-
-    def get_parameters(self, label, definition):
-
-        """
-        This function ...
-        :param label:
-        :param definition:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Getting parameters for the " + label + " component ...")
-
-        # Use default values
-        if self.config.use_defaults:
-
-            setter = PassiveConfigurationSetter(label, add_cwd=False, add_logging=False)
-            config = setter.run(definition)
-
-        # Prompt for the values
-        else:
-
-            # Prompt for the values
-            setter = InteractiveConfigurationSetter(label, add_cwd=False, add_logging=False)
-            config = setter.run(definition, prompt_optional=True)
-
-        # Return the parameters mapping
-        return config
 
     # -----------------------------------------------------------------
 

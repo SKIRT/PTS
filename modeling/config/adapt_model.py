@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import load_modeling_environment_cwd
+from pts.modeling.decomposition.decomposition import scalelength_scaleheight_ratios, degeyter_ratio
 
 # -----------------------------------------------------------------
 
@@ -82,5 +83,13 @@ definition.add_optional("metallicity", "positive_real", "metallicity for templat
 definition.add_optional("default_ionizing_compactness", "real", "compactness", 6.)
 definition.add_optional("default_ionizing_pressure", "quantity", "pressure", "1e12 K/m3", convert_default=True)
 definition.add_optional("default_covering_factor", "real", "covering factor", 0.2)
+
+# -----------------------------------------------------------------
+
+# Scale heights
+definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=degeyter_ratio, suggestions=scalelength_scaleheight_ratios)
+definition.add_optional("young_scaleheight_ratio", "real", "ratio of the young stellar scaleheight to the old stellar scaleheight", 0.5)
+definition.add_optional("ionizing_scaleheight_ratio", "real", "ratio of the ionizing scaleheight to the old stellar scaleheight", 0.25)
+definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust scaleheight to the old stellar scaleheight", 0.5)
 
 # -----------------------------------------------------------------

@@ -112,9 +112,6 @@ class SimplePropertyComposite(object):
         # Set the choices
         self._choices[name] = choices
 
-        # Set the fixed flag
-        self._fixed[name] = fixed
-
         # Convert default
         if default_value is not None and convert_default:
             parsing_function = getattr(parsing, ptype)
@@ -122,6 +119,42 @@ class SimplePropertyComposite(object):
 
         # Set the attribute with the default value
         setattr(self, name, default_value)
+
+        # Set the fixed flag
+        self._fixed[name] = fixed
+
+    # -----------------------------------------------------------------
+
+    def add_fixed(self, name, description, value):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param value:
+        :return:
+        """
+
+        # Check
+        if hasattr(self, name): raise ValueError("A property with the name '" + name + "' already exists")
+
+        # Check
+        if " " in name: raise ValueError("Name cannot contain spaces")
+
+        # Get pytpe
+        ptype, string = stringify(value)
+
+        # Set the ptype
+        self._ptypes[name] = ptype
+
+        # Set the description
+        self._descriptions[name] = description
+
+        # Set the attribute with the default value
+        setattr(self, name, value)
+
+        # Set the fixed flag
+        self._fixed[name] = True
 
     # -----------------------------------------------------------------
 
@@ -367,7 +400,7 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                          startswith=None, endswith=None, required=True, label=None):
+                          startswith=None, endswith=None, required=True, label=None, suggestions=None, add_suggestions=False):
 
         """
         This function ...
@@ -380,15 +413,20 @@ class SimplePropertyComposite(object):
         :param endswith:
         :param required:
         :param label:
+        :param suggestions:
+        :param add_suggestions:
         :return:
         """
 
         from .configuration import prompt_variable, prompt_fixed
 
         has_changed = False
+        used_suggestions = []
 
         # Loop over the properties
         for name in self.property_names:
+
+            if suggestions is not None and name in suggestions: used_suggestions.append(name)
 
             # Checks
             if contains is not None and contains not in name: continue
@@ -403,6 +441,9 @@ class SimplePropertyComposite(object):
             default = self.get_value(name)
             choices = self.get_choices(name)
 
+            # Get suggestions
+            suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
+
             # Add label to description
             if label is not None: description = description + " [" + label + "]"
 
@@ -412,7 +453,7 @@ class SimplePropertyComposite(object):
                 continue
 
             # Ask for the new value
-            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required)
+            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required, suggestions=suggestns)
             if default is None and value == "": continue
 
             # Set the property
@@ -436,6 +477,16 @@ class SimplePropertyComposite(object):
                 # Prompt the settings of the section
                 has_changed_section = self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
                 if has_changed_section: has_changed = True
+
+        # Add suggested
+        if suggestions is not None and add_suggestions:
+            for name in suggestions:
+                if name in used_suggestions: continue
+                values = suggestions[name]
+                if len(values) > 1: raise ValueError("Multiple suggestions")
+                value = values[0]
+                self.add_fixed(name, "no description", value)
+                has_changed = True
 
         # Return whether any property changed
         return has_changed
