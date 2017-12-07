@@ -39,9 +39,9 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         FittingInitializerBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
-        # Solar luminosity units
-        self.sun_fuv = None
-        self.sun_i1 = None
+        # Solar luminosity units: not used anymore
+        #self.sun_fuv = None
+        #self.sun_i1 = None
 
     # -----------------------------------------------------------------
 
@@ -92,9 +92,9 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         GalaxyModelingComponent.setup(self, **kwargs)
 
         # Solar properties
-        sun = Sun()
-        self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv_filter) # Get the luminosity of the Sun in the FUV band
-        self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1_filter)   # Get the luminosity of the Sun in the IRAC I1 band
+        #sun = Sun()
+        #self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv_filter) # Get the luminosity of the Sun in the FUV band
+        #self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1_filter)   # Get the luminosity of the Sun in the IRAC I1 band
 
     # -----------------------------------------------------------------
 
@@ -246,7 +246,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # 3. Write the wavelength grids
         self.write_wavelength_grids()
 
-        # 4. Write the paths to the input maps
+        # 4. Write the wavelength grid table
+        self.write_wavelength_grid_table()
+
+        # 5. Write the paths to the input maps
         self.write_input_map_paths()
 
     # -----------------------------------------------------------------

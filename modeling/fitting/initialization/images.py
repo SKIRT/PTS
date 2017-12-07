@@ -299,6 +299,9 @@ class ImagesFittingInitializer(FittingInitializerBase, ImagesModelingComponent):
         # 3. Write the wavelength grids
         self.write_wavelength_grids()
 
+        # Write the wavelength grid table
+        self.write_wavelength_grid_table()
+
         # 4. Write the paths to the input maps
         self.write_input_map_paths()
 

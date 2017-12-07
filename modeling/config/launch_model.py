@@ -34,6 +34,11 @@ default_dust_grid_type = bintree
 
 # -----------------------------------------------------------------
 
+default_nwavelengths = 100
+default_wavelength_range = "0.02 micron > 2000 micron"
+
+# -----------------------------------------------------------------
+
 definition.add_required("origin", "string", "origin of the analysis model", choices=origins)
 
 # -----------------------------------------------------------------
@@ -83,9 +88,9 @@ definition.add_flag("adjust_npackages", "adjust the number of photon packages to
 
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
-definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", 100)
+definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", default_nwavelengths)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
-definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.02 micron > 2000 micron", convert_default=True)
+definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", default_wavelength_range, convert_default=True)
 
 # -----------------------------------------------------------------
 

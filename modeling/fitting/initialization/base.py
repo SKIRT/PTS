@@ -284,8 +284,10 @@ class FittingInitializerBase(FittingComponent):
         log.info("Writing the wavelength grids ...")
 
         # Loop over the grids
-        index = 0
-        for grid in self.wg_generator.grids:
+        for index, grid in enumerate(self.wg_generator.grids):
+
+            # Debugging
+            log.debug("Writing wavelength grid " + str(index) + " ...")
 
             # Determine the path to the grid
             path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
@@ -293,11 +295,20 @@ class FittingInitializerBase(FittingComponent):
             # Save the wavelength grid
             grid.to_skirt_input(path)
 
-            # Increment the index
-            index += 1
+    # -----------------------------------------------------------------
+
+    def write_wavelength_grid_table(self):
+
+        """
+        Tihs function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grid table ...")
 
         # Write the wavelength grids table
-        tables.write(self.wg_generator.table, self.fitting_run.wavelength_grids_table_path)
+        self.wg_generator.table.saveto(self.fitting_run.wavelength_grids_table_path)
 
     # -----------------------------------------------------------------
 

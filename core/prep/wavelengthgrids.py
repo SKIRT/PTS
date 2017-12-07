@@ -33,25 +33,32 @@ from ..tools.stringify import stringify_list_fancy
 
 # -----------------------------------------------------------------
 
+euv = "EUV"
+stellar = "stellar"
+aromatic = "aromatic"
+thermal = "thermal"
+microwave = "microwave"
+
+# -----------------------------------------------------------------
+
 # The names of the subgrids
-#subgrids = ["UV", "optical", "PAH", "dust", "extension"]
-subgrids = ["EUV", "stellar", "aromatic", "thermal", "microwave"]
+subgrids = [euv, stellar, aromatic, thermal, microwave]
 
 # Define the ranges of the subgrids
 ranges = OrderedDict()
-ranges["EUV"] = QuantityRange(0.02, 0.085, unit="micron")
-ranges["stellar"] = QuantityRange(0.085, 3., unit="micron")
-ranges["aromatic"] = QuantityRange(3., 27., unit="micron")
-ranges["thermal"] = QuantityRange(27., 1000., unit="micron")
-ranges["microwave"] = QuantityRange(1000., 2000, unit="micron")
+ranges[euv] = QuantityRange(0.02, 0.085, unit="micron")
+ranges[stellar] = QuantityRange(0.085, 3., unit="micron")
+ranges[aromatic] = QuantityRange(3., 27., unit="micron")
+ranges[thermal] = QuantityRange(27., 1000., unit="micron")
+ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
 
 # Define the relative fineness (the number of points) of the subgrids
 relpoints = OrderedDict()
-relpoints["EUV"] = 25./325.           # 25
-relpoints["stellar"] = 100./325.     # 100
-relpoints["aromatic"] = 125./325.         # 125
-relpoints["thermal"] = 50./325.         # 50
-relpoints["microwave"] = 25./325.    # 25
+relpoints[euv] = 25./325.           # 25
+relpoints[stellar] = 100./325.     # 100
+relpoints[aromatic] = 125./325.         # 125
+relpoints[thermal] = 50./325.         # 50
+relpoints[microwave] = 25./325.    # 25
 
 # -----------------------------------------------------------------
 
@@ -73,11 +80,11 @@ class WavelengthGridsTable(SmartTable):
         super(WavelengthGridsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("UV points", int, None, "number of points in UV spectrum (range: " + str(ranges["UV"]) + ")")
-        self.add_column_info("Optical points", int, None, "number of points in the optical spectrum (range: " + str(ranges["optical"]) + ")")
-        self.add_column_info("PAH points", int, None, "number of points in the PAH spectrum (range: " + str(ranges["PAH"]) + ")")
-        self.add_column_info("Dust points", int, None, "number of points in the dust spectrum (range: " + str(ranges["dust"]) + ")")
-        self.add_column_info("Extension points", int, None, "number of points in the extension spectrum (range: " + str(ranges["extension"]) + ")")
+        self.add_column_info("EUV points", int, None, "number of points in EUV spectrum (range: " + str(ranges[euv]) + ")")
+        self.add_column_info("stellar points", int, None, "number of points in stellar spectrum (range: " + str(ranges[stellar]) + ")")
+        self.add_column_info("aromatic points", int, None, "number of points in aromatic spectrum (range: " + str(ranges[aromatic]) + ")")
+        self.add_column_info("thermal points", int, None, "number of points in thermal spectrum (range: " + str(ranges[thermal]) + ")")
+        self.add_column_info("microwave points", int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
         self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelength range was resampled")
         self.add_column_info("Narrow band filters", str, None, "narrow band filters for which the wavelength was added")
         self.add_column_info("Emission lines", int, None, "number of emission lines")
@@ -100,18 +107,18 @@ class WavelengthGridsTable(SmartTable):
         """
 
         # Get values
-        uv_npoints = subgrid_npoints["UV"] if "UV" in subgrid_npoints else 0
-        optical_npoints = subgrid_npoints["optical"] if "optical" in subgrid_npoints else 0
-        pah_npoints = subgrid_npoints["PAH"] if "PAH" in subgrid_npoints else 0
-        dust_npoints = subgrid_npoints["dust"] if "dust" in subgrid_npoints else 0
-        extension_npoints = subgrid_npoints["extension"] if "extension" in subgrid_npoints else 0
+        euv_npoints = subgrid_npoints[euv] if euv in subgrid_npoints else 0
+        stellar_npoints = subgrid_npoints[stellar] if stellar in subgrid_npoints else 0
+        aromatic_npoints = subgrid_npoints[aromatic] if aromatic in subgrid_npoints else 0
+        thermal_npoints = subgrid_npoints[thermal] if thermal in subgrid_npoints else 0
+        microwave_npoints = subgrid_npoints[microwave] if microwave in subgrid_npoints else 0
 
         # Create strings from the filter lists
         broad_string = ",".join(broad_resampled)
         narrow_string = ",".join(narrow_added)
 
         # Add row
-        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, broad_string,
+        self.add_row([euv_npoints, stellar_npoints, aromatic_npoints, thermal_npoints, microwave_npoints, broad_string,
                       narrow_string, emission_npoints, fixed_npoints, len(grid)])
 
 # -----------------------------------------------------------------

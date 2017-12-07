@@ -18,6 +18,12 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
+default_nwavelengths_range = "100>500"
+default_ngrids = 10
+default_wavelength_range = "0.02 micron > 2000 micron"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
@@ -28,10 +34,10 @@ else: definition.add_required("name", "string", "name of the fitting run", runs.
 
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
-definition.sections["wg"].add_optional("npoints_range", "integer_range", "range of the wavelength grid size", "150>500", convert_default=True)
-definition.sections["wg"].add_optional("ngrids", "integer", "number of wavelength grids to generate", 10)
+definition.sections["wg"].add_optional("npoints_range", "integer_range", "range of the wavelength grid size", default_nwavelengths_range, convert_default=True)
+definition.sections["wg"].add_optional("ngrids", "integer", "number of wavelength grids to generate", default_ngrids)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
-definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)
+definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", default_wavelength_range, convert_default=True)
 
 # Add optional arguments
 definition.add_optional("npackages", "real", "number of photon packages per wavelength", 2e5)
