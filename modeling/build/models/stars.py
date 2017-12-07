@@ -895,7 +895,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Get the spectral luminosity at the FUV wavelength
-        luminosity = self.ionizing_mappings.luminosity_at(self.fuv_filter.pivot)
+        luminosity = self.ionizing_mappings.luminosity_at(self.fuv_wavelength)
 
         # Set the luminosity
         config.filter = str(self.fuv_filter)

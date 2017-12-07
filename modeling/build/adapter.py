@@ -381,6 +381,99 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def i1_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.i1_filter.pivot
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the flux density of the bulge
+        fluxdensity = self.bulge2d_model.fluxdensity
+        return fluxdensity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_fluxdensity.to("W/micron", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.i1_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the flux
+        bulge_fluxdensity = self.bulge2d_model.fluxdensity
+
+        # Get the 3.6 micron flux density with the bulge subtracted
+        fluxdensity = self.observed_flux(self.i1_filter, unit="Jy") - bulge_fluxdensity
+
+        # Return the flux density
+        return fluxdensity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_fluxdensity.to("W/micron", wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_fluxdensity.to("Lsun", density=True, density_strict=True, wavelength=self.i1_wavelength, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
     def fuv_wavelength(self):
 
         """
@@ -972,7 +1065,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: save_mapping(self.bulge_parameters_path, parameters)
+        if changed and self.config.save: save_mapping(self.bulge_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -996,7 +1089,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                          startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: model.save()
+        if changed and self.config.save: model.save()
 
     # -----------------------------------------------------------------
 
@@ -1038,7 +1131,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: save_mapping(self.old_parameters_path, parameters)
+        if changed and self.config.save: save_mapping(self.old_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1062,7 +1155,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: deprojection.save()
+        if changed and self.config.save: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1104,7 +1197,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: save_mapping(self.young_parameters_path, parameters)
+        if changed and self.config.save: save_mapping(self.young_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1128,7 +1221,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: deprojection.save()
+        if changed and self.config.save: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1170,7 +1263,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: save_mapping(self.ionizing_parameters_path, parameters)
+        if changed and self.config.save: save_mapping(self.ionizing_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1194,7 +1287,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                                  startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: deprojection.save()
+        if changed and self.config.save: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1420,7 +1513,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                     startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: save_mapping(self.disk_parameters_path, parameters)
+        if changed and self.config.save: save_mapping(self.disk_parameters_path, parameters)
 
     # -----------------------------------------------------------------
 
@@ -1444,7 +1537,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                              startswith=self.config.startswith, endswith=self.config.endswith, label=label)
 
         # Save if changed
-        if changed: deprojection.save()
+        if changed and self.config.save: deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1588,7 +1681,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                              startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
                 # Save if changed
-                if changed: projection.save()
+                if changed and self.config.save: projection.save()
 
     # -----------------------------------------------------------------
 
@@ -1629,7 +1722,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                              startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
                 # Save if changed
-                if changed: instrument.save()
+                if changed and self.config.save: instrument.save()
 
     # -----------------------------------------------------------------
 
@@ -1661,7 +1754,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
                                    startswith=self.config.startswith, endswith=self.config.endswith, label=full_label)
 
             # Save if changed
-            if changed: grid.save()
+            if changed and self.config.save: grid.save()
 
     # -----------------------------------------------------------------
 
@@ -1817,6 +1910,9 @@ def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=N
 
         # print(label, tostr(self.disk_parameters[label]))
 
+        # Skip properties related to configuration
+        if name == "config_path": continue
+
         # Checks
         if contains is not None and contains not in name: continue
         if not_contains is not None and not_contains in name: continue
@@ -1831,6 +1927,9 @@ def prompt_parameters(parameters, contains=None, not_contains=None, exact_name=N
         suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
         default = parameters[name]
         ptype, string = stringify(default)
+
+        # No ptype: value was probably None: expect any kind of property
+        if ptype is None or ptype == "None": ptype = "any"
 
         # Add label to description
         if label is not None: description = description + " [" + label + "]"

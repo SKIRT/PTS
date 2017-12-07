@@ -50,6 +50,11 @@ else: definition.add_fixed("representations", "adapt properties of these represe
 
 # -----------------------------------------------------------------
 
+# Save
+definition.add_flag("save", "save adapted properties", True)
+
+# -----------------------------------------------------------------
+
 # Select certain properties
 definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
 definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
