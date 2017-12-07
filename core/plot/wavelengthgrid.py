@@ -344,9 +344,7 @@ class WavelengthGridPlotter(Configurable):
 
         """
         This function ...
-        :param output_path:
-        :param min_wavelength:
-        :param max_wavelength:
+        :param kwargs:
         :return:
         """
 
@@ -355,6 +353,9 @@ class WavelengthGridPlotter(Configurable):
 
         # 2. Make the plot
         self.plot()
+
+        # 3. Write
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -2538,5 +2539,68 @@ class WavelengthGridPlotter(Configurable):
         # if self.out_path is not None: self.save_figure()
 
         self.figure.finish(out=self.out_path)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the complete grid
+        self.write_complete()
+
+        # Write the individual grids
+        self.write_grids()
+
+    # -----------------------------------------------------------------
+
+    def write_complete(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the complete grid ...")
+
+        # Determine the path
+        path = self.output_path_file("complete_grid.dat")
+
+        # Write the grid
+        self.complete_grid.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the individual grids ...")
+
+        # Loop over the grids
+        for label in self.grids:
+
+            # Debugging
+            log.debug("Writing the '" + label + "' wavelength grid ...")
+
+            # Get the wavelength points
+            grid = self.grids[label].grid
+
+            # Determine the path
+            path = self.output_path_file(label + ".dat")
+
+            # Save the grid
+            grid.saveto(path)
 
 # -----------------------------------------------------------------

@@ -388,7 +388,8 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         :return:
         """
 
-        return self.i1_filter.pivot
+        #return self.i1_filter.pivot
+        return self.i1_filter.wavelength
 
     # -----------------------------------------------------------------
 
@@ -481,7 +482,8 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         :return:
         """
 
-        return self.fuv_filter.pivot
+        #return self.fuv_filter.pivot
+        return self.fuv_filter.wavelength
 
     # -----------------------------------------------------------------
 

@@ -153,11 +153,17 @@ def add_new_stellar_component(ski, name, component, title=None):
             metallicity = component.parameters.metallicity
 
             # Get normalization
-            fltr = parse_filter(component.parameters.filter)
             luminosity = component.parameters.luminosity
 
             # Determine the normalization wavelength
-            filter_or_wavelength = fltr.center
+            if "wavelength" in component.parameters: wavelength = component.parameters.wavelength
+            elif "filter" in component.parameters:
+                fltr = parse_filter(component.parameters.filter)
+                wavelength = fltr.wavelength
+            else: raise ValueError("Neither wavelength nor filter is defined in the component parameters")
+
+            # Set the normalization to the wavelength
+            filter_or_wavelength = wavelength
 
     # Check whether title is defined
     if title is None: log.warning("Title for the component '" + name + "' is not defined")

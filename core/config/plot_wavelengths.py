@@ -139,5 +139,6 @@ definition.add_flag("separate_complete_grid", "plot the complete grid separately
 # -----------------------------------------------------------------
 
 definition.add_flag("show", "show the plot (default is automatic)", None)
+definition.add_flag("write", "write grids", False)
 
 # -----------------------------------------------------------------
