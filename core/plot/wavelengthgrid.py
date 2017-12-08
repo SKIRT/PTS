@@ -652,78 +652,23 @@ class WavelengthGridPlotter(Configurable):
         filter_wavelengths_path = self.input_path_file("filter_wavelengths.dat")
         line_wavelengths_path = self.input_path_file("line_wavelengths.dat")
 
-        # Loop over the subgrid files
-        for path, name in fs.files_in_path(self.input_path, extension="dat", startswith="subgrid_",
-                                           returns=["path", "name"]):
-            # Get subgrid label
-            subgrid = name.split("subgrid_")[1]
-
-            # Check
-            if subgrid not in self.config.subgrids: continue
-
-            # Debugging
-            log.debug("Adding '" + subgrid + "' subgrid ...")
-
-            # Add grid
-            self.add_grid_from_file(path, label=subgrid)
+        # Add the subgrid files
+        self.add_subgrids_in_path(self.input_path)
 
         # Fixed?
-        if fs.is_file(fixed_path):
-
-            # Debugging
-            log.debug("Adding fixed wavelengths ...")
-
-            # Add
-            self.add_grid_from_file(fixed_path, label="fixed", linewidth=1., pointsize=20)
+        if fs.is_file(fixed_path): self.add_fixed_grid_from_file(fixed_path)
 
         # New?
-        if fs.is_file(new_path):
-
-            # Debugging
-            log.debug("Adding new wavelengths ...")
-
-            # Add wavelengths
-            new = load_list(new_path)
-            self.add_wavelengths(new, label="new", color="b")
+        if fs.is_file(new_path): self.add_new_wavelengths_from_file(new_path)
 
         # Replaced?
-        if fs.is_file(replaced_path):
-
-            # Debugging
-            log.debug("Adding replaced wavelengths ...")
-
-            # Add
-            replaced = load_list(replaced_path)
-            for old, replacement in replaced:
-                self.add_wavelength(old, colour="red")
-                self.add_wavelength(replacement, colour="green")
-
-                # Remove the old wavelength from the complete grid
-                self.remove_wavelength(old)
+        if fs.is_file(replaced_path): self.add_replaced_wavelengths_from_file(replaced_path)
 
         # Filter
-        if fs.is_file(filter_wavelengths_path):
-
-            # Debugging
-            log.debug("Adding filter wavelengths ...")
-
-            # Add
-            filter_wavelengths = load_dict(filter_wavelengths_path)
-            for fltr in filter_wavelengths:
-                wavelengths = filter_wavelengths[fltr]
-                filter_name = str(fltr)
-                self.add_wavelengths(wavelengths, label=filter_name)
+        if fs.is_file(filter_wavelengths_path): self.add_filter_wavelengths_from_file(filter_wavelengths_path)
 
         # Emission lines?
-        if fs.is_file(line_wavelengths_path):
-
-            # Debugging
-            log.debug("Adding emission lines ...")
-
-            line_wavelengths = load_dict(line_wavelengths_path)
-            for identifier in line_wavelengths:
-                wavelengths = line_wavelengths[identifier]
-                self.add_wavelengths(wavelengths, label=identifier, color="grey", shared_label="lines", y_value=0.6)
+        if fs.is_file(line_wavelengths_path): self.add_line_wavelengths_from_file(line_wavelengths_path)
 
     # -----------------------------------------------------------------
 
@@ -738,7 +683,6 @@ class WavelengthGridPlotter(Configurable):
         log.debug("Generating a subgrids wavelength grid ...")
 
         from ...modeling.build.wavelengthgrid import WavelengthGridBuilder
-        from ..simulation.wavelengthgrid import WavelengthGrid
 
         # Create wavelength grid builder
         builder = WavelengthGridBuilder()
@@ -760,84 +704,304 @@ class WavelengthGridPlotter(Configurable):
         # Run the wavelength grid builder
         builder.run()
 
+        # Add the elements from the wavelength grid builder
+        self.add_elements(builder.subgrids, fixed=builder.fixed, filter_wavelengths=builder.filter_wavelengths,
+                          replaced=builder.replaced, new=builder.new, line_wavelengths=builder.line_wavelengths)
+
+    # -----------------------------------------------------------------
+
+    def add_elements(self, subgrids, fixed=None, fixed_grid=None, filter_wavelengths=None, replaced=None, new=None, line_wavelengths=None):
+
+        """
+        This function ...
+        :param subgrids:
+        :param fixed:
+        :param fixed_grid:
+        :param filter_wavelengths:
+        :param replaced:
+        :param new:
+        :param line_wavelengths:
+        :return:
+        """
+
+        # Add the subgrids
+        self.add_subgrids(subgrids)
+
+        # Grid of fixed wavelengths
+        has_fixed = fixed is not None and len(fixed) > 0
+        if has_fixed: self.add_fixed_wavelengths(fixed)
+        has_fixed_grid = fixed_grid is not None and len(fixed_grid) > 0
+        if has_fixed_grid:
+            if has_fixed: raise ValueError("Cannot pass fixed wavelengths and fixed grid")
+            self.add_fixed_grid(fixed_grid)
+
+        # Get filter wavelengths
+        has_filters = filter_wavelengths is not None and len(filter_wavelengths) > 0
+        if has_filters: self.add_filter_wavelengths(filter_wavelengths)
+
+        # Get replaced
+        has_replaced = replaced is not None and len(replaced) > 0
+        if has_replaced: self.add_replaced_wavelengths(replaced)
+
+        # Get new
+        has_new = new is not None and len(new) > 0
+        if has_new: self.add_new_wavelengths(new)
+
+        # Get line wavelengths
+        has_line_wavelengths = line_wavelengths is not None and len(line_wavelengths) > 0
+        if has_line_wavelengths: self.add_line_wavelengths(line_wavelengths)
+
+    # -----------------------------------------------------------------
+
+    def add_subgrids(self, subgrids):
+
+        """
+        This function ...
+        :param subgrids:
+        :return:
+        """
+
         # Loop over the subgrids
-        for name in builder.subgrids:
+        for name in subgrids:
 
             # Debugging
             log.debug("Adding '" + name + "' subgrid ...")
 
             # Add grid
-            subgrid = builder.subgrids[name]
+            subgrid = subgrids[name]
             self.add_wavelength_grid(subgrid, label=name)
 
-        # Grid of fixed wavelengths
-        if builder.has_fixed:
+    # -----------------------------------------------------------------
 
-            # Debugging
-            log.debug("Adding fixed wavelengths ...")
+    def add_subgrid_from_file(self, name, path):
 
-            # Add
-            fixed_grid = WavelengthGrid.from_wavelengths(builder.fixed)
-            self.add_wavelength_grid(fixed_grid, label="fixed", linewidth=1., pointsize=20)
+        """
+        This function ...
+        :param name:
+        :param path:
+        :return:
+        """
 
-        # Get filter wavelengths
-        if builder.has_filters:
+        # Debugging
+        log.debug("Adding '" + name + "' subgrid ...")
 
-            # Debugging
-            log.debug("Adding filter wavelengths ...")
+        # Add grid
+        self.add_grid_from_file(path, label=name)
 
-            # Get
-            filter_wavelengths = builder.filter_wavelengths
+    # -----------------------------------------------------------------
 
-            # Loop over the filters
-            for fltr in filter_wavelengths:
+    def add_subgrids_in_path(self, input_path):
 
-                wavelengths = filter_wavelengths[fltr]
-                filter_name = str(fltr)
-                self.add_wavelengths(wavelengths, label=filter_name)
+        """
+        This function ...
+        :param input_path:
+        :return:
+        """
 
-        # Get replaced
-        if builder.has_replaced:
+        # Loop over the subgrid files
+        for path, name in fs.files_in_path(input_path, extension="dat", startswith="subgrid_", returns=["path", "name"]):
 
-            replaced = builder.replaced
+            # Get subgrid label
+            subgrid = name.split("subgrid_")[1]
 
-            # Debugging
-            log.debug("Adding replaced wavelengths ...")
+            # Check
+            if subgrid not in self.config.subgrids: continue
 
-            # Add
-            for old, replacement in replaced:
-                self.add_wavelength(old, colour="red")
-                self.add_wavelength(replacement, colour="green")
+            # Add subgrid
+            self.add_subgrid_from_file(subgrid, path)
 
-                # Remove the old wavelength from the complete grid
-                self.remove_wavelength(old)
+    # -----------------------------------------------------------------
 
-        # Get new
-        if builder.has_new:
+    def add_fixed_wavelengths(self, fixed):
 
-            new = builder.new
+        """
+        This function ...
+        :param fixed:
+        :return:
+        """
 
-            # Debugging
-            log.debug("Adding new wavelengths ...")
+        from ..simulation.wavelengthgrid import WavelengthGrid
 
-            # Add wavelengths
-            self.add_wavelengths(new, label="new", color="b")
+        # Debugging
+        log.debug("Adding fixed wavelengths ...")
 
-        # Get emission line wavelengths
-        if builder.has_line_wavelengths:
+        # Add
+        fixed_grid = WavelengthGrid.from_wavelengths(fixed)
+        self.add_wavelength_grid(fixed_grid, label="fixed", linewidth=1., pointsize=20)
 
-            line_wavelengths = builder.line_wavelengths
+    # -----------------------------------------------------------------
 
-            # Debugging
-            log.debug("Adding emission lines ...")
+    def add_fixed_grid(self, fixed_grid):
 
-            # Loop over the lines
-            for identifier in line_wavelengths:
-                wavelengths = line_wavelengths[identifier]
-                if identifier[0] is None: continue
-                #print(identifier)
-                label = identifier[0] + identifier[1]
-                self.add_wavelengths(wavelengths, label=label, color="grey", y_value=0.6, shared_label="lines")
+        """
+        This function ...
+        :param fixed_grid:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding fixed wavelengths ...")
+
+        # Add
+        self.add_wavelength_grid(fixed_grid, label="fixed", linewidth=1., pointsize=20)
+
+    # -----------------------------------------------------------------
+
+    def add_fixed_grid_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..simulation.wavelengthgrid import WavelengthGrid
+
+        # Load
+        fixed_grid = WavelengthGrid.from_file(path)
+
+        # Add
+        self.add_fixed_grid(fixed_grid)
+
+    # -----------------------------------------------------------------
+
+    def add_filter_wavelengths(self, filter_wavelengths):
+
+        """
+        This function ...
+        :param filter_wavelengths:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding filter wavelengths ...")
+
+        # Loop over the filters
+        for fltr in filter_wavelengths:
+
+            # Get the wavelengths
+            wavelengths = filter_wavelengths[fltr]
+            filter_name = str(fltr)
+
+            # Add the wavelengths as a grid
+            self.add_wavelengths(wavelengths, label=filter_name)
+
+    # -----------------------------------------------------------------
+
+    def add_filter_wavelengths_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load and add
+        filter_wavelengths = load_dict(path)
+        self.add_filter_wavelengths(filter_wavelengths)
+
+    # -----------------------------------------------------------------
+
+    def add_replaced_wavelengths(self, replaced):
+
+        """
+        This function ...
+        :param replaced:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding replaced wavelengths ...")
+
+        # Add
+        for old, replacement in replaced:
+
+            # Add the old wavelength and the replacement wavelength
+            self.add_wavelength(old, colour="red")
+            self.add_wavelength(replacement, colour="green")
+
+            # Remove the old wavelength from the complete grid
+            self.remove_wavelength(old)
+
+    # -----------------------------------------------------------------
+
+    def add_replaced_wavelengths_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load and add
+        replaced = load_list(path)
+        self.add_replaced_wavelengths(replaced)
+
+    # -----------------------------------------------------------------
+
+    def add_new_wavelengths(self, new):
+
+        """
+        This function ...
+        :param new:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding new wavelengths ...")
+
+        # Add wavelengths
+        self.add_wavelengths(new, label="new", color="b")
+
+    # -----------------------------------------------------------------
+
+    def add_new_wavelengths_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load and add
+        new = load_list(path)
+        self.add_new_wavelengths(new)
+
+    # -----------------------------------------------------------------
+
+    def add_line_wavelengths(self, line_wavelengths):
+
+        """
+        This function ...
+        :param line_wavelengths: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Adding emission line wavelengths ...")
+
+        # Loop over the lines
+        for identifier in line_wavelengths:
+
+            wavelengths = line_wavelengths[identifier]
+            if identifier[0] is None: continue
+            # print(identifier)
+            label = identifier[0] + identifier[1]
+            self.add_wavelengths(wavelengths, label=label, color="grey", y_value=0.6, shared_label="lines")
+
+    # -----------------------------------------------------------------
+
+    def add_line_wavelengths_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load and add
+        line_wavelengths = load_dict(path)
+        self.add_line_wavelengths(line_wavelengths)
 
     # -----------------------------------------------------------------
 

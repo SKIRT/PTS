@@ -11,7 +11,7 @@ from pts.core.config.plot import definition as plot_definition
 from pts.core.basics.plot import plotting_libraries, mpl
 from pts.core.prep.wavelengthgrids import subgrids
 from pts.magic.tools import wavelengths
-from pts.core.basics.emissionlines import get_id_strings
+from pts.core.basics.emissionlines import get_id_strings, important_lines
 from pts.core.tools import parsing
 
 # -----------------------------------------------------------------
@@ -45,7 +45,7 @@ default_regimes = ["euv", "fuv", "muv", "nuv", "optical", "nir", "mir", "fir", "
 
 # Emission lines
 all_lines = get_id_strings()
-default_lines = ["Halpha", "Hbeta", "Hgamma", "Hdelta", "A1", "A2"]
+default_lines = important_lines
 
 # -----------------------------------------------------------------
 

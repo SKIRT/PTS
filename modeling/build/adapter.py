@@ -380,19 +380,6 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def i1_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return self.i1_filter.pivot
-        return self.i1_filter.wavelength
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def bulge_fluxdensity(self):
 
@@ -471,19 +458,6 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
         """
 
         return self.old_fluxdensity.to("Lsun", density=True, density_strict=True, wavelength=self.i1_wavelength, distance=self.galaxy_distance)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fuv_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return self.fuv_filter.pivot
-        return self.fuv_filter.wavelength
 
     # -----------------------------------------------------------------
 

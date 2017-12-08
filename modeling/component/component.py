@@ -491,6 +491,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fuv_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fuv_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def i1_filter(self):
 
         """
@@ -499,6 +511,18 @@ class ModelingComponent(Configurable):
         """
 
         return BroadBandFilter("IRAC I1")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def i1_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.i1_filter.wavelength
 
     # -----------------------------------------------------------------
 

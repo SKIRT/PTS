@@ -13,10 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.data.sun import Sun
 from ....core.basics.log import log
 from ...component.galaxy import GalaxyModelingComponent
 from .base import FittingInitializerBase
+from ....core.prep.wavelengthgrids import WavelengthGridGenerator
+from ....core.basics.emissionlines import get_id_strings, important_lines
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -39,9 +41,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         FittingInitializerBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
-        # Solar luminosity units: not used anymore
-        #self.sun_fuv = None
-        #self.sun_i1 = None
+        # The wavelength grid generators
+        self.basic_generator = None
+        self.refined_generator = None
+        self.highres_generator = None
 
     # -----------------------------------------------------------------
 
@@ -91,11 +94,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         FittingInitializerBase.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
 
-        # Solar properties
-        #sun = Sun()
-        #self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv_filter) # Get the luminosity of the Sun in the FUV band
-        #self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1_filter)   # Get the luminosity of the Sun in the IRAC I1 band
-
     # -----------------------------------------------------------------
 
     def load_ski(self):
@@ -128,6 +126,18 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.fitting_filters
+
+    # -----------------------------------------------------------------
+
     def create_wavelength_grids(self):
 
         """
@@ -138,18 +148,143 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating the wavelength grids ...")
 
-        # Fixed wavelengths (always in the grid)
-        fixed = self.normalization_wavelengths
+        # Basic wavelength grids
+        self.create_basic_wavelength_grids()
 
-        # Set options
-        self.wg_generator.config.show = False
-        self.wg_generator.config.write = False
+        # Refined wavelength grids
+        self.create_refined_wavelength_grids()
+
+        # High-resolution wavelength grids
+        self.create_highres_wavelength_grids()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def important_emission_lines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return important_lines
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_emission_lines(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return get_id_strings()
+
+    # -----------------------------------------------------------------
+
+    def create_basic_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating basic wavelength grids ...")
+
+        # Create generator
+        self.basic_generator = WavelengthGridGenerator()
+
+        # Set basic settings
+        self.basic_generator.config.ngrids = self.config.ngrids_basic
+        self.basic_generator.config.npoints_range = self.config.wg.npoints_range_basic
+        self.basic_generator.config.range = self.config.wg.range
+
+        # Set other
+        self.basic_generator.config.add_emission_lines = self.config.wg.add_emission_lines
+        self.basic_generator.config.emission_lines = self.important_emission_lines
+        self.basic_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.basic_generator.config.adjust_to = self.fitting_filters
+        self.basic_generator.config.fixed = self.normalization_wavelengths
+
+        # Set other flags
+        self.basic_generator.config.show = False
+        self.basic_generator.config.write = False
+        self.basic_generator.config.plot = True
 
         # Generate the wavelength grids
-        self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
-                              fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
-                              min_wavelength=self.config.wg.range.min, max_wavelength=self.config.wg.range.max,
-                              filters=self.fitting_run.fitting_filters)
+        self.basic_generator.run(table=self.wg_table)
+
+    # -----------------------------------------------------------------
+
+    def create_refined_wavelength_grids(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating refined wavelength grids ...")
+
+        # Create generator
+        self.refined_generator = WavelengthGridGenerator()
+
+        # Set basic settings
+        self.refined_generator.config.ngrids = self.config.ngrids_refined
+        self.refined_generator.config.npoints_range = self.config.wg.npoints_range_refined
+        self.refined_generator.config.range = self.config.wg.range
+
+        # Set other
+        self.refined_generator.config.add_emission_lines = self.config.wg.add_emission_lines
+        self.refined_generator.config.emission_lines = self.important_emission_lines
+        self.refined_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.refined_generator.config.filters = self.fitting_filters
+        self.refined_generator.config.fixed = self.normalization_wavelengths
+
+        # Set other flags
+        self.refined_generator.config.show = False
+        self.refined_generator.config.write = False
+        self.refined_generator.config.plot = True
+
+        # Generate the refined wavelength grids
+        self.refined_generator.run(table=self.wg_table)
+
+    # -----------------------------------------------------------------
+
+    def create_highres_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating high-resolution wavelength grids ...")
+
+        # Create generator
+        self.highres_generator = WavelengthGridGenerator()
+
+        # Set basic settings
+        self.highres_generator.config.ngrids = self.config.ngrids_highres
+        self.highres_generator.config.npoints_range = self.config.wg.npoints_range_highres
+        self.highres_generator.config.range = self.config.wg.range
+
+        # Set other
+        self.highres_generator.config.add_emission_lines = self.config.wg.add_emission_lines
+        self.highres_generator.config.emission_lines = self.all_emission_lines
+        self.highres_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.highres_generator.config.filters = self.fitting_filters
+        self.highres_generator.config.fixed = self.normalization_wavelengths
+
+        # Set other flags
+        self.highres_generator.config.show = False
+        self.highres_generator.config.write = False
+        self.highres_generator.config.plot = True
+
+        # Generate the high-resolution wavelength grids
+        self.highres_generator.run(table=self.wg_table)
 
     # -----------------------------------------------------------------
 
@@ -266,5 +401,62 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Save the ski template file
         self.ski.save()
+
+    # -----------------------------------------------------------------
+
+    def write_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grids ...")
+
+        # Basic
+        self.write_basic_wavelength_grids()
+
+        # Refined
+        self.write_refined_wavelength_grids()
+
+        # Highres
+        self.write_highres_wavelength_grids()
+
+    # -----------------------------------------------------------------
+
+    def write_basic_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the basic wavelength grids ...")
+
+    # -----------------------------------------------------------------
+
+    def write_refined_wavelength_grids(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the refined wavelength grids ...")
+
+    # -----------------------------------------------------------------
+
+    def write_highres_wavelength_grids(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the high-resolution wavelength grids ...")
 
 # -----------------------------------------------------------------

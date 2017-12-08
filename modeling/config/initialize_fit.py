@@ -18,30 +18,49 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-default_nwavelengths_range = "100>500"
-default_ngrids = 10
+default_npoints_range_basic = "100>200"
+default_npoints_range_refined = "100>300"
+default_npoints_range_highres = "300>500"
+
+# -----------------------------------------------------------------
+
+default_ngrids_basic = 3
+default_ngrids_refined = 3
+default_ngrids_highres = 3
+
+# -----------------------------------------------------------------
+
 default_wavelength_range = "0.02 micron > 2000 micron"
+default_npackages = 2e5
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# FITTING RUN
+# Fitting run
 if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
 elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
 else: definition.add_required("name", "string", "name of the fitting run", runs.names)
 
+# -----------------------------------------------------------------
+
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
-definition.sections["wg"].add_optional("npoints_range", "integer_range", "range of the wavelength grid size", default_nwavelengths_range, convert_default=True)
-definition.sections["wg"].add_optional("ngrids", "integer", "number of wavelength grids to generate", default_ngrids)
+definition.sections["wg"].add_optional("npoints_range_basic", "integer_range", "range of the basic wavelength grid size", default_npoints_range_basic, convert_default=True)
+definition.sections["wg"].add_optional("npoints_range_refined", "integer_range", "range of the refined wavelength grid size", default_npoints_range_refined, convert_default=True)
+definition.sections["wg"].add_optional("npoints_range_highres", "integer_range", "range of the high-resolution wavelength grid size", default_npoints_range_highres, convert_default=True)
+definition.sections["wg"].add_optional("ngrids_basic", "integer", "number of basic wavelength grids to generate", default_ngrids_basic)
+definition.sections["wg"].add_optional("ngrids_refined", "integer", "number of refined wavelength grids to generate", default_ngrids_refined)
+definition.sections["wg"].add_optional("ngrids_highres", "integer", "number of high-resolution wavelength grids to generate", default_ngrids_highres)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
 definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", default_wavelength_range, convert_default=True)
 
-# Add optional arguments
-definition.add_optional("npackages", "real", "number of photon packages per wavelength", 2e5)
-definition.add_flag("selfabsorption", "enable dust self-absorption")
+# -----------------------------------------------------------------
+
+# Other simulation settings
+definition.add_optional("npackages", "real", "number of photon packages per wavelength", default_npackages)
+definition.add_flag("selfabsorption", "enable dust self-absorption", False)
 definition.add_flag("transient_heating", "enable transient heating", True)
 
 # -----------------------------------------------------------------

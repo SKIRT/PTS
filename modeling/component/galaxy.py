@@ -1301,7 +1301,8 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return [self.i1_filter.pivot, self.fuv_filter.pivot]
+        #return [self.i1_filter.pivot, self.fuv_filter.pivot]
+        return [self.i1_wavelength, self.fuv_wavelength]
 
     # -----------------------------------------------------------------
 

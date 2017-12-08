@@ -54,6 +54,8 @@ else: definition.add_optional("model_name", "string", "name of the model to use 
 if runs.has_any: definition.add_optional("from_run", "string", "adapt configuration of other fitting run", choices=runs.names)
 else: definition.add_fixed("from_run", "no previous fitting run", None)
 
+# -----------------------------------------------------------------
+
 # Adapt certain things from the other fitting run
 definition.add_flag("adapt_parameters", "adapt the free parameters from the other fitting run")
 definition.add_flag("adapt_descriptions", "adapt the descriptions from the other fitting run")
@@ -81,6 +83,8 @@ definition.add_flag("except_grid", "don't use grid settings from other fitting r
 # FITTING METHOD
 definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, fitting_methods)
 
+# -----------------------------------------------------------------
+
 # Add optional
 definition.add_optional("parameters", "string_list", "parameters to be used as free parameters during the fitting")
 definition.add_optional("descriptions", "string_string_dictionary", "parameter descriptions")
@@ -91,7 +95,7 @@ definition.add_optional("filters", "string_list", "fit to the observed data of t
 definition.add_optional("genetic", "dictionary", "options for the genetic algorithm")
 definition.add_optional("grid", "dictionary", "options for the grid fitting")
 
-# Free ranges?
+# Use free ranges?
 definition.add_flag("free_ranges", "use free ranges, instead of using initial values and a certain magnitude range around it", False)
 
 # Sections

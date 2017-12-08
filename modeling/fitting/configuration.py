@@ -42,7 +42,7 @@ template_ski_path = fs.join(introspection.pts_modeling_ski_templates_path(), "la
 magnitude_ranges = dict()
 magnitude_ranges["fuv_young"] = 2
 magnitude_ranges["dust_mass"] = 1
-magnitude_ranges["fuv_ionizing"] = 4
+magnitude_ranges["fuv_ionizing"] = 3
 
 # -----------------------------------------------------------------
 

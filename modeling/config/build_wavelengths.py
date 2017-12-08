@@ -13,7 +13,6 @@ from pts.core.basics.emissionlines import get_id_strings
 
 # Emission lines
 all_lines = get_id_strings()
-#default_lines = ["Halpha", "Hbeta", "Hgamma", "Hdelta", "A1", "A2"]
 default_lines = None # no default: means all
 
 # -----------------------------------------------------------------

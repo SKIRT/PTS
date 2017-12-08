@@ -30,6 +30,8 @@ from ..basics.range import IntegerRange
 from ..tools import sequences
 from ..basics.containers import DefaultOrderedDict
 from ..tools.stringify import stringify_list_fancy
+from ..tools import parsing
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -52,7 +54,7 @@ ranges[aromatic] = QuantityRange(3., 27., unit="micron")
 ranges[thermal] = QuantityRange(27., 1000., unit="micron")
 ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
 
-# Define the relative fineness (the number of points) of the subgrids
+# Define the relative number of points of the subgrids
 relpoints = OrderedDict()
 relpoints[euv] = 25./325.           # 25
 relpoints[stellar] = 100./325.     # 100
@@ -80,29 +82,35 @@ class WavelengthGridsTable(SmartTable):
         super(WavelengthGridsTable, self).__init__(*args, **kwargs)
 
         # Add column info
+        self.add_column_info("Label", str, None, "wavelength grid label")
         self.add_column_info("EUV points", int, None, "number of points in EUV spectrum (range: " + str(ranges[euv]) + ")")
-        self.add_column_info("stellar points", int, None, "number of points in stellar spectrum (range: " + str(ranges[stellar]) + ")")
-        self.add_column_info("aromatic points", int, None, "number of points in aromatic spectrum (range: " + str(ranges[aromatic]) + ")")
-        self.add_column_info("thermal points", int, None, "number of points in thermal spectrum (range: " + str(ranges[thermal]) + ")")
-        self.add_column_info("microwave points", int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
+        self.add_column_info("Stellar points", int, None, "number of points in stellar spectrum (range: " + str(ranges[stellar]) + ")")
+        self.add_column_info("Aromatic points", int, None, "number of points in aromatic spectrum (range: " + str(ranges[aromatic]) + ")")
+        self.add_column_info("Thermal points", int, None, "number of points in thermal spectrum (range: " + str(ranges[thermal]) + ")")
+        self.add_column_info("Microwave points", int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
         self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelength range was resampled")
         self.add_column_info("Narrow band filters", str, None, "narrow band filters for which the wavelength was added")
+        self.add_column_info("Adjusted points", int, None, "number of points that were adjuted")
+        self.add_column_info("New points", int, None, "number of new points")
         self.add_column_info("Emission lines", int, None, "number of emission lines")
         self.add_column_info("Fixed points", int, None, "number of fixed points")
         self.add_column_info("Total points", int, None, "total number of points")
 
     # -----------------------------------------------------------------
 
-    def add_grid(self, grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added):
+    def add_grid(self, label, npoints, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added, adjusted_npoints, new_npoints):
 
         """
         This function ...
-        :param grid:
+        :param label:
+        :param npoints:
         :param subgrid_npoints:
         :param emission_npoints:
         :param fixed_npoints:
         :param broad_resampled:
         :param narrow_added:
+        :param adjusted_npoints:
+        :param new_npoints:
         :return:
         """
 
@@ -118,8 +126,155 @@ class WavelengthGridsTable(SmartTable):
         narrow_string = ",".join(narrow_added)
 
         # Add row
-        self.add_row([euv_npoints, stellar_npoints, aromatic_npoints, thermal_npoints, microwave_npoints, broad_string,
-                      narrow_string, emission_npoints, fixed_npoints, len(grid)])
+        self.add_row([label, euv_npoints, stellar_npoints, aromatic_npoints, thermal_npoints, microwave_npoints, broad_string,
+                      narrow_string, adjusted_npoints, new_npoints, emission_npoints, fixed_npoints, npoints])
+
+    # -----------------------------------------------------------------
+
+    def get_label(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Label"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_index_for_label(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        from ..tools import tables
+        return tables.find_index(self, label, column_name="Label")
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_euv(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["EUV points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_stellar(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Stellar points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_aromatic(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Aromatic points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_thermal(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Thermal points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_microwave(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Microwave points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_broad_band_filters(self, index):
+
+        """
+        Thisn function ...
+        :param index:
+        :return:
+        """
+
+        if self["Broad band filters"].mask[index]: return None
+        return parsing.broad_band_filter_list(self["Broad band filters"][index])
+
+    # -----------------------------------------------------------------
+
+    def get_narrow_band_filters(self, index):
+
+        """
+        Thisn function ...
+        :param index:
+        :return:
+        """
+
+        if self["Narrow band filters"].mask[index]: return None
+        return parsing.narrow_band_filter_list(self["Narrow band filters"][index])
+
+    # -----------------------------------------------------------------
+
+    def get_nemission_lines(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Emission lines"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints_fixed(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Fixed points"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints(self, index):
+
+        """
+        Thisn function ...
+        :param index:
+        :return:
+        """
+
+        return self["Total points"][index]
 
 # -----------------------------------------------------------------
 
@@ -142,25 +297,18 @@ class WavelengthGridGenerator(Configurable):
 
         # -- Attributes --
 
-        # Settings
-        self.npoints_range = None
-        self.ngrids = None
-        self.fixed = None
-        self.add_emission_lines = False
-        self.lines = None
-        self.min_wavelength = None
-        self.max_wavelength = None
-        self.filters = None
-        self.adjust_to = None
-
-        # The wavelength grids
-        self.grids = []
-
         # The wavelength grid property table
         self.table = None
 
-        # The emission line object
-        self.emission_lines = None
+        # Lists to contain the elements of each grid
+        self.npoints = []
+        self.grids = []
+        self.subgrids = []
+        self.filter_wavelengths = []
+        self.replaced = []
+        self.new = []
+        self.line_wavelengths = []
+        self.fixed = []
 
     # -----------------------------------------------------------------
 
@@ -189,6 +337,30 @@ class WavelengthGridGenerator(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def ngrids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.grids)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ngrids == 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def single_grid(self):
 
         """
@@ -196,8 +368,8 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        if len(self.grids) == 0: raise RuntimeError("No grid")
-        elif len(self.grids) == 1: return self.grids[0]
+        if self.no_grids: raise RuntimeError("No grids")
+        elif self.ngrids == 1: return self.grids[0]
         else: raise RuntimeError("More than one grid")
 
     # -----------------------------------------------------------------
@@ -209,29 +381,47 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        # Set options
-        self.ngrids = kwargs.pop("ngrids")
-        if self.ngrids == 1: self.npoints_range = IntegerRange.infinitesimal(kwargs.pop("npoints"))
-        else: self.npoints_range = kwargs.pop("npoints_range")
-        self.fixed = kwargs.pop("fixed", None)
-        self.add_emission_lines = kwargs.pop("add_emission_lines", False)
-        self.lines = kwargs.pop("lines", None)
-        self.min_wavelength = kwargs.pop("min_wavelength", None)
-        self.max_wavelength = kwargs.pop("max_wavelength", None)
-        self.filters = kwargs.pop("filters", None)
-        self.adjust_to = kwargs.pop("adjust_to", None)
+        # Call the setup function of the base class
+        super(WavelengthGridGenerator, self).setup(**kwargs)
 
-        # Create the emission lines instance
-        if self.add_emission_lines:
+        # Get the wavelength grids table
+        self.table = kwargs.pop("table", None)
 
-            # Use all liness
-            if self.lines is None: self.emission_lines = EmissionLines()
+    # -----------------------------------------------------------------
 
-            # Use specific lines
-            else: self.emission_lines = [EmissionLine.from_string(string) for string in self.lines]
+    @property
+    def has_table(self):
 
-        # Initialize the table
-        self.table = WavelengthGridsTable()
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.range.min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.range.max
 
     # -----------------------------------------------------------------
 
@@ -246,56 +436,280 @@ class WavelengthGridGenerator(Configurable):
         log.info("Generating the wavelength grids ...")
 
         # Loop over the different number of points
-        for npoints in self.npoints_range.linear(self.ngrids):
+        for index, npoints in enumerate(self.config.npoints_range.linear(self.config.ngrids)):
 
-            # Create the grid and add it to the list
-            self.create_grid(npoints)
+            # Debugging
+            log.debug("Creating a wavelength grid with a target of " + str(npoints) + " points ...")
+
+            # Create the grid
+            wavelength_grid, subgrid_wavelengths, filter_wavelengths, replaced, new, line_wavelengths, fixed = create_one_subgrid_wavelength_grid(
+                self.config.npoints, self.emission_lines, self.config.fixed,
+                min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
+                filters=self.config.filters, adjust_to=self.config.adjust_to, return_elements=True)
+
+            # Add to lists
+            self.npoints.append(npoints)
+            self.grids.append(wavelength_grid)
+            self.subgrids.append(subgrid_wavelengths)
+            self.filter_wavelengths.append(filter_wavelengths)
+            self.replaced.append(replaced)
+            self.new.append(new)
+            self.line_wavelengths.append(line_wavelengths)
+            self.fixed.append(fixed)
+
+            # Add entry to the table
+            if self.has_table: self.add_to_table(index, npoints)
 
     # -----------------------------------------------------------------
 
-    def create_grid(self, npoints):
+    @lazyproperty
+    def emission_lines(self):
 
         """
         This function ...
+        :return:
+        """
+
+        # Create the emission lines instance
+        if self.config.add_emission_lines:
+
+            # Line IDs are specified
+            if self.config.emission_lines is not None:
+
+                lines = []
+
+                # Loop over the line IDS
+                for line_id in self.config.emission_lines:
+
+                    # Create line
+                    line = EmissionLine.from_string(line_id)
+
+                    # Add line
+                    lines.append(line)
+
+                # Return the lines
+                return lines
+
+            # No lines are specified: take all
+            else: return EmissionLines()
+
+        # No emission lines to be used
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def add_to_table(self, index, npoints):
+
+        """
+        This function ...
+        :param index:
         :param npoints:
         :return:
         """
 
-        # Inform the user
-        with_without = " with " if self.add_emission_lines else " without "
-        log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
-
-        # Generate the grid
-        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added, replaced, new = \
-            create_one_subgrid_wavelength_grid(npoints, self.emission_lines, fixed=self.fixed,
-                                               min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
-                                               filters=self.filters, min_wavelengths_in_filter=self.config.min_wavelengths_in_filter,
-                                               min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm, adjust_to=self.adjust_to)
-
-        has_replaced = len(replaced) > 0
-        has_new = len(new) > 0
-
         # Debugging
-        log.debug("Generated a wavelength grid with:")
-        log.debug("")
-        log.debug(" - number of points: " + str(len(grid)))
-        log.debug(" - number of points in subgrids: ")
-        for subgrid in subgrid_npoints: log.debug("     * " + subgrid + ": " + str(subgrid_npoints[subgrid]))
-        log.debug(" - number of emission points: " + str(emission_npoints))
-        log.debug(" - number of fixed points: " + str(fixed_npoints))
-        log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
-        log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
-        if has_replaced: log.debug(" - replaced wavelengths:")
-        for old, new in replaced: log.debug("    * " + str(old) + " -> " + str(new))
-        if has_new: log.debug(" - new wavelengths:")
-        for line in stringify_list_fancy(new)[1].split("\n"): log.debug("    " + line)
-        log.debug("")
+        log.debug("Adding row to the wavelength grids table ...")
 
-        # Add the grid
-        self.grids.append(grid)
+        # Determine the label
+        label = self.config.label + str(npoints) if self.config.label is not None else str(npoints)
 
-        # Add entry to the table
-        self.table.add_grid(grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added)
+        # Get properties
+        npoints = self.get_npoints(index)
+        subgrid_npoints = self.get_subgrid_npoints(index)
+        emission_npoints = self.get_emission_npoints(index)
+        fixed_npoints = self.get_fixed_npoints(index)
+        broad_resampled = self.get_broad_resampled(index)
+        narrow_added = self.get_narrow_added(index)
+        adjusted_npoints = self.get_replaced_npoints(index)
+        new_npoints = self.get_new_npoints(index)
+
+        # Add to table
+        self.table.add_grid(label, npoints, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled,
+                            narrow_added, adjusted_npoints, new_npoints)
+
+    # -----------------------------------------------------------------
+
+    def get_grid(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.grids[index]
+
+    # -----------------------------------------------------------------
+
+    def get_npoints(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.get_grid(index))
+
+    # -----------------------------------------------------------------
+
+    def get_subgrid_npoints(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        subgrid_wavelengths = self.subgrids[index]
+
+        # Keep track of the number of points per subgrid
+        subgrid_npoints = OrderedDict()
+        for subgrid in subgrid_wavelengths:
+            subgrid_npoints[subgrid] = len(subgrid_wavelengths[subgrid])
+        return subgrid_npoints
+
+    # -----------------------------------------------------------------
+
+    def get_emission_npoints(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Set emission npoints
+        emission_npoints = 0
+        for line_identifier in self.line_wavelengths[index]:
+            emission_npoints += len(self.line_wavelengths[index][line_identifier])
+        return emission_npoints
+
+    # -----------------------------------------------------------------
+
+    def get_fixed_npoints(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.fixed[index])
+
+    # -----------------------------------------------------------------
+
+    def get_broad_resampled(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Set broad resampled nwavelengths
+        broad_resampled = []
+        for fltr in self.filter_wavelengths[index]:
+            if not isinstance(fltr, BroadBandFilter): continue
+            broad_resampled.append(fltr)
+        return broad_resampled
+
+    # -----------------------------------------------------------------
+
+    def get_narrow_added(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Set narrow band filter added nwavelengths
+        narrow_added = []
+        for fltr in self.filter_wavelengths[index]:
+            if not isinstance(fltr, NarrowBandFilter): continue
+            narrow_added.append(fltr)
+        return narrow_added
+
+    # -----------------------------------------------------------------
+
+    def get_nreplaced(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.replaced[index])
+
+    # -----------------------------------------------------------------
+
+    get_replaced_npoints = get_nreplaced
+
+    # -----------------------------------------------------------------
+
+    def has_replaced(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_nreplaced(index) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_replaced(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.replaced[index]
+
+    # -----------------------------------------------------------------
+
+    def get_nnew(self, index):
+
+        """
+        Thisn function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.new[index])
+
+    # -----------------------------------------------------------------
+
+    get_new_npoints = get_nnew
+
+    # -----------------------------------------------------------------
+
+    def has_new(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_nnew(index) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_new(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.new[index]
 
     # -----------------------------------------------------------------
 
@@ -310,9 +724,27 @@ class WavelengthGridGenerator(Configurable):
         log.info("Showing the wavelength grids ...")
 
         # Loop over the grids
-        for grid in self.grids:
+        for index in range(self.ngrids):
 
-            print("Wavelength grid with " + str(len(grid)) + " wavelength points:")
+            # Get properties
+            grid = self.get_grid(index)
+            npoints = self.get_npoints(index)
+
+            # Show
+            print("Wavelength grid with " + str(npoints) + " wavelength points:")
+            print("")
+
+            print(" - number of points in subgrids:")
+            subgrid_npoints = self.get_subgrid_npoints(index)
+            for subgrid in subgrid_npoints: print("    * " + subgrid + ": " + str(subgrid_npoints[subgrid]))
+            print(" - number of emission points: " + str(self.get_emission_npoints(index)))
+            print(" - number of fixed points: " + str(self.get_fixed_npoints(index)))
+            print(" - filters for which extra sampling was performed: " + str(self.get_broad_resampled(index)))
+            print(" - narrow band filters for which wavelength was added: " + str(self.get_narrow_added(index)))
+            if self.has_replaced(index): print(" - replaced wavelengths:")
+            for old, new in self.get_replaced(index): print("    * " + str(old) + " -> " + str(new))
+            if self.has_new(index): print(" - new wavelengths:")
+            for line in stringify_list_fancy(self.get_new(index))[1].split("\n"): print("    " + line)
             print("")
             print(grid)
             print("")
@@ -329,7 +761,29 @@ class WavelengthGridGenerator(Configurable):
         # Inform the user
         log.info("Plotting the wavelength grids ...")
 
-        #plotter = TransmissionPlotter()
+        from ..plot.wavelengthgrid import WavelengthGridPlotter
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get the elements of this grid
+            #npoints = self.npoints[index]
+            #wavelength_grid = self.grids[index]
+            subgrid_wavelengths = self.subgrids[index]
+            filter_wavelengths = self.filter_wavelengths[index]
+            replaced = self.replaced[index]
+            new = self.new[index]
+            line_wavelengths = self.line_wavelengths[index]
+            fixed = self.fixed[index]
+
+            # Create the plotter
+            plotter = WavelengthGridPlotter()
+
+            # Add the elements
+            plotter.add_elements(subgrid_wavelengths, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
+
+            # Run the plotter
+            plotter.run()
 
     # -----------------------------------------------------------------
 

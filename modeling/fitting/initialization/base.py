@@ -18,7 +18,7 @@ from ....core.tools import tables
 from ....core.tools import filesystem as fs
 from ....magic.tools import wavelengths
 from ....core.basics.log import log
-from ....core.prep.wavelengthgrids import WavelengthGridGenerator
+from ....core.prep.wavelengthgrids import WavelengthGridGenerator, WavelengthGridsTable
 from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict
 from ....core.prep.smile import SKIRTSmileSchema
@@ -59,6 +59,9 @@ class FittingInitializerBase(FittingComponent):
         # The wavelength grid generator
         self.wg_generator = None
 
+        # The wavelength grid table
+        self.wg_table = None
+
         # The dictionary of input map paths
         self.input_map_paths = dict()
 
@@ -81,14 +84,14 @@ class FittingInitializerBase(FittingComponent):
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)
 
-        # Create a WavelengthGridGenerator
-        self.wg_generator = WavelengthGridGenerator()
-
         # Create the table to contain the weights
         self.weights = WeightsTable()
 
         # Set the models suite
         self.suite = ModelSuite.from_modeling_path(self.config.path)
+
+        # Initialize the wavelength grids table
+        self.wg_table = WavelengthGridsTable()
 
     # -----------------------------------------------------------------
 
@@ -157,8 +160,11 @@ class FittingInitializerBase(FittingComponent):
         # Inform the user
         log.info("Creating the wavelength grids ...")
 
+        # Create a WavelengthGridGenerator
+        self.wg_generator = WavelengthGridGenerator()
+
         # Fixed wavelengths (always in the grid)
-        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
+        fixed = [self.fuv_wavelength, self.i1_wavelength]
 
         # Set options
         self.wg_generator.config.show = False
@@ -168,7 +174,7 @@ class FittingInitializerBase(FittingComponent):
         self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
                               fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
                               min_wavelength=self.config.wg.min_wavelength, max_wavelength=self.config.wg.max_wavelength,
-                              filters=self.fitting_run.fitting_filters)
+                              filters=self.fitting_run.fitting_filters, table=self.wg_table)
 
     # -----------------------------------------------------------------
 
@@ -308,7 +314,7 @@ class FittingInitializerBase(FittingComponent):
         log.info("Writing the wavelength grid table ...")
 
         # Write the wavelength grids table
-        self.wg_generator.table.saveto(self.fitting_run.wavelength_grids_table_path)
+        self.wg_table.saveto(self.fitting_run.wavelength_grids_table_path)
 
     # -----------------------------------------------------------------
 

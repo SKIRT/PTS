@@ -151,19 +151,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def fuv_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return self.fuv_filter.pivot
-        return self.fuv_filter.wavelength
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def intrinsic_fuv_flux(self):
 
@@ -422,19 +409,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
         return scale_height
-
-    # -----------------------------------------------------------------
-
-    @property
-    def i1_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return self.i1_filter.pivot
-        return self.i1_filter.wavelength
 
     # -----------------------------------------------------------------
 
