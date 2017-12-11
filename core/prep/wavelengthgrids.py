@@ -1397,6 +1397,9 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
                 for index in sorted(current_indices_new, reverse=True): del filter_wavelengths[fltr][index]
                 filter_wavelengths[fltr].extend(new_wavelengths)
 
+            # NEW: Add the peak wavelength
+            if fltr.peak is not None: filter_wavelengths[fltr].append(fltr.peak)
+
         # For a narrow band filter, add the exact wavelength of the filter to the wavelength grid
         elif isinstance(fltr, NarrowBandFilter):
 
