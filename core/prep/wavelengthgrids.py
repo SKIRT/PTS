@@ -406,7 +406,7 @@ class WavelengthGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def min_wavelength(self):
 
         """
@@ -414,11 +414,35 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        return self.config.range.min
+        # Check filters?
+        if self.config.check_filters is not None:
+
+            # Get specified minimum wavelength
+            min_wavelength = self.config.range.min
+
+            # Loop over the filters
+            for fltr in self.config.check_filters:
+
+                # Check below
+                if fltr.wavelength < min_wavelength:
+
+                    # Warning
+                    log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
+                    # Adjust?
+                    if self.config.adjust_minmax:
+                        log.debug("Adjusting the minimum wavelength to incorporate the '" + str(fltr) + "' filter")
+                        min_wavelength = 0.99 * fltr.wavelength
+
+            # Return the lower wavelength
+            return min_wavelength
+
+        # Return the specified minimum wavelength
+        else: return self.config.range.min
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def max_wavelength(self):
 
         """
@@ -426,7 +450,55 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        return self.config.range.max
+        # Check filters?
+        if self.config.check_filters is not None:
+
+            # Get specified maximum wavelength
+            max_wavelength = self.config.range.max
+
+            # Loop over the filters
+            for fltr in self.config.check_filters:
+
+                # Check above
+                if fltr.wavelength > max_wavelength:
+
+                    # Warning
+                    log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
+                    # Adjust?
+                    if self.config.adjust_minmax:
+                        log.debug("Adjusting the maximum wavelength to incorporate the '" + str(fltr) + "' filter")
+                        max_wavelength = 1.01 * fltr.wavelength
+
+            # Return the higher wavelength
+            return max_wavelength
+
+        # Return the specified maximum wavelength
+        else: return self.config.range.max
+
+    # -----------------------------------------------------------------
+
+    # @property
+    # def min_wavelength(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.config.range.min
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @property
+    # def max_wavelength(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.config.range.max
 
     # -----------------------------------------------------------------
 
@@ -450,7 +522,10 @@ class WavelengthGridGenerator(Configurable):
             wavelength_grid, subgrid_wavelengths, filter_wavelengths, replaced, new, line_wavelengths, fixed = create_one_subgrid_wavelength_grid(
                 npoints, self.emission_lines, self.config.fixed,
                 min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
-                filters=self.config.filters, adjust_to=self.config.adjust_to, return_elements=True)
+                filters=self.config.filters, adjust_to=self.config.adjust_to,
+                min_wavelengths_in_filter=self.config.min_wavelengths_in_filter,
+                min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm,
+                return_elements=True)
 
             #print("Filters:", filter_wavelengths)
 
@@ -833,6 +908,7 @@ class WavelengthGridGenerator(Configurable):
             label = self.get_label(target_npoints)
 
             # Get the elements of this grid
+            grid = self.get_grid(index)
             subgrids = self.get_subgrids(index)
             filter_wavelengths = self.filter_wavelengths[index]
             replaced = self.replaced[index]
@@ -843,8 +919,35 @@ class WavelengthGridGenerator(Configurable):
             # Create the plotter
             plotter = WavelengthGridPlotter()
 
+            # Set settings
+            plotter.config.add_regimes = self.config.plot_regimes
+            plotter.config.regimes = self.config.regimes
+            plotter.config.only_subregimes = self.config.only_subregimes
+
+            #print("FILTERS", self.config.filters)
+            plotter.config.add_filters = self.config.plot_filters
+            plotter.config.filters = self.config.filters
+            plotter.config.categorize_filters = self.config.categorize_filters
+
+            plotter.config.add_lines = self.config.plot_lines
+            plotter.config.lines = self.config.emission_lines
+
+            plotter.config.add_seds = self.config.plot_seds
+            plotter.config.seds = self.config.seds
+            plotter.config.metallicity = self.config.metallicity
+            plotter.config.compactness = self.config.compactness
+            plotter.config.pressure = self.config.pressure
+            plotter.config.covering_factor = self.config.covering_factor
+            plotter.config.ages = self.config.ages
+
+            # Plot separate
+            plotter.config.separate_grids = True
+
             # Add the elements
             plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
+
+            # Add complete grid
+            plotter.add_reference_grid(grid, label="reference", in_legend=True)
 
             # Determine plot filepath
             if self.config.plot_path is not None: plot_filepath = fs.join(self.config.plot_path, label + ".pdf")

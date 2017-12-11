@@ -32,7 +32,7 @@ default_ages = "8.0 Gyr,0.1 Gyr"
 # -----------------------------------------------------------------
 
 # Filters
-default_filter_names = "GALEX,SDSS,2MASS,Spitzer,Herschel"
+default_filter_names = "GALEX,SDSS,2MASS,IRAC,MIPS 24mu,Herschel"
 default_filters = parsing.lazy_filter_list(default_filter_names)
 
 # -----------------------------------------------------------------
@@ -135,6 +135,10 @@ definition.add_flag("ranges_alternate_labels", "alternate the position (above, b
 
 definition.add_flag("plot_complete_grid", "plot the complete grid", True)
 definition.add_flag("separate_complete_grid", "plot the complete grid separately", True)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("separate_grids", "plot the complete grid separately", False)
 
 # -----------------------------------------------------------------
 

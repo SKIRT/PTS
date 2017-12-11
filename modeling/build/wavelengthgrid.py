@@ -219,7 +219,10 @@ class WavelengthGridBuilder(Configurable):
         self.wavelength_grid, self.subgrid_wavelengths, self.filter_wavelengths, self.replaced, self.new, self.line_wavelengths, self.fixed = create_one_subgrid_wavelength_grid(self.config.npoints, self.emission_lines, self.config.fixed,
                                                                                                                                                                                    min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
                                                                                                                                                                                    filters=self.config.filters,
-                                                                                                                                                                                   adjust_to=self.config.adjust_to, return_elements=True)
+                                                                                                                                                                                   adjust_to=self.config.adjust_to,
+                                                                                                                                                                                 min_wavelengths_in_filter=self.config.min_wavelengths_in_filter,
+                                                                                                                                                                                 min_wavelengths_in_fwhm=self.config.min_wavelengths_in_fwhm,
+                                                                                                                                                                                 return_elements=True)
 
     # -----------------------------------------------------------------
 

@@ -45,3 +45,9 @@ definition.add_optional("adjust_to", "length_quantity_list", "adjust wavelength 
 definition.add_optional("fixed", "length_quantity_list", "fixed wavelengths to add to the grid")
 
 # -----------------------------------------------------------------
+
+# Add optional
+definition.add_optional("min_wavelengths_in_filter", "positive_integer", "minimum number of wavelength points to sample a filter", default_min_points_per_filter)
+definition.add_optional("min_wavelengths_in_fwhm", "positive_integer", "minimum number of wavelength points to sample within inner range of filter", default_min_points_per_fwhm)
+
+# -----------------------------------------------------------------

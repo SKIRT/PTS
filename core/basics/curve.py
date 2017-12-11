@@ -429,6 +429,8 @@ class WavelengthCurve(Curve):
 
         """
         This function ...
+        :param min_wavelength:
+        :param max_wavelength:
         :return: 
         """
 

@@ -492,18 +492,47 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None, asarray=False, add_unit=True):
+    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        # Initialize mask
+        mask = np.zeros(len(self), dtype=bool)
+
+        # Loop over the wavelengths, check them
+        for index, wavelength in enumerate(self.wavelengths()):
+
+            if min_wavelength is not None and wavelength < min_wavelength: mask[index] = True
+            if max_wavelength is not None and wavelength > max_wavelength: mask[index] = True
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
-        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit)
-        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit)
+        # Create mask
+        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        else: mask = None
+
+        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit, mask=mask)
+        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit, mask=mask)
 
     # -----------------------------------------------------------------
 

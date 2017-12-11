@@ -27,8 +27,12 @@ default_wavelength_range = "0.019 micron > 2050. micron"
 # -----------------------------------------------------------------
 
 # Filters
-default_filter_names = "GALEX,SDSS,2MASS,Spitzer,Herschel"
+default_filter_names = "GALEX,SDSS,2MASS,IRAC,MIPS 24mu,Herschel"
 default_filters = parsing.lazy_filter_list(default_filter_names)
+
+# -----------------------------------------------------------------
+
+filter_wavelengths = [fltr.wavelength for fltr in default_filters]
 
 # Emission lines
 all_lines = get_id_strings()
@@ -48,6 +52,11 @@ default_regimes = ["euv", "fuv", "muv", "nuv", "optical", "nir", "mir", "fir", "
 
 # -----------------------------------------------------------------
 
+default_min_points_per_filter = 8
+default_min_points_per_fwhm = 5
+
+# -----------------------------------------------------------------
+
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
@@ -56,9 +65,20 @@ definition.add_required("ngrids", "positive_integer", "number of wavelength grid
 definition.add_positional_optional("npoints_range", "integer_range", "range of the number of wavelength points for the grids", default=default_nwavelengths_range)
 definition.add_positional_optional("range", "length_quantity_range", "wavelength range", default_wavelength_range, convert_default=True)
 
+# Emission lines
+definition.add_flag("add_emission_lines", "add emission lines", True)
+definition.add_optional("emission_lines", "string_list", "emission lines to use for building the grid", default=default_lines, choices=all_lines)
+
+# Filters
+definition.add_optional("check_filters", "filter_list", "check coverage for these filters")
+definition.add_flag("adjust_minmax", "adjust min or max based on the filters to be checked", False)
+definition.add_optional("filters", "filter_list", "resample for these filters", default_filters)
+definition.add_optional("adjust_to", "length_quantity_list", "adjust wavelength points to these exact wavelengths", filter_wavelengths)
+definition.add_optional("fixed", "length_quantity_list", "fixed wavelengths to add to the grid")
+
 # Add optional
-definition.add_optional("min_wavelengths_in_filter", "positive_integer", "minimum number of wavelength points to sample a filter", 5)
-definition.add_optional("min_wavelengths_in_fwhm", "positive_integer", "minimum number of wavelength points to sample within inner range of filter", 3)
+definition.add_optional("min_wavelengths_in_filter", "positive_integer", "minimum number of wavelength points to sample a filter", default_min_points_per_filter)
+definition.add_optional("min_wavelengths_in_fwhm", "positive_integer", "minimum number of wavelength points to sample within inner range of filter", default_min_points_per_fwhm)
 
 # Add flags
 definition.add_flag("show", "show", False)
@@ -80,22 +100,20 @@ definition.add_optional("plot_path", "directory_path", "plotting directory")
 # Plotting
 
 # Regimes?
-definition.add_flag("add_regimes", "show wavelength regimes")
-
+definition.add_flag("plot_regimes", "show wavelength regimes", True)
 definition.add_optional("regimes", "string_list", "regimes to show", default=default_regimes, choices=regimes)
 definition.add_flag("only_subregimes", "only show subregimes", True)
 
 # Filters
-definition.add_flag("add_filters", "add filters")
-definition.add_optional("filters", "lazy_filter_list", "filters to add", default=default_filters)
+definition.add_flag("plot_filters", "add filters", True)
 definition.add_flag("categorize_filters", "categorize filters per instrument", True)
 
 # Emission lines
-definition.add_flag("add_lines", "add emission lines")
-definition.add_optional("lines", "string_list", "emission line IDs to plot", default=default_lines, choices=all_lines)
+definition.add_flag("plot_lines", "add emission lines", True)
+#definition.add_optional("lines", "string_list", "emission line IDs to plot", default=default_lines, choices=all_lines)
 
 # Add SEDs
-definition.add_flag("add_seds", "add template SEDs")
+definition.add_flag("plot_seds", "add template SEDs", False)
 definition.add_optional("seds", "string_list", "template SEDs to add", default=seds, choices=seds)
 definition.add_optional("metallicity", "positive_real", "metallicity for templates", 0.02)
 
