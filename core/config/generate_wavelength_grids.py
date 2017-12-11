@@ -14,7 +14,8 @@ from pts.magic.tools import wavelengths
 # -----------------------------------------------------------------
 
 # Npoints
-default_nwavelengths_range = "100>500"
+#default_nwavelengths_range = "100>500"
+default_nwavelengths_range = "70>400"
 
 # Wavelength range
 default_min_wavelength = "0.019 micron"
@@ -62,7 +63,17 @@ definition.add_optional("min_wavelengths_in_fwhm", "positive_integer", "minimum 
 # Add flags
 definition.add_flag("show", "show", False)
 definition.add_flag("plot", "plot", False)
-definition.add_flag("write", "write", False)
+definition.add_flag("write", "write", True)
+definition.add_flag("write_grids", "write grids", True)
+definition.add_flag("write_table", "write table", True)
+definition.add_flag("write_elements", "write elements", True)
+
+# Table
+definition.add_flag("table", "create a table if not passed as input", True)
+
+# Output and plot directories
+definition.add_optional("output", "directory_path", "output directory")
+definition.add_optional("plot_path", "directory_path", "plotting directory")
 
 # -----------------------------------------------------------------
 

@@ -26,12 +26,13 @@ from ..basics.range import QuantityRange
 from ..units.parsing import parse_unit as u
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
-from ..basics.range import IntegerRange
 from ..tools import sequences
 from ..basics.containers import DefaultOrderedDict
 from ..tools.stringify import stringify_list_fancy
 from ..tools import parsing
 from ..tools.utils import lazyproperty
+from ..tools import filesystem as fs
+from ..tools.serialization import write_dict, write_list
 
 # -----------------------------------------------------------------
 
@@ -98,7 +99,8 @@ class WavelengthGridsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_grid(self, label, npoints, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added, adjusted_npoints, new_npoints):
+    def add_grid(self, label, npoints, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added,
+                 adjusted_npoints, new_npoints):
 
         """
         This function ...
@@ -121,9 +123,11 @@ class WavelengthGridsTable(SmartTable):
         thermal_npoints = subgrid_npoints[thermal] if thermal in subgrid_npoints else 0
         microwave_npoints = subgrid_npoints[microwave] if microwave in subgrid_npoints else 0
 
+        #print("BROAD:", [str(fltr) for fltr in broad_resampled])
+
         # Create strings from the filter lists
-        broad_string = ",".join(broad_resampled)
-        narrow_string = ",".join(narrow_added)
+        broad_string = ",".join([str(fltr) for fltr in broad_resampled])
+        narrow_string = ",".join([str(fltr) for fltr in narrow_added])
 
         # Add row
         self.add_row([label, euv_npoints, stellar_npoints, aromatic_npoints, thermal_npoints, microwave_npoints, broad_string,
@@ -386,6 +390,7 @@ class WavelengthGridGenerator(Configurable):
 
         # Get the wavelength grids table
         self.table = kwargs.pop("table", None)
+        if self.table is None and self.config.table: self.table = WavelengthGridsTable()
 
     # -----------------------------------------------------------------
 
@@ -443,9 +448,11 @@ class WavelengthGridGenerator(Configurable):
 
             # Create the grid
             wavelength_grid, subgrid_wavelengths, filter_wavelengths, replaced, new, line_wavelengths, fixed = create_one_subgrid_wavelength_grid(
-                self.config.npoints, self.emission_lines, self.config.fixed,
+                npoints, self.emission_lines, self.config.fixed,
                 min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
                 filters=self.config.filters, adjust_to=self.config.adjust_to, return_elements=True)
+
+            #print("Filters:", filter_wavelengths)
 
             # Add to lists
             self.npoints.append(npoints)
@@ -498,20 +505,33 @@ class WavelengthGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_table(self, index, npoints):
+    def get_label(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        # Determine the label
+        return self.config.label + str(npoints) if self.config.label is not None else str(npoints)
+
+    # -----------------------------------------------------------------
+
+    def add_to_table(self, index, target_npoints):
 
         """
         This function ...
         :param index:
-        :param npoints:
+        :param target_npoints:
         :return:
         """
 
         # Debugging
         log.debug("Adding row to the wavelength grids table ...")
 
-        # Determine the label
-        label = self.config.label + str(npoints) if self.config.label is not None else str(npoints)
+        # Get label (with target npoints)
+        label = self.get_label(target_npoints)
 
         # Get properties
         npoints = self.get_npoints(index)
@@ -526,6 +546,18 @@ class WavelengthGridGenerator(Configurable):
         # Add to table
         self.table.add_grid(label, npoints, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled,
                             narrow_added, adjusted_npoints, new_npoints)
+
+    # -----------------------------------------------------------------
+
+    def get_target_npoints(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.npoints[index]
 
     # -----------------------------------------------------------------
 
@@ -550,6 +582,24 @@ class WavelengthGridGenerator(Configurable):
         """
 
         return len(self.get_grid(index))
+
+    # -----------------------------------------------------------------
+
+    def get_subgrids(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        subgrid_wavelengths = self.subgrids[index]
+
+        grids = OrderedDict()
+        for name in subgrid_wavelengths:
+            grid = WavelengthGrid.from_wavelengths(subgrid_wavelengths[name], sort=True)
+            grids[name] = grid
+        return grids
 
     # -----------------------------------------------------------------
 
@@ -596,6 +646,18 @@ class WavelengthGridGenerator(Configurable):
         """
 
         return len(self.fixed[index])
+
+    # -----------------------------------------------------------------
+
+    def get_fixed_grid(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return WavelengthGrid.from_wavelengths(self.fixed[index])
 
     # -----------------------------------------------------------------
 
@@ -766,10 +828,12 @@ class WavelengthGridGenerator(Configurable):
         # Loop over the grids
         for index in range(self.ngrids):
 
+            # Get label
+            target_npoints = self.get_target_npoints(index)
+            label = self.get_label(target_npoints)
+
             # Get the elements of this grid
-            #npoints = self.npoints[index]
-            #wavelength_grid = self.grids[index]
-            subgrid_wavelengths = self.subgrids[index]
+            subgrids = self.get_subgrids(index)
             filter_wavelengths = self.filter_wavelengths[index]
             replaced = self.replaced[index]
             new = self.new[index]
@@ -780,10 +844,14 @@ class WavelengthGridGenerator(Configurable):
             plotter = WavelengthGridPlotter()
 
             # Add the elements
-            plotter.add_elements(subgrid_wavelengths, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
+            plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
+
+            # Determine plot filepath
+            if self.config.plot_path is not None: plot_filepath = fs.join(self.config.plot_path, label + ".pdf")
+            else: plot_filepath = None
 
             # Run the plotter
-            plotter.run()
+            plotter.run(output=plot_filepath)
 
     # -----------------------------------------------------------------
 
@@ -798,10 +866,28 @@ class WavelengthGridGenerator(Configurable):
         log.info("Writing ...")
 
         # Write the grids
-        self.write_grids()
+        if self.config.write_grids: self.write_grids()
+
+        # Write the subgrids
+        if self.config.write_elements: self.write_subgrids()
+
+        # Write the grids of fixed wavelengths
+        if self.config.write_elements: self.write_fixed()
+
+        # Write filter wavelengths
+        if self.config.write_elements: self.write_filter_wavelengths()
+
+        # Write replaced wavelengths
+        if self.config.write_elements: self.write_replaced()
+
+        # Write new wavelengths
+        if self.config.write_elements: self.write_new()
+
+        # Write emission line wavelengths
+        if self.config.write_elements: self.write_line_wavelengths()
 
         # Write the table
-        self.write_table()
+        if self.has_table and self.config.write_table: self.write_table()
 
     # -----------------------------------------------------------------
 
@@ -815,7 +901,245 @@ class WavelengthGridGenerator(Configurable):
         # Inform the user
         log.info("Writing the grids ...")
 
-        pass
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get wavelength grid
+            wavelength_grid = self.grids[index]
+
+            # Determine filepath
+            path = self.output_path_file(label + ".dat")
+
+            # Write the wavelength grid
+            wavelength_grid.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_subgrids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the subgrids ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing the subgrids of the " + str(target_npoints) + " points wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the elements
+            subgrids = self.get_subgrids(index)
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Loop over the subgrids
+            for name in subgrids:
+
+                # Debugging
+                log.debug("Writing the '" + name + "' subgrid ...")
+
+                # Get path
+                path = fs.join(elements_path, "subgrid_" + name + ".dat")
+
+                # Write subgrid
+                subgrids[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_fixed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing fixed wavelengths ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing the fixed wavelengths of the " + str(target_npoints) + " points wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the fixed grid
+            fixed_grid = self.get_fixed_grid(index)
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Determine filepath
+            path = fs.join(elements_path, "fixed_grid.dat")
+
+            # Write the grid
+            fixed_grid.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_filter_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the filter wavelengths ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing the filter wavelengths of the " + str(target_npoints) + " wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the elements
+            filter_wavelengths = self.filter_wavelengths[index]
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Determine filepath
+            path = fs.join(elements_path, "filter_wavelengths.dat")
+
+            # Write
+            write_dict(filter_wavelengths, path)
+
+    # -----------------------------------------------------------------
+
+    def write_replaced(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing replaced wavelengths ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing replaced wavelengths of the " + str(target_npoints) + " points wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the elements
+            replaced = self.replaced[index]
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Determine filepath
+            path = fs.join(elements_path, "replaced.dat")
+
+            # Write
+            write_list(replaced, path)
+
+    # -----------------------------------------------------------------
+
+    def write_new(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing new wavelengths ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing new wavelengths of the " + str(target_npoints) + " points wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the elements
+            new = self.new[index]
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Determine filepath
+            path = fs.join(elements_path, "new.dat")
+
+            # Write
+            write_list(new, path)
+
+    # -----------------------------------------------------------------
+
+    def write_line_wavelengths(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing line wavelengths ...")
+
+        # Loop over the grids
+        for index in range(self.ngrids):
+
+            # Get target npoints
+            target_npoints = self.get_target_npoints(index)
+
+            # Debugging
+            log.debug("Writing line wavelengths of the " + str(target_npoints) + " points wavelength grid ...")
+
+            # Get label (with target npoints)
+            label = self.get_label(target_npoints)
+
+            # Get the line wavelengths
+            line_wavelengths = self.line_wavelengths[index]
+
+            # Determine directory path
+            elements_path = self.output_path_directory(label, create=True)
+
+            # Determine file path
+            path = fs.join(elements_path, "line_wavelengths.dat")
+
+            # Write
+            write_dict(line_wavelengths, path)
 
     # -----------------------------------------------------------------
 
@@ -827,9 +1151,13 @@ class WavelengthGridGenerator(Configurable):
         """
 
         # Inform the user
-        log.info("Writing the grids table ...")
+        log.info("Writing the wavelength grids table ...")
 
-        pass
+        # Determine the path
+        path = self.output_path_file("table.dat")
+
+        # Save the table
+        self.table.saveto(path)
 
 # -----------------------------------------------------------------
 

@@ -660,6 +660,20 @@ def photometric_density_quantity_range(argument):
 
 # -----------------------------------------------------------------
 
+def length_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = length_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
 def range(argument):
 
     """

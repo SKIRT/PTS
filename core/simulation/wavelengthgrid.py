@@ -375,6 +375,32 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def mean_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return numbers.arithmetic_mean(*self.wavelengths(unit=self.unit, add_unit=False)) * self.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def geometric_mean_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return numbers.geometric_mean(*self.wavelengths(unit=self.unit, add_unit=False)) * self.unit
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, index):
 
         """

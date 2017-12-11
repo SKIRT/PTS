@@ -38,6 +38,8 @@ from ..basics.emissionlines import EmissionLine
 from ...magic.tools.wavelengths import find_single_wavelength_range
 from ..basics.plot import dark_pretty_colors
 from ..tools import sequences
+from ..filter.filter import parse_filter
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -151,7 +153,7 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     def add_wavelength_grid(self, grid, label, pointsize=None, linewidth=None, linealpha=None, color=None,
-                            in_legend=True, y_value=None, copy_grid=True, shared_label=None):
+                            in_legend=True, y_value=None, copy_grid=True, shared_label=None, add_tag=False):
 
         """
         This function ...
@@ -165,6 +167,7 @@ class WavelengthGridPlotter(Configurable):
         :param y_value:
         :param copy_grid:
         :param shared_label:
+        :param add_tag:
         :return:
         """
 
@@ -181,6 +184,7 @@ class WavelengthGridPlotter(Configurable):
         props.in_legend = in_legend
         props.y_value = y_value
         props.shared_label = shared_label
+        props.add_tag = add_tag
 
         # Add grid
         self.grids[label] = props
@@ -188,7 +192,7 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     def add_grid_from_file(self, path, label=None, pointsize=None, linewidth=None, linealpha=None, color=None,
-                           in_legend=True, y_value=None, shared_label=None):
+                           in_legend=True, y_value=None, shared_label=None, add_tag=False):
 
         """
         Thisf unction ...
@@ -201,6 +205,7 @@ class WavelengthGridPlotter(Configurable):
         :param in_legend:
         :param y_value:
         :param shared_label:
+        :param add_tag:
         :return:
         """
 
@@ -209,12 +214,12 @@ class WavelengthGridPlotter(Configurable):
         grid = WavelengthGrid.from_file(path)
         self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha,
                                  color=color, in_legend=in_legend, y_value=y_value, copy_grid=False,
-                                 shared_label=shared_label)
+                                 shared_label=shared_label, add_tag=add_tag)
 
     # -----------------------------------------------------------------
 
     def add_wavelengths(self, wavelengths, label, unit=None, pointsize=None, linewidth=None, linealpha=None,
-                        color=None, in_legend=True, y_value=None, shared_label=None):
+                        color=None, in_legend=True, y_value=None, shared_label=None, add_tag=False):
 
         """
         This function ...
@@ -228,6 +233,7 @@ class WavelengthGridPlotter(Configurable):
         :param in_legend:
         :param y_value:
         :param shared_label:
+        :param add_tag:
         :return:
         """
 
@@ -235,7 +241,7 @@ class WavelengthGridPlotter(Configurable):
         grid = WavelengthGrid.from_wavelengths(wavelengths, unit=unit)
         self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha,
                                  color=color, in_legend=in_legend, y_value=y_value, copy_grid=False,
-                                 shared_label=shared_label)
+                                 shared_label=shared_label, add_tag=add_tag)
 
     # -----------------------------------------------------------------
 
@@ -376,6 +382,7 @@ class WavelengthGridPlotter(Configurable):
         # Set the output path
         self.out_path = kwargs.pop("output", None)
         self.out_path = kwargs.pop("output_path", self.out_path)
+        #if self.out_path is None and "output" in self.config: self.out_path = self.config.output
 
         # Set the axis limits
         self.min_wavelength = kwargs.pop("min_wavelength", self.config.min_wavelength)
@@ -876,15 +883,38 @@ class WavelengthGridPlotter(Configurable):
         # Debugging
         log.debug("Adding filter wavelengths ...")
 
+        # Sort the filters
+        sorted_filters = sorted(filter_wavelengths.keys(), key=lambda fltr: fltr.wavelength.to("micron").value)
+        nfilters = len(filter_wavelengths)
+
+        # Set colours if needed
+        cm = self.filters_colormap
+        ncolours = nfilters
+        cNorm = colors.Normalize(vmin=0, vmax=ncolours - 1.)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+        filter_colors = [scalarMap.to_rgba(i) for i in range(ncolours)]
+        filter_colors = iter(filter_colors) # make iterable
+
         # Loop over the filters
-        for fltr in filter_wavelengths:
+        for fltr in sorted_filters:
 
             # Get the wavelengths
             wavelengths = filter_wavelengths[fltr]
             filter_name = str(fltr)
 
+            add_tag = False
+
+            # Set color for filter
+            if self.has_colour_for_filter(fltr): color = self.get_filter_colour(fltr)
+            elif self.has_filter_colours:
+                color = "k" # black: there are colours for other filters
+                add_tag = True
+            else:
+                color = next(filter_colors)
+                add_tag = True
+
             # Add the wavelengths as a grid
-            self.add_wavelengths(wavelengths, label=filter_name)
+            self.add_wavelengths(wavelengths, label=filter_name, in_legend=False, color=color, add_tag=add_tag, y_value=0.7)
 
     # -----------------------------------------------------------------
 
@@ -1857,6 +1887,7 @@ class WavelengthGridPlotter(Configurable):
             in_legend = self.grids[label].in_legend
             y_value = self.grids[label].y_value
             shared_label = self.grids[label].shared_label
+            add_tag = self.grids[label].add_tag
 
             # Check
             if shared_label is not None and not in_legend: raise ValueError("in_legend is disabled but shared label is specified")
@@ -1895,6 +1926,13 @@ class WavelengthGridPlotter(Configurable):
 
             # Plot a vertical line for each grid point
             for w in wavelengths: self.main.vlines(w, self.min_y, self.max_y, color=color, lw=linewidth, alpha=linealpha)
+
+            # Add text
+            if add_tag:
+                center = grid.geometric_mean_wavelength.to(self.config.wavelength_unit).value
+                tag_y_value = y_value + 0.1
+                t = self.main.text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w')
+                #t.set_bbox(dict(color='w', alpha=self.lines_label_alpha, edgecolor='w'))
 
             # Add the handle
             if in_legend and add_label: self.grid_handles.append(sc)
@@ -2246,6 +2284,134 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters_colormap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = "rainbow"
+        return plt.get_cmap(name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters_hierarchy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the filters
+        if self.config.categorize_filters: categorized = self.categorized_filter_labels
+        else: categorized = {"dummy": self.sorted_filter_labels}
+        return categorized
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filter_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        colours = dict()
+
+        cm = self.filters_colormap
+
+        if self.config.categorize_filters: ncolours = len(self.filters_hierarchy)
+        else: ncolours = self.nfilters
+
+        cNorm = colors.Normalize(vmin=0, vmax=ncolours - 1.)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+
+        # Loop over the instrument
+        counter = 0
+        instrument_counter = 0
+        for instrument in self.filters_hierarchy:
+
+            if self.config.categorize_filters: colorVal = scalarMap.to_rgba(instrument_counter)
+            else: colorVal = None
+
+            # Loop over the instruments
+            for label in self.filters_hierarchy[instrument]:
+
+                # Get the filter
+                fltr = self.filters[label]
+
+                # Get color for this filter
+                if not self.config.categorize_filters: colorVal = scalarMap.to_rgba(counter)
+
+                # Set the colour
+                colours[fltr] = colorVal
+
+                # Increment counter
+                counter += 1
+
+            # Increment instrument counter
+            instrument_counter += 1
+
+        # Return the colours
+        return colours
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfilter_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.filter_colours)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_filter_colours(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return self.nfilter_colours > 0
+
+    # -----------------------------------------------------------------
+
+    def has_colour_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if not self.has_filter_colours: return None
+        else: return fltr in self.filter_colours
+
+    # -----------------------------------------------------------------
+
+    def get_filter_colour(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if not self.has_filter_colours: raise ValueError("No filter colours")
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return self.filter_colours[fltr]
+
+    # -----------------------------------------------------------------
+
     def plot_filters(self):
 
         """
@@ -2256,11 +2422,6 @@ class WavelengthGridPlotter(Configurable):
         # Inform the user
         log.info("Plotting filters ...")
 
-        # Get the color map
-        colormap = "rainbow"
-        cm = plt.get_cmap(colormap)
-
-        counter = 0
         min_wavelength = float("inf")
         max_wavelength = 0.0
 
@@ -2270,34 +2431,20 @@ class WavelengthGridPlotter(Configurable):
 
         handles = []
 
-        # Loop over the filters
-        if self.config.categorize_filters: categorized = self.categorized_filter_labels
-        else: categorized = {"dummy": self.sorted_filter_labels}
-
-        if self.config.categorize_filters: ncolours = len(categorized)
-        else: ncolours = self.nfilters
-
-        cNorm = colors.Normalize(vmin=0, vmax=ncolours - 1.)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-
         # Loop over the instrument
-        instrument_counter = 0
-        for instrument in categorized:
-
-            if self.config.categorize_filters: colorVal = scalarMap.to_rgba(instrument_counter)
-            else: colorVal = None
+        for instrument in self.filters_hierarchy:
 
             first_for_instrument = True
 
             # Loop over the instruments
-            for label in categorized[instrument]:
+            for label in self.filters_hierarchy[instrument]:
 
                 # Get the filter
                 fltr = self.filters[label]
                 description = fltr.description()
 
                 # Get color for this filter
-                if not self.config.categorize_filters: colorVal = scalarMap.to_rgba(counter)
+                colorVal = self.filter_colours[fltr]
 
                 # Determine legend label
                 if self.config.categorize_filters:
@@ -2338,16 +2485,8 @@ class WavelengthGridPlotter(Configurable):
                 # Add the handle
                 handles.append(handle)
 
-                # Increment counter
-                counter += 1
-
                 # Set flag
                 first_for_instrument = False
-
-            # Increment instrument counter
-            instrument_counter += 1
-
-        #print(handles)
 
         # Create legend
         valid_handles = [handle for handle in handles if handle.get_label() is not None]
