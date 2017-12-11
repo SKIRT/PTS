@@ -1037,6 +1037,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def mean(self):
+        if self.meanwavelength() is None: return None
         from ..units.parsing import parse_unit as u
         return self.meanwavelength() * u("micron")
 

@@ -337,12 +337,13 @@ class FilterShower(Configurable):
 
                     print("    - Minimum wavelength: " + represent_quantity(fltr.min))
                     print("    - Maximum wavelength: " + represent_quantity(fltr.max))
-                    print("    - Mean wavelength: " + represent_quantity(fltr.mean))
+                    if fltr.mean is not None: print("    - Mean wavelength: " + represent_quantity(fltr.mean))
+                    if fltr.peak is not None: print("    - Peak wavelength: " + represent_quantity(fltr.peak))
                     print("    - Center wavelength: " + represent_quantity(fltr.center))
                     if fltr.effective is not None: print("    - Effective wavelength: " + represent_quantity(fltr.effective))
                     print("    - Pivot wavelength: " + represent_quantity(fltr.pivot))
                     if fltr.bandwidth is not None: print("    - Effective bandwidth: " + represent_quantity(fltr.bandwidth))
-                    print("    - Mean frequency: " + represent_quantity(fltr.mean.to("GHz", equivalencies=spectral())))
+                    if fltr.mean is not None: print("    - Mean frequency: " + represent_quantity(fltr.mean.to("GHz", equivalencies=spectral())))
 
                     print("")
 
