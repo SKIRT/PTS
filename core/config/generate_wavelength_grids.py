@@ -14,8 +14,7 @@ from pts.magic.tools import wavelengths
 # -----------------------------------------------------------------
 
 # Npoints
-#default_nwavelengths_range = "100>500"
-default_nwavelengths_range = "70>400"
+default_nwavelengths_range = "50>400"
 
 # Wavelength range
 default_min_wavelength = "0.019 micron"
@@ -110,7 +109,6 @@ definition.add_flag("categorize_filters", "categorize filters per instrument", T
 
 # Emission lines
 definition.add_flag("plot_lines", "add emission lines", True)
-#definition.add_optional("lines", "string_list", "emission line IDs to plot", default=default_lines, choices=all_lines)
 
 # Add SEDs
 definition.add_flag("plot_seds", "add template SEDs", False)

@@ -647,6 +647,9 @@ class BroadBandFilter(Filter):
                 self._Wavelengths = [wavelength.to("micron").value for wavelength in wavelengths]
                 self._Transmission = transmission
 
+                max_transmission_index = np.argmax(transmission)
+                self._WavelengthPeak = self._Wavelengths[max_transmission_index]
+
             #category = "Various"
             #filter_id = "CTIO/" + category + "." + filtercode.replace("/", "_")
             filter_id = "CTIO/CTIO." + filtercode.replace("/", "-")
@@ -755,6 +758,10 @@ class BroadBandFilter(Filter):
                 self._Transmission = transmissions
                 self._PhotonCounter = False
 
+                # Set peak wavelength
+                max_transmission_index = np.argmax(transmissions)
+                self._WavelengthPeak = wavelengths[max_transmission_index]
+
                 true_filter = True
 
                 # Determine ID and description
@@ -769,12 +776,13 @@ class BroadBandFilter(Filter):
             elif isinstance(filterspec, types.StringTypes):
 
                 # Load
-                min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
+                min_wavelength, max_wavelength, peak_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
                 fwhm, eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
 
                 # Set properties
                 self._WavelengthMin = min_wavelength
                 self._WavelengthMax = max_wavelength
+                self._WavelengthPeak = peak_wavelength
                 self._WavelengthCen = center_wavelength
                 self._WavelengthMean = mean_wavelength
                 self._WavelengthEff = eff_wavelength
@@ -794,6 +802,7 @@ class BroadBandFilter(Filter):
 
                 if name is None: name = "Uniform"
                 self._WavelengthMin, self._WavelengthMax = map(float, filterspec)
+                self._WavelengthPeak = None
                 self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
                 self._WavelengthMean = self._WavelengthCen
                 self._WavelengthEff = self._WavelengthCen
@@ -886,6 +895,10 @@ class BroadBandFilter(Filter):
 
         self._EffWidth = None
         self._FWHM = None
+
+        # Set peak wavelength
+        max_transmission_index = np.argmax(transmissions)
+        self._WavelengthPeak = wavelengths[max_transmission_index]
 
     # ---------- Retrieving information -------------------------------
 
@@ -1059,6 +1072,17 @@ class BroadBandFilter(Filter):
     def max(self):
         from ..units.parsing import parse_unit as u
         return self.maxwavelength() * u("micron")
+
+    ## This function returns the wavelength of maximum transmission for the filter, in micron.
+    def peakwavelength(self):
+        return self._WavelengthPeak
+
+    ## This property returns the peak wavelength as a quantity.
+    @property
+    def peak(self):
+        if self.peakwavelength() is None: return None
+        from ..units.parsing import parse_unit as u
+        return self.peakwavelength() * u("micron")
 
     ## This function returns the center wavelength for the filter, in micron. The center wavelength is
     # defined as the wavelength halfway between the two points for which filter response or transmission
@@ -1427,6 +1451,7 @@ def load_svo(filterspec):
     # load some basic properties (converting from Angstrom to micron)
     min_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMin'][1]/@value")[0])
     max_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMax'][1]/@value")[0])
+    peak_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthPeak'][1]/@value")[0])
     center_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthCen'][1]/@value")[0])
     mean_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMean'][1]/@value")[0])
     eff_wavelength = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthEff'][1]/@value")[0])
@@ -1449,7 +1474,7 @@ def load_svo(filterspec):
     photon_counter = not any(["/" + x in filterid.lower() for x in ("pacs", "spire")])
 
     # Return the properties
-    return min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
+    return min_wavelength, max_wavelength, peak_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
            description, fwhm, eff_width, photon_counter, wavelengths, transmissions
 
 # -----------------------------------------------------------------

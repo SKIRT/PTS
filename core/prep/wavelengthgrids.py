@@ -1341,6 +1341,8 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
             min_wavelength = fltr.min
             max_wavelength = fltr.max
 
+            # Get wavelength of maximum transmission
+
             # Check that at least 5 wavelength points sample the range of the filter
             # Get the indices of the wavelengths that fall within this range in the current list of wavelengths
             current_indices = [i for i in range(len(wavelengths)) if min_wavelength < wavelengths[i] < max_wavelength]
