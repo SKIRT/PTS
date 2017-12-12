@@ -139,6 +139,10 @@ definition.add_flag("separate_complete_grid", "plot the complete grid separately
 # -----------------------------------------------------------------
 
 definition.add_flag("separate_grids", "plot the complete grid separately", False)
+definition.add_flag("group_wavelengths", "plot individual wavelengths separately in a single row", False)
+definition.add_optional("lines_in_group", "string", "plot the emission lines together with a group of grids")
+definition.add_flag("separate_lines", "plot the emission lines separately", False)
+definition.add_flag("mark_removed", "mark removed wavelengths", False)
 
 # -----------------------------------------------------------------
 

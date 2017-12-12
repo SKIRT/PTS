@@ -942,6 +942,10 @@ class WavelengthGridGenerator(Configurable):
 
             # Plot separate
             plotter.config.separate_grids = True
+            plotter.config.group_wavelengths = True
+            #plotter.config.lines_in_group = "lines"
+            plotter.config.separate_lines = True
+            plotter.config.mark_removed = True
 
             # Add the elements
             plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
@@ -1328,6 +1332,9 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
     # Debugging
     log.debug("Adding wavelengths for sampling filter bandpasses ...")
 
+    # Keep track of the wavelengths that need to remain exactly as they are
+    exact_wavelengths = defaultdict(list)
+
     # Loop over the filters
     for fltr in filters:
 
@@ -1425,6 +1432,9 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
                     wavelengths.append(fltr.peak)
                     filter_wavelengths[fltr].append(fltr.peak)
 
+                # ADD AS EXACT WAVELENGTH
+                exact_wavelengths[fltr].append(fltr.peak)
+
         # For a narrow band filter, add the exact wavelength of the filter to the wavelength grid
         elif isinstance(fltr, NarrowBandFilter):
 
@@ -1437,20 +1447,24 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
             # Add the wavelength
             filter_wavelengths[fltr].append(fltr.wavelength)
 
+            # Add as exact wavelength
+            exact_wavelengths[fltr].append(fltr.wavelength)
+
         # Unrecognized filter
         else: raise ValueError("Unrecognized filter object: " + str(fltr))
 
-    # Return the filter wavelengths
-    return filter_wavelengths
+    # Return the filter wavelengths and exact wavelength
+    return filter_wavelengths, exact_wavelengths
 
 # -----------------------------------------------------------------
 
-def adjust_to_wavelengths(wavelengths, adjust_to):
+def adjust_to_wavelengths(wavelengths, adjust_to, keep=None):
 
     """
     This function ...
     :param wavelengths:
     :param adjust_to:
+    :param keep:
     :return:
     """
 
@@ -1475,8 +1489,11 @@ def adjust_to_wavelengths(wavelengths, adjust_to):
         # Find closest
         index = sequences.find_closest_index(wavelengths, wavelength)
 
-        # Add wavelength
-        replace_dict[index].append(wavelength)
+        # Check if wavelength needs to be kept
+        if keep is not None and wavelengths[index] in keep: new.append(wavelength)
+
+        # Add wavelength to be replaced
+        else: replace_dict[index].append(wavelength)
 
     # Loop over the indices for which a replacement will be performed
     for index in replace_dict:
@@ -1566,11 +1583,17 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         wavelengths += subgrid_wavelengths[subgrid]
 
     # Loop over the filters
-    if filters is not None: filter_wavelengths = resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=min_wavelengths_in_filter, min_wavelengths_in_fwhm=min_wavelengths_in_fwhm)
-    else: filter_wavelengths = dict()
+    if filters is not None: filter_wavelengths, exact_filter_wavelengths = resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=min_wavelengths_in_filter, min_wavelengths_in_fwhm=min_wavelengths_in_fwhm)
+    else:
+        filter_wavelengths = dict()
+        exact_filter_wavelengths = dict()
+
+    # Get a list of all the exact wavelengths that can't be adjusted
+    exact_wavelengths = []
+    for fltr in exact_filter_wavelengths: exact_wavelengths.extend(exact_filter_wavelengths[fltr])
 
     # Adjust to passed wavelengths
-    if adjust_to is not None: replaced, new = adjust_to_wavelengths(wavelengths, adjust_to)
+    if adjust_to is not None: replaced, new = adjust_to_wavelengths(wavelengths, adjust_to, keep=exact_wavelengths)
     else: replaced = new = []
 
     # Add the emission lines
