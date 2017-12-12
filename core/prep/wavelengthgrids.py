@@ -1438,17 +1438,19 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
             if len(current_indices) < min_wavelengths_in_filter:
 
                 # Otherwise, delete the current wavelengths and add 10 new ones
-                for index in sorted(current_indices, reverse=True): del wavelengths[index]
+                # NO: DON'T DELETE JUST YET: DON'T DELETE WAVELENGTHS OF OTHER FILTERS
+                # FIRST DELETE AT THE END AND THEN ADD THEM ALL
+                #for index in sorted(current_indices, reverse=True): del wavelengths[index]
 
                 # Generate new wavelengths for sampling the filter range on a logarithmic grid
                 new_wavelengths = fltr.range.log(min_wavelengths_in_filter, as_list=True)
 
-                # Add the new wavelengths
-                wavelengths += new_wavelengths
+                #print(fltr, fltr.range, [str(wavelength) for wavelength in new_wavelengths])
 
-                # Sort the wavelength points
-                # SORTING IS DONE AT THE END
-                #wavelengths = sorted(wavelengths)
+                # Add the new wavelengths
+                # NO: DON'T ADD JUST YET: DON'T DELETE WAVELENGTHS OF OTHER FILTERS
+                # FIRST DELETE AT THE END AND THEN ADD THEM ALL
+                #wavelengths += new_wavelengths
 
                 # Add the wavelengths
                 filter_wavelengths[fltr].extend(new_wavelengths)
@@ -1472,15 +1474,19 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
                 if len(current_indices) < min_wavelengths_in_fwhm:
 
                     # Otherwise, delete the current wavelengths and add 3 new ones
-                    for index in sorted(current_indices, reverse=True): del wavelengths[index]
+                    # NO: DON'T DELETE JUST YET: DON'T DELETE WAVELENGTHS OF OTHER FILTERS
+                    # FIRST DELETE AT THE END AND THEN ADD THEM ALL
+                    #for index in sorted(current_indices, reverse=True): del wavelengths[index]
 
                     # Generate new wavelengths for sampling the inner filter range on a logarithmic grid
                     new_wavelengths = fltr.fwhm_range.log(min_wavelengths_in_fwhm, as_list=True)
 
-                    # Add the new wavelengths
-                    wavelengths += new_wavelengths
+                    #print("(FWHM)", fltr, fltr.fwhm_range, [str(wavelength) for wavelength in new_wavelengths])
 
-                    # SORTING IS DONE AT THE END
+                    # Add the new wavelengths
+                    # NO: DON'T ADD JUST YET: DON'T DELETE WAVELENGTHS OF OTHER FILTERS
+                    # FIRST DELETE AT THE END AND THEN ADD THEM ALL
+                    #wavelengths += new_wavelengths
 
                     # Add to dictionary
                     if current_indices_new is not None:
@@ -1498,16 +1504,16 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
 
                     # Find closest
                     index = sequences.find_closest_index(filter_wavelengths[fltr], fltr.peak)
-                    all_index = sequences.find_closest_index(wavelengths, fltr.peak)
+                    #all_index = sequences.find_closest_index(wavelengths, fltr.peak)
 
                     # Replace
                     filter_wavelengths[fltr][index] = fltr.peak
-                    wavelengths[all_index] = fltr.peak
+                    #wavelengths[all_index] = fltr.peak
 
                 # Nothing has been added
                 else:
 
-                    wavelengths.append(fltr.peak)
+                    #wavelengths.append(fltr.peak)
                     filter_wavelengths[fltr].append(fltr.peak)
 
                 # ADD AS EXACT WAVELENGTH
@@ -1517,7 +1523,7 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
         elif isinstance(fltr, NarrowBandFilter):
 
             # Add the wavelength
-            wavelengths.append(fltr.wavelength)
+            #wavelengths.append(fltr.wavelength)
 
             # One more filter for which we have added a wavelength
             #narrow_added.append(str(fltr))
@@ -1530,6 +1536,28 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
 
         # Unrecognized filter
         else: raise ValueError("Unrecognized filter object: " + str(fltr))
+
+    # DELETE WAVELENGTHS
+    for fltr in filter_wavelengths:
+
+        fltr_wavelengths = filter_wavelengths[fltr]
+        nwavelengths = len(fltr_wavelengths)
+        if nwavelengths == 1: continue
+
+        min_wavelength = min(fltr_wavelengths)
+        max_wavelength = max(fltr_wavelengths)
+
+        #print(str(fltr), min_wavelength, max_wavelength)
+
+        # DELETE WAVELENGTHS BETWEEN
+        # Get indices of wavelengths between
+        indices = [i for i in range(len(wavelengths)) if min_wavelength < wavelengths[i] < max_wavelength]
+
+        # Remove indices
+        for index in sorted(indices, reverse=True): del wavelengths[index]
+
+    # ADD FILTER WAVELENGTHS
+    for fltr in filter_wavelengths: wavelengths.extend(filter_wavelengths[fltr])
 
     # Return the filter wavelengths and exact wavelength
     return filter_wavelengths, exact_wavelengths
@@ -1568,7 +1596,9 @@ def adjust_to_wavelengths(wavelengths, adjust_to, keep=None):
         index = sequences.find_closest_index(wavelengths, wavelength)
 
         # Check if wavelength needs to be kept
-        if keep is not None and wavelengths[index] in keep: new.append(wavelength)
+        if keep is not None and wavelengths[index] in keep:
+            wavelengths.append(wavelength)
+            new.append(wavelength)
 
         # Add wavelength to be replaced
         else: replace_dict[index].append(wavelength)

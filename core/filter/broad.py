@@ -1135,7 +1135,9 @@ class BroadBandFilter(Filter):
     def fwhm_range(self):
         if self.fwhm is None: return None
         from ..basics.range import QuantityRange
-        return QuantityRange(self.mean - self.fwhm, self.mean + self.fwhm)
+        minimum = max(self.mean - self.fwhm, self.min)
+        maximum = min(self.mean + self.fwhm, self.max)
+        return QuantityRange(minimum, maximum)
 
     # ---------- Integrating --------------------------------------
 

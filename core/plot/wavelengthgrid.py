@@ -300,7 +300,7 @@ class WavelengthGridPlotter(Configurable):
         """
 
         from ..simulation.wavelengthgrid import WavelengthGrid
-        grid = WavelengthGrid.from_wavelengths(wavelengths, unit=unit)
+        grid = WavelengthGrid.from_wavelengths(wavelengths, unit=unit, sort=True)
         self.add_wavelength_grid(grid, label, pointsize=pointsize, linewidth=linewidth, linealpha=linealpha,
                                  color=color, in_legend=in_legend, y_value=y_value, copy_grid=False,
                                  shared_label=shared_label, add_tag=add_tag, separate=separate,
@@ -2636,6 +2636,8 @@ class WavelengthGridPlotter(Configurable):
                     # Create transmission curve
                     curve = TransmissionCurve.from_filter(plot_on_filter)
                     curve.normalize(value=self.max_y_filters, method="max")
+
+                    #print(plot_on_filter.min, plot_on_filter.max, curve.min_wavelength, curve.max_wavelength, wavelengths)
 
                     # Find interpolated normalized transmission value for the wavelength
                     y = [curve.transmission_at(wavelength * self.config.wavelength_unit) for wavelength in wavelengths]
