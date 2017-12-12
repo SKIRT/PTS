@@ -724,6 +724,18 @@ class WavelengthGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_fixed(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_fixed_npoints(index) > 0
+
+    # -----------------------------------------------------------------
+
     def get_fixed_grid(self, index):
 
         """
@@ -733,6 +745,30 @@ class WavelengthGridGenerator(Configurable):
         """
 
         return WavelengthGrid.from_wavelengths(self.fixed[index])
+
+    # -----------------------------------------------------------------
+
+    def get_nfilters(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.filter_wavelengths[index])
+
+    # -----------------------------------------------------------------
+
+    def has_filters(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_nfilters(index) > 0
 
     # -----------------------------------------------------------------
 
@@ -847,6 +883,30 @@ class WavelengthGridGenerator(Configurable):
         """
 
         return self.new[index]
+
+    # -----------------------------------------------------------------
+
+    def get_nlines(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return len(self.line_wavelengths[index])
+
+    # -----------------------------------------------------------------
+
+    def has_line_wavelengths(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_nlines(index) > 0
 
     # -----------------------------------------------------------------
 
@@ -1014,6 +1074,9 @@ class WavelengthGridGenerator(Configurable):
             # Get target npoints
             target_npoints = self.get_target_npoints(index)
 
+            # Debugging
+            log.debug("Writing the " + str(target_npoints) + " points wavelength grid ...")
+
             # Get label (with target npoints)
             label = self.get_label(target_npoints)
 
@@ -1083,6 +1146,9 @@ class WavelengthGridGenerator(Configurable):
         # Loop over the grids
         for index in range(self.ngrids):
 
+            # Has fixed?
+            if not self.has_fixed(index): continue
+
             # Get target npoints
             target_npoints = self.get_target_npoints(index)
 
@@ -1118,6 +1184,9 @@ class WavelengthGridGenerator(Configurable):
 
         # Loop over the grids
         for index in range(self.ngrids):
+
+            # Has filter wavelengths?
+            if not self.has_filters(index): continue
 
             # Get target npoints
             target_npoints = self.get_target_npoints(index)
@@ -1155,6 +1224,9 @@ class WavelengthGridGenerator(Configurable):
         # Loop over the grids
         for index in range(self.ngrids):
 
+            # Has replaced?
+            if not self.has_replaced(index): continue
+
             # Get target npoints
             target_npoints = self.get_target_npoints(index)
 
@@ -1191,6 +1263,9 @@ class WavelengthGridGenerator(Configurable):
         # Loop over the grids
         for index in range(self.ngrids):
 
+            # Has new?
+            if not self.has_new(index): continue
+
             # Get target npoints
             target_npoints = self.get_target_npoints(index)
 
@@ -1226,6 +1301,9 @@ class WavelengthGridGenerator(Configurable):
 
         # Loop over the grids
         for index in range(self.ngrids):
+
+            # Has line wavelengths?
+            if not self.has_line_wavelengths(index): continue
 
             # Get target npoints
             target_npoints = self.get_target_npoints(index)

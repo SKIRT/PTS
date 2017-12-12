@@ -21,6 +21,7 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 from matplotlib.legend import Legend
 from collections import defaultdict
+import matplotlib.patches as patches
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -151,6 +152,9 @@ class WavelengthGridPlotter(Configurable):
 
         # Have filters been added from config?
         self._filters_added = False
+
+        # Backgrounds
+        self.backgrounds = []
 
     # -----------------------------------------------------------------
 
@@ -1110,6 +1114,31 @@ class WavelengthGridPlotter(Configurable):
         if self.has_reference_grids: self.refs = plots[-1-self.nreference_grids:-1]
         self.delta = plots[-1]
 
+        # Fill backgrounds
+        for props in self.backgrounds:
+
+            min_wavelength = props.min_wavelength
+            max_wavelength = props.max_wavelength
+            group = props.group
+            color = props.color
+            alpha = props.alpha
+            hatch = props.hatch
+            fill = props.fill
+
+            #x = (min_wavelength.to(self.config.wavelength_unit).value, max_wavelength.to(self.config.wavelength_unit).value)
+            #print(x, self.min_y_groups, self.max_y_groups, alpha, color)
+
+            width = max_wavelength.to(self.config.wavelength_unit).value - min_wavelength.to(self.config.wavelength_unit).value
+
+            if group is not None:
+                xy = (min_wavelength.to(self.config.wavelength_unit).value, self.min_y_groups)
+                height = self.max_y_groups - self.min_y_groups
+                self.groups[group].axes.add_patch(patches.Rectangle(xy, width, height, alpha=alpha, facecolor=color, linewidth=0, hatch=hatch, fill=fill))
+            else:
+                xy = (min_wavelength.to(self.config.wavelength_unit).value, self.min_y)
+                height = self.max_y - self.min_y
+                self.main_axes.add_patch(patches.Rectangle(xy, width, height, alpha=alpha, facecolor=color, linewidth=0, hatch=hatch, fill=fill))
+
     # -----------------------------------------------------------------
 
     def load_subgrids(self):
@@ -1403,6 +1432,39 @@ class WavelengthGridPlotter(Configurable):
         for min_wavelength, max_wavelength in remove_betweens:
             # Remove wavelengths between
             self.remove_wavelengths_between(min_wavelength, max_wavelength, except_grids=filter_wavelength_grid_names)
+
+            # Colour background
+            self.colour_background_in_group(min_wavelength, max_wavelength, "subgrids", "grey", alpha=0.2, hatch='///', fill=False)
+
+    # -----------------------------------------------------------------
+
+    def colour_background_in_group(self, min_wavelength, max_wavelength, group, color, alpha=None, hatch=None, fill=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param group:
+        :param color:
+        :param alpha:
+        :param hatch:
+        :param fill:
+        :return:
+        """
+
+        props = Map()
+        props.min_wavelength = min_wavelength
+        props.max_wavelength = max_wavelength
+        props.group = group
+        props.color = color
+        props.alpha = alpha
+        props.hatch = hatch
+        props.fill = fill
+
+        #print(props)
+
+        # Add
+        self.backgrounds.append(props)
 
     # -----------------------------------------------------------------
 
