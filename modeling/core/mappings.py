@@ -95,8 +95,16 @@ class Mappings(object):
         # Get the spectral luminosity at the specified wavelength
         normalized_luminosity = mappings.luminosity_at(wavelength, unit="W/micron")
 
+        #print(luminosity, type(luminosity))
+        #print(normalized_luminosity, type(normalized_luminosity))
+
         # Get the scaling factor
-        scaling_factor = luminosity / normalized_luminosity
+        scaling_factor = luminosity.to("W/micron").value / normalized_luminosity.to("W/micron").value
+
+        #print(scaling_factor, type(scaling_factor))
+        #print(scaling_factor.unit)
+        #print(scaling_factor.base_unit)
+        #print(scaling_factor.scale_factor)
 
         # Return the scaling factor with respect to a SFR of 1
         # So SFR = scaling factor * Msun / yr

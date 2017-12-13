@@ -1740,8 +1740,8 @@ class PhotometricUnit(CompositeUnit):
         # Same type
         if self.physical_type == to_unit.physical_type:
             #print("here")
-            factor = (self / to_unit).to("")
-            return factor
+            #factor = (self / to_unit).to("")
+            return self / to_unit # now divide_units returns factor
 
         # Convert
         if types.is_string_type(solid_angle):
@@ -2932,6 +2932,13 @@ def divide_units(unit_a, unit_b, density=None, brightness=None):
 
         if brightness is None: brightness = unit_a.is_brightness
         else: brightness_strict = True
+
+    # Same physical type?
+    elif unit_a.physical_type == unit_b.physical_type:
+
+        # Make composite unit and return just the equivalent scalar value
+        unit = make_composite_division(unit_a, unit_b)
+        return unit.to("")
 
     # Make composite unit
     else:

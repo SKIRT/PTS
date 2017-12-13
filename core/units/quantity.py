@@ -156,6 +156,120 @@ class PhotometricQuantity(Quantity):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scale_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.scale_factor
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if isinstance(other, Quantity):
+
+            other = parse_quantity(other)
+
+            if isinstance(other, PhotometricQuantity):
+
+                #print(self, self.physical_type)
+                #print(other, other.physical_type)
+
+                other_value = other.value
+                other_unit = other.unit
+
+                new_value = self.value / other_value
+                new_unit = self.unit / other_unit
+                return new_value * new_unit
+
+            else: return super(PhotometricQuantity, self).__div__(other)
+
+        else: return super(PhotometricQuantity, self).__div__(other)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def base_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.base_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.wavelength_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def frequency_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.frequency_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.distance_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extent_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.extent_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def solid_angle_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.solid_angle_unit
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """

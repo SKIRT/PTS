@@ -548,6 +548,8 @@ def analyse_unit(unit):
     # Loop over the bases
     for base, power in zip(unit.bases, unit.powers):
 
+        #print(base, power)
+
         if power > 0:
 
             # We have spectral flux density (e.g. Jy) as a base unit
@@ -715,6 +717,9 @@ def analyse_unit(unit):
 
             # Set
             solid_angle_unit = base ** 2
+
+        # Not recognized
+        else: raise ValueError("Not a photometric unit: found " + str(base) + "^" + str(power))
 
     # Check if wavelength and frequency unit are not both defined
     if wavelength_unit != "" and frequency_unit != "": raise ValueError("Not a photometric unit: found wavelength^-1 and frequency^-1 dimensions")

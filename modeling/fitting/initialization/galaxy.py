@@ -24,6 +24,7 @@ from ....core.basics.emissionlines import get_id_strings, important_lines
 from ....core.tools.utils import lazyproperty
 from ...core.bruzualcharlot import create_bruzual_charlot_sed
 from ....core.tools import filesystem as fs
+from ....core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -163,7 +164,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return self.model_definition.old_stars_age
+        return self.model_definition.old_stars_age * u("Gyr")
 
     # -----------------------------------------------------------------
 
@@ -175,7 +176,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return self.model_definition.young_stars_age
+        return self.model_definition.young_stars_age * u("Gyr")
 
     # -----------------------------------------------------------------
 
