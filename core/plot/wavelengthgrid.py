@@ -1592,12 +1592,14 @@ class WavelengthGridPlotter(Configurable):
         # Debugging
         log.debug("Adding replaced wavelengths ...")
 
+        # Set wavelength range for each filter
         if filter_wavelengths is not None:
             filter_ranges = dict()
             for fltr in filter_wavelengths:
                 wavelengths = filter_wavelengths[fltr]
                 nwavelengths = len(wavelengths)
                 if nwavelengths == 1: continue
+                print(wavelengths)
                 wavelength_range = QuantityRange.limits(wavelengths)
                 filter_ranges[fltr] = wavelength_range
         else: filter_ranges = None

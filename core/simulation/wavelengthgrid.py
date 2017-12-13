@@ -127,6 +127,9 @@ class WavelengthGrid(object):
         :return:
         """
 
+        # Make a copy of the list of wavelengths
+        wavelengths = wavelengths[:]
+
         # Create a new class instance
         grid = cls()
 
