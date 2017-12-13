@@ -927,7 +927,7 @@ class ParameterExplorer(FittingComponent):
         self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges,
                            fixed_initial_parameters=self.fixed_initial_parameters, generation=self.generation,
                            scales=self.scales, most_sampled_parameters=self.most_sampled_parameters,
-                           sampling_weights=self.sampling_weights)
+                           sampling_weights=self.sampling_weights, npoin)
 
         # Set the actual number of simulations for this generation
         self.generation_info.nsimulations = self.nmodels

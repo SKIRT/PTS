@@ -3738,7 +3738,7 @@ class WavelengthGridPlotter(Configurable):
                 linestyle = linestyles[absolute_index]
 
                 # Plot line
-                handle = self.lines.vlines(center, self.min_y_separate_lines, self.max_y_separate_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label)
+                handle = self.lines.vlines(center, self.min_y_separate_lines, self.max_y_separate_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label, linestyles=linestyle)
                 handles.append(handle)
 
                 t = None
@@ -3748,9 +3748,10 @@ class WavelengthGridPlotter(Configurable):
 
                 # Get line colour
                 colour = line_colours[absolute_index]
+                linestyle = linestyles[absolute_index]
 
                 # Plot line
-                handle = self.groups[self.config.lines_in_group].vlines(center, self.min_y_groups, self.max_y_groups, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label)
+                handle = self.groups[self.config.lines_in_group].vlines(center, self.min_y_groups, self.max_y_groups, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label, linestyles=linestyle)
                 handles.append(handle)
 
                 # Add text
@@ -3762,9 +3763,10 @@ class WavelengthGridPlotter(Configurable):
 
                 # Get colour, rotating
                 colour = line_colours[index]
+                linestyle = linestyles[index]
 
                 # Plot line
-                self.main.vlines(center, self.min_y, self.max_y_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha)
+                self.main.vlines(center, self.min_y, self.max_y_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, linestyles=linestyle)
 
                 # Add text
                 t = self.main.text(center, self.lines_y_values[index], label, horizontalalignment='center', fontsize='xx-small', color=colour, backgroundcolor='w')

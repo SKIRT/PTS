@@ -227,13 +227,49 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         log.info("Creating the wavelength grids ...")
 
         # Basic wavelength grids
-        self.create_basic_wavelength_grids()
+        if not self.has_basic: self.create_basic_wavelength_grids()
 
         # Refined wavelength grids
-        self.create_refined_wavelength_grids()
+        if not self.has_refined: self.create_refined_wavelength_grids()
 
         # High-resolution wavelength grids
-        self.create_highres_wavelength_grids()
+        if not self.has_highres: self.create_highres_wavelength_grids()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_refined(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return False
 
     # -----------------------------------------------------------------
 

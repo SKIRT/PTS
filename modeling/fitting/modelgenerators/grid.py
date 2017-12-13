@@ -38,6 +38,9 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).__init__(*args, **kwargs)
 
+        # Number of sampling points per parameter
+        self.npoints = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -51,11 +54,26 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).setup(**kwargs)
 
+        # Get npoints
+        if "npoints" in kwargs: self.npoints = kwargs.pop("npoints")
+
         # Prompt for most sampled parameters
-        if self.most_sampled_parameters is None: self.prompt_most_sampled_parameters()
+        if not self.has_npoints and self.most_sampled_parameters is None: self.prompt_most_sampled_parameters()
 
         # Prompt for sampling weights
-        if self.sampling_weights is None: self.prompt_sampling_weights()
+        if not self.has_npoints and self.sampling_weights is None: self.prompt_sampling_weights()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.npoints is not None
 
     # -----------------------------------------------------------------
 
@@ -127,6 +145,36 @@ class GridModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
+    @property
+    def combined_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_npoints: raise ValueError("Number of points per parameter not defined")
+        total = 1
+        for label in self.npoints:
+            npoints = self.npoints[label]
+            total *= npoints
+        return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def target_nmodels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_npoints: return self.combined_npoints
+        else: return self.config.nmodels
+
+    # -----------------------------------------------------------------
+
     def generate(self):
 
         """
@@ -135,13 +183,10 @@ class GridModelGenerator(ModelGenerator):
         """
 
         # Inform the user
-        log.info("Generating the model grid points ...")
+        log.info("Generating the model parameters ...")
 
         # Generate the grid points (as dictionary of lists)
-        grid_points = self.generate_grid_points_different_scales(self.parameter_scales, most_sampled=self.config.most_sampled_parameters, weights=self.config.sampling_weights) # returns dictionary
-
-        # Convert into lists
-        grid_points = self.grid_points_to_lists(grid_points)
+        grid_points = self.generate_grid_points()
 
         # Create iterator of combinations
         iterator = sequences.iterate_lists_combinations(grid_points)
@@ -151,7 +196,7 @@ class GridModelGenerator(ModelGenerator):
 
         # Generate the initial parameter sets
         # Loop over the number of required models minus the number of fixed model parameter sets
-        for index in range(self.config.nmodels):
+        for index in range(self.target_nmodels):
 
             # The next combination
             parameters_model = list(iterator.next())  # returns tuple
@@ -170,6 +215,26 @@ class GridModelGenerator(ModelGenerator):
 
                 # Add the parameter value to the dictionary
                 self.parameters[label][name] = value
+
+    # -----------------------------------------------------------------
+
+    def generate_grid_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Generating grid points ...")
+
+        # Generate as dictionary
+        points_per_parameter = self.generate_grid_points_different_scales(self.parameter_scales, npoints=self.npoints,
+                                                                         most_sampled=self.config.most_sampled_parameters,
+                                                                         weights=self.config.sampling_weights)  # returns dictionary
+
+        # Convert into lists
+        return self.grid_points_to_lists(points_per_parameter)
 
     # -----------------------------------------------------------------
 
