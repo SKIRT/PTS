@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -1116,6 +1117,12 @@ class WavelengthGridPlotter(Configurable):
             if group is None: continue
             names.add(group)
 
+        # Loop over the individual wavelength props
+        for props in self.wavelengths:
+            group = props.group
+            if group is None: continue
+            names.add(group)
+
         # Return the group names
         return list(names)
 
@@ -1235,20 +1242,27 @@ class WavelengthGridPlotter(Configurable):
         # Add the subgrid files
         self.add_subgrids_in_path(self.input_path)
 
+        # Check which files are present
+        has_fixed = fs.is_file(fixed_path)
+        has_new = fs.is_file(new_path)
+        has_replaced = fs.is_file(replaced_path)
+        has_filters = fs.is_file(filter_wavelengths_path)
+        has_lines = fs.is_file(line_wavelengths_path)
+
         # Fixed?
-        if fs.is_file(fixed_path): self.add_fixed_grid_from_file(fixed_path)
+        if has_fixed: self.add_fixed_grid_from_file(fixed_path)
 
         # New?
-        if fs.is_file(new_path): self.add_new_wavelengths_from_file(new_path)
+        if has_new: self.add_new_wavelengths_from_file(new_path)
 
         # Replaced?
-        if fs.is_file(replaced_path): self.add_replaced_wavelengths_from_file(replaced_path)
+        if has_replaced: self.add_replaced_wavelengths_from_file(replaced_path, connect=has_filters)
 
         # Filter
-        if fs.is_file(filter_wavelengths_path): self.add_filter_wavelengths_from_file(filter_wavelengths_path)
+        if has_filters: self.add_filter_wavelengths_from_file(filter_wavelengths_path)
 
         # Emission lines?
-        if fs.is_file(line_wavelengths_path): self.add_line_wavelengths_from_file(line_wavelengths_path)
+        if has_lines: self.add_line_wavelengths_from_file(line_wavelengths_path)
 
     # -----------------------------------------------------------------
 
@@ -1308,28 +1322,30 @@ class WavelengthGridPlotter(Configurable):
         # Add the subgrids
         self.add_subgrids(subgrids)
 
-        # Grid of fixed wavelengths
+        # Check what is present
         has_fixed = fixed is not None and len(fixed) > 0
-        if has_fixed: self.add_fixed_wavelengths(fixed)
         has_fixed_grid = fixed_grid is not None and len(fixed_grid) > 0
+        has_filters = filter_wavelengths is not None and len(filter_wavelengths) > 0
+        has_replaced = replaced is not None and len(replaced) > 0
+        has_new = new is not None and len(new) > 0
+        has_line_wavelengths = line_wavelengths is not None and len(line_wavelengths) > 0
+
+        # Grid of fixed wavelengths
+        if has_fixed: self.add_fixed_wavelengths(fixed)
         if has_fixed_grid:
             if has_fixed: raise ValueError("Cannot pass fixed wavelengths and fixed grid")
             self.add_fixed_grid(fixed_grid)
 
         # Get filter wavelengths
-        has_filters = filter_wavelengths is not None and len(filter_wavelengths) > 0
         if has_filters: self.add_filter_wavelengths(filter_wavelengths)
 
         # Get replaced
-        has_replaced = replaced is not None and len(replaced) > 0
-        if has_replaced: self.add_replaced_wavelengths(replaced)
+        if has_replaced: self.add_replaced_wavelengths(replaced, connect=has_filters)
 
         # Get new
-        has_new = new is not None and len(new) > 0
         if has_new: self.add_new_wavelengths(new)
 
         # Get line wavelengths
-        has_line_wavelengths = line_wavelengths is not None and len(line_wavelengths) > 0
         if has_line_wavelengths: self.add_line_wavelengths(line_wavelengths)
 
     # -----------------------------------------------------------------
@@ -1561,11 +1577,12 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_replaced_wavelengths(self, replaced):
+    def add_replaced_wavelengths(self, replaced, connect=False):
 
         """
         This function ...
         :param replaced:
+        :param connect:
         :return:
         """
 
@@ -1576,7 +1593,7 @@ class WavelengthGridPlotter(Configurable):
         for old, replacement in replaced:
 
             # Add the old wavelength and the replacement wavelength
-            self.add_wavelength(old, colour="red", linewidth=0.5, group="adjusted", connect=True, connect_in_style=True)
+            self.add_wavelength(old, colour="red", linewidth=0.5, group="adjusted", connect=connect, connect_in_style=True)
             self.add_wavelength(replacement, colour="green", linewidth=0.5, group="adjusted")
 
             # Remove the old wavelength from the complete grid
@@ -1584,17 +1601,18 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_replaced_wavelengths_from_file(self, path):
+    def add_replaced_wavelengths_from_file(self, path, connect=False):
 
         """
         This function ...
         :param path:
+        :param connect:
         :return:
         """
 
         # Load and add
         replaced = load_list(path)
-        self.add_replaced_wavelengths(replaced)
+        self.add_replaced_wavelengths(replaced, connect=connect)
 
     # -----------------------------------------------------------------
 
@@ -3572,6 +3590,18 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def nline_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.lines_colours)
+
+    # -----------------------------------------------------------------
+
+    @property
     def separate_line_colours(self):
 
         """
@@ -3580,6 +3610,18 @@ class WavelengthGridPlotter(Configurable):
         """
 
         return dark_pretty_colors[::-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nseparate_line_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.separate_line_colours)
 
     # -----------------------------------------------------------------
 
@@ -3645,7 +3687,6 @@ class WavelengthGridPlotter(Configurable):
 
     def plot_lines(self):
 
-
         """
         This function ...
         :return:
@@ -3659,6 +3700,24 @@ class WavelengthGridPlotter(Configurable):
         index = 0
 
         handles = []
+
+        # Set line colours and styles list
+        if self.config.separate_lines or self.config.lines_in_group:
+
+            if self.nseparate_line_colours > self.nlines:
+
+                factor_more = float(self.nlines) / float(self.nseparate_line_colours)
+                int_factor_more = int(math.ceil(factor_more))
+                line_colours = self.separate_line_colours * int_factor_more
+                linestyles = sequences.repeat(line_styles, self.nseparate_line_colours)
+
+            else:
+                line_colours = self.separate_line_colours
+                linestyles = ["solid"] * self.nlines
+
+        else:
+            line_colours = self.lines_colours
+            linestyles = ["solid"] * self.nline_colours
 
         # Loop over the emission lines
         for line in self.emission_lines:
@@ -3674,8 +3733,9 @@ class WavelengthGridPlotter(Configurable):
             # Plot lines separately
             if self.config.separate_lines:
 
-                # Get line colour
-                colour = self.separate_line_colours[absolute_index]
+                # Get line colour and line style
+                colour = line_colours[absolute_index]
+                linestyle = linestyles[absolute_index]
 
                 # Plot line
                 handle = self.lines.vlines(center, self.min_y_separate_lines, self.max_y_separate_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label)
@@ -3687,7 +3747,7 @@ class WavelengthGridPlotter(Configurable):
             elif self.config.lines_in_group:
 
                 # Get line colour
-                colour = self.separate_line_colours[absolute_index]
+                colour = line_colours[absolute_index]
 
                 # Plot line
                 handle = self.groups[self.config.lines_in_group].vlines(center, self.min_y_groups, self.max_y_groups, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha, label=label)
@@ -3701,7 +3761,7 @@ class WavelengthGridPlotter(Configurable):
             else:
 
                 # Get colour, rotating
-                colour = self.lines_colours[index]
+                colour = line_colours[index]
 
                 # Plot line
                 self.main.vlines(center, self.min_y, self.max_y_lines, color=colour, lw=self.lines_linewidth, alpha=self.lines_alpha)

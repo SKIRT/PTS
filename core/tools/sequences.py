@@ -19,6 +19,19 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def repeat(sequence, ntimes):
+
+    """
+    This function ...
+    :param sequence:
+    :param ntimes:
+    :return:
+    """
+
+    return list(itertools.chain.from_iterable(itertools.repeat(x, ntimes) for x in sequence))
+
+# -----------------------------------------------------------------
+
 def before(sequence, element):
 
     """
