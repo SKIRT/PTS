@@ -56,6 +56,7 @@ generate_representations | -- | build.representations.generator.RepresentationGe
 
 # FITTING
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
+adapt_fit | -- | fitting.adapter.FittingAdapter | arguments | Adapt the fitting configuration of an existing fitting run
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
 initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling

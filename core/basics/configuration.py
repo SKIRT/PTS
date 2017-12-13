@@ -1293,6 +1293,102 @@ def print_mapping(mapping, indent="", empty_lines=True):
 
 # -----------------------------------------------------------------
 
+def prompt_mapping(parameters, contains=None, not_contains=None, exact_name=None, exact_not_name=None, startswith=None,
+                   endswith=None, label=None, descriptions=None, choices=None, fixed=None, suggestions=None,
+                   required=True, add_suggestions=False):
+
+    """
+    This function ...
+    :param parameters:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :param label:
+    :param descriptions:
+    :param choices:
+    :param fixed:
+    :param suggestions:
+    :param required:
+    :param add_suggestions:
+    :return:
+    """
+
+    has_changed = False
+    used_suggestions = []
+
+    # Adapt
+    for name in parameters:
+
+        # Skip properties related to configuration
+        if name == "config_path": continue
+
+        if suggestions is not None and name in suggestions: used_suggestions.append(name)
+
+        # Checks
+        if contains is not None and contains not in name: continue
+        if not_contains is not None and not_contains in name: continue
+        if exact_name is not None and name != exact_name: continue
+        if exact_not_name is not None and name == exact_not_name: continue
+        if startswith is not None and not name.startswith(startswith): continue
+        if endswith is not None and not name.endswith(endswith): continue
+
+        # Get properties
+        description = descriptions[name] if descriptions is not None and name in descriptions else "no description"
+        choics = choices[name] if choices is not None and name in choices else None
+        suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
+        default = parameters[name]
+        ptype, string = stringify.stringify(default)
+
+        # No ptype: value was probably None: expect any kind of property
+        if ptype is None or ptype == "None": ptype = "any"
+
+        # Add label to description
+        if label is not None: description = description + " [" + label + "]"
+
+        # Fixed variable: show value and description
+        if fixed is not None and name in fixed:
+            value = prompt_fixed(name, description, default)
+            continue
+
+        # Ask for the new value
+        value = prompt_variable(name, ptype, description, choices=choics, default=default, required=required, suggestions=suggestns)
+        if default is None and value == "": continue
+
+        # Set the property
+        if value != default:
+
+            # Debugging
+            log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+
+            # Set the new value
+            parameters[name] = value
+
+            # Set flag
+            has_changed = True
+
+    # Add suggested
+    if suggestions is not None and add_suggestions:
+        for name in suggestions:
+
+            if name in used_suggestions: continue
+            values = suggestions[name]
+            if len(values) > 1: raise ValueError("Multiple suggestions")
+            value = values[0]
+            parameters[name] = value
+            has_changed = True
+
+            # Show the suggested value
+            description = descriptions[name] if descriptions is not None and name in descriptions else "no description"
+            value = prompt_fixed(name, description, value)
+
+    # Return flag
+    return has_changed
+
+# -----------------------------------------------------------------
+
 class ConfigurationDefinition(object):
 
     """

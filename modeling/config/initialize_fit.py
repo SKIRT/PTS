@@ -18,10 +18,6 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-#default_npoints_range_basic = "100>200"
-#default_npoints_range_refined = "100>300"
-#default_npoints_range_highres = "300>500"
-
 default_npoints_range_basic = "50>150"
 default_npoints_range_refined = "50>200"
 default_npoints_range_highres = "150>400"

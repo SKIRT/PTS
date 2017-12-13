@@ -108,6 +108,7 @@ definition.add_flag("only_subregimes", "only show subregimes", True)
 # Filters
 definition.add_flag("plot_filters", "add filters", True)
 definition.add_flag("categorize_filters", "categorize filters per instrument", True)
+definition.add_optional("plotting_filters", "broad_band_filter_list", "filters to show on the plot (default is filters used for resampling the grid)")
 
 # Emission lines
 definition.add_flag("plot_lines", "add emission lines", True)

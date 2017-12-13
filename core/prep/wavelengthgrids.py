@@ -1004,7 +1004,8 @@ class WavelengthGridGenerator(Configurable):
 
             #print("FILTERS", self.config.filters)
             plotter.config.add_filters = self.config.plot_filters
-            plotter.config.filters = self.config.filters
+            if self.config.plotting_filters is not None: plotter.config.filters = self.config.plotting_filters
+            else: plotter.config.filters = self.config.filters
             plotter.config.categorize_filters = self.config.categorize_filters
 
             # Lines
@@ -1028,7 +1029,7 @@ class WavelengthGridGenerator(Configurable):
                 plotter.config.plot_differences = True
 
             # Determine plot filepath
-            if self.plot_paths is not None and target_npoints in self.plot_paths: plot_filepath = fs.join()
+            if self.plot_paths is not None and target_npoints in self.plot_paths: plot_filepath = fs.join(self.plot_paths[target_npoints], "grid.pdf")
             elif self.config.plot_path is not None: plot_filepath = fs.join(self.config.plot_path, label + ".pdf")
             else: plot_filepath = None
 

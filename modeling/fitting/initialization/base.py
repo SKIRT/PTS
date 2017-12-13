@@ -93,6 +93,12 @@ class FittingInitializerBase(FittingComponent):
         # Initialize the wavelength grids table
         self.wg_table = WavelengthGridsTable()
 
+        # Clear
+        if self.has_weights_table: fs.remove_file(self.weights_table_path)
+        fs.clear_directory(self.wavelength_grids_path)
+        if self.has_wavelength_grids_table: fs.remove_file(self.wavelength_grids_table_path)
+        if self.has_input_maps_file: fs.remove_file(self.input_maps_path)
+
     # -----------------------------------------------------------------
 
     @property
@@ -264,6 +270,30 @@ class FittingInitializerBase(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def weights_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.weights_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_weights_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.weights_table_path)
+
+    # -----------------------------------------------------------------
+
     def write_weights(self):
 
         """
@@ -272,10 +302,22 @@ class FittingInitializerBase(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the table with weights to " + self.fitting_run.weights_table_path + " ...")
+        log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
         # Write the table with weights
-        self.weights.saveto(self.fitting_run.weights_table_path)
+        self.weights.saveto(self.weights_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.wavelength_grids_path
 
     # -----------------------------------------------------------------
 
@@ -296,10 +338,34 @@ class FittingInitializerBase(FittingComponent):
             log.debug("Writing wavelength grid " + str(index) + " ...")
 
             # Determine the path to the grid
-            path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
+            path = fs.join(self.wavelength_grids_path, str(index) + ".txt")
 
             # Save the wavelength grid
             grid.to_skirt_input(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.wavelength_grids_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelength_grids_table(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_file(self.wavelength_grids_table_path)
 
     # -----------------------------------------------------------------
 
@@ -314,7 +380,31 @@ class FittingInitializerBase(FittingComponent):
         log.info("Writing the wavelength grid table ...")
 
         # Write the wavelength grids table
-        self.wg_table.saveto(self.fitting_run.wavelength_grids_table_path)
+        self.wg_table.saveto(self.wavelength_grids_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.input_maps_file_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_input_maps_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.input_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -329,6 +419,6 @@ class FittingInitializerBase(FittingComponent):
         log.info("Writing the dictionary of input map paths ...")
 
         # Write
-        write_dict(self.input_map_paths, self.fitting_run.input_maps_file_path)
+        write_dict(self.input_map_paths, self.input_maps_path)
 
 # -----------------------------------------------------------------
