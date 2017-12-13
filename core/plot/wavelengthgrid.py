@@ -397,7 +397,7 @@ class WavelengthGridPlotter(Configurable):
             grid = self.grids[label].grid
 
             # Get the wavelengths between the min and max
-            wavelengths = grid.wavelengths(self.config.wavelength_unit, min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+            wavelengths = grid.wavelengths(self.config.wavelength_unit, min_wavelength=min_wavelength, max_wavelength=max_wavelength, inclusive=False)
 
             # Remove wavelengths
             self.remove_wavelengths(wavelengths)
@@ -1517,7 +1517,7 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def colour_background_in_group(self, min_wavelength, max_wavelength, group, color, alpha=None, hatch=None, fill=None):
+    def colour_background_in_group(self, min_wavelength, max_wavelength, group, color, alpha=None, hatch=None, fill=True):
 
         """
         This function ...
@@ -1644,8 +1644,24 @@ class WavelengthGridPlotter(Configurable):
 
             wavelengths = line_wavelengths[identifier]
             if identifier[0] is None: continue
-            # print(identifier)
+            nwavelengths = len(wavelengths)
             label = identifier[0] + identifier[1]
+
+            # Remove wavelengths of subgrids between line wavelengths
+            if nwavelengths > 1:
+
+                min_wavelength = min(wavelengths)
+                max_wavelength = max(wavelengths)
+
+                #print(label, min_wavelength, max_wavelength)
+
+                # Remove wavelengths between min and max of line wavelengths
+                self.remove_wavelengths_between(min_wavelength, max_wavelength)
+
+                # Colour background
+                self.colour_background_in_group(min_wavelength, max_wavelength, "subgrids", "grey", alpha=0.5)
+
+            # Add line wavelengths
             self.add_wavelengths(wavelengths, label=label, color="grey", y_value=0.6, shared_label="lines", separate=False, group="lines", linewidth=0.3)
 
     # -----------------------------------------------------------------

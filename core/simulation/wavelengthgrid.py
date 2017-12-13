@@ -492,12 +492,13 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None):
+    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None, inclusive=True):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
+        :param inclusive:
         :return:
         """
 
@@ -507,15 +508,19 @@ class WavelengthGrid(object):
         # Loop over the wavelengths, check them
         for index, wavelength in enumerate(self.wavelengths()):
 
-            if min_wavelength is not None and wavelength < min_wavelength: mask[index] = True
-            if max_wavelength is not None and wavelength > max_wavelength: mask[index] = True
+            if min_wavelength is not None:
+                if inclusive and wavelength < min_wavelength: mask[index] = True
+                if not inclusive and wavelength <= min_wavelength: mask[index] = True
+            if max_wavelength is not None:
+                if inclusive and wavelength > max_wavelength: mask[index] = True
+                if not inclusive and wavelength >= max_wavelength: mask[index] = True
 
         # Return the mask
         return mask
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
+    def wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None, inclusive=True):
 
         """
         This function ...
@@ -524,11 +529,12 @@ class WavelengthGrid(object):
         :param add_unit:
         :param min_wavelength:
         :param max_wavelength:
+        :param inclusive:
         :return:
         """
 
         # Create mask
-        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength, inclusive=inclusive)
         else: mask = None
 
         if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit, mask=mask)
