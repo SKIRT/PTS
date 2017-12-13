@@ -143,6 +143,7 @@ definition.add_flag("group_wavelengths", "plot individual wavelengths separately
 definition.add_optional("lines_in_group", "string", "plot the emission lines together with a group of grids")
 definition.add_flag("separate_lines", "plot the emission lines separately", False)
 definition.add_flag("mark_removed", "mark removed wavelengths", False)
+definition.add_flag("plot_differences", "plot differences between complete grid and reference grid (only for one reference)")
 
 # -----------------------------------------------------------------
 

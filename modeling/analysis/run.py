@@ -2448,16 +2448,8 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        # Create the model
-        model = Model()
-
-        # Set attributes
-        model.simulation_name = self.simulation_name
-        model.chi_squared = self.chi_squared
-        model.parameter_values = self.parameter_values
-
-        # Return the model
-        return model
+        # Create the model and return it
+        return Model(simulation_name=self.simulation_name, chi_squared=self.chi_squared, parameter_values=self.parameter_values)
 
     # -----------------------------------------------------------------
 

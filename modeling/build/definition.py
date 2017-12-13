@@ -18,14 +18,15 @@ from .tables import ModelsTable, ModelMapsTable
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.list import NamedCoordinateSystemList
 from ...core.basics.containers import NamedFileList
-#from .stars import basic_stellar_maps_names
-#from .dust import basic_dust_maps_names
 from .models.stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
 from .models.dust import basic_dust_map_name
 from .models.general import parameters_filename, deprojection_filename
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D
 from ...core.tools.utils import lazyproperty
+from ..core.mappings import Mappings
+from ...core.filter.filter import parse_filter
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -893,6 +894,19 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .models.stars import bulge_component_name
+        return self.stellar_paths[bulge_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_stars_component_path(self):
 
         """
@@ -901,7 +915,6 @@ class ModelDefinition(object):
         """
 
         from .models.stars import old_component_name
-        #return fs.directory_of(self.old_stars_map_path)
         return self.stellar_paths[old_component_name]
 
     # -----------------------------------------------------------------
@@ -915,7 +928,6 @@ class ModelDefinition(object):
         """
 
         from .models.stars import young_component_name
-        #return fs.directory_of(self.young_stars_map_path)
         return self.stellar_paths[young_component_name]
 
     # -----------------------------------------------------------------
@@ -929,7 +941,6 @@ class ModelDefinition(object):
         """
 
         from .models.stars import ionizing_component_name
-        #return fs.directory_of(self.ionizing_stars_map_path)
         return self.stellar_paths[ionizing_component_name]
 
     # -----------------------------------------------------------------
@@ -943,8 +954,19 @@ class ModelDefinition(object):
         """
 
         from .models.dust import disk_component_name
-        #return fs.directory_of(self.dust_map_path)
         return self.dust_paths[disk_component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.bulge_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
@@ -997,6 +1019,18 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return open_mapping(self.bulge_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_stars_parameters(self):
 
         """
@@ -1032,6 +1066,54 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def i1_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter("IRAC I1")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def i1_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.i1_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter("GALEX FUV")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fuv_filter.wavelength
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_stars_sfr(self):
 
@@ -1040,7 +1122,17 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.ionizing_stars_parameters["sfr"]
+        # Get scalar SFR from parameters
+        sfr_scalar = self.ionizing_stars_parameters.sfr
+
+        # Get the SFR
+        sfr_from_lum = Mappings.sfr_for_luminosity(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, self.ionizing_stars_luminosity, self.fuv_wavelength)
+
+        # Check
+        if not numbers.is_close(sfr_scalar, sfr_from_lum.to("Msun/yr")): raise ValueError("Inconsistent SFR and FUV luminosity")
+
+        # Return
+        return sfr_from_lum
 
     # -----------------------------------------------------------------
 
@@ -1052,7 +1144,7 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.ionizing_stars_parameters["pressure"]
+        return self.ionizing_stars_parameters.pressure
 
     # -----------------------------------------------------------------
 
@@ -1064,7 +1156,7 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.ionizing_stars_parameters["covering_factor"]
+        return self.ionizing_stars_parameters.covering_factor
 
     # -----------------------------------------------------------------
 
@@ -1076,7 +1168,55 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.ionizing_stars_parameters["compactness"]
+        return self.ionizing_stars_parameters.compactness
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Mappings(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, sfr=self.ionizing_stars_sfr)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_mappings_normalized(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Mappings(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_mappings.sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_sed_normalized(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_mappings_normalized.sed
 
     # -----------------------------------------------------------------
 
@@ -1093,6 +1233,42 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_parameters.neutral_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_parameters.fluxdensity
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_stars_luminosity(self):
 
         """
@@ -1101,6 +1277,42 @@ class ModelDefinition(object):
         """
 
         return self.old_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.neutral_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.old_stars_fluxdensity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_age(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.age
 
     # -----------------------------------------------------------------
 
@@ -1117,6 +1329,42 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_stars_neutral_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_stars_parameters.neutral_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_stars_parameters.fluxdensity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_age(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_stars_parameters.age
+
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_stars_luminosity(self):
 
         """
@@ -1125,6 +1373,30 @@ class ModelDefinition(object):
         """
 
         return self.ionizing_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_neutral_luminosity(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters.neutral_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_fluxdensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters.fluxdensity
 
     # -----------------------------------------------------------------
 

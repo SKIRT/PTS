@@ -98,6 +98,8 @@ definition.add_optional("plot_path", "directory_path", "plotting directory")
 
 # Plotting
 
+definition.add_flag("plot_reference", "plot reference grid and differences", False)
+
 # Regimes?
 definition.add_flag("plot_regimes", "show wavelength regimes", True)
 definition.add_optional("regimes", "string_list", "regimes to show", default=default_regimes, choices=regimes)

@@ -19,6 +19,68 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def before(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    elements = []
+    for el in sequence:
+        if el == element: break
+        elements.append(el)
+    else: raise ValueError("Element not in sequence")
+    return elements
+
+# -----------------------------------------------------------------
+
+def before_and_including(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    return before(sequence, element) + [element]
+
+# -----------------------------------------------------------------
+
+def after(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    elements = []
+    for el in reversed(sequence):
+        if el == element: break
+        elements.append(el)
+    else: raise ValueError("Element not in sequence")
+    return list(reversed(elements))
+
+# -----------------------------------------------------------------
+
+def after_and_including(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    return [element] + after(sequence, element)
+
+# -----------------------------------------------------------------
+
 def permutate(lst, lengths=None):
 
     """

@@ -12,13 +12,18 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ...component.galaxy import GalaxyModelingComponent
 from .base import FittingInitializerBase
-from ....core.prep.wavelengthgrids import WavelengthGridGenerator
+from ....core.prep.wavelengthgrids import WavelengthGridGenerator, get_min_wavelength, get_max_wavelength
 from ....core.basics.emissionlines import get_id_strings, important_lines
 from ....core.tools.utils import lazyproperty
+from ...core.bruzualcharlot import create_bruzual_charlot_sed
+from ....core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -126,6 +131,54 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def model_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.suite.get_model_definition(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def metallicity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.metallicity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_age(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.old_stars_age
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_age(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.young_stars_age
+
+    # -----------------------------------------------------------------
+
     @property
     def fitting_filters(self):
 
@@ -183,6 +236,205 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def template_sed_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.old_age)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def template_sed_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.young_age)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def template_sed_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.ionizing_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def template_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        seds = OrderedDict()
+        seds["old"] = self.template_sed_old
+        seds["young"] = self.template_sed_young
+        seds["ionizing"] = self.template_sed_ionizing
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_min_wavelength(self.config.range.min, self.observed_filter_wavelengths_no_iras_planck)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_max_wavelength(self.config.range.max, self.observed_filter_wavelengths_no_iras_planck)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def basic_npoints_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.wg.npoints_range_basic.linear(self.config.wg.ngrids_basic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def refined_npoints_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.wg.npoints_range_refined.linear(self.config.wg.ngrids_refined)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highres_npoints_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.wg.npoints_range_highres.linear(self.config.wg.ngrids_highres)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.wavelength_grids_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def basic_grid_paths(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        paths = OrderedDict()
+        for npoints in self.basic_npoints_list:
+
+            # Determine path
+            dirname = "basic_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+            if fs.is_directory(path): fs.clear_directory(path)
+            else: fs.create_directory(path)
+
+            # Set path
+            paths[npoints] = path
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def refined_grid_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = OrderedDict()
+        for npoints in self.refined_npoints_list:
+
+            # Determine path
+            dirname = "refined_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+            if fs.is_directory(path): fs.clear_directory(path)
+            else: fs.create_directory(path)
+
+            # Set path
+            paths[npoints] = path
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highres_grid_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = OrderedDict()
+        for npoints in self.highres_npoints_list:
+
+            # Determine path
+            dirname = "highres_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+            if fs.is_directory(path): fs.clear_directory(path)
+            else: fs.create_directory(path)
+
+            # Set path
+            paths[npoints] = path
+
+        # Return the paths
+        return paths
+
+    # -----------------------------------------------------------------
+
     def create_basic_wavelength_grids(self):
 
         """
@@ -197,7 +449,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.basic_generator = WavelengthGridGenerator()
 
         # Set basic settings
-        self.basic_generator.config.ngrids = self.config.ngrids_basic
+        self.basic_generator.config.ngrids = self.config.wg.ngrids_basic
         self.basic_generator.config.npoints_range = self.config.wg.npoints_range_basic
         self.basic_generator.config.range = self.config.wg.range
 
@@ -210,11 +462,46 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Set other flags
         self.basic_generator.config.show = False
-        self.basic_generator.config.write = False
+        self.basic_generator.config.write = True
         self.basic_generator.config.plot = True
 
+        # Writing
+        self.basic_generator.config.write_grids = False
+        self.basic_generator.config.write_elements = True
+        self.basic_generator.config.write_table = False
+
+        # Other
+        self.basic_generator.config.label = "basic"
+
         # Generate the wavelength grids
-        self.basic_generator.run(table=self.wg_table)
+        self.basic_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.basic_grid_paths, plot_paths=self.basic_grid_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def basic_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        grids = OrderedDict()
+
+        # Loop over the grids
+        for index in range(self.basic_generator.ngrids):
+
+            # Get target npoints
+            target_npoints = self.basic_generator.get_target_npoints(index)
+
+            # Get wavelength grid
+            wavelength_grid = self.basic_generator.grids[index]
+
+            # Set the grid
+            grids[target_npoints] = wavelength_grid
+
+        # Return the grids
+        return grids
 
     # -----------------------------------------------------------------
 
@@ -232,7 +519,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.refined_generator = WavelengthGridGenerator()
 
         # Set basic settings
-        self.refined_generator.config.ngrids = self.config.ngrids_refined
+        self.refined_generator.config.ngrids = self.config.wg.ngrids_refined
         self.refined_generator.config.npoints_range = self.config.wg.npoints_range_refined
         self.refined_generator.config.range = self.config.wg.range
 
@@ -245,11 +532,46 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Set other flags
         self.refined_generator.config.show = False
-        self.refined_generator.config.write = False
+        self.refined_generator.config.write = True
         self.refined_generator.config.plot = True
 
+        # Writing
+        self.refined_generator.config.write_grids = False
+        self.refined_generator.config.write_elements = True
+        self.refined_generator.config.write_table = False
+
+        # Other
+        self.refined_generator.config.label = "refined"
+
         # Generate the refined wavelength grids
-        self.refined_generator.run(table=self.wg_table)
+        self.refined_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.refined_grid_paths, plot_paths=self.refined_grid_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def refined_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        grids = OrderedDict()
+
+        # Loop over the grids
+        for index in range(self.refined_generator.ngrids):
+
+            # Get target npoints
+            target_npoints = self.refined_generator.get_target_npoints(index)
+
+            # Get wavelength grid
+            wavelength_grid = self.refined_generator.grids[index]
+
+            # Set the grid
+            grids[target_npoints] = wavelength_grid
+
+        # Return the grids
+        return grids
 
     # -----------------------------------------------------------------
 
@@ -267,7 +589,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.highres_generator = WavelengthGridGenerator()
 
         # Set basic settings
-        self.highres_generator.config.ngrids = self.config.ngrids_highres
+        self.highres_generator.config.ngrids = self.config.wg.ngrids_highres
         self.highres_generator.config.npoints_range = self.config.wg.npoints_range_highres
         self.highres_generator.config.range = self.config.wg.range
 
@@ -280,11 +602,46 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Set other flags
         self.highres_generator.config.show = False
-        self.highres_generator.config.write = False
+        self.highres_generator.config.write = True
         self.highres_generator.config.plot = True
 
+        # Writing
+        self.highres_generator.config.write_grids = False
+        self.highres_generator.config.write_elements = True
+        self.highres_generator.config.write_table = False
+
+        # Other
+        self.highres_generator.config.label = "highres"
+
         # Generate the high-resolution wavelength grids
-        self.highres_generator.run(table=self.wg_table)
+        self.highres_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.highres_grid_paths, plot_paths=self.highres_grid_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highres_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        grids = OrderedDict()
+
+        # Loop over the grids
+        for index in range(self.highres_generator.ngrids):
+
+            # Get target npoints
+            target_npoints = self.highres_generator.get_target_npoints(index)
+
+            # Get wavelength grid
+            wavelength_grid = self.highres_generator.grids[index]
+
+            # Set the grid
+            grids[target_npoints] = wavelength_grid
+
+        # Return
+        return grids
 
     # -----------------------------------------------------------------
 
@@ -435,6 +792,19 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the basic wavelength grids ...")
 
+        # Loop over the grids
+        for target_npoints in self.basic_wavelength_grids:
+
+            # Debugging
+            log.debug("Writing the " + str(target_npoints) + " points basic wavelength grid ...")
+
+            # Determine the filepath
+            filename = "basic_" + str(target_npoints) + ".dat"
+            filepath = fs.join(self.wavelength_grids_path, filename)
+
+            # Save the wavelength grid
+            self.basic_wavelength_grids[target_npoints].to_skirt_input(filepath)
+
     # -----------------------------------------------------------------
 
     def write_refined_wavelength_grids(self):
@@ -447,6 +817,19 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the refined wavelength grids ...")
 
+        # Loop over the grids
+        for target_npoints in self.refined_wavelength_grids:
+
+            # Debugging
+            log.debug("Writing the " + str(target_npoints) + " points refined wavelength grid ...")
+
+            # Determine the filepath
+            filename = "refined_" + str(target_npoints) + ".dat"
+            filepath = fs.join(self.wavelength_grids_path, filename)
+
+            # Save the wavelength grid
+            self.refined_wavelength_grids[target_npoints].to_skirt_input(filepath)
+
     # -----------------------------------------------------------------
 
     def write_highres_wavelength_grids(self):
@@ -458,5 +841,18 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Inform the user
         log.info("Writing the high-resolution wavelength grids ...")
+
+        # Loop over the grids
+        for target_npoints in self.highres_wavelength_grids:
+
+            # Debugging
+            log.debug("Writing the " + str(target_npoints) + " points high-resolution wavelength grid ...")
+
+            # Determine the filepath
+            filename = "highres_" + str(target_npoints) + ".dat"
+            filepath = fs.join(self.wavelength_grids_path, filename)
+
+            # Save the wavelength grid
+            self.highres_wavelength_grids[target_npoints].to_skirt_input(filepath)
 
 # -----------------------------------------------------------------

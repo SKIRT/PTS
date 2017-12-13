@@ -29,6 +29,11 @@ mappings_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Mappings")
 
 # -----------------------------------------------------------------
 
+# This factor (~2e6) is the *magic* conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun (from a private discussion between Ilse and Brent Groves)
+sfr_to_dust_mass = 2143279.799
+
+# -----------------------------------------------------------------
+
 class Mappings(object):
     
     """
@@ -51,6 +56,9 @@ class Mappings(object):
         self.pressure = pressure
         self.covering_factor = covering_factor
         self.sfr = sfr
+
+        # Add unit to SFR
+        if not hasattr(self.sfr, "unit"): self.sfr = self.sfr * u("Msun/yr")
 
     # -----------------------------------------------------------------
 
@@ -113,11 +121,8 @@ class Mappings(object):
         # Get the SFR
         sfr = cls.sfr_for_luminosity(metallicity, compactness, pressure, covering_factor, luminosity, wavelength)
 
-        # This factor (~2e6) is the conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun
-        sfr_to_dust_mass = 2143279.799
-
         # Determine the total dust mass in SFR clouds
-        dust_mass = sfr.to("Msun/yr") * sfr_to_dust_mass * u("Msun")
+        dust_mass = sfr.to("Msun/yr").value * sfr_to_dust_mass * u("Msun")
 
         # Return the dust mass
         return dust_mass
@@ -135,6 +140,31 @@ class Mappings(object):
         :param covering_factor:
         :param luminosity:
         :param wavelength:
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the total dust mass in SFR clouds
+        return self.sfr.to("Msun/yr").value * sfr_to_dust_mass * u("Msun")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_mass(self):
+
+        """
+        This function ...
         :return:
         """
 
@@ -185,6 +215,9 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
     :param sfr:
     :return:
     """
+
+    # Add unit to SFR
+    if not hasattr(sfr, "unit"): sfr = sfr * u("Msun/yr")
 
     # Load the data files
     lambdav, _Zrelv, _logCv, _logpv, j0_dict, j1_dict = load_mappings_data()
@@ -277,8 +310,11 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
         jk = (1.0 - fPDR) * j0 + fPDR * j1
         jv[k] = jk
 
+    # Get scalar SFR
+    sfr_scalar = sfr.to("Msun/yr").value
+
     wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in lambdav]
-    luminosity_column = jv * sfr * 1e-6 # 1e-6 is to go from per meter to per micron
+    luminosity_column = jv * sfr_scalar * 1e-6 # 1e-6 is to go from per meter to per micron
 
     # Create the SED
     sed = SED.from_arrays(wavelength_column, luminosity_column, wavelength_unit="micron", photometry_unit="W/micron")

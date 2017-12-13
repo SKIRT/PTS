@@ -314,6 +314,13 @@ class WavelengthGridGenerator(Configurable):
         self.line_wavelengths = []
         self.fixed = []
 
+        # SEDs for plotting
+        self.seds = OrderedDict()
+
+        # Out paths and plot paths
+        self.out_paths = None
+        self.plot_paths = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -392,6 +399,89 @@ class WavelengthGridGenerator(Configurable):
         self.table = kwargs.pop("table", None)
         if self.table is None and self.config.table: self.table = WavelengthGridsTable()
 
+        # Get SEDS for plotting
+        if kwargs.get("seds", None) is not None:
+            seds = kwargs.pop("seds")
+            for label in seds: self.add_sed(seds[label], label)
+
+        # Create SEDs
+        if self.config.plot_seds: self.create_seds()
+
+        # Get out paths
+        self.out_paths = kwargs.pop("out_paths", None)
+
+        # Get plot paths
+        self.plot_paths = kwargs.pop("plot_paths", None)
+
+    # -----------------------------------------------------------------
+
+    def add_sed(self, sed, label):
+
+        """
+        This function ...
+        :param sed:
+        :param label:
+        :return:
+        """
+
+        self.seds[label] = sed
+
+    # -----------------------------------------------------------------
+
+    def create_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..plot.wavelengthgrid import get_sed_template
+
+        # Inform the suer
+        log.info("Creating SED templates ...")
+
+        # Loop over the template names
+        for name in self.config.seds:
+
+            # MAPPINGS
+            if name == "mappings":
+
+                # Debugging
+                log.debug("Creating MAPPINGS SED template ...")
+
+                properties = dict()
+                properties["metallicity"] = self.config.metallicity
+                properties["compactness"] = self.config.compactness
+                properties["pressure"] = self.config.pressure
+                properties["covering_factor"] = self.config.covering_factor
+
+                # Set label
+                label = "MAPPINGS"
+
+                sed = get_sed_template(name, **properties)
+                self.add_sed(sed, label=label)
+
+            # Stellar Bruzual Charlot
+            elif name == "bruzual_charlot":
+
+                # Debugging
+                log.debug("Creating Bruzual-Charlot SED templates ...")
+
+                # Loop over the ages
+                for age in self.config.ages:
+
+                    properties = dict()
+                    properties["metallicity"] = self.config.metallicity
+                    properties["age"] = age
+
+                    #label = name + "_" + str(age).replace(" ", "")
+                    label = "Bruzual-Charlot " + str(age)
+                    sed = get_sed_template(name, **properties)
+                    self.add_sed(sed, label=label)
+
+            # Invalid
+            else: raise ValueError("Invalid SED template name")
+
     # -----------------------------------------------------------------
 
     @property
@@ -414,31 +504,7 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        # Check filters?
-        if self.config.check_filters is not None:
-
-            # Get specified minimum wavelength
-            min_wavelength = self.config.range.min
-
-            # Loop over the filters
-            for fltr in self.config.check_filters:
-
-                # Check below
-                if fltr.wavelength < min_wavelength:
-
-                    # Warning
-                    log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
-
-                    # Adjust?
-                    if self.config.adjust_minmax:
-                        log.debug("Adjusting the minimum wavelength to incorporate the '" + str(fltr) + "' filter")
-                        min_wavelength = 0.99 * fltr.wavelength
-
-            # Return the lower wavelength
-            return min_wavelength
-
-        # Return the specified minimum wavelength
-        else: return self.config.range.min
+        return get_min_wavelength(self.config.range.min, self.config.check_filters, self.config.adjust_minmax)
 
     # -----------------------------------------------------------------
 
@@ -450,55 +516,7 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        # Check filters?
-        if self.config.check_filters is not None:
-
-            # Get specified maximum wavelength
-            max_wavelength = self.config.range.max
-
-            # Loop over the filters
-            for fltr in self.config.check_filters:
-
-                # Check above
-                if fltr.wavelength > max_wavelength:
-
-                    # Warning
-                    log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
-
-                    # Adjust?
-                    if self.config.adjust_minmax:
-                        log.debug("Adjusting the maximum wavelength to incorporate the '" + str(fltr) + "' filter")
-                        max_wavelength = 1.01 * fltr.wavelength
-
-            # Return the higher wavelength
-            return max_wavelength
-
-        # Return the specified maximum wavelength
-        else: return self.config.range.max
-
-    # -----------------------------------------------------------------
-
-    # @property
-    # def min_wavelength(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.config.range.min
-    #
-    # # -----------------------------------------------------------------
-    #
-    # @property
-    # def max_wavelength(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.config.range.max
+        return get_max_wavelength(self.config.range.max, self.config.check_filters, self.config.adjust_minmax)
 
     # -----------------------------------------------------------------
 
@@ -989,16 +1007,9 @@ class WavelengthGridGenerator(Configurable):
             plotter.config.filters = self.config.filters
             plotter.config.categorize_filters = self.config.categorize_filters
 
+            # Lines
             plotter.config.add_lines = self.config.plot_lines
             plotter.config.lines = self.config.emission_lines
-
-            plotter.config.add_seds = self.config.plot_seds
-            plotter.config.seds = self.config.seds
-            plotter.config.metallicity = self.config.metallicity
-            plotter.config.compactness = self.config.compactness
-            plotter.config.pressure = self.config.pressure
-            plotter.config.covering_factor = self.config.covering_factor
-            plotter.config.ages = self.config.ages
 
             # Plot separate
             plotter.config.separate_grids = True
@@ -1008,17 +1019,21 @@ class WavelengthGridGenerator(Configurable):
             plotter.config.mark_removed = True
 
             # Add the elements
-            plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
+            plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced,
+                                 new=new, line_wavelengths=line_wavelengths)
 
             # Add complete grid
-            plotter.add_reference_grid(grid, label="reference", in_legend=True)
+            if self.config.plot_reference:
+                plotter.add_reference_grid(grid, label="reference", in_legend=True)
+                plotter.config.plot_differences = True
 
             # Determine plot filepath
-            if self.config.plot_path is not None: plot_filepath = fs.join(self.config.plot_path, label + ".pdf")
+            if self.plot_paths is not None and target_npoints in self.plot_paths: plot_filepath = fs.join()
+            elif self.config.plot_path is not None: plot_filepath = fs.join(self.config.plot_path, label + ".pdf")
             else: plot_filepath = None
 
             # Run the plotter
-            plotter.run(output=plot_filepath)
+            plotter.run(output=plot_filepath, seds=self.seds)
 
     # -----------------------------------------------------------------
 
@@ -1084,7 +1099,8 @@ class WavelengthGridGenerator(Configurable):
             wavelength_grid = self.grids[index]
 
             # Determine filepath
-            path = self.output_path_file(label + ".dat")
+            if self.out_paths is not None and target_npoints in self.out_paths: path = fs.join(self.out_paths[target_npoints], "grid.dat")
+            else: path = self.output_path_file(label + ".dat")
 
             # Write the wavelength grid
             wavelength_grid.saveto(path)
@@ -1117,7 +1133,8 @@ class WavelengthGridGenerator(Configurable):
             subgrids = self.get_subgrids(index)
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else:  elements_path = self.output_path_directory(label, create=True)
 
             # Loop over the subgrids
             for name in subgrids:
@@ -1162,7 +1179,8 @@ class WavelengthGridGenerator(Configurable):
             fixed_grid = self.get_fixed_grid(index)
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else: elements_path = self.output_path_directory(label, create=True)
 
             # Determine filepath
             path = fs.join(elements_path, "fixed_grid.dat")
@@ -1201,7 +1219,8 @@ class WavelengthGridGenerator(Configurable):
             filter_wavelengths = self.filter_wavelengths[index]
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else: elements_path = self.output_path_directory(label, create=True)
 
             # Determine filepath
             path = fs.join(elements_path, "filter_wavelengths.dat")
@@ -1240,7 +1259,8 @@ class WavelengthGridGenerator(Configurable):
             replaced = self.replaced[index]
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else: elements_path = self.output_path_directory(label, create=True)
 
             # Determine filepath
             path = fs.join(elements_path, "replaced.dat")
@@ -1279,7 +1299,8 @@ class WavelengthGridGenerator(Configurable):
             new = self.new[index]
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else: elements_path = self.output_path_directory(label, create=True)
 
             # Determine filepath
             path = fs.join(elements_path, "new.dat")
@@ -1318,7 +1339,8 @@ class WavelengthGridGenerator(Configurable):
             line_wavelengths = self.line_wavelengths[index]
 
             # Determine directory path
-            elements_path = self.output_path_directory(label, create=True)
+            if self.out_paths is not None and target_npoints in self.out_paths: elements_path = self.out_paths[target_npoints]
+            else: elements_path = self.output_path_directory(label, create=True)
 
             # Determine file path
             path = fs.join(elements_path, "line_wavelengths.dat")
@@ -1976,5 +1998,81 @@ def make_grid(wmin, wmax, N):
 
     # Return the grid
     return result
+
+# -----------------------------------------------------------------
+
+def get_min_wavelength(minimum, check_filters=None, adjust_minmax=False):
+
+    """
+    This function checks and gets the minimum wavelength for a grid
+    :param minimum:
+    :param check_filters:
+    :param adjust_minmax:
+    :return:
+    """
+
+    # Check filters?
+    if check_filters is not None:
+
+        # Get specified minimum wavelength
+        min_wavelength = minimum
+
+        # Loop over the filters
+        for fltr in check_filters:
+
+            # Check below
+            if fltr.wavelength < min_wavelength:
+
+                # Warning
+                log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
+                # Adjust?
+                if adjust_minmax:
+                    log.debug("Adjusting the minimum wavelength to incorporate the '" + str(fltr) + "' filter")
+                    min_wavelength = 0.99 * fltr.wavelength
+
+        # Return the lower wavelength
+        return min_wavelength
+
+    # Return the specified minimum wavelength
+    else: return minimum
+
+# -----------------------------------------------------------------
+
+def get_max_wavelength(maximum, check_filters=None, adjust_minmax=False):
+
+    """
+    This function ...
+    :param maximum:
+    :param check_filters:
+    :param adjust_minmax:
+    :return:
+    """
+
+    # Check filters?
+    if check_filters is not None:
+
+        # Get specified maximum wavelength
+        max_wavelength = maximum
+
+        # Loop over the filters
+        for fltr in check_filters:
+
+            # Check above
+            if fltr.wavelength > max_wavelength:
+
+                # Warning
+                log.warning("The wavelength range does not contain the wavelength of the '" + str(fltr) + "' filter")
+
+                # Adjust?
+                if adjust_minmax:
+                    log.debug("Adjusting the maximum wavelength to incorporate the '" + str(fltr) + "' filter")
+                    max_wavelength = 1.01 * fltr.wavelength
+
+        # Return the higher wavelength
+        return max_wavelength
+
+    # Return the specified maximum wavelength
+    else: return maximum
 
 # -----------------------------------------------------------------
