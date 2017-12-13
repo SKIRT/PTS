@@ -252,7 +252,7 @@ def prompt_finish(description=None):
 
 # -----------------------------------------------------------------
 
-def prompt_automatic(name, description, default, choices=None, default_alias=None):
+def prompt_automatic(name, description, default, choices=None, default_alias=None, suggestions=None):
 
     """
     This function ...
@@ -261,6 +261,7 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
     :param default:
     :param choices:
     :param default_alias:
+    :param suggestions:
     :return:
     """
 
@@ -271,7 +272,7 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
     ptype, string = stringify.stringify(default)
 
     # Prompt
-    return prompt_variable(name, ptype, description, choices=choices, default=default, default_alias=default_alias)
+    return prompt_variable(name, ptype, description, choices=choices, default=default, default_alias=default_alias, suggestions=suggestions)
 
 # -----------------------------------------------------------------
 

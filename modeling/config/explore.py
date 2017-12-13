@@ -45,9 +45,12 @@ else: definition.add_fixed("remotes", "remote hosts", [])
 
 # Options
 definition.add_flag("attached", "run remote simulations in attached mode")
-definition.add_optional("nsimulations", "even_positive_integer", "the number of simulations to launch in one batch/generation", 100)
+definition.add_optional("nsimulations", "even_positive_integer", "number of simulations to launch in one batch/generation", 100)
 definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
+
+# Number of points per free parameter
+definition.add_optional("npoints", "string_integer_dictionary", "number of grid points for the different free parameters")
 
 # -----------------------------------------------------------------
 

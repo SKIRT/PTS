@@ -1255,11 +1255,12 @@ class WavelengthGridPlotter(Configurable):
         # New?
         if has_new: self.add_new_wavelengths_from_file(new_path)
 
-        # Replaced?
-        if has_replaced: self.add_replaced_wavelengths_from_file(replaced_path, connect=has_filters)
-
         # Filter
-        if has_filters: self.add_filter_wavelengths_from_file(filter_wavelengths_path)
+        if has_filters: filter_wavelengths = self.add_filter_wavelengths_from_file(filter_wavelengths_path)
+        else: filter_wavelengths = None
+
+        # Replaced?
+        if has_replaced: self.add_replaced_wavelengths_from_file(replaced_path, connect=has_filters, filter_wavelengths=filter_wavelengths)
 
         # Emission lines?
         if has_lines: self.add_line_wavelengths_from_file(line_wavelengths_path)
@@ -1340,7 +1341,7 @@ class WavelengthGridPlotter(Configurable):
         if has_filters: self.add_filter_wavelengths(filter_wavelengths)
 
         # Get replaced
-        if has_replaced: self.add_replaced_wavelengths(replaced, connect=has_filters)
+        if has_replaced: self.add_replaced_wavelengths(replaced, connect=has_filters, filter_wavelengths=filter_wavelengths)
 
         # Get new
         if has_new: self.add_new_wavelengths(new)
@@ -1574,26 +1575,44 @@ class WavelengthGridPlotter(Configurable):
         # Load and add
         filter_wavelengths = load_dict(path)
         self.add_filter_wavelengths(filter_wavelengths)
+        return filter_wavelengths
 
     # -----------------------------------------------------------------
 
-    def add_replaced_wavelengths(self, replaced, connect=False):
+    def add_replaced_wavelengths(self, replaced, connect=False, filter_wavelengths=None):
 
         """
         This function ...
         :param replaced:
         :param connect:
+        :param filter_wavelengths:
         :return:
         """
 
         # Debugging
         log.debug("Adding replaced wavelengths ...")
 
+        if filter_wavelengths is not None:
+            filter_ranges = dict()
+            for fltr in filter_wavelengths:
+                wavelengths = filter_wavelengths[fltr]
+                nwavelengths = len(wavelengths)
+                if nwavelengths == 1: continue
+                wavelength_range = QuantityRange.limits(wavelengths)
+                filter_ranges[fltr] = wavelength_range
+        else: filter_ranges = None
+
         # Add
         for old, replacement in replaced:
 
+            if connect:
+                if filter_ranges is None: connect_line = True
+                elif in_some_range(old, filter_ranges): connect_line = True
+                else: connect_line = False
+            else: connect_line = False
+
             # Add the old wavelength and the replacement wavelength
-            self.add_wavelength(old, colour="red", linewidth=0.5, group="adjusted", connect=connect, connect_in_style=True)
+            self.add_wavelength(old, colour="red", linewidth=0.5, group="adjusted", connect=connect_line, connect_in_style=True)
             self.add_wavelength(replacement, colour="green", linewidth=0.5, group="adjusted")
 
             # Remove the old wavelength from the complete grid
@@ -1601,18 +1620,19 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_replaced_wavelengths_from_file(self, path, connect=False):
+    def add_replaced_wavelengths_from_file(self, path, connect=False, filter_wavelengths=None):
 
         """
         This function ...
         :param path:
         :param connect:
+        :param filter_wavelengths:
         :return:
         """
 
         # Load and add
         replaced = load_list(path)
-        self.add_replaced_wavelengths(replaced, connect=connect)
+        self.add_replaced_wavelengths(replaced, connect=connect, filter_wavelengths=filter_wavelengths)
 
     # -----------------------------------------------------------------
 
@@ -4125,5 +4145,21 @@ class WavelengthGridPlotter(Configurable):
 
             # Save the grid
             grid.saveto(path)
+
+# -----------------------------------------------------------------
+
+def in_some_range(wavelength, filter_ranges):
+
+    """
+    This function ...
+    :param wavelength:
+    :param filter_ranges:
+    :return:
+    """
+
+    for fltr in filter_ranges:
+        wavelength_range = filter_ranges[fltr]
+        if wavelength in wavelength_range: return True
+    return False
 
 # -----------------------------------------------------------------

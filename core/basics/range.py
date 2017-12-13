@@ -201,6 +201,22 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def limits(cls, values, inclusive=True):
+
+        """
+        This function ...
+        :param values:
+        :param inclusive:
+        :return:
+        """
+
+        min_value = min(values)
+        max_value = max(values)
+        return cls(min_value, max_value, inclusive=inclusive)
+
+    # -----------------------------------------------------------------
+
     @property
     def min(self):
 

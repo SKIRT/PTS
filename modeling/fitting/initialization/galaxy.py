@@ -22,9 +22,8 @@ from .base import FittingInitializerBase
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator, get_min_wavelength, get_max_wavelength
 from ....core.basics.emissionlines import get_id_strings, important_lines
 from ....core.tools.utils import lazyproperty
-from ...core.bruzualcharlot import create_bruzual_charlot_sed
 from ....core.tools import filesystem as fs
-from ....core.units.parsing import parse_unit as u
+from ....core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -164,7 +163,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return self.model_definition.old_stars_age * u("Gyr")
+        return self.model_definition.old_stars_age
 
     # -----------------------------------------------------------------
 
@@ -176,7 +175,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return self.model_definition.young_stars_age * u("Gyr")
+        return self.model_definition.young_stars_age
 
     # -----------------------------------------------------------------
 
@@ -245,7 +244,28 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return True
+        has_any = False
+        has_all = True
+
+        # Loop over the target npoints of the basic grids
+        for npoints in self.basic_npoints_list:
+
+            # Determine path
+            dirname = "basic_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
+
+            # Check
+            if not fs.is_file(grid_path): has_all = False
+            else: has_any = True
+
+        # Clear
+        if not has_all: fs.remove_directories_in_path(self.wavelength_grids_path, startswith="basic_")
+
+        # Return
+        return has_any and has_all
 
     # -----------------------------------------------------------------
 
@@ -257,7 +277,28 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return True
+        has_any = False
+        has_all = True
+
+        # Loop over the target npoints of the refined grids
+        for npoints in self.refined_npoints_list:
+
+            # Determine path
+            dirname = "refined_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
+
+            # Check
+            if not fs.is_file(grid_path): has_all = False
+            else: has_any = True
+
+        # Clear
+        if not has_all: fs.remove_directories_in_path(self.wavelength_grids_path, startswith="refined_")
+
+        # Return
+        return has_any and has_all
 
     # -----------------------------------------------------------------
 
@@ -269,7 +310,28 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return False
+        has_any = False
+        has_all = True
+
+        # Loop over the target npoints of the high-res grids
+        for npoints in self.highres_npoints_list:
+
+            # Determine path
+            dirname = "highres_" + str(npoints)
+            path = fs.join(self.wavelength_grids_path, dirname)
+
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
+
+            # Check
+            if not fs.is_file(grid_path): has_all = False
+            else: has_any = True
+
+        # Clear
+        if not has_all: fs.remove_directories_in_path(self.wavelength_grids_path, startswith="highres_")
+
+        # Return
+        return has_any and has_all
 
     # -----------------------------------------------------------------
 
@@ -305,7 +367,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.old_age)
+        return self.model_definition.old_sed
 
     # -----------------------------------------------------------------
 
@@ -317,7 +379,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.young_age)
+        return self.model_definition.young_sed
 
     # -----------------------------------------------------------------
 
@@ -517,7 +579,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.basic_generator.config.plot = True
 
         # Writing
-        self.basic_generator.config.write_grids = False
+        self.basic_generator.config.write_grids = True
         self.basic_generator.config.write_elements = True
         self.basic_generator.config.write_table = False
 
@@ -539,17 +601,39 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         grids = OrderedDict()
 
-        # Loop over the grids
-        for index in range(self.basic_generator.ngrids):
+        # Not generated this time
+        if self.basic_generator is None:
 
-            # Get target npoints
-            target_npoints = self.basic_generator.get_target_npoints(index)
+            # Loop over the target npoints of the basic grids
+            for npoints in self.basic_npoints_list:
 
-            # Get wavelength grid
-            wavelength_grid = self.basic_generator.grids[index]
+                # Determine path
+                dirname = "basic_" + str(npoints)
+                path = fs.join(self.wavelength_grids_path, dirname)
 
-            # Set the grid
-            grids[target_npoints] = wavelength_grid
+                # Determine grid file path
+                grid_path = fs.join(path, "grid.dat")
+
+                # Load grid
+                grid = WavelengthGrid.from_file(grid_path)
+
+                # Add the grid
+                grids[npoints] = grid
+
+        # Generated
+        else:
+
+            # Loop over the grids
+            for index in range(self.basic_generator.ngrids):
+
+                # Get target npoints
+                target_npoints = self.basic_generator.get_target_npoints(index)
+
+                # Get wavelength grid
+                wavelength_grid = self.basic_generator.grids[index]
+
+                # Set the grid
+                grids[target_npoints] = wavelength_grid
 
         # Return the grids
         return grids
@@ -588,7 +672,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.refined_generator.config.plot = True
 
         # Writing
-        self.refined_generator.config.write_grids = False
+        self.refined_generator.config.write_grids = True
         self.refined_generator.config.write_elements = True
         self.refined_generator.config.write_table = False
 
@@ -610,17 +694,39 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         grids = OrderedDict()
 
-        # Loop over the grids
-        for index in range(self.refined_generator.ngrids):
+        # Not generated this time
+        if self.refined_generator is None:
 
-            # Get target npoints
-            target_npoints = self.refined_generator.get_target_npoints(index)
+            # Loop over the target npoints of the refined grids
+            for npoints in self.refined_npoints_list:
 
-            # Get wavelength grid
-            wavelength_grid = self.refined_generator.grids[index]
+                # Determine path
+                dirname = "refined_" + str(npoints)
+                path = fs.join(self.wavelength_grids_path, dirname)
 
-            # Set the grid
-            grids[target_npoints] = wavelength_grid
+                # Determine grid file path
+                grid_path = fs.join(path, "grid.dat")
+
+                # Load grid
+                grid = WavelengthGrid.from_file(grid_path)
+
+                # Add the grid
+                grids[npoints] = grid
+
+        # Generated
+        else:
+
+            # Loop over the grids
+            for index in range(self.refined_generator.ngrids):
+
+                # Get target npoints
+                target_npoints = self.refined_generator.get_target_npoints(index)
+
+                # Get wavelength grid
+                wavelength_grid = self.refined_generator.grids[index]
+
+                # Set the grid
+                grids[target_npoints] = wavelength_grid
 
         # Return the grids
         return grids
@@ -659,7 +765,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.highres_generator.config.plot = True
 
         # Writing
-        self.highres_generator.config.write_grids = False
+        self.highres_generator.config.write_grids = True
         self.highres_generator.config.write_elements = True
         self.highres_generator.config.write_table = False
 
@@ -681,17 +787,39 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         grids = OrderedDict()
 
-        # Loop over the grids
-        for index in range(self.highres_generator.ngrids):
+        # Not generated this time
+        if self.highres_generator is None:
 
-            # Get target npoints
-            target_npoints = self.highres_generator.get_target_npoints(index)
+            # Loop over the target npoints of the high-res grids
+            for npoints in self.highres_npoints_list:
 
-            # Get wavelength grid
-            wavelength_grid = self.highres_generator.grids[index]
+                # Determine path
+                dirname = "highres_" + str(npoints)
+                path = fs.join(self.wavelength_grids_path, dirname)
 
-            # Set the grid
-            grids[target_npoints] = wavelength_grid
+                # Determine grid file path
+                grid_path = fs.join(path, "grid.dat")
+
+                # Load grid
+                grid = WavelengthGrid.from_file(grid_path)
+
+                # Add the grid
+                grids[npoints] = grid
+
+        # Generated
+        else:
+
+            # Loop over the grids
+            for index in range(self.highres_generator.ngrids):
+
+                # Get target npoints
+                target_npoints = self.highres_generator.get_target_npoints(index)
+
+                # Get wavelength grid
+                wavelength_grid = self.highres_generator.grids[index]
+
+                # Set the grid
+                grids[target_npoints] = wavelength_grid
 
         # Return
         return grids

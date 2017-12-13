@@ -27,6 +27,8 @@ from ...core.tools.utils import lazyproperty
 from ..core.mappings import Mappings
 from ...core.filter.filter import parse_filter
 from ...core.tools import numbers
+from ...core.units.unit import parse_unit as u
+from ..core.bruzualcharlot import create_bruzual_charlot_sed
 
 # -----------------------------------------------------------------
 
@@ -1066,6 +1068,30 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.old_stars_age)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.young_stars_age)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def i1_filter(self):
 
@@ -1312,7 +1338,7 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.old_stars_parameters.age
+        return self.old_stars_parameters.age * u("Gyr")
 
     # -----------------------------------------------------------------
 
@@ -1360,7 +1386,7 @@ class ModelDefinition(object):
         :return:
         """
 
-        return self.young_stars_parameters.age
+        return self.young_stars_parameters.age * u("Gyr")
 
     # -----------------------------------------------------------------
 
