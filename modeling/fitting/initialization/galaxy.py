@@ -297,7 +297,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return get_min_wavelength(self.config.range.min, self.observed_filter_wavelengths_no_iras_planck)
+        return get_min_wavelength(self.config.range.min, self.observed_filters_no_iras_planck)
 
     # -----------------------------------------------------------------
 
@@ -309,7 +309,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        return get_max_wavelength(self.config.range.max, self.observed_filter_wavelengths_no_iras_planck)
+        return get_max_wavelength(self.config.range.max, self.observed_filters_no_iras_planck)
 
     # -----------------------------------------------------------------
 
@@ -457,7 +457,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set other
         self.basic_generator.config.add_emission_lines = self.config.wg.add_emission_lines
         self.basic_generator.config.emission_lines = self.important_emission_lines
-        self.basic_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.basic_generator.config.check_filters = self.observed_filters_no_iras_planck
         self.basic_generator.config.adjust_to = self.fitting_filters
         self.basic_generator.config.fixed = self.normalization_wavelengths
 
@@ -527,7 +527,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set other
         self.refined_generator.config.add_emission_lines = self.config.wg.add_emission_lines
         self.refined_generator.config.emission_lines = self.important_emission_lines
-        self.refined_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.refined_generator.config.check_filters = self.observed_filters_no_iras_planck
         self.refined_generator.config.filters = self.fitting_filters
         self.refined_generator.config.fixed = self.normalization_wavelengths
 
@@ -597,7 +597,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set other
         self.highres_generator.config.add_emission_lines = self.config.wg.add_emission_lines
         self.highres_generator.config.emission_lines = self.all_emission_lines
-        self.highres_generator.config.check_filters = self.observed_filter_wavelengths_no_iras_planck
+        self.highres_generator.config.check_filters = self.observed_filters_no_iras_planck
         self.highres_generator.config.filters = self.fitting_filters
         self.highres_generator.config.fixed = self.normalization_wavelengths
 

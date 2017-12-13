@@ -1129,7 +1129,7 @@ class ModelDefinition(object):
         sfr_from_lum = Mappings.sfr_for_luminosity(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, self.ionizing_stars_luminosity, self.fuv_wavelength)
 
         # Check
-        if not numbers.is_close(sfr_scalar, sfr_from_lum.to("Msun/yr").value): raise ValueError("Inconsistent SFR and FUV luminosity")
+        if not numbers.is_close(sfr_scalar, sfr_from_lum.to("Msun/yr").value): raise ValueError("Inconsistent SFR and FUV luminosity: " + str(sfr_scalar) + " =/= " + str(sfr_from_lum.to("Msun/yr").value))
 
         # Return
         return sfr_from_lum

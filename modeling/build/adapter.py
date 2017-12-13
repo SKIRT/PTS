@@ -1364,6 +1364,7 @@ class GalaxyModelAdapter(BuildComponent, GalaxyModelingComponent):
 
         # Create suggestions
         suggestions = dict()
+        suggestions["sfr"] = [self.sfr_msun_per_year]
         suggestions["fluxdensity"] = [self.intrinsic_ionizing_fuv_flux]
         suggestions["neutral_luminosity"] = [self.intrinsic_ionizing_fuv_neutral_luminosity]
         suggestions["luminosity"] = [self.intrinsic_ionizing_fuv_luminosity]
