@@ -57,7 +57,7 @@ definition.sections["wg"].add_optional("npoints_range_highres", "integer_range",
 definition.sections["wg"].add_optional("ngrids_basic", "integer", "number of basic wavelength grids to generate", default_ngrids_basic)
 definition.sections["wg"].add_optional("ngrids_refined", "integer", "number of refined wavelength grids to generate", default_ngrids_refined)
 definition.sections["wg"].add_optional("ngrids_highres", "integer", "number of high-resolution wavelength grids to generate", default_ngrids_highres)
-definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
+definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", True)
 definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", default_wavelength_range, convert_default=True)
 
 # -----------------------------------------------------------------

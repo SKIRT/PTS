@@ -8,7 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import parsing
-from pts.core.basics.emissionlines import get_id_strings, important_lines
+from pts.core.basics.emissionlines import get_identifiers, important_lines, strong_lines
 from pts.magic.tools import wavelengths
 
 # -----------------------------------------------------------------
@@ -34,8 +34,9 @@ default_filters = parsing.lazy_filter_list(default_filter_names)
 filter_wavelengths = [fltr.wavelength for fltr in default_filters]
 
 # Emission lines
-all_lines = get_id_strings()
-default_lines = important_lines
+all_lines = get_identifiers()
+#default_lines = important_lines
+default_lines = strong_lines
 
 # -----------------------------------------------------------------
 

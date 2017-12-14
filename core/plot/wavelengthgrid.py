@@ -527,7 +527,7 @@ class WavelengthGridPlotter(Configurable):
         # Set the output path
         self.out_path = kwargs.pop("output", None)
         self.out_path = kwargs.pop("output_path", self.out_path)
-        if self.out_path is None and "output" in self.config: self.out_path = fs.join(self.config.output, self.config.filename + "." + self.config.format)
+        if self.out_path is None and self.config.output is not None: self.out_path = fs.join(self.config.output, self.config.filename + "." + self.config.format)
         #print("OUT PATH:", self.out_path, self.config.output)
 
         # Set the axis limits

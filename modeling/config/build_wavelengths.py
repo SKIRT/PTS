@@ -7,13 +7,18 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.emissionlines import get_id_strings
+from pts.core.basics.emissionlines import get_identifiers
 
 # -----------------------------------------------------------------
 
 # Emission lines
-all_lines = get_id_strings()
+all_lines = get_identifiers()
 default_lines = None # no default: means all
+
+# -----------------------------------------------------------------
+
+default_min_points_per_filter = 8
+default_min_points_per_fwhm = 5
 
 # -----------------------------------------------------------------
 
