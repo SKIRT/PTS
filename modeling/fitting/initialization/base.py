@@ -97,7 +97,7 @@ class FittingInitializerBase(FittingComponent):
         if self.has_weights_table: fs.remove_file(self.weights_table_path)
         if self.has_wavelength_grids_table: fs.remove_file(self.wavelength_grids_table_path)
         if self.has_input_maps_file: fs.remove_file(self.input_maps_path)
-        # fs.clear_directory(self.wavelength_grids_path)
+        if self.config.regenerate_wavelength_grids: fs.clear_directory(self.wavelength_grids_path)
 
     # -----------------------------------------------------------------
 

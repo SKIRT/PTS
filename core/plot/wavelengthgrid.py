@@ -23,6 +23,7 @@ import matplotlib.cm as cmx
 from matplotlib.legend import Legend
 from collections import defaultdict
 import matplotlib.patches as patches
+from scipy.interpolate import interp1d
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -42,6 +43,7 @@ from ..basics.plot import dark_pretty_colors
 from ..tools import sequences
 from ..filter.filter import parse_filter
 from ..tools import types
+from ..tools import nr
 
 # -----------------------------------------------------------------
 
@@ -137,6 +139,7 @@ class WavelengthGridPlotter(Configurable):
         self.differences = None
         self.refs = []
         self.delta = None
+        self.residuals = None
 
         # Legends of the main plot
         self.grids_legend = None
@@ -391,6 +394,8 @@ class WavelengthGridPlotter(Configurable):
         # Loop over the wavelength grids
         for label in self.grids:
 
+            #print(label)
+
             # Except?
             if except_grids is not None and label in except_grids: continue
 
@@ -522,7 +527,8 @@ class WavelengthGridPlotter(Configurable):
         # Set the output path
         self.out_path = kwargs.pop("output", None)
         self.out_path = kwargs.pop("output_path", self.out_path)
-        #if self.out_path is None and "output" in self.config: self.out_path = self.config.output
+        if self.out_path is None and "output" in self.config: self.out_path = fs.join(self.config.output, self.config.filename + "." + self.config.format)
+        #print("OUT PATH:", self.out_path, self.config.output)
 
         # Set the axis limits
         self.min_wavelength = kwargs.pop("min_wavelength", self.config.min_wavelength)
@@ -703,6 +709,54 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def min_y_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return -100.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_y_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 100.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residuals_y_limits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.min_y_residuals, self.max_y_residuals)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residuals_y_span(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.max_y_residuals - self.min_y_residuals
+
+    # -----------------------------------------------------------------
+
+    @property
     def min_y_complete_grid(self):
 
         """
@@ -746,14 +800,34 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
+        # Main and delta
         total = 2
+
+        # Complete grid plot
         if self.config.separate_complete_grid: total += 1
+
+        # Reference grid plots
         if self.has_reference_grids: total += self.nreference_grids
+
+        # Separate grid plots
         if self.has_separate_grids: total += self.nseparate_grids
+
+        # Group plots
         if self.has_groups: total += self.ngroups
+
+        # Individual wavelengths plot
         if self.has_wavelengths_not_in_group and self.config.group_wavelengths: total += 1
+
+        # Lines
         if self.has_lines and self.config.separate_lines: total += 1
+
+        # Differences
         if self.config.plot_differences: total += 1
+
+        # Residuals
+        if self.has_seds and self.config.plot_residuals: total += 1
+
+        # Return the number of rows
         return total
 
     # -----------------------------------------------------------------
@@ -983,19 +1057,40 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
+        # Main plot
         limits = [self.main_y_limits]
+
+        # Separate grid plots
         if self.has_separate_grids:
             for _ in range(self.nseparate_grids): limits.append(self.separate_y_limits)
-        #if self.has_lines and self.config.separate_lines: limits.append(self.separate_lines_y_limits)
+
+        # Group plots
         if self.has_groups:
             for _ in range(self.ngroups): limits.append(self.groups_y_limits)
+
+        # Lines
         if self.has_lines and self.config.separate_lines: limits.append(self.separate_lines_y_limits)
+
+        # Individual wavelengths plot
         if self.has_wavelengths_not_in_group and self.config.group_wavelengths: limits.append(self.individual_y_limits)
+
+        # Complete grid plot
         if self.config.separate_complete_grid: limits.append(self.complete_y_limits)
+
+        # Reference grid plots
         if self.has_reference_grids:
             for _ in range(self.nreference_grids): limits.append(self.reference_y_limits)
+
+        # Differences plot
         if self.config.plot_differences: limits.append(self.differences_y_limits)
+
+        # Delta plot
         limits.append(self.delta_y_limits)
+
+        # Residuals
+        if self.has_seds and self.config.plot_residuals: limits.append(self.residuals_y_limits)
+
+        # Return the limits
         return limits
 
     # -----------------------------------------------------------------
@@ -1008,19 +1103,40 @@ class WavelengthGridPlotter(Configurable):
         :return:
         """
 
+        # Main plot
         ratios = [4]
+
+        # Separate grid plots
         if self.has_separate_grids:
             for _ in range(self.nseparate_grids): ratios.append(0.2)
-        #if self.has_lines and self.config.separate_lines: ratios.append(0.4)
+
+        # Group plots
         if self.has_groups:
             for _ in range(self.ngroups): ratios.append(0.4)
+
+        # Lines
         if self.has_lines and self.config.separate_lines: ratios.append(0.4)
+
+        # Individual wavelengths plot
         if self.has_wavelengths_not_in_group and self.config.group_wavelengths: ratios.append(0.3)
+
+        # Complete grid plot
         if self.config.separate_complete_grid: ratios.append(0.3)
+
+        # Reference grid plots
         if self.has_reference_grids:
             for _ in range(self.nreference_grids): ratios.append(0.3)
+
+        # Differences plot
         if self.config.plot_differences: ratios.append(0.2)
+
+        # Delta plot
         ratios.append(1)
+
+        # Residuals plot
+        if self.has_seds and self.config.plot_residuals: ratios.append(1)
+
+        # Return the list of ratios
         return ratios
 
     # -----------------------------------------------------------------
@@ -1046,7 +1162,14 @@ class WavelengthGridPlotter(Configurable):
         """
 
         labels = [None] * self.nrows
-        labels[-1] = r"$\Delta\lambda\,(\mathrm{dex})$"
+
+        # Delta plot
+        labels[self.delta_plot_index] = r"$\Delta\lambda\,(\mathrm{dex})$"
+
+        # Residuals
+        if self.has_seds and self.config.plot_residuals: labels[self.residuals_plot_index] = r"$\epsilon\,(\%)$"
+
+        # Return the labels
         return labels
 
     # -----------------------------------------------------------------
@@ -1165,35 +1288,108 @@ class WavelengthGridPlotter(Configurable):
         # Create subplots
         plots = self.figure.create_column(self.nrows, share_axis=True, height_ratios=self.height_ratios, x_label=self.x_label, y_labels=self.y_labels, x_limits=self.x_limits, x_scale=self.x_scale, y_limits=self.y_limits, x_log_scalar=True)
 
-        # Set plots
+        # Set main plot
         self.main = plots[0]
+
+        # Set separate grid plots
         if self.has_separate_grids: self.separate = plots[1:self.nseparate_grids + 1]
-        #if self.has_lines and self.config.separate_lines: self.lines = plots[self.nseparate_grids + 1]
+
+        # Set group plots
         if self.has_groups:
-            #if self.has_lines and self.config.separate_lines: start = self.nseparate_grids + 2
-            #else: start = self.nseparate_grids + 1
             start = self.nseparate_grids + 1
             group_plots = plots[start:start+self.ngroups]
             for name, plot in zip(self.group_names, group_plots): self.groups[name] = plot
+
+        # Set lines plot
         if self.has_lines and self.config.separate_lines: self.lines = plots[self.nseparate_grids + 1 + self.ngroups]
+
+        # Set individual wavelengths plot
         if self.has_wavelengths_not_in_group and self.config.group_wavelengths:
             if self.has_lines and self.config.separate_lines: index = self.nseparate_grids + 2 + self.ngroups
             else: index = self.nseparate_grids + 1 + self.ngroups
             self.individual = plots[index]
+
+        # Set complete grid plot
         if self.config.separate_complete_grid:
-            if self.has_reference_grids and self.config.plot_differences: index = -2-self.nreference_grids-1
-            else: index = -1-self.nreference_grids-1
+            if self.has_seds and self.config.plot_residuals: offset = -1
+            else: offset = 0
+            if self.has_reference_grids and self.config.plot_differences: index = -2 - self.nreference_grids - 1 + offset
+            else: index = -1 - self.nreference_grids - 1 + offset
             self.complete = plots[index]
+
+        # Set reference grid plots
         if self.has_reference_grids:
+            if self.has_seds and self.config.plot_residuals: offset = -1
+            else: offset = 0
             if self.has_reference_grids and self.config.plot_differences:
-                start = -2-self.nreference_grids
-                end = -2
+                start = -2 - self.nreference_grids + offset
+                end = -2 + offset
             else:
-                start = -1-self.nreference_grids
-                end = -1
+                start = -1-self.nreference_grids + offset
+                end = -1 + offset
             self.refs = plots[start:end]
-        if self.has_reference_grids and self.config.plot_differences: self.differences = plots[-2]
-        self.delta = plots[-1]
+
+        # Set differences plot
+        if self.has_reference_grids and self.config.plot_differences: self.differences = plots[self.differences_plot_index]
+
+        # Set delta plot
+        self.delta = plots[self.delta_plot_index]
+
+        # Set residuals plot
+        if self.has_seds and self.config.plot_residuals: self.residuals = plots[self.residuals_plot_index]
+
+        # Set background
+        self.set_backgrounds()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def differences_plot_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_seds and self.config.plot_residuals: return -3
+        else: return -2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def delta_plot_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_seds and self.config.plot_residuals: return -2
+        else: return -1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_plot_index(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return -1
+
+    # -----------------------------------------------------------------
+
+    def set_backgrounds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting backgrounds ...")
 
         # Fill backgrounds
         for props in self.backgrounds:
@@ -1233,14 +1429,22 @@ class WavelengthGridPlotter(Configurable):
         log.debug("Loading from subgrids wavelength grid generation ...")
 
         # Set paths
-        fixed_path = self.input_path_file("fixed_grid.dat")
-        new_path = self.input_path_file("new.dat")
-        replaced_path = self.input_path_file("replaced.dat")
-        filter_wavelengths_path = self.input_path_file("filter_wavelengths.dat")
-        line_wavelengths_path = self.input_path_file("line_wavelengths.dat")
+        if self.config.subgrids_path is not None:
+            fixed_path = fs.join(self.config.subgrids_path, "fixed_grid.dat")
+            new_path = fs.join(self.config.subgrids_path, "new.dat")
+            replaced_path = fs.join(self.config.subgrids_path, "replaced.dat")
+            filter_wavelengths_path = fs.join(self.config.subgrids_path, "filter_wavelengths.dat")
+            line_wavelengths_path = fs.join(self.config.subgrids_path, "line_wavelengths.dat")
+        else:
+            fixed_path = self.input_path_file("fixed_grid.dat")
+            new_path = self.input_path_file("new.dat")
+            replaced_path = self.input_path_file("replaced.dat")
+            filter_wavelengths_path = self.input_path_file("filter_wavelengths.dat")
+            line_wavelengths_path = self.input_path_file("line_wavelengths.dat")
 
         # Add the subgrid files
-        self.add_subgrids_in_path(self.input_path)
+        if self.config.subgrids_path is not None: self.add_subgrids_in_path(self.config.subgrids_path)
+        else: self.add_subgrids_in_path(self.input_path)
 
         # Check which files are present
         has_fixed = fs.is_file(fixed_path)
@@ -1457,6 +1661,9 @@ class WavelengthGridPlotter(Configurable):
 
         # Load
         fixed_grid = WavelengthGrid.from_file(path)
+        if len(fixed_grid) == 0:
+            log.warning("No points in the fixed wavelength grid: skipping ...")
+            return
 
         # Add
         self.add_fixed_grid(fixed_grid)
@@ -1599,7 +1806,7 @@ class WavelengthGridPlotter(Configurable):
                 wavelengths = filter_wavelengths[fltr]
                 nwavelengths = len(wavelengths)
                 if nwavelengths == 1: continue
-                print(wavelengths)
+                #print(wavelengths)
                 wavelength_range = QuantityRange.limits(wavelengths)
                 filter_ranges[fltr] = wavelength_range
         else: filter_ranges = None
@@ -1958,6 +2165,18 @@ class WavelengthGridPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def log_all_grid_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.log10(self.all_grid_wavelengths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def complete_grid(self):
 
         """
@@ -2099,6 +2318,336 @@ class WavelengthGridPlotter(Configurable):
         """
 
         return QuantityRange(self.grid_min_wavelength, self.grid_max_wavelength, unit=self.config.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        wavelengths = dict()
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Get the wavelengths array
+            warray = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
+
+            # Add to the dictionary
+            wavelengths[label] = warray
+
+        # Return the dictionary
+        return wavelengths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_sed_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        log_wavelengths = dict()
+
+        # Loop over the SEDs
+        for label in self.seds: log_wavelengths[label] = np.log10(self.sed_wavelengths[label])
+
+        # Return
+        return log_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fluxes = dict()
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Get the fluxes
+            farray = self.seds[label].normalized_photometry(method="max", asarray=True)
+
+            # Add to the dictionary
+            fluxes[label] = farray
+
+        # Return the dictionary
+        return fluxes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_sed_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        log_fluxes = dict()
+
+        # Loop over the SEDs
+        for label in self.seds: log_fluxes[label] = np.log10(self.sed_fluxes[label])
+
+        # Return
+        return log_fluxes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_grid_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fluxes = dict()
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Get the fluxes
+            farray = self.seds[label].normalized_photometry(method="max", asarray=True)
+
+            # Calculate interpolated (resampled) values
+            interpolated = nr.resample_log_log(self.all_grid_wavelengths, self.sed_wavelengths[label], farray)
+
+            # Add to the dictionary
+            fluxes[label] = interpolated
+
+        # Return the dictionary
+        return fluxes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_sed_grid_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        log_fluxes = dict()
+
+        # Loop over the SEDs
+        for label in self.seds: log_fluxes[label] = np.log10(self.sed_grid_fluxes[label])
+
+        # Return
+        return log_fluxes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_interpolated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fluxes = dict()
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Create interpolation function from grid fluxes in log space
+            f2 = interp1d(self.log_all_grid_wavelengths, self.log_sed_grid_fluxes[label], kind=self.config.interpolation_method, bounds_error=False, fill_value=float("NaN"))
+
+            # Evaluate the function at the original wavelengths of the SED
+            #wavelengths = self.sed_wavelengths[label]
+            log_wavelengths = self.log_sed_wavelengths[label]
+            log_interpolated = f2(log_wavelengths)
+            interpolated = 10**log_interpolated
+
+            # Set the interpolated fluxes
+            fluxes[label] = interpolated
+
+        # Return the interpolated fluxes
+        return fluxes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        residuals = dict()
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Get the original fluxes and original wavelengths
+            #wavelengths = self.sed_wavelengths[label]
+            fluxes = self.sed_fluxes[label]
+
+            # Get the interpolated fluxes
+            interpolated = self.sed_interpolated_fluxes[label]
+
+            # Calculate residuals
+            res = (interpolated - fluxes) / fluxes
+
+            # Add residuals
+            residuals[label] = res
+
+        # Return
+        return residuals
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_residuals_percentual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        residuals = dict()
+        for label in self.seds: residuals[label] = self.sed_residuals[label] * 100
+        return residuals
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_sed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        minima = dict()
+
+        # Loop over the SEDs
+        for label in self.seds: minima[label] = np.nanmin(self.sed_residuals[label])
+
+        # Return the minima
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_sed_residuals_percentual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        minima = dict()
+        for label in self.seds: minima[label] = self.min_sed_residuals[label] * 100.
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_sed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maxima = dict()
+
+        # Loop over the SEDs
+        for label in self.seds: maxima[label] = np.nanmax(self.sed_residuals[label])
+
+        # Return the maxima
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_sed_residuals_percentual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maxima = dict()
+        for label in self.seds: maxima[label] = self.max_sed_residuals[label] * 100.
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_residual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        minimum = None
+
+        # Loop over the SEDs
+        for label in self.seds:
+            if minimum is None or self.min_sed_residuals[label] < minimum:
+                minimum = self.min_sed_residuals[label]
+
+        return minimum
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_residual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maximum = None
+
+        # Loop over the SEDs
+        for label in self.seds:
+            if maximum is None or self.max_sed_residuals[label] > maximum:
+                maximum = self.max_sed_residuals[label]
+
+        return maximum
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_residual_percentual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.min_residual * 100.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_residual_percentual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.max_residual * 100.
 
     # -----------------------------------------------------------------
 
@@ -2446,7 +2995,10 @@ class WavelengthGridPlotter(Configurable):
         # 10. Wavelength ranges
         if self.has_ranges: self.plot_ranges()
 
-        # 11. Finish
+        # 11. Residuals
+        if self.has_seds and self.config.plot_residuals: self.plot_residuals()
+
+        # 12. Finish
         self.finish_plot()
 
     # -----------------------------------------------------------------
@@ -2864,9 +3416,9 @@ class WavelengthGridPlotter(Configurable):
                 else: raise ValueError("Invalid tag position")
 
                 # Plot text
-                if group is not None: t = self.groups[group].text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w')
-                elif separate: t = self.separate[separate_index].text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w')
-                else: t = self.main.text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w')
+                if group is not None: t = self.groups[group].text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w', zorder=200)
+                elif separate: t = self.separate[separate_index].text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w', zorder=200)
+                else: t = self.main.text(center, tag_y_value, label, horizontalalignment='center', fontsize='xx-small', color=color, backgroundcolor='w', zorder=200)
 
                 # Set text box properties
                 t.set_bbox(dict(color='w', alpha=self.tag_label_alpha, edgecolor='w'))
@@ -3201,8 +3753,10 @@ class WavelengthGridPlotter(Configurable):
             log.debug("Adding '" + label + "' SED to the plot ...")
 
             # Get the wavelengths and fluxes array
-            wavelengths = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
-            fluxes = self.seds[label].normalized_photometry(method="max")
+            #wavelengths = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
+            #fluxes = self.seds[label].normalized_photometry(method="max")
+            wavelengths = self.sed_wavelengths[label]
+            fluxes = self.sed_fluxes[label]
 
             nonzero = fluxes != 0
             wavelengths = wavelengths[nonzero]
@@ -3227,7 +3781,8 @@ class WavelengthGridPlotter(Configurable):
             #minlogflux = np.mean(logfluxes)
             logfluxes = logfluxes - minlogflux
 
-            logfluxes = logfluxes / np.max(logfluxes)
+            maxlogflux = np.max(logfluxes)
+            logfluxes = logfluxes / maxlogflux
 
             log_fluxes = self.seds_min_y + logfluxes  # normalized
             #log_fluxes = logfluxes
@@ -3246,6 +3801,40 @@ class WavelengthGridPlotter(Configurable):
 
             # Add handle
             handles.append(handle)
+
+            # Plot resampled
+            if self.config.plot_resampled:
+
+                resampled = self.sed_grid_fluxes[label]
+                logresampled = np.log10(resampled)
+                logresampled = logresampled - minlogflux
+                logresampled = logresampled / maxlogflux
+                logresampled = self.seds_min_y + logresampled
+
+                pointsize = 15
+                pointcolor = "black"
+
+                # wavelengths, y, s=pointsize, marker='.', color=color, linewidths=0, label=legend_label
+                self.main.scatter(self.all_grid_wavelengths, logresampled, s=pointsize, marker=".", color=pointcolor, linewidths=0, zorder=100) # make sure is above all lines
+
+            # Plot interpolated
+            if self.config.plot_interpolated:
+
+                # Get resampled, mask out
+                resampled = self.sed_interpolated_fluxes[label][nonzero][not_outside]
+
+                # Normalize in the same way
+                logresampled = np.log10(resampled)
+                logresampled = logresampled - minlogflux
+                logresampled = logresampled / maxlogflux
+                logresampled = self.seds_min_y + logresampled
+
+                #line_style = '--'
+                linewidth = 0.8 * self.sed_linewidth
+                color = "grey"
+
+                # Plot
+                self.main.plot(wavelengths, logresampled, color=color, lw=linewidth, ls=line_style, alpha=self.sed_linealpha)
 
         # Create the legend
         labels = [handle.get_label() for handle in handles]
@@ -4059,6 +4648,43 @@ class WavelengthGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting SED residuals ...")
+
+        # Get colours for the SEDs
+        colours = iter(self.seds_colours)
+
+        # Loop over the SEDs
+        for label in self.seds:
+
+            # Debugging
+            log.debug("Adding '" + label + "' SED residuals to the plot ...")
+
+            # Get the wavelengths and fluxes array
+            #wavelengths = self.seds[label].wavelengths(unit=self.config.wavelength_unit, asarray=True)
+            #fluxes = self.seds[label].normalized_photometry(method="max")
+
+            # Get the wavelengths and residuals
+            wavelengths = self.sed_wavelengths[label]
+            residuals = self.sed_residuals_percentual[label]
+
+            # Get colour and line style
+            color = next(colours)
+            line_style = "-"
+
+            # Plot the residuals
+            h = self.residuals.plot(wavelengths, residuals, color=color, lw=self.sed_linewidth, label=label, ls=line_style, alpha=self.sed_linealpha)
+            #handle = h[0]
+
+    # -----------------------------------------------------------------
+
     def finish_plot(self):
 
         """
@@ -4072,17 +4698,7 @@ class WavelengthGridPlotter(Configurable):
         # Set the title
         if self.title is not None: self.figure.set_title(self.title, width=60)  # self._figure.suptitle("\n".join(wrap(self.title, 60)))
 
-        # # Save or show the plot
-        # # if self.out_path is None: self.figure.show()
-        # if self.config.show:
-        #     #self.figure.show()
-        #     log.debug("Showing the SED plot ...")
-        #     plt.show()
-        #     plt.close()
-        #
-        # # Save the figure
-        # if self.out_path is not None: self.save_figure()
-
+        # Plot
         self.figure.finish(out=self.out_path)
 
     # -----------------------------------------------------------------

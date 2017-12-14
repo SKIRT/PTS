@@ -126,4 +126,9 @@ definition.add_optional("covering_factor", "positive_real", "covering factor for
 # Bruzual-Charlot
 definition.add_optional("ages", "time_quantity_list", "ages for Bruzual-Charlot templates", default_ages, convert_default=True)
 
+# Plot residuals and resampled SEDs
+definition.add_flag("plot_resampled", "plot the SEDs resampled on the complete wavelength grid", False)
+definition.add_flag("plot_interpolated", "plot the SEDs interpolated", False)
+definition.add_flag("plot_residuals", "plot the residuals between the original SEDs and the resampled SEDs", False)
+
 # -----------------------------------------------------------------

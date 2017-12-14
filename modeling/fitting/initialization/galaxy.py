@@ -583,6 +583,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.basic_generator.config.write_elements = True
         self.basic_generator.config.write_table = False
 
+        # Advanced
+        self.basic_generator.config.plot_resampled = True
+        self.basic_generator.config.plot_residuals = True
+
         # Other
         self.basic_generator.config.label = "basic"
 
@@ -676,6 +680,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.refined_generator.config.write_elements = True
         self.refined_generator.config.write_table = False
 
+        # Advanced
+        self.refined_generator.config.plot_resampled = True
+        self.refined_generator.config.plot_residuals = True
+
         # Other
         self.refined_generator.config.label = "refined"
 
@@ -768,6 +776,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         self.highres_generator.config.write_grids = True
         self.highres_generator.config.write_elements = True
         self.highres_generator.config.write_table = False
+
+        # Advanced
+        self.highres_generator.config.plot_resampled = True
+        self.highres_generator.config.plot_residuals = True
 
         # Other
         self.highres_generator.config.label = "highres"

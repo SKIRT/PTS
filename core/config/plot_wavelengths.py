@@ -57,6 +57,7 @@ definition.add_positional_optional("grids", "filepath_list", "wavelength grids t
 definition.add_flag("load_subgrids", "plot from the output of subgrid wavelength grid generation in the working directory")
 definition.add_flag("create_subgrids", "generate subgrid wavelength grid")
 definition.add_optional("subgrids", "string_list", "subgrids to load", default=subgrids, choices=subgrids)
+definition.add_optional("subgrids_path", "directory_path", "path of the directory containing the subgrids files")
 
 # Set adjust wavelengths
 adjust_wavelengths = [fltr.wavelength for fltr in default_filters]
@@ -144,10 +145,29 @@ definition.add_optional("lines_in_group", "string", "plot the emission lines tog
 definition.add_flag("separate_lines", "plot the emission lines separately", False)
 definition.add_flag("mark_removed", "mark removed wavelengths", False)
 definition.add_flag("plot_differences", "plot differences between complete grid and reference grid (only for one reference)")
+definition.add_flag("plot_resampled", "plot the SEDs resampled on the complete wavelength grid", False)
+definition.add_flag("plot_interpolated", "plot the SEDs interpolated on the original SED wavelengths, from the resampled points", False)
+definition.add_flag("plot_residuals", "plot the residuals between the original SEDs and the resampled SEDs", False)
+
+interpolation_methods = ["linear", "nearest", "zero", "slinear", "quadratic", "cubic"]
+default_interpolation_method = "linear"
+definition.add_optional("interpolation_method", "string", "interpolation method", default_interpolation_method, choices=interpolation_methods)
 
 # -----------------------------------------------------------------
 
 definition.add_flag("show", "show the plot (default is automatic)", None)
 definition.add_flag("write", "write grids", False)
+
+# -----------------------------------------------------------------
+
+default_format = "pdf"
+formats = ["png", "pdf"]
+
+# -----------------------------------------------------------------
+
+# The output directory
+definition.add_optional("output", "directory_path", "output directory", letter="o")
+definition.add_optional("filename", "string", "output file name", "grid")
+definition.add_optional("format", "string", "file format", default=default_format, choices=formats)
 
 # -----------------------------------------------------------------

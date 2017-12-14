@@ -606,7 +606,8 @@ class Distribution(object):
 
         x, y_cumulative = self.cumulative_smooth(x_min, x_max)
 
-        index = locate_clip(y_cumulative, uniform)
+        from ..tools import nr
+        index = nr.locate_clip(y_cumulative, uniform)
 
         return x[index]
 
@@ -1076,45 +1077,6 @@ def get_local_minima(x, y):
     y_minima = [y[i] for i in m]
 
     return x_minima, y_minima
-
-# -----------------------------------------------------------------
-
-def locate_clip(array, value):
-
-    """
-    This function ...
-    :param array: actually a list
-    :param value:
-    :return:
-    """
-
-    #n = array.size
-    n = len(array)
-    if value < array[0]: return 0
-    return locate_basic_impl(array, value, n-1)
-
-# -----------------------------------------------------------------
-
-def locate_basic_impl(xv, x, n):
-
-    """
-    This function ...
-    :param xv:
-    :param x:
-    :param n:
-    :return:
-    """
-
-    jl = -1
-    ju = n
-
-    while ju - jl > 1:
-
-        jm = (ju + jl) >> 1
-        if x < xv[jm]: ju = jm
-        else: jl = jm
-
-    return jl
 
 # -----------------------------------------------------------------
 

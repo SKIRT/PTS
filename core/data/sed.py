@@ -399,12 +399,13 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def normalized_photometry(self, value=1.0, method="integral"):
+    def normalized_photometry(self, value=1.0, method="integral", asarray=False):
 
         """
         This function ...
         :param value:
         :param method:
+        :param asarray:
         :return:
         """
 
@@ -417,7 +418,8 @@ class SED(WavelengthCurve):
             factor = value / max_value
 
             # Return the normalized data
-            return photometry * factor
+            if asarray: return photometry * factor
+            else: return list(photometry * factor)
 
         # Integral method
         elif method == "integral": raise NotImplementedError("Not implemented yet")

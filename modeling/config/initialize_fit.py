@@ -18,13 +18,13 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-default_npoints_range_basic = "50>200"
+default_npoints_range_basic = "50>250"
 default_npoints_range_refined = "50>250"
 default_npoints_range_highres = "150>400"
 
 # -----------------------------------------------------------------
 
-default_ngrids_basic = 5
+default_ngrids_basic = 6
 default_ngrids_refined = 5
 default_ngrids_highres = 4
 
@@ -42,6 +42,10 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
 elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
 else: definition.add_required("name", "string", "name of the fitting run", runs.names)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("regenerate_wavelength_grids", "regenerate the wavelength grids", False)
 
 # -----------------------------------------------------------------
 

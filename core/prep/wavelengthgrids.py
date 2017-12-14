@@ -1019,6 +1019,11 @@ class WavelengthGridGenerator(Configurable):
             plotter.config.separate_lines = True
             plotter.config.mark_removed = True
 
+            # Plot resampled and residuals
+            plotter.config.plot_resampled = self.config.plot_resampled
+            plotter.config.plot_interpolated = self.config.plot_interpolated
+            plotter.config.plot_residuals = self.config.plot_residuals
+
             # Add the elements
             plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced,
                                  new=new, line_wavelengths=line_wavelengths)
