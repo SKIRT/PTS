@@ -4315,10 +4315,14 @@ class WavelengthGridPlotter(Configurable):
         # Set line colours and styles list
         if self.config.separate_lines or self.config.lines_in_group:
 
-            if self.nseparate_line_colours > self.nlines:
+            #print(self.nseparate_line_colours, self.nlines)
+
+            if self.nlines > self.nseparate_line_colours:
 
                 factor_more = float(self.nlines) / float(self.nseparate_line_colours)
+                #print(factor_more)
                 int_factor_more = int(math.ceil(factor_more))
+                #print(int_factor_more)
                 line_colours = self.separate_line_colours * int_factor_more
                 linestyles = sequences.repeat(line_styles, self.nseparate_line_colours)
 
