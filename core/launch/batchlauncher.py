@@ -167,6 +167,10 @@ class BatchLauncher(Configurable):
         # The desired number of processes
         self.nprocesses_local = None
 
+        # Flag for data parallelization
+        self.data_parallel_local = None
+        self.data_parallel_hosts = dict()
+
         # The memory usage (if defined, assumed to be the same for each simulation of the batch)
         self.memory = None
 
@@ -828,6 +832,18 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_nprocesses_local(self, nprocesses):
+
+        """
+        This function ...
+        :param nprocesses:
+        :return:
+        """
+
+        self.nprocesses_local = nprocesses
+
+    # -----------------------------------------------------------------
+
     def set_nprocesses_for_host(self, host_id, nprocesses):
 
         """
@@ -853,6 +869,31 @@ class BatchLauncher(Configurable):
 
         # Set the number of processes per node for the specified host
         self.nprocesses_per_node_hosts[host_id] = nprocesses
+
+    # -----------------------------------------------------------------
+
+    def set_data_parallel_local(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.data_parallel_local = value
+
+    # -----------------------------------------------------------------
+
+    def set_data_parallel_for_host(self, host_id, value):
+
+        """
+        This function ...
+        :param host_id:
+        :param value:
+        :return:
+        """
+
+        self.data_parallel_hosts[host_id] = value
 
     # -----------------------------------------------------------------
 
@@ -1448,8 +1489,11 @@ class BatchLauncher(Configurable):
         log.debug("The number of thread per core is " + str(threads_per_core))
         log.debug("The number of processes is " + str(processes))
 
+        if self.data_parallel_local is not None: data_parallel = self.data_parallel_local
+        else: data_parallel = self.config.data_parallel_local
+
         # Set the parallelization scheme
-        self.parallelization_local = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
+        self.parallelization_local = Parallelization(cores, threads_per_core, processes, data_parallel=data_parallel)
 
         # Debugging
         log.debug("The parallelization scheme for local execution is " + str(self.parallelization_local))
@@ -1462,6 +1506,9 @@ class BatchLauncher(Configurable):
         Thisj function ...
         :return:
         """
+
+        if self.data_parallel_local is not None: data_parallel = self.data_parallel_local
+        else: data_parallel = self.config.data_parallel_local
 
         # Loop over the simulations in the local queue
         for definition, simulation_name, _ in self.local_queue:
@@ -1485,7 +1532,7 @@ class BatchLauncher(Configurable):
                 memory = estimate_memory(definition.ski_path, input_path=definition.input_path, ncells=self.ncells)
 
                 # Determine the number of possible nprocesses
-                processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), memory.serial, memory.parallel, data_parallel=self.config.data_parallel_local)
+                processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), memory.serial, memory.parallel, data_parallel=data_parallel)
 
             # Calculate the maximum number of threads per process based on the current cpu load of the system
             free_cpus = monitoring.free_cpus()
@@ -1508,7 +1555,7 @@ class BatchLauncher(Configurable):
             log.debug("The number of processes is " + str(processes))
 
             # Set the parallelization scheme
-            parallelization_simulation = Parallelization(cores, threads_per_core, processes, data_parallel=self.config.data_parallel_local)
+            parallelization_simulation = Parallelization(cores, threads_per_core, processes, data_parallel=data_parallel)
 
             # Debugging
             log.debug("The parallelization scheme for the '" + simulation_name + "' simulation in the local queue is " + str(parallelization_simulation))
@@ -2264,8 +2311,12 @@ class BatchLauncher(Configurable):
         threads_per_core = prop.threads_per_core if prop.hyperthreading else 1
         threads_per_process = threads_per_core * ncores_per_process
 
-        # Determine data-parallel flag
-        if self.config.data_parallel_remote is None:
+        # Set data parallelization flag
+        if host_id in self.data_parallel_hosts: data_parallel = self.data_parallel_hosts[host_id]
+        elif self.config.data_parallel_remote is not None: data_parallel = self.config.data_parallel
+        else:
+
+            # Determine data-parallel flag
 
             # User thinks all simulations have the same requirements
             if self.config.same_requirements: data_parallel = self.get_first_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_first_dustlib_dimension_for_host(host_id) == 3 # assured to be safe even if simulations differ
@@ -2275,9 +2326,6 @@ class BatchLauncher(Configurable):
 
             # Not data-parallel
             else: data_parallel = False
-
-        # Up to the user
-        else: data_parallel = self.config.data_parallel_remote
 
         # Create the parallelization object
         parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
@@ -2311,14 +2359,19 @@ class BatchLauncher(Configurable):
         threads_per_process = threads_per_core * ncores_per_process
         total_ncores = prop.nnodes * prop.nsockets * prop.ncores
 
-        # Determine data-parallel flag
-        if self.config.data_parallel_remote is None:
+        # Set data parallelization flag
+        if host_id in self.data_parallel_hosts: data_parallel = self.data_parallel_hosts[host_id]
+        elif self.config.data_parallel_remote is not None: data_parallel = self.config.data_parallel
+        else:
+
+            # Determine data-parallel flag
+            #if self.config.data_parallel_remote is None:
 
             if self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True
             else: data_parallel = False
 
         # Up to the user
-        else: data_parallel = self.config.data_parallel_remote
+        #else: data_parallel = self.config.data_parallel_remote
 
         # Create the parallelization object
         parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
@@ -2337,6 +2390,8 @@ class BatchLauncher(Configurable):
         :param host_id:
         :return:
         """
+
+        # TODO: use data parallelization flags?
 
         # Debugging
         log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")
@@ -2362,7 +2417,7 @@ class BatchLauncher(Configurable):
                                                     nwavelengths=nwavelengths)
 
         # Show
-        log.debug("The parallelization scheme for the '" + host_id + "' host is " + str(parallelization))
+        log.debug("The parallelization scheme for the '" + host_id + "' host is a " + str(parallelization))
 
         # Set the parallelization scheme for this host
         self.set_parallelization_for_host(host_id, parallelization)
@@ -2376,6 +2431,8 @@ class BatchLauncher(Configurable):
         :param host_id: 
         :return: 
         """
+
+        # TODO: use data parallelization flags?
 
         # Debugging
         log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")

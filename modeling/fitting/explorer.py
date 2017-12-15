@@ -589,6 +589,44 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nremotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.config.remotes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.launcher.has_single_remote
+        return self.nremotes == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_host_id(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if not self.has_single_remote: raise RuntimeError("Not a single remote host")
+        return self.config.remotes[0]
+
+    # -----------------------------------------------------------------
+
     def set_simulation_options(self):
 
         """
@@ -605,6 +643,22 @@ class ParameterExplorer(FittingComponent):
         ## Logging
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
+
+        # Set number of local processes
+        self.launcher.set_nprocesses_local(self.config.nprocesses_local)
+
+        # Set number of remote processes
+        if self.config.nprocesses_remote is not None:
+            if not self.has_single_remote: raise ValueError("Cannot specify number of remote processes when using more than one remote host")
+            self.launcher.set_nprocesses_for_host(self.single_host_id, self.config.nprocesses_remote)
+
+        # Set data parallel flag for local execution
+        self.launcher.set_data_parallel_local(self.config.data_parallel_local)
+
+        # Set data parallel flag for remote execution
+        if self.config.data_parallel_remote is not None:
+            if not self.has_single_remote: raise ValueError("Cannot set data parallelization flag when using more than one remote host")
+            self.launcher.set_data_parallel_for_host(self.single_host_id, self.config.data_parallel_remote)
 
     # -----------------------------------------------------------------
 

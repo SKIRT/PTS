@@ -78,10 +78,11 @@ definition.add_flag("use_images", "use images for evaluating the simulations", N
 
 # -----------------------------------------------------------------
 
-# Parallelization options
-definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
-definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
-definition.add_flag("data_parallel", "data parallelization mode", False)
+# The number of parallel processes
+definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
+definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
+definition.add_flag("data_parallel_local", "use data-parallelization", False)
+definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
 
 # -----------------------------------------------------------------
 

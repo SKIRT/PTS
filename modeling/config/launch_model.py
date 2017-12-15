@@ -116,7 +116,7 @@ definition.add_flag("check_dust_grid_quality", "check the quality of the dust gr
 
 # -----------------------------------------------------------------
 
-# The number of parallel processes for local execution
+# The number of parallel processes
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
