@@ -844,7 +844,8 @@ def str_from_real(real, **kwargs):
     if scientific:
         if fancy:
             if ndigits is not None:
-                power = len(str(real).split(".")[0]) - 1
+                if "e" in str(real): power = int(str(real).split("e")[1])
+                else: power = len(str(real).split(".")[0]) - 1
                 digits = []
                 rounded = numbers.round_to_n_significant_digits(real, ndigits)
                 str_rounded = str(rounded)

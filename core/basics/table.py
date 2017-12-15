@@ -438,15 +438,19 @@ class SmartTable(Table):
 
         """
         This function ...
+        :param values:
         :return:
         """
 
         new_sizes = dict()
 
+        #print(values)
+
         colnames = self.colnames
         for index in range(len(colnames)):
 
             colname = colnames[index]
+            #print(colname, values[index])
 
             dtype_str = str(self[colname].dtype)
 

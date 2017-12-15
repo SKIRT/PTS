@@ -287,6 +287,8 @@ class ModelGenerator(FittingComponent):
 
         # Get scales for different free parameters
         if "scales" in kwargs: self.scales = kwargs.pop("scales")
+        else: self.scales = self.config.scales
+        #if self.scales is None: raise ValueError("Scales are not defined")
 
         # Get parameter ranges
         if "parameter_ranges" in kwargs: self.ranges = kwargs.pop("parameter_ranges")

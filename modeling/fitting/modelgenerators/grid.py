@@ -107,28 +107,28 @@ class GridModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
-    @property
-    def parameter_scales(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        scales = dict()
-
-        # Loop over the free parameter
-        for label in self.fitting_run.free_parameter_labels:
-
-            # Check whether scales were given as input
-            if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
-            elif self.config.scales is not None and label in self.config.scales: scales[label] = self.config.scales[label]
-            else: #raise ValueError("Scale was not set for '" + label + "'")
-                # Take from grid fitting configuration
-                scales[label] = self.fitting_run.grid_settings[label + "_scale"]
-
-        # Return the scales
-        return scales
+    # @property
+    # def parameter_scales(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     scales = dict()
+    #
+    #     # Loop over the free parameter
+    #     for label in self.fitting_run.free_parameter_labels:
+    #
+    #         # Check whether scales were given as input
+    #         if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
+    #         elif self.config.scales is not None and label in self.config.scales: scales[label] = self.config.scales[label]
+    #         else: #raise ValueError("Scale was not set for '" + label + "'")
+    #             # Take from grid fitting configuration
+    #             scales[label] = self.fitting_run.grid_settings[label + "_scale"]
+    #
+    #     # Return the scales
+    #     return scales
 
     # -----------------------------------------------------------------
 
@@ -141,9 +141,10 @@ class GridModelGenerator(ModelGenerator):
         """
 
         # Check whether scales were given as input
-        if self.scales is not None and label in self.scales: return self.scales[label]
-        elif self.config.scales is not None and label in self.config.scales: return self.config.scales[label]
-        else: raise ValueError("Scale was not set for '" + label + "'")
+        #if self.scales is not None and label in self.scales: return self.scales[label]
+        #elif self.config.scales is not None and label in self.config.scales: return self.config.scales[label]
+        #else: raise ValueError("Scale was not set for '" + label + "'")
+        return self.scales[label]
 
     # -----------------------------------------------------------------
 
@@ -233,7 +234,7 @@ class GridModelGenerator(ModelGenerator):
         log.debug("Generating grid points ...")
 
         # Generate as dictionary
-        points_per_parameter = self.generate_grid_points_different_scales(self.parameter_scales, npoints=self.npoints,
+        points_per_parameter = self.generate_grid_points_different_scales(self.scales, npoints=self.npoints,
                                                                          most_sampled=self.config.most_sampled_parameters,
                                                                          weights=self.config.sampling_weights)  # returns dictionary
 

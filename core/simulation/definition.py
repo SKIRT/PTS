@@ -189,6 +189,7 @@ class SingleSimulationDefinition(SimulationDefinition):
         :return:
         """
 
+        #print(self.input_path)
         return self.ski.nwavelengthsfile(self.input_path) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
 
     # -----------------------------------------------------------------

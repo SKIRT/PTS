@@ -278,6 +278,9 @@ class GenerationsTable(SmartTable):
         # If not called from astropy
         if not from_astropy:
 
+            # name, index, timestamp, method, wavelength_grid_name, representation, nsimulations,
+            # npackages, selfabsorption, transientheating, spectralconvolution, use_images
+
             self.add_column_info("Generation name", str, None, "name for the generation")
             self.add_column_info("Generation index", int, None, "index of the generation")
             self.add_column_info("Launching time", str, None, "time of launching the generation simulations")
@@ -289,6 +292,7 @@ class GenerationsTable(SmartTable):
             self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
             self.add_column_info("Transient heating", bool, None, "transient heating enabled")
             self.add_column_info("Spectral convolution", bool, None, "spectral convolution enabled")
+            self.add_column_info("Use images", bool, None, "use images")
 
             # RANGES
             # Loop over the parameters

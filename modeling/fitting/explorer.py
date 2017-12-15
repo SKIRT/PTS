@@ -1086,11 +1086,37 @@ class ParameterExplorer(FittingComponent):
         # Run the model generator
         self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges,
                            fixed_initial_parameters=self.fixed_initial_parameters, generation=self.generation,
-                           scales=self.scales, most_sampled_parameters=self.most_sampled_parameters,
+                           scales=self.parameter_scales, most_sampled_parameters=self.most_sampled_parameters,
                            sampling_weights=self.sampling_weights, npoints=self.npoints)
 
         # Set the actual number of simulations for this generation
         self.generation_info.nsimulations = self.nmodels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_scales(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scales = dict()
+
+        # Loop over the free parameter
+        for label in self.fitting_run.free_parameter_labels:
+
+            # Check whether scales were given as input
+            if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
+            #elif self.config.scales is not None and label in self.config.scales: scales[label] = self.config.scales[label]
+            #else: #raise ValueError("Scale was not set for '" + label + "'")
+            #    # Take from grid fitting configuration
+            #    scales[label] = self.fitting_run.grid_settings[label + "_scale"]
+            else: scales[label] = self.fitting_run.grid_settings[label + "_scale"]
+
+        # Return the scales
+        return scales
 
     # -----------------------------------------------------------------
 
@@ -1381,7 +1407,7 @@ class ParameterExplorer(FittingComponent):
         if self.use_file_tree_dust_grid: self.simulation_input.add_file(self.representation.dust_grid_tree_path)
 
         # Determine and set the path to the appropriate wavelength grid file
-        self.simulation_input.add_file(self.wavelength_grid_path)
+        self.simulation_input.add_file(self.wavelength_grid_path, name="wavelengths.txt")
 
         # Debugging
         log.debug("The wavelength grid for the simulations contains " + str(self.nwavelengths) + " wavelength points")
@@ -2024,7 +2050,8 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the generations table ...")
 
         # Add an entry to the generations table
-        self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges, self.scales)
+        #print(self.parameter_scales)
+        self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges, self.parameter_scales)
 
         # Save the table
         self.fitting_run.generations_table.save()
