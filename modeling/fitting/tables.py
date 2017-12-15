@@ -282,12 +282,13 @@ class GenerationsTable(SmartTable):
             self.add_column_info("Generation index", int, None, "index of the generation")
             self.add_column_info("Launching time", str, None, "time of launching the generation simulations")
             self.add_column_info("Method", str, None, "method used for model generation")
-            self.add_column_info("Wavelength grid level", int, None, "level of the wavelength gid")
+            self.add_column_info("Wavelength grid name", str, None, "name of the wavelength gid")
             self.add_column_info("Model representation", str, None, "representation of the model")
             self.add_column_info("Number of simulations", int, None, "number of simulations (individuals) in the generation")
             self.add_column_info("Number of photon packages", int, None, "number of photon packages per wavelength")
             self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
             self.add_column_info("Transient heating", bool, None, "transient heating enabled")
+            self.add_column_info("Spectral convolution", bool, None, "spectral convolution enabled")
 
             # RANGES
             # Loop over the parameters
@@ -723,20 +724,22 @@ class GenerationsTable(SmartTable):
         name = generation_info.name
         index = generation_info.index
         method = generation_info.method
-        wg_level = generation_info.wavelength_grid_level
+        wg_name = generation_info.wavelength_grid_name
         representation = generation_info.model_representation_name
         nsimulations = generation_info.nsimulations
         npackages = generation_info.npackages
         selfabsorption = generation_info.selfabsorption
         transientheating = generation_info.transient_heating
+        spectralconvolution = generation_info.spectral_convolution
+        use_images = generation_info.use_images
 
         # Call other function
-        self.add_entry_impl(name, index, timestamp, method, wg_level, representation, nsimulations, npackages, selfabsorption, transientheating, ranges, scales)
+        self.add_entry_impl(name, index, timestamp, method, wg_name, representation, nsimulations, npackages, selfabsorption, transientheating, use_images, spectralconvolution, ranges, scales)
 
     # -----------------------------------------------------------------
 
-    def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_level, representation, nsimulations, npackages,
-                  selfabsorption, transientheating, ranges, scales):
+    def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_name, representation, nsimulations, npackages,
+                  selfabsorption, transientheating, spectralconvolution, use_images, ranges, scales):
 
         """
         This function ...
@@ -744,18 +747,20 @@ class GenerationsTable(SmartTable):
         :param index:
         :param timestamp:
         :param method:
-        :param wavelength_grid_level:
+        :param wavelength_grid_name:
         :param representation:
         :param nsimulations:
         :param npackages:
         :param selfabsorption:
         :param transientheating:
+        :param spectralconvolution:
+        :param use_images:
         :param ranges:
         :param scales:
         :return:
         """
 
-        values = [name, index, timestamp, method, wavelength_grid_level, representation, nsimulations, npackages, selfabsorption, transientheating]
+        values = [name, index, timestamp, method, wavelength_grid_name, representation, nsimulations, npackages, selfabsorption, transientheating, spectralconvolution, use_images]
 
         # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for label in self.parameter_labels:

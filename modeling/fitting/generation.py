@@ -48,12 +48,14 @@ class GenerationInfo(SimplePropertyComposite):
         self.add_string_property("name", "name of the generation")
         self.add_integer_property("index", "index of the generation")
         self.add_string_property("method", "generation method")
-        self.add_integer_property("wavelength_grid_level", "wavelength grid level")
+        self.add_string_property("wavelength_grid_name", "wavelength grid name")
         self.add_string_property("model_representation_name", "model representation name")
         self.add_integer_property("nsimulations", "number of simulations")
         self.add_integer_property("npackages", "number of packages")
         self.add_boolean_property("selfabsorption", "dust self-absorption enabled")
         self.add_boolean_property("transient_heating", "transient heating enabled")
+        self.add_boolean_property("spectral_convolution", "spectral convolution enabled")
+        self.add_boolean_property("use_images", "use images")
         self.add_string_property("path", "generation path")
 
         # Set properties
@@ -211,14 +213,14 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
-    def wavelength_grid_level(self):
+    def wavelength_grid_name(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.info.wavelength_grid_level
+        return self.info.wavelength_grid_name
 
     # -----------------------------------------------------------------
 
@@ -317,6 +319,30 @@ class Generation(object):
         """
 
         return self.info.transient_heating
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_convolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.use_images
 
     # -----------------------------------------------------------------
 

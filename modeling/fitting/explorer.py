@@ -34,7 +34,7 @@ from ...core.tools import introspection
 from ...core.tools import parallelization as par
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
-from ...core.basics.configuration import prompt_proceed
+from ...core.basics.configuration import prompt_proceed, prompt_integer
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.utils import lazyproperty
 from ...core.prep.deploy import Deployer
@@ -76,9 +76,6 @@ class ParameterExplorer(FittingComponent):
         # The generation object
         self.generation = None
 
-        # The model representation to use
-        self.representation = None
-
         # The individuals table
         self.individuals_table = None
 
@@ -106,9 +103,6 @@ class ParameterExplorer(FittingComponent):
 
         # A dictionary with the scheduling options for the different remote hosts
         self.scheduling_options = dict()
-
-        # The number of wavelengths used
-        self.nwavelengths = None
 
         # Extra input for the model generator
         self.scales = None
@@ -197,6 +191,18 @@ class ParameterExplorer(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.free_parameter_labels
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_all_ranges(self):
 
         """
@@ -205,7 +211,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Loop over the free parameter labels
-        for label in self.fitting_run.free_parameter_labels:
+        for label in self.parameter_labels:
 
             # If range is already defined
             if label not in self.ranges: return False
@@ -260,6 +266,71 @@ class ParameterExplorer(FittingComponent):
 
         # Deploy SKIRT
         if self.has_host_ids and self.config.deploy: self.deploy()
+
+    # -----------------------------------------------------------------
+
+    def get_description(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.fitting_run.parameter_descriptions[label]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.grid_config
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genetic_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.genetic_config
+
+    # -----------------------------------------------------------------
+
+    def get_default_npoints(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        if self.grid_fitting: return self.grid_settings[label + "_npoints"]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.prompt_npoints:
+            npoints_dict = dict()
+            for label in self.parameter_labels: npoints_dict[label] = prompt_integer("npoints_" + label, "number of points for the " + self.get_description(label), default=self.get_default_npoints(label))
+            return npoints_dict
+        else: return self.config.npoints
 
     # -----------------------------------------------------------------
 
@@ -462,12 +533,13 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
         if self.is_images_modeling: # images modeling
 
-            self.launcher.config.analysis.misc.fluxes = False
-            self.launcher.config.analysis.misc.images = True
-            self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path)
-            self.launcher.config.analysis.misc.images_unit = "Jy"
-            self.launcher.config.analysis.misc.images_kernels = None
-            self.launcher.config.analysis.misc.rebin_wcs = None
+            #self.launcher.config.analysis.misc.fluxes = False
+            #self.launcher.config.analysis.misc.images = True
+            #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path)
+            #self.launcher.config.analysis.misc.images_unit = "Jy"
+            #self.launcher.config.analysis.misc.images_kernels = None
+            #self.launcher.config.analysis.misc.rebin_wcs = None
+            pass
 
         # Galaxy and SED modeling
         else:
@@ -475,13 +547,14 @@ class ParameterExplorer(FittingComponent):
             self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
             self.launcher.config.analysis.misc.images = False
 
-        # observation_filters
+        # Observation_filters
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
-        # observation_instruments
+
+        # Observation_instruments
         self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
         # Set spectral convolution flag
-        self.launcher.config.analysis.misc.spectral_convolution = self.fitting_run.fitting_configuration.spectral_convolution
+        self.launcher.config.analysis.misc.spectral_convolution = self.spectral_convolution
 
         # Set the path to the modeling directory to the simulation object
         self.launcher.config.analysis.modeling_path = self.config.path
@@ -533,7 +606,7 @@ class ParameterExplorer(FittingComponent):
         best_parameters_table = self.fitting_run.best_parameters_table
 
         # Get the names of the original genetic generations
-        original_genetic_generation_names = generations_table.genetic_generations_with_initial
+        #original_genetic_generation_names = generations_table.genetic_generations_with_initial
         original_genetic_generations_with_initial_names_and_indices = generations_table.genetic_generations_with_initial_names_and_indices
 
         # Keep track of the lowest genetic generation index
@@ -694,6 +767,30 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def grid_fitting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.generation_method == "grid"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genetic_fitting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.generation_method == "genetic"
+
+    # -----------------------------------------------------------------
+
     def set_generator(self):
 
         """
@@ -705,10 +802,10 @@ class ParameterExplorer(FittingComponent):
         log.info("Setting the model generator ...")
 
         # Generate new models based on a simple grid (linear or logarithmic) of parameter values
-        if self.config.generation_method == "grid": self.set_grid_generator()
+        if self.grid_fitting: self.set_grid_generator()
 
         # Generate new models using genetic algorithms
-        elif self.config.generation_method == "genetic": self.set_genetic_generator()
+        elif self.genetic_fitting: self.set_genetic_generator()
 
         # Invalid generation method
         else: raise ValueError("Invalid generation method: " + str(self.config.generation_method))
@@ -825,7 +922,7 @@ class ParameterExplorer(FittingComponent):
         else: config = None
 
         # Set the ranges
-        for label in self.fitting_run.free_parameter_labels:
+        for label in self.parameter_labels:
 
             # If range is already defined
             if label in self.ranges: continue
@@ -849,7 +946,7 @@ class ParameterExplorer(FittingComponent):
         extra_info = self.create_parameter_ranges_info()
 
         # Loop over the free parameters, add a setting slot for each parameter range
-        for label in self.fitting_run.free_parameter_labels:
+        for label in self.parameter_labels:
 
             # Skip if range is already defined for this label
             if label in self.ranges: continue
@@ -927,10 +1024,207 @@ class ParameterExplorer(FittingComponent):
         self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges,
                            fixed_initial_parameters=self.fixed_initial_parameters, generation=self.generation,
                            scales=self.scales, most_sampled_parameters=self.most_sampled_parameters,
-                           sampling_weights=self.sampling_weights, npoints=self.config.npoints)
+                           sampling_weights=self.sampling_weights, npoints=self.npoints)
 
         # Set the actual number of simulations for this generation
         self.generation_info.nsimulations = self.nmodels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine whether selfabsorption should be enabled
+        if self.config.selfabsorption is not None: return self.config.selfabsorption
+        else: return self.fitting_run.current_selfabsorption
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def transient_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine whether transient heating should be enabled
+        if self.config.transient_heating is not None: return self.config.transient_heating
+        else: return self.fitting_run.current_transient_heating
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_convolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.spectral_convolution is not None: return self.config.spectral_convolution
+        else: return self.fitting_run.current_spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def use_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.use_images is not None: return self.config.use_images
+        else: return self.fitting_run.current_use_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the number of photon packages
+        if self.config.increase_npackages: return int(self.fitting_run.current_npackages * self.config.npackages_factor)
+        else: return self.fitting_run.current_npackages
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # DETERMINE THE REPRESENTATION
+        if self.config.refine_spatial: return self.fitting_run.next_model_representation  # GET NEXT REPRESENTATION (THEY ARE NAMED IN ORDER OF SPATIAL RESOLUTION)
+
+        # Get the previous (current because this generation is just
+        else: return self.fitting_run.current_model_representation  # GET LAST REPRESENTATION #self.fitting_run.initial_representation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.wavelength_grids_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.highres is not None: return self.config.highres
+        else: return self.fitting_run.is_highres_current_wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Use high-resolution grids
+        if self.highres_wavelength_grid:
+
+            if self.fitting_run.is_highres_current_wavelength_grid:
+
+                if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
+                else: return self.fitting_run.current_wavelength_grid_name
+
+            else: return self.fitting_run.lowest_highres_wavelength_grid_name
+
+        # Spectral convolution: use refined grids
+        elif self.spectral_convolution:
+
+            if self.fitting_run.is_refined_current_wavelength_grid:
+
+                if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
+                else: return self.fitting_run.current_wavelength_grid_name
+
+            else: return self.fitting_run.lowest_refined_wavelength_grid_name
+
+        # Basic grids
+        else:
+
+            if self.fitting_run.is_basic_current_wavelength_grid:
+
+                if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
+                else: return self.fitting_run.current_wavelength_grid_name
+
+            else: return self.fitting_run.lowest_basic_wavelength_grid_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, self.wavelength_grid_name + ".dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -944,47 +1238,25 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the generation info ...")
 
-        # Get the previous wavelength grid level
-        wavelength_grid_level = self.fitting_run.current_wavelength_grid_level
-        #dust_grid_level = self.fitting_run.current_dust_grid_level
-
-        # Determine the wavelength grid level
-        #if self.config.refine_wavelengths:
-        if self.config.refine_spectral:
-            if wavelength_grid_level == self.fitting_run.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
-            else: wavelength_grid_level += 1
-
-        # Determine the dust grid level
-        #if self.config.refine_dust:
-        #    if dust_grid_level == self.fitting_run.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
-        #    else: dust_grid_level += 1
-        # DETERMINE THE REPRESENTATION
-        if self.config.refine_spatial: self.representation = self.fitting_run.next_model_representation # GET NEXT REPRESENTATION (THEY ARE NAMED IN ORDER OF SPATIAL RESOLUTION)
-        # Get the previous (current because this generation is just
-        else: self.representation = self.fitting_run.current_model_representation # GET LAST REPRESENTATION #self.fitting_run.initial_representation
-
-        # Determine the number of photon packages
-        if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
-        else: npackages = self.fitting_run.current_npackages
-
-        # Determine whether selfabsorption should be enabled
-        if self.config.selfabsorption is not None: selfabsorption = self.config.selfabsorption
-        else: selfabsorption = self.fitting_run.current_selfabsorption
-
-        # Determine whether transient heating should be enabled
-        if self.config.transient_heating is not None: transient_heating = self.config.transient_heating
-        else: transient_heating = self.fitting_run.current_transient_heating
-
         # Set the generation info
         self.generation_info.name = self.generation_name
         self.generation_info.index = self.generation_index
         self.generation_info.method = self.config.generation_method
-        self.generation_info.wavelength_grid_level = wavelength_grid_level
-        self.generation_info.model_representation_name = self.representation.name
+
+        # Wavelength grid and representation
+        self.generation_info.wavelength_grid_name = self.wavelength_grid_name
+        self.generation_info.model_representation_name = self.representation_name
+
         #self.generation.nsimulations = self.config.nsimulations # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
-        self.generation_info.npackages = npackages
-        self.generation_info.selfabsorption = selfabsorption
-        self.generation_info.transient_heating = transient_heating
+
+        # Set number of photon packages
+        self.generation_info.npackages = self.npackages
+
+        # Simulation options
+        self.generation_info.selfabsorption = self.selfabsorption
+        self.generation_info.transient_heating = self.transient_heating
+        self.generation_info.spectral_convolution = self.spectral_convolution
+        self.generation_info.use_images = self.use_images
 
     # -----------------------------------------------------------------
 
@@ -1023,12 +1295,7 @@ class ParameterExplorer(FittingComponent):
         if self.use_file_tree_dust_grid: self.simulation_input.add_file(self.representation.dust_grid_tree_path)
 
         # Determine and set the path to the appropriate wavelength grid file
-        wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)
-        #self.input_paths.append(wavelength_grid_path)
-        self.simulation_input.add_file(wavelength_grid_path)
-
-        # Get the number of wavelengths
-        self.nwavelengths = len(WavelengthGrid.from_skirt_input(wavelength_grid_path))
+        self.simulation_input.add_file(self.wavelength_grid_path)
 
         # Debugging
         log.debug("The wavelength grid for the simulations contains " + str(self.nwavelengths) + " wavelength points")
@@ -1067,7 +1334,7 @@ class ParameterExplorer(FittingComponent):
         self.individuals_table = IndividualsTable()
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable(parameters=self.fitting_run.free_parameter_labels, units=self.fitting_run.parameter_units)
+        self.parameters_table = ParametersTable(parameters=self.parameter_labels, units=self.fitting_run.parameter_units)
 
         # Initialize the chi squared table
         self.chi_squared_table = ChiSquaredTable()
@@ -1156,10 +1423,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to " + fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
+        log.debug("Setting the name of the wavelengths file to '" + self.wavelength_grid_name + "' ...")
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid(fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)))
+        self.ski.set_file_wavelength_grid(self.wavelength_grid_name)
 
     # -----------------------------------------------------------------
 

@@ -38,7 +38,8 @@ from ..config.parameters import parsing_types_for_parameter_types
 from ..build.component import get_representation
 from ...core.tools import sequences
 from ..build.component import get_model_definition
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -2202,20 +2203,7 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def highest_wavelength_grid_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Return the last filename, sorted as integers
-        return int(fs.files_in_path(self.wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def current_wavelength_grid_level(self):
+    def current_spectral_convolution(self):
 
         """
         This function ...
@@ -2223,22 +2211,498 @@ class FittingRun(object):
         """
 
         # Generations exist
-        if len(self.generations_table) > 0: return self.generations_table["Wavelength grid level"][-1]
+        if len(self.generations_table) > 0: return self.generations_table["Spectral convolution"][-1]
 
-        # Initial value
-        else: return 0
+        # Initial value (False)
+        else: return False
 
     # -----------------------------------------------------------------
 
-    def wavelength_grid_path_for_level(self, level):
+    @lazyproperty
+    def current_use_images(self):
 
         """
         This function ...
-        :param level:
         :return:
         """
 
-        return fs.join(self.wavelength_grids_path, str(level) + ".txt")
+        # Generations exist
+        if len(self.generations_table) > 0: return self.generations_table["Use images"][-1]
+
+        # Initial value (False)
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def highest_wavelength_grid_level(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Return the last filename, sorted as integers
+    #     return int(fs.files_in_path(self.wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def current_wavelength_grid_level(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Generations exist
+    #     if len(self.generations_table) > 0: return self.generations_table["Wavelength grid level"][-1]
+    #
+    #     # Initial value
+    #     else: return 0
+
+    # -----------------------------------------------------------------
+
+    # def wavelength_grid_path_for_level(self, level):
+    #
+    #     """
+    #     This function ...
+    #     :param level:
+    #     :return:
+    #     """
+    #
+    #     return fs.join(self.wavelength_grids_path, str(level) + ".txt")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generations exist
+        if len(self.generations_table) > 0: return self.generations_table["Wavelength grid name"][-1]
+
+        # Initial value
+        else: return self.highest_basic_wavelength_grid_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_wavelength_grid_npoints(self):
+
+        """
+        Thi function ...
+        :return:
+        """
+
+        return int(self.current_wavelength_grid_name.split("_")[1])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def next_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No generations yet
+        if len(self.generations_table) == 0: raise ValueError("No generation yet: cannot refine")
+
+        # Get current number of points
+        current_npoints = self.current_wavelength_grid_npoints
+
+        # Basic
+        if self.is_basic_current_wavelength_grid:
+
+            current_index = self.basic_wavelength_grid_npoints.index(current_npoints)
+            next_index = current_index + 1
+            next_npoints = self.basic_wavelength_grid_npoints[next_index]
+            return self.get_basic_wavelength_grid_name(next_npoints)
+
+        # Refined
+        elif self.is_refined_current_wavelength_grid:
+
+            current_index = self.refined_wavelength_grid_npoints.index(current_npoints)
+            next_index = current_index + 1
+            next_npoints = self.refined_wavelength_grid_npoints[next_index]
+            return self.get_refined_wavelength_grid_name(next_npoints)
+
+        # High-resolution
+        elif self.is_highres_current_wavelength_grid:
+
+            current_index = self.highres_wavelength_grid_npoints.index(current_npoints)
+            next_index = current_index + 1
+            next_npoints = self.highres_wavelength_grid_npoints[next_index]
+            return self.get_highres_wavelength_grid_name(next_npoints)
+
+        # Invalid
+        else: raise RuntimeError("Something went wrong")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_basic_current_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.current_wavelength_grid_name.startswith("basic")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_refined_current_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.current_wavelength_grid_name.startswith("refined")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_highres_current_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.current_wavelength_grid_name.startswith("highres")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def basic_wavelength_grid_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.wavelength_grids_path, startswith="basic_", extension="dat", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def refined_wavelength_grid_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.wavelength_grids_path, startswith="refined_", extension="dat", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highres_wavelength_grid_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.wavelength_grids_path, startswith="highres_", extension="dat", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def basic_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.ordered([int(name.split("basic_")[1]) for name in self.basic_wavelength_grid_names])
+
+    # -----------------------------------------------------------------
+
+    def get_basic_wavelength_grid_name(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return "basic_" + str(npoints)
+
+    # -----------------------------------------------------------------
+
+    def get_basic_wavelength_grid_path(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, self.get_basic_wavelength_grid_name(npoints) + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def get_basic_wavelength_grid(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.get_basic_wavelength_grid_path(npoints))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_basic_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.basic_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_basic_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_basic_wavelength_grid_name(self.lowest_basic_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_basic_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.basic_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_basic_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_basic_wavelength_grid_name(self.highest_basic_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def refined_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.ordered([int(name.split("refined_")[1]) for name in self.refined_wavelength_grid_names])
+
+    # -----------------------------------------------------------------
+
+    def get_refined_wavelength_grid_name(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return "refined_" + str(npoints)
+
+    # -----------------------------------------------------------------
+
+    def get_refined_wavelength_grid_path(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, self.get_refined_wavelength_grid_name(npoints) + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def get_refined_wavelength_grid(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return WavelengthGrid.from_file(self.get_refined_wavelength_grid_path(npoints))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_refined_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.refined_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_refined_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_refined_wavelength_grid_name(self.lowest_refined_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_refined_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.refined_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_refined_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_refined_wavelength_grid_name(self.highest_refined_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highres_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.ordered([int(name.split("highres_")[1]) for name in self.highres_wavelength_grid_names])
+
+    # -----------------------------------------------------------------
+
+    def get_highres_wavelength_grid_name(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return "highres_" + str(npoints)
+
+    # -----------------------------------------------------------------
+
+    def get_highres_wavelength_grid_path(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, self.get_highres_wavelength_grid_name(npoints) + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def get_highres_wavelength_grid(self, npoints):
+
+        """
+        This function ...
+        :param npoints:
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.get_highres_wavelength_grid_path(npoints))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_highres_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.highres_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowest_highres_wavelength_grid_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_highres_wavelength_grid_name(self.lowest_highres_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_highres_wavelength_grid_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.highres_wavelength_grid_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_highres_wavelength_grid_name(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.get_highres_wavelength_grid_name(self.highest_highres_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 

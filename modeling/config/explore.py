@@ -51,6 +51,7 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 
 # Number of points per free parameter
 definition.add_optional("npoints", "string_integer_dictionary", "number of grid points for the different free parameters")
+definition.add_flag("prompt_npoints", "prompt for the number of grid points for each free parameter")
 
 # -----------------------------------------------------------------
 
@@ -61,17 +62,27 @@ definition.add_flag("visualise", "make visualisations")
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
 
-# THESE TWO ARE SPECIAL: use a different wavelength grid input file or use a different representation
+# Use a different wavelength grid or use a different representation
 definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)
 definition.add_flag("refine_spatial", "increase the spatial resolution of the model for the new batch of simulations", False)
+definition.add_flag("highres", "use high-resolution wavelength grids (default is same as previous generation)", None)
 
+# -----------------------------------------------------------------
+
+# Simulation and analysis options
 definition.add_flag("selfabsorption", "dust self-absorption", None)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
+definition.add_flag("spectral_convolution", "use spectral convolution for evaluating the simulations", None)
+definition.add_flag("use_images", "use images for evaluating the simulations", None)
+
+# -----------------------------------------------------------------
 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
 definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
 definition.add_flag("data_parallel", "data parallelization mode", False)
+
+# -----------------------------------------------------------------
 
 # Special options
 definition.add_flag("dry", "dry-run (don't actually launch simulations)")

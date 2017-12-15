@@ -19,6 +19,18 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def ordered(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return list(sorted(sequence))
+
+# -----------------------------------------------------------------
+
 def repeat(sequence, ntimes):
 
     """
