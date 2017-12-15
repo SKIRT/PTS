@@ -626,7 +626,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
             ski = self.ski_contributions[contribution]
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=self.ndust_cells)
+            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, nwavelengths=len(self.wavelength_grid), ncells=self.ndust_cells)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")

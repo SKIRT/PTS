@@ -617,7 +617,7 @@ class ScalingTest(Configurable):
         #  - the number of dust cells (?)
 
         # Estimate the runtime for the configured remote host and the simulation properties
-        runtime = self.estimator.runtime_for(ski, parallelization, self.launcher.single_remote.host_id, self.launcher.single_remote.cluster_name, data_parallel)
+        runtime = self.estimator.runtime_for(ski, parallelization, self.launcher.single_remote.host_id, self.launcher.single_remote.cluster_name)
 
         # Return the runtime
         return runtime

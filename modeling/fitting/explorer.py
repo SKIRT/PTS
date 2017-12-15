@@ -21,17 +21,12 @@ from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from ...core.tools import time
 from .tables import ParametersTable, ChiSquaredTable, IndividualsTable
-from ...core.launch.options import SchedulingOptions
-from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import load_host
 from ...core.basics.configuration import ConfigurationDefinition, create_configuration_interactive
 from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
 from ...core.simulation.input import SimulationInput
-from ...core.tools import introspection
-from ...core.tools import parallelization as par
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import prompt_proceed, prompt_integer
@@ -101,13 +96,22 @@ class ParameterExplorer(FittingComponent):
         # The simulation input
         self.simulation_input = None
 
-        # A dictionary with the scheduling options for the different remote hosts
-        self.scheduling_options = dict()
-
         # Extra input for the model generator
         self.scales = None
         self.most_sampled_parameters = None
         self.sampling_weights = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.needs_input
 
     # -----------------------------------------------------------------
 
@@ -138,27 +142,18 @@ class ParameterExplorer(FittingComponent):
         self.generate_models()
 
         # 7. Set the paths to the input files
-        if self.fitting_run.needs_input: self.set_input()
+        if self.needs_input: self.set_input()
 
         # 8. Adjust the ski template
         self.adjust_ski()
 
-        # 9. Set the parallelization scheme for local execution if necessary
-        if self.only_local: self.set_parallelization_local()
-
-        # 10. Set the parallelization schemes for the different remote hosts
-        if self.uses_schedulers: self.set_parallelization_remote()
-
-        # 11. Estimate the runtimes for the different remote hosts
-        if self.uses_schedulers: self.estimate_runtimes()
-
-        # 12. Fill the tables for the current generation
+        # 9. Fill the tables for the current generation
         self.fill_tables()
 
-        # 13. Writing
+        # 10. Writing
         self.write()
 
-        # 14. Launch the simulations for different parameter values
+        # 11. Launch the simulations for different parameter values
         # Test whether simulations are required, because if the optimizer detects recurrence of earlier models,
         # it is possible that no simulations have to be done
         if self.needs_simulations: self.launch()
@@ -513,6 +508,30 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def timing_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.timing_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.memory_table_path
+
+    # -----------------------------------------------------------------
+
     def set_launcher_options(self):
 
         """
@@ -522,6 +541,30 @@ class ParameterExplorer(FittingComponent):
 
         # Inform the user
         log.info("Setting options for the batch simulation launcher ...")
+
+        # Basic launcher options
+        self.set_basic_launcher_options()
+
+        # Simulation options
+        self.set_simulation_options()
+
+        # Analysis options
+        self.set_analysis_options()
+
+    # -----------------------------------------------------------------
+
+    def set_basic_launcher_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting basic launcher options ...")
+
+        # Simulations have approximately the same requirements
+        self.launcher.config.same_requirements = True
 
         # Basic options
         self.launcher.config.shared_input = True                               # The input directories (or files) for the different simulations are shared
@@ -533,11 +576,28 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
 
-        # Record memory and timeline information
-        if self.record_timing: self.launcher.config.timing_table_path = self.fitting_run.timing_table_path  # The path to the timing table file
-        if self.record_memory: self.launcher.config.memory_table_path = self.fitting_run.memory_table_path  # The path to the memory table file
+        # Memory and timing table paths (for recording and for estimating)
+        self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
+        self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
 
-        # Simulation analysis options
+        # Record timing and memory?
+        self.launcher.config.add_timing = self.record_timing
+        self.launcher.config.add_memory = self.record_memory
+
+        # Set runtimes plot path
+        self.launcher.config.runtimes_plot_path = self.visualisation_path
+
+    # -----------------------------------------------------------------
+
+    def set_simulation_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting simulation options ...")
 
         ## General
         self.launcher.config.relative = True
@@ -546,18 +606,83 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
 
-        # ANALYSIS
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting analysis options ...")
+
+        # General analysis options
+        self.set_general_analysis_options()
+
+        # Extraction options
+        self.set_extraction_options()
+
+        # Plotting options
+        self.set_plotting_options()
+
+        # Misc options
+        self.set_misc_options()
+
+    # -----------------------------------------------------------------
+
+    def set_general_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting general analysis options ...")
 
         # To create the extr, plot, misc directories relative in the simulation directory
         self.launcher.config.analysis.relative = True
 
-        ## Extraction
+        # Set the path to the modeling directory to the simulation object
+        self.launcher.config.analysis.modeling_path = self.config.path
+
+        # Set analyser classes
+        if self.is_images_modeling: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
+        else: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
+
+    # -----------------------------------------------------------------
+
+    def set_extraction_options(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting extraction options ...")
+
+        # Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
         self.launcher.config.analysis.extraction.progress = self.config.extract_progress  # extract progress information
         self.launcher.config.analysis.extraction.timeline = self.extract_timeline # extract the simulation timeline
         self.launcher.config.analysis.extraction.memory = self.extract_memory    # extract memory information
 
-        ## Plotting
+    # -----------------------------------------------------------------
+
+    def set_plotting_options(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting plotting options ...")
+
+        # Plotting
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
         self.launcher.config.analysis.plotting.seds = self.config.plot_seds    # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
@@ -566,65 +691,71 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.timeline = self.config.plot_timeline
         self.launcher.config.analysis.plotting.memory = self.config.plot_memory
 
-        ## Miscellaneous
+    # -----------------------------------------------------------------
+
+    def set_misc_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting miscellaneous analysis options ...")
+
+        # Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
-        if self.is_images_modeling: # images modeling #self.launcher.config.analysis.misc.fluxes = False #self.launcher.config.analysis.misc.images = True #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path) #self.launcher.config.analysis.misc.images_unit = "Jy" #self.launcher.config.analysis.misc.images_kernels = None #self.launcher.config.analysis.misc.rebin_wcs = None
-            pass
-        # Galaxy and SED modeling
+
+        # if self.is_images_modeling: # images modeling #self.launcher.config.analysis.misc.fluxes = False #self.launcher.config.analysis.misc.images = True #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path) #self.launcher.config.analysis.misc.images_unit = "Jy" #self.launcher.config.analysis.misc.images_kernels = None #self.launcher.config.analysis.misc.rebin_wcs = None
+        #     pass
+        #
+        # # Galaxy and SED modeling
+        # else:
+
+        # From images
+        if self.use_images:
+
+            self.launcher.config.analysis.misc.fluxes_from_images = True # calculate observed fluxes from images
+            self.launcher.config.analysis.misc.fluxes = False
+            self.launcher.config.analysis.misc.images = False
+
+            # Plot fluxes
+            self.launcher.config.analysis.misc.plot_fluxes_from_images = True
+            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
+
+            # Set instrument and coordinate system path
+            self.launcher.config.analysis.misc.fluxes_from_images_instrument = self.earth_instrument_name
+            self.launcher.config.analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
+
+            # Set mask paths
+            self.launcher.config.analysis.misc.fluxes_from_images_masks = self.environment.photometry_image_paths_for_filter_names # only for galaxy modeling
+            self.launcher.config.analysis.misc.fluxes_from_images_mask_from_nans = True
+
+            # Write the fluxes images
+            self.launcher.config.analysis.misc.write_fluxes_images = True
+
+            # Plot fluxes
+            self.launcher.config.analysis.misc.plot_fluxes_from_images = True
+            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
+
+        # From SEDs
         else:
 
-            # From images
-            if self.use_images:
+            self.launcher.config.analysis.misc.fluxes_from_images = False
+            self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes from SEDs
+            self.launcher.config.analysis.misc.images = False
 
-                self.launcher.config.analysis.misc.fluxes_from_images = True # calculate observed fluxes from images
-                self.launcher.config.analysis.misc.fluxes = False
-                self.launcher.config.analysis.misc.images = False
-
-                # Plot fluxes
-                self.launcher.config.analysis.misc.plot_fluxes_from_images = True
-                self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
-
-                # Set instrument and coordinate system path
-                self.launcher.config.analysis.misc.fluxes_from_images_instrument = self.earth_instrument_name
-                self.launcher.config.analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
-
-                # Set mask paths
-                self.launcher.config.analysis.misc.fluxes_from_images_masks = self.environment.photometry_image_paths_for_filter_names # only for galaxy modeling
-                self.launcher.config.analysis.misc.fluxes_from_images_mask_from_nans = True
-
-                # Write the fluxes images
-                self.launcher.config.analysis.misc.write_fluxes_images = True
-
-                # Plot fluxes
-                self.launcher.config.analysis.misc.plot_fluxes_from_images = True
-                self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
-
-            # From SEDs
-            else:
-
-                self.launcher.config.analysis.misc.fluxes_from_images = False
-                self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes from SEDs
-                self.launcher.config.analysis.misc.images = False
-
-                # Plot fluxes
-                self.launcher.config.analysis.misc.plot_fluxes = True
-                self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.observed_sed_path
+            # Plot fluxes
+            self.launcher.config.analysis.misc.plot_fluxes = True
+            self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.observed_sed_path
 
         # Observation filters and observation instruments
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
         self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
         # Set spectral convolution flag
-        #self.launcher.config.analysis.misc.spectral_convolution = self.spectral_convolution
         self.launcher.config.analysis.misc.fluxes_spectral_convolution = self.spectral_convolution
         self.launcher.config.analysis.misc.fluxes_from_images_spectral_convolution = self.spectral_convolution
-
-        # Set the path to the modeling directory to the simulation object
-        self.launcher.config.analysis.modeling_path = self.config.path
-
-        # Set analyser classes
-        if self.is_images_modeling: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
-        else: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
 
     # -----------------------------------------------------------------
 
@@ -1578,156 +1709,6 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def set_parallelization_local(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the parallelization scheme for local execution ...")
-
-        # Get properties of the local machine
-        nnodes = par.nnodes()
-        nsockets = par.sockets_per_node()
-        ncores = par.cores_per_socket()
-        memory = par.virtual_memory().to("Gbyte")
-        threads_per_core = par.nthreads_per_core()
-        hyperthreading = threads_per_core > 1
-        mpi = introspection.has_mpi()
-
-        # Create the parallelization tool
-        tool = ParallelizationTool()
-
-        # Set configuration options
-        tool.config.ski = self.ski
-        tool.config.input = self.simulation_input
-
-        # Set host properties
-        tool.config.nnodes = nnodes
-        tool.config.nsockets = nsockets
-        tool.config.ncores = ncores
-        tool.config.memory = memory
-
-        # MPI available and used
-        tool.config.mpi = mpi
-        tool.config.hyperthreading = hyperthreading
-        tool.config.threads_per_core = threads_per_core
-
-        # Number of dust cells
-        tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
-
-        # Don't show
-        tool.config.show = False
-
-        # Run the parallelization tool
-        tool.run()
-
-        # Get the parallelization scheme
-        parallelization = tool.parallelization
-
-        # Debugging
-        log.debug("The parallelization scheme for local execution is " + str(parallelization))
-
-        # Set the parallelization scheme
-        self.launcher.set_parallelization_for_local(parallelization)
-
-    # -----------------------------------------------------------------
-
-    def set_parallelization_remote(self):
-
-        """
-        This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
-        a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
-        based on the current load of the corresponding system).
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the parallelization scheme for the remote host(s) that use a scheduling system ...")
-
-        # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
-        for host in self.launcher.scheduler_hosts:
-
-            # Create the parallelization tool
-            tool = ParallelizationTool()
-
-            # Set configuration options
-            tool.config.ski = self.ski
-            tool.config.input = self.simulation_input
-
-            # Set host properties
-            tool.config.nnodes = self.config.nnodes
-            tool.config.nsockets = host.cluster.sockets_per_node
-            tool.config.ncores = host.cluster.cores_per_sockets
-            tool.config.memory = host.cluster.memory
-
-            # MPI available and used
-            tool.config.mpi = True
-            tool.config.hyperthreading = False # no hyperthreading
-            #tool.config.threads_per_core = None
-
-            # Number of dust cells
-            tool.config.ncells = None # number of dust cells (relevant if ski file uses a tree dust grid)
-
-            # Run the tool
-            tool.run()
-
-            # Get the parallelization
-            parallelization = tool.parallelization
-
-            # Debugging
-            log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
-
-            # Set the parallelization for this host
-            self.launcher.set_parallelization_for_host(host.id, parallelization)
-
-    # -----------------------------------------------------------------
-
-    def estimate_runtimes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Estimating the runtimes based on the results of previously finished simulations ...")
-
-        # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator.from_file(self.fitting_run.timing_table_path)
-
-        # Initialize a dictionary to contain the estimated walltimes for the different hosts with scheduling system
-        walltimes = dict()
-
-        # Loop over the hosts which use a scheduling system and estimate the walltime
-        for host in self.launcher.scheduler_hosts:
-
-            # Debugging
-            log.debug("Estimating the runtime for host '" + host.id + "' ...")
-
-            # Get the parallelization scheme that we have defined for this remote host
-            parallelization = self.launcher.parallelization_for_host(host.id)
-
-            # Visualisation of the distribution of estimated runtimes
-            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("explorer_runtimes_" + host.id) + ".pdf")
-            else: plot_path = None
-
-            # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(self.ski, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths, plot_path=plot_path)
-
-            # Debugging
-            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
-
-            # Set the estimated walltime
-            walltimes[host.id] = runtime
-
-        # Create and set scheduling options for each host that uses a scheduling system
-        for host_id in walltimes: self.scheduling_options[host_id] = SchedulingOptions.from_dict({"walltime": walltimes[host_id]})
-
-    # -----------------------------------------------------------------
-
     def launch(self):
 
         """
@@ -1756,23 +1737,24 @@ class ParameterExplorer(FittingComponent):
                                             self.simulation_input, self.generation_info.path, scientific=True, fancy=True,
                                             ndigits=self.fitting_run.ndigits_dict)
 
-            # Debugging
-            log.debug("Adding a simulation to the queue with:")
-            log.debug("")
-            log.debug(" - name: " + simulation_name)
-            log.debug(" - input: " + str(self.simulation_input))
-            log.debug(" - ski path: " + definition.ski_path)
-            log.debug(" - output path: " + definition.output_path)
-            log.debug("")
-
             # Put the parameters in the queue and get the simulation object
             self.launcher.add_to_queue(definition, simulation_name)
 
-            # Set scheduling options (for the different remote hosts with a scheduling system)
-            for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
-
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
-        self.launcher.run()
+        try: self.launcher.run(ncells=self.ndust_cells)
+        except:
+
+            # Something went wrong, show error message
+            log.error("No simulations could be launched: removing generation")
+            log.error("Try again later")
+            log.error("Cleaning up generation and quitting ...")
+
+            # Remove this generation from the generations table
+            self.fitting_run.generations_table.remove_entry(self.generation_name)
+            self.fitting_run.generations_table.save()
+
+            # Remove the generation directory
+            fs.remove_directory(self.generation_path)
 
         # Check the launched simulations
         self.check_simulations()
@@ -1795,6 +1777,18 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.launched_simulations
+
+    # -----------------------------------------------------------------
+
     def check_simulations(self):
 
         """
@@ -1805,15 +1799,13 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Checking the simulations ...")
 
-        simulations = self.launcher.launched_simulations
-
         # Check the number of simulations that were effectively launched
-        if self.nmodels == len(simulations):
+        if self.nmodels == len(self.simulations):
             log.success("All simulations were scheduled succesfully")
             return
 
         # No simulations were launched
-        if len(simulations) == 0:
+        if len(self.simulations) == 0:
 
             # Show error message
             log.error("No simulations could be launched: removing generation")
@@ -1825,16 +1817,16 @@ class ParameterExplorer(FittingComponent):
             self.fitting_run.generations_table.save()
 
             # Remove the generation directory
-            fs.remove_directory(self.generation_info.path)
+            fs.remove_directory(self.generation_path)
 
             # Quit
             exit()
 
         # Less simulations were launched
-        elif len(simulations) < self.nmodels:
+        elif len(self.simulations) < self.nmodels:
 
             # Get the names of simulations that were launched
-            launched_simulation_names = [simulation.name for simulation in simulations]
+            launched_simulation_names = [simulation.name for simulation in self.simulations]
             if None in launched_simulation_names: raise RuntimeError("Some or all simulation don't have a name defined")
 
             # Show error message

@@ -31,8 +31,12 @@ definition.add_flag("progress_bar", "use progress bars to show progress")
 # The timing and memory table
 definition.add_optional("timing_table_path", "file_path", "path to the timing table")
 definition.add_optional("memory_table_path", "file_path", "path to the memory table")
+definition.add_optional("runtimes_plot_path", "directory_path", "path for plotting runtimes (from runtime estimation)")
+definition.add_flag("same_requirements", "set this flag when all simulations have approximately the same requirements", False)
 
 # Flags
+definition.add_flag("add_timing", True)
+definition.add_flag("add_memory", True)
 definition.add_flag("add_timing_local", "add timing information for locally launched simulations", True)
 definition.add_flag("add_memory_local", "add memory information for locally launched simulations", True)
 

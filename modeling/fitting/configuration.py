@@ -708,13 +708,6 @@ class FittingConfigurer(FittingComponent):
             definition = ConfigurationDefinition()
             for name in self.parameter_labels:
 
-                # Get the type of quantity for this parameter
-                #parameter_type = self.types_config.types[name]
-
-                # Don't ask for units for dimensionless quantities
-                #if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
-                #else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
-
                 # Ask for the number of significant digits
                 definition.add_optional(name, "positive_integer", "number of significant digits for the '" + name + "' parameter", default=self.config.default_ndigits)
 

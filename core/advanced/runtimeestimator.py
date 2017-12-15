@@ -65,7 +65,7 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, ncells=None, fos=1.2, plot_path=None):
+    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, in_path=None, nwavelengths=None, ncells=None, fos=1.2, plot_path=None):
 
         """
         This function ...
@@ -73,16 +73,16 @@ class RuntimeEstimator(object):
         :param parallelization:
         :param host_id:
         :param cluster_name:
-        :param data_parallel:
         :param in_path:
         :param nwavelengths:
+        :param ncells:
         :param fos: factor of safety
         :param plot_path:
         :return:
         """
 
         # Get the parameters that are relevant for timing
-        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel, in_path, nwavelengths, ncells)
+        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, in_path, nwavelengths, ncells)
 
         # TODO: greatly expand the number of parameters that are used to estimate the runtime
         # such as: nwavelengths, self-absorption, transient heating, data parallel, ...
@@ -107,7 +107,7 @@ class RuntimeEstimator(object):
                 title = "Distribution of previously recorded runtimes"
                 plotter.add_distribution(distribution, "Test")
                 plotter.set_title(title)
-                plotter.run(plot_path)
+                plotter.run(output_path=plot_path)
 
             # Return the most frequent (most probable) runtime, times the safety factor
             return distribution.most_frequent * fos
@@ -136,7 +136,7 @@ class RuntimeEstimator(object):
                              "the same number of photon packages, with various parallelization schemes"
                     plotter.add_distribution(distribution, "Test")
                     plotter.set_title(title)
-                    plotter.run(plot_path)
+                    plotter.run(output_path=plot_path)
 
                 # Return the most probable runtime, times the safety factor
                 return distribution.most_frequent * fos
@@ -160,7 +160,7 @@ class RuntimeEstimator(object):
                                   "schemes"
                         plotter.add_distribution(distribution, "Test")
                         plotter.set_title(title)
-                        plotter.run(plot_path)
+                        plotter.run(output_path=plot_path)
 
                     # Return the most probable runtime, times the safety factor
                     return distribution.most_frequent * fos
@@ -181,7 +181,7 @@ class RuntimeEstimator(object):
                                 "schemes"
                         plotter.add_distribution(distribution, "Test")
                         plotter.set_title(title)
-                        plotter.run(plot_path)
+                        plotter.run(output_path=plot_path)
 
                     # Return the most probable runtime, times the safety factor
                     return distribution.most_frequent * fos
@@ -419,7 +419,7 @@ class RuntimeEstimator(object):
 
 # -----------------------------------------------------------------
 
-def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, ncells=None):
+def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, in_path=None, nwavelengths=None, ncells=None):
 
     """
     This function ...
@@ -427,7 +427,6 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
     :param parallelization:
     :param host_id:
     :param cluster_name:
-    :param data_parallel:
     :param in_path:
     :param nwavelengths:
     :param ncells:
@@ -477,7 +476,8 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
     parameters.transient_heating = ski_file.transientheating()
 
     # Other
-    parameters.data_parallel = data_parallel
+    #parameters.data_parallel = data_parallel
+    parameters.data_parallel = parallelization.data_parallel
 
     # Return the parameters
     return parameters

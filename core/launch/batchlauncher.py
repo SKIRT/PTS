@@ -43,6 +43,9 @@ from ..tools.utils import lazyproperty
 from ..basics.map import Map
 from ..advanced.parallelizationtool import determine_parallelization
 from ..tools import parallelization
+from .timing import TimingTable
+from .memory import MemoryTable
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -97,6 +100,24 @@ class DifferentDustLibDimensions(Exception):
 
         # Call the base class constructor
         super(DifferentDustLibDimensions, self).__init__(message)
+
+# -----------------------------------------------------------------
+
+class DifferentNDustCells(Exception):
+
+    """
+    Thisf unction ...
+    """
+
+    def __init__(self, message):
+
+        """
+        This function ...
+        :param message:
+        """
+
+        # Call the base class constructor
+        super(DifferentNDustCells, self).__init__(message)
 
 # -----------------------------------------------------------------
 
@@ -266,7 +287,12 @@ class BatchLauncher(Configurable):
         """
 
         # Debugging
-        log.debug("Adding simulation '" + name + "' to the queue ...")
+        log.debug("Adding a simulation '" + name + "' to the queue with:")
+        log.debug("")
+        log.debug(" - input: " + tostr(definition.input_path))
+        log.debug(" - ski path: " + definition.ski_path)
+        log.debug(" - output path: " + definition.output_path)
+        log.debug("")
 
         # Check whether the simulation name doesn't contain spaces
         if " " in name: raise ValueError("The simulation name cannot contain spaces")
@@ -938,6 +964,69 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def timing_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return TimingTable.from_file(self.config.timing_table_path) if self.config.timing_table_path is not None else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def runtime_estimator(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..advanced.runtimeestimator import RuntimeEstimator
+
+        # Create a RuntimeEstimator instance
+        return RuntimeEstimator(self.timing_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_timing_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.timing_table_path is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryTable.from_file(self.config.memory_table_path) if self.config.memory_table_path is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.memory_table_path is not None
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -952,22 +1041,25 @@ class BatchLauncher(Configurable):
         # 2. Check the input files for all simulations
         self.check_input()
 
-        # 2. Set the parallelization scheme for the remote hosts for which this was not specified by the user
+        # 3. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
 
-        # 3. Launch the simulations
+        # 4. Estimate the runtimes if necessary
+        if self.uses_schedulers and self.has_timing_table: self.estimate_runtimes()
+
+        # 5. Launch the simulations
         self.launch()
 
-        # 4. Retrieve the simulations that are finished
+        # 6. Retrieve the simulations that are finished
         self.try_retrieving()
 
-        # Show the simulations that are finished
+        # 7. Show the simulations that are finished
         if self.has_simulations and self.config.show: self.show()
 
-        # 5. Analyse the output of the retrieved simulations
+        # 8. Analyse the output of the retrieved simulations
         if self.has_simulations: self.try_analysing()
 
-        # Write
+        # 9. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -1576,6 +1668,143 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_first_simulation_name_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_names_for_host(host_id)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_last_simulation_name_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_names_for_host(host_id)[-1]
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_definition(self, host_id, simulation_name):
+
+        """
+        Thisf unction ....
+        :param host_id:
+        :param simulation_name:
+        :return:
+        """
+
+        for definition, name, _ in self.queues[host_id]:
+            if name == simulation_name: return definition
+        raise ValueError("No simulation with the name '" + simulation_name + "' in the queue for remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_ski_path(self, host_id, simulation_name):
+
+        """
+        This function ...
+        :param host_id:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation_definition(host_id, simulation_name).ski_path
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_skifile(self, host_id, simulation_name):
+
+        """
+        This function ...
+        :param host_id:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation_definition(host_id, simulation_name).ski
+
+    # -----------------------------------------------------------------
+
+    def get_first_simulation_definition_for_host(self, host_id):
+
+        """
+        Thisf untion ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_definition(host_id, self.get_first_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
+    def get_last_simulation_definition_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_definition(host_id, self.get_last_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
+    def get_first_simulation_ski_path_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_ski_path(host_id, self.get_first_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
+    def get_last_simulation_ski_path_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_ski_path(host_id, self.get_last_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
+    def get_first_simulation_skifile_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_skifile(host_id, self.get_first_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
+    def get_last_simulation_skifile_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_simulation_skifile(host_id, self.get_last_simulation_name_for_host(host_id))
+
+    # -----------------------------------------------------------------
+
     def nwavelengths_for_host(self, host_id):
 
         """
@@ -1618,10 +1847,23 @@ class BatchLauncher(Configurable):
         # Check whether the number of wavelengths is the same for each simulation in this host's queue
         nwavelengths = self.nwavelengths_for_host(host_id)
         simulation_names = nwavelengths.keys()
-        if sequences.all_equal(nwavelengths): return nwavelengths[simulation_names[0]]
+        if sequences.all_equal(nwavelengths.values()): return nwavelengths[simulation_names[0]]
 
         # Not the same
         else: raise DifferentNwavelengths("Different number of wavelengths for simulations in queue of remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_first_nwavelengths_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        nwavelengths = self.nwavelengths_for_host(host_id)
+        return nwavelengths[self.get_first_simulation_name_for_host(host_id)]
 
     # -----------------------------------------------------------------
 
@@ -1660,10 +1902,78 @@ class BatchLauncher(Configurable):
         # Check whether dimensions are the same for each simulation in this host's queue
         dimensions = self.dustlib_dimensions_for_host(host_id)
         simulation_names = dimensions.keys()
-        if sequences.all_equal(dimensions): return dimensions[simulation_names[0]]
+        if sequences.all_equal(dimensions.values()): return dimensions[simulation_names[0]]
 
         # Not the same
         else: raise DifferentDustLibDimensions("Different dustlib dimensions for simulations in queue of remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_first_dustlib_dimension_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        dimensions = self.dustlib_dimensions_for_host(host_id)
+        return dimensions[self.get_first_simulation_name_for_host(host_id)]
+
+    # -----------------------------------------------------------------
+
+    def ncells_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        ncells = dict()
+
+        # Get the number of dust cells for each simulation in the queue
+        for definition, simulation_name, _ in self.queues[host_id]:
+
+            # Get the number of dust cells
+            ndustcells = definition.ndust_cells
+
+            # Add to dictionary
+            ncells[simulation_name] = ndustcells
+
+        # Return the dictionary
+        return ncells
+
+    # -----------------------------------------------------------------
+
+    def get_ncells_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Check whether the number of dust cells are the same for each simulation in this host's queue
+        ncells = self.ncells_for_host(host_id)
+        simulation_names = ncells.keys()
+        if sequences.all_equal(ncells.values()): return ncells[simulation_names[0]]
+
+        # Not the same
+        else: raise DifferentNDustCells("Different number of dust cells for simulations in queue of remote host '" + host_id + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_first_ncells_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        ncells = self.ncells_for_host(host_id)
+        return ncells[self.get_first_simulation_name_for_host(host_id)]
 
     # -----------------------------------------------------------------
 
@@ -1858,10 +2168,12 @@ class BatchLauncher(Configurable):
 
                 # Try to set one parallelization for the host
                 try: self.set_parallelization_for_remote_from_nprocesses_per_node(remote.host_id)
-                except () as e: self.set_parallelization_different_for_remote(remote.host_id)
+                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(remote.host_id)
 
-            # Determine the parallelization scheme with the parallelization tool
-            # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
+            # Determine the parallelization scheme for each remote host
+            elif self.config.same_requirements: self.set_parallelization_same_for_remote(remote.host_id)
+
+            # Determine the parallelization scheme with the parallelization tool separately for each simulation
             else: self.set_parallelization_different_for_remote(remote.host_id)
 
     # -----------------------------------------------------------------
@@ -1955,7 +2267,13 @@ class BatchLauncher(Configurable):
         # Determine data-parallel flag
         if self.config.data_parallel_remote is None:
 
-            if self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True
+            # User thinks all simulations have the same requirements
+            if self.config.same_requirements: data_parallel = self.get_first_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_first_dustlib_dimension_for_host(host_id) == 3 # assured to be safe even if simulations differ
+
+            # Check whether we can find that all simulations have the same number of wavelengths and dustlib dimension
+            elif self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True # can return errors for non-uniformity
+
+            # Not data-parallel
             else: data_parallel = False
 
         # Up to the user
@@ -2008,6 +2326,45 @@ class BatchLauncher(Configurable):
                                                          data_parallel=data_parallel)
 
         # Set
+        self.set_parallelization_for_host(host_id, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_same_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")
+
+        # Determine the number of wavelengths
+        if self.nwavelengths is not None: nwavelengths = self.nwavelengths
+        else: nwavelengths = self.get_first_nwavelengths_for_host(host_id)
+
+        # Determine the number of dust cells
+        if self.ncells is not None: ncells = self.ncells
+        else: ncells = self.get_first_ncells_for_host(host_id)
+
+        # Get host properties
+        prop = self.get_properties_for_host(host_id)
+
+        # Get first simulation definition for this remote host
+        definition = self.get_first_simulation_definition_for_host(host_id)
+
+        # Determine parallelization
+        parallelization = determine_parallelization(definition.ski_path, definition.input_path,
+                                                    self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
+                                                    prop.hyperthreading, prop.threads_per_core, ncells=ncells,
+                                                    nwavelengths=nwavelengths)
+
+        # Show
+        log.debug("The parallelization scheme for the '" + host_id + "' host is " + str(parallelization))
+
+        # Set the parallelization scheme for this host
         self.set_parallelization_for_host(host_id, parallelization)
 
     # -----------------------------------------------------------------
@@ -2085,6 +2442,198 @@ class BatchLauncher(Configurable):
 
         # Add the ID of the host to the list
         self.save_screen_output.append(host_id)
+
+    # -----------------------------------------------------------------
+
+    def has_scheduling_options(self, host_id, name):
+
+        """
+        Thisn function ...
+        :param host_id:
+        :param name:
+        :return:
+        """
+
+        return host_id in self.scheduling_options and name in self.scheduling_options[name]
+
+    # -----------------------------------------------------------------
+
+    def get_scheduling_options(self, host_id, name):
+
+        """
+        This function ...
+        :param host_id:
+        :param name:
+        :return:
+        """
+
+        return self.scheduling_options[host_id][name]
+
+    # -----------------------------------------------------------------
+
+    def has_walltime(self, host_id, name):
+
+        """
+        This function ...
+        :param host_id:
+        :param name:
+        :return:
+        """
+
+        return self.has_scheduling_options(host_id, name) and self.get_scheduling_options(host_id, name).walltime is not None
+
+    # -----------------------------------------------------------------
+
+    def get_walltime(self, host_id, name):
+
+        """
+        This function ...
+        :param host_id:
+        :param name:
+        :return:
+        """
+
+        return self.scheduling_options[host_id][name].walltime
+
+    # -----------------------------------------------------------------
+
+    def set_walltime(self, host_id, name, walltime):
+
+        """
+        Thisf unction ...
+        :param host_id:
+        :param name:
+        :param walltime:
+        :return:
+        """
+
+        self.scheduling_options[host_id][name].walltime = walltime
+
+    # -----------------------------------------------------------------
+
+    def all_have_walltime(self, host_id):
+
+        """
+        This function ....
+        :param host_id:
+        :return:
+        """
+
+        # Loop over the simulation names for this host
+        for simulation_name in self.get_simulation_names_for_host(host_id):
+            if not self.has_walltime(host_id, simulation_name): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the runtimes based on the timings of previous simulations ...")
+
+        # Loop over the hosts which use a scheduling system
+        for host_id in self.scheduler_host_ids:
+
+            # Debugging
+            log.debug("Estimating the runtimes for host '" + host_id + "' ...")
+
+            # The simulations have the same requirements; estimate the runtime for the host
+            if self.config.same_requirements: self.estimate_runtimes_same_for_remote(host_id)
+
+            # The simulations can have different requirements: estimate the runtime for each simulation separately
+            else: self.estimate_runtimes_different_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtimes_same_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Estimating one runtime for all simulations on remote host '" + host_id + "' ...")
+
+        # Check if all simulations for this host already have a walltime defined
+        if self.all_have_walltime(host_id): return
+
+        # Get cluster name
+        cluster_name = self.get_clustername_for_host(host_id)
+
+        # Get the parallelization scheme that we have defined for this remote host
+        parallelization_host = self.parallelization_for_host(host_id)
+
+        # Get the first simulation definition
+        ski = self.get_first_simulation_skifile_for_host(host_id)
+
+        # Visualisation of the distribution of estimated runtimes
+        if self.config.runtimes_plot_path is not None: plot_path = fs.join(self.config.runtimes_plot_path, time.unique_name("explorer_runtimes_" + host_id) + ".pdf")
+        else: plot_path = None
+
+        # Estimate the runtime
+        runtime = self.runtime_estimator.runtime_for(ski, parallelization_host, host_id, cluster_name, nwavelengths=self.nwavelengths, plot_path=plot_path)
+
+        # Debugging
+        log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
+
+        # Loop over the simulations, set the walltime
+        for simulation_name in self.get_simulation_names_for_host(host_id):
+
+            # Check if walltime is already defined: shouldn't be?
+            if self.has_walltime(host_id, simulation_name): continue
+
+            # Set walltime
+            self.set_walltime(host_id, simulation_name, runtime)
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtimes_different_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Estimating the runtime for each simulation in the queue of remote host '" + host_id + "' separately ...")
+
+        # Get cluster name
+        cluster_name = self.get_clustername_for_host(host_id)
+
+        # Loop over the simulations
+        for simulation_name in self.get_simulation_names_for_host(host_id):
+
+            # Get the parallelization scheme
+            parallelization_item = self.get_parallelization(host_id, simulation_name)
+
+            # Check if walltime is already defined
+            if self.has_walltime(host_id, simulation_name): continue
+
+            # Visualisation of the distribution of estimated runtimes
+            if self.config.runtimes_plot_path is not None: plot_path = fs.join(self.config.runtimes_plot_path, time.unique_name("explorer_runtimes_" + host_id) + ".pdf")
+            else: plot_path = None
+
+            # Get the ski file
+            ski = self.get_simulation_skifile(host_id, simulation_name)
+
+            # Estimate the runtime for the current number of photon packages and the current remote host
+            runtime = self.runtime_estimator.runtime_for(ski, parallelization_item, host_id, cluster_name, nwavelengths=self.nwavelengths, plot_path=plot_path)
+
+            # Debugging
+            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
+
+            # Set the walltime
+            self.set_walltime(host_id, simulation_name, runtime)
 
     # -----------------------------------------------------------------
 
@@ -2237,6 +2786,27 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_parallelization(self, host_id, simulation_name):
+
+        """
+        This function ...
+        :param host_id:
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the parallelization scheme that has been defined for this simulation
+        parallelization_item = self.parallelization_for_simulation(simulation_name)
+
+        # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
+        # defined for the current remote host
+        if parallelization_item is None: return self.parallelization_for_host(host_id) # Get the parallelization scheme for this remote host
+
+        # Return individual parallelization
+        else: return parallelization_item
+
+    # -----------------------------------------------------------------
+
     def schedule_simulations(self, remote):
 
         """
@@ -2251,9 +2821,6 @@ class BatchLauncher(Configurable):
         # The remote input path
         remote_input_path = None
 
-        # Get the parallelization scheme for this remote host
-        parallelization_host = self.parallelization_for_host(remote.host_id)
-
         # Cache the simulation objects scheduled to the current remote
         simulations_remote = []
 
@@ -2264,16 +2831,11 @@ class BatchLauncher(Configurable):
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.queues[remote.host_id].pop()
 
-            # Get the parallelization scheme that has been defined for this simulation
-            parallelization_item = self.parallelization_for_simulation(name)
-
-            # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
-            # defined for the current remote host
-            if parallelization_item is None: parallelization_item = parallelization_host
+            # Get the parallelization
+            parallelization_item = self.get_parallelization(remote.host_id, name)
 
             # Check whether scheduling options are defined for this simulation and for this remote host
-            if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
-                scheduling_options = self.scheduling_options[remote.host_id][name]
+            if self.has_scheduling_options(remote.host_id, name): scheduling_options = self.scheduling_options[remote.host_id][name]
             else: scheduling_options = None
 
             # Generate the analysis options
@@ -2302,7 +2864,7 @@ class BatchLauncher(Configurable):
                 # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                ## SET OPTIONS
+                # SET OPTIONS
 
                 # Remove remote files
                 simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
@@ -2392,9 +2954,11 @@ class BatchLauncher(Configurable):
 
         # Set add_timing and add_memory settings
         if local:
-            add_timing = self.config.add_timing_local
-            add_memory = self.config.add_memory_local
-        else: add_timing = add_memory = True
+            add_timing = self.config.add_timing and self.config.add_timing_local
+            add_memory = self.config.add_memory and self.config.add_memory_local
+        else:
+            add_timing = self.config.add_timing
+            add_memory = self.config.add_memory
 
         # Check whether analysis options are specified
         if analysis_options_item is None:

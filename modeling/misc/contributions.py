@@ -150,19 +150,19 @@ class ModelContributionsLauncher(ModelSimulationInterface):
         # 7. Create the instruments
         self.create_instruments()
 
-        # Adapt the ski file
+        # 8. Adapt the ski file
         self.adapt_ski()
 
         # 9. Build the dust grid (to get tree file) (maybe not necessary since there is only one simulation performed?)
         if not self.has_dust_grid_tree: self.build_dust_grid()
 
-        # Set the input
+        # 10. Set the input
         self.set_input()
 
-        # 9. Write first, then launch the simulations
+        # 11. Write first, then launch the simulations
         self.write()
 
-        # 10. Launch the simulations
+        # 12. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -1033,123 +1033,6 @@ class ModelContributionsLauncher(ModelSimulationInterface):
 
         # Run the dust grid builder
         builder.run(definition=self.definition, dust_grid=self.dust_grid)
-
-    # -----------------------------------------------------------------
-
-    # def set_parallelization(self):
-    #
-    #     """
-    #     This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
-    #     a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
-    #     based on the current load of the corresponding system).
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Setting the parallelization scheme for the remote host (" + self.config.remote + ") ...")
-    #
-    #     # Create the parallelization tool
-    #     tool = ParallelizationTool()
-    #
-    #     # Set configuration options
-    #     tool.config.ski = self.ski
-    #     tool.config.input = self.input_paths
-    #
-    #     # Set host properties
-    #     tool.config.nnodes = self.config.nnodes
-    #     tool.config.nsockets = self.remote_host.cluster.sockets_per_node
-    #     tool.config.ncores = self.remote_host.cluster.cores_per_sockets
-    #     tool.config.memory = self.remote_host.cluster.memory
-    #
-    #     # MPI available and used
-    #     tool.config.mpi = True
-    #     tool.config.hyperthreading = False
-    #     tool.config.threads_per_core = None
-    #
-    #     # Number of dust cells
-    #     tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
-    #
-    #     # Run the parallelization tool
-    #     tool.run()
-    #
-    #     # Get the parallelization scheme
-    #     parallelization = tool.parallelization
-    #
-    #     # Get the parallelization scheme for this host
-    #     #parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes, self.config.data_parallel)
-    #
-    #     # Debugging
-    #     log.debug("Parallelization scheme for host " + self.remote_host_id + ": " + str(parallelization))
-    #
-    #     # Set the parallelization for this host
-    #     self.launcher.set_parallelization_for_host(self.remote_host_id, parallelization)
-
-    # -----------------------------------------------------------------
-
-    # def estimate_runtimes(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Estimating the runtimes based on the results of previously finished simulations ...")
-    #
-    #     # Create a RuntimeEstimator instance
-    #     estimator = RuntimeEstimator.from_file(self.timing_table_path)
-    #
-    #     # Debugging
-    #     log.debug("Estimating the runtime for host '" + self.remote_host_id + "' ...")
-    #
-    #     # Get the parallelization scheme that we have defined for this remote host
-    #     parallelization = self.launcher.parallelization_for_host(self.remote_host_id)
-    #
-    #     # Dictionary of estimated walltimes for the different simulations
-    #     walltimes = dict()
-    #
-    #     # Determine the number of dust cells by building the tree locally
-    #     ncells = self.estimate_ncells()
-    #
-    #     # Loop over the different ski files`
-    #     for contribution in self.ski_contributions:
-    #
-    #         # Get the ski file
-    #         ski = self.ski_contributions[contribution]
-    #
-    #         # Estimate the runtime for the current number of photon packages and the current remote host
-    #         runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=ncells)
-    #
-    #         # Debugging
-    #         log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
-    #
-    #         # Set the estimated walltime
-    #         walltimes[contribution] = runtime * 5. # * 5 is temporary
-    #
-    #     # Create and set scheduling options for each host that uses a scheduling system
-    #     for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
-    #
-    # -----------------------------------------------------------------
-
-    # def estimate_ncells(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Estimating the number of dust cells ...")
-    #
-    #     # Create simulation directory and output directory
-    #     simulation_path = fs.create_directory_in(self.best_generation_path, "temp")
-    #
-    #     # Initialize dust grid tool
-    #     tool = DustGridTool()
-    #
-    #     # Get the dust grid statistics
-    #     statistics = tool.get_statistics(self.ski_contributions["total"], simulation_path, self.maps_path, self.galaxy_name)
-    #     return statistics.ncells
 
     # -----------------------------------------------------------------
 

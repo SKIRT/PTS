@@ -120,7 +120,6 @@ definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance 
 # Deploy on remote hosts
 definition.add_flag("deploy", "deploy SKIRT where necessary", False)
 definition.add_flag("check_versions", "check versions of SKIRT where necessary", True)
-#definition.add_flag("update_dependencies", "update PTS dependencies", False)
 definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
