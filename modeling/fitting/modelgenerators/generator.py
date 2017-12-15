@@ -258,7 +258,7 @@ class ModelGenerator(FittingComponent):
         self.load_distributions()
 
         # 3. Initialize the animations
-        self.initialize_animations()
+        if self.config.animate: self.initialize_animations()
 
         # 4. Generate the model parameters
         self.generate()
@@ -287,6 +287,9 @@ class ModelGenerator(FittingComponent):
 
         # Get scales for different free parameters
         if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+        # Get parameter ranges
+        if "parameter_ranges" in kwargs: self.ranges = kwargs.pop("parameter_ranges")
 
         # Get other input
         if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
@@ -478,11 +481,12 @@ class ModelGenerator(FittingComponent):
 
         # Convert into lists, and strip units
         grid_points_lists = []
-        for label in enumerate(self.fitting_run.free_parameter_labels):
+        for label in self.fitting_run.free_parameter_labels:
 
             # Get the list of scalar values
             if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
                 unit = self.fitting_run.parameter_units[label]
+                #print(label, unit)
                 values = [value.to(unit).value for value in grid_points_dict[label]]
             else: values = grid_points_dict[label]
 

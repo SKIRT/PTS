@@ -481,6 +481,8 @@ def create_configuration(definition, command_name, description, configuration_me
 
     ## CREATE THE CONFIGURATION
 
+    prompt_optional = kwargs.pop("prompt_optional", None)
+
     # Create the configuration setter
     if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, **kwargs)
     elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, **kwargs)
@@ -495,7 +497,8 @@ def create_configuration(definition, command_name, description, configuration_me
     else: raise ValueError("Invalid configuration method: " + configuration_method)
 
     # Create the configuration from the definition and from reading the command line arguments
-    config = setter.run(definition)
+    if configuration_method == "interactive": config = setter.run(definition, prompt_optional=prompt_optional)
+    else: config = setter.run(definition)
 
     # Return the configuration
     return config

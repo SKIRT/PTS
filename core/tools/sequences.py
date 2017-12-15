@@ -709,9 +709,17 @@ def iterate_from_middle(lst):
     :return: 
     """
 
+    from . import numbers
+
     try:
 
-        middle = len(lst)/2
+        # Even
+        if numbers.is_even(len(lst)): middle = len(lst)/2
+        # Odd
+        else: middle = (len(lst)-1)/2
+
+        assert numbers.is_integer(middle)
+        middle = int(middle)
         yield lst[middle]
 
         for shift in range(1, middle+1):

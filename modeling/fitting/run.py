@@ -1487,6 +1487,7 @@ class FittingRun(object):
 
         # Get the values for the free parameters from the ski file template
         labeled_values = self.ski_template.get_labeled_values()
+        #print(labeled_values)
         for label in self.free_parameter_labels:
             parameter_values[label] = labeled_values[label]
 

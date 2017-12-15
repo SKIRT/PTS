@@ -257,7 +257,6 @@ class ParameterExplorer(FittingComponent):
         # Check whether initialize_fit has been called
         if self.is_galaxy_modeling:
             if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
-            #if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration") # doesn't exist anymore: incorporated in the representations
 
         # Get grid generation settings
         self.scales = kwargs.pop("scales", None)
@@ -476,6 +475,44 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def reference_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...magic.basics.coordinatesystem import CoordinateSystem
+        if self.reference_map_path is None: return None
+        else: return CoordinateSystem.from_file(self.reference_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_wcs_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.reference_map_path
+
+    # -----------------------------------------------------------------
+
     def set_launcher_options(self):
 
         """
@@ -524,37 +561,63 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
         self.launcher.config.analysis.plotting.seds = self.config.plot_seds    # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
-        self.launcher.config.analysis.plotting.format = "pdf"  # plot format
+        self.launcher.config.analysis.plotting.format = self.config.plotting_format  # plot format
         self.launcher.config.analysis.plotting.progress = self.config.plot_progress
         self.launcher.config.analysis.plotting.timeline = self.config.plot_timeline
         self.launcher.config.analysis.plotting.memory = self.config.plot_memory
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
-        if self.is_images_modeling: # images modeling
-
-            #self.launcher.config.analysis.misc.fluxes = False
-            #self.launcher.config.analysis.misc.images = True
-            #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path)
-            #self.launcher.config.analysis.misc.images_unit = "Jy"
-            #self.launcher.config.analysis.misc.images_kernels = None
-            #self.launcher.config.analysis.misc.rebin_wcs = None
+        if self.is_images_modeling: # images modeling #self.launcher.config.analysis.misc.fluxes = False #self.launcher.config.analysis.misc.images = True #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path) #self.launcher.config.analysis.misc.images_unit = "Jy" #self.launcher.config.analysis.misc.images_kernels = None #self.launcher.config.analysis.misc.rebin_wcs = None
             pass
-
         # Galaxy and SED modeling
         else:
 
-            self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
-            self.launcher.config.analysis.misc.images = False
+            # From images
+            if self.use_images:
 
-        # Observation_filters
+                self.launcher.config.analysis.misc.fluxes_from_images = True # calculate observed fluxes from images
+                self.launcher.config.analysis.misc.fluxes = False
+                self.launcher.config.analysis.misc.images = False
+
+                # Plot fluxes
+                self.launcher.config.analysis.misc.plot_fluxes_from_images = True
+                self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
+
+                # Set instrument and coordinate system path
+                self.launcher.config.analysis.misc.fluxes_from_images_instrument = self.earth_instrument_name
+                self.launcher.config.analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
+
+                # Set mask paths
+                self.launcher.config.analysis.misc.fluxes_from_images_masks = self.environment.photometry_image_paths_for_filter_names # only for galaxy modeling
+                self.launcher.config.analysis.misc.fluxes_from_images_mask_from_nans = True
+
+                # Write the fluxes images
+                self.launcher.config.analysis.misc.write_fluxes_images = True
+
+                # Plot fluxes
+                self.launcher.config.analysis.misc.plot_fluxes_from_images = True
+                self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
+
+            # From SEDs
+            else:
+
+                self.launcher.config.analysis.misc.fluxes_from_images = False
+                self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes from SEDs
+                self.launcher.config.analysis.misc.images = False
+
+                # Plot fluxes
+                self.launcher.config.analysis.misc.plot_fluxes = True
+                self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.observed_sed_path
+
+        # Observation filters and observation instruments
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
-
-        # Observation_instruments
         self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
         # Set spectral convolution flag
-        self.launcher.config.analysis.misc.spectral_convolution = self.spectral_convolution
+        #self.launcher.config.analysis.misc.spectral_convolution = self.spectral_convolution
+        self.launcher.config.analysis.misc.fluxes_spectral_convolution = self.spectral_convolution
+        self.launcher.config.analysis.misc.fluxes_from_images_spectral_convolution = self.spectral_convolution
 
         # Set the path to the modeling directory to the simulation object
         self.launcher.config.analysis.modeling_path = self.config.path
@@ -916,7 +979,7 @@ class ParameterExplorer(FittingComponent):
         definition = self.create_parameter_ranges_definition()
 
         # Get the ranges
-        if len(definition) > 0: config = create_configuration_interactive(definition, "ranges", "parameter ranges", add_cwd=False, add_logging=False)
+        if len(definition) > 0: config = create_configuration_interactive(definition, "ranges", "parameter ranges", add_cwd=False, add_logging=False, prompt_optional=True)
 
         # No parameters for which the ranges still have to be specified interactively
         else: config = None
@@ -1094,8 +1157,19 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Determine the number of photon packages
-        if self.config.increase_npackages: return int(self.fitting_run.current_npackages * self.config.npackages_factor)
-        else: return self.fitting_run.current_npackages
+        if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
+        else: npackages = self.fitting_run.current_npackages
+
+        # Check
+        if npackages < self.ndust_cells:
+
+            if self.config.adjust_npackages:
+                log.debug("Adjusting the number of photon packages from " + str(npackages) + " to the number of dust cells (" + str(self.ndust_cells) + ") ...")
+                npackages = self.ndust_cells
+            else: log.warning("The number of photon packages (" + str(npackages) + ") is less than the number of dust cells (" + str(self.ndust_cells) + ")")
+
+        # Return the number of photon packages
+        return npackages
 
     # -----------------------------------------------------------------
 
@@ -1124,6 +1198,18 @@ class ParameterExplorer(FittingComponent):
         """
 
         return self.representation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.ndust_cells
 
     # -----------------------------------------------------------------
 
@@ -1365,6 +1451,15 @@ class ParameterExplorer(FittingComponent):
 
         # Set model representation
         self.set_representation()
+
+        # Use images?
+        if self.use_images:
+
+            # Remove the existing instruments
+            self.ski.remove_all_instruments()
+
+            # Add the instrument
+            self.ski.add_instrument(self.earth_instrument_name, self.representation.simple_instrument)
 
     # -----------------------------------------------------------------
 

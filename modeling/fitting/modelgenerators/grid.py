@@ -123,7 +123,9 @@ class GridModelGenerator(ModelGenerator):
             # Check whether scales were given as input
             if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
             elif self.config.scales is not None and label in self.config.scales: scales[label] = self.config.scales[label]
-            else: raise ValueError("Scale was not set for " + label)
+            else: #raise ValueError("Scale was not set for '" + label + "'")
+                # Take from grid fitting configuration
+                scales[label] = self.fitting_run.grid_settings[label + "_scale"]
 
         # Return the scales
         return scales
@@ -141,7 +143,7 @@ class GridModelGenerator(ModelGenerator):
         # Check whether scales were given as input
         if self.scales is not None and label in self.scales: return self.scales[label]
         elif self.config.scales is not None and label in self.config.scales: return self.config.scales[label]
-        else: raise ValueError("Scale was not set for " + label)
+        else: raise ValueError("Scale was not set for '" + label + "'")
 
     # -----------------------------------------------------------------
 
@@ -187,15 +189,17 @@ class GridModelGenerator(ModelGenerator):
 
         # Generate the grid points (as dictionary of lists)
         grid_points = self.generate_grid_points()
+        #print(grid_points)
 
         # Create iterator of combinations
-        iterator = sequences.iterate_lists_combinations(grid_points)
+        iterator = sequences.iterate_lists_combinations(*grid_points)
 
         # Create name iterator
         name_iterator = strings.alphabet_strings_iterator()
 
         # Generate the initial parameter sets
         # Loop over the number of required models minus the number of fixed model parameter sets
+        #print("nmodels:", self.target_nmodels)
         for index in range(self.target_nmodels):
 
             # The next combination

@@ -43,4 +43,7 @@ definition.add_optional("scales", "string_string_dictionary", "scales (linear/lo
 #definition.add_optional("most_sampled_parameters", "string_list", "free parameter(s) which get the most sampling points", choices=labels)
 #definition.add_optional("sampling_weights", "weights", "relative sampling for the free parameters: " + ",".join(labels))
 
+# Make animations?
+definition.add_flag("animate", "make animations", False)
+
 # -----------------------------------------------------------------

@@ -40,7 +40,7 @@ definition.add_positional_optional("generation_method", "string", "model generat
 ## Remote execution
 
 # Remote hosts
-if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
+if len(find_host_ids()) > 0: definition.add_positional_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
 else: definition.add_fixed("remotes", "remote hosts", [])
 
 # Options
@@ -61,6 +61,7 @@ definition.add_flag("visualise", "make visualisations")
 # Model options
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
+definition.add_flag("adjust_npackages", "adjust the number of packages to the number of dust cells", True)
 
 # Use a different wavelength grid or use a different representation
 definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)
@@ -91,13 +92,16 @@ definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
 
 # Launcher settings
+default_format = "pdf"
+formats = ["pdf", "png"]
 definition.add_flag("extract_progress", "extract progress information", False)
 definition.add_flag("extract_timeline", "extract timeline information", False)
 definition.add_flag("extract_memory", "extract memory information", False)
 definition.add_flag("plot_progress", "plot progress information", False)
 definition.add_flag("plot_timeline", "plot simulation timeline", False)
 definition.add_flag("plot_memory", "plot memory information", False)
-definition.add_flag("plot_seds", "plot the SEDs of individual simulations", False)
+definition.add_flag("plot_seds", "plot the SEDs of individual simulations", True)
+definition.add_optional("plotting_format", "string", "plotting format", default_format, choices=formats)
 
 # Other
 definition.add_flag("record_timing", "record timing information in timing table", True)

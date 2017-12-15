@@ -41,4 +41,7 @@ definition.add_flag("check_recurrence", "check for recurrence of models that hav
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
 
+# Make animations?
+definition.add_flag("animate", "make animations", False)
+
 # -----------------------------------------------------------------

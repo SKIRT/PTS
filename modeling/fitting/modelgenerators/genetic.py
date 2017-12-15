@@ -565,7 +565,7 @@ class GeneticModelGenerator(ModelGenerator):
         grid_points = self.grid_points_to_lists(grid_points)
 
         # Create iterator of combinations
-        iterator = sequences.iterate_lists_combinations(grid_points)
+        iterator = sequences.iterate_lists_combinations(*grid_points)
 
         # Generate the initial parameter sets
         # Loop over the number of required models minus the number of fixed model parameter sets
