@@ -70,6 +70,47 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_dictionary(cls, dictionary, key_label="Property", value_label="Value", tostr_kwargs=None,
+                        key_description="property name", value_description="property value"):
+
+        """
+        This function ...
+        :param dictionary:
+        :param key_label:
+        :param value_label:
+        :param tostr_kwargs:
+        :param key_description:
+        :param value_description:
+        :return:
+        """
+
+        # Import tostr function
+        from ..tools.stringify import tostr
+
+        if tostr_kwargs is None: tostr_kwargs = dict()
+
+        # Create the table
+        table = cls()
+
+        # Add the column info
+        table.add_column_info(key_label, str, None, key_description)
+        table.add_column_info(value_label, str, None, value_description)
+        table.setup()
+
+        for label in dictionary:
+
+            value = dictionary[label]
+            value_string = tostr(value, **tostr_kwargs)
+
+            values = [label, value_string]
+            table.add_row(values)
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_composite(cls, composite, key_label="Property", value_label="Value", tostr_kwargs=None,
                        key_description="property name", value_description="property value"):
 
