@@ -1547,3 +1547,34 @@ def sort_with_first_last(sequence, first=None, last=None):
     return firsts + between + lasts
 
 # -----------------------------------------------------------------
+
+def find_endswith(sequence, endswith):
+
+    """
+    This function ...
+    :param sequence:
+    :param endswith:
+    :return:
+    """
+
+    result = []
+    for item in sequence:
+        if item.endswith(endswith): result.append(item)
+    return result
+
+# -----------------------------------------------------------------
+
+def find_unique_endswith(sequence, endswith):
+
+    """
+    This function ...
+    :param sequence:
+    :param endswith:
+    :return:
+    """
+
+    result = find_endswith(sequence, endswith)
+    if len(result) != 1: raise ValueError("Not unique")
+    return result[0]
+
+# -----------------------------------------------------------------

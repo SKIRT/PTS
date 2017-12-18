@@ -90,6 +90,70 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SingleSimulationDefinition(self.ski_pattern, self.output_path, input_path=self.input_path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_command(cls, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        from ..tools import sequences
+
+        parts = command.split()
+        first = parts[0]
+
+        # SKIRT is called directly, no MPI
+        if first.endswith("skirt"):
+
+            mpirun_path = None
+            skirt_path = first
+            nprocesses = 1
+
+        # Probably MPI call
+        else:
+
+            mpirun_path = first
+            skirt_path = sequences.find_unique_endswith(parts, "skirt")
+            if "-np" in command: nprocesses = int(command.split("-np")[1].split()[0])
+            elif "-n" in command: nprocesses = int(command.split("-n")[1].split()[0])
+            else: raise ValueError("Unknown MPI command")
+
+        # Find ski file path
+        ski_path = sequences.find_unique_endswith(parts, ".ski")
+
+        # Input and output
+        output_path = strings.unquote(command.split("-o")[1].split()[0].strip()) if "-o" in parts else None
+        input_path = strings.unquote(command.split("-i")[1].split()[0].strip()) if "-i" in parts else None
+
+        # Other parallelization options
+        nthreads = int(command.split("-t")[1].split()[0]) if "-t" in parts else None
+        data_parallel = "-d" in parts
+
+        # Logging options
+        verbose = "-v" in parts
+
+        # Emulate?
+        emulate = "-e" in parts
+
+        # Create and return the skirt arguments object
+        return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose, memory=False, data_parallel=data_parallel, emulate=emulate)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_definition(cls, definition, logging_options, parallelization, emulate=False):
 
@@ -129,7 +193,7 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False):
+    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False, data_parallel=False, emulate=False):
 
         """
         This function ...
@@ -140,6 +204,8 @@ class SkirtArguments(object):
         :param threads:
         :param verbose:
         :param memory:
+        :param data_parallel:
+        :param emulate:
         :return:
         """
 
@@ -157,6 +223,8 @@ class SkirtArguments(object):
         arguments.output_path = output_path
         arguments.logging.verbose = verbose
         arguments.logging.memory = memory
+        arguments.parallel.dataparallel = data_parallel
+        arguments.emulate = emulate
 
         # Return the new instance
         return arguments
