@@ -87,7 +87,10 @@ definition.add_flag("data_parallel_remote", "use data-parallelization for remote
 # -----------------------------------------------------------------
 
 # Special options
-definition.add_flag("dry", "dry-run (don't actually launch simulations)")
+definition.add_flag("keep", "keep remote input and output", False)
+definition.add_flag("attached", "run SKIRT in attached mode", False)
+definition.add_flag("show_progress", "show progress of local simulations", False)
+definition.add_flag("dry", "dry-run (don't actually launch simulations)", False)
 
 # Advanced
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)

@@ -214,11 +214,12 @@ def prompt_yn(name, description, default=None):
 
 # -----------------------------------------------------------------
 
-def prompt_proceed(description=None):
+def prompt_proceed(description=None, default=None):
 
     """
     This function ...
     :param description:
+    :param default:
     :return:
     """
 
@@ -226,7 +227,7 @@ def prompt_proceed(description=None):
 
     # Create definition
     definition = ConfigurationDefinition(write_config=False)
-    definition.add_flag("proceed", description, default=None)
+    definition.add_flag("proceed", description, default=default)
 
     # Create setter
     setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False, add_config_path=False)

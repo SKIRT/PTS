@@ -575,6 +575,9 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
+        self.launcher.config.keep = self.config.keep # keep remote output
+        self.launcher.config.attached = self.config.attached  # run SKIRT in attached mode
+        self.launcher.config.show_progress = self.config.show_progress
 
         # Memory and timing table paths (for recording and for estimating)
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file

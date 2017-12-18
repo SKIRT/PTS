@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.change_simulation_settings Change certain settings of a simulation.
+## \package pts.do.core.change_simulation_settings Change certain settings of a simulation or multiple simulations.
 
 # -----------------------------------------------------------------
 
@@ -169,15 +169,19 @@ def set_value_for_simulations(simulations, name, value):
 
 # -----------------------------------------------------------------
 
-def set_value_for_simulations_prompt(simulations, name, value):
+def set_value_for_simulations_prompt(simulations, name, value, changed=None):
 
     """
     This function ...
     :param simulations:
     :param name:
     :param value:
+    :param changed:
     :return:
     """
+
+    # Initialize changed dictinoary
+    if changed is None: changed = {simulation_id: False for simulation_id in simulations}
 
     # Debugging
     log.debug("Changing the values of '" + name + "' for each simulation ...")
@@ -198,6 +202,10 @@ def set_value_for_simulations_prompt(simulations, name, value):
         # Prompt
         if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + " for simulation '" + simulation_name + "'?"):
             set_value_for_simulation(simulation, name, value)
+            changed[simulation_id] = True
+
+    # Return the changed dictionary
+    return changed
 
 # -----------------------------------------------------------------
 
@@ -242,6 +250,45 @@ def get_common_ptype(values):
 
 # -----------------------------------------------------------------
 
+def save_simulation(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Saving the simulation ...")
+
+    # Save the simulation
+    simulation.save()
+
+# -----------------------------------------------------------------
+
+def save_simulations(simulations, changed=None):
+
+    """
+    This function ...
+    :param simulations:
+    :param changed:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Saving the simulations ...")
+
+    # Loop over the simulations
+    for simulation_id in simulations:
+
+        # Not changed?
+        if changed is not None and not changed[simulation_id]: continue
+
+        # Save
+        simulations[simulation_id].save()
+
+# -----------------------------------------------------------------
+
 # Adapt a single simulation
 if has_single_id:
 
@@ -282,8 +329,8 @@ if has_single_id:
         # Set the property
         if value != default: set_value_for_simulation(simulation, name, value)
 
-    # Save the simulation
-    simulation.save()
+    # Save
+    save_simulation(simulation)
 
 # -----------------------------------------------------------------
 
@@ -293,6 +340,10 @@ else:
     # Load the simulations and put them in a dictionary
     simulations = OrderedDict()
     for simulation_id in config.ids: simulations[simulation_id] = get_simulation_for_host(config.remote, simulation_id)
+
+    # Create a dictionary to contain a flag for each simulation that tells whether it has changed
+    changed = dict()
+    for simulation_id in simulations: changed[simulation_id] = False
 
     # Loop over the properties
     for name in properties:
@@ -320,6 +371,9 @@ else:
             choices = None
             suggestions = None
         else:
+            # Prompt to change this property
+            change = prompt_proceed("Change the property '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
+            if not change: continue
             default = None
             ptype = get_common_ptype(unique_values)
             choices = None
@@ -331,9 +385,14 @@ else:
 
         # Each simulation had the same value: adapt each simulation simultaneously without prompting to proceed
         if len(unique_values) == 1:
-            if value != default: set_value_for_simulations(simulations, name, value)
+            if value != default:
+                set_value_for_simulations(simulations, name, value)
+                for simulation_id in simulations: changed[simulation_id] = True
 
         # Different simulations had different values
-        else: set_value_for_simulations_prompt(simulations, name, value)
+        else: changed = set_value_for_simulations_prompt(simulations, name, value, changed=changed)
+
+    # Save simulations that have changed
+    save_simulations(simulations, changed=changed)
 
 # -----------------------------------------------------------------
