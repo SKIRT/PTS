@@ -479,6 +479,42 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ndifferences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.differences)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfree_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.nfree_parameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndof(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ndifferences - self.nfree_parameters - 1 # number of data points - number of fitted parameters - 1
+
+    # -----------------------------------------------------------------
+
     def calculate_chi_squared(self):
 
         """
@@ -489,12 +525,9 @@ class SEDFitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the chi squared value for this model ...")
 
-        # Calculate the degrees of freedom
-        dof = len(self.observed_sed) - 3. - 1.  # number of data points - number of fitted parameters - 1
-
         # The (reduced) chi squared value is the sum of all the terms (for each band),
         # divided by the number of degrees of freedom
-        self.chi_squared = np.sum(self.differences["Chi squared term"]) / dof
+        self.chi_squared = np.sum(self.differences["Chi squared term"]) / self.ndof
 
         # Debugging
         log.debug("Found a (reduced) chi squared value of " + str(self.chi_squared))
@@ -745,24 +778,6 @@ class ImagesFitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the residual maps of the observed and simulated images ...")
 
-        # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
-        # search the one corresponding to the "earth" instrument
-        mock_sed_name = self.object_name + "_earth"
-        if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
-
-        # Get the mock SED
-        mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
-
-        # Loop over the entries in the fluxdensity table (SED) derived from the simulation
-        for i in range(len(mock_sed)):
-            # Get instrument, band and flux density
-            instrument = mock_sed["Instrument"][i]
-            band = mock_sed["Band"][i]
-            fluxdensity = mock_sed["Photometry"][i]
-
-            # Find the corresponding flux in the SED derived from observation
-            observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
-
     # -----------------------------------------------------------------
 
     def calculate_chi_squared(self):
@@ -771,6 +786,8 @@ class ImagesFitModelAnalyser(FittingComponent):
         This function ...
         :return:
         """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -781,6 +798,8 @@ class ImagesFitModelAnalyser(FittingComponent):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
     def update_generation(self):
@@ -790,6 +809,8 @@ class ImagesFitModelAnalyser(FittingComponent):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -798,5 +819,7 @@ class ImagesFitModelAnalyser(FittingComponent):
         This function ...
         :return:
         """
+
+        pass
 
 # -----------------------------------------------------------------
