@@ -1218,7 +1218,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def mpi_knows_cpus_per_proc_option(self):
 
         """

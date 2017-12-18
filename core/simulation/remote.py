@@ -1896,7 +1896,9 @@ class SKIRTRemote(Remote):
                     screen_name = handle.value
 
                     # Check whether screen is active
-                    if screen_states is not None: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
+                    if screen_states is not None:
+                        if screen_name not in screen_states: active_screen = False
+                        else: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
                     else: active_screen = self.is_active_screen(screen_name)
 
                     # Get status of simulation
@@ -1923,7 +1925,9 @@ class SKIRTRemote(Remote):
                 screen_name = handle.value
 
                 # Check whether screen is active
-                if screen_states is not None: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
+                if screen_states is not None:
+                    if screen_name not in screen_states: active_screen = False
+                    else: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
                 else: active_screen = self.is_active_screen(screen_name)
 
                 # Set status of simulation
