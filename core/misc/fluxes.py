@@ -890,7 +890,8 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
 
 # -----------------------------------------------------------------
 
-def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, errors=None, return_wavelength=False, result_unit="Jy"):
+def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, errors=None,
+                                  return_wavelength=False, result_unit="Jy"):
 
     """
     This function ...
@@ -908,8 +909,11 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     # Debugging
     log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
 
+    # Determine the filter wavelength
+    filter_wavelength = fltr.wavelength.to(wavelength_unit).value  # fltr.pivot.to(wavelength_unit).value
+
     # Get the index of the wavelength closest to that of the filter
-    index = sequences.find_closest_index(wavelengths, fltr.pivot.to(wavelength_unit).value)  # wavelengths are in micron
+    index = sequences.find_closest_index(wavelengths, filter_wavelength)  # wavelengths are in micron
 
     # Get result unit
     result_unit = u(result_unit)
