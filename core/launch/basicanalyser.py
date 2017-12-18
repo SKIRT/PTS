@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..extract.progress import ProgressExtractor
@@ -94,6 +97,11 @@ class BasicAnalyser(Configurable):
         self.flux_calculator = None
         self.image_flux_calculator = None
         self.image_maker = None
+
+        # The observed fluxes and images
+        self._mock_seds = None
+        self._mock_seds_from_images = None
+        self._mock_images = None
 
     # -----------------------------------------------------------------
 
@@ -661,62 +669,62 @@ class BasicAnalyser(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def needs_rgb(self):
+    def rgb(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.misc_options.rgb and not self.has_rgb
+        return self.misc_options.rgb
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_animations(self):
+    def animations(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.misc_options.animations and not self.has_animations
+        return self.misc_options.animations
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_fluxes(self):
+    def observed_fluxes(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.misc_options.fluxes and not self.has_fluxes
+        return self.misc_options.fluxes
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_fluxes_from_images(self):
+    def observed_fluxes_from_images(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.misc_options.fluxes_from_images and not self.has_fluxes_from_images
+        return self.misc_options.fluxes_from_images
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_images(self):
+    def observed_images(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.misc_options.images and not self.has_images
+        return self.misc_options.images
 
     # -----------------------------------------------------------------
 
@@ -734,19 +742,19 @@ class BasicAnalyser(Configurable):
         self.show_misc_options()
 
         # If requested, make RGB images of the output FITS files
-        if self.needs_rgb: self.make_rgb()
+        if self.rgb: self.make_rgb()
 
         # If requested, make datacube animations from the output datacubes
-        if self.needs_animations: self.make_animations()
+        if self.animations: self.make_animations()
 
-        # If requested, calculate observed fluxes from the output SEDs
-        if self.needs_fluxes: self.calculate_observed_fluxes()
+        # Observed fluxes
+        if self.observed_fluxes: self.get_observed_fluxes()
 
-        # If requested, calculate observed fluxes from the output datacubes
-        if self.needs_fluxes_from_images: self.calculate_observed_fluxes_from_images()
+        # Observed fluxes from images
+        if self.observed_fluxes_from_images: self.get_observed_fluxes_from_images()
 
-        # If requested, create observed imgaes from the output datacubes
-        if self.needs_images: self.make_observed_images()
+        # Observed images
+        if self.observed_images: self.get_observed_images()
 
     # -----------------------------------------------------------------
 
@@ -1073,6 +1081,21 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_observed_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        if not self.has_fluxes: self.calculate_observed_fluxes()
+
+        # Load
+        else: self.load_observed_fluxes()
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes(self):
 
         """
@@ -1103,6 +1126,55 @@ class BasicAnalyser(Configurable):
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
         self.simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def load_observed_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the observed fluxes ...")
+
+        from ..data.sed import ObservedSED
+
+        # Get output path
+        output_path = self.fluxes_output_path
+
+        # Initialize dictionary
+        self._mock_seds = OrderedDict()
+
+        # Loop over the instruments for which observed fluxes were calculated
+        for instr_name in self.misc_options.observation_instruments:
+
+            # Determine the path to the output flux table
+            path = fs.join(output_path, instr_name + "_fluxes.dat")
+
+            # Debugging
+            log.debug("Loading the mock SED '" + instr_name + "' from '" + path + "' ...")
+
+            # Load the sed
+            sed = ObservedSED.from_file(path)
+
+            # Set the sed
+            self._mock_seds[instr_name] = sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mock_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._mock_seds is not None: return self._mock_seds
+        elif self.flux_calculator is not None: return self.flux_calculator.mock_seds
+        else: return None #raise ValueError("No mock SEDs")
 
     # -----------------------------------------------------------------
 
@@ -1293,6 +1365,21 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_observed_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        if not self.has_fluxes_from_images: self.calculate_observed_fluxes_from_images()
+
+        # Load
+        else: self.load_observed_fluxes_from_images()
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes_from_images(self):
 
         """
@@ -1335,6 +1422,55 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    def load_observed_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading observed fluxes from output images ...")
+
+        from ..data.sed import ObservedSED
+
+        # Get output path
+        output_path = self.fluxes_from_images_output_path
+
+        # Initialize dictionary
+        self._mock_seds_from_images = OrderedDict()
+
+        # Loop over the instruments for which observed fluxes were calculated
+        for instr_name in self.fluxes_from_images_instruments:
+
+            # Determine the path to the output flux table
+            path = fs.join(output_path, instr_name + "_fluxes.dat")
+
+            # Debugging
+            log.debug("Loading the mock SED (from images) '" + instr_name + "' from '" + path + "' ...")
+
+            # Load the sed
+            sed = ObservedSED.from_file(path)
+
+            # Set the sed
+            self._mock_seds_from_images[instr_name] = sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mock_seds_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._mock_seds_from_images is not None: return self._mock_seds_from_images
+        elif self.image_flux_calculator is not None: return self.image_flux_calculator.mock_seds
+        else: return None #raise ValueError("No mock SEDs from images")
+
+    # -----------------------------------------------------------------
+
     @property
     def filters_for_images(self):
 
@@ -1356,6 +1492,21 @@ class BasicAnalyser(Configurable):
         """
 
         return fs.create_directory_in(self.misc_options.path, "images", recursive=True)
+
+    # -----------------------------------------------------------------
+
+    def get_observed_images(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Create
+        if not self.has_images: self.make_observed_images()
+
+        # Load
+        else: self.load_observed_images()
 
     # -----------------------------------------------------------------
 
@@ -1439,5 +1590,21 @@ class BasicAnalyser(Configurable):
         # Done
         self.simulation.analysed_misc.append(images_name)
         self.simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def load_observed_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+        # Debugging
+        #log.debug("Loading observed images ...")
+
+        #raise NotImplementedError("Not yet implemented")
 
 # -----------------------------------------------------------------

@@ -1921,7 +1921,13 @@ class SKIRTRemote(Remote):
 
                 # The simulation has not started or it's screen session has been cancelled
                 screen_name = handle.value
-                if self.is_active_screen(screen_name): simulation_status = "queued"
+
+                # Check whether screen is active
+                if screen_states is not None: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
+                else: active_screen = self.is_active_screen(screen_name)
+
+                # Set status of simulation
+                if active_screen: simulation_status = "queued"
                 else: simulation_status = "cancelled"
 
             # Attached terminal session

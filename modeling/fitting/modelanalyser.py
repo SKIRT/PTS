@@ -281,9 +281,6 @@ class SEDFitModelAnalyser(FittingComponent):
         # The name of the generation
         self.generation_name = None
 
-        # The flux calculator
-        self.flux_calculator = None
-
         # The weights given to each band for the calculation of the chi squared
         self.weights = None
 
@@ -295,6 +292,9 @@ class SEDFitModelAnalyser(FittingComponent):
 
         # The chi squared table
         self.chi_squared_table = None
+
+        # The mock observed SEDs
+        self.mock_seds = None
 
     # -----------------------------------------------------------------
 
@@ -362,7 +362,6 @@ class SEDFitModelAnalyser(FittingComponent):
         # Set the attributes to default values
         self.simulation = None
         self.generation_name = None
-        self.flux_calculator = None
         self.differences = None
         self.chi_squared = None
         self.chi_squared_table = None
@@ -383,10 +382,15 @@ class SEDFitModelAnalyser(FittingComponent):
         simulationanalyser = kwargs.pop("simulation_analyser")
 
         # Make a local reference to the flux calculator
-        if simulationanalyser.basic_analyser.image_flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.image_flux_calculator
-        elif simulationanalyser.basic_analyser.flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.flux_calculator
-        else: raise RuntimeError("No ObservedFluxCalculator found; the calculate_observed_fluxes flag must be enabled on "
-                               "each simulation that is part of the radiative transfer modeling")
+        #if simulationanalyser.basic_analyser.image_flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.image_flux_calculator
+        #elif simulationanalyser.basic_analyser.flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.flux_calculator
+        #else: raise RuntimeError("No ObservedFluxCalculator found; the calculate_observed_fluxes flag must be enabled on "
+        #                       "each simulation that is part of the radiative transfer modeling")
+
+        # Get mock observed fluxes
+        if simulationanalyser.basic_analyser.mock_seds_from_images is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds_from_images
+        elif simulationanalyser.basic_analyser.mock_seds is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds
+        else: raise ValueError("No mock observed fluxes could be obtained from the simulation analyser")
 
         # Determine the generation directory
         generation_path = fs.directory_of(self.simulation.base_path)
@@ -432,13 +436,16 @@ class SEDFitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the differences between the observed and simulated SED ...")
 
+        earth_instrument_name = "earth"
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
-        mock_sed_name = self.object_name + "_earth"
-        if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
+        #mock_sed_name = self.object_name + "_earth"
+        #if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
+        if earth_instrument_name not in self.mock_seds: raise RuntimeError("Could not find a mock observed SED for the 'earth' instrument")
 
         # Get the mock SED
-        mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
+        #mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
+        mock_sed = self.mock_seds[earth_instrument_name]
 
         # Loop over the entries in the fluxdensity table (SED) derived from the simulation
         for i in range(len(mock_sed)):
