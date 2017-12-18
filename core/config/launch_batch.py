@@ -43,7 +43,9 @@ definition.add_flag("add_memory_local", "add memory information for locally laun
 # The analyser classes
 definition.add_optional("analysers", "string_list", "analyser classes for the simulations")
 
-definition.add_flag("relative_analysis_paths", "treat the analysis paths (extraction, plotting, misc) as bein relative to the respective ski files")
+# -----------------------------------------------------------------
+
+definition.add_flag("relative_analysis_paths", "treat the analysis paths (extraction, plotting, misc) as being relative to the respective ski files")
 
 # -----------------------------------------------------------------
 

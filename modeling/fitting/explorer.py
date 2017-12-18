@@ -700,7 +700,7 @@ class ParameterExplorer(FittingComponent):
         log.debug("Setting general analysis options ...")
 
         # To create the extr, plot, misc directories relative in the simulation directory
-        self.launcher.config.analysis.relative = True
+        self.launcher.config.relative_analysis_paths = True
 
         # Set the path to the modeling directory to the simulation object
         self.launcher.config.analysis.modeling_path = self.config.path

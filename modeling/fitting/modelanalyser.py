@@ -23,6 +23,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
 from ...core.filter.filter import parse_filter_from_instrument_and_band
+from .tables import WeightsTable
 
 # -----------------------------------------------------------------
 
@@ -380,32 +381,44 @@ class SEDFitModelAnalyser(FittingComponent):
 
         # Get a reference to the flux calculator
         simulationanalyser = kwargs.pop("simulation_analyser")
-        flux_calculator = simulationanalyser.basic_analyser.flux_calculator
 
         # Make a local reference to the flux calculator
-        if flux_calculator is None:
-            raise RuntimeError("No ObservedFluxCalculator found; the calculate_observed_fluxes flag must be enabled on "
+        if simulationanalyser.basic_analyser.image_flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.image_flux_calculator
+        elif simulationanalyser.basic_analyser.flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.flux_calculator
+        else: raise RuntimeError("No ObservedFluxCalculator found; the calculate_observed_fluxes flag must be enabled on "
                                "each simulation that is part of the radiative transfer modeling")
-        self.flux_calculator = flux_calculator
 
         # Determine the generation directory
         generation_path = fs.directory_of(self.simulation.base_path)
+        generations_path = fs.directory_of(generation_path)
+        fitting_run_path = fs.directory_of(generations_path)
 
         # Set the name of the generation
         self.generation_name = fs.name(fs.directory_of(self.simulation.base_path))
 
         # Set the name of the fitting run
-        fitting_run_name = fs.name(fs.directory_of(fs.directory_of(generation_path)))
+        fitting_run_name = fs.name(fitting_run_path)
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(fitting_run_name)
 
         # Load the weights table
-        #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
-        self.weights = tables.from_file(self.fitting_run.weights_table_path)
+        self.weights = WeightsTable.from_file(self.fitting_run.weights_table_path)
 
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.fitting_run.name
 
     # -----------------------------------------------------------------
 

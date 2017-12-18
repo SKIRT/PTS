@@ -205,6 +205,42 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def progress_extraction(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extraction_options.progress
+
+    # -----------------------------------------------------------------
+
+    @property
+    def timeline_extraction(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.extraction_options.timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_extraction(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extraction_options.memory
+
+    # -----------------------------------------------------------------
+
     def extract(self):
 
         """
@@ -215,21 +251,75 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Extracting ...")
 
+        # Show options
+        self.show_extraction_options()
+
+        # Progress
+        if self.progress_extraction: self.extract_or_load_progress()
+
+        # Timeline
+        if self.timeline_extraction: self.extract_or_load_timeline()
+
+        # Memory
+        if self.memory_extraction: self.extract_or_load_memory()
+
+    # -----------------------------------------------------------------
+
+    def show_extraction_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Extraction options:")
         if log.is_debug(): print(str(self.extraction_options))
 
-        # Extract the progress information
-        if self.extraction_options.progress and not self.extracted_progress: self.extract_progress()
-        elif self.extraction_options.progress: self.load_progress()
+    # -----------------------------------------------------------------
 
-        # Extract the timeline information
-        if self.extraction_options.timeline and not self.extracted_timeline: self.extract_timeline()
-        elif self.extraction_options.timeline: self.load_timeline()
+    def extract_or_load_progress(self):
 
-        # Extract the memory information
-        if self.extraction_options.memory and not self.extracted_memory: self.extract_memory()
-        elif self.extraction_options.memory: self.load_memory()
+        """
+        This function ...
+        :return:
+        """
+
+        # Extract
+        if not self.extracted_progress: self.extract_progress()
+
+        # Load
+        else: self.load_progress()
+
+    # -----------------------------------------------------------------
+
+    def extract_or_load_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Extract
+        if not self.extracted_timeline: self.extract_timeline()
+
+        # Load
+        else: self.load_timeline()
+
+    # -----------------------------------------------------------------
+
+    def extract_or_load_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Extract
+        if not self.extracted_memory: self.extract_memory()
+
+        # Load
+        else: self.load_memory()
 
     # -----------------------------------------------------------------
 
@@ -347,6 +437,126 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def seds_plotting(self):
+
+        """
+        Thi function ...
+        :return:
+        """
+
+        return self.plotting_options.seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_seds_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.seds_plotting and not self.plotted_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grids_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.plotting_options.grids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_grids_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.grids_plotting and not self.plotted_grids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def progress_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.plotting_options.progress
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_progress_plotting(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.progress_plotting and not self.plotted_progress
+
+    # -----------------------------------------------------------------
+
+    @property
+    def timeline_plotting(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.plotting_options.timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_timeline_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.timeline_plotting and not self.plotted_timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.plotting_options.memory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_memory_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.memory_plotting and not self.plotted_memory
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -357,24 +567,36 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Plotting ...")
 
+        # Show
+        self.show_plot_options()
+
+        # If requested, plot the SED's
+        if self.needs_seds_plotting: self.plot_seds()
+
+        # If requested, make plots of the dust grid
+        if self.needs_grids_plotting: self.plot_grids()
+
+        # If requested, plot the simulation progress as a function of time
+        if self.needs_progress_plotting: self.plot_progress()
+
+        # If requested, plot a timeline of the different simulation phases
+        if self.needs_timeline_plotting: self.plot_timeline()
+
+        # If requested, plot the memory usage as a function of time
+        if self.needs_memory_plotting: self.plot_memory()
+
+    # -----------------------------------------------------------------
+
+    def show_plot_options(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
         # Debugging
         log.debug("Plotting options:")
         if log.is_debug(): print(str(self.plotting_options))
-
-        # If requested, plot the SED's
-        if self.plotting_options.seds and not self.plotted_seds: self.plot_seds()
-
-        # If requested, make plots of the dust grid
-        if self.plotting_options.grids and not self.plotted_grids: self.plot_grids()
-
-        # If requested, plot the simulation progress as a function of time
-        if self.plotting_options.progress and not self.plotted_progress: self.plot_progress()
-
-        # If requested, plot a timeline of the different simulation phases
-        if self.plotting_options.timeline and not self.plotted_timeline: self.plot_timeline()
-
-        # If requested, plot the memory usage as a function of time
-        if self.plotting_options.memory and not self.plotted_memory: self.plot_memory()
 
     # -----------------------------------------------------------------
 
@@ -438,6 +660,66 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_rgb(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.rgb and not self.has_rgb
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_animations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.animations and not self.has_animations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.fluxes and not self.has_fluxes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_fluxes_from_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.fluxes_from_images and not self.has_fluxes_from_images
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.images and not self.has_images
+
+    # -----------------------------------------------------------------
+
     def misc(self):
 
         """
@@ -448,24 +730,36 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Performing miscellaneous analysis ...")
 
+        # Show
+        self.show_misc_options()
+
+        # If requested, make RGB images of the output FITS files
+        if self.needs_rgb: self.make_rgb()
+
+        # If requested, make datacube animations from the output datacubes
+        if self.needs_animations: self.make_animations()
+
+        # If requested, calculate observed fluxes from the output SEDs
+        if self.needs_fluxes: self.calculate_observed_fluxes()
+
+        # If requested, calculate observed fluxes from the output datacubes
+        if self.needs_fluxes_from_images: self.calculate_observed_fluxes_from_images()
+
+        # If requested, create observed imgaes from the output datacubes
+        if self.needs_images: self.make_observed_images()
+
+    # -----------------------------------------------------------------
+
+    def show_misc_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Miscellaneous options:")
         if log.is_debug(): print(str(self.misc_options))
-
-        # If requested, make RGB images of the output FITS files
-        if self.misc_options.rgb and not self.has_rgb: self.make_rgb()
-
-        # If requested, make datacube animations from the output datacubes
-        if self.misc_options.animations and not self.has_animations: self.make_animations()
-
-        # If requested, calculate observed fluxes from the output SEDs
-        if self.misc_options.fluxes and not self.has_fluxes: self.calculate_observed_fluxes()
-
-        # If requested, calculate observed fluxes from the output datacubes
-        if self.misc_options.fluxes_from_images and not self.has_fluxes_from_images: self.calculate_observed_fluxes_from_images()
-
-        # If requested, create observed imgaes from the output datacubes
-        if self.misc_options.images and not self.has_images: self.make_observed_images()
 
     # -----------------------------------------------------------------
 

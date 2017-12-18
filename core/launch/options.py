@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.composite import SimplePropertyComposite
@@ -99,7 +102,6 @@ memory_name = "memory"
 seds_name = "seds"
 grids_name = "grids"
 rgb_name = "rgb"
-#wave_name = "wave"
 animations_name = "animations"
 fluxes_name = "fluxes"
 fluxes_from_images_name = "fluxes_from_images"
@@ -110,6 +112,90 @@ images_name = "images"
 extraction_names = [progress_name, timeline_name, memory_name]
 plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
 misc_names = [rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name]
+
+# -----------------------------------------------------------------
+
+def get_analysis_property_names():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return AnalysisOptions().property_names
+
+# -----------------------------------------------------------------
+
+def get_analysis_property_names_and_descriptions():
+
+    """
+    This function ...
+    :return:
+    """
+
+    descriptions = OrderedDict()
+    opts = AnalysisOptions()
+    for name in opts.property_names:
+        description = opts.description_for_property(name)
+        descriptions[name] = description
+    return descriptions
+
+# -----------------------------------------------------------------
+
+def get_analysis_section_names():
+
+    """
+    Thisf unction ...
+    :return:
+    """
+
+    return AnalysisOptions().section_names
+
+# -----------------------------------------------------------------
+
+def get_analysis_section_names_and_descriptions():
+
+    """
+    This function ...
+    :return:
+    """
+
+    descriptions = OrderedDict()
+    opts = AnalysisOptions()
+    for name in opts.section_names:
+        description = opts.description_for_property(name)
+        descriptions[name] = description
+    return descriptions
+
+# -----------------------------------------------------------------
+
+def get_analysis_property_names_for_section(section_name):
+
+    """
+    This function ...
+    :param section_name:
+    :return:
+    """
+
+    return AnalysisOptions()[section_name].property_names
+
+# -----------------------------------------------------------------
+
+def get_analysis_property_names_and_descriptions_for_section(section_name):
+
+    """
+    This function ...
+    :param section_name:
+    :return:
+    """
+
+    descriptions = OrderedDict()
+    opts = AnalysisOptions()
+    section = opts[section_name]
+    for name in section.property_names:
+        description = section.description_for_property(name)
+        descriptions[name] = description
+    return descriptions
 
 # -----------------------------------------------------------------
 

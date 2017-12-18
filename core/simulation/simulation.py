@@ -208,6 +208,12 @@ class SkirtSimulation(object):
             # Set the attribute
             setattr(self, attr_name, value)
 
+    ## This property returns a SingleSimulationDefinition object
+    @property
+    def definition(self):
+        from .definition import SingleSimulationDefinition
+        return SingleSimulationDefinition(self.ski_path, self.output_path, self.input_path, name=self.name)
+
     ## This property returns a SimulationInput object
     @property
     def input(self):

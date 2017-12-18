@@ -365,11 +365,15 @@ else:
         # Get unique values
         unique_values = sequences.unique_values(values.values())
 
+        # Only one unique value
         if len(unique_values) == 1:
+
             default = unique_values[0]
             ptype, string = stringify(default)
             choices = None
             suggestions = None
+
+        # Multiple unique values
         else:
             # Prompt to change this property
             change = prompt_proceed("Change the property '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
