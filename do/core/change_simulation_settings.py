@@ -27,45 +27,47 @@ from pts.core.tools import introspection
 
 # -----------------------------------------------------------------
 
-# Create the configuration definition
-definition = ConfigurationDefinition()
+if __name__ == "__main__":
 
-# Add required
-definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
-definition.add_positional_optional("ids", "integer_list", "simulation IDs (if none specified, all simulation IDs will be used)")
-definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string")
+    # Create the configuration definition
+    definition = ConfigurationDefinition()
 
-# -----------------------------------------------------------------
+    # Add required
+    definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
+    definition.add_positional_optional("ids", "integer_list", "simulation IDs (if none specified, all simulation IDs will be used)")
+    definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string")
 
-# Select certain properties
-definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
-definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
-definition.add_optional("exact_name", "string", "only adapt properties with this exact string as their name")
-definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
-definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
-definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Select certain properties
+    definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
+    definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
+    definition.add_optional("exact_name", "string", "only adapt properties with this exact string as their name")
+    definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
+    definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
+    definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
 
-# Parse the arguments into a configuration
-config = parse_arguments("change_simulation_settings", definition, description="Change certain settings of a simulation")
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Parse the arguments into a configuration
+    config = parse_arguments("change_simulation_settings", definition, description="Change certain settings of a simulation")
 
-# Check settings
-if config.matching is not None:
-    if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
-    config.contains = config.matching
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Check settings
+    if config.matching is not None:
+        if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
+        config.contains = config.matching
 
-# No IDs specified?
-if config.ids is None: config.ids = introspection.simulation_ids_for_host(config.remote)
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # No IDs specified?
+    if config.ids is None: config.ids = introspection.simulation_ids_for_host(config.remote)
 
-nids = len(config.ids)
-has_single_id = nids == 1
+    # -----------------------------------------------------------------
+
+    nids = len(config.ids)
+    has_single_id = nids == 1
 
 # -----------------------------------------------------------------
 
@@ -289,114 +291,116 @@ def save_simulations(simulations, changed=None):
 
 # -----------------------------------------------------------------
 
-# Adapt a single simulation
-if has_single_id:
+if __name__ == "__main__":
 
-    # Open the simulation object
-    single_id = config.ids[0]
-    simulation = get_simulation_for_host(config.remote, single_id)
+    # Adapt a single simulation
+    if has_single_id:
 
-    # Loop over the properties
-    for name in properties:
+        # Open the simulation object
+        single_id = config.ids[0]
+        simulation = get_simulation_for_host(config.remote, single_id)
 
-        # Checks
-        if config.contains is not None and config.contains not in name: continue
-        if config.not_contains is not None and config.not_contains in name: continue
-        if config.exact_name is not None and name != config.exact_name: continue
-        if config.exact_not_name is not None and name == config.exact_not_name: continue
-        if config.startswith is not None and not name.startswith(config.startswith): continue
-        if config.endswith is not None and not name.endswith(config.endswith): continue
+        # Loop over the properties
+        for name in properties:
 
-        # Get the description
-        description = properties[name]
+            # Checks
+            if config.contains is not None and config.contains not in name: continue
+            if config.not_contains is not None and config.not_contains in name: continue
+            if config.exact_name is not None and name != config.exact_name: continue
+            if config.exact_not_name is not None and name == config.exact_not_name: continue
+            if config.startswith is not None and not name.startswith(config.startswith): continue
+            if config.endswith is not None and not name.endswith(config.endswith): continue
 
-        # Get the current value
-        default = get_value_for_simulation(simulation, name)
+            # Get the description
+            description = properties[name]
 
-        # There is a current value
-        if default is not None: ptype, pstring = stringify(default)
+            # Get the current value
+            default = get_value_for_simulation(simulation, name)
 
-        # No current value
-        else: ptype = "any"
+            # There is a current value
+            if default is not None: ptype, pstring = stringify(default)
 
-        # Check ptype
-        if ptype is None: ptype = "any"
+            # No current value
+            else: ptype = "any"
 
-        # Ask for the new value
-        value = prompt_variable(name, ptype, description, default=default, required=True)
-        if default is None and value == "": continue
+            # Check ptype
+            if ptype is None: ptype = "any"
 
-        # Set the property
-        if value != default: set_value_for_simulation(simulation, name, value)
+            # Ask for the new value
+            value = prompt_variable(name, ptype, description, default=default, required=True)
+            if default is None and value == "": continue
 
-    # Save
-    save_simulation(simulation)
+            # Set the property
+            if value != default: set_value_for_simulation(simulation, name, value)
 
-# -----------------------------------------------------------------
+        # Save
+        save_simulation(simulation)
 
-# Adapt multiple simulations
-else:
+    # -----------------------------------------------------------------
 
-    # Load the simulations and put them in a dictionary
-    simulations = OrderedDict()
-    for simulation_id in config.ids: simulations[simulation_id] = get_simulation_for_host(config.remote, simulation_id)
+    # Adapt multiple simulations
+    else:
 
-    # Create a dictionary to contain a flag for each simulation that tells whether it has changed
-    changed = dict()
-    for simulation_id in simulations: changed[simulation_id] = False
+        # Load the simulations and put them in a dictionary
+        simulations = OrderedDict()
+        for simulation_id in config.ids: simulations[simulation_id] = get_simulation_for_host(config.remote, simulation_id)
 
-    # Loop over the properties
-    for name in properties:
+        # Create a dictionary to contain a flag for each simulation that tells whether it has changed
+        changed = dict()
+        for simulation_id in simulations: changed[simulation_id] = False
 
-        # Checks
-        if config.contains is not None and config.contains not in name: continue
-        if config.not_contains is not None and config.not_contains in name: continue
-        if config.exact_name is not None and name != config.exact_name: continue
-        if config.exact_not_name is not None and name == config.exact_not_name: continue
-        if config.startswith is not None and not name.startswith(config.startswith): continue
-        if config.endswith is not None and not name.endswith(config.endswith): continue
+        # Loop over the properties
+        for name in properties:
 
-        # Get the description
-        description = properties[name]
+            # Checks
+            if config.contains is not None and config.contains not in name: continue
+            if config.not_contains is not None and config.not_contains in name: continue
+            if config.exact_name is not None and name != config.exact_name: continue
+            if config.exact_not_name is not None and name == config.exact_not_name: continue
+            if config.startswith is not None and not name.startswith(config.startswith): continue
+            if config.endswith is not None and not name.endswith(config.endswith): continue
 
-        # Get the values for all the simulations
-        values = get_values_for_simulations(simulations, name)
+            # Get the description
+            description = properties[name]
 
-        # Get unique values
-        unique_values = sequences.unique_values(values.values())
+            # Get the values for all the simulations
+            values = get_values_for_simulations(simulations, name)
 
-        # Only one unique value
-        if len(unique_values) == 1:
+            # Get unique values
+            unique_values = sequences.unique_values(values.values())
 
-            default = unique_values[0]
-            ptype, string = stringify(default)
-            choices = None
-            suggestions = None
+            # Only one unique value
+            if len(unique_values) == 1:
 
-        # Multiple unique values
-        else:
-            # Prompt to change this property
-            change = prompt_proceed("Change the property '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
-            if not change: continue
-            default = None
-            ptype = get_common_ptype(unique_values)
-            choices = None
-            suggestions = unique_values
+                default = unique_values[0]
+                ptype, string = stringify(default)
+                choices = None
+                suggestions = None
 
-        # Ask for the new value
-        value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
-        #if default is None and value == "": continue
+            # Multiple unique values
+            else:
+                # Prompt to change this property
+                change = prompt_proceed("Change the property '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
+                if not change: continue
+                default = None
+                ptype = get_common_ptype(unique_values)
+                choices = None
+                suggestions = unique_values
 
-        # Each simulation had the same value: adapt each simulation simultaneously without prompting to proceed
-        if len(unique_values) == 1:
-            if value != default:
-                set_value_for_simulations(simulations, name, value)
-                for simulation_id in simulations: changed[simulation_id] = True
+            # Ask for the new value
+            value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
+            #if default is None and value == "": continue
 
-        # Different simulations had different values
-        else: changed = set_value_for_simulations_prompt(simulations, name, value, changed=changed)
+            # Each simulation had the same value: adapt each simulation simultaneously without prompting to proceed
+            if len(unique_values) == 1:
+                if value != default:
+                    set_value_for_simulations(simulations, name, value)
+                    for simulation_id in simulations: changed[simulation_id] = True
 
-    # Save simulations that have changed
-    save_simulations(simulations, changed=changed)
+            # Different simulations had different values
+            else: changed = set_value_for_simulations_prompt(simulations, name, value, changed=changed)
+
+        # Save simulations that have changed
+        save_simulations(simulations, changed=changed)
 
 # -----------------------------------------------------------------

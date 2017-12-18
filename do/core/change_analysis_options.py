@@ -29,45 +29,47 @@ from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
-# Create the configuration definition
-definition = ConfigurationDefinition()
+if __name__ == "__main__":
 
-# Add required
-definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
-definition.add_positional_optional("ids", "integer_list", "simulation IDs")
-definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string", suggestions=["remote"])
+    # Create the configuration definition
+    definition = ConfigurationDefinition()
 
-# -----------------------------------------------------------------
+    # Add required
+    definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
+    definition.add_positional_optional("ids", "integer_list", "simulation IDs")
+    definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string", suggestions=["remote"])
 
-# Select certain properties
-definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
-definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
-definition.add_optional("exact_name", "string", "only adapt properties with this exact string as their name")
-definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
-definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
-definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Select certain properties
+    definition.add_optional("contains", "string", "only adapt properties containing this string in their name")
+    definition.add_optional("not_contains", "string", "don't adapt properties containing this string in their name")
+    definition.add_optional("exact_name", "string", "only adapt properties with this exact string as their name")
+    definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
+    definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
+    definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
 
-# Parse the arguments into a configuration
-config = parse_arguments("change_analysis_options", definition, description="Change certain analysis options for a simulation")
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Parse the arguments into a configuration
+    config = parse_arguments("change_analysis_options", definition, description="Change certain analysis options for a simulation")
 
-# Check settings
-if config.matching is not None:
-    if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
-    config.contains = config.matching
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # Check settings
+    if config.matching is not None:
+        if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
+        config.contains = config.matching
 
-# No IDs specified?
-if config.ids is None: config.ids = introspection.simulation_ids_for_host(config.remote)
+    # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
+    # No IDs specified?
+    if config.ids is None: config.ids = introspection.simulation_ids_for_host(config.remote)
 
-nids = len(config.ids)
-has_single_id = nids == 1
+    # -----------------------------------------------------------------
+
+    nids = len(config.ids)
+    has_single_id = nids == 1
 
 # -----------------------------------------------------------------
 
@@ -194,109 +196,44 @@ def set_analysis_value_for_simulations_prompt(simulations, name, value, changed=
 
 # -----------------------------------------------------------------
 
-# Adapt a single simulation
-if has_single_id:
+if __name__ == "__main__":
 
-    # Open the simulation object
-    single_id = config.ids[0]
-    simulation = get_simulation_for_host(config.remote, single_id)
+    # Adapt a single simulation
+    if has_single_id:
 
-    # Update
-    simulation.update_analysis_options()
+        # Open the simulation object
+        single_id = config.ids[0]
+        simulation = get_simulation_for_host(config.remote, single_id)
 
-    # Check whether analysis options are defined
-    simulation.analysis.prompt_properties(contains=config.contains, not_contains=config.not_contains, exact_name=config.exact_name, exact_not_name=config.exact_not_name, startswith=config.startswith, endswith=config.endswith)
+        # Update
+        simulation.update_analysis_options()
 
-    # Save the simulation
-    save_simulation(simulation)
+        # Check whether analysis options are defined
+        simulation.analysis.prompt_properties(contains=config.contains, not_contains=config.not_contains, exact_name=config.exact_name, exact_not_name=config.exact_not_name, startswith=config.startswith, endswith=config.endswith)
 
-# -----------------------------------------------------------------
+        # Save the simulation
+        save_simulation(simulation)
 
-# Adapt multiple simulations
-else:
+    # -----------------------------------------------------------------
 
-    # Load the simulations and put them in a dictionary
-    simulations = OrderedDict()
-    for simulation_id in config.ids: simulations[simulation_id] = get_simulation_for_host(config.remote, simulation_id)
+    # Adapt multiple simulations
+    else:
 
-    # Update analysis options in each simulation
-    for simulation_id in config.ids: simulations[simulation_id].update_analysis_options()
+        # Load the simulations and put them in a dictionary
+        simulations = OrderedDict()
+        for simulation_id in config.ids: simulations[simulation_id] = get_simulation_for_host(config.remote, simulation_id)
 
-    # Create a dictionary to contain a flag for each simulation that tells whether it has changed
-    changed = dict()
-    for simulation_id in simulations: changed[simulation_id] = False
+        # Update analysis options in each simulation
+        for simulation_id in config.ids: simulations[simulation_id].update_analysis_options()
 
-    # Get properties
-    properties = get_analysis_property_names_and_descriptions()
-
-    # Loop over the properties
-    for name in properties:
-
-        # Checks
-        if config.contains is not None and config.contains not in name: continue
-        if config.not_contains is not None and config.not_contains in name: continue
-        if config.exact_name is not None and name != config.exact_name: continue
-        if config.exact_not_name is not None and name == config.exact_not_name: continue
-        if config.startswith is not None and not name.startswith(config.startswith): continue
-        if config.endswith is not None and not name.endswith(config.endswith): continue
-
-        # Get description
-        description = properties[name]
-
-        # Get the analysis options for all the simulations
-        values = get_analysis_values_for_simulations(simulations, name)
-
-        # Get unique values
-        unique_values = sequences.unique_values(values.values())
-
-        # Only one unique value
-        if len(unique_values) == 1:
-
-            default = unique_values[0]
-            ptype, string = stringify(default)
-            choices = None
-            suggestions = None
-
-        # Multiple unique values
-        else:
-
-            # Prompt to change this property
-            change = prompt_proceed("Change the analysis option '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
-            if not change: continue
-            default = None
-            ptype = get_common_ptype(unique_values)
-            choices = None
-            suggestions = unique_values
-
-        # Ask for the new value
-        value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
-
-        # Each simulation had the same value: adapt each simulation's analysis options simultaneously without prompting to proceed
-        if len(unique_values) == 1:
-
-            if value != default:
-                set_analysis_value_for_simulations(simulations, name, value)
-                for simulation_id in simulations: changed[simulation_id] = True
-
-        # Different simulations had different values
-        else: changed = set_analysis_value_for_simulations_prompt(simulations, name, value, changed=changed)
-
-    # Get sections
-    sections = get_analysis_section_names_and_descriptions()
-
-    # Loop over the sections
-    for section_name in sections:
-
-        # Get section description
-        section_description = sections[section_name]
-
-        # Debug
-        log.debug("Entering section '" + section_name + "' ...")
+        # Create a dictionary to contain a flag for each simulation that tells whether it has changed
+        changed = dict()
+        for simulation_id in simulations: changed[simulation_id] = False
 
         # Get properties
-        properties = get_analysis_property_names_and_descriptions_for_section(section_name)
+        properties = get_analysis_property_names_and_descriptions()
 
-        # Loop over the properties in this section
+        # Loop over the properties
         for name in properties:
 
             # Checks
@@ -311,7 +248,7 @@ else:
             description = properties[name]
 
             # Get the analysis options for all the simulations
-            values = get_analysis_values_for_simulations(simulations, name, section=section_name)
+            values = get_analysis_values_for_simulations(simulations, name)
 
             # Get unique values
             unique_values = sequences.unique_values(values.values())
@@ -342,13 +279,80 @@ else:
             if len(unique_values) == 1:
 
                 if value != default:
-                    set_analysis_value_for_simulations(simulations, name, value, section=section_name)
+                    set_analysis_value_for_simulations(simulations, name, value)
                     for simulation_id in simulations: changed[simulation_id] = True
 
-                # Different simulations had different values
-                else: changed = set_analysis_value_for_simulations_prompt(simulations, name, value, changed=changed, section=section_name)
+            # Different simulations had different values
+            else: changed = set_analysis_value_for_simulations_prompt(simulations, name, value, changed=changed)
 
-    # Save the simulations
-    save_simulations(simulations, changed=changed)
+        # Get sections
+        sections = get_analysis_section_names_and_descriptions()
+
+        # Loop over the sections
+        for section_name in sections:
+
+            # Get section description
+            section_description = sections[section_name]
+
+            # Debug
+            log.debug("Entering section '" + section_name + "' ...")
+
+            # Get properties
+            properties = get_analysis_property_names_and_descriptions_for_section(section_name)
+
+            # Loop over the properties in this section
+            for name in properties:
+
+                # Checks
+                if config.contains is not None and config.contains not in name: continue
+                if config.not_contains is not None and config.not_contains in name: continue
+                if config.exact_name is not None and name != config.exact_name: continue
+                if config.exact_not_name is not None and name == config.exact_not_name: continue
+                if config.startswith is not None and not name.startswith(config.startswith): continue
+                if config.endswith is not None and not name.endswith(config.endswith): continue
+
+                # Get description
+                description = properties[name]
+
+                # Get the analysis options for all the simulations
+                values = get_analysis_values_for_simulations(simulations, name, section=section_name)
+
+                # Get unique values
+                unique_values = sequences.unique_values(values.values())
+
+                # Only one unique value
+                if len(unique_values) == 1:
+
+                    default = unique_values[0]
+                    ptype, string = stringify(default)
+                    choices = None
+                    suggestions = None
+
+                # Multiple unique values
+                else:
+
+                    # Prompt to change this property
+                    change = prompt_proceed("Change the analysis option '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
+                    if not change: continue
+                    default = None
+                    ptype = get_common_ptype(unique_values)
+                    choices = None
+                    suggestions = unique_values
+
+                # Ask for the new value
+                value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
+
+                # Each simulation had the same value: adapt each simulation's analysis options simultaneously without prompting to proceed
+                if len(unique_values) == 1:
+
+                    if value != default:
+                        set_analysis_value_for_simulations(simulations, name, value, section=section_name)
+                        for simulation_id in simulations: changed[simulation_id] = True
+
+                    # Different simulations had different values
+                    else: changed = set_analysis_value_for_simulations_prompt(simulations, name, value, changed=changed, section=section_name)
+
+        # Save the simulations
+        save_simulations(simulations, changed=changed)
 
 # -----------------------------------------------------------------
