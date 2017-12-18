@@ -39,3 +39,8 @@ definition.add_flag("check_data", "for crashed simulations, check whether the si
 definition.add_flag("offline", "run in offline mode: only analyse already retrieved simulations and tasks, don't try to connect to remotes")
 
 # -----------------------------------------------------------------
+
+# ADVANCED
+definition.add_optional("nopen_files", "positive_integer", "number of allowed open files", 1024)
+
+# -----------------------------------------------------------------

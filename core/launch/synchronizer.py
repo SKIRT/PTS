@@ -149,6 +149,9 @@ class RemoteSynchronizer(Configurable):
                     # Add the remote to the list of remote objects
                     self.remotes.append(remote)
 
+        # Set the number of allowed open file handles
+        fs.set_nallowed_open_files(self.config.nopen_files)
+
     # -----------------------------------------------------------------
 
     @property

@@ -2288,7 +2288,7 @@ class FittingRun(object):
         if len(self.generations_table) > 0: return self.generations_table["Wavelength grid name"][-1]
 
         # Initial value
-        else: return self.highest_basic_wavelength_grid_name
+        else: return self.lowest_basic_wavelength_grid_name
 
     # -----------------------------------------------------------------
 
