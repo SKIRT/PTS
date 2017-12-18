@@ -2064,6 +2064,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def screen_states(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        states = dict()
+        for name in self.screen_names(): states[name] = self.screen_state(name)
+        return states
+
+    # -----------------------------------------------------------------
+
     def screen_state(self, name):
 
         """

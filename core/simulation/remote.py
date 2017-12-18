@@ -1587,11 +1587,12 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def _get_simulation_status_not_scheduler(self, simulation):
+    def _get_simulation_status_not_scheduler(self, simulation, screen_states=None):
 
         """
         This function ...
         :param simulation:
+        :param screen_states:
         :return:
         """
 
@@ -1608,7 +1609,7 @@ class SKIRTRemote(Remote):
         elif simulation.retrieved: simulation_status = "retrieved"
 
         # Get the simulation status from the remote log file if not yet retrieved
-        else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name)
+        else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name, screen_states=screen_states)
 
         # Return the simulation status
         return simulation_status
@@ -1789,6 +1790,9 @@ class SKIRTRemote(Remote):
         # If the remote host does not use a scheduling system
         if not self.scheduler:
 
+            # Get state of screen sessions
+            states = self.screen_states()
+
             # Search for simulation files in the local SKIRT run/host_id directory
             for path in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
 
@@ -1812,7 +1816,7 @@ class SKIRTRemote(Remote):
                 else:
 
                     # Get the status
-                    simulation_status = self._get_simulation_status_not_scheduler(simulation)
+                    simulation_status = self._get_simulation_status_not_scheduler(simulation, screen_states=states)
 
                     # Add the simulation properties to the list
                     entries.append((path, simulation_status))
@@ -1858,13 +1862,14 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def status_from_log_file(self, file_path, handle, simulation_prefix):
+    def status_from_log_file(self, file_path, handle, simulation_prefix, screen_states=None):
 
         """
         This function ...
         :param file_path:
         :param handle:
         :param simulation_prefix:
+        :param screen_states:
         :return:
         """
 
@@ -1889,7 +1894,13 @@ class SKIRTRemote(Remote):
                 if handle.type == "screen":
 
                     screen_name = handle.value
-                    if self.is_active_screen(screen_name): simulation_status = self.running_status_from_log_file(file_path)
+
+                    # Check whether screen is active
+                    if screen_states is not None: active_screen = screen_states[screen_name] == "detached" or screen_states[screen_name] == "attached"
+                    else: active_screen = self.is_active_screen(screen_name)
+
+                    # Get status of simulation
+                    if active_screen: simulation_status = self.running_status_from_log_file(file_path)
                     else: simulation_status = "aborted"
 
                 # Attached terminal session
