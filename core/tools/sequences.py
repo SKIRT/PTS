@@ -659,6 +659,18 @@ def common_elements(sequence_a, sequence_b):
 
 # -----------------------------------------------------------------
 
+def unique_values(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return list(set(sequence))
+
+# -----------------------------------------------------------------
+
 def append_unique(lst, element):
 
     """
