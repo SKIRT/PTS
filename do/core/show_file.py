@@ -36,16 +36,18 @@ definition = ConfigurationDefinition(write_config=False)
 definition.add_required("filetype", "string", "type of file", choices=filetypes)
 definition.add_required("filename", "file_path", "path of the dictionary file")
 definition.add_flag("latex", "print as latex")
+definition.add_optional("columns", "string_list", "only show these columns")
 config = parse_arguments("show_file", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
 
-def load_structure(path, filetype):
+def load_structure(path, filetype, columns=None):
 
     """
     This function ...
     :param path:
     :param filetype:
+    :param columns:
     :return:
     """
 
@@ -58,12 +60,18 @@ def load_structure(path, filetype):
         # Create table
         tab = SmartTable.from_composite(composite)
 
+        # Remove columns?
+        if columns is not None: tab.remove_other_columns(columns)
+
     # Table
     elif filetype == table:
 
         # Load table
         structure = SmartTable.from_file(path)
         tab = structure
+
+        # Remove columns?
+        if columns is not None: tab.remove_other_columns(columns)
 
     # Dictionary
     elif filetype == dictionary:
@@ -72,12 +80,18 @@ def load_structure(path, filetype):
         structure = load_dict(path)
         tab = SmartTable.from_dictionary(structure)
 
+        # Remove columns?
+        if columns is not None: tab.remove_other_columns(columns)
+
     # SED
     elif filetype == sed:
 
         # Load SED
         structure = load_sed(path)
         tab = structure
+
+        # Remove columns?
+        if columns is not None: tab.remove_other_columns(columns)
 
     # Invalid
     else: raise ValueError("Unrecognized filetype")
@@ -119,7 +133,7 @@ def show_structure(structure, filetype):
 # -----------------------------------------------------------------
 
 # Load
-structure, tab = load_structure(config.filename, config.filetype)
+structure, tab = load_structure(config.filename, config.filetype, columns=config.columns)
 
 # -----------------------------------------------------------------
 

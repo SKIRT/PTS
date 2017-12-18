@@ -308,6 +308,19 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def remove_other_columns(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        remove_names = sequences.get_other(self.colnames, names)
+        self.remove_columns(remove_names)
+
+    # -----------------------------------------------------------------
+
     def add_column_info(self, name, dtype, unit, description):
 
         """
