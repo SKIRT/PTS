@@ -315,6 +315,10 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
+        # TODO: use max_nthreads
+        # TODO: don't use hyperthreading for SKIRT by default
+        # TODO: use newer cpus-per-proc syntax
+
         # Debugging
         log.debug("Setting parallelization for simulation with high memory requirement ...")
 
@@ -326,7 +330,7 @@ class ParallelizationTool(Configurable):
         if memory_per_process > self.config.memory:  # is the memory used per process larger than the memory per node?
             raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
 
-        # Arbitrarily pick a divisor (DIV) of Npps between 4 and 10
+        # Arbitrarily pick a divisor (DIV) of Npps
         divisors = factors(self.config.ncores)
 
         # Loop over divisors, try to set parallelization
@@ -361,7 +365,6 @@ class ParallelizationTool(Configurable):
         total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
 
         # Nlambda >= 10 x Np
-        # nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
         if self.nwavelengths >= 10 * nprocesses:
 
             # Determine number of threads per core

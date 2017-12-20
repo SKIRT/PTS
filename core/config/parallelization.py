@@ -30,6 +30,9 @@ definition.add_flag("mpi", "mpi available", True)
 definition.add_flag("hyperthreading", "use hyperthreading", False)
 definition.add_optional("threads_per_core", "integer", "number of hyperthreads per core")
 
+# Maximum number of threads per process
+definition.add_flag("max_nthreads", "positive_integer", "maximum allowed number of threads per process", 8)
+
 # Add optional
 definition.add_optional("ncells", "integer", "number of dust cells (relevant if ski file uses a tree dust grid)")
 definition.add_optional("nwavelengths", "integer", "number of wavelengths (relevant if ski file uses input file)")
