@@ -25,6 +25,9 @@ from pts.core.simulation.arguments import SkirtArguments
 definition = ConfigurationDefinition()
 definition.add_required("filename", "file_path", "script file path")
 
+# Optional arguments
+definition.add_optional("parallelization", "parallelization", "new parallelization scheme")
+
 # Read the command line arguments
 config = parse_arguments("relaunch_simulations_screen", definition, description="Relaunch simulations in a screen from a local script file")
 
@@ -32,11 +35,12 @@ config = parse_arguments("relaunch_simulations_screen", definition, description=
 
 # Initiliaze variables
 filename = fs.strip_extension(fs.name(config.filename))
-#host_id = strings.split_at_last("_")[1]
 queue_name = strings.split_at_last(filename, "_")[0]
 host_id = None
 remote_path = None
 screen_name = None
+
+# -----------------------------------------------------------------
 
 # Get launch info
 header = fs.get_header_lines(config.filename)
@@ -62,6 +66,8 @@ print("screen name", screen_name)
 
 # Loop over the simulation lines
 for line in fs.read_lines(config.filename):
+
+    # Skip comments and empty lines
     if line.startswith("#"): continue
     if not line: continue
 

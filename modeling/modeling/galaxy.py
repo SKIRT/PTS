@@ -482,6 +482,7 @@ class GalaxyModeler(ModelerBase):
 
         # Set flag to create Poisson error maps
         config["make_poisson"] = self.config.make_poisson
+        config["nprocesses"] = self.config.nprocesses
 
         # Create the image fetcher
         fetcher = ImageFetcher(config)

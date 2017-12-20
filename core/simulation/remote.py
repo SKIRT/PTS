@@ -19,7 +19,7 @@ import tempfile
 
 # Import the relevant PTS classes and modules
 from ..remote.remote import Remote
-from .jobscript import JobScript, MultiJobScript, SKIRTJobScript
+from .jobscript import MultiJobScript, SKIRTJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation

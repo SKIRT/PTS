@@ -27,6 +27,9 @@ definition.add_optional("halpha_flux", "quantity", "flux of the h-alpha image to
 # Flags
 definition.add_flag("make_poisson", "perform the poisson error mosaicing", True)
 
+# Number of processes for Poisson error map making
+definition.add_optional("nprocesses", "positive_integer", "number of parallel processes", 1)
+
 # Advanced
 definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum number of observations to use for the mosaic and poisson frames (GALEX and SDSS)")
 

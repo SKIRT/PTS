@@ -256,6 +256,7 @@ class ImageFetcher(DataComponent):
         config_dict["output"] = local_output_path
         config_dict["max_nobservations_fuv"] = self.config.max_nobservations_mosaic
         config_dict["max_nobservations_nuv"] = self.config.max_nobservations_mosaic
+        config_dict["nprocesses"] = self.config.nprocesses
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}
@@ -318,6 +319,7 @@ class ImageFetcher(DataComponent):
         config_dict["max_nobservations_r"] = self.config.max_nobservations_mosaic
         config_dict["max_nobservations_i"] = self.config.max_nobservations_mosaic
         config_dict["max_nobservations_z"] = self.config.max_nobservations_mosaic
+        config_dict["nprocesses"] = self.config.nprocesses
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}
