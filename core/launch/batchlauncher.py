@@ -1413,7 +1413,7 @@ class BatchLauncher(Configurable):
         elif self.has_queued_local and self.config.check_paralleliation: self.check_parallelization_local()
 
         # Set parallelization schemes for remote execution
-        self.set_parallelization_remote()
+        if self.has_remotes: self.set_parallelization_remote()
 
     # -----------------------------------------------------------------
 
@@ -2456,10 +2456,10 @@ class BatchLauncher(Configurable):
             prop = self.get_properties_for_host(host_id)
 
             # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
-            parallelization = determine_parallelization(definition.ski_path, definition.input_path,
-                                                        self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
-                                                        prop.hyperthreading, prop.threads_per_core, ncells=ncells,
-                                                        nwavelengths=nwavelengths)
+            parallelization_simulation = determine_parallelization(definition.ski_path, definition.input_path,
+                                                                self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
+                                                                prop.hyperthreading, prop.threads_per_core, ncells=ncells,
+                                                                nwavelengths=nwavelengths)
 
             # Show
             log.debug("The parallelization scheme for the '" + simulation_name + "' simulation is " + str(parallelization))

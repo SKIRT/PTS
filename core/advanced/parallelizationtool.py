@@ -24,6 +24,7 @@ from ..simulation.skifile import SkiFile
 from ..simulation.parallelization import Parallelization
 from ..tools.utils import lazyproperty
 from ..tools import filesystem as fs
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -35,7 +36,7 @@ def factors(n):
     :return:
     """
 
-    return set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))
+    return list(sorted(set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))))
 
 # -----------------------------------------------------------------
 
@@ -62,7 +63,7 @@ def factors(n):
 # -----------------------------------------------------------------
 
 def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading,
-                              threads_per_core, ncells=None, nwavelengths=None):
+                              threads_per_core, ncells=None, nwavelengths=None, data_parallel=None):
 
     """
     This function ...
@@ -78,6 +79,7 @@ def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, nc
     :param threads_per_core:
     :param ncells:
     :param nwavelengths:
+    :param data_parallel:
     :return:
     """
 
@@ -120,6 +122,9 @@ def determine_parallelization(ski_path, input_path, memory, nnodes, nsockets, nc
 
     # Number of wavelengths
     tool.config.nwavelengths = nwavelengths
+
+    # Data-parallelization
+    tool.config.data_parallel = data_parallel
 
     # Don't show the parallelization
     tool.config.show = False
@@ -234,126 +239,194 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
-        # If MPI cannot be used
-        if not self.config.mpi:
+        # MPI cannot be used
+        if not self.config.mpi: self.set_parallelization_singleprocessing()
 
-            # Determine the number of cores per node
-            cores_per_node = self.config.nsockets * self.config.ncores
+        # MPI can be used
+        else: self.set_parallelization_multiprocessing()
 
-            # Determine optimal number of cores used for threading (not more than 12)
-            cores = min(cores_per_node, 12)
+    # -----------------------------------------------------------------
 
-            #if self.config.hyperthreading: threads = cores * self.config.threads_per_core
-            #else: threads = cores
+    def set_parallelization_singleprocessing(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Determine the number of cores per node
+        cores_per_node = self.config.nsockets * self.config.ncores
+
+        # Determine optimal number of cores used for threading (not more than 12)
+        cores = min(cores_per_node, 12)
+
+        # if self.config.hyperthreading: threads = cores * self.config.threads_per_core
+        # else: threads = cores
+
+        # Determine number of threads per core
+        threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+
+        # Create the parallelization object
+        self.parallelization = Parallelization.from_mode("threads", cores, threads_per_core)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_multiprocessing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If memory as not been set, estimate it
+        if self.memory is None: self.memory = estimate_memory(self.ski, input_path=self.config.input, ncells=self.config.ncells)
+
+        # Get serial and parallel parts of the memory requirement
+        serial_memory = self.memory.serial
+        parallel_memory = self.memory.parallel
+
+        # Calculate the total memory of one process without data parallelization
+        total_memory = serial_memory + parallel_memory
+
+        # The total memory consumption is larger than the node memory
+        if total_memory > self.config.memory:
+
+            # Check data parallel flag
+            if self.config.data_parallel is False: raise ValueError("Data-parallelization is disabled but memory usage is larger than node memory")
+
+            # Check number of nodes
+            if self.config.nnodes == 1: raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
+
+            # Set parallelization
+            self.set_parallelization_high_memory(serial_memory, parallel_memory) # Ms > Mn
+
+        # If more than one simulation memory fits on a node
+        else: self.set_parallelization_low_memory(total_memory)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_high_memory(self, serial_memory, parallel_memory):
+
+        """
+        This function ...
+        :param serial_memory:
+        :param parallel_memory:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting parallelization for simulation with high memory requirement ...")
+
+        # Determine the amount of required memory per process
+        memory_per_process = serial_memory + parallel_memory / self.config.nnodes
+
+        # Mn x Nn < Ms?
+        # if self.config.memory * self.config.nnodes < memory_simulation_nnode_processes:
+        if memory_per_process > self.config.memory:  # is the memory used per process larger than the memory per node?
+            raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
+
+        # Arbitrarily pick a divisor (DIV) of Npps between 4 and 10
+        divisors = factors(self.config.ncores)
+
+        # Loop over divisors, try to set parallelization
+        for divisor in sequences.iterate_from_middle(divisors):
+
+            # Try to set parallelization
+            if self.try_parallelization_divisor(divisor): break
+
+    # -----------------------------------------------------------------
+
+    def try_parallelization_divisor(self, divisor):
+
+        """
+        This function ...
+        :param divisor:
+        :return:
+        """
+
+        # Debuggging
+        log.debug("Trying to set paralellelization with divisor " + str(divisor) + " ...")
+
+        # First implementation was random
+        #divisor = random.choice(divisors)
+
+        # Nt = min(Npps, DIV)
+        nthreads = min(self.config.ncores, divisor)
+
+        # Np = Nn x Nppn / Nt
+        ppn = self.config.nsockets * self.config.ncores
+        nprocesses = self.config.nnodes * ppn / nthreads
+
+        total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+
+        # Nlambda >= 10 x Np
+        # nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+        if self.nwavelengths >= 10 * nprocesses:
 
             # Determine number of threads per core
             threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
 
+            # data parallelization
             # Create the parallelization object
-            self.parallelization = Parallelization.from_mode("threads", cores, threads_per_core)
+            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                             threads_per_process=nthreads,
+                                                             data_parallel=True)
 
-        # If MPI can be used
-        else:
+            # Success
+            return True
 
-            # If memory as not been set, estimate it
-            if self.memory is None: self.memory = estimate_memory(self.ski, input_path=self.config.input, ncells=self.config.ncells)
+        # Try again from picking divisor, but now a larger one (less processes)
+        else: return False
 
-            # Get serial and parallel parts of the memory requirement
-            serial_memory = self.memory.serial
-            parallel_memory = self.memory.parallel
+    # -----------------------------------------------------------------
 
-            # Calculate the total memory of one process without data parallelization
-            total_memory = serial_memory + parallel_memory
+    def set_parallelization_low_memory(self, total_memory):
 
-            # The total memory consumption is larger than the node memory
-            if total_memory > self.config.memory: # Ms > Mn
+        """
+        This function ...
+        :param total_memory:
+        :return:
+        """
 
-                # If multiple nodes can be used
-                if self.config.nnodes > 1:
+        # Debugging
+        log.debug("Setting parallelization for simulation with low memory requirement ...")
 
-                    # Total memory consumed by the simulation for all processes (=nnodes) combined
-                    #memory_simulation_nnode_processes = serial_memory * self.config.nnodes + parallel_memory
+        # Np = min(Mn / Ms, Nppn)
+        ppn = self.config.nsockets * self.config.ncores
+        nprocesses_per_node = int(math.floor(min(self.config.memory / total_memory, ppn)))
 
-                    memory_per_process = serial_memory + parallel_memory / self.config.nnodes
+        nprocesses = nprocesses_per_node * self.config.nnodes
 
-                    # Mn x Nn < Ms?
-                    #if self.config.memory * self.config.nnodes < memory_simulation_nnode_processes:
-                    if memory_per_process > self.config.memory: # is the memory used per process larger than the memory per node?
-                        raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
+        # nthreads = ppn / nprocesses_per_node
+        ncores_per_process = ppn / nprocesses_per_node
+        # ncores_per_process = int(math.ceil(ncores_per_process)) -> this leads to total_ncores that is larger than self.config.nnodes * self.config.nsockets * self.config.ncores
+        ncores_per_process = int(ncores_per_process)
 
-                    else:
+        # Determine number of threads per core
+        threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
 
-                        # Arbitrarily pick a divisor (DIV) of Npps between 4 and 10
-                        divisors = factors(self.config.ncores)
-                        divisor = random.choice(divisors)
+        # Threads per process
+        threads_per_process = threads_per_core * ncores_per_process
 
-                        # Nt = min(Npps, DIV)
-                        nthreads = min(self.config.ncores, divisor)
+        # Total number of cores
+        total_ncores = nprocesses * ncores_per_process
 
-                        # Np = Nn x Nppn / Nt
-                        ppn = self.config.nsockets * self.config.ncores
-                        nprocesses = self.config.nnodes * ppn / nthreads
+        # Data-parallelization flag is set
+        if self.config.data_parallel is not None: data_parallel = self.config.data_parallel
 
-                        total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+        # Nlambda >= 10 * Np?
+        # nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+        elif self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3: data_parallel = True
 
-                        # Nlambda >= 10 x Np
-                        #nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                        if self.nwavelengths >= 10 * nprocesses:
+        # No data-parallelization should be used
+        else: data_parallel = False
 
-                            # Determine number of threads per core
-                            threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
-
-                            # data parallelization
-                            # Create the parallelization object
-                            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
-
-                        # try again from picking divisor, but now a larger one (less processes)
-                        else: pass
-
-                # If only one node can be used
-                else: raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
-
-            # If more than one simulation memory fits on a node
-            else:
-
-                #Np = min(Mn / Ms, Nppn)
-                ppn = self.config.nsockets * self.config.ncores
-                nprocesses_per_node = int(math.floor(min(self.config.memory / total_memory, ppn)))
-
-                nprocesses = nprocesses_per_node * self.config.nnodes
-
-                #nthreads = ppn / nprocesses_per_node
-                ncores_per_process = ppn / nprocesses_per_node
-                #ncores_per_process = int(math.ceil(ncores_per_process)) -> this leads to total_ncores that is larger than self.config.nnodes * self.config.nsockets * self.config.ncores
-                ncores_per_process = int(ncores_per_process)
-
-                # Determine number of threads per core
-                threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
-
-                # Threads per process
-                threads_per_process = threads_per_core * ncores_per_process
-
-                # Total number of cores
-                #total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
-                total_ncores = nprocesses * ncores_per_process
-
-                #print("ncores per process: " + str(ncores_per_process))
-                #print("threads per core: " + str(threads_per_core))
-                #print("threads per process: " + str(threads_per_process))
-                #print("total ncores: " + str(total_ncores))
-
-                # Nlambda >= 10 * Np?
-                #nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                if self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3:
-
-                    # data parallelization
-                    # Create the parallelization object
-                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=True)
-
-                else:
-
-                    # task parallelization
-                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=False)
+        # data parallelization
+        # Create the parallelization object
+        self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+                                                         threads_per_process=threads_per_process,
+                                                         data_parallel=data_parallel)
 
     # -----------------------------------------------------------------
 
