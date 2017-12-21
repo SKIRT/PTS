@@ -42,7 +42,7 @@ class SkirtArguments(object):
     """
 
     def __init__(self, definition=None, logging_options=None, parallelization=None, emulate=False, skirt_path=None,
-                 mpirun_path=None):
+                 mpirun_path=None, simulation_name=None):
 
         """
         The constructor ...
@@ -51,6 +51,7 @@ class SkirtArguments(object):
         :param parallelization:
         :param skirt_path:
         :param mpirun_path:
+        :param simulation_name:
         :return:
         """
 
@@ -89,6 +90,9 @@ class SkirtArguments(object):
         self.parallel.dataparallel = parallelization.data_parallel if parallelization is not None else False  # Run in data parallelization mode
         self.parallel.threads_per_core = parallelization.threads_per_core if parallelization is not None else False
 
+        # Simulation name (not required)
+        self.simulation_name = simulation_name
+
     # -----------------------------------------------------------------
 
     @property
@@ -112,7 +116,7 @@ class SkirtArguments(object):
         :return:
         """
 
-        return SingleSimulationDefinition(self.ski_pattern, self.output_path, input_path=self.input_path)
+        return SingleSimulationDefinition(self.ski_pattern, self.output_path, input_path=self.input_path, name=self.simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -126,6 +130,9 @@ class SkirtArguments(object):
         """
 
         from ..tools import sequences
+
+        if "# " in command: command, comment = strings.split_at_last(command, "# ")
+        else: comment = None
 
         parts = command.split()
         first = parts[0]
@@ -163,9 +170,13 @@ class SkirtArguments(object):
         # Emulate?
         emulate = "-e" in parts
 
+        # Determine simulation name
+        simulation_name = comment.strip() if comment is not None else None
+
         # Create and return the skirt arguments object
         return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose,
-                          memory=False, data_parallel=data_parallel, emulate=emulate, skirt_path=skirt_path, mpirun_path=mpirun_path)
+                          memory=False, data_parallel=data_parallel, emulate=emulate, skirt_path=skirt_path,
+                          mpirun_path=mpirun_path, simulation_name=simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -185,7 +196,7 @@ class SkirtArguments(object):
         if isinstance(definition, SingleSimulationDefinition):
 
             # Create the SkirtArguments object
-            arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
+            arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization, simulation_name=definition.name)
 
             # Set the base simulation options such as ski path, input path and output path (remote)
             arguments.ski_pattern = definition.ski_path
@@ -209,7 +220,7 @@ class SkirtArguments(object):
 
     @classmethod
     def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False,
-               data_parallel=False, emulate=False, skirt_path=None, mpirun_path=None):
+               data_parallel=False, emulate=False, skirt_path=None, mpirun_path=None, simulation_name=None):
 
         """
         This function ...
@@ -224,11 +235,12 @@ class SkirtArguments(object):
         :param emulate:
         :param skirt_path:
         :param mpirun_path:
+        :param simulation_name:
         :return:
         """
 
         # Create a SkirtArguments instance
-        arguments = cls(skirt_path=skirt_path, mpirun_path=mpirun_path)
+        arguments = cls(skirt_path=skirt_path, mpirun_path=mpirun_path, simulation_name=simulation_name)
 
         # Set the options
         arguments.ski_pattern = ski_path
@@ -300,6 +312,7 @@ class SkirtArguments(object):
 
             # Set name and return simulation
             if simulation_name is not None: simulation.name = simulation_name
+            elif self.simulation_name is not None: simulation.name = self.simulation_name
             return simulation
 
         # Else, just return the list of simulations (even when containing only one item)
@@ -342,14 +355,13 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
+    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=False, to_string=False, remote=None):
 
         """
         This function ...
         :param skirt_path:
         :param mpirun_path:
         :param bind_to_cores:
-        :param threads_per_core:
         :param to_string:
         :param remote:
         :return:
@@ -360,7 +372,7 @@ class SkirtArguments(object):
         mpirun_path = mpirun_path if mpirun_path is not None else self.mpirun_path
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
+        arguments = skirt_command(skirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, self.parallel.threads_per_core, scheduler, remote)
 
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -408,6 +420,10 @@ class SkirtArguments(object):
 
         ## Set options identical to this instance
 
+        # SKIRT and MPI paths
+        arguments.skirt_path = self.skirt_path
+        arguments.mpirun_path = self.mpirun_path
+
         # Options for the ski file pattern
         arguments.ski_pattern = self.ski_pattern
         arguments.recursive = self.recursive
@@ -433,6 +449,10 @@ class SkirtArguments(object):
         arguments.parallel.threads = self.parallel.threads           # The number of parallel threads per simulation
         arguments.parallel.processes = self.parallel.processes       # The number of parallel processes per simulation
         arguments.parallel.dataparallel = self.parallel.dataparallel # Run in data parallelization mode
+        arguments.parallel.threads_per_core = self.parallel.threads_per_core # Number of threads per core
+
+        # Simulation name
+        arguments.simulation_name = self.simulation_name
 
         # Return the new object
         return arguments
@@ -446,6 +466,8 @@ class SkirtArguments(object):
         """
 
         properties = []
+        properties.append("SKIRT command: " + self.skirt_path)
+        properties.append("MPI command: " + self.mpirun_path)
         properties.append("ski path: " + self.ski_pattern)
         properties.append("recursive: " + str(self.recursive))
         properties.append("relative: " + str(self.relative))
@@ -462,6 +484,8 @@ class SkirtArguments(object):
         properties.append("threads: " + str(self.parallel.threads))
         properties.append("processes: " + str(self.parallel.processes))
         properties.append("data-parallization: " + str(self.parallel.dataparallel))
+        properties.append("number of threads per core: " + str(self.parallel.threads_per_core))
+        if self.simulation_name is not None: properties.append("simulation name: " + str(self.simulation_name))
 
         return_str = self.__class__.__name__ + ":\n"
         for property in properties: return_str += " -" + property + "\n"
