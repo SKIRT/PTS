@@ -173,11 +173,12 @@ class FileMonitor(object):
         """
 
         from ..tools import formatting as fmt
+        from .log import log
 
         indent = '  > '
         terminal_width = 80
 
-        if self.has_open_files:
+        if self.has_open_files and log.is_debug():
             print("")
             print(fmt.red + "Open files:" + fmt.reset)
             print("")

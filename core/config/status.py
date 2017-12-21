@@ -41,6 +41,6 @@ definition.add_flag("offline", "run in offline mode: only analyse already retrie
 # -----------------------------------------------------------------
 
 # ADVANCED
-definition.add_optional("nopen_files", "positive_integer", "number of allowed open files", 1024)
+definition.add_optional("nopen_files", "positive_integer", "number of allowed open files", 2000)
 
 # -----------------------------------------------------------------
