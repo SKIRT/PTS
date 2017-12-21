@@ -743,8 +743,11 @@ class SKIRTRemote(Remote):
         # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
 
+        # If no screen output path is set, create a directory
+        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name, recursive=True)
+
         # Create screen script
-        screen = ScreenScript(screen_name, self.skirt_path, self.mpirun_path)
+        screen = ScreenScript(screen_name, self.skirt_path, self.mpirun_path, remote=self)
 
         # Loop over the items in the queue, add a line for each simulation
         for arguments, name in self.queue: screen.add_simulation(name, arguments)

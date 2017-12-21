@@ -211,40 +211,80 @@ class SkirtSimulation(object):
     ## Set analysed flags
     def set_analysed(self, value=True, all=False):
 
-        from ..tools import sequences
-
         changed = False
         old_analysed = self.analysed
         self.analysed = value
         if old_analysed != value: changed = True
 
-        if not value and all:
+        if not value and all: changed |= self.unset_analysed_extraction()
+        if not value and all: changed |= self.unset_analysed_plotting()
+        if not value and all: changed |= self.unset_analysed_misc()
+        if not value and all: changed |= self.unset_analysed_batch()
+        if not value and all: changed |= self.unset_analysed_scaling()
+        if not value and all: changed |= self.unset_analysed_extra()
 
-            # Extraction
-            if not sequences.is_empty(self.analysed_extraction): changed = True
-            self.analysed_extraction = []
+        return changed
 
-            # Plotting
-            if not sequences.is_empty(self.analysed_plotting): changed = True
-            self.analysed_plotting = []
+    ## Unset analysed extraction
+    def unset_analysed_extraction(self):
 
-            # Misc
-            if not sequences.is_empty(self.analysed_misc): changed = True
-            self.analysed_misc = []
+        from ..tools import sequences
 
-            # Batch
-            if self.analysed_batch: changed = True
-            self.analysed_batch = False
+        # Extraction
+        if not sequences.is_empty(self.analysed_extraction): changed = True
+        else: changed = False
+        self.analysed_extraction = []
+        return changed
 
-            # Scaling
-            if self.analysed_scaling: changed = True
-            self.analysed_scaling = False
+    ## Unset analysed plotting
+    def unset_analysed_plotting(self):
 
-            # Extra
-            if not sequences.is_empty(self.analysed_extra): changed = True
-            self.analysed_extra = []
+        from ..tools import sequences
 
-        # Return changed flag
+        # Plotting
+        if not sequences.is_empty(self.analysed_plotting): changed = True
+        else: changed = False
+        self.analysed_plotting = []
+        return changed
+
+    ## Unset analysed misc
+    def unset_analysed_misc(self):
+
+        from ..tools import sequences
+
+        # Misc
+        if not sequences.is_empty(self.analysed_misc): changed = True
+        else: changed = False
+        self.analysed_misc = []
+        return changed
+
+    ## Unset analysed batch
+    def unset_analysed_batch(self):
+
+        # Batch
+        if self.analysed_batch: changed = True
+        else: changed = False
+        self.analysed_batch = False
+        return changed
+
+    ## Unset analysed scaling
+    def unset_analysed_scaling(self):
+
+        # Scaling
+        if self.analysed_scaling: changed = True
+        else: changed = False
+        self.analysed_scaling = False
+        return changed
+
+    ## Unset analysed extra
+    def unset_analysed_extra(self):
+
+        from ..tools import sequences
+
+        # Extra
+        if not sequences.is_empty(self.analysed_extra): changed = True
+        else: changed = False
+        self.analysed_extra = []
         return changed
 
     ## This property returns a SingleSimulationDefinition object

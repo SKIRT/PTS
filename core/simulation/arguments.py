@@ -27,6 +27,7 @@ from .input import SimulationInput
 from ..tools import types
 from ..tools import strings
 from ..tools.utils import lazyproperty
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -131,6 +132,7 @@ class SkirtArguments(object):
 
         from ..tools import sequences
 
+        # Get and remove comment from the line
         if "# " in command: command, comment = strings.split_at_last(command, "# ")
         else: comment = None
 
@@ -359,6 +361,7 @@ class SkirtArguments(object):
 
         """
         This function ...
+        :param scheduler:
         :param skirt_path:
         :param mpirun_path:
         :param bind_to_cores:
@@ -532,12 +535,25 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             # Hyperthreading: threads_per_core will be > 1
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)
-            cores_per_process = int(threads / threads_per_core)
+            cores_per_process = threads / threads_per_core
+            if not numbers.is_integer(cores_per_process): raise RuntimeError("Something went wrong")
+            cores_per_process = int(cores_per_process)
+
+            # Remote is not specified: assume most recent version
+            if remote is None: command += ["--map-by", "core:PE=" + str(cores_per_process), "--bind-to", "core"]
+
+            # Check if --map-by and --bind-to options are available
+            elif remote.mpi_has_bind_to_option and remote.mpi_has_map_by_option: command += ["--map-by", "core:PE=" + str(cores_per_process), "--bind-to", "core"]
 
             # Check if cpus-per-proc option is possible
-            if remote is None or remote.mpi_has_cpus_per_proc_option:
-                command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+            elif remote is None or remote.mpi_has_cpus_per_proc_option: command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+
+            # Give warning
             else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
+
+        # Add report bindings option
+        if remote is None: command += ["--report-bindings"] # assume most recent version
+        elif remote.mpi_has_report_bindings_option: command += ["--report-bindings"]
 
         # Add the SKIRT path and return the final command list
         command += [skirt_path]

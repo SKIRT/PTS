@@ -15,6 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import OrderedDict
 
+# Import the relevant PTS classes and modules
+from ..tools import filesystem as fs
+from ..tools import strings
+from .arguments import SkirtArguments
+from ..tools.utils import lazyproperty
+from ..remote.remote import load_remote
+
 # -----------------------------------------------------------------
 
 class ScreenScript(object):
@@ -23,13 +30,17 @@ class ScreenScript(object):
     An instance of the ...
     """
 
-    def __init__(self, name, skirt_path, mpirun_path=None):
+    def __init__(self, name, host_id, output_path, process_binding=True, skirt_path=None, mpirun_path=None, remote=None):
 
         """
         The constructor ...
         :param name:
+        :param host_id:
+        :param output_path:
+        :param process_binding:
         :param skirt_path:
         :param mpirun_path:
+        :param remote:
         :return:
         """
 
@@ -40,11 +51,23 @@ class ScreenScript(object):
         self.skirt_path = skirt_path
         self.mpirun_path = mpirun_path
 
+        # Output path
+        self.output_path = output_path
+
+        # Set host ID
+        self.host_id = host_id
+
+        # Flags
+        self.process_binding = process_binding
+
         # The arguments
         self.arguments = OrderedDict()
 
         # The path
         self.path = None
+
+        # Reference to the remote
+        self._remote = remote
 
     # -----------------------------------------------------------------
 
@@ -57,6 +80,61 @@ class ScreenScript(object):
         :return:
         """
 
+        # Get info
+        # filename = fs.strip_extension(fs.name(path))
+        # queue_name = strings.split_at_last(filename, "_")[0]
+
+        # Initiliaze variables
+        host_id = None
+        screen_output_path = None
+        screen_name = None
+
+        # Get launch info
+        header = fs.get_header_lines(path)
+        next_output_path = False
+        for line in header:
+            if next_output_path:
+                screen_output_path = strings.unquote(line.strip())
+                next_output_path = False
+            elif "running SKIRT on remote host" in line: host_id = strings.unquote(line.split("on remote host ")[1])
+            elif "upload this file to the remote filesystem in the following directory" in line: next_output_path = True
+            elif line.startswith("screen -S"): screen_name = line.split("screen -S ")[1].split()[0]
+
+        # Create screen script
+        screen = cls(screen_name, host_id, screen_output_path)
+
+        # Loop over the simulation lines
+        for line in fs.read_lines(path):
+
+            # Skip comments and empty lines
+            if line.startswith("#"): continue
+            if not line: continue
+
+            # Get SKIRT arguments
+            arguments = SkirtArguments.from_command(line)
+
+            # Check whether the simulation name is defined
+            if arguments.simulation_name is None: raise ValueError("Simulation name is not defined")
+
+            # Add
+            screen.add_simulation(arguments.simulation_name, arguments)
+
+        # Return the screen script
+        return screen
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._remote is not None: return self._remote
+        else: return load_remote(self.host_id)
+
     # -----------------------------------------------------------------
 
     def add_simulation(self, name, arguments):
@@ -68,15 +146,35 @@ class ScreenScript(object):
         :return:
         """
 
-        # Write the command string to the job script
-        threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
-        command = arguments.to_command(scheduler=False, skirt_path=self.skirt_path, mpirun_path=self.host.mpi_command,
-                                       bind_to_cores=self.host.force_process_binding,
-                                       threads_per_core=threads_per_core, to_string=True, remote=self)
+        # Check name
+        if name in self.simulation_names: raise ValueError("Already a simulation with the name '" + name + "'")
 
-        script_file.write(command + "\n")
-        # Write to disk
-        script_file.flush()
+        # Add the arguments
+        self.arguments[name] = arguments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.arguments.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_script_file_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.name + ".sh"
 
     # -----------------------------------------------------------------
 
@@ -88,25 +186,41 @@ class ScreenScript(object):
         :return:
         """
 
-        # If a path is given, create a script file at the specified location
-        script_file = open(local_script_path, 'w')
+        # Initialize a list for the lines
+        lines = []
 
-        # If no screen output path is set, create a directory
-        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name, recursive=True)
+        # Add header
+        lines.append("#!/bin/sh")
+        lines.append("# Batch script for running SKIRT on remote host " + self.host_id)
+        lines.append("# To execute manualy, upload this file to the remote filesystem in the following directory:")
+        lines.append("# " + self.output_path)
+        lines.append("# under the name '" + self.remote_script_file_name + "' and enter the following commmands:")
+        lines.append("# cd '" + self.output_path + "' # navigate to the screen output directory")
+        lines.append("# screen -S " + self.name + " -L -d -m " + self.remote_script_file_name + "'")
+        lines.append("")
 
-        # Write a general header to the batch script
-        remote_script_file_name = screen_name + ".sh"
-        script_file.write("#!/bin/sh\n")
-        script_file.write("# Batch script for running SKIRT on remote host " + self.host_id + "\n")
-        script_file.write("# To execute manualy, upload this file to the remote filesystem in the following directory:\n")
-        script_file.write("# " + screen_output_path + "\n")
-        script_file.write("# under the name '" + remote_script_file_name + "' and enter the following commmands:\n")
-        script_file.write("# cd '" + screen_output_path + "' # navigate to the screen output directory\n")
-        script_file.write("# screen -S " + screen_name + " -L -d -m " + remote_script_file_name + "'\n")
-        script_file.write("\n")
+        # Show version of MPI
+        if self.mpirun_path is not None:
+            lines.append(self.mpirun_path + " --version")
+            lines.append("")
 
-        # Close the script file (if it is temporary it will automatically be removed)
-        script_file.close()
+        # Loop over the arguments
+        for simulation_name in self.simulation_names:
+
+            # Get arguments
+            arguments = self.arguments[simulation_name]
+
+            # Get command
+            command = arguments.to_command(scheduler=False, skirt_path=self.skirt_path, mpirun_path=self.mpirun_path, bind_to_cores=self.process_binding, to_string=True, remote=self.remote)
+
+            # Add simulation name to command
+            line = command + " # " + simulation_name
+
+            # Add line
+            lines.append(line)
+
+        # Write the lines
+        fs.write_lines(path, lines)
 
     # -----------------------------------------------------------------
 
@@ -116,5 +230,11 @@ class ScreenScript(object):
         This function ...
         :return:
         """
+
+        # Check whether a path is defined for the script file
+        if self.path is None: raise RuntimeError("The screen script file does not exist yet")
+
+        # Save to the original path
+        self.saveto(self.path)
 
 # -----------------------------------------------------------------
