@@ -357,7 +357,7 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=False, to_string=False, remote=None):
+    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=True, to_string=False, remote=None):
 
         """
         This function ...

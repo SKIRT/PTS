@@ -30,7 +30,7 @@ class JobScript(object):
     """
 
     def __init__(self, path, arguments, cluster, skirt_path, mpi_command, modules, walltime, nodes, ppn, name=None,
-                 mail=False, full_node=False, bind_to_cores=False, threads_per_core=1):
+                 mail=False, full_node=False, bind_to_cores=False):
 
         """
         The constructor takes the following arguments:
@@ -50,7 +50,6 @@ class JobScript(object):
             other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
             in terms of computation time.
         :param bind_to_cores: force process binding to cores
-        :param threads_per_core: the number of hyperthreads per core
         :return:
         """
 
@@ -125,8 +124,7 @@ class JobScript(object):
         if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
 
         # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
-                                       threads_per_core=threads_per_core, to_string=True)
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True)
         self.script.write(command + "\n")
 
         # Close the script file
@@ -165,7 +163,7 @@ class MultiJobScript(object):
     """
 
     def __init__(self, path, arguments, cluster, skirt_path, mpi_command, modules, walltime, nodes, ppn, name=None,
-                 mail=False, full_node=False, bind_to_cores=False, threads_per_core=1):
+                 mail=False, full_node=False, bind_to_cores=False):
 
         """
         The constructor ...
@@ -182,7 +180,6 @@ class MultiJobScript(object):
         :param mail:
         :param full_node:
         :param bind_to_cores:
-        :param threads_per_core:
         """
 
         # Set the file path
@@ -256,8 +253,7 @@ class MultiJobScript(object):
         if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
 
         # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
-                                       threads_per_core=threads_per_core, to_string=True)
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True)
         self.script.write(command + "\n")
 
         # Close the script file
@@ -378,8 +374,7 @@ class SKIRTJobScript(_JobScript):
         mpi_command += " --hybrid " + str(processes_per_node)
 
         # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
-                                       threads_per_core=threads_per_core, to_string=True)
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True)
 
         # Add the SKIRT command
         self.add_command(command, "Launch SKIRT")

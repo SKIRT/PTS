@@ -1286,14 +1286,11 @@ class SKIRTRemote(Remote):
         """
 
         # Inform the user
-        log.info("Starting simulation on the remote host")
+        log.info("Starting simulation on the remote host ...")
 
-        # Send the command to the remote machine using a screen session so that we can safely detach from the
-        # remote shell
-        threads_per_core = self.threads_per_core if self.use_hyperthreading_skirt else 1
+        # Send the command to the remote machine using a screen session so that we can safely detach from the remote shell
         command = arguments.to_command(self.scheduler, skirt_path=self.skirt_path, mpirun_path=self.host.mpi_command,
-                                       bind_to_cores=self.host.force_process_binding, threads_per_core=threads_per_core,
-                                       to_string=True, remote=self)
+                                       bind_to_cores=self.host.force_process_binding, to_string=True, remote=self)
         self.execute("screen -d -m " + command, output=False)
 
         # Generate a new simulation ID based on the ID's currently in use
