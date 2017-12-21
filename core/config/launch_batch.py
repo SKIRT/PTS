@@ -57,3 +57,8 @@ definition.add_flag("data_parallel_remote", "set data parallelization for remote
 definition.add_flag("check_parallelization", "check the specified parallelization scheme", True)
 
 # -----------------------------------------------------------------
+
+# Write?
+definition.add_flag("write", "enable writing", False)
+
+# -----------------------------------------------------------------

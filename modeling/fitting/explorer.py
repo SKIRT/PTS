@@ -563,6 +563,12 @@ class ParameterExplorer(FittingComponent):
         # Debugging
         log.debug("Setting basic launcher options ...")
 
+        # Set path
+        self.launcher.config.path = self.generation_path
+
+        # Write assignments and leftover queues
+        self.launcher.config.write = True
+
         # Simulations have approximately the same requirements
         self.launcher.config.same_requirements = True
 

@@ -37,6 +37,7 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 
 # Flags
 definition.add_flag("backup", "make backups of non-empty directories", False)
+definition.add_flag("adapt_simulations", "unset retrieved and analysed flags of the corresponding simulations", False)
 
 # Generations to remove
 definition.add_required("generation", "string", "generations to remove (none means all)")
@@ -111,5 +112,37 @@ if len(chi_squared) > 0:
     if config.backup: fs.backup_file(chi_squared_path)
     chi_squared.remove_all_rows()
     chi_squared.save()
+
+# -----------------------------------------------------------------
+
+# Adapt simulations?
+if config.adapt_simulations:
+
+    # Get the simulations for the generation
+    generation = fitting_run.get_generation(config.generation)
+
+    # Check if has assignment table
+    if generation.has_assignment_table:
+
+        # Get the simulations
+        for simulation in generation.simulations:
+
+            # Set flag
+            changed = False
+
+            # Unset retrieved
+            changed = simulation.set_retrieved(False)
+
+            # Unset analysed
+            #print(simulation.retrieved, simulation.analysed, simulation.analysed_extraction, simulation.analysed_plotting, simulation.analysed_misc, simulation.analysed_batch, simulation.analysed_scaling, simulation.analysed_extra)
+            changed |= simulation.set_analysed(False, all=True)
+
+            # Has changed
+            if changed:
+                log.debug("Adapting retrieved and analysed flags for simulation '" + simulation.name + "' ...")
+                simulation.save()
+
+    # Give warning
+    else: log.warning("Assignment table not found")
 
 # -----------------------------------------------------------------

@@ -1580,6 +1580,23 @@ def copy_directory(path, directory_path, new_name=None):
 
 # -----------------------------------------------------------------
 
+def copy_contents(path, directory_path):
+
+    """
+    Thisf unction ...
+    :param path:
+    :param directory_path:
+    :return:
+    """
+
+    # Create the directory
+    if not is_directory(directory_path): create_directory(directory_path)
+
+    # Copy contents
+    copy_from_directory(path, directory_path)
+
+# -----------------------------------------------------------------
+
 def clear_and_copy_from_directory(from_directory, to_directory, **kwargs):
 
     """
@@ -2831,7 +2848,7 @@ def backup_directory(path, suffix="backup"):
 
     backup_path = path + "_" + suffix
     if is_directory(backup_path): raise IOError("Backup directory already exists (" + backup_path + ")")
-    copy_directory(path, backup_path)
+    copy_contents(path, backup_path)
 
 # -----------------------------------------------------------------
 

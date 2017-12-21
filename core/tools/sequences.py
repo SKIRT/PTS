@@ -659,15 +659,17 @@ def common_elements(sequence_a, sequence_b):
 
 # -----------------------------------------------------------------
 
-def unique_values(sequence):
+def unique_values(sequence, ignore=None):
 
     """
     This function ...
     :param sequence:
+    :param ignore:
     :return:
     """
 
-    return list(set(sequence))
+    result = list(set(sequence))
+    if ignore is not None: return removed(result, ignore)
 
 # -----------------------------------------------------------------
 

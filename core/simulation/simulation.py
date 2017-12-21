@@ -208,6 +208,45 @@ class SkirtSimulation(object):
             # Set the attribute
             setattr(self, attr_name, value)
 
+    ## Set analysed flags
+    def set_analysed(self, value=True, all=False):
+
+        from ..tools import sequences
+
+        changed = False
+        old_analysed = self.analysed
+        self.analysed = value
+        if old_analysed != value: changed = True
+
+        if not value and all:
+
+            # Extraction
+            if not sequences.is_empty(self.analysed_extraction): changed = True
+            self.analysed_extraction = []
+
+            # Plotting
+            if not sequences.is_empty(self.analysed_plotting): changed = True
+            self.analysed_plotting = []
+
+            # Misc
+            if not sequences.is_empty(self.analysed_misc): changed = True
+            self.analysed_misc = []
+
+            # Batch
+            if self.analysed_batch: changed = True
+            self.analysed_batch = False
+
+            # Scaling
+            if self.analysed_scaling: changed = True
+            self.analysed_scaling = False
+
+            # Extra
+            if not sequences.is_empty(self.analysed_extra): changed = True
+            self.analysed_extra = []
+
+        # Return changed flag
+        return changed
+
     ## This property returns a SingleSimulationDefinition object
     @property
     def definition(self):
@@ -861,6 +900,20 @@ class RemoteSimulation(SkirtSimulation):
 
         # Remote
         self._remote = None
+
+    # -----------------------------------------------------------------
+
+    def set_retrieved(self, value=True):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        old_retrieved = self.retrieved
+        self.retrieved = value
+        return old_retrieved != self.retrieved
 
     # -----------------------------------------------------------------
 

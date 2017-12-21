@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-import tempfile
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..remote.remote import Remote
@@ -52,6 +52,37 @@ def get_simulation_for_host(host_id, simulation_id):
 
     # load the simulation and return
     return RemoteSimulation.from_file(simulation_path)
+
+# -----------------------------------------------------------------
+
+def get_simulations_for_host(host_id, as_dict=False):
+
+    """
+    This function ...
+    :param host_id:
+    :param as_dict:
+    :return:
+    """
+
+    simulations = [get_simulation_for_host(host_id, simulation_id) for simulation_id in introspection.simulation_ids_for_host(host_id)]
+    nsimulations = len(simulations)
+    if as_dict:
+        dictionary = OrderedDict((simulation.name, simulation) for simulation in simulations)
+        if len(dictionary) < nsimulations: raise ValueError("Something went wrong: simulation names not unique")
+        return dictionary
+    else: return simulations
+
+# -----------------------------------------------------------------
+
+def get_simulation_names_for_host(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    return [simulation.name for simulation in get_simulations_for_host(host_id)]
 
 # -----------------------------------------------------------------
 

@@ -24,7 +24,9 @@ from ...core.basics.configuration import Configuration
 from ...evolve.optimize.components import get_crossover, get_crossover_origins, get_genome_class, get_mutator, get_selector, get_scaling, get_initializator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ...core.launch.batchlauncher import SimulationAssignmentTable
+from ...core.simulation.remote import get_simulation_for_host
 
 # -----------------------------------------------------------------
 
@@ -185,6 +187,224 @@ class Generation(object):
         """
 
         return fs.directory_of(self.fit_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_screen_scripts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.path, extension="sh")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def screen_script_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.path, extension="sh")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def assignment_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "assignment.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_assignment_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.assignment_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def assignment_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationAssignmentTable.from_file(self.assignment_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        directory_names = fs.directories_in_path(self.path, returns="name")
+        simulation_names = self.individuals_table.simulation_names
+
+        if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and ")
+
+        return simulation_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.assignment_table.unique_host_ids
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_names_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.assignment_table.simulations_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
+    def get_simulations_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        simulations = []
+        simulation_ids = self.assignment_table.ids_for_remote(host_id)
+        for simulation_id in simulation_ids:
+            simulation = get_simulation_for_host(host_id, simulation_id)
+            simulations.append(simulation)
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sims = []
+        for host_id in self.host_ids:
+            simulations = self.get_simulations_for_host(host_id)
+            sims.extend(simulations)
+        return sims
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.path, extension="dat", startswith="queue_")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def queue_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.path, extension="dat", startswith="queue_")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def local_queue_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "queue_local.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_local_queue(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.local_queue_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remote_queues(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.path, extension="dat", startswith="queue_", exact_not_name="queue_local")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_queue_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.path, extension="dat", startswith="queue_", exact_not_name="queue_local")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_queue_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [name.split("queue_")[1] for name in fs.files_in_path(self.path, extension="dat", startswith="queue_", exact_not_name="queue_local", returns="name")]
 
     # -----------------------------------------------------------------
 
@@ -1100,15 +1320,16 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def nparameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.optimizer_config.nparameters
+    # DEFINED ABOVE ALREADY
+    # @property
+    # def nparameters(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.optimizer_config.nparameters
 
     # -----------------------------------------------------------------
 

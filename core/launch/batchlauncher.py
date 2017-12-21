@@ -25,7 +25,7 @@ from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..basics.log import log
-from ..remote.host import Host, load_host
+from ..remote.host import load_host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
@@ -46,6 +46,9 @@ from ..tools import parallelization
 from .timing import TimingTable
 from .memory import MemoryTable
 from ..tools.stringify import tostr
+from ..basics.table import SmartTable
+from ..tools import tables
+from ..tools.serialization import write_list
 
 # -----------------------------------------------------------------
 
@@ -118,6 +121,435 @@ class DifferentNDustCells(Exception):
 
         # Call the base class constructor
         super(DifferentNDustCells, self).__init__(message)
+
+# -----------------------------------------------------------------
+
+class SimulationAssignmentTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(SimulationAssignmentTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Simulation name", str, None, "name of the simulation")
+        self.add_column_info("Host ID", str, None, "remote host ID")
+        self.add_column_info("Cluster", str, None, "cluster name")
+        self.add_column_info("ID", int, None, "simulation ID")
+        self.add_column_info("Success", bool, None, "succesfully launched")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["ID"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Host ID"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.unique_values(self["Host ID"], ignore=[None])
+
+    # -----------------------------------------------------------------
+
+    def get_index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return tables.find_index(self, simulation_name, "Simulation name")
+
+    # -----------------------------------------------------------------
+
+    def get_host_id_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self["Host ID"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_id_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self["ID"][index]
+
+    # -----------------------------------------------------------------
+
+    def is_launched(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self["Success"][index]
+
+    # -----------------------------------------------------------------
+
+    def is_local(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Host ID"].mask[index]
+
+    # -----------------------------------------------------------------
+
+    def is_local_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self.is_local(index)
+
+    # -----------------------------------------------------------------
+
+    def is_remote(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return not self["Host ID"].mask[index]
+
+    # -----------------------------------------------------------------
+
+    def is_remote_host(self, index, host_id):
+
+        """
+        Thisf unction ....
+        :param index:
+        :param host_id:
+        :return:
+        """
+
+        return self["Host ID"][index] == host_id
+
+    # -----------------------------------------------------------------
+
+    def is_remote_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self.is_remote(index)
+
+    # -----------------------------------------------------------------
+
+    def set_success_for_simulation(self, simulation_name, value=True):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param value:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        self.set_success(index, value=value)
+        return index
+
+    # -----------------------------------------------------------------
+
+    def set_success(self, index, value=True):
+
+        """
+        Thisf unction ...
+        :param index:
+        :param value:
+        :return:
+        """
+
+        self["Success"][index] = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self)
+
+    # -----------------------------------------------------------------
+
+    def get_name(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Simulation name"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_id(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["ID"][index] if not self["ID"].mask[index] else None
+
+    # -----------------------------------------------------------------
+
+    def get_host_id(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Host ID"][index] if not self["Host ID"].mask[index] else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def local_simulations(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Keep list of simulation names
+        names = []
+
+        # Loop over the indices
+        for index in range(self.nsimulations):
+            if not self.is_local(index): continue
+            name = self.get_name(index)
+            names.append(name)
+
+        # Return the list of names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlocal_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.local_simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Keep list of simulation names
+        names = []
+
+        # Loop over the indices
+        for index in range(self.nsimulations):
+            if not self.is_remote(index): continue
+            name = self.get_name(index)
+            names.append(name)
+
+        # Return the list of names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nremote_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remote_simulations)
+
+    # -----------------------------------------------------------------
+
+    def simulations_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Keep list of simulation names
+        names = []
+
+        # Loop over the indices
+        for index in range(self.nsimulations):
+            if not self.is_remote(index): continue
+            host_id_simulation = self.get_host_id(index)
+            if host_id_simulation != host_id: continue
+            name = self.get_name(index)
+            names.append(name)
+
+        # Return the list of names
+        return names
+
+    # -----------------------------------------------------------------
+
+    def nsimulations_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return len(self.simulations_for_remote(host_id))
+
+    # -----------------------------------------------------------------
+
+    def ids_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        ids = []
+
+        for index in range(self.nsimulations):
+
+            if not self.is_remote(index): continue
+            if not self.is_remote_host(index, host_id): continue
+            id = self.get_id(index)
+            ids.append(id)
+
+        # Return the simulation IDs
+        return ids
+
+    # -----------------------------------------------------------------
+
+    def add_local_simulation(self, name, success):
+
+        """
+        This function ...
+        :param name:
+        :param success:
+        :return:
+        """
+
+        if name in self.names: raise ValueError("Already a simulation with the name '" + name + "'")
+        values = [name, None, None, None, success]
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def add_remote_simulation(self, name, host_id, cluster_name=None, simulation_id=None, success=True):
+
+        """
+        This function ...
+        :param name:
+        :param host_id:
+        :param cluster_name:
+        :param simulation_id:
+        :param success:
+        :return:
+        """
+
+        if name in self.names: raise ValueError("Already a simulation with the name '" + name + "'")
+        values = [name, host_id, cluster_name, simulation_id, success]
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+default_extraction_dirname = "extr"
+default_plotting_dirname = "plot"
+default_misc_dirname = "misc"
 
 # -----------------------------------------------------------------
 
@@ -216,6 +648,9 @@ class BatchLauncher(Configurable):
 
         # Original definitions of local simulations (when definitions are changed because of shared input)
         self.original_local_definitions = dict()
+
+        # The simulation assignment table
+        self.assignment = None
 
     # -----------------------------------------------------------------
 
@@ -1122,7 +1557,7 @@ class BatchLauncher(Configurable):
         if self.has_simulations: self.try_analysing()
 
         # 9. Write
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -1218,6 +1653,9 @@ class BatchLauncher(Configurable):
 
         ## Get the number of processes
         if "nprocesses_local" in kwargs: self.nprocesses_local = kwargs.pop("nprocesses_local")
+
+        # Initialize the simulation assignment table
+        self.assignment = SimulationAssignmentTable()
 
     # -----------------------------------------------------------------
 
@@ -2438,16 +2876,16 @@ class BatchLauncher(Configurable):
         definition = self.get_first_simulation_definition_for_host(host_id)
 
         # Determine parallelization
-        parallelization = determine_parallelization(definition.ski_path, definition.input_path,
+        parallelization_remote = determine_parallelization(definition.ski_path, definition.input_path,
                                                     self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
                                                     prop.hyperthreading, prop.threads_per_core, ncells=ncells,
                                                     nwavelengths=nwavelengths)
 
         # Show
-        log.debug("The parallelization scheme for the '" + host_id + "' host is a " + str(parallelization))
+        log.debug("The parallelization scheme for the '" + host_id + "' host is a " + str(parallelization_remote))
 
         # Set the parallelization scheme for this host
-        self.set_parallelization_for_host(host_id, parallelization)
+        self.set_parallelization_for_host(host_id, parallelization_remote)
 
     # -----------------------------------------------------------------
 
@@ -2489,10 +2927,10 @@ class BatchLauncher(Configurable):
                                                                 nwavelengths=nwavelengths)
 
             # Show
-            log.debug("The parallelization scheme for the '" + simulation_name + "' simulation is " + str(parallelization))
+            log.debug("The parallelization scheme for the '" + simulation_name + "' simulation is " + str(parallelization_simulation))
 
             # Set the parallelization scheme for this simulation
-            self.set_parallelization_for_simulation(simulation_name, parallelization)
+            self.set_parallelization_for_simulation(simulation_name, parallelization_simulation)
 
     # -----------------------------------------------------------------
 
@@ -2826,6 +3264,9 @@ class BatchLauncher(Configurable):
                 # Also add the simulation directly to the list of simulations to be analysed
                 self.simulations.append(simulation)
 
+                # Add the simulation to the assignment table
+                self.assignment.add_local_simulation(name, success=True)
+
             # Error occured during simulation
             except Exception:
 
@@ -2833,10 +3274,37 @@ class BatchLauncher(Configurable):
                 log.error("Launching simulation '" + name + "' failed:")
                 traceback.print_exc()
                 log.error("Cancelling following simulations in the queue ...")
+
+                # Add the failed simulation back to the queue
+                failed_item = (definition, name, analysis_options_item)
+                self.local_queue.append(failed_item)
+
+                # Set the assignment for all failed simulations
+                self.add_assignment_failed_local()
+
+                # Stop the loop
                 break
 
         # Return the list of simulations
         return simulations
+
+    # -----------------------------------------------------------------
+
+    def add_assignment_failed_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting local simulations that failed to be assigned ...")
+
+        # Loop over the leftover simulations
+        for definition, name, analysis_options_item in self.local_queue:
+
+            # Add entry to the assignment table
+            self.assignment.add_local_simulation(name, success=False)
 
     # -----------------------------------------------------------------
 
@@ -2908,6 +3376,9 @@ class BatchLauncher(Configurable):
         # Cache the simulation objects scheduled to the current remote
         simulations_remote = []
 
+        # Get cluster name
+        cluster_name = self.get_clustername_for_host(remote.host_id)
+
         # Loop over the simulation in the queue for this remote host
         total_queued_host = len(self.queues[remote.host_id])
         for index in range(total_queued_host):
@@ -2965,16 +3436,51 @@ class BatchLauncher(Configurable):
                 # Save the simulation object
                 simulation.save()
 
+                # Add to assignment
+                self.assignment.add_remote_simulation(name, remote.host_id, cluster_name=cluster_name, simulation_id=simulation.id, success=None) # We don't know yet whether launching will actually be succesful!
+
             # Exception was raised
             except Exception:
 
+                # Print error
                 log.error("Adding simulation '" + name + "' to the queue failed:")
                 traceback.print_exc()
                 log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
+
+                # Add the failed simulation back to the queue
+                failed_item = (definition, name, analysis_options_item)
+                self.queues[remote.host_id].append(failed_item)
+
+                # Set the assignment for all failed simulations
+                self.add_assignment_failed_for_host(remote.host_id)
+
+                # Stop the loop
                 break
 
         # Return the simulations scheduled for the host
         return simulations_remote
+
+    # -----------------------------------------------------------------
+
+    def add_assignment_failed_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting simulations that failed to be assigned to remote host '" + host_id + "' ...")
+
+        # Get cluster name
+        cluster_name = self.get_clustername_for_host(host_id)
+
+        # Loop over the leftover simulations
+        for definition, name, analysis_options_item in self.queues[host_id]:
+
+            # Add entry to assignment table
+            self.assignment.add_remote_simulation(name, host_id, cluster_name=cluster_name, success=False)
 
     # -----------------------------------------------------------------
 
@@ -3007,21 +3513,76 @@ class BatchLauncher(Configurable):
             screen_output_path = this_screen_output_path
         else: screen_output_path = None
 
-        # Start the queue
-        jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-        handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
-                                     group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
-                                     local_script_path=local_script_path, screen_output_path=screen_output_path,
-                                     jobscripts_path=jobscripts_path, attached=self.config.attached, dry=self.config.dry)
+        # Try starting the queue
+        try:
 
-        # SET THE EXECUTION HANDLES
-        # Loop over the simulation for this remote
-        for simulation in simulations_remote:
+            jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
+            handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
+                                         group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
+                                         local_script_path=local_script_path, screen_output_path=screen_output_path,
+                                         jobscripts_path=jobscripts_path, attached=self.config.attached, dry=self.config.dry)
 
-            # If all simulations should have the same handle
-            if isinstance(handles, ExecutionHandle): simulation.handle = handles
-            else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
-            simulation.save()
+            # SET THE EXECUTION HANDLES
+            # Loop over the simulation for this remote
+            for simulation in simulations_remote:
+
+                # If all simulations should have the same handle
+                if isinstance(handles, ExecutionHandle): simulation.handle = handles
+                else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
+                simulation.save()
+
+        # An error occured
+        except Exception:
+
+            # Print error
+            log.error("Launching queue of simulations for remote host '" + remote.host_id + "' failed")
+            traceback.print_exc()
+
+            # Set the assignment for all failed simulations
+            self.set_assignment_failed_for_host(remote.host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nassigned(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.assignment)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def assigned_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.assignment.local
+
+    # -----------------------------------------------------------------
+
+    def set_assignment_failed_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Indicating that launching the simulations for remote host '" + host_id + "' failed ...")
+
+        # Loop over all the simulations in the assignment table
+        for index in range(self.nassigned):
+
+            # Set success flag to False
+            self.assignment.set_success(index, False)
 
     # -----------------------------------------------------------------
 
@@ -3212,6 +3773,90 @@ class BatchLauncher(Configurable):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the simulation assignment
+        self.write_assignment()
+
+        # Write queues
+        self.write_queues()
+
+    # -----------------------------------------------------------------
+
+    def write_assignment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the simulation assignment ...")
+
+        # Determine the path
+        path = self.output_path_file("assignment.dat")
+
+        # Write
+        self.assignment.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_queues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the queues ...")
+
+        # Write local queue, if any
+        if self.has_queued_local: self.write_local_queue()
+
+        # Write remote queues
+        if self.has_queued_remotes: self.write_remote_queues()
+
+    # -----------------------------------------------------------------
+
+    def write_local_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing local queue ...")
+
+        # Determine path
+        path = self.output_path_file("queue_local.dat")
+
+        # Write
+        write_list(self.local_queue, path)
+
+    # -----------------------------------------------------------------
+
+    def write_remote_queues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing remote queues ...")
+
+        # Loop over the remotes
+        for host_id in self.queues:
+
+            # Any still queued?
+            if not self.has_queued_remote(host_id): continue
+
+            # Determine path
+            path = self.output_path_file("queue_" + host_id + ".dat")
+
+            # Write queue
+            write_list(self.queues[host_id], path)
+
     # -----------------------------------------------------------------
 
     def create_analysis_options(self, definition, simulation_name, logging_options=None, add_timing=True, add_memory=True):
@@ -3232,9 +3877,9 @@ class BatchLauncher(Configurable):
 
         # Determine the path to the extraction directory for this simulation
         if self.config.analysis.extraction.path is None:
-            extraction_path = fs.join(definition.base_path, "extr")
+            extraction_path = fs.join(definition.base_path, default_extraction_dirname)
             # the ski files of multiple simulations can be int he same directory
-            if fs.is_directory(extraction_path): extraction_path = fs.join(definition.base_path, definition.name, "extr")
+            if fs.is_directory(extraction_path): extraction_path = fs.join(definition.base_path, definition.name, default_extraction_dirname)
         elif self.config.relative_analysis_paths: extraction_path = fs.join(definition.base_path, self.config.analysis.extraction.path)
         else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation_name)
 
@@ -3248,9 +3893,9 @@ class BatchLauncher(Configurable):
 
         # Determine the path to the plotting directory for this simulation
         if self.config.analysis.plotting.path is None:
-            plotting_path = fs.join(definition.base_path, "plot")
+            plotting_path = fs.join(definition.base_path, default_plotting_dirname)
             # the ski files of multiple simulations can be in the same directory
-            if fs.is_directory(plotting_path): plotting_path = fs.join(definition.base_path, simulation_name, "plot")
+            if fs.is_directory(plotting_path): plotting_path = fs.join(definition.base_path, simulation_name, default_plotting_dirname)
         elif self.config.relative_analysis_paths: plotting_path = fs.join(definition.base_path, self.config.analysis.plotting.path)
         else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation_name)
 
@@ -3264,9 +3909,9 @@ class BatchLauncher(Configurable):
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
         if self.config.analysis.misc.path is None:
-            misc_path = fs.join(definition.base_path, "misc")
+            misc_path = fs.join(definition.base_path, default_misc_dirname)
             # the ski files of multiple simulations can be int he same directory
-            if fs.is_directory(misc_path): misc_path = fs.join(definition.base_path, simulation_name, "misc")
+            if fs.is_directory(misc_path): misc_path = fs.join(definition.base_path, simulation_name, default_misc_dirname)
         elif self.config.relative_analysis_paths: misc_path = fs.join(definition.base_path, self.config.analysis.misc.path)
         else: misc_path = fs.join(self.config.analysis.misc.path, simulation_name)
 
