@@ -316,8 +316,30 @@ class SmartTable(Table):
         :return:
         """
 
-        remove_names = sequences.get_other(self.colnames, names)
+        remove_names = sequences.get_other(self.column_names, names)
         self.remove_columns(remove_names)
+
+    # -----------------------------------------------------------------
+
+    def remove_all_columns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remove_columns(self.column_names)
+
+    # -----------------------------------------------------------------
+
+    def remove_all_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remove_rows(range(self.nrows))
 
     # -----------------------------------------------------------------
 

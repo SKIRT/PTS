@@ -1228,6 +1228,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def is_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return generation_name in self.generation_names
+
+    # -----------------------------------------------------------------
+
     def get_generation_path(self, generation_name):
 
         """

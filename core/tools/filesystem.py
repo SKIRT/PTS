@@ -2820,6 +2820,21 @@ def backup_file(filepath, suffix="backup"):
 
 # -----------------------------------------------------------------
 
+def backup_directory(path, suffix="backup"):
+
+    """
+    This function ...
+    :param path:
+    :param suffix:
+    :return:
+    """
+
+    backup_path = path + "_" + suffix
+    if is_directory(backup_path): raise IOError("Backup directory already exists (" + backup_path + ")")
+    copy_directory(path, backup_path)
+
+# -----------------------------------------------------------------
+
 def backup_files(filepaths, suffix="backup"):
 
     """
