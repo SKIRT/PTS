@@ -195,7 +195,7 @@ class SkirtExec:
         else: raise ValueError("Invalid MPI style")
 
         # Get the command string
-        command = arguments.to_command(self._path, mpi_command, scheduler)
+        command = arguments.to_command(scheduler, skirt_path=self._path, mpirun_path=mpi_command)
 
         # Not waiting and progress_bar don't go together!
         if show_progress and not wait: raise ValueError("Cannot show progress when 'wait' is False")

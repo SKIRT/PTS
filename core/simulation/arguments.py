@@ -26,6 +26,12 @@ from ..basics.log import log
 from .input import SimulationInput
 from ..tools import types
 from ..tools import strings
+from ..tools.utils import lazyproperty
+
+# -----------------------------------------------------------------
+
+default_skirt_path = "skirt"
+default_mpirun_path = "mpirun"
 
 # -----------------------------------------------------------------
 
@@ -35,17 +41,24 @@ class SkirtArguments(object):
     This class ...
     """
 
-    def __init__(self, definition=None, logging_options=None, parallelization=None, emulate=False):
+    def __init__(self, definition=None, logging_options=None, parallelization=None, emulate=False, skirt_path=None,
+                 mpirun_path=None):
 
         """
         The constructor ...
         :param definition:
         :param logging_options:
         :param parallelization:
+        :param skirt_path:
+        :param mpirun_path:
         :return:
         """
 
         # TODO: discriminate between different types of 'SimulationDefinition' (multiple or single)
+
+        # SKIRT path and MPIRUN path
+        self.skirt_path = skirt_path if skirt_path is not None else default_skirt_path
+        self.mpirun_path = mpirun_path if mpirun_path is not None else default_mpirun_path
 
         # Options for the ski file pattern
         self.ski_pattern = definition.ski_path if definition is not None else None
@@ -74,6 +87,7 @@ class SkirtArguments(object):
         self.parallel.threads = parallelization.threads if parallelization is not None else None # The number of parallel threads per simulation
         self.parallel.processes = parallelization.processes if parallelization is not None else None # The number of parallel processes per simulation
         self.parallel.dataparallel = parallelization.data_parallel if parallelization is not None else False  # Run in data parallelization mode
+        self.parallel.threads_per_core = parallelization.threads_per_core if parallelization is not None else False
 
     # -----------------------------------------------------------------
 
@@ -150,7 +164,8 @@ class SkirtArguments(object):
         emulate = "-e" in parts
 
         # Create and return the skirt arguments object
-        return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose, memory=False, data_parallel=data_parallel, emulate=emulate)
+        return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose,
+                          memory=False, data_parallel=data_parallel, emulate=emulate, skirt_path=skirt_path, mpirun_path=mpirun_path)
 
     # -----------------------------------------------------------------
 
@@ -193,7 +208,8 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False, data_parallel=False, emulate=False):
+    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False,
+               data_parallel=False, emulate=False, skirt_path=None, mpirun_path=None):
 
         """
         This function ...
@@ -206,25 +222,33 @@ class SkirtArguments(object):
         :param memory:
         :param data_parallel:
         :param emulate:
+        :param skirt_path:
+        :param mpirun_path:
         :return:
         """
 
         # Create a SkirtArguments instance
-        arguments = cls()
+        arguments = cls(skirt_path=skirt_path, mpirun_path=mpirun_path)
 
         # Set the options
         arguments.ski_pattern = ski_path
         arguments.single = True
+        arguments.emulate = emulate
         arguments.recursive = False
         arguments.relative = False
-        arguments.parallel.processes = processes
-        arguments.parallel.threads = threads
+
+        # Input and output
         arguments.input_path = input_path
         arguments.output_path = output_path
+
+        # Logging
         arguments.logging.verbose = verbose
         arguments.logging.memory = memory
+
+        # Parallelization
+        arguments.parallel.processes = processes
+        arguments.parallel.threads = threads
         arguments.parallel.dataparallel = data_parallel
-        arguments.emulate = emulate
 
         # Return the new instance
         return arguments
@@ -285,13 +309,45 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
+    @lazyproperty
+    def input_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check input directory
+        if isinstance(self.input_path, SimulationInput):
+            input_dir_path = self.input_path.to_single_directory()
+
+        # If the input consists of a list of paths, check whether they represent files in the same directory
+        elif types.is_sequence(self.input_path):
+            # print(1)
+            input_dir_path = SimulationInput(*self.input_path).to_single_directory()
+        elif types.is_string_type(self.input_path):
+            # print(2)
+            input_dir_path = SimulationInput(self.input_path).to_single_directory()
+        elif types.is_dictionary(self.input_path):
+            # print(3)
+            # print(self.input_path)
+            input_dir_path = SimulationInput(**self.input_path).to_single_directory()
+        elif self.input_path is None:
+            # print(4)
+            input_dir_path = None
+        else: raise ValueError("Type of simulation input not recognized")
+
+        # Return
+        return input_dir_path
+
+    # -----------------------------------------------------------------
+
+    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
 
         """
         This function ...
         :param skirt_path:
-        :param mpi_command:
-        :param scheduler:
+        :param mpirun_path:
         :param bind_to_cores:
         :param threads_per_core:
         :param to_string:
@@ -299,29 +355,12 @@ class SkirtArguments(object):
         :return:
         """
 
-        #print("INPUT PATH", self.input_path)
-
-        if isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
-
-        # If the input consists of a list of paths, check whether they represent files in the same directory
-        elif types.is_sequence(self.input_path):
-            #print(1)
-            input_dir_path = SimulationInput(*self.input_path).to_single_directory()
-        elif types.is_string_type(self.input_path):
-            #print(2)
-            input_dir_path = SimulationInput(self.input_path).to_single_directory()
-        elif types.is_dictionary(self.input_path):
-            #print(3)
-            #print(self.input_path)
-            input_dir_path = SimulationInput(**self.input_path).to_single_directory()
-        elif self.input_path is None:
-            #print(4)
-            input_dir_path = None
-        else: raise ValueError("Type of simulation input not recognized")
-        #print(input_dir_path)
+        # Set SKIRT path and mpirun path
+        skirt_path = skirt_path if skirt_path is not None else self.skirt_path
+        mpirun_path = mpirun_path if mpirun_path is not None else self.mpirun_path
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
+        arguments = skirt_command(skirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
 
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -335,9 +374,7 @@ class SkirtArguments(object):
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         # Options for input and output
-        #if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
-        #if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
-        if input_dir_path is not None: arguments += ["-i", strings.add_quotes_if_spaces(input_dir_path)]
+        if self.input_directory_path is not None: arguments += ["-i", strings.add_quotes_if_spaces(self.input_directory_path)]
         if self.output_path is not None: arguments += ["-o", strings.add_quotes_if_spaces(self.output_path)]
 
         # Other options
@@ -351,13 +388,8 @@ class SkirtArguments(object):
         else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
 
         # If requested, convert the argument list into a string
-        if to_string:
-
-            # Create the final command string for this simulation
-            command = " ".join(arguments)
-
-            # Return the command string
-            return command
+        # Create the final command string for this simulation
+        if to_string: return " ".join(arguments)
 
         # Otherwise, return the list of argument values
         else: return arguments
@@ -479,7 +511,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             cores_per_process = int(threads / threads_per_core)
 
             # Check if cpus-per-proc option is possible
-            if remote is None or remote.mpi_knows_cpus_per_proc_option:
+            if remote is None or remote.mpi_has_cpus_per_proc_option:
                 command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
             else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 

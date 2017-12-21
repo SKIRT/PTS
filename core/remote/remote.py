@@ -1218,26 +1218,6 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def mpi_knows_cpus_per_proc_option(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        output = self.execute("mpiexec --cpus-per-proc")
-
-        for line in output:
-
-            if "unrecognized argument cpus-per-proc" in line: return False # certainly not available
-            if 'option "--cpus-per-proc" did not have enough parameters' in line: return True # certainly available
-
-        # Probably available, found nothing suspect
-        return True
-
-    # -----------------------------------------------------------------
-
     @property
     def has_cpp_compiler(self):
 
@@ -1281,6 +1261,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def mpirun_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_mpirun_names:
+            path = self.find_executable(name)
+            if path is not None: return path
+        return None # No mpirun
+
+    # -----------------------------------------------------------------
+
     @property
     def has_mpi_compiler(self):
 
@@ -1294,7 +1289,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def mpi_compiler_path(self):
 
         """
@@ -1306,6 +1301,114 @@ class Remote(object):
             path = self.find_executable(name)
             if path is not None: return path
         return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mpi_version(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_mpi: return None
+        else: return self.version_of(self.mpirun_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_openmpi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        version_string = self.mpi_version
+        return "Open MPI" in version_string or "OpenRTE" in version_string
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def openmpi_version(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_openmpi: raise RuntimeError("Not using OpenMPI")
+        return self.mpi_version.split(")")[1].strip()
+
+    # -----------------------------------------------------------------
+
+    def mpi_has_option(self, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        output = self.execute(self.mpirun_path + " --" + string)
+
+        # Check output
+        for line in output:
+
+            if "unrecognized argument " + string in line: return False # certainly not available
+            if 'option "' + string + '" did not have enough parameters' in line: return True # certainly available
+
+        # Probably available, found nothing suspect
+        return True
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mpi_has_cpus_per_proc_option(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.mpi_has_option("cpus-per-proc")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mpi_has_report_bindings_option(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.mpi_has_option("report-bindings")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mpi_has_map_by_option(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.mpi_has_option("map-by")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mpi_has_bind_to_option(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.mpi_has_option("bind-to")
 
     # -----------------------------------------------------------------
 
@@ -4440,28 +4543,30 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def version_of(self, name, show_output=False):
+    def version_of(self, name_or_path, show_output=False):
 
         """
         This function ...
-        :param name:
+        :param name_or_path:
         :param show_output:
         :return:
         """
 
         # Execute
-        output = self.execute(name + " --version", show_output=show_output)
+        output = self.execute(name_or_path + " --version", show_output=show_output)
+
+        # Get name
+        name = fs.name(name_or_path)
 
         # Return the line with the version number
         for line in output:
+            if line.startswith("[warn]"): continue
             if "warning: setlocale:" in line: continue
-            return line
+            if line.startswith(name): return line.split(name)[1].strip()
+            else: return line.strip()
 
         # Cannot determine version
         return None
-
-        # Return the relevant portion of the output
-        #return output[0]
 
     # -----------------------------------------------------------------
 

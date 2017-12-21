@@ -145,12 +145,12 @@ class FitSKIRTArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, fitskirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
+    def to_command(self, scheduler, fitskirt_path, mpirun_path, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
 
         """
         This function ...
         :param fitskirt_path:
-        :param mpi_command:
+        :param mpirun_path:
         :param scheduler:
         :param bind_to_cores:
         :param threads_per_core:
@@ -160,7 +160,7 @@ class FitSKIRTArguments(object):
         """
 
         # Create the argument list
-        arguments = fitskirt_command(fitskirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
+        arguments = fitskirt_command(fitskirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
 
         # # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -245,7 +245,7 @@ def fitskirt_command(fitskirt_path, mpi_command, bind_to_cores, processes, threa
             cores_per_process = int(threads / threads_per_core)
 
             # Check if cpus-per-proc option is possible
-            if remote is None or remote.mpi_knows_cpus_per_proc_option:
+            if remote is None or remote.mpi_has_cpus_per_proc_option:
                 command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
             else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 
@@ -1545,7 +1545,7 @@ class FitSKIRT(object):
         else: raise ValueError("Invalid MPI style")
 
         # Get the command string
-        command = arguments.to_command(self.path, mpi_command, scheduler)
+        command = arguments.to_command(scheduler, fitskirt_path=self.path, mpirun_path=mpi_command)
 
         # Debugging
         command_string = " ".join(command)

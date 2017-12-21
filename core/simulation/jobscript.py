@@ -125,7 +125,7 @@ class JobScript(object):
         if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
 
         # Write the command string to the job script
-        command = arguments.to_command(skirt_path, mpi_command, scheduler=True, bind_to_cores=bind_to_cores,
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
                                        threads_per_core=threads_per_core, to_string=True)
         self.script.write(command + "\n")
 
@@ -256,7 +256,7 @@ class MultiJobScript(object):
         if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
 
         # Write the command string to the job script
-        command = arguments.to_command(skirt_path, mpi_command, scheduler=True, bind_to_cores=bind_to_cores,
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
                                        threads_per_core=threads_per_core, to_string=True)
         self.script.write(command + "\n")
 
@@ -378,7 +378,7 @@ class SKIRTJobScript(_JobScript):
         mpi_command += " --hybrid " + str(processes_per_node)
 
         # Write the command string to the job script
-        command = arguments.to_command(skirt_path, mpi_command, scheduler=True, bind_to_cores=bind_to_cores,
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores,
                                        threads_per_core=threads_per_core, to_string=True)
 
         # Add the SKIRT command

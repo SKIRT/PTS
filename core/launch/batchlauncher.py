@@ -354,6 +354,27 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_skirt_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        if isinstance(host_id, SKIRTRemote): return host_id
+
+        # Search in remotes
+        for remote in self.remotes:
+            if remote.host_id == host_id:
+                assert isinstance(remote, SKIRTRemote)
+                return remote
+
+        # Create new remote (shouldn't happen if the setup has been called)
+        return SKIRTRemote(host_id=host_id)
+
+    # -----------------------------------------------------------------
+
     def set_cluster_for_host(self, host_id, cluster_name):
 
         """
@@ -2128,13 +2149,19 @@ class BatchLauncher(Configurable):
         """
 
         # Get the remote instance
-        remote = self.get_remote(host_id)
+        #remote = self.get_remote(host_id)
 
         # If the remote uses a scheduling system
-        if remote.scheduler: return remote.host.use_hyperthreading
+        #if remote.scheduler: return remote.host.use_hyperthreading
 
         # Remote does not use a scheduling system
-        else: return remote.host.use_hyperthreading
+        #else: return remote.host.use_hyperthreading
+
+        # Get the remote instance
+        remote = self.get_skirt_remote(host_id)
+
+        # Return
+        return remote.use_hyperthreading_skirt
 
     # -----------------------------------------------------------------
 
@@ -2237,7 +2264,7 @@ class BatchLauncher(Configurable):
         log.info("Checking the parallelization scheme ...")
 
         # Get the remote instance
-        remote = self.get_remote(host_id)
+        remote = self.get_skirt_remote(host_id)
 
         # Get the specified parallelization
         parallelization = self.parallelization_hosts[host_id]
@@ -2248,7 +2275,7 @@ class BatchLauncher(Configurable):
 
             # Determine the total number of hardware threads that can be used on the remote cluster
             hardware_threads_per_node = remote.cores_per_node
-            if remote.use_hyperthreading: hardware_threads_per_node *= remote.threads_per_core
+            if remote.use_hyperthreading_skirt: hardware_threads_per_node *= remote.threads_per_core
 
             # Raise an error if the number of requested threads per process exceeds the number of hardware threads
             # per node
@@ -2274,7 +2301,7 @@ class BatchLauncher(Configurable):
 
             # Determine the total number of hardware threads that can be used on the remote host
             hardware_threads = remote.cores_per_node
-            if remote.use_hyperthreading: hardware_threads *= remote.threads_per_core
+            if remote.use_hyperthreading_skirt: hardware_threads *= remote.threads_per_core
 
             # If the number of requested threads is greater than the allowed number of hardware threads, raise
             # an error

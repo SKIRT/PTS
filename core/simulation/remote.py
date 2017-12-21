@@ -34,6 +34,7 @@ from ..tools import types
 from ..tools import numbers
 from .output import get_output_type, get_parent_type
 from .data import SimulationData
+from .screen import ScreenScript
 
 # -----------------------------------------------------------------
 
@@ -393,6 +394,18 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    @property
+    def use_hyperthreading_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return False # don't use hyperthreading for SKIRT at the moment as we assume it doesn't give much performance gain
+
+    # -----------------------------------------------------------------
+
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
                      remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False):
 
@@ -445,7 +458,7 @@ class SKIRTRemote(Remote):
         # Set the parallelization properties to the simulation object
         processes = arguments.parallel.processes
         threads = arguments.parallel.threads
-        threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
+        threads_per_core = self.threads_per_core if self.use_hyperthreading_skirt else 1
         simulation.parallelization = Parallelization.from_processes_and_threads(processes, threads, threads_per_core)
 
         # If analysis options are defined, adjust the correponding settings of the simulation object
@@ -681,7 +694,7 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None, attached=False, dry=False):
+    def start_queue_screen(self, screen_name, local_script_path=None, screen_output_path=None, attached=False, dry=False):
 
         """
         This function ...
@@ -699,46 +712,20 @@ class SKIRTRemote(Remote):
         # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
 
-        # If the path for the shell script is not given, create a named temporary file
-        if local_script_path is None:
-            script_file = tempfile.NamedTemporaryFile()
-            local_script_path = script_file.name
-
-        # If a path is given, create a script file at the specified location
-        else: script_file = open(local_script_path, 'w')
-
-        # If no screen output path is set, create a directory
-        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name, recursive=True)
-
-        # Write a general header to the batch script
-        remote_script_file_name = screen_name + ".sh"
-        script_file.write("#!/bin/sh\n")
-        script_file.write("# Batch script for running SKIRT on remote host " + self.host_id + "\n")
-        script_file.write("# To execute manualy, upload this file to the remote filesystem in the following directory:\n")
-        script_file.write("# " + screen_output_path + "\n")
-        script_file.write("# under the name '" + remote_script_file_name + "' and enter the following commmands:\n")
-        script_file.write("# cd '" + screen_output_path + "' # navigate to the screen output directory\n")
-        script_file.write("# screen -S " + screen_name + " -L -d -m " + remote_script_file_name + "'\n")
-        script_file.write("\n")
+        # Create screen script
+        screen = ScreenScript(screen_name, self.skirt_path, self.mpirun_path)
 
         # Loop over the items in the queue, add a line for each simulation
-        for arguments, name in self.queue:
+        for arguments, name in self.queue: screen.add_simulation(name, arguments)
 
-            # Write the command string to the job script
-            threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
-            command = arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False,
-                                           bind_to_cores=self.host.force_process_binding,
-                                           threads_per_core=threads_per_core, to_string=True, remote=self)
-            script_file.write(command + "\n")
+        # Determine local script path
+        if local_script_path is None: local_script_path = fs.join(introspection.pts_temp_dir, screen_name + ".sh")
 
-        # Write to disk
-        script_file.flush()
+        # Save the screen script
+        screen.saveto(local_script_path)
 
         # Start a screen session, UNLESS DRY MODE IS ENABLED, IN WHICH CASE THE USER HAS TO UPLOAD AND RUN THE SCRIPT HIM/HERSELF
         if not dry: self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
-
-        # Close the script file (if it is temporary it will automatically be removed)
-        script_file.close()
 
         # Create the execution handle
         if attached: handle = ExecutionHandle.tty(self.tty, self.host_id)
@@ -1269,9 +1256,9 @@ class SKIRTRemote(Remote):
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
-        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.scheduler,
-                                       self.host.force_process_binding, threads_per_core=threads_per_core,
+        threads_per_core = self.threads_per_core if self.use_hyperthreading_skirt else 1
+        command = arguments.to_command(self.scheduler, skirt_path=self.skirt_path, mpirun_path=self.host.mpi_command,
+                                       bind_to_cores=self.host.force_process_binding, threads_per_core=threads_per_core,
                                        to_string=True, remote=self)
         self.execute("screen -d -m " + command, output=False)
 
@@ -2033,7 +2020,7 @@ class SKIRTRemote(Remote):
         if options.nodes is None or options.ppn is None:
 
             # The number of threads per core that should be used
-            threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
+            threads_per_core = self.threads_per_core if self.use_hyperthreading_skirt else 1
 
             # Get the requirements in number of nodes and ppn
             processors = arguments.parallel.processes * arguments.parallel.threads / threads_per_core
