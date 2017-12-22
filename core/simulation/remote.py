@@ -872,12 +872,17 @@ class SKIRTRemote(Remote):
         :return:
         """
 
-        # Create a unique name for the simulation directory
-        skifile_name = fs.name(definition.ski_path).split(".ski")[0]
-        remote_simulation_name = time.unique_name(skifile_name, separator="__")
+        # Determine simulation directory name
+        if definition.name is not None: remote_simulation_name = definition.name
+        else:
+
+            # Create a unique name for the simulation directory
+            skifile_name = fs.name(definition.ski_path).split(".ski")[0]
+            remote_simulation_name = time.unique_name(skifile_name, separator="__")
 
         # Determine the full path of the simulation directory on the remote system
         remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
+        if self.is_directory(remote_simulation_path): raise IOError("Simulation directory already exists")
 
         # Create the remote simulation directory
         self.create_directory(remote_simulation_path)

@@ -97,6 +97,35 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @property
+    def parallelization(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .parallelization import Parallelization
+        return Parallelization.from_processes_and_threads(self.parallel.processes, self.parallel.threads, threads_per_core=self.parallel.threads_per_core, data_parallel=self.parallel.dataparallel)
+
+    # -----------------------------------------------------------------
+
+    @parallelization.setter
+    def parallelization(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.parallel.threads = value.threads
+        self.parallel.processes = value.processes
+        self.parallel.dataparallel = value.data_parallel
+        self.parallel.threads_per_core = value.threads_per_core
+
+    # -----------------------------------------------------------------
+
+    @property
     def prefix(self):
 
         """
@@ -136,35 +165,53 @@ class SkirtArguments(object):
         if "# " in command: command, comment = strings.split_at_last(command, "# ")
         else: comment = None
 
+        # Split the command and get the first part
         parts = command.split()
         first = parts[0]
 
         # SKIRT is called directly, no MPI
         if first.endswith("skirt"):
 
+            # Set SKIRT and mpirun path
             mpirun_path = None
             skirt_path = first
             nprocesses = 1
+            cores_per_process = None
 
         # Probably MPI call
         else:
 
+            # Set SKIRT and mpirun path
             mpirun_path = first
             skirt_path = sequences.find_unique_endswith(parts, "skirt")
+
+            # Get number of processes
             if "-np" in command: nprocesses = int(command.split("-np")[1].split()[0])
             elif "-n" in command: nprocesses = int(command.split("-n")[1].split()[0])
             else: raise ValueError("Unknown MPI command")
+
+            # Get cores per process
+            if "--map-by socket" in command: cores_per_process = int(command.split("--map-by socket:pe=")[1].split()[0])
+            elif "--cpus-per-proc" in command: cores_per_process = int(command.split("--cpus-per-proc")[1].split()[0])
+            else: cores_per_process = None
 
         # Find ski file path
         ski_path = sequences.find_unique_endswith(parts, ".ski")
 
         # Input and output
-        output_path = strings.unquote(command.split("-o")[1].split()[0].strip()) if "-o" in parts else None
-        input_path = strings.unquote(command.split("-i")[1].split()[0].strip()) if "-i" in parts else None
+        output_path = strings.unquote(command.split(" -o ")[1].split()[0].strip()) if "-o" in parts else None
+        input_path = strings.unquote(command.split(" -i ")[1].split()[0].strip()) if "-i" in parts else None
 
         # Other parallelization options
-        nthreads = int(command.split("-t")[1].split()[0]) if "-t" in parts else None
+        nthreads = int(command.split(" -t ")[1].split()[0]) if "-t" in parts else None
         data_parallel = "-d" in parts
+
+        # Find number of threads per core
+        if cores_per_process is None: threads_per_core = 1
+        else:
+            threads_per_core = nthreads / cores_per_process
+            if not numbers.is_integer(threads_per_core): raise RuntimeError("Something went wrong")
+            threads_per_core = int(threads_per_core)
 
         # Logging options
         verbose = "-v" in parts
@@ -177,8 +224,8 @@ class SkirtArguments(object):
 
         # Create and return the skirt arguments object
         return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose,
-                          memory=False, data_parallel=data_parallel, emulate=emulate, skirt_path=skirt_path,
-                          mpirun_path=mpirun_path, simulation_name=simulation_name)
+                          memory=False, data_parallel=data_parallel, threads_per_core=threads_per_core, emulate=emulate,
+                          skirt_path=skirt_path, mpirun_path=mpirun_path, simulation_name=simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -222,7 +269,7 @@ class SkirtArguments(object):
 
     @classmethod
     def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False,
-               data_parallel=False, emulate=False, skirt_path=None, mpirun_path=None, simulation_name=None):
+               data_parallel=False, threads_per_core=1, emulate=False, skirt_path=None, mpirun_path=None, simulation_name=None):
 
         """
         This function ...
@@ -234,6 +281,7 @@ class SkirtArguments(object):
         :param verbose:
         :param memory:
         :param data_parallel:
+        :param threads_per_core:
         :param emulate:
         :param skirt_path:
         :param mpirun_path:
@@ -263,6 +311,7 @@ class SkirtArguments(object):
         arguments.parallel.processes = processes
         arguments.parallel.threads = threads
         arguments.parallel.dataparallel = data_parallel
+        arguments.parallel.threads_per_core = threads_per_core
 
         # Return the new instance
         return arguments
@@ -540,10 +589,10 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             cores_per_process = int(cores_per_process)
 
             # Remote is not specified: assume most recent version
-            if remote is None: command += ["--map-by", "core:PE=" + str(cores_per_process), "--bind-to", "core"]
+            if remote is None: command += ["--map-by", "socket:pe=" + str(cores_per_process), "--bind-to", "core"]
 
             # Check if --map-by and --bind-to options are available
-            elif remote.mpi_has_bind_to_option and remote.mpi_has_map_by_option: command += ["--map-by", "core:PE=" + str(cores_per_process), "--bind-to", "core"]
+            elif remote.mpi_has_bind_to_option and remote.mpi_has_map_by_option: command += ["--map-by", "socket:pe=" + str(cores_per_process), "--bind-to", "core"]
 
             # Check if cpus-per-proc option is possible
             elif remote is None or remote.mpi_has_cpus_per_proc_option: command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions

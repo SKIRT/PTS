@@ -1426,6 +1426,24 @@ def add_prefix(file_path, prefix):
 
 # -----------------------------------------------------------------
 
+def added_prefix(file_path, prefix):
+
+    """
+    This function ...
+    :param file_path:
+    :param prefix:
+    :return:
+    """
+
+    old_name = strip_extension(name(file_path))
+    extension = get_extension(file_path)
+    new_name = prefix + old_name + "." + extension
+
+    directory = directory_of(file_path)
+    return join(directory, new_name)
+
+# -----------------------------------------------------------------
+
 def add_suffix(file_path, suffix):
 
     """
@@ -1439,6 +1457,24 @@ def add_suffix(file_path, suffix):
     extension = get_extension(file_path)
     new_name = old_name + suffix + "." + extension
     rename_file_path(file_path, new_name)
+
+# -----------------------------------------------------------------
+
+def added_suffix(file_path, suffix):
+
+    """
+    This function ...
+    :param file_path:
+    :param suffix:
+    :return:
+    """
+
+    old_name = strip_extension(name(file_path))
+    extension = get_extension(file_path)
+    new_name = old_name + suffix + "." + extension
+
+    directory = directory_of(file_path)
+    return join(directory, new_name)
 
 # -----------------------------------------------------------------
 

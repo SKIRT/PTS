@@ -236,6 +236,11 @@ class SkirtSimulation(object):
         self.analysed_extraction = []
         return changed
 
+    @property
+    def analysed_any_extraction(self):
+        from ..tools import sequences
+        return not sequences.is_empty(self.analysed_extraction)
+
     ## Unset analysed plotting
     def unset_analysed_plotting(self):
 
@@ -247,6 +252,11 @@ class SkirtSimulation(object):
         self.analysed_plotting = []
         return changed
 
+    @property
+    def analysed_any_plotting(self):
+        from ..tools import sequences
+        return not sequences.is_empty(self.analysed_plotting)
+
     ## Unset analysed misc
     def unset_analysed_misc(self):
 
@@ -257,6 +267,11 @@ class SkirtSimulation(object):
         else: changed = False
         self.analysed_misc = []
         return changed
+
+    @property
+    def analysed_any_misc(self):
+        from ..tools import sequences
+        return not sequences.is_empty(self.analysed_misc)
 
     ## Unset analysed batch
     def unset_analysed_batch(self):
@@ -286,6 +301,11 @@ class SkirtSimulation(object):
         else: changed = False
         self.analysed_extra = []
         return changed
+
+    @property
+    def analysed_any_extra(self):
+        from ..tools import sequences
+        return not sequences.is_empty(self.analysed_extra)
 
     ## This property returns a SingleSimulationDefinition object
     @property

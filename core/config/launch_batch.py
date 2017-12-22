@@ -14,6 +14,9 @@ from pts.core.config.launch import definition
 # Flags
 definition.add_flag("recursive", "look for ski files recursively")
 
+# Load from queues
+definition.add_flag("load_queues", "load queue files found in the working directory")
+
 # Settings for the remote
 if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
 else: definition.add_fixed("remotes", "remote hosts", [])

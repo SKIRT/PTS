@@ -21,6 +21,7 @@ from ..tools import strings
 from .arguments import SkirtArguments
 from ..tools.utils import lazyproperty
 from ..remote.remote import load_remote
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -48,8 +49,8 @@ class ScreenScript(object):
         self.name = name
 
         # Set paths
-        self.skirt_path = skirt_path
-        self.mpirun_path = mpirun_path
+        self._skirt_path = skirt_path
+        self._mpirun_path = mpirun_path
 
         # Output path
         self.output_path = output_path
@@ -109,6 +110,7 @@ class ScreenScript(object):
             # Skip comments and empty lines
             if line.startswith("#"): continue
             if not line: continue
+            if line.endswith("--version"): continue
 
             # Get SKIRT arguments
             arguments = SkirtArguments.from_command(line)
@@ -137,6 +139,56 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def skirt_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [arguments.skirt_path for arguments in self.arguments.values()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mpirun_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [arguments.mpirun_path for arguments in self.arguments.values()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._skirt_path is not None: return self._skirt_path
+        else: return sequences.get_all_equal_value(self.skirt_paths, return_none=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mpirun_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._mpirun_path is not None: return self._mpirun_path
+        else: return sequences.get_all_equal_value(self.mpirun_paths, return_none=True, ignore_none=True)
+
+    # -----------------------------------------------------------------
+
     def add_simulation(self, name, arguments):
 
         """
@@ -154,6 +206,18 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
+    def remove_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.arguments.pop(name)
+
+    # -----------------------------------------------------------------
+
     @property
     def simulation_names(self):
 
@@ -163,6 +227,91 @@ class ScreenScript(object):
         """
 
         return self.arguments.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
+
+    # -----------------------------------------------------------------
+
+    def get_arguments(self, simulation_name):
+
+        """
+        This functio n...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.arguments[simulation_name]
+
+    # -----------------------------------------------------------------
+
+    def get_skirt_path(self, simulation_name):
+
+        """
+        Thisf unction ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.arguments[simulation_name].skirt_path
+
+    # -----------------------------------------------------------------
+
+    def get_mpirun_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.arguments[simulation_name].mpirun_path
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.arguments[simulation_name].parallelization
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization(self, simulation_name, parallelization):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param parallelization:
+        :return:
+        """
+
+        self.arguments[simulation_name].parallelization = parallelization
 
     # -----------------------------------------------------------------
 
@@ -178,11 +327,12 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path):
+    def saveto(self, path, update_path=True):
 
         """
         This function ...
         :param path:
+        :param update_path:
         :return:
         """
 
@@ -221,6 +371,9 @@ class ScreenScript(object):
 
         # Write the lines
         fs.write_lines(path, lines)
+
+        # Update path
+        if update_path: self.path = path
 
     # -----------------------------------------------------------------
 

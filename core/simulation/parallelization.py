@@ -64,6 +64,30 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @property
+    def ncores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cores
+
+    # -----------------------------------------------------------------
+
+    @ncores.setter
+    def ncores(self, value):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        self.cores = value
+
+    # -----------------------------------------------------------------
+
+    @property
     def nprocesses(self):
 
         """
@@ -75,6 +99,19 @@ class Parallelization(object):
 
     # -----------------------------------------------------------------
 
+    @nprocesses.setter
+    def nprocesses(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.processes = value
+
+    # -----------------------------------------------------------------
+
     @property
     def threads(self):
 
@@ -83,6 +120,7 @@ class Parallelization(object):
         :return:
         """
 
+        #print(self.cores_per_process, self.threads_per_core)
         threads = self.cores_per_process * self.threads_per_core
         assert int(threads) == threads
         return int(threads)
@@ -101,6 +139,47 @@ class Parallelization(object):
 
     # -----------------------------------------------------------------
 
+    @nthreads.setter
+    def nthreads(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Scale the number of cores per process so to keep threads_per_core constant
+        factor = value / self.nthreads
+        new_ncores = self.ncores * factor
+        self.ncores = new_ncores
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nthreads_per_core(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.threads_per_core
+
+    # -----------------------------------------------------------------
+
+    @nthreads_per_core.setter
+    def nthreads_per_core(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.threads_per_core = value
+
+    # -----------------------------------------------------------------
+
     @property
     def cores_per_process(self):
 
@@ -109,8 +188,10 @@ class Parallelization(object):
         :return:
         """
 
+        from ..tools import numbers
+        #print(self.cores, self.processes)
         corespp = self.cores / self.processes
-        assert int(corespp) == corespp
+        if not numbers.is_integer(corespp): raise RuntimeError("Invalid parallelization")
         return int(corespp)
 
     # -----------------------------------------------------------------
@@ -202,8 +283,12 @@ class Parallelization(object):
         :return:
         """
 
+        from ..tools import numbers
+
         # Determine the number of required cores
         cores_per_process = threads / threads_per_core
+        if not numbers.is_integer(cores_per_process): raise ValueError("Inconsistent values")
+        cores_per_process = int(cores_per_process)
         cores = cores_per_process * processes
 
         # Create a new class instance and return it

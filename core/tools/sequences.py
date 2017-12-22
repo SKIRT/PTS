@@ -365,17 +365,20 @@ def all_equal(lst, ignore_none=False, ignore=None):
 
 # -----------------------------------------------------------------
 
-def get_all_equal_value(sequence, ignore_none=False, ignore=None):
+def get_all_equal_value(sequence, ignore_none=False, ignore=None, return_none=False):
 
     """
     This function ...
     :param sequence:
     :param ignore_none:
     :param ignore:
+    :param return_none:
     :return:
     """
 
-    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore): raise ValueError("Not all equal: " + str(sequence))
+    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore):
+        if return_none: return None
+        else: raise ValueError("Not all equal: " + str(sequence))
     else:
         if ignore_none: return find_first_not_none(sequence, ignore=ignore)
         elif ignore is not None: return find_first(sequence, ignore=ignore)
@@ -1576,7 +1579,8 @@ def find_unique_endswith(sequence, endswith):
     """
 
     result = find_endswith(sequence, endswith)
-    if len(result) != 1: raise ValueError("Not unique")
-    return result[0]
+    if len(result) == 0: raise ValueError("None found")
+    elif len(result) > 1: raise ValueError("Not unique: '" + endswith + "' in " + str(sequence))
+    else: return result[0]
 
 # -----------------------------------------------------------------
