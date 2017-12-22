@@ -120,6 +120,7 @@ class SimulationAnalyser(Configurable):
 
         # Set flags
         self.basic_analyser.config.ignore_missing_data = self.config.ignore_missing_data
+        self.batch_analyser.config.ignore_missing_data = self.config.ignore_missing_data
 
     # -----------------------------------------------------------------
 

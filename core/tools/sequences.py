@@ -562,6 +562,33 @@ def get_other(seq, test):
 
 # -----------------------------------------------------------------
 
+def equal_sequences(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    import numpy as np
+    from . import types
+
+    if not equal_sizes(sequence_a, sequence_b): return False
+    for index in range(len(sequence_a)):
+        item_a = sequence_a[index]
+        item_b = sequence_b[index]
+        #print(item_a, item_b, item_a == item_b)
+        if item_a != item_b:
+            if types.is_real_type(item_a) and types.is_real_type(item_b):
+                if not np.isclose(item_a, item_b): return False
+            elif types.is_quantity(item_a) and types.is_quantity(item_b):
+                if not np.isclose(item_a.value, item_b.value): return False
+            else: return False
+    return True
+
+# -----------------------------------------------------------------
+
 def equal_sizes(*lsts):
 
     """

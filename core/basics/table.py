@@ -714,12 +714,13 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_row(self, index, add_units=True):
+    def get_row(self, index, add_units=True, as_list=False):
 
         """
         This function ...
         :param index:
         :param add_units:
+        :param as_list:
         :return:
         """
 
@@ -734,7 +735,8 @@ class SmartTable(Table):
             row[name] = value
 
         # Return the row
-        return row
+        if as_list: return row.values()
+        else: return row
 
     # -----------------------------------------------------------------
 

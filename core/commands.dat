@@ -28,6 +28,7 @@ test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estima
 parallelization | -- | advanced.parallelizationtool.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file
 analyse_simulation | -- | launch.analyser.SimulationAnalyser | arguments | Analyse a SKIRT simulation
 *analyse_basic | -- | launch.basicanalyser.BasicAnalyser | arguments | Run basic SKIRT simulation analysis
+*analyse_batch | -- | launch.batchanalyser.BatchAnalyser | arguments | Run batch SKIRT simulation analysis
 
 # PLOTTING
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs

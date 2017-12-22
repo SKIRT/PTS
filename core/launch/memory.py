@@ -18,6 +18,7 @@ from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..basics.log import log
 from ..units.parsing import parse_unit as u
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -73,7 +74,7 @@ class MemoryTable(SmartTable):
                   ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
                   max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
                   npixels, total_peak_memory, setup_peak_memory, stellar_peak_memory, spectra_peak_memory, dust_peak_memory,
-                  writing_peak_memory):
+                  writing_peak_memory, original_simulation_name=None):
 
         """
         This function ...
@@ -104,6 +105,7 @@ class MemoryTable(SmartTable):
         :param spectra_peak_memory:
         :param dust_peak_memory:
         :param writing_peak_memory:
+        :param original_simulation_name:
         :return:
         """
 
@@ -114,8 +116,20 @@ class MemoryTable(SmartTable):
                   npixels, total_peak_memory, setup_peak_memory, stellar_peak_memory, spectra_peak_memory, dust_peak_memory,
                   writing_peak_memory]
 
+        # Name was changed because already present
+        if original_simulation_name is not None:
+            index = self.index_for_simulation(original_simulation_name)
+            previous_values = self.get_row(index, add_units=False, as_list=True)
+            if sequences.equal_sequences(previous_values[1:], values[1:]):
+                log.warning("Entry for simulation '" + original_simulation_name + "' is already present in the table: ignoring ...")
+                return False
+            else: pass  # new values, must be different simulation
+
         # Add a row to the table
         self.add_row(values)
+
+        # Added
+        return True
 
     # -----------------------------------------------------------------
 
@@ -177,8 +191,10 @@ class MemoryTable(SmartTable):
         # Check whether the name is unique
         if simulation_name in self["Simulation name"]:
             log.warning("A simulation with the name '" + simulation_name + "' is already present in this memory table")
+            original_simulation_name = simulation_name
             simulation_name = time.unique_name(simulation_name)
-            log.warning("Generating the unique name '" + simulation_name + "' for this simulation")
+            log.warning("Generating the unique name '" + simulation_name + "' for this simulation ...")
+        else: original_simulation_name = None
 
         # Get the peak memory usage
         peak_memory_usage = None
@@ -261,14 +277,17 @@ class MemoryTable(SmartTable):
         writing_peak_memory = log_file.writing_peak_memory
 
         # Add an entry to the memory table
-        self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
+        added = self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
                        hyperthreads, processes, wavelengths, ncells, grid_type, min_level, max_level,
                        search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
                        selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage, setup_peak_memory,
-                       stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory)
+                       stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory, original_simulation_name=original_simulation_name)
 
         # Return the unique simulation name
-        return simulation_name
+        if not added:
+            if original_simulation_name is None: raise RuntimeError("Something went wrong")
+            return original_simulation_name
+        else: return simulation_name
 
     # -----------------------------------------------------------------
 

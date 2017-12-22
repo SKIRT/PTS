@@ -126,6 +126,30 @@ class BatchAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.timeline is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.memory is not None
+
+    # -----------------------------------------------------------------
+
     def load_log_file(self):
 
         """
@@ -166,6 +190,13 @@ class BatchAnalyser(Configurable):
         :return:
         """
 
+        # Check
+        if not self.has_timeline:
+            if self.config.ignore_missing_data:
+                log.warning("No timing information for this simulation: skipping ...")
+                return
+            else: raise RuntimeError("No timing information was found")
+
         # Inform the user
         log.info("Writing the timing information of the simulation ...")
 
@@ -176,7 +207,7 @@ class BatchAnalyser(Configurable):
         unique_name = timing_table.add_from_simulation(self.simulation, self.ski, self.log_file, self.timeline)
 
         # Check
-        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: I don't know what to do at this moment")
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name")
 
         # Save the table
         timing_table.save()
@@ -190,6 +221,13 @@ class BatchAnalyser(Configurable):
         :return:
         """
 
+        # Check
+        if not self.has_memory:
+            if self.config.ignore_missing_data:
+                log.warning("No memory usage information for this simulation: skipping ...")
+                return
+            else: raise RuntimeError("No memory information was found")
+
         # Inform the user
         log.info("Writing the memory usage information of the simulation ...")
 
@@ -200,7 +238,7 @@ class BatchAnalyser(Configurable):
         unique_name = memory_table.add_from_simulation(self.simulation, self.ski, self.log_file)
 
         # Check
-        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: I don't know what to do at this moment")
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name")
 
         # Save the table
         memory_table.save()

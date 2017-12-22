@@ -21,6 +21,7 @@ from ..tools import tables, time
 from ..simulation.simulation import RemoteSimulation, SkirtSimulation
 from ..basics.log import log
 from ..simulation.discover import matching_npackages
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -86,7 +87,7 @@ class TimingTable(SmartTable):
                   total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
                   communication_time, densities_communication_time, stellar_absorption_communication_time,
                   dust_absorption_communication_time, emission_communication_time, instruments_communication_time,
-                  intermediate_time):
+                  intermediate_time, original_simulation_name=None):
 
         """
         This function ...
@@ -125,6 +126,7 @@ class TimingTable(SmartTable):
         :param emission_communication_time:
         :param instruments_communication_time:
         :param intermediate_time:
+        :param original_simulation_name:
         :return:
         """
 
@@ -137,8 +139,20 @@ class TimingTable(SmartTable):
                   dust_absorption_communication_time, emission_communication_time, instruments_communication_time,
                   intermediate_time]
 
+        # Name was changed because already present
+        if original_simulation_name is not None:
+            index = self.index_for_simulation(original_simulation_name)
+            previous_values = self.get_row(index, add_units=False, as_list=True)
+            if sequences.equal_sequences(previous_values[1:], values[1:]):
+                log.warning("Entry for simulation '" + original_simulation_name + "' is already present in the table: ignoring ...")
+                return False
+            else: pass # new values, must be different simulation
+
         # Add a row to the table
         self.add_row(values)
+
+        # Added
+        return True
 
     # -----------------------------------------------------------------
 
@@ -201,8 +215,10 @@ class TimingTable(SmartTable):
         # Check whether the name is unique
         if simulation_name in self["Simulation name"]:
             log.warning("A simulation with the name '" + simulation_name + "' is already present in this timing table")
+            original_simulation_name = simulation_name
             simulation_name = time.unique_name(simulation_name)
-            log.warning("Generating the unique name '" + simulation_name + "' for this simulation")
+            log.warning("Generating the unique name '" + simulation_name + "' for this simulation ...")
+        else: original_simulation_name = None
 
         # Get the total runtime (in seconds)
         total_runtime = log_file.total_runtime
@@ -286,17 +302,20 @@ class TimingTable(SmartTable):
         intermediate_time = timeline.other
 
         # Add an entry to the timing table
-        self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
+        added = self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
                        hyperthreads, processes, wavelengths, packages, ncells, grid_type, min_level, max_level,
                        search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
                        selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
                        stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
                        densities_communication_time, stellar_absorption_communication_time,
                        dust_absorption_communication_time, emission_communication_time,
-                       instruments_communication_time, intermediate_time)
+                       instruments_communication_time, intermediate_time, original_simulation_name=original_simulation_name)
 
         # Return the unique simulation name
-        return simulation_name
+        if not added:
+            if original_simulation_name is None: raise RuntimeError("Something went wrong")
+            return original_simulation_name
+        else: return simulation_name
 
     # -----------------------------------------------------------------
 
