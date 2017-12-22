@@ -37,6 +37,8 @@ definition.add_required("filetype", "string", "type of file", choices=filetypes)
 definition.add_required("filename", "file_path", "path of the dictionary file")
 definition.add_flag("latex", "print as latex")
 definition.add_optional("columns", "string_list", "only show these columns")
+definition.add_flag("interactive", "display tables interactively", False)
+definition.add_optional("sort", "string", "sort the entries on this column")
 config = parse_arguments("show_file", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
@@ -114,7 +116,9 @@ def show_structure(structure, filetype):
     if filetype == composite: print(structure)
 
     # Table
-    if filetype == table: print(structure)
+    if filetype == table:
+        if config.interactive: structure.more()
+        else: print(structure)
 
     # Dictionary
     elif filetype == dictionary:
@@ -125,7 +129,9 @@ def show_structure(structure, filetype):
             print(line)
 
     # SED
-    elif filetype == sed: print(structure)
+    elif filetype == sed:
+        if config.interactive: structure.more()
+        else: print(structure)
 
     # Not recognized
     else: raise ValueError("Unrecognized filetype")
@@ -134,6 +140,9 @@ def show_structure(structure, filetype):
 
 # Load
 structure, tab = load_structure(config.filename, config.filetype, columns=config.columns)
+
+# Sort?
+if config.sort is not None: tab.sort(config.sort)
 
 # -----------------------------------------------------------------
 

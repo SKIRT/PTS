@@ -562,28 +562,26 @@ def get_other(seq, test):
 
 # -----------------------------------------------------------------
 
-def equal_sequences(sequence_a, sequence_b):
+def equal_sequences(*sequences):
 
     """
     This function ...
-    :param sequence_a:
-    :param sequence_b:
+    :param sequences:
     :return:
     """
 
     import numpy as np
     from . import types
 
-    if not equal_sizes(sequence_a, sequence_b): return False
-    for index in range(len(sequence_a)):
-        item_a = sequence_a[index]
-        item_b = sequence_b[index]
-        #print(item_a, item_b, item_a == item_b)
-        if item_a != item_b:
-            if types.is_real_type(item_a) and types.is_real_type(item_b):
-                if not np.isclose(item_a, item_b): return False
-            elif types.is_quantity(item_a) and types.is_quantity(item_b):
-                if not np.isclose(item_a.value, item_b.value): return False
+    if not equal_sizes(*sequences): return False
+    first_sequence = sequences[0]
+    for index in range(len(first_sequence)):
+        items = [sequence[index] for sequence in sequences]
+        if not all_equal(items):
+            if all_true([types.is_real_type(item) for item in items]):
+                if not all_close(items): return False
+            elif all_true([types.is_quantity(item) for item in items]):
+                if not all_close(items): return False
             else: return False
     return True
 
@@ -689,17 +687,20 @@ def common_elements(sequence_a, sequence_b):
 
 # -----------------------------------------------------------------
 
-def unique_values(sequence, ignore=None):
+def unique_values(sequence, ignore=None, ignore_none=False):
 
     """
     This function ...
     :param sequence:
     :param ignore:
+    :param ignore_none:
     :return:
     """
 
     result = list(set(sequence))
+    if ignore_none: result = removed(result, [None])
     if ignore is not None: return removed(result, ignore)
+    else: return result
 
 # -----------------------------------------------------------------
 

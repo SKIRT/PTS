@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import StringIO
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 # Import astronomical modules
 from astropy.table import Table, MaskedColumn
@@ -26,6 +26,147 @@ from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 from ..tools import types
 from ..tools import sequences
+from .containers import DefaultOrderedDict
+
+# -----------------------------------------------------------------
+
+def has_same_values_for_column(tables, column_name, reference_column_name, reference_values):
+
+    """
+    This function ...
+    :param tables:
+    :param column_name:
+    :param reference_column_name:
+    :param reference_values:
+    :return:
+    """
+
+    from ..tools.tables import find_index
+
+    for value in reference_values:
+
+        table_column_values = []
+
+        for table in tables:
+
+            index = find_index(table, value, column_name=reference_column_name)
+            if index is None: continue
+            table_column_values.append(table[column_name][index])
+
+        #print(table_column_values)
+
+        if not sequences.all_equal(table_column_values): return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def merge_tables(*tables, **kwargs):
+
+    """
+    This function ...
+    :param tables:
+    :param kwargs:
+    :return:
+    """
+
+    from ..tools.tables import find_index
+
+    # Get table labels
+    labels = kwargs.pop("labels", None)
+    if labels is not None and len(labels) != len(tables): raise ValueError("Number of labels must be equal to number of tables")
+
+    # Only shared columns
+    only_shared = kwargs.pop("only_shared", False)
+
+    # Determine column name
+    reference_column_name = kwargs.pop("column_name", None)
+    if reference_column_name is None:
+
+        first_column_names = [table.colnames[0] for table in tables]
+        if not sequences.all_equal(first_column_names): raise ValueError("Tables have different first columns")
+        reference_column_name = first_column_names[0]
+
+    reference_column_dtypes = []
+    reference_column_units = []
+    for table in tables:
+        reference_column_dtypes.append(table.get_column_dtype(reference_column_name))
+        reference_column_units.append(table.get_column_unit(reference_column_name))
+    # Check
+    if not sequences.all_equal(reference_column_dtypes): raise ValueError("Different reference column dtypes")
+    if not sequences.all_equal(reference_column_units): raise ValueError("Different reference column units")
+    reference_column_dtype = reference_column_dtypes[0]
+    reference_column_unit = reference_column_units[0]
+
+    all_column_types = DefaultOrderedDict(list)
+    all_column_units = defaultdict(list)
+    all_column_tableids = defaultdict(list)
+
+    for table_index, table in enumerate(tables):
+        #for colname in table.colu
+        for name, dtype, unit, description in table.column_info:
+            if name == reference_column_name: continue
+            all_column_types[name].append(dtype)
+            all_column_units[name].append(unit)
+            all_column_tableids[name].append(table_index)
+
+    all_values = []
+    for table in tables: all_values.extend(table[reference_column_name])
+    # print(all_values)
+    reference_values = sequences.unique_values(all_values, ignore_none=True)
+
+    # Create a table
+    merged = SmartTable()
+
+    # Add the columns
+    merged.add_column_info(reference_column_name, reference_column_dtype, reference_column_unit, None)
+    for column_name in all_column_types:
+
+        # Get types and units
+        dtypes = all_column_types[column_name]
+        units = all_column_units[column_name]
+        tableids = all_column_tableids[column_name]
+
+        if len(dtypes) == 1:
+
+            if only_shared: continue
+            assert len(units) == 1
+            assert len(tableids) == 1
+            merged.add_column_info(column_name, dtypes[0], units[0], None)
+
+        else:
+
+            # Check if the columns are equal
+            if has_same_values_for_column(tables, column_name, reference_column_name, reference_values):
+
+                dtype = tables[tableids[0]].get_column_dtype(column_name)
+                unit = tables[tableids[0]].get_column_unit(column_name)
+                merged.add_column_info(column_name, dtype, unit, None)
+
+            else:
+
+                for dtype, unit, tableid in zip(dtypes, units, tableids):
+                    if labels is not None: new_column_name = column_name + " " + labels[tableid]
+                    else: new_column_name = column_name + " " + str(tableid)
+                    merged.add_column_info(new_column_name, dtype, unit, None)
+
+    # All columns are added
+    merged.setup()
+    column_names = merged.column_names
+
+    # Loop over all reference values
+    for value in reference_values:
+
+        # Find index of this value for each table
+        indices = []
+        for table in tables:
+            index = find_index(table, value, column_name=reference_column_name)
+            indices.append(index)
+
+        values = [value]
+
+    # Return the table
+    return merged
 
 # -----------------------------------------------------------------
 
@@ -181,19 +322,11 @@ class SmartTable(Table):
         # Get tostr kwargs
         tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
-        #print(composites)
-
         # Get list of lists of property names
         property_names = [composite.property_names for composite in composites]
-        #property_types = [composite.property_types for composite in composites]
-        #property_units = [composite.property_units for composite in composites]
-        #property_descriptions = [composite.property_descriptions for composite in composites]
 
         # Determine the column names, types and descriptions
         column_names = sequences.union(*property_names)
-        #column_units = sequences.union(*property_units)
-        #column_types = sequences.union(*property_types)
-        #column_descriptions = sequences.union(*property_descriptions)
 
         # Add the label column name
         if labels is not None: sequences.prepend(column_names, label)
@@ -268,11 +401,6 @@ class SmartTable(Table):
             # Add the column info
             table.add_column_info(name, real_type, column_unit, column_description)
 
-        # Make the columns
-        #for name, dtype, description in zip(column_names, column_types, column_units, column_descriptions):
-        #    # Add column info
-        #    table.add_column_info(name, simple_dtype, unit, description)
-
         # Set None string
         if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = "--"
 
@@ -293,9 +421,6 @@ class SmartTable(Table):
                         value = getattr(composite, name)
                         if name in to_string: value = tostr(value, **tostr_kwargs)
                     else: value = None
-
-                #
-                #if value == "None": value = "--"
 
                 # Add the value
                 values.append(value)
@@ -340,6 +465,62 @@ class SmartTable(Table):
         """
 
         self.remove_rows(range(self.nrows))
+
+    # -----------------------------------------------------------------
+
+    def get_column_index(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        for index in range(len(self.column_info)):
+            if self.column_info[index][0] == column_name: return index
+        return None
+
+    # -----------------------------------------------------------------
+
+    def get_column_dtype(self, column_name):
+
+        """
+        Thisf unction ...
+        :param column_name:
+        :return:
+        """
+
+        index = self.get_column_index(column_name)
+        if index is None: raise ValueError("No column '" + column_name + "'")
+        return self.column_info[index][1]
+
+    # -----------------------------------------------------------------
+
+    def get_column_unit(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        index = self.get_column_index(column_name)
+        if index is None: raise ValueError("No column '" + column_name + "'")
+        return self.column_info[index][2]
+
+    # -----------------------------------------------------------------
+
+    def get_column_description(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        index = self.get_column_index(column_name)
+        if index is None: raise ValueError("No column '" + column_name + "'")
+        return self.column_info[index][3]
 
     # -----------------------------------------------------------------
 
