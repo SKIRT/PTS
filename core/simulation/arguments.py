@@ -215,6 +215,10 @@ class SkirtArguments(object):
 
         # Logging options
         verbose = "-v" in parts
+        brief = "-b" in parts
+        memory = "-m" in parts
+        allocation = "-l" in parts
+        allocation_limit = float(command.split(" -l ")[1].split()[0]) if "-l" in parts else 1e-5
 
         # Emulate?
         emulate = "-e" in parts
@@ -223,8 +227,9 @@ class SkirtArguments(object):
         simulation_name = comment.strip() if comment is not None else None
 
         # Create and return the skirt arguments object
-        return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, verbose=verbose,
-                          memory=False, data_parallel=data_parallel, threads_per_core=threads_per_core, emulate=emulate,
+        return cls.single(ski_path, input_path, output_path, processes=nprocesses, threads=nthreads, brief=brief,
+                          verbose=verbose, memory=memory, allocation=allocation, allocation_limit=allocation_limit,
+                          data_parallel=data_parallel, threads_per_core=threads_per_core, emulate=emulate,
                           skirt_path=skirt_path, mpirun_path=mpirun_path, simulation_name=simulation_name)
 
     # -----------------------------------------------------------------
@@ -268,8 +273,9 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False,
-               data_parallel=False, threads_per_core=1, emulate=False, skirt_path=None, mpirun_path=None, simulation_name=None):
+    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, brief=False, verbose=False,
+               memory=False, allocation=False, allocation_limit=1e-5, data_parallel=False, threads_per_core=1,
+               emulate=False, skirt_path=None, mpirun_path=None, simulation_name=None):
 
         """
         This function ...
@@ -280,6 +286,8 @@ class SkirtArguments(object):
         :param threads:
         :param verbose:
         :param memory:
+        :param allocation:
+        :param allocation_limit:
         :param data_parallel:
         :param threads_per_core:
         :param emulate:
@@ -304,8 +312,11 @@ class SkirtArguments(object):
         arguments.output_path = output_path
 
         # Logging
+        arguments.logging.brief = brief
         arguments.logging.verbose = verbose
         arguments.logging.memory = memory
+        arguments.logging.allocation = allocation
+        arguments.logging.allocation_limit = allocation_limit
 
         # Parallelization
         arguments.parallel.processes = processes

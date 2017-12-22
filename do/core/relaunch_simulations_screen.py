@@ -38,7 +38,6 @@ definition.add_flag("data_parallel", "new data parallelization flag", None)
 definition.add_flag("finished", "relaunch already finished simulations", True)
 definition.add_flag("launch", "launch the screen again (instead of just adapting the screen script", True)
 definition.add_flag("attached", "run in attached mode", False)
-#definition.add_flag("direct", "use input screen script file directly", False)
 
 # Read the command line arguments
 config = parse_arguments("relaunch_simulations_screen", definition, description="Relaunch simulations in a screen from a local script file")
@@ -60,14 +59,6 @@ if config.parallelization is not None:
 screen = ScreenScript.from_file(config.filename)
 
 # -----------------------------------------------------------------
-
-# Direct?
-#if config.direct: new_path = config.filename
-
-# -----------------------------------------------------------------
-
-# Adapt
-#else:
 
 # Loop over the arguments
 for simulation_name in screen.simulation_names:
