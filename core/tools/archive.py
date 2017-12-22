@@ -383,6 +383,22 @@ def decompress_bz2(bz2_path, new_path):
 
 # -----------------------------------------------------------------
 
+## Get lines
+def get_lines(filepath):
+
+    # File exists
+    if fs.is_file(filepath): return fs.get_lines(filepath)
+
+    # Look for compressed file
+    directory, filename = os.path.split(filepath)
+    zippath = directory + ".zip"
+    if not fs.is_file(zippath): raise IOError("File is not found")
+
+    # Return the lines from the compressed file
+    with zipfile.ZipFile(zippath, 'r').open(filename, 'r') as fh: return fs.get_lines_filehandle(fh)
+
+# -----------------------------------------------------------------
+
 ## This function opens a text file in read-only mode. If a file exists at the specified path, it is simply opened.
 # Otherwise, the function looks for a ZIP archive with the same name as the directory in which the file would have
 # resided, but with the ".zip" extension added, and it attempts to open a file with the same name from the archive.
@@ -390,13 +406,16 @@ def decompress_bz2(bz2_path, new_path):
 # only the following methods: read(), readline(), readlines(), \_\_iter\_\_(), next().
 #
 def opentext(filepath):
-    # if the specified file exists, simply open it
-    if os.path.isfile(filepath):
-        return open(filepath, 'r')
+
+    # If the specified file exists, simply open it
+    if fs.is_file(filepath): return open(filepath, 'r')
 
     # otherwise, try a zip archive with the same name as the directory in which the file would have resided
     directory,filename = os.path.split(filepath)
     zippath = directory + ".zip"
+    if not fs.is_file(zippath): raise IOError("File is not found")
+
+    # Return the filehandle
     return zipfile.ZipFile(zippath,'r').open(filename,'r')
 
 ## This function opens a binary file in read-only mode. If a file exists at the specified path, it is simply opened.

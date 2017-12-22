@@ -1764,6 +1764,35 @@ def move_files(file_paths, directory_path):
 
 # -----------------------------------------------------------------
 
+def read_lines_filehandle(fh, newlines=False):
+
+    """
+    This function ...
+    :param fh:
+    :param newlines:
+    :return:
+    """
+
+    # Loop over the lines, cut off the end-of-line characters
+    for line in fh.readlines():
+        if newlines: yield line
+        else: yield line[:-1]
+
+# -----------------------------------------------------------------
+
+def get_lines_filehandle(fh, newlines=False):
+
+    """
+    This function ...
+    :param fh:
+    :param newlines:
+    :return:
+    """
+
+    return list(read_lines_filehandle(fh, newlines=newlines))
+
+# -----------------------------------------------------------------
+
 def read_lines(path, newlines=False):
 
     """
@@ -1778,11 +1807,7 @@ def read_lines(path, newlines=False):
 
     # Open the file
     with open(path, 'r') as fh:
-
-        # Loop over the lines, cut off the end-of-line characters
-        for line in fh.readlines():
-            if newlines: yield line
-            else: yield line[:-1]
+        for line in read_lines_filehandle(fh, newlines=newlines): yield line
 
 # -----------------------------------------------------------------
 

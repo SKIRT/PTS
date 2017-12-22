@@ -65,15 +65,14 @@ class SkiFile7:
 
             # Check
             if tree is not None: raise ValueError("Cannot define both filepath and tree")
-
-            if not filepath.lower().endswith((".ski","_parameters.xml")):
-                raise ValueError("Invalid filename extension for ski file")
+            if not filepath.lower().endswith((".ski","_parameters.xml")): raise ValueError("Invalid filename extension for ski file")
 
             # Set the path to the ski file
             self.path = os.path.expanduser(filepath)
 
             # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
-            self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
+            lines = arch.get_lines(self.path)
+            self.tree = etree.fromstringlist(lines, parser=etree.XMLParser(remove_blank_text=True))
 
             # Replace path by the full, absolute path
             self.path = os.path.abspath(self.path)
@@ -96,15 +95,10 @@ class SkiFile7:
     @classmethod
     def from_remote_file(cls, path, remote):
 
-        # Get the lines
-        #contents = remote.get_text(path)
-
         import StringIO
         #output = StringIO.StringIO()
         #for line in remote.read_lines(path): output.write(line + "\n") # DOESN'T WORK??
         output = StringIO.StringIO(remote.get_text(path)) # WORKS!!
-
-        #print(output)
 
         # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
         #tree = etree.fromstring(contents, parser=etree.XMLParser(remove_blank_text=True)) # doesn't work, cannot acces getroot()??
