@@ -118,6 +118,10 @@ def merge_tables(*tables, **kwargs):
     # Create a table
     merged = SmartTable()
 
+    unique_column_names = dict()
+    equal_column_names = []
+    original_column_names = dict()
+
     # Add the columns
     merged.add_column_info(reference_column_name, reference_column_dtype, reference_column_unit, None)
     for column_name in all_column_types:
@@ -133,6 +137,7 @@ def merge_tables(*tables, **kwargs):
             assert len(units) == 1
             assert len(tableids) == 1
             merged.add_column_info(column_name, dtypes[0], units[0], None)
+            unique_column_names[column_name] = tableids[0]
 
         else:
 
@@ -142,6 +147,7 @@ def merge_tables(*tables, **kwargs):
                 dtype = tables[tableids[0]].get_column_dtype(column_name)
                 unit = tables[tableids[0]].get_column_unit(column_name)
                 merged.add_column_info(column_name, dtype, unit, None)
+                equal_column_names.append(column_name)
 
             else:
 
@@ -149,6 +155,7 @@ def merge_tables(*tables, **kwargs):
                     if labels is not None: new_column_name = column_name + " " + labels[tableid]
                     else: new_column_name = column_name + " " + str(tableid)
                     merged.add_column_info(new_column_name, dtype, unit, None)
+                    original_column_names[new_column_name] = (column_name, tableid)
 
     # All columns are added
     merged.setup()
@@ -163,7 +170,49 @@ def merge_tables(*tables, **kwargs):
             index = find_index(table, value, column_name=reference_column_name)
             indices.append(index)
 
+        #print(value, indices)
+
         values = [value]
+
+        # Loop over the column names
+        for column_name in column_names:
+            if column_name == reference_column_name: continue
+
+            #tableids = all_column_tableids[column_name]
+
+            if column_name in equal_column_names:
+                #print(column_name, indices[0])
+                #value = tables[0][column_name][indices[0]]
+                values_tables = [tables[tableid][column_name][indices[tableid]] for tableid in range(len(tables)) if column_name in tables[tableid].colnames and indices[tableid] is not None]
+                #print(column_name, values_tables)
+                value = sequences.get_first_not_none_value(values_tables)
+                #print(value)
+
+            elif column_name in original_column_names:
+
+                original_column_name, tableid = original_column_names[column_name]
+                if indices[tableid] is not None:
+                    #print(indices[tableid])
+                    value = tables[tableid][original_column_name][indices[tableid]]
+                else: value = None
+
+            elif column_name in unique_column_names:
+
+                tableid = unique_column_names[column_name]
+                if indices[tableid] is not None:
+                    #print(indices[tableid])
+                    value = tables[tableid][column_name][indices[tableid]]
+                else: value = None
+
+            else: raise RuntimeError("Something went wrong: " + column_name)
+
+            # Add the value
+            values.append(value)
+
+        #print(values)
+
+        # Add row
+        merged.add_row(values)
 
     # Return the table
     return merged
