@@ -23,10 +23,11 @@ tests | -- | test.pts.PTSTestSuite | arguments | Run PTS tests
 launch_simulation | -- | launch.launcher.SKIRTLauncher | arguments | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
 launch_batch | -- | launch.batchlauncher.BatchLauncher | interactive | Launch a batch of SKIRT simulations remotely on one or more remote hosts
 status | -- | launch.synchronizer.RemoteSynchronizer | arguments | Check the status of SKIRT simulations and PTS tasks running remotely
-
 estimate_memory | -- | advanced.memoryestimator.MemoryEstimator | arguments | Estimate the memory required for a certain ski file
 test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estimation for a certain ski file with the actual memory consumption
 parallelization | -- | advanced.parallelizationtool.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file
+analyse_simulation | -- | launch.analyser.SimulationAnalyser | arguments | Analyse a SKIRT simulation
+*analyse_basic | -- | launch.basicanalyser.BasicAnalyser | arguments | Run basic SKIRT simulation analysis
 
 # PLOTTING
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs

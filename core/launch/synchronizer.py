@@ -152,6 +152,9 @@ class RemoteSynchronizer(Configurable):
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
 
+        # Set analyser options
+        self.analyser.config.ignore_missing_data = self.config.ignore_missing_data
+
     # -----------------------------------------------------------------
 
     @property

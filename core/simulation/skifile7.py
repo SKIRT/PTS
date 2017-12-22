@@ -72,7 +72,8 @@ class SkiFile7:
 
             # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
             lines = arch.get_lines(self.path)
-            self.tree = etree.fromstringlist(lines, parser=etree.XMLParser(remove_blank_text=True))
+            root = etree.fromstringlist(lines, parser=etree.XMLParser(remove_blank_text=True))
+            self.tree = etree.ElementTree(root)
 
             # Replace path by the full, absolute path
             self.path = os.path.abspath(self.path)

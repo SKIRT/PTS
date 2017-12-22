@@ -118,6 +118,9 @@ class SimulationAnalyser(Configurable):
         # Make a local reference to the simulation object
         self.simulation = kwargs.pop("simulation")
 
+        # Set flags
+        self.basic_analyser.config.ignore_missing_data = self.config.ignore_missing_data
+
     # -----------------------------------------------------------------
 
     def clear(self):

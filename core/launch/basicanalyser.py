@@ -17,9 +17,9 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..extract.progress import ProgressExtractor
-from ..extract.timeline import TimeLineExtractor
-from ..extract.memory import MemoryExtractor
+from ..extract.progress import ProgressExtractor, NoProgressData
+from ..extract.timeline import TimeLineExtractor, NoTimingData
+from ..extract.memory import MemoryExtractor, NoMemoryData
 from ..plot.progress import ProgressPlotter
 from ..plot.timeline import TimeLinePlotter
 from ..plot.memory import MemoryPlotter
@@ -105,6 +105,42 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def extraction(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.analysis.any_extraction
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.analysis.any_plotting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def miscellaneous(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.analysis.any_misc
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -117,13 +153,13 @@ class BasicAnalyser(Configurable):
         self.setup(**kwargs)
 
         # 2. Extract information from the simulation's log files
-        self.extract()
+        if self.extraction: self.extract()
 
         # 3. Make plots based on the simulation output
-        self.plot()
+        if self.plotting: self.plot()
 
         # 4. Miscellaneous output
-        self.misc()
+        if self.miscellaneous: self.misc()
 
     # -----------------------------------------------------------------
 
@@ -788,12 +824,32 @@ class BasicAnalyser(Configurable):
         path = fs.join(self.extraction_options.path, progress_filename)
 
         # Run the progress extractor, get the progress table
-        extractor.run(self.simulation, path)
-        self.progress = extractor.table
+        try:
 
-        # Done
-        self.simulation.analysed_extraction.append(progress_name)
-        self.simulation.save()
+            # Try extraction progress information
+            extractor.run(self.simulation, path)
+            self.progress = extractor.table
+
+            # Done
+            self.simulation.analysed_extraction.append(progress_name)
+            self.simulation.save()
+
+        # No progress data
+        except NoProgressData:
+
+            # Ignore this, but unset extract progress flag
+            if self.config.ignore_missing_data:
+
+                # Give warning
+                log.warning("Missing progress data: disabling progress extraction option ...")
+
+                # Unset progress extraction and plotting
+                self.simulation.analysis.extraction.progress = False
+                self.simulation.analysis.plotting.progress = False
+                self.simulation.save()
+
+            # Give error
+            else: raise RuntimeError("Could not extract progress information")
 
     # -----------------------------------------------------------------
 
@@ -814,12 +870,32 @@ class BasicAnalyser(Configurable):
         path = fs.join(self.extraction_options.path, timeline_filename)
 
         # Run the timeline extractor, get the timeline table
-        extractor.run(self.simulation, path)
-        self.timeline = extractor.table
+        try:
 
-        # Done
-        self.simulation.analysed_extraction.append(timeline_name)
-        self.simulation.save()
+            # Try extracting timeline information
+            extractor.run(self.simulation, path)
+            self.timeline = extractor.table
+
+            # Done
+            self.simulation.analysed_extraction.append(timeline_name)
+            self.simulation.save()
+
+        # No timing data
+        except NoTimingData:
+
+            # Ignore this, but unset extract timeline flag
+            if self.config.ignore_missing_data:
+
+                # Give warning
+                log.warning("Missing timing data: disabling timeline extraction option ...")
+
+                # Unset timeline extraction and plotting
+                self.simulation.analysis.extraction.timeline = False
+                self.simulation.analysis.plotting.timeline = False
+                self.simulation.save()
+
+            # Give error
+            else: raise RuntimeError("Could not extract timeline information")
 
     # -----------------------------------------------------------------
 
@@ -840,12 +916,32 @@ class BasicAnalyser(Configurable):
         path = fs.join(self.extraction_options.path, memory_filename)
 
         # Run the memory extractor, get the memory usage table
-        extractor.run(self.simulation, path)
-        self.memory = extractor.table
+        try:
 
-        # Done
-        self.simulation.analysed_extraction.append(memory_name)
-        self.simulation.save()
+            # Try extracting memory information
+            extractor.run(self.simulation, path)
+            self.memory = extractor.table
+
+            # Done
+            self.simulation.analysed_extraction.append(memory_name)
+            self.simulation.save()
+
+        # No memory data
+        except NoMemoryData:
+
+            # Ignore this, but unset extract memory flag
+            if self.config.ignore_missing_data:
+
+                # Give warning
+                log.warning("Missing memory data: disabling memory extraction option ...")
+
+                # Unset memory extraction and plotting
+                self.simulation.analysis.extraction.memory = False
+                self.simulation.analysis.plotting.memory = False
+                self.simulation.save()
+
+            # Give error
+            else: raise RuntimeError("Could not extract memory information")
 
     # -----------------------------------------------------------------
 

@@ -24,6 +24,28 @@ from ..basics.log import log
 
 # -----------------------------------------------------------------
 
+class NoMemoryData(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, simulation_name=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param simulation_name:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(NoMemoryData, self).__init__(message)
+
+        # The simulation name
+        self.simulation_name = simulation_name
+
+# -----------------------------------------------------------------
+
 class MemoryUsageTable(Table):
 
     """
@@ -269,7 +291,7 @@ class MemoryExtractor(object):
         self.log_files = simulation.logfiles()
 
         # Check whether the log files contain memory information
-        if not self.log_files[0].has_memory: raise ValueError("The log files don't contain memory information")
+        if not self.log_files[0].has_memory: raise NoMemoryData("The log files don't contain memory information", simulation_name=simulation.name)
 
         # Set the output path
         self.output_path = output_path

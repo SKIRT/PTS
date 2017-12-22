@@ -36,6 +36,10 @@ definition.add_flag("check_data", "for crashed simulations, check whether the si
 
 # -----------------------------------------------------------------
 
+definition.add_flag("ignore_missing_data", "ignore missing data when analysing the simulations", False)
+
+# -----------------------------------------------------------------
+
 definition.add_flag("offline", "run in offline mode: only analyse already retrieved simulations and tasks, don't try to connect to remotes")
 
 # -----------------------------------------------------------------

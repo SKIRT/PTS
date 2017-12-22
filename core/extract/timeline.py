@@ -26,6 +26,28 @@ from ..basics.log import log
 
 # -----------------------------------------------------------------
 
+class NoTimingData(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, simulation_name=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param simulation_name:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(NoTimingData, self).__init__(message)
+
+        # The simulation name
+        self.simulation_name = simulation_name
+
+# -----------------------------------------------------------------
+
 class TimeLineTable(Table):
 
     """
