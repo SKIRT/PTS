@@ -14,29 +14,29 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-import random
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..basics.configurable import Configurable
-from .memoryestimator import MemoryEstimator, estimate_memory
+from .memoryestimator import estimate_memory
 from ..simulation.skifile import SkiFile
 from ..simulation.parallelization import Parallelization
 from ..tools.utils import lazyproperty
 from ..tools import filesystem as fs
-from ..tools import sequences
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
-def factors(n):
+def factors(n, reversed=False):
 
     """
     This function ...
     :param n:
+    :param reversed:
     :return:
     """
 
-    return list(sorted(set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))))
+    return list(sorted(set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0))), reverse=reversed))
 
 # -----------------------------------------------------------------
 
@@ -255,6 +255,9 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Setting parallelization scheme for singleprocessing ...")
+
         # Determine the number of cores per node
         cores_per_node = self.config.nsockets * self.config.ncores
 
@@ -272,6 +275,127 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def serial_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.memory.serial
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parallel_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.memory.parallel
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # the total memory of one process without data parallelization
+        return self.serial_memory + self.parallel_memory
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nthreads_per_core(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine number of threads per core
+        return self.config.threads_per_core if self.config.hyperthreading else 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_ncores_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(math.ceil(self.config.max_nthreads / self.nthreads_per_core)) # round up because when hyperthreading is envolved, we can as well allow a slightly higher effective nthreads per process
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_nprocesses_per_socket(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return numbers.as_integer_check(self.config.ncores / self.max_ncores_per_process)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ideal_ncores_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Lesser cores per socket than the maximum number of cores per process
+        if self.config.ncores <= self.max_ncores_per_process: return self.config.ncores
+        else:
+
+            # The number of cores per process must be a divisor of the number of cores per socket (so that the number of processes is integer)
+            divisors = factors(self.config.ncores)
+            allowed_divisors = [divisor for divisor in divisors if divisor <= self.max_ncores_per_process]
+
+            # Pick the largest divisor that is still smaller than the maximum number of cores per process
+            return max(allowed_divisors)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ideal_nprocesses_per_socket(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        result = self.config.ncores / self.ideal_ncores_per_process
+        if not numbers.is_integer(result): raise RuntimeError("Something went wrong")
+        return int(result)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ideal_nprocesses_per_node(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ideal_nprocesses_per_socket * self.config.nsockets
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_multiprocessing(self):
 
         """
@@ -279,18 +403,14 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Setting parallelization scheme for multiprocessing ...")
+
         # If memory as not been set, estimate it
         if self.memory is None: self.memory = estimate_memory(self.ski, input_path=self.config.input, ncells=self.config.ncells)
 
-        # Get serial and parallel parts of the memory requirement
-        serial_memory = self.memory.serial
-        parallel_memory = self.memory.parallel
-
-        # Calculate the total memory of one process without data parallelization
-        total_memory = serial_memory + parallel_memory
-
         # The total memory consumption is larger than the node memory
-        if total_memory > self.config.memory:
+        if self.total_memory > self.config.memory:
 
             # Check data parallel flag
             if self.config.data_parallel is False: raise ValueError("Data-parallelization is disabled but memory usage is larger than node memory")
@@ -299,96 +419,193 @@ class ParallelizationTool(Configurable):
             if self.config.nnodes == 1: raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
 
             # Set parallelization
-            self.set_parallelization_high_memory(serial_memory, parallel_memory) # Ms > Mn
+            self.set_parallelization_high_memory() # Ms > Mn
 
         # If more than one simulation memory fits on a node
-        else: self.set_parallelization_low_memory(total_memory)
+        else: self.set_parallelization_low_memory()
 
     # -----------------------------------------------------------------
 
-    def set_parallelization_high_memory(self, serial_memory, parallel_memory):
+    def set_parallelization_high_memory(self):
 
         """
         This function ...
-        :param serial_memory:
-        :param parallel_memory:
         :return:
         """
-
-        # TODO: use max_nthreads
-        # TODO: don't use hyperthreading for SKIRT by default
-        # TODO: use newer cpus-per-proc syntax
 
         # Debugging
         log.debug("Setting parallelization for simulation with high memory requirement ...")
 
         # Determine the amount of required memory per process
-        memory_per_process = serial_memory + parallel_memory / self.config.nnodes
+        memory_per_process = self.serial_memory + self.parallel_memory / self.config.nnodes
 
         # Mn x Nn < Ms?
         # if self.config.memory * self.config.nnodes < memory_simulation_nnode_processes:
         if memory_per_process > self.config.memory:  # is the memory used per process larger than the memory per node?
             raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
 
-        # Arbitrarily pick a divisor (DIV) of Npps
-        divisors = factors(self.config.ncores)
+        # Try setting a parallelization with the ideal number of processes per socket
+        success = self.try_parallelization_pps(self.ideal_nprocesses_per_socket)
 
-        # Loop over divisors, try to set parallelization
-        for divisor in sequences.iterate_from_middle(divisors):
+        # Tro other nprocesses per socket
+        max_nprocesses_per_socket = self.ideal_nprocesses_per_socket
+        min_nprocesses_per_socket = self.min_nprocesses_per_socket
 
-            # Try to set parallelization
-            if self.try_parallelization_divisor(divisor): break
+        # Factors of the number of cores per socket, from highest to lowest
+        divisors = factors(self.config.ncores, reversed=True)
+
+        # Loop over the divisors
+        for pps in divisors:
+
+            # Check
+            if pps >= max_nprocesses_per_socket: continue
+            if pps < min_nprocesses_per_socket:
+                log.warning("Could not find an efficient parallelization scheme for data parallelization")
+                self.set_parallelization_pps(min_nprocesses_per_socket)
+
+            # Try
+            success = self.try_parallelization_pps(pps)
+            if success: break
 
     # -----------------------------------------------------------------
 
-    def try_parallelization_divisor(self, divisor):
+    @property
+    def total_ncores(self):
 
         """
         This function ...
-        :param divisor:
+        :return:
+        """
+
+        return self.config.nnodes * self.config.nsockets * self.config.ncores
+
+    # -----------------------------------------------------------------
+
+    def try_parallelization_pps(self, processes_per_socket):
+
+        """
+        This function ...
+        :param processes_per_socket:
         :return:
         """
 
         # Debuggging
-        log.debug("Trying to set paralellelization with divisor " + str(divisor) + " ...")
+        log.debug("Trying to set paralellelization with number of processes per socket of " + str(processes_per_socket) + " ...")
 
-        # First implementation was random
-        #divisor = random.choice(divisors)
+        # Determine number of cores per process
+        cores_per_process = numbers.as_integer_check(self.config.ncores / processes_per_socket)
 
-        # Nt = min(Npps, DIV)
-        nthreads = min(self.config.ncores, divisor)
+        # Determine number of threads per process
+        threads_per_process = cores_per_process * self.nthreads_per_core
 
-        # Np = Nn x Nppn / Nt
-        ppn = self.config.nsockets * self.config.ncores
-        nprocesses = self.config.nnodes * ppn / nthreads
+        # Determine total number of processes
+        nprocesses = processes_per_socket * self.config.ncores * self.config.nnodes
 
-        total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
-
-        # Nlambda >= 10 x Np
+        # Nlambda >= 10 x Np: can we use data parallelization?
+        # -> nprocesses cannot be too high (compared to nwavelengths) for load balancing
         if self.nwavelengths >= 10 * nprocesses:
 
-            # Determine number of threads per core
-            threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+             # data parallelization
+             # Create the parallelization object
+             self.parallelization = Parallelization.from_mode("hybrid", self.total_ncores, self.nthreads_per_core,
+                                                              threads_per_process=threads_per_process,
+                                                              data_parallel=True)
 
-            # data parallelization
-            # Create the parallelization object
-            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
-                                                             threads_per_process=nthreads,
-                                                             data_parallel=True)
+             # Success
+             return True
 
-            # Success
-            return True
-
-        # Try again from picking divisor, but now a larger one (less processes)
+        # Try again with less processes?
         else: return False
 
     # -----------------------------------------------------------------
 
-    def set_parallelization_low_memory(self, total_memory):
+    def set_parallelization_pps(self, processes_per_socket):
 
         """
         This function ...
-        :param total_memory:
+        :param processes_per_socket:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting parallelization scheme with " + str(processes_per_socket) + " processes per socket ...")
+
+        # Determine number of cores per process
+        cores_per_process = numbers.as_integer_check(self.config.ncores / processes_per_socket)
+
+        # Determine number of threads per process
+        threads_per_process = cores_per_process * self.nthreads_per_core
+
+        # Determine total number of processes
+        nprocesses = processes_per_socket * self.config.ncores * self.config.nnodes
+
+        # Show the number of wavelengths per process
+        nwavelengths_per_process = self.nwavelengths / nprocesses
+        log.debug("The number of wavelengths per process is " + str(nwavelengths_per_process))
+
+        # data parallelization
+        # Create the parallelization object
+        self.parallelization = Parallelization.from_mode("hybrid", self.total_ncores, self.nthreads_per_core,
+                                                         threads_per_process=threads_per_process,
+                                                         data_parallel=True)
+
+    # -----------------------------------------------------------------
+
+    # Arbitrarily pick a divisor (DIV) of Npps
+    # divisors = factors(self.config.ncores)
+    #
+    # # Loop over divisors, try to set parallelization
+    # for divisor in sequences.iterate_from_middle(divisors):
+    #
+    #     # Try to set parallelization
+    #     if self.try_parallelization_divisor(divisor): break
+
+    # -----------------------------------------------------------------
+
+    # def try_parallelization_divisor(self, divisor):
+    #
+    #     """
+    #     This function ...
+    #     :param divisor:
+    #     :return:
+    #     """
+    #
+    #     # Debuggging
+    #     log.debug("Trying to set paralellelization with divisor " + str(divisor) + " ...")
+    #
+    #     # First implementation was random
+    #     #divisor = random.choice(divisors)
+    #
+    #     # Nt = min(Npps, DIV)
+    #     nthreads = min(self.config.ncores, divisor)
+    #
+    #     # Np = Nn x Nppn / Nt
+    #     ppn = self.config.nsockets * self.config.ncores
+    #     nprocesses = self.config.nnodes * ppn / nthreads
+    #
+    #     total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+    #
+    #     # Nlambda >= 10 x Np
+    #     if self.nwavelengths >= 10 * nprocesses:
+    #
+    #         # data parallelization
+    #         # Create the parallelization object
+    #         self.parallelization = Parallelization.from_mode("hybrid", total_ncores, self.nthreads_per_core,
+    #                                                          threads_per_process=nthreads,
+    #                                                          data_parallel=True)
+    #
+    #         # Success
+    #         return True
+    #
+    #     # Try again from picking divisor, but now a larger one (less processes)
+    #     else: return False
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_low_memory(self):
+
+        """
+        This function ...
         :return:
         """
 
@@ -397,8 +614,12 @@ class ParallelizationTool(Configurable):
 
         # Np = min(Mn / Ms, Nppn)
         ppn = self.config.nsockets * self.config.ncores
-        nprocesses_per_node = int(math.floor(min(self.config.memory / total_memory, ppn)))
 
+        # Determine the optimal number of processes per node, taking into account memory considerations and not having too many processes
+        nprocesses_per_node = int(math.floor(min(self.config.memory / self.total_memory, ppn)))
+        nprocesses_per_node = min(self.ideal_nprocesses_per_node, nprocesses_per_node)
+
+        # Determine the total number of processes
         nprocesses = nprocesses_per_node * self.config.nnodes
 
         # nthreads = ppn / nprocesses_per_node
@@ -406,11 +627,8 @@ class ParallelizationTool(Configurable):
         # ncores_per_process = int(math.ceil(ncores_per_process)) -> this leads to total_ncores that is larger than self.config.nnodes * self.config.nsockets * self.config.ncores
         ncores_per_process = int(ncores_per_process)
 
-        # Determine number of threads per core
-        threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
-
         # Threads per process
-        threads_per_process = threads_per_core * ncores_per_process
+        threads_per_process = self.nthreads_per_core * ncores_per_process
 
         # Total number of cores
         total_ncores = nprocesses * ncores_per_process
@@ -427,7 +645,7 @@ class ParallelizationTool(Configurable):
 
         # data parallelization
         # Create the parallelization object
-        self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
+        self.parallelization = Parallelization.from_mode("hybrid", total_ncores, self.nthreads_per_core,
                                                          threads_per_process=threads_per_process,
                                                          data_parallel=data_parallel)
 

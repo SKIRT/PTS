@@ -2524,7 +2524,7 @@ class BatchLauncher(Configurable):
     def get_ncores_for_host(self, host_id):
 
         """
-        This function ...
+        This function returns the number of cores per socket for the specified remote host
         :param host_id:
         :return:
         """
