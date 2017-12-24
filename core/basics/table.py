@@ -72,6 +72,15 @@ def merge_tables(*tables, **kwargs):
 
     from ..tools.tables import find_index
 
+    # Get flags
+    differences = kwargs.pop("differences", False)
+    rel_differences = kwargs.pop("rel_differences", False)
+    percentual = kwargs.pop("percentual", False)
+
+    # Columns to use
+    columns = kwargs.pop("columns", None)
+    not_columns = kwargs.pop("not_columns", None)
+
     # Get table labels
     labels = kwargs.pop("labels", None)
     if labels is not None and len(labels) != len(tables): raise ValueError("Number of labels must be equal to number of tables")
@@ -121,10 +130,15 @@ def merge_tables(*tables, **kwargs):
     unique_column_names = dict()
     equal_column_names = []
     original_column_names = dict()
+    new_column_names = dict()
 
     # Add the columns
     merged.add_column_info(reference_column_name, reference_column_dtype, reference_column_unit, None)
     for column_name in all_column_types:
+
+        # Use column?
+        if columns is not None and column_name not in columns: continue
+        if not_columns is not None and column_name in not_columns: continue
 
         # Get types and units
         dtypes = all_column_types[column_name]
@@ -156,6 +170,31 @@ def merge_tables(*tables, **kwargs):
                     else: new_column_name = column_name + " " + str(tableid)
                     merged.add_column_info(new_column_name, dtype, unit, None)
                     original_column_names[new_column_name] = (column_name, tableid)
+
+                # Add differences?
+                if differences:
+                    #print(tableids)
+                    if len(tableids) > 2: raise ValueError("Cannot add differences for more than 2 tables")
+                    if not sequences.all_equal(dtypes): raise ValueError("Not the same types")
+                    if not sequences.all_equal(units): raise ValueError("Not the same units")
+                    dtype = dtypes[0]
+                    unit = units[0]
+                    difference_column_name = column_name + " difference"
+                    merged.add_column_info(difference_column_name, dtype, unit, "difference")
+                    new_column_names[difference_column_name] = tableids
+
+                # Add relative differences?
+                if rel_differences:
+                    #print(tableids)
+                    if len(tableids) > 2: raise ValueError("Cannot add relative differences for more than 2 tables")
+                    if not sequences.all_equal(dtypes): raise ValueError("Not the same types")
+                    if not sequences.all_equal(units): raise ValueError("Not the same units")
+                    dtype = dtypes[0]
+                    unit = units[0]
+                    if percentual: rel_difference_column_name = column_name + " percentual difference"
+                    else: rel_difference_column_name = column_name + " relative difference"
+                    merged.add_column_info(rel_difference_column_name, dtype, unit, "relative difference")
+                    new_column_names[rel_difference_column_name] = tableids
 
     # All columns are added
     merged.setup()
@@ -204,12 +243,47 @@ def merge_tables(*tables, **kwargs):
                     value = tables[tableid][column_name][indices[tableid]]
                 else: value = None
 
+            elif column_name in new_column_names:
+
+                tableids = new_column_names[column_name]
+                id_a = tableids[0]
+                id_b = tableids[1]
+                index_a = indices[id_a]
+                index_b = indices[id_b]
+                #print(index_a, index_b)
+
+                if index_a is None or index_b is None: value = None
+                else:
+
+                    if column_name.endswith("relative difference"):
+
+                        original_column_name = column_name.split(" relative difference")[0]
+                        value_a = tables[id_a][original_column_name][index_a]
+                        value_b = tables[id_b][original_column_name][index_b]
+                        value = abs(value_a - value_b) / value_a
+
+                    elif column_name.endswith("percentual difference"):
+
+                        original_column_name = column_name.split(" percentual difference")[0]
+                        value_a = tables[id_a][original_column_name][index_a]
+                        value_b = tables[id_b][original_column_name][index_b]
+                        value = abs(value_a - value_b) / value_a * 100.
+
+                    elif column_name.endswith("difference"):
+
+                        original_column_name = column_name.split(" difference")[0]
+                        value_a = tables[id_a][original_column_name][index_a]
+                        value_b = tables[id_b][original_column_name][index_b]
+                        value = abs(value_a - value_b)
+
+                    else: raise ValueError("Column name not recognized")
+
             else: raise RuntimeError("Something went wrong: " + column_name)
+
+            #print(value)
 
             # Add the value
             values.append(value)
-
-        #print(values)
 
         # Add row
         merged.add_row(values)

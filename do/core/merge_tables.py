@@ -25,6 +25,11 @@ definition.add_required("files", "filepath_list", "list of the table file paths"
 definition.add_positional_optional("column", "string", "name of column to use as reference for the merge")
 definition.add_flag("show", "show the merged table", False)
 definition.add_flag("write", "write the merged table", True)
+definition.add_flag("differences", "add absolute differences", False)
+definition.add_flag("rel_differences", "add relative differences", False)
+definition.add_flag("percentual", "put relative differences in percentages", False)
+definition.add_optional("columns", "string_list", "only use these columns (other than the reference column)")
+definition.add_optional("not_columns", "string_list", "don't use these columns")
 
 # Parse
 config = parse_arguments("merge_tables", definition)
@@ -43,7 +48,8 @@ filenames = [fs.strip_extension(fs.name(filepath)) for filepath in config.files]
 
 # -----------------------------------------------------------------
 
-table = merge_tables(*tables, column_name=config.column, labels=filenames)
+table = merge_tables(*tables, column_name=config.column, labels=filenames, differences=config.differences,
+                     rel_differences=config.rel_differences, percentual=config.percentual, columns=config.columns, not_columns=config.not_columns)
 
 # -----------------------------------------------------------------
 
