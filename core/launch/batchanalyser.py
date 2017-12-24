@@ -15,9 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ...core.basics.log import log
-from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
+from ..simulation.remote import get_simulation_for_host
 
 # -----------------------------------------------------------------
 
@@ -111,7 +111,9 @@ class BatchAnalyser(Configurable):
         super(BatchAnalyser, self).setup(**kwargs)
 
         # Make a local reference to the simulation object
-        self.simulation = kwargs.pop("simulation")
+        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
+        elif self.config.remote is not None and self.config.id is not None: self.load_simulation()
+        else: raise ValueError("No simulation is specified")
 
         # Also make references to the timing and memory table files (for shortness of notation)
         self.timing_table_path = self.simulation.analysis.timing_table_path
@@ -123,6 +125,21 @@ class BatchAnalyser(Configurable):
 
         # Load the ski file
         self.ski = self.simulation.parameters()
+
+    # -----------------------------------------------------------------
+
+    def load_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the simulation ...")
+
+        # Load simulation
+        self.simulation = get_simulation_for_host(self.config.remote, self.config.id)
 
     # -----------------------------------------------------------------
 

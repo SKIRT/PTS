@@ -41,6 +41,7 @@ from ..tools.utils import lazyproperty
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..filter.filter import parse_filter
 from ...magic.core.mask import Mask
+from ..simulation.remote import get_simulation_for_host
 
 # -----------------------------------------------------------------
 
@@ -175,7 +176,9 @@ class BasicAnalyser(Configurable):
         super(BasicAnalyser, self).setup()
 
         # Make a local reference to the simulation object
-        self.simulation = kwargs.pop("simulation")
+        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
+        elif self.config.remote is not None and self.config.id is not None: self.load_simulation()
+        else: raise ValueError("No simulation is specified")
 
         # Update the analysis options for added features
         self.simulation.update_analysis_options()
@@ -184,6 +187,21 @@ class BasicAnalyser(Configurable):
         self.extraction_options = self.simulation.analysis.extraction
         self.plotting_options = self.simulation.analysis.plotting
         self.misc_options = self.simulation.analysis.misc
+
+    # -----------------------------------------------------------------
+
+    def load_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the simulation ...")
+
+        # Load simulation
+        self.simulation = get_simulation_for_host(self.config.remote, self.config.id)
 
     # -----------------------------------------------------------------
 

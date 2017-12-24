@@ -20,6 +20,7 @@ from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.log import log
 from ..simulation.simulation import RemoteSimulation
 from ..tools import filesystem as fs
+from ..simulation.remote import get_simulation_for_host
 
 # -----------------------------------------------------------------
 
@@ -116,11 +117,28 @@ class SimulationAnalyser(Configurable):
         super(SimulationAnalyser, self).setup(**kwargs)
 
         # Make a local reference to the simulation object
-        self.simulation = kwargs.pop("simulation")
+        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
+        elif self.config.remote is not None and self.config.id is not None: self.load_simulation()
+        else: raise ValueError("No simulation is specified")
 
         # Set flags
         self.basic_analyser.config.ignore_missing_data = self.config.ignore_missing_data
         self.batch_analyser.config.ignore_missing_data = self.config.ignore_missing_data
+
+    # -----------------------------------------------------------------
+
+    def load_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the simulation ...")
+
+        # Load simulation
+        self.simulation = get_simulation_for_host(self.config.remote, self.config.id)
 
     # -----------------------------------------------------------------
 
