@@ -44,3 +44,8 @@ definition.add_flag("data_parallel", "use data-parallelization (None means autom
 definition.add_flag("show", "show the parallelization", True)
 
 # -----------------------------------------------------------------
+
+# Advanced
+definition.add_optional("min_nwavelengths_per_process", "positive_integer", "minimum number of wavelengths per process for data parallelization", 10)
+
+# -----------------------------------------------------------------

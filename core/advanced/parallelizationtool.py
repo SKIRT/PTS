@@ -378,9 +378,9 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
-        result = self.config.ncores / self.ideal_ncores_per_process
-        if not numbers.is_integer(result): raise RuntimeError("Something went wrong")
-        return int(result)
+        return numbers.as_integer_check(self.config.ncores / self.ideal_ncores_per_process)
+        #if not numbers.is_integer(result): raise RuntimeError("Something went wrong")
+        #return int(result)
 
     # -----------------------------------------------------------------
 
@@ -446,8 +446,9 @@ class ParallelizationTool(Configurable):
 
         # Try setting a parallelization with the ideal number of processes per socket
         success = self.try_parallelization_pps(self.ideal_nprocesses_per_socket)
+        if success: return
 
-        # Tro other nprocesses per socket
+        # Try other nprocesses per socket
         max_nprocesses_per_socket = self.ideal_nprocesses_per_socket
         min_nprocesses_per_socket = self.min_nprocesses_per_socket
 
@@ -503,7 +504,7 @@ class ParallelizationTool(Configurable):
 
         # Nlambda >= 10 x Np: can we use data parallelization?
         # -> nprocesses cannot be too high (compared to nwavelengths) for load balancing
-        if self.nwavelengths >= 10 * nprocesses:
+        if self.nwavelengths >= self.config.min_nwavelengths_per_process * nprocesses:
 
              # data parallelization
              # Create the parallelization object
@@ -551,57 +552,6 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    # Arbitrarily pick a divisor (DIV) of Npps
-    # divisors = factors(self.config.ncores)
-    #
-    # # Loop over divisors, try to set parallelization
-    # for divisor in sequences.iterate_from_middle(divisors):
-    #
-    #     # Try to set parallelization
-    #     if self.try_parallelization_divisor(divisor): break
-
-    # -----------------------------------------------------------------
-
-    # def try_parallelization_divisor(self, divisor):
-    #
-    #     """
-    #     This function ...
-    #     :param divisor:
-    #     :return:
-    #     """
-    #
-    #     # Debuggging
-    #     log.debug("Trying to set paralellelization with divisor " + str(divisor) + " ...")
-    #
-    #     # First implementation was random
-    #     #divisor = random.choice(divisors)
-    #
-    #     # Nt = min(Npps, DIV)
-    #     nthreads = min(self.config.ncores, divisor)
-    #
-    #     # Np = Nn x Nppn / Nt
-    #     ppn = self.config.nsockets * self.config.ncores
-    #     nprocesses = self.config.nnodes * ppn / nthreads
-    #
-    #     total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
-    #
-    #     # Nlambda >= 10 x Np
-    #     if self.nwavelengths >= 10 * nprocesses:
-    #
-    #         # data parallelization
-    #         # Create the parallelization object
-    #         self.parallelization = Parallelization.from_mode("hybrid", total_ncores, self.nthreads_per_core,
-    #                                                          threads_per_process=nthreads,
-    #                                                          data_parallel=True)
-    #
-    #         # Success
-    #         return True
-    #
-    #     # Try again from picking divisor, but now a larger one (less processes)
-    #     else: return False
-
-    # -----------------------------------------------------------------
-
     def set_parallelization_low_memory(self):
 
         """
@@ -638,7 +588,7 @@ class ParallelizationTool(Configurable):
 
         # Nlambda >= 10 * Np?
         # nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-        elif self.nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3: data_parallel = True
+        elif self.nwavelengths >= self.config.min_nwavelengths_per_process * nprocesses and self.dustlib_dimension == 3: data_parallel = True
 
         # No data-parallelization should be used
         else: data_parallel = False
