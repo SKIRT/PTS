@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.analysis.run import AnalysisRuns
 from pts.magic.core.rgba import alpha_methods
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -29,8 +29,7 @@ runs = AnalysisRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # ANALYSIS RUN
 if runs.empty: raise ValueError("No analysis runs are present (yet)")

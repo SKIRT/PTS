@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -17,8 +17,7 @@ suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Add settings
 model_names = suite.model_names

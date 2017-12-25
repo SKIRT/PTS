@@ -1505,6 +1505,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
     def __len__(self):
 
         """

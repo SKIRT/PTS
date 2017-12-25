@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.core.remote.host import find_host_ids
 from pts.core.simulation.grids import cartesian, bintree, octtree
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -23,8 +23,7 @@ default_make_contributions = False
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # -----------------------------------------------------------------
 

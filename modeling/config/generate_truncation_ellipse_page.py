@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.magic.view.html import scales, colormaps, zooms
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -17,8 +17,9 @@ default_zoom = "toFit;x2"
 
 # -----------------------------------------------------------------
 
+definition = definition.copy()
+
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
 
 # Filters

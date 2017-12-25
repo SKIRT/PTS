@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.decomposition.decomposition import scalelength_scaleheight_ratios, degeyter_ratio
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -22,8 +22,7 @@ dust_and_stellar = ["dust", "stellar"]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # No models?
 if not suite.has_models: raise ValueError("There are currently no models")

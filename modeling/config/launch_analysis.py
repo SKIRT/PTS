@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.core.environment import load_modeling_environment_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -28,8 +28,7 @@ default_other_host_id = other_host_ids[0]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Remote execution
 definition.add_optional("remote", "string", "remote host on which to launch the simulation", choices=host_ids)

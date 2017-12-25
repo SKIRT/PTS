@@ -6,12 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-
+from pts.modeling.config.component import definition
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The levels
 definition.add_positional_optional("levels", "string_real_dictionary", "significance level for each image")

@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -21,8 +21,7 @@ features = ["maps", "masks", "deprojected", "deprojected_skirt", "edgeon"]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Types
 definition.add_positional_optional("types", "string_list", "types of maps to be plotted", default=types, choices=types)

@@ -6,13 +6,12 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The path of the resulting mosaic image
 definition.add_optional("band_id", "string", "ID of the band")

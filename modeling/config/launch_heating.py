@@ -6,11 +6,11 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.analysis.run import AnalysisRuns
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.magic.tools import wavelengths
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -25,8 +25,7 @@ wavelength_range = wavelengths.wavelength_range_before_and_including("MIR")
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # THE ANALYSIS RUN
 if runs.empty: raise ValueError("No analysis runs present (yet)")

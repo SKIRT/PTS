@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import load_modeling_environment_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -22,8 +23,7 @@ default_dust_grid_type = "bintree"
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Name of the representation
 if suite.has_representations: definition.add_required("name", "string", "name for the representation", forbidden=suite.representation_names)

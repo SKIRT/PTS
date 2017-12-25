@@ -6,14 +6,12 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools import filesystem as fs
 from pts.modeling.config.generate_genetic import default_scale, scales
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Add settings
 definition.add_required("name", "string", "fitting run name")

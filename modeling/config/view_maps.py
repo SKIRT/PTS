@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.magic.view.html import scales, colormaps, zooms
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -15,8 +15,7 @@ types = ["colours", "ssfr", "tir", "attenuation", "old", "dust", "young", "ioniz
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Which maps?
 definition.add_required("which", "string", "types of map to be plotted", choices=types)

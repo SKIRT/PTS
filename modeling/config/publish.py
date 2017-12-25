@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import smb_host_ids
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -15,8 +15,7 @@ default_host_name = "www"
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Upload
 definition.add_optional("host_name", "string", "remote host name", default_host_name, choices=smb_host_ids())

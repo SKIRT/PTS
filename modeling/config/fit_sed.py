@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -18,8 +18,7 @@ runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The fitting run for which to fit the SED
 # FITTING RUN

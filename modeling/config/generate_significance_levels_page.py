@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -25,8 +25,9 @@ default_interval = "pts"
 
 # -----------------------------------------------------------------
 
+definition = definition.copy()
+
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
 
 # Sigma levels

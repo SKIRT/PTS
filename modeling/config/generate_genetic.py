@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -23,8 +23,7 @@ methods = ["random", "grid"]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Add optional
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)

@@ -6,12 +6,11 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Levels
 definition.add_optional("levels", "real_list", "levels", [1.0, 3.0, 5.0, 10., 20.])

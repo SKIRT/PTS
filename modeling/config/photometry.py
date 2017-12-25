@@ -6,13 +6,12 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Add option for the remote host ID
 definition.add_positional_optional("remote", "string", "remote host to use for the aperture correction calculation", choices=find_host_ids(schedulers=False))

@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -35,8 +35,7 @@ default_npackages = 2e5
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Fitting run
 if runs.empty: raise RuntimeError("No fitting runs are present (yet)")

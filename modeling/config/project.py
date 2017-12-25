@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -16,8 +16,7 @@ default_parallelization = "2:1:2" # 2 cores, 1 process, 2 threads per core
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Writing
 definition.add_section("writing", "writing options")

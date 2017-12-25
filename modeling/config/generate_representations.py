@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.config.build_representation_galaxy import dust_grid_types, default_dust_grid_type
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -23,8 +23,7 @@ default_nrepresentations = 2
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Name of the model for which to create the representation
 model_names = suite.model_names

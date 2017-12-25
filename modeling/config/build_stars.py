@@ -9,10 +9,10 @@
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.maps.selection import ComponentMapsSelection
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.decomposition.decomposition import scalelength_scaleheight_ratios, degeyter_ratio
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -31,8 +31,7 @@ default_ionizing_contribution = 0.3
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The name
 definition.add_required("name", "string", "name of the model")

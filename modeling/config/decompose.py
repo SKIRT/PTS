@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.decomposition.decomposition import scalelength_scaleheight_ratios, degeyter_ratio
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -20,8 +21,7 @@ default_filter_name = "IRAC I1" if "IRAC I1" in environment.nir_filter_names els
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The filter for decomposition: choose from NIR filters
 definition.add_optional("filter", "filter", "filter for which to use the data for decomposition", default=default_filter_name, convert_default=True, choices=environment.nir_filters)

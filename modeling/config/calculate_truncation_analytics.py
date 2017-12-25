@@ -6,9 +6,9 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 #from pts.modeling.component.component import get_cache_host_id
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -16,8 +16,7 @@ modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 #definition.add_optional("image_names", "string_list", "The image names for which to make the truncated images", ["GALEX FUV", "SDSS g", "IRAC I1", "MIPS 24mu", "Pacs red", "SPIRE PLW"])
 definition.add_optional("factor_range", "real_range", "range (min,max) of values for the factor to which the disk ellipse should be scaled to obtain the truncation region", "0.2>1.5", convert_default=True)

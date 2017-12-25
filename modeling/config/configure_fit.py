@@ -11,6 +11,7 @@ from pts.modeling.component.component import get_default_fitting_method
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -32,8 +33,7 @@ default_ndigits = 3
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # -----------------------------------------------------------------
 

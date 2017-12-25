@@ -6,12 +6,12 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
 from pts.modeling.preparation.preparer import steps
 from pts.modeling.component.component import get_cache_host_id
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -19,8 +19,7 @@ modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Add required arguments
 definition.add_positional_optional("image", "string", "name of the image for which to run the preparation")

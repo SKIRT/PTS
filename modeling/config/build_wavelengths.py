@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.emissionlines import get_identifiers
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -22,8 +22,7 @@ default_min_points_per_fwhm = 5
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # Output directory
 definition.add_optional("output", "directory_path", "output directory", letter="o")

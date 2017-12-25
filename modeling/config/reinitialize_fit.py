@@ -6,11 +6,11 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.component.component import get_default_fitting_method
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -29,8 +29,7 @@ fitting_methods = ["genetic", "grid"]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # FITTING RUN
 if runs.empty: definition.add_required("name", "string", "name for the fitting run")

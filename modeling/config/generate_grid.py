@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
@@ -15,8 +15,7 @@ scales = ["linear", "logarithmic"]
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = definition.copy()
 
 # The number of models
 definition.add_optional("nmodels", "positive_integer", "number of models per generation", 80)
