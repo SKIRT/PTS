@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
@@ -985,6 +986,27 @@ class ParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unique_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = OrderedDict()
+
+        for name in self.colnames:
+            if name == "Simulation name": continue
+            unique_values = sequences.unique_values(self[name])
+            if self.column_unit(name) is not None: unique_values = [value * self.column_unit(name) for value in unique_values]
+            values[name] = unique_values
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, parameter_values):
 
         """
@@ -1039,6 +1061,24 @@ class ChiSquaredTable(SmartTable):
 
         index = np.argmin(self["Chi squared"])
         return self["Simulation name"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_best_simulation_names(self, nsimulations):
+
+        """
+        This function ...
+        :param nsimulations:
+        :return:
+        """
+
+        indices = np.argsort(self["Chi squared"])
+        names = []
+        for j in range(nsimulations):
+            index = indices[j]
+            name = self["Simulation name"][index]
+            names.append(name)
+        return names
 
     # -----------------------------------------------------------------
 

@@ -110,13 +110,19 @@ def is_odd(integer):
 
 # -----------------------------------------------------------------
 
-def is_integer(value):
+def is_integer(value, absolute=True, rtol=1.e-5, atol=1.e-8):
 
     """
     This function ...
     :param value:
+    :param absolute:
+    :param rtol:
+    :param atol:
     :return:
     """
+
+    #print(value, int(round(value)), int(value))
+    #print(value - round(value))
 
     # Special values
     if value == float("nan"): return False
@@ -124,20 +130,28 @@ def is_integer(value):
     if value == float("-inf"): return False
 
     # Regular value
-    return int(value) == value
+    if absolute: return int(value) == value
+    else:
+        #difference = value - round(value)
+        return np.isclose(value, round(value), rtol=rtol, atol=atol)
 
 # -----------------------------------------------------------------
 
-def as_integer_check(value):
+def as_integer_check(value, absolute=True, rtol=1.e-5, atol=1.e-8):
 
     """
     This function ...
     :param value:
+    :param absolute:
+    :param rtol:
+    :param atol:
     :return:
     """
 
-    if not is_integer(value): raise ValueError("Not an integer")
-    return int(value)
+    if not is_integer(value, absolute=absolute, rtol=rtol, atol=atol): raise ValueError("Not an integer")
+
+    if absolute: return int(value)
+    else: return int(round(value))
 
 # -----------------------------------------------------------------
 

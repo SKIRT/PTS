@@ -31,6 +31,113 @@ def find_nearest(array, value):
 
 # -----------------------------------------------------------------
 
+def find_bounds(array, value):
+
+    """
+    This function ...
+    :param array:
+    :param value:
+    :return:
+    """
+
+    indices = locate_bounds(array, value)
+    if isinstance(indices, tuple):
+        lower = indices[0]
+        upper = indices[1]
+        if lower == -1: return None, array[upper]
+        if upper == len(array): return array[lower], None
+    else: return array[indices]
+
+# -----------------------------------------------------------------
+
+def locate_bounds(array, value):
+
+    """
+    This function ...
+    :param array:
+    :param value:
+    :return:
+    """
+
+    nvalues = len(array)
+    indices = np.argsort(array)
+
+    previous_index = -1
+    for i in range(nvalues):
+
+        index = indices[i]
+        value_i = array[index]
+        if value_i == value: return index
+        elif value_i > value: return (previous_index, index)
+        previous_index = index
+
+    # All values are smaller than the target value
+    return (previous_index, previous_index+1)
+
+# -----------------------------------------------------------------
+
+def locate_continuous(array, value, scale="linear", out_of_bounds=None):
+
+    """
+    This function ...
+    :param array:
+    :param value:
+    :param scale:
+    :param out_of_bounds: None, error, or clip
+    :return:
+    """
+
+    #print(array, value)
+
+    indices = locate_bounds(array, value)
+
+    if isinstance(indices, tuple):
+
+        lower = indices[0]
+        upper = indices[1]
+
+        if lower == -1:
+            if out_of_bounds is None: return None
+            elif out_of_bounds == "error": raise ValueError("Out of bounds")
+            elif out_of_bounds == "clip": return float(upper)
+            else: raise ValueError("Invalid option for 'out_of_bounds'")
+        if upper == len(array):
+            if out_of_bounds is None: return None
+            elif out_of_bounds == "error": raise ValueError("Out of bounds")
+            elif out_of_bounds == "clip": return float(lower)
+            else: raise ValueError("Invalid option for 'out_of_bounds'")
+
+        #print(upper, lower)
+        if upper == lower + 1:
+
+            x1 = float(lower)
+            x2 = float(upper)
+
+            # Compute logarithm of function values if required
+            if scale == "linear":
+
+                fx = value
+                f1 = array[lower]
+                f2 = array[upper]
+
+            elif scale == "logarithmic":
+
+                fx = np.log10(value)
+                f1 = np.log10(array[lower])
+                f2 = np.log10(array[upper])
+
+            else: raise ValueError("Invalid value for 'scale'")
+
+            # Return
+            return interpolate_inverse(fx, x1, x2, f1, f2)
+
+        elif upper == lower - 1: raise NotImplementedError("Not yet implemented")
+        else: raise ValueError("Values are not sequential")
+
+    else: return float(indices)
+
+# -----------------------------------------------------------------
+
 def locate_clip(array, value):
 
     """
@@ -122,6 +229,46 @@ def resample_log_log(xresv, xoriv, yoriv):
 
     # Return the interpolated values
     return yresv
+
+# -----------------------------------------------------------------
+
+def interpolate(x, x1, x2, f1, f2):
+
+    """
+    This function ...
+    :param x:
+    :param x1:
+    :param x2:
+    :param f1:
+    :param f2:
+    :return:
+    """
+
+    # Perform the interpolation
+    fx = f1 + ((x - x1) / (x2 - x1)) * (f2 - f1)
+
+    # Return
+    return fx
+
+# -----------------------------------------------------------------
+
+def interpolate_inverse(fx, x1, x2, f1, f2):
+
+    """
+    This function ...
+    :param fx:
+    :param x1:
+    :param x2:
+    :param f1:
+    :param f2:
+    :return:
+    """
+
+    # Return
+    x = x1 + (fx - f1) / (f2 - f1) * (x2 - x1)
+
+    # Return
+    return x
 
 # -----------------------------------------------------------------
 

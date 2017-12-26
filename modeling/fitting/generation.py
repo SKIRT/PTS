@@ -267,6 +267,19 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.simulation_names: raise ValueError("Simulation does not exist")
+        return fs.join(self.path, name)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def host_ids(self):
 

@@ -2611,7 +2611,8 @@ class Remote(object):
         filename = fs.name(filepath)
 
         self.make_executable(filepath)
-        return self.execute("./" + filename + " " + options, output=output, show_output=show_output, timeout=timeout, expect=expect, cwd=dir_path)
+        return self.execute("./" + filename + " " + options, output=output, show_output=show_output, timeout=timeout,
+                            expect=expect, cwd=dir_path)
 
     # -----------------------------------------------------------------
 
