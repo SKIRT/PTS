@@ -337,6 +337,54 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def retrieved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [simulation for simulation in self.simulations if simulation.retrieved]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analysed_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [simulation for simulation in self.simulations if simulation.analysed]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nretrieved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.retrieved_simulations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nanalysed_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.analysed_simulations)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_queues(self):
 

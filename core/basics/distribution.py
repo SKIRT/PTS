@@ -36,7 +36,7 @@ class Distribution(object):
     This class ...
     """
     
-    def __init__(self, counts, edges, centers, mean, median, percentile_16, percentile_84, name=None):
+    def __init__(self, counts, edges, centers, mean, median, percentile_16, percentile_84, name=None, unit=None):
         
         """
         The constructor ...
@@ -45,6 +45,7 @@ class Distribution(object):
         :param centers:
         :param mean:
         :param median:
+        :param unit:
         """
 
         self.counts = counts
@@ -58,6 +59,9 @@ class Distribution(object):
         self.name = name
 
         self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
+
+        # The unit
+        self.unit = unit
 
         # The path
         self.path = None
@@ -109,15 +113,25 @@ class Distribution(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, values, bins=20, weights=None):
+    def from_values(cls, values, bins=20, weights=None, unit=None):
 
         """
         This function ...
         :param values:
         :param bins:
         :param weights:
+        :param unit:
         :return:
         """
+
+        from ..tools import sequences
+
+        # Check whether has units
+        if sequences.have_units(values):
+            if unit is not None: values = sequences.without_units(values, unit=unit)
+            else:
+                unit = sequences.get_unit(values)
+                values = sequences.without_units(values)
 
         counts, edges = np.histogram(values, bins=bins, density=True, weights=weights)
 
@@ -130,7 +144,7 @@ class Distribution(object):
         percentile_16 = np.percentile(values, 15.86)
         percentile_84 = np.percentile(values, 84.14)
 
-        return cls(counts, edges, centers, mean, median, percentile_16, percentile_84)
+        return cls(counts, edges, centers, mean, median, percentile_16, percentile_84, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -719,9 +733,12 @@ class Distribution(object):
         sp1.spines['left'].set_color('r')
         sp1.spines['right'].set_color('r')
 
+        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
+        else: xlabel = "Values"
+
         # Put the title and labels
         if title is not None: sp1.set_title(title, color='red')
-        sp1.set_xlabel('Values', color='red')
+        sp1.set_xlabel(xlabel, color='red')
         sp1.set_ylabel('Cumulative probability', color='red')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')
@@ -803,9 +820,12 @@ class Distribution(object):
         sp1.spines['left'].set_color('r')
         sp1.spines['right'].set_color('r')
 
+        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
+        else: xlabel = "Values"
+
         # Put the title and labels
         if title is not None: sp1.set_title(title, color='red')
-        sp1.set_xlabel('Values', color='red')
+        sp1.set_xlabel(xlabel, color='red')
         sp1.set_ylabel('Probability', color='red')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')
@@ -904,9 +924,12 @@ class Distribution(object):
         #sp1.spines['left'].set_color('r')
         #sp1.spines['right'].set_color('r')
 
+        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
+        else: xlabel = "Values"
+
         # Put the title and labels
         if title is not None: sp1.set_title(strings.split_in_lines(title))
-        sp1.set_xlabel('Values')
+        sp1.set_xlabel(xlabel)
         sp1.set_ylabel('Probability')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')

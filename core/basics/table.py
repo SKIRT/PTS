@@ -1171,7 +1171,9 @@ class SmartTable(Table):
         #return (self[column_name] == self[column_name][0]).all() # all equal to the first element
 
         first = self[column_name][0]
+        #print(first)
         for i in range(len(self[column_name])):
+            print(self[column_name][i])
             if self[column_name][i] != first: return False
         return True
 

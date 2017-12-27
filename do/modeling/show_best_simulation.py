@@ -37,7 +37,7 @@ elif runs.has_single: definition.add_fixed("name", "name of the fitting run", ru
 else: definition.add_required("name", "string", "name of the fitting run", choices=runs.names)
 
 # Generations to remove
-definition.add_required("generation", "string", "generation")
+definition.add_required("generation", "string", "generation name")
 
 # Rank
 definition.add_positional_optional("nsimulations", "positive_integer", "number of simulations to show", 5)

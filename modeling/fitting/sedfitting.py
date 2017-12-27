@@ -73,15 +73,16 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the parameters of the best models for each generation
         self.get_best_parameters()
@@ -100,15 +101,16 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SEDFitter, self).setup()
+        super(SEDFitter, self).setup(**kwargs)
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)

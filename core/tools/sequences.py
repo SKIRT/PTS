@@ -213,6 +213,64 @@ def combine_unique(*args):
 
 # -----------------------------------------------------------------
 
+def have_units(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    has_units = [hasattr(item, "unit") for item in sequence]
+    if not all_equal(has_units): raise ValueError("Inconsistent sequence")
+    return has_units[0]
+
+# -----------------------------------------------------------------
+
+def same_units(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return all_equal([item.unit for item in sequence])
+
+# -----------------------------------------------------------------
+
+def get_unit(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    if not same_units(sequence): raise ValueError("Not the same units")
+    return sequence[0].unit
+
+# -----------------------------------------------------------------
+
+def without_units(sequence, unit=None, check_same=True):
+
+    """
+    This function ...
+    :param sequence:
+    :param unit:
+    :param check_same:
+    :return:
+    """
+
+    if unit is not None: return [item.to(unit).value for item in sequence]
+    else: # no unit is specified
+        if check_same:
+            unit = get_unit(sequence)
+            return [item.to(unit).value for item in sequence]
+        else: return [item.value for item in sequence]
+
+# -----------------------------------------------------------------
+
 def find_closest_index(seq, value):
 
     """
@@ -225,16 +283,6 @@ def find_closest_index(seq, value):
     closest_delta = None
     #closest_delta = float("inf")
     closest_index = None
-
-    #column_unit = table[column_name].unit
-
-    #value_unit = value.unit if hasattr(value, "unit") else None
-
-    # Check units
-    #if value_unit is not None:
-        #if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
-        #else: value = value.to(column_unit).value # for correct comparison inside loop
-    #elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
 
     # Loop over all entries in the sequence
     for i in range(len(seq)):

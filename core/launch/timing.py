@@ -25,6 +25,12 @@ from ..tools import sequences
 
 # -----------------------------------------------------------------
 
+all_ski_parameters = ["Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level",
+                          "Search method", "Sample count", "Max optical depth", "Max mass fraction",
+                          "Max density dispersion", "Self-absorption", "Transient heating"]
+
+# -----------------------------------------------------------------
+
 class TimingTable(SmartTable):
 
     """
@@ -339,14 +345,35 @@ class TimingTable(SmartTable):
         """
 
         parameters = []
-        ski_parameters = ["Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level",
-                          "Search method", "Sample count", "Max optical depth", "Max mass fraction",
-                          "Max density dispersion", "Self-absorption", "Transient heating"]
-        for parameter in ski_parameters:
+        for parameter in all_ski_parameters:
             if not self.all_equal(parameter): parameters.append(str(parameter)) # dtype('S21') to str
-
-        # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def equal_ski_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameters = []
+        for parameter in all_ski_parameters:
+            if self.all_equal(parameter): parameters.append(str(parameter))
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self["Simulation name"]
 
     # -----------------------------------------------------------------
 
@@ -364,11 +391,142 @@ class TimingTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def ski_parameters_for_simulation(self, simulation_name):
+    def total_time_for_simulation(self, simulation_name):
 
         """
         This function ...
         :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Total runtime")
+
+    # -----------------------------------------------------------------
+
+    def setup_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Setup time")
+
+    # -----------------------------------------------------------------
+
+    def stellar_emission_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Stellar emission time")
+
+    # -----------------------------------------------------------------
+
+    def spectra_calculation_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Spectra calculation time")
+
+    # -----------------------------------------------------------------
+
+    def dust_emission_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Dust emission time")
+
+    # -----------------------------------------------------------------
+
+    def writing_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Writing time")
+
+    # -----------------------------------------------------------------
+
+    def waiting_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Waiting time")
+
+    # -----------------------------------------------------------------
+
+    def communication_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Communication time")
+
+    # -----------------------------------------------------------------
+
+    def intermediate_time_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_timing(index, "Intermediate time")
+
+    # -----------------------------------------------------------------
+
+    def get_timing(self, index, column_name):
+
+        """
+        This function ...
+        :param index:
+        :param column_name:
+        :return:
+        """
+
+        return self[column_name][index] * self.column_unit(column_name)
+
+    # -----------------------------------------------------------------
+
+    def ski_parameters_for_simulation(self, simulation_name, which="different"):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param which:
         :return:
         """
 
@@ -378,9 +536,15 @@ class TimingTable(SmartTable):
         # Initialize dictionary
         parameters = dict()
 
+        # Get the parameter names
+        if which == "all": parameter_names = all_ski_parameters
+        elif which == "different": parameter_names = self.different_ski_parameters()
+        elif which == "equal": parameter_names = self.equal_ski_parameters()
+        else: raise ValueError("Invalid value for 'which'")
+
         # Set the parameter values
-        for parameter in self.different_ski_parameters():
-            parameters[str(parameter)] = self[parameter][index] # dtype('S21') to str
+        for parameter in parameter_names:
+            parameters[str(parameter)] = self[parameter][index] if not self[parameter].mask[index] else None # dtype('S21') to str
 
         # Return the parameter values
         return parameters

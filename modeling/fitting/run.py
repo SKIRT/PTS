@@ -238,8 +238,6 @@ class FittingRun(object):
         return fs.directory_of(fit_path)
 
     # -----------------------------------------------------------------
-    # NEW FROM MODELINGCOMPONENT
-    # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_configuration(self):
@@ -828,15 +826,27 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def has_dust_grids(self):
+    @lazyproperty
+    def timing_table(self):
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
+        """
+        This function ...
+        :return:
+        """
 
-        #return len(fs.files_in_path(self.dust_grids_path, extension="txt")) > 0
+        return TimingTable.from_file(self.timing_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryTable.from_file(self.memory_table_path)
 
     # -----------------------------------------------------------------
 
