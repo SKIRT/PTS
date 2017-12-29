@@ -663,6 +663,18 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def has_column_unit(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return self[column_name].unit is not None
+
+    # -----------------------------------------------------------------
+
     def column_unit(self, column_name):
 
         """
@@ -671,7 +683,7 @@ class SmartTable(Table):
         :return:
         """
 
-        if self[column_name].unit is None: return None
+        if not self.has_column_unit(column_name): return None
 
         # Construct unit
         if column_name in self.meta["density"]: density = True
@@ -998,7 +1010,7 @@ class SmartTable(Table):
         value = self[colname][index]
 
         if self[colname].mask[index]: value = None
-        elif self[colname].unit is not None and add_unit: value = value * self[colname].unit
+        elif self.has_column_unit(colname) and add_unit: value = value * self.column_unit(colname)
 
         # Return the value
         return value

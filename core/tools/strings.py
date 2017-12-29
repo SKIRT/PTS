@@ -1283,3 +1283,35 @@ def remove_hash_words(string):
     return " ".join(filter(lambda x: x[0] != '#', string.split()))
 
 # -----------------------------------------------------------------
+
+def number(real, ndecimal, ndigits, fill="0"):
+
+    """
+    This function ...
+    :param real:
+    :param ndecimal:
+    :param ndigits:
+    :param fill:
+    :return:
+    """
+
+    magnitude = len(str(float(real)).split(".")[0]) - 1
+    ndig_magnitude = magnitude + 1
+    if ndig_magnitude + ndecimal > ndigits: raise ValueError("Cannot represent the number '" + str(real) + "' with only " + str(ndigits) + " digits with " + str(ndecimal) + " decimal places")
+
+    string = str(real)
+
+    if "." in string: before, after = string.split(".")
+    else: before = string, after = ""
+
+    ndec = len(after)
+    if ndec < ndecimal: after += fill * (ndecimal - ndec)
+    else: after = after[:ndecimal]
+
+    ndig = ndecimal + len(before)
+    before = fill * (ndigits - ndig) + before
+
+    # Return
+    return before + "." + after
+
+# -----------------------------------------------------------------

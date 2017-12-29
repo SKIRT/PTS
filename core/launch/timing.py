@@ -400,7 +400,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Total runtime")
+        return self.get_value("Total runtime", index)
 
     # -----------------------------------------------------------------
 
@@ -413,7 +413,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Setup time")
+        return self.get_value("Setup time", index)
 
     # -----------------------------------------------------------------
 
@@ -426,7 +426,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Stellar emission time")
+        return self.get_value("Stellar emission time", index)
 
     # -----------------------------------------------------------------
 
@@ -439,7 +439,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Spectra calculation time")
+        return self.get_value("Spectra calculation time", index)
 
     # -----------------------------------------------------------------
 
@@ -452,7 +452,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Dust emission time")
+        return self.get_value("Dust emission time", index)
 
     # -----------------------------------------------------------------
 
@@ -465,7 +465,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Writing time")
+        return self.get_value("Writing time", index)
 
     # -----------------------------------------------------------------
 
@@ -478,7 +478,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Waiting time")
+        return self.get_value("Waiting time", index)
 
     # -----------------------------------------------------------------
 
@@ -491,7 +491,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Communication time")
+        return self.get_value("Communication time", index)
 
     # -----------------------------------------------------------------
 
@@ -504,20 +504,7 @@ class TimingTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        return self.get_timing(index, "Intermediate time")
-
-    # -----------------------------------------------------------------
-
-    def get_timing(self, index, column_name):
-
-        """
-        This function ...
-        :param index:
-        :param column_name:
-        :return:
-        """
-
-        return self[column_name][index] * self.column_unit(column_name)
+        return self.get_value("Intermediate time", index)
 
     # -----------------------------------------------------------------
 
@@ -544,7 +531,7 @@ class TimingTable(SmartTable):
 
         # Set the parameter values
         for parameter in parameter_names:
-            parameters[str(parameter)] = self[parameter][index] if not self[parameter].mask[index] else None # dtype('S21') to str
+            parameters[str(parameter)] = self[parameter][index] if not self[parameter].mask[index] else None
 
         # Return the parameter values
         return parameters

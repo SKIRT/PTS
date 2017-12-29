@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.basics.distribution import Distribution
+from pts.core.tools import formatting as fmt
+from pts.core.tools import strings
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -38,6 +41,7 @@ definition.add_required("generation", "string", "generation name")
 # Extra
 definition.add_flag("plot_runtimes", "plot runtimes")
 definition.add_flag("plot_memory", "plot memory usage")
+definition.add_flag("plot_chisquared", "plot chi squared")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -49,6 +53,11 @@ fitting_run = runs.load(config.name)
 
 # Get the generation
 generation = fitting_run.get_generation(config.generation)
+
+# -----------------------------------------------------------------
+
+# Get the chi squared table
+chi_squared = generation.chi_squared_table
 
 # -----------------------------------------------------------------
 
@@ -68,6 +77,12 @@ nsimulations = generation.nsimulations
 nretrieved = generation.nretrieved_simulations
 nanalysed = generation.nanalysed_simulations
 #print(nsimulations, nretrieved, nanalysed)
+fraction_analysed = float(nanalysed) / nsimulations
+
+print("")
+print("Total number of simulations: " + str(nsimulations))
+print("Number of analysed simulations: " + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
+print("")
 
 # -----------------------------------------------------------------
 
@@ -87,7 +102,16 @@ intermediate_times = []
 for simulation in generation.simulations:
 
     simulation_name = simulation.name
-    print(simulation_name, simulation.retrieved, simulation.analysed)
+
+    if simulation.analysed:
+
+        # Get chi squared
+        chisq = chi_squared.chi_squared_for(simulation_name)
+        ndecimal = 1
+        ndigits = 7
+        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" "))
+
+    else: print(" - " + fmt.red + simulation_name + fmt.reset)
 
     # Get timing
     if timing.has_simulation(simulation_name):

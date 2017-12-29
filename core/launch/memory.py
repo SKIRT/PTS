@@ -22,6 +22,12 @@ from ..tools import sequences
 
 # -----------------------------------------------------------------
 
+all_ski_parameters = ["Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method",
+                          "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
+                          "Self-absorption", "Transient heating", "Number of pixels"]
+
+# -----------------------------------------------------------------
+
 class MemoryTable(SmartTable):
 
     """
@@ -311,14 +317,35 @@ class MemoryTable(SmartTable):
         """
 
         parameters = []
-        ski_parameters = ["Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method",
-                          "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
-                          "Self-absorption", "Transient heating", "Number of pixels"]
-        for parameter in ski_parameters:
+        for parameter in all_ski_parameters:
             if not self.all_equal(parameter): parameters.append(str(parameter))
-
-        # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def equal_ski_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameters = []
+        for parameter in all_ski_parameters:
+            if self.all_equal(parameter): parameters.append(str(parameter))
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self["Simulation name"]
 
     # -----------------------------------------------------------------
 
@@ -336,11 +363,90 @@ class MemoryTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def ski_parameters_for_simulation(self, simulation_name):
+    def total_memory_for_simulation(self, simulation_name):
 
         """
         This function ...
         :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Total peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def setup_memory_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Setup peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def stellar_memory_for_simulation(self, simulation_name):
+
+        """
+        This fnuction ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Stellar emission peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def spectra_memory_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Spectra calculation peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def dust_memory_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Dust emission peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def writing_memory_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Writing peak memory", index)
+
+    # -----------------------------------------------------------------
+
+    def ski_parameters_for_simulation(self, simulation_name, which="different"):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param which:
         :return:
         """
 
@@ -350,8 +456,15 @@ class MemoryTable(SmartTable):
         # Initialize dictionary
         parameters = dict()
 
+        # Get the parameter names
+        if which == "all": parameter_names = all_ski_parameters
+        elif which == "different": parameter_names = self.different_ski_parameters()
+        elif which == "equal": parameter_names = self.equal_ski_parameters()
+        else: raise ValueError("Invalid value for 'which'")
+
         # Set the parameter values
-        for parameter in self.different_ski_parameters(): parameters[str(parameter)] = self[parameter][index] # dtype('S21') to str
+        for parameter in parameter_names:
+            parameters[str(parameter)] = self[parameter][index] if not self[parameter].mask[index] else None
 
         # Return the parameter values
         return parameters
