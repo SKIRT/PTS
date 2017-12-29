@@ -215,6 +215,50 @@ class Curve(SmartTable):
         elif method == "integral": raise NotImplementedError("Not implemented yet")
         else: raise ValueError("Invalid option for 'method'")
 
+    # -----------------------------------------------------------------
+
+    def get_x(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :return:
+        """
+
+        # Create and return
+        if asarray: return arrays.plain_array(self[self.x_name], unit=unit, array_unit=self.column_unit(self.x_name),
+                                      conversion_info=conversion_info, density=density, brightness=brightness)
+        else: return arrays.array_as_list(self[self.x_name], unit=unit, add_unit=add_unit,
+                                        array_unit=self.column_unit(self.x_name), conversion_info=conversion_info,
+                                        density=density, brightness=brightness)
+
+    # -----------------------------------------------------------------
+
+    def get_y(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :return:
+        """
+
+        # Create and return
+        if asarray: return arrays.plain_array(self[self.y_name], unit=unit, array_unit=self.column_unit(self.y_name),
+                                      conversion_info=conversion_info, density=density, brightness=brightness)
+        else: return arrays.array_as_list(self[self.y_name], unit=unit, add_unit=add_unit,
+                                        array_unit=self.column_unit(self.y_name), conversion_info=conversion_info,
+                                        density=density, brightness=brightness)
+
 # -----------------------------------------------------------------
 
 class WavelengthCurve(Curve):
@@ -264,6 +308,8 @@ class WavelengthCurve(Curve):
 
         # From astropy call ...
         else: self.distance = None
+
+        self.values()
 
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)

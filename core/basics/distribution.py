@@ -27,6 +27,624 @@ from astropy.modeling import models, fitting
 
 # Import the relevant PTS classes and modules
 from ..tools import strings
+from ..tools.utils import lazyproperty
+from .curve import Curve
+
+# -----------------------------------------------------------------
+
+class newDistribution(Curve):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        if "name" in kwargs: from_astropy = False
+        else: from_astropy = True
+
+        if not from_astropy:
+
+            # Get unit
+            name = kwargs.pop("name")
+            unit = kwargs.pop("unit", None)
+            description = kwargs.pop("description", None)
+
+            x_unit = unit
+            #y_unit = None
+            x_name = name
+            y_name = "Frequency"
+            x_description = description
+            #y_description = description
+
+            kwargs["x_unit"] = x_unit
+            #kwargs["y_unit"] = y_unit
+            kwargs["x_name"] = x_name
+            kwargs["y_name"] = y_name
+            kwargs["x_description"] = x_description
+            #kwargs["y_description"] = y_description
+
+        # Call the constructor of the base class
+        super(newDistribution, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_columns(cls, name, values, frequencies):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param frequencies:
+        :return:
+        """
+
+        # Create distribution
+        distr = cls(name=name)
+
+        # Check if sorted
+        from ..tools import sequences
+        if not sequences.is_sorted(values): raise ValueError("Values are not sorted")
+
+        # Set data
+        distr[name] = np.array(values)
+        distr["Frequency"] = np.array(frequencies)
+
+        # Return the distribution
+        return distr
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_old_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Read the table from file
+        fill_values = [('--', '0')]
+        table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
+
+        parameter_name = table.colnames[0]
+
+        # Get values
+        values = table[parameter_name]
+        frequencies = np.array(table["Probability"])
+
+        # Return
+        return cls.from_columns(parameter_name, values, frequencies)
+
+    # -----------------------------------------------------------------
+
+    def add_row(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise RuntimeError("Cannot add rows to a distribution object")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_x(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frequencies(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_y(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.column_unit(self.x_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_column_unit(self.x_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        value = numbers.weighed_arithmetic_mean(self.values, weights=self.frequencies)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def geometric_mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        value = numbers.weighed_geometric_mean(self.values, weights=self.frequencies)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def median(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        value = numbers.median(self.values)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def percentile_16(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = find_percentile_16(self.values, self.frequencies)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def percentile_84(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = find_percentile_84(self.values, self.frequencies)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nvalues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nbins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nvalues
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bin_widths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        widths = []
+        for i in range(len(self.edges) - 1): widths.append(self.edges[i+1] - self.edges[i])
+        return widths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bin_width(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        widths = self.bin_widths
+
+        # Check
+        if not all_close(widths): raise RuntimeError("Bin widths not equal")
+
+        # Calculate width
+        width = (self.max_value - self.min_value) / self.nbins
+        assert np.isclose(width, widths[0])
+
+        # Return
+        return width
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def most_frequent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmax(self.frequencies)
+        return self.values[index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def least_frequent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self.frequencies)
+        return self.values[index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def least_frequent_non_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ma = np.ma.masked_equal(self.frequencies, 0.0, copy=False)
+        index = np.argmin(ma)
+        return self.values[index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.values[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.first_value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def second_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.values[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.values[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.last_value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def second_last_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.values[-2]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_frequency(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_frequency(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_frequency_nonzero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ma = np.ma.masked_equal(self.frequencies, 0.0, copy=False)
+        return np.min(ma)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+
+        # Add placeholder for first edge
+        edges = [None]
+
+        # Add next edges
+        for i in range(self.nvalues - 1):
+            edge = numbers.arithmetic_mean(self.values[i], self.values[i+1])
+            edges.append(edge)
+
+        # Calculate first and last edge widths
+        first_edge_width = self.second_value - self.first_value
+        first_edge_half_width = 0.5 * first_edge_width
+        last_edge_width = self.last_value - self.second_last_value
+        last_edge_half_width = 0.5 * last_edge_width
+
+        # Set first edge position
+        first_edge = self.first_value - first_edge_half_width
+        edges[0] = first_edge
+
+        # Add last edge position
+        last_edge = self.last_value + last_edge_half_width
+        edges.append(last_edge)
+
+        # Return the edges
+        return edges
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edges_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+
+        # Add placeholder for first edge
+        edges = [None]
+
+        # Add next edges
+        for i in range(self.nvalues - 1):
+            edge = numbers.geometric_mean(self.values[i], self.values[i + 1])
+            edges.append(edge)
+
+        # Calculate first and last edge widths (factors)
+        first_edge_factor = self.second_value / self.first_value
+        first_edge_sqrt_factor = np.sqrt(first_edge_factor)
+        last_edge_factor = self.last_value / self.second_last_value
+        last_edge_sqrt_factor = np.sqrt(last_edge_factor)
+
+        # Set first edge position
+        first_edge = self.first_value / first_edge_sqrt_factor
+        edges[0] = first_edge
+
+        # Add last edge position
+        last_edge = self.last_value * last_edge_sqrt_factor
+        edges.append(last_edge)
+
+        # Return the edges
+        return edges
+
+    # -----------------------------------------------------------------
+
+    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
+             add_smooth=False, format=None, add_extrema=False, model=None):
+
+        """
+        This function ...
+        :param title:
+        :param path:
+        :param logscale:
+        :param xlogscale:
+        :param x_limits:
+        :param y_limits:
+        :param add_smooth:
+        :param format:
+        :param add_extrema:
+        :param model:
+        :return:
+        """
+
+        # Create a canvas to place the subgraphs
+        figure = plt.figure()
+        rect = figure.patch
+        rect.set_facecolor('white')
+
+        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+        #sp1 = canvas.add_subplot(111)
+        sp1 = figure.gca()
+
+        #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
+
+        sp1.bar(self.edges[:-1], self.frequencies, linewidth=0, width=self.bin_widths, alpha=0.5)
+
+        # Determine the x limits
+        if x_limits is None:
+            x_min = self.min_value
+            x_max = self.max_value
+        else:
+            x_min = x_limits[0]
+            x_max = x_limits[1]
+
+        # Determine the y limits
+        if y_limits is None:
+            y_min = 0. if not logscale else 0.5 * self.min_frequency_nonzero
+            y_max = 1.1 * self.max_frequency if not logscale else 2. * self.max_frequency
+        else:
+            y_min = y_limits[0]
+            y_max = y_limits[1]
+
+        # Set the axis limits
+        sp1.set_xlim(x_min, x_max)
+        sp1.set_ylim(y_min, y_max)
+
+        # Add smooth
+        #if add_smooth:
+        #    if logscale:
+        #        x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
+        #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+        #    else:
+        #        x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
+        #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+
+        #if add_extrema:
+        #    x, y = self.local_maxima
+        #    sp1.plot(x, y, 'g^')
+        #    x, y = self.local_minima
+        #    sp1.plot(x, y, 'rv')
+
+        #if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
+
+        #print(self.mean, self.median, self.most_frequent)
+        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
+        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
+        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
+        plt.legend()
+
+        # Colorcode the tick tabs
+        #sp1.tick_params(axis='x', colors='red')
+        #sp1.tick_params(axis='y', colors='red')
+
+        # Colorcode the spine of the graph
+        #sp1.spines['bottom'].set_color('r')
+        #sp1.spines['top'].set_color('r')
+        #sp1.spines['left'].set_color('r')
+        #sp1.spines['right'].set_color('r')
+
+        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
+        else: xlabel = "Values"
+
+        # Put the title and labels
+        if title is not None: sp1.set_title(strings.split_in_lines(title))
+        sp1.set_xlabel(xlabel)
+        sp1.set_ylabel('Probability')
+
+        if logscale: sp1.set_yscale("log", nonposx='clip')
+        if xlogscale: sp1.set_xscale("log")
+
+        plt.tight_layout()
+        #plt.grid(alpha=0.8)
+
+        if path is None: plt.show()
+        else: figure.savefig(path, format=format)
+
+        plt.close()
 
 # -----------------------------------------------------------------
 
@@ -48,6 +666,7 @@ class Distribution(object):
         :param unit:
         """
 
+        # Set attributes
         self.counts = counts
         self.edges = edges
         self.centers = np.array(centers)
@@ -56,6 +675,7 @@ class Distribution(object):
         self.percentile_16 = float(percentile_16) if percentile_16 is not None else None
         self.percentile_84 = float(percentile_84) if percentile_84 is not None else None
 
+        # Set name
         self.name = name
 
         self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
@@ -149,13 +769,16 @@ class Distribution(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, logarithmic=False):
 
         """
         This function ...
         :param path:
+        :param logarithmic:
         :return:
         """
+
+        from ..tools import numbers
 
         # Read the table from file
         fill_values = [('--', '0')]
@@ -163,10 +786,15 @@ class Distribution(object):
 
         parameter_name = table.colnames[0]
 
+        # Get values
         values = table[parameter_name]
         probabilities = np.array(table["Probability"])
 
-        mean = np.sum(values * probabilities) / np.sum(probabilities)
+        # Calculate mean value
+        #mean = np.sum(values * probabilities) / np.sum(probabilities)
+        #geometric = numbers.geometric_mean()
+        mean = numbers.weighed_arithmetic_mean(values, probabilities)
+        #geometric =
 
         edges = [0]
 
@@ -207,11 +835,10 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path):
+    def as_table(self):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
@@ -222,9 +849,24 @@ class Distribution(object):
 
         data = [self.centers, self.counts]
         names = [name, "Probability"]
-        meta = {"mean": self.mean, "median": self.median, "percentile16": self.percentile_16, "percentile84": self.percentile_84}
+        meta = {"mean": self.mean, "median": self.median, "percentile16": self.percentile_16,
+                "percentile84": self.percentile_84}
 
         table = Table(data=data, names=names, meta=meta, masked=True)
+        return table
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get table
+        table = self.as_table()
 
         # Save the table
         table.write(path, format="ascii.ecsv")
@@ -719,9 +1361,11 @@ class Distribution(object):
             x_smooth, y_smooth = self.cumulative_smooth(x_min=x_min, x_max=x_max, npoints=npoints)
             sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
 
-        sp1.axvline(self.mean, color="green", linestyle="dashed")
-        sp1.axvline(self.median, color="purple", linestyle="dashed")
-        sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
+        #print(self.mean, self.median, self.most_frequent)
+        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
+        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
+        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
+        plt.legend()
 
         # Colorcode the tick tabs
         sp1.tick_params(axis='x', colors='red')
@@ -807,9 +1451,11 @@ class Distribution(object):
         x, y = get_local_minima(x_smooth, y_smooth)
         sp1.plot(x, y, 'rv')
 
-        sp1.axvline(self.mean, color="green", linestyle="dashed")
-        sp1.axvline(self.median, color="purple", linestyle="dashed")
-        sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
+        # print(self.mean, self.median, self.most_frequent)
+        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
+        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
+        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
+        plt.legend()
 
         # Colorcode the tick tabs
         sp1.tick_params(axis='x', colors='red')
@@ -840,8 +1486,8 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None,
-             add_extrema=False, model=None):
+    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
+             add_smooth=False, format=None, add_extrema=False, model=None):
 
         """
         This function ...
@@ -909,13 +1555,13 @@ class Distribution(object):
             x, y = self.local_minima
             sp1.plot(x, y, 'rv')
 
-        if model is not None:
+        if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
 
-            sp1.plot(self.centers, model(self.centers), label='Model')
-
-        sp1.axvline(self.mean, color="green", linestyle="dashed")
-        sp1.axvline(self.median, color="purple", linestyle="dashed")
-        sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
+        #print(self.mean, self.median, self.most_frequent)
+        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
+        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
+        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
+        plt.legend()
 
         # Colorcode the tick tabs
         #sp1.tick_params(axis='x', colors='red')
@@ -1005,7 +1651,7 @@ def find_percentile_16(values, probabilities):
     :return:
     """
 
-    find_percentile(values, probabilities, 15.86)
+    return find_percentile(values, probabilities, 15.86)
 
 # -----------------------------------------------------------------
 

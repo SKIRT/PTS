@@ -1059,6 +1059,20 @@ def arithmetic_mean(*numbers):
 
 # -----------------------------------------------------------------
 
+def weighed_arithmetic_mean(numbers, weights):
+
+    """
+    This function ...
+    :param numbers:
+    :param weights:
+    :return:
+    """
+
+    #return np.sum(numbers * weights) / np.sum(weights)
+    return sum([number * weight for number, weight in zip(numbers, weights)]) / sum(weights)
+
+# -----------------------------------------------------------------
+
 def geometric_mean(*numbers):
 
     """
@@ -1073,7 +1087,33 @@ def geometric_mean(*numbers):
 
 # -----------------------------------------------------------------
 
-def text2int(textnum, numwords={}):
+def weighed_geometric_mean(numbers, weights):
+
+    """
+    This function ...
+    :param numbers:
+    :param weights:
+    :return:
+    """
+
+    log_numbers = [np.log10(number) for number in numbers]
+    return 10**(weighed_arithmetic_mean(log_numbers, weights))
+
+# -----------------------------------------------------------------
+
+def median(*numbers):
+
+    """
+    This function ...
+    :param numbers:
+    :return:
+    """
+
+    return np.median(np.asarray(numbers))
+
+# -----------------------------------------------------------------
+
+def text2int(textnum, numwords=None):
 
     """
     Thisf function ...
@@ -1082,7 +1122,8 @@ def text2int(textnum, numwords={}):
     :return:
     """
 
-    if not numwords:
+    if numwords is None:
+      numwords = {}
 
       units = [
         "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",

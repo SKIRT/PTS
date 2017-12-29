@@ -30,3 +30,8 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 definition.add_flag("visualise", "make visualisations")
 
 # -----------------------------------------------------------------
+
+# Flags
+definition.add_flag("unfinished", "also include unfinished generations")
+
+# -----------------------------------------------------------------

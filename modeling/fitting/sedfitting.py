@@ -25,6 +25,7 @@ from ...core.basics.log import log
 from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
 from .tables import ModelProbabilitiesTable, ParameterProbabilitiesTable
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -101,6 +102,55 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.has_finished_generations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.unfinished: return self.fitting_run.generation_names
+        else: return self.fitting_run.finished_generations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ngenerations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.generation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ngenerations > 0
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -119,13 +169,27 @@ class SEDFitter(FittingComponent):
         self.prob_generations_path = fs.create_directory_in(self.fitting_run.prob_path, "generations")
 
         # Check if there are finished generations
-        if len(self.fitting_run.finished_generations) == 0: raise RuntimeError("There are no finished generations")
+        if not self.has_finished_generations and not self.config.unfinished: raise RuntimeError("There are no finished generations")
+        if not self.has_generations: raise RuntimeError("There are no generations")
 
         # For each finished generation, determine the path to the probability table
-        for generation_name in self.fitting_run.finished_generations:
+        for generation_name in self.generation_names:
 
+            # Determine probabilities table path
             path = fs.join(self.prob_generations_path, generation_name + ".dat")
             self.prob_generations_table_paths[generation_name] = path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_finished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.unfinished
 
     # -----------------------------------------------------------------
 
@@ -139,13 +203,13 @@ class SEDFitter(FittingComponent):
         log.info("Getting the parameter values of the best model for the finished generations (if not already done) ...")
 
         # Loop over the finished generations
-        for generation_name in self.fitting_run.finished_generations:
+        for generation_name in self.generation_names:
 
             # Check if the generation is already in the best parameters table
             if generation_name in self.fitting_run.best_parameters_table.generation_names: continue
 
             # Otherwise, add the best parameter values
-            values, chi_squared = self.fitting_run.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
+            values, chi_squared = self.fitting_run.best_parameter_values_for_generation(generation_name, return_chi_squared=True, only_finished=self.only_finished)
 
             # Add an entry to the best parameters table file
             self.fitting_run.best_parameters_table.add_entry(generation_name, values, chi_squared)
@@ -181,7 +245,7 @@ class SEDFitter(FittingComponent):
         log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
 
         # Loop over the finished generations
-        for generation_name in self.fitting_run.finished_generations:
+        for generation_name in self.generation_names:
 
             # Check whether the probabilities table is already present for this generation
             if fs.is_file(self.prob_generations_table_paths[generation_name]):
@@ -271,9 +335,10 @@ class SEDFitter(FittingComponent):
                 # Add the probabilities from all models that have this value
                 individual_probabilities = []
 
+                # Loop over the generations
                 for generation_name in self.model_probabilities:
-
                     simulation_indices = self.model_probabilities[generation_name][label] == value
+                    nsimulations_for_value = np.sum(simulation_indices)
                     individual_probabilities += list(self.model_probabilities[generation_name]["Probability"][simulation_indices])
 
                 # Combine the individual probabilities
@@ -322,7 +387,7 @@ class SEDFitter(FittingComponent):
         self.animation = Animation()
 
         # Loop over the generations
-        for generation_name in self.fitting_run.finished_generations:
+        for generation_name in self.generation_names:
 
             # Get the model probabilities table for this generation
             model_probabilities_table = self.model_probabilities[generation_name]
@@ -447,7 +512,7 @@ class SEDFitter(FittingComponent):
 
             # Create a plot file for the probability distribution
             path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
-            try: distribution.plot(title="Probability of the " + description, path=path, logscale=True)
+            try: distribution.plot(title="Probability of the " + description, path=path, logscale=False, xlogscale=True)
             except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
 
     # -----------------------------------------------------------------

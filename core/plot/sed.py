@@ -64,6 +64,34 @@ pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
+def plot_sed(sed, label=None, path=None, title=None):
+
+    """
+    This function ...
+    :param sed:
+    :param label:
+    :param path:
+    :param title:
+    :return:
+    """
+
+    # Create a new SEDPlotter instance
+    plotter = SEDPlotter()
+
+    # Determine label
+    if label is None:
+        if isinstance(sed, ObservedSED): label = "observation"
+        elif isinstance(sed, SED): label = "model"
+        else: raise ValueError("Invalid SED object")
+
+    # Add the SED
+    plotter.add_sed(sed, label)
+
+    # Make the plot
+    plotter.run(title=title, output=path)
+
+# -----------------------------------------------------------------
+
 class SEDPlotter(Configurable):
     
     """
