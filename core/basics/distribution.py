@@ -751,13 +751,14 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot_smooth(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
+    def plot_smooth(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None, npoints=200):
 
         """
         This function ...
         :param title:
         :param path:
         :param logscale:
+        :param xlogscale:
         :param x_limits:
         :param y_limits:
         :param npoints:
@@ -829,6 +830,7 @@ class Distribution(object):
         sp1.set_ylabel('Probability', color='red')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')
+        if xlogscale: sp1.set_xscale("log")
 
         plt.tight_layout()
         plt.grid(alpha=0.8)
@@ -838,7 +840,7 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None,
+    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None,
              add_extrema=False, model=None):
 
         """
@@ -846,6 +848,7 @@ class Distribution(object):
         :param title:
         :param path:
         :param logscale:
+        :param xlogscale:
         :param x_limits:
         :param y_limits:
         :param add_smooth:
@@ -933,6 +936,7 @@ class Distribution(object):
         sp1.set_ylabel('Probability')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')
+        if xlogscale: sp1.set_xscale("log")
 
         plt.tight_layout()
         #plt.grid(alpha=0.8)

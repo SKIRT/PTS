@@ -25,6 +25,7 @@ from ...core.basics.curve import FilterCurve
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import time
 from ...core.tools import sequences
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -1167,6 +1168,18 @@ class ChiSquaredTable(SmartTable):
 
         # Replace the column
         self["Chi squared"] = new_column
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Distribution.from_values(self["Chi squared"])
 
 # -----------------------------------------------------------------
 

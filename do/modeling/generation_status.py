@@ -19,6 +19,8 @@ from pts.core.basics.distribution import Distribution
 from pts.core.tools import formatting as fmt
 from pts.core.tools import strings
 from pts.core.tools.stringify import tostr
+from pts.core.simulation.remote import SKIRTRemote
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -38,7 +40,7 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 # Generations to remove
 definition.add_required("generation", "string", "generation name")
 
-# Extra
+# Plotting
 definition.add_flag("plot_runtimes", "plot runtimes")
 definition.add_flag("plot_memory", "plot memory usage")
 definition.add_flag("plot_chisquared", "plot chi squared")
@@ -98,20 +100,55 @@ intermediate_times = []
 
 # -----------------------------------------------------------------
 
+total_memories = []
+setup_memories = []
+stellar_memories = []
+spectra_memories = []
+dust_memories = []
+writing_memories = []
+
+# -----------------------------------------------------------------
+
+# Inform the user
+log.info("Loading the remotes ...")
+
+# Create the remote instances
+remotes = dict()
+for host_id in generation.host_ids: remotes[host_id] = SKIRTRemote(host_id=host_id)
+
+# -----------------------------------------------------------------
+
+# Get screen states
+states = dict()
+for host_id in remotes: states[host_id] = remotes[host_id].screen_states()
+
+# -----------------------------------------------------------------
+
 # Get the simulations
 for simulation in generation.simulations:
 
+    # Get simlation name and host ID
     simulation_name = simulation.name
+    host_id = simulation.host_id
 
+    # Already analysed
     if simulation.analysed:
 
         # Get chi squared
         chisq = chi_squared.chi_squared_for(simulation_name)
         ndecimal = 1
         ndigits = 7
-        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" "))
+        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + fmt.reset)
 
-    else: print(" - " + fmt.red + simulation_name + fmt.reset)
+    elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+    else:
+
+        # Not yet retrieved, what is the status?
+        simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+
+        # Show
+        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + ": " + simulation_status + fmt.reset)
+        else: print(" - " + fmt.red + simulation_name + ": " + simulation_status + fmt.reset)
 
     # Get timing
     if timing.has_simulation(simulation_name):
@@ -141,11 +178,34 @@ for simulation in generation.simulations:
         communication_times.append(communication_time)
         intermediate_times.append(intermediate_time)
 
+    # Get memory
+    if memory.has_simulation(simulation_name):
+
+        # parameters = memory.ski_parameters_for_simulation(simulation_name, which="all")
+        # print(parameters)
+
+        # Get memory info
+        total_memory = memory.total_memory_for_simulation(simulation_name)
+        setup_memory = memory.setup_memory_for_simulation(simulation_name)
+        stellar_memory = memory.stellar_memory_for_simulation(simulation_name)
+        spectra_memory = memory.spectra_memory_for_simulation(simulation_name)
+        dust_memory = memory.dust_memory_for_simulation(simulation_name)
+        writing_memory = memory.writing_memory_for_simulation(simulation_name)
+
+        # Add memory info
+        total_memories.append(total_memory)
+        setup_memories.append(setup_memory)
+        stellar_memories.append(stellar_memory)
+        spectra_memories.append(spectra_memory)
+        dust_memories.append(dust_memory)
+        writing_memories.append(writing_memory)
+
 # -----------------------------------------------------------------
 
 # Plot?
 if config.plot_runtimes:
 
+    # Create distributions
     total = Distribution.from_values(total_times, unit="min")
     setup = Distribution.from_values(setup_times, unit="min")
     stellar = Distribution.from_values(stellar_times, unit="min")
@@ -156,6 +216,7 @@ if config.plot_runtimes:
     communication = Distribution.from_values(communication_times, unit="min")
     intermediate = Distribution.from_values(intermediate_times, unit="min")
 
+    # Plot
     total.plot(title="Total")
     setup.plot(title="Setup")
     stellar.plot(title="Stellar")
@@ -165,5 +226,31 @@ if config.plot_runtimes:
     waiting.plot(title="Waiting")
     communication.plot(title="Communication")
     intermediate.plot(title="Intermediate")
+
+# -----------------------------------------------------------------
+
+# Plot?
+if config.plot_memory:
+
+    # Create distributions
+    total = Distribution.from_values(total_memories, unit="GB")
+    setup = Distribution.from_values(setup_memories, unit="GB")
+    stellar = Distribution.from_values(stellar_memories, unit="GB")
+    spectra = Distribution.from_values(spectra_memories, unit="GB")
+    dust = Distribution.from_values(dust_memories, unit="GB")
+    writing = Distribution.from_values(writing_memories, unit="GB")
+
+    # Plot
+    total.plot(title="Total")
+    setup.plot(title="Setup")
+    stellar.plot(title="Stellar")
+    spectra.plot(title="Spectra")
+    dust.plot(title="Dust")
+    writing.plot(title="Writing")
+
+# -----------------------------------------------------------------
+
+# Plot chi squared?
+if config.plot_chisquared: chi_squared.distribution.plot(title="Chi squared values", xlogscale=True)
 
 # -----------------------------------------------------------------

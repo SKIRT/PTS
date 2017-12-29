@@ -1799,6 +1799,36 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    def iterate_simulations(self, invalid="ignore", add_path=False):
+
+        """
+        This function ...
+        :param invalid:
+        :param add_path:
+        :return:
+        """
+
+        from ..basics.configuration import prompt_proceed
+
+        # Loop over the simulation files
+        for path in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
+
+            # Open the simulation file
+            try: simulation = RemoteSimulation.from_file(path)
+            except EOFError:
+
+                log.error("The simulation file '" + path + "' is not readable: perhaps serialization has failed")
+                remove = prompt_proceed("remove the simulation file?")
+                if remove: fs.remove_file(path)
+                log.error("Skipping this simulation ...")
+                continue
+
+            # Yield the simulation
+            if add_path: yield simulation, path
+            else: yield simulation
+
+    # -----------------------------------------------------------------
+
     def get_status(self):
 
         """
@@ -1806,83 +1836,105 @@ class SKIRTRemote(Remote):
         :return:
         """
 
-        from ..basics.configuration import prompt_proceed
-
         # Initialize a list to contain the statuses
         entries = []
 
-        # If the remote host does not use a scheduling system
-        if not self.scheduler:
-
-            # Get state of screen sessions
-            states = self.screen_states()
-
-            # Search for simulation files in the local SKIRT run/host_id directory
-            for path in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
-
-                # Open the simulation file
-                try: simulation = RemoteSimulation.from_file(path)
-                except EOFError:
-                    log.error("The simulation file '" + path + "' is not readable: perhaps serialization has failed")
-                    remove = prompt_proceed("remove the simulation file?")
-                    if remove: fs.remove_file(path)
-                    log.error("Skipping this simulation ...")
-                    continue
-
-                # Check whether the handle is defined
-                if simulation.handle is None:
-
-                    # Warning to get attention
-                    log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + self.host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
-                    entries.append((path, "running"))
-
-                # Handle is defined
-                else:
-
-                    # Get the status
-                    simulation_status = self._get_simulation_status_not_scheduler(simulation, screen_states=states)
-
-                    # Add the simulation properties to the list
-                    entries.append((path, simulation_status))
+        # Initialize extra arguments
+        jobs_status = None
+        session = None
+        states = None
 
         # If the remote has a scheduling system for launching jobs
-        else:
+        if self.scheduler:
 
             # Get the status of the jobs
             jobs_status = self.get_jobs_status()
 
             # Start a remote python session
-            if self.has_pts:
-
-                # Start python session
-                session = self.start_python_session(assume_pts=True)
-
-                # Import statements
-                session.import_package("SimulationQueue", from_name="pts.core.remote.queue")
-
-                # Load all simulation queues
-                for path, name in session.files_in_path(self.pts_run_path, extension="queue", returns=["path", "name"]):
-
-                    # Load the queue
-                    session.define_simple_variable("queue__" + name, "SimulationQueue.from_file('" + path + "'")
-
-            # Do not open a session
+            if self.has_pts: session = self.load_queues_in_session()
             else: session = None
 
-            # Search for simulation files in the SKIRT run directory
-            for path, name in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns=["path", "name"]):
+        # If the remote host does not use a scheduling system
+        else: states = self.screen_states() # Get state of screen sessions
 
-                # Open the simulation file
-                simulation = RemoteSimulation.from_file(path)
+        # Loop over the simulations for this remote host
+        for simulation, path in self.iterate_simulations(add_path=True):
 
-                # Get the status
-                simulation_status = self._get_simulation_status_scheduler(simulation, jobs_status, session)
+            # Get the status of the simulation
+            simulation_status = self.get_simulation_status(simulation, screen_states=states, jobs_status=jobs_status, session=session)
 
-                # Add the simulation properties to the list
-                entries.append((path, simulation_status))
+            # Add the simulation properties to the list
+            entries.append((path, simulation_status))
 
         # Return the list of simulation properties
         return entries
+
+    # -----------------------------------------------------------------
+
+    def load_queues_in_session(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Start python session
+        session = self.start_python_session(assume_pts=True)
+
+        # Import statements
+        session.import_package("SimulationQueue", from_name="pts.core.remote.queue")
+
+        # Load all simulation queues
+        for path, name in session.files_in_path(self.pts_run_path, extension="queue", returns=["path", "name"]):
+
+            # Load the queue
+            session.define_simple_variable("queue__" + name, "SimulationQueue.from_file('" + path + "'")
+
+        # Return the session
+        return session
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_status(self, simulation, screen_states=None, jobs_status=None, session=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param screen_states:
+        :param jobs_status:
+        :param session:
+        :return:
+        """
+
+        # Uses scheduler?
+        if self.scheduler:
+
+            # Check jobs status
+            if jobs_status is None: jobs_status = self.get_jobs_status()
+
+            # Check session
+            if session is None:
+                if self.has_pts: session = self.load_queues_in_session()
+                else: session = None
+
+            # Get the status
+            simulation_status = self._get_simulation_status_scheduler(simulation, jobs_status, session)
+
+        # Doesn't use scheduler
+        else:
+
+            # Check whether the handle is defined
+            if simulation.handle is None:
+
+                # Warning to get attention
+                log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + self.host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
+                simulation_status = "running"
+
+            # Handle is defined
+            else: simulation_status = self._get_simulation_status_not_scheduler(simulation, screen_states=screen_states)
+
+        # Return the status
+        return simulation_status
 
     # -----------------------------------------------------------------
 
