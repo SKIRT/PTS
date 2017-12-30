@@ -1172,7 +1172,9 @@ def dictionary(argument):
 
     if argument == "": return dict()
     else:
-        d = eval("{" + argument + "}")
+        eval_string = "{" + argument + "}"
+        #print(eval_string)
+        d = eval(eval_string)
         if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
         return d
 

@@ -293,7 +293,21 @@ class newDistribution(Curve):
         """
 
         widths = []
-        for i in range(len(self.edges) - 1): widths.append(self.edges[i+1] - self.edges[i])
+        for i in range(self.nedges - 1): widths.append(self.edges[i+1] - self.edges[i])
+        return widths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bin_widths_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        widths = []
+        for i in range(self.nedges - 1): widths.append(self.edges_log[i+1] - self.edges[i])
         return widths
 
     # -----------------------------------------------------------------
@@ -306,17 +320,29 @@ class newDistribution(Curve):
         :return:
         """
 
-        widths = self.bin_widths
-
         # Check
-        if not all_close(widths): raise RuntimeError("Bin widths not equal")
+        if not all_close(self.bin_widths): raise RuntimeError("Bin widths not equal")
 
         # Calculate width
         width = (self.max_value - self.min_value) / self.nbins
-        assert np.isclose(width, widths[0])
+        assert np.isclose(width, self.bin_widths[0])
 
         # Return
         return width
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bin_width_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check
+        #if not all_close(self.bin_widths_log): raise RuntimeError("Bin widths in log space not equal")
+        pass
 
     # -----------------------------------------------------------------
 
@@ -506,6 +532,90 @@ class newDistribution(Curve):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nedges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.edges)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edges[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def second_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edges[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edges[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def second_last_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edges[-2]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.first_edge
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_edge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.last_edge
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def edges_log(self):
 
@@ -543,108 +653,75 @@ class newDistribution(Curve):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
-             add_smooth=False, format=None, add_extrema=False, model=None):
+    @property
+    def first_edge_log(self):
 
         """
         This function ...
-        :param title:
-        :param path:
-        :param logscale:
-        :param xlogscale:
-        :param x_limits:
-        :param y_limits:
-        :param add_smooth:
-        :param format:
-        :param add_extrema:
-        :param model:
         :return:
         """
 
-        # Create a canvas to place the subgraphs
-        figure = plt.figure()
-        rect = figure.patch
-        rect.set_facecolor('white')
+        return self.edges_log[0]
 
-        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
-        #sp1 = canvas.add_subplot(111)
-        sp1 = figure.gca()
+    # -----------------------------------------------------------------
 
-        #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
+    @property
+    def second_edge_log(self):
 
-        sp1.bar(self.edges[:-1], self.frequencies, linewidth=0, width=self.bin_widths, alpha=0.5)
+        """
+        This function ...
+        :return:
+        """
 
-        # Determine the x limits
-        if x_limits is None:
-            x_min = self.min_value
-            x_max = self.max_value
-        else:
-            x_min = x_limits[0]
-            x_max = x_limits[1]
+        return self.edges_log[1]
 
-        # Determine the y limits
-        if y_limits is None:
-            y_min = 0. if not logscale else 0.5 * self.min_frequency_nonzero
-            y_max = 1.1 * self.max_frequency if not logscale else 2. * self.max_frequency
-        else:
-            y_min = y_limits[0]
-            y_max = y_limits[1]
+    # -----------------------------------------------------------------
 
-        # Set the axis limits
-        sp1.set_xlim(x_min, x_max)
-        sp1.set_ylim(y_min, y_max)
+    @property
+    def last_edge_log(self):
 
-        # Add smooth
-        #if add_smooth:
-        #    if logscale:
-        #        x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
-        #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-        #    else:
-        #        x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
-        #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+        """
+        Thisn function ...
+        :return:
+        """
 
-        #if add_extrema:
-        #    x, y = self.local_maxima
-        #    sp1.plot(x, y, 'g^')
-        #    x, y = self.local_minima
-        #    sp1.plot(x, y, 'rv')
+        return self.edges_log[-1]
 
-        #if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
+    # -----------------------------------------------------------------
 
-        #print(self.mean, self.median, self.most_frequent)
-        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
-        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
-        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
-        plt.legend()
+    @property
+    def second_last_edge_log(self):
 
-        # Colorcode the tick tabs
-        #sp1.tick_params(axis='x', colors='red')
-        #sp1.tick_params(axis='y', colors='red')
+        """
+        Thisn function ...
+        :return:
+        """
 
-        # Colorcode the spine of the graph
-        #sp1.spines['bottom'].set_color('r')
-        #sp1.spines['top'].set_color('r')
-        #sp1.spines['left'].set_color('r')
-        #sp1.spines['right'].set_color('r')
+        return self.edges_log[-2]
 
-        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
-        else: xlabel = "Values"
+    # -----------------------------------------------------------------
 
-        # Put the title and labels
-        if title is not None: sp1.set_title(strings.split_in_lines(title))
-        sp1.set_xlabel(xlabel)
-        sp1.set_ylabel('Probability')
+    @property
+    def min_edge_log(self):
 
-        if logscale: sp1.set_yscale("log", nonposx='clip')
-        if xlogscale: sp1.set_xscale("log")
+        """
+        This function ...
+        :return:
+        """
 
-        plt.tight_layout()
-        #plt.grid(alpha=0.8)
+        return self.first_edge_log
 
-        if path is None: plt.show()
-        else: figure.savefig(path, format=format)
+    # -----------------------------------------------------------------
 
-        plt.close()
+    @property
+    def max_edge_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.last_edge_log
 
 # -----------------------------------------------------------------
 

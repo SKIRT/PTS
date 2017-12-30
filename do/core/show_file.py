@@ -22,6 +22,7 @@ from pts.core.data.sed import load_sed
 from pts.core.basics.composite import load_composite
 from pts.core.basics.distribution import newDistribution
 from pts.core.plot.sed import plot_sed
+from pts.core.plot.distribution import plot_distribution
 
 # -----------------------------------------------------------------
 
@@ -44,6 +45,7 @@ definition.add_flag("interactive", "display tables interactively", False)
 definition.add_optional("sort", "string", "sort the entries on this column")
 definition.add_flag("plot", "make a plot")
 definition.add_optional("plot_path", "string", "plot output path")
+definition.add_optional("plotting", "dictionary", "plotting options", dict())
 config = parse_arguments("show_file", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
@@ -162,13 +164,14 @@ def show_structure(structure, filetype):
 
 # -----------------------------------------------------------------
 
-def plot_structure(structure, filetype, filepath=None):
+def plot_structure(structure, filetype, filepath=None, **kwargs):
 
     """
     This function ...
     :param structure:
     :param filetype:
     :param filepath:
+    :param kwargs:
     :return:
     """
 
@@ -185,7 +188,7 @@ def plot_structure(structure, filetype, filepath=None):
     elif filetype == sed: plot_sed(structure, path=filepath)
 
     # Distribution
-    elif filetype == distribution: structure.plot(path=filepath)
+    elif filetype == distribution: plot_distribution(structure, path=filepath, **kwargs)
 
     # Not recognized
     else: raise ValueError("Unrecognized filetype")
@@ -211,6 +214,6 @@ else: show_structure(structure, config.filetype)
 # -----------------------------------------------------------------
 
 # Plot
-if config.plot: plot_structure(structure, config.filetype)
+if config.plot: plot_structure(structure, config.filetype, **config.plotting)
 
 # -----------------------------------------------------------------

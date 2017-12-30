@@ -23,6 +23,144 @@ import matplotlib.gridspec as gridspec
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ...magic.tools.plotting import line_styles, filled_markers, pretty_colours
+from ..tools import strings
+
+# -----------------------------------------------------------------
+
+def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
+                      y_limits=None, color="xkcd:sky blue", x_label="Values", y_label="Frequency"):
+
+    """
+    This function ...
+    :param distribution:
+    :param path:
+    :param logscale:
+    :param logfrequency:
+    :param title:
+    :param x_limits:
+    :param y_limits:
+    :param color:
+    :param x_label:
+    :param y_label:
+    :return:
+    """
+
+    #def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
+    #         add_smooth=False, format=None, add_extrema=False, model=None):
+
+    # Create a canvas to place the subgraphs
+    figure = plt.figure()
+    rect = figure.patch
+    rect.set_facecolor('white')
+
+    #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+    #sp1 = canvas.add_subplot(111)
+    sp1 = figure.gca()
+
+    #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
+
+    #print(distribution.values)
+    #print(distribution.edges_log)
+    #print(distribution.edges)
+    #print(distribution.frequencies)
+
+    alpha = None
+    edgecolor = "black"
+    linewidth = 1
+
+    edgecolor_list = [edgecolor for _ in range(distribution.nvalues)]
+    linewidth_list = [linewidth for _ in range(distribution.nvalues)]
+
+    if logscale: sp1.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+    else: sp1.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+
+    #print("min", distribution.min_value)
+    #print("max", distribution.max_value)
+
+    # Determine the x limits
+    if x_limits is None:
+        #x_min = distribution.min_value
+        #x_max = distribution.max_value
+        if logscale:
+            x_min = distribution.min_edge_log
+            x_max = distribution.max_edge_log
+        else:
+            x_min = distribution.min_edge
+            x_max = distribution.max_edge
+    else:
+        x_min = x_limits[0]
+        x_max = x_limits[1]
+
+    # Determine the y limits
+    if y_limits is None:
+        y_min = 0. if not logfrequency else 0.5 * distribution.min_frequency_nonzero
+        y_max = 1.1 * distribution.max_frequency if not logfrequency else 2. * distribution.max_frequency
+    else:
+        y_min = y_limits[0]
+        y_max = y_limits[1]
+
+    # Set the axis limits
+    sp1.set_xlim(x_min, x_max)
+    sp1.set_ylim(y_min, y_max)
+
+    # Add smooth
+    #if add_smooth:
+    #    if logscale:
+    #        x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
+    #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+    #    else:
+    #        x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
+    #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+
+    #if add_extrema:
+    #    x, y = self.local_maxima
+    #    sp1.plot(x, y, 'g^')
+    #    x, y = self.local_minima
+    #    sp1.plot(x, y, 'rv')
+
+    #if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
+
+    #if logscale: print("mean", distribution.geometric_mean)
+    #else: print("mean", distribution.mean)
+    #print("median", distribution.median)
+    #print("max", distribution.most_frequent)
+
+    #print(self.mean, self.median, self.most_frequent)
+    if logscale: mean_line = sp1.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
+    else: mean_line = sp1.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
+    median_line = sp1.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
+    max_line = sp1.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+    plt.legend()
+
+    # Colorcode the tick tabs
+    #sp1.tick_params(axis='x', colors='red')
+    #sp1.tick_params(axis='y', colors='red')
+
+    # Colorcode the spine of the graph
+    #sp1.spines['bottom'].set_color('r')
+    #sp1.spines['top'].set_color('r')
+    #sp1.spines['left'].set_color('r')
+    #sp1.spines['right'].set_color('r')
+
+    if distribution.unit is not None: xlabel = x_label + " [" + str(distribution.unit) + "]"
+    else: xlabel = x_label
+
+    # Put the title and labels
+    if title is not None: sp1.set_title(strings.split_in_lines(title))
+    sp1.set_xlabel(xlabel)
+    sp1.set_ylabel(y_label)
+
+    if logfrequency: sp1.set_yscale("log", nonposx='clip')
+    if logscale: sp1.set_xscale("log")
+
+    plt.tight_layout()
+    #plt.grid(alpha=0.8)
+
+    if path is None: plt.show()
+    else: figure.savefig(path, format=format)
+
+    # Close the figure
+    plt.close()
 
 # -----------------------------------------------------------------
 
@@ -222,7 +360,7 @@ class DistributionPlotter(object):
             distribution = self.distributions[label]
 
             # Plot the distribution as a histogram
-            plt.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=next(colors))
+            plt.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=next(colors), align="edge")
 
             min_value = distribution.min_value
             max_value = distribution.max_value
@@ -400,14 +538,14 @@ class DistributionGridPlotter(object):
             distribution = self.distributions[label]
 
             # Plot the distribution as a histogram
-            ax.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=pretty_colours[0])
+            ax.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=pretty_colours[0], align="edge")
 
             if label in self.extra_distributions:
 
                 extra_distribution = self.extra_distributions[label]
 
                 # Plot the distribution as a histogram
-                ax.bar(extra_distribution.edges[:-1], extra_distribution.counts, linewidth=0, width=extra_distribution.bin_width, alpha=0.5, color=pretty_colours[1])
+                ax.bar(extra_distribution.edges[:-1], extra_distribution.counts, linewidth=0, width=extra_distribution.bin_width, alpha=0.5, color=pretty_colours[1], align="edge")
 
             counter += 1
 
