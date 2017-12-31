@@ -416,7 +416,7 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
                 # Get the runtimes
                 runtimes = self.runtimes[host_id][packages, parallelization]
 
-                distribution = Distribution.from_values(runtimes, bins)
+                distribution = Distribution.from_values("Runtime", runtimes, nbins=bins)
 
                 path = fs.join(self.plot_analysis_path, "runtimes_" + host_id + "_" + str(parallelization) + "_" + str(packages) + ".pdf")
                 title = host_id + " " + str(parallelization) + " " + str(packages)

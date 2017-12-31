@@ -411,8 +411,8 @@ class ExactApertureNoiseCalculator(Configurable):
         random_r_list = adj_semimin_pix + np.abs(np.random.normal(loc=0.0, scale=5.0 * adj_semimaj_pix_full, size=random_size))
 
         # Distribution of radii
-        initial_r_distribution = Distribution.from_values(random_r_list)
-        initial_theta_distribution = Distribution.from_values(random_theta_list)
+        initial_r_distribution = Distribution.from_values("Radius", random_r_list)
+        initial_theta_distribution = Distribution.from_values("Angle", random_theta_list)
 
         # Locate contiguous map regions
         log.debug('Pruning: Locating contiguous coverage regions')
@@ -452,8 +452,8 @@ class ExactApertureNoiseCalculator(Configurable):
         random_r_list = random_r_list[random_r_coverage]
         random_theta_list = random_theta_list[random_r_coverage]
 
-        final_r_distributution = Distribution.from_values(random_r_list)
-        final_theta_distribution = Distribution.from_values(random_theta_list)
+        final_r_distributution = Distribution.from_values("Radius", random_r_list)
+        final_theta_distribution = Distribution.from_values("Angle", random_theta_list)
 
         plotter = DistributionPlotter()
         plotter.add_distribution(initial_r_distribution, "initial r")

@@ -1179,7 +1179,7 @@ class ChiSquaredTable(SmartTable):
         :return:
         """
 
-        return Distribution.from_values(self["Chi squared"])
+        return Distribution.from_values("Chi squared", self["Chi squared"])
 
 # -----------------------------------------------------------------
 

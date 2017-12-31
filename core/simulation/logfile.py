@@ -750,7 +750,7 @@ class LogFile(object):
                     level += 1
 
                 # This level does not exist anymore in the tree, return the result as a distribution
-                else: return Distribution.from_probabilities(counts, levels)
+                else: return Distribution.from_counts("Number of cells", counts, levels)
 
         # If the tree leaf distribution could not be determined, return None
         return None

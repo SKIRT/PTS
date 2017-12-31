@@ -111,7 +111,7 @@ class DistributionsPLotter(FittingPlottingComponent):
                     continue
 
                 # Create a distribution from the list of parameter values
-                distribution = Distribution.from_values(parameters_table[label])
+                distribution = Distribution.from_values("Parameter value", parameters_table[label])
 
                 # Add the distribution to the dictionary
                 distributions_dict[label] = distribution

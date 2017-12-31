@@ -83,7 +83,7 @@ class DistributionAnimation(Animation):
         self.values.append(value)
 
         # Create the new (normalized) distribution
-        new_distribution = Distribution.from_values(self.values)
+        new_distribution = Distribution.from_values(self.variable_name, self.values)
         new_distribution.normalize(1.0, method="max")
         buf = io.BytesIO()
 

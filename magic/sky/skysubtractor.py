@@ -1295,8 +1295,8 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Removing aperture outliers ...")
 
-        #means_distribution = Distribution.from_values(aperture_means, bins=50)
-        #stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
+        #means_distribution = Distribution.from_values("Mean aperture", aperture_means, nbins=50)
+        #stddevs_distribution = Distribution.from_values("Stddev aperture", aperture_stddevs, nbins=50)
 
         #means_distribution.plot("Aperture means before sigma-clipping")
         #stddevs_distribution.plot("Aperture stddevs before sigma-clipping")
@@ -1317,8 +1317,8 @@ class SkySubtractor(Configurable):
         clipped_aperture_masks = []
         for index in indices: clipped_aperture_masks.append(aperture_masks[index])
 
-        #means_distribution = Distribution.from_values(aperture_means, bins=50)
-        #stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
+        #means_distribution = Distribution.from_values("Mean aperture", aperture_means, nbins=50)
+        #stddevs_distribution = Distribution.from_values("Stddev aperture", aperture_stddevs, nbins=50)
 
         #means_distribution.plot("Aperture means after sigma-clipping")
         #stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
@@ -2620,7 +2620,7 @@ class SkySubtractor(Configurable):
         original_1d = self.frame_masked_array.compressed()
 
         # Create distribution of original pixel values
-        original = Distribution.from_values(original_1d)
+        original = Distribution.from_values("Pixel values", original_1d)
 
         # Set distribution
         self.distributions.original = original
@@ -2641,7 +2641,7 @@ class SkySubtractor(Configurable):
         not_clipped_1d = self.not_clipped_masked_array.compressed()
 
         # Create distribution of pixel values
-        not_clipped = Distribution.from_values(not_clipped_1d)
+        not_clipped = Distribution.from_values("Pixel values", not_clipped_1d)
 
         # Set distribution
         self.distributions.not_clipped = not_clipped
@@ -2659,7 +2659,7 @@ class SkySubtractor(Configurable):
         log.info("Creating distribution of subtracted pixel values ...")
 
         # Create distribution of subtracted pixel values
-        subtracted = Distribution.from_values(self.subtracted_values)
+        subtracted = Distribution.from_values("Pixel values", self.subtracted_values)
 
         # Set distribution
         self.distributions.subtracted = subtracted

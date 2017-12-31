@@ -490,7 +490,7 @@ class ColourAnalyser(ColourAnalysisComponent):
                 continue
 
             # Create distribution
-            distribution = Distribution.from_values(values, bins=self.config.nbins)
+            distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
 
             # Add the distribution
             self.residual_distributions[colour_name] = distribution

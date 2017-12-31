@@ -32,7 +32,7 @@ from .curve import Curve
 
 # -----------------------------------------------------------------
 
-class newDistribution(Curve):
+class Distribution(Curve):
 
     """
     This class ...
@@ -51,43 +51,93 @@ class newDistribution(Curve):
 
         if not from_astropy:
 
-            # Get unit
+            # Get x properties
             name = kwargs.pop("name")
             unit = kwargs.pop("unit", None)
             description = kwargs.pop("description", None)
 
-            x_unit = unit
-            #y_unit = None
-            x_name = name
-            y_name = "Frequency"
-            x_description = description
-            #y_description = description
+            # Get y properties
+            y_name = kwargs.pop("y_name", "Frequency")
+            y_description = kwargs.pop("y_description", None)
 
+            # Set x properties
+            x_unit = unit
+            x_name = name
+            x_description = description
+
+            # Add settings to dict
             kwargs["x_unit"] = x_unit
-            #kwargs["y_unit"] = y_unit
             kwargs["x_name"] = x_name
             kwargs["y_name"] = y_name
             kwargs["x_description"] = x_description
-            #kwargs["y_description"] = y_description
+            kwargs["y_description"] = y_description
 
         # Call the constructor of the base class
-        super(newDistribution, self).__init__(*args, **kwargs)
+        super(Distribution, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_columns(cls, name, values, frequencies):
+    def from_values(cls, name, values, nbins=20, weights=None, unit=None, logarithmic=False, density=True):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param bins:
+        :param weights:
+        :param unit:
+        :param logarithmic:
+        :param density:
+        :return:
+        """
+
+        from ..tools import sequences
+        from ..tools import numbers
+
+        # Check whether has units
+        if sequences.have_units(values):
+            if unit is not None: values = sequences.without_units(values, unit=unit)
+            else:
+                unit = sequences.get_unit(values)
+                values = sequences.without_units(values)
+
+        # Create histogram
+        if logarithmic:
+            logvalues = np.log10(np.array(values))
+            counts, edges = np.histogram(logvalues, bins=nbins, density=density, weights=weights)
+            edges = 10**edges
+        else: counts, edges = np.histogram(values, bins=nbins, density=density, weights=weights)
+
+        # Determine the centers
+        centers = []
+        nedges = len(edges)
+        for i in range(nedges - 1):
+            if logarithmic: center = numbers.geometric_mean(edges[i], edges[i+1])
+            else: center = numbers.arithmetic_mean(edges[i], edges[i+1])
+            centers.append(center)
+
+        # Create and return
+        if density: return cls.from_probabilities(name, counts, centers, unit=unit)
+        else: return cls.from_counts(name, counts, centers, unit=unit)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_columns(cls, name, values, frequencies, y_name="Frequency", unit=None):
 
         """
         This function ...
         :param name:
         :param values:
         :param frequencies:
+        :param y_name:
+        :param unit:
         :return:
         """
 
         # Create distribution
-        distr = cls(name=name)
+        distr = cls(name=name, y_name=y_name, unit=unit)
 
         # Check if sorted
         from ..tools import sequences
@@ -95,7 +145,7 @@ class newDistribution(Curve):
 
         # Set data
         distr[name] = np.array(values)
-        distr["Frequency"] = np.array(frequencies)
+        distr[y_name] = np.array(frequencies)
 
         # Return the distribution
         return distr
@@ -103,26 +153,59 @@ class newDistribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_old_file(cls, path):
+    def from_probabilities(cls, name, probabilities, values, unit=None):
 
         """
         This function ...
-        :param path:
+        :param probabilities:
+        :param values:
+        :param name:
+        :param unit:
         :return:
         """
 
-        # Read the table from file
-        fill_values = [('--', '0')]
-        table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
+        # Create
+        return cls.from_columns(name, values, probabilities, y_name="Probability", unit=unit)
 
-        parameter_name = table.colnames[0]
+    # -----------------------------------------------------------------
 
-        # Get values
-        values = table[parameter_name]
-        frequencies = np.array(table["Probability"])
+    @classmethod
+    def from_counts(cls, name, counts, values, unit=None):
 
-        # Return
-        return cls.from_columns(parameter_name, values, frequencies)
+        """
+        This function ...
+        :param name:
+        :param counts:
+        :param values:
+        :param unit:
+        :return:
+        """
+
+        return cls.from_columns(name, values, counts, y_name="Counts", unit=unit)
+
+    # -----------------------------------------------------------------
+
+    # @classmethod
+    # def from_old_file(cls, path):
+    #
+    #     """
+    #     This function ...
+    #     :param path:
+    #     :return:
+    #     """
+    #
+    #     # Read the table from file
+    #     fill_values = [('--', '0')]
+    #     table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
+    #
+    #     parameter_name = table.colnames[0]
+    #
+    #     # Get values
+    #     values = table[parameter_name]
+    #     frequencies = np.array(table["Probability"])
+    #
+    #     # Return
+    #     return cls.from_columns(parameter_name, values, frequencies)
 
     # -----------------------------------------------------------------
 
@@ -725,7 +808,7 @@ class newDistribution(Curve):
 
 # -----------------------------------------------------------------
 
-class Distribution(object):
+class oldDistribution(object):
     
     """
     This class ...

@@ -100,7 +100,7 @@ class RuntimeEstimator(object):
             log.debug("A total runtime was found for a total of " + str(len(previous_runtimes)) + " simulations that were run on the same remote host and with the same number of photon packages and parallelization")
 
             # Create a probability distribution from the recorded runtimes
-            distribution = Distribution.from_values(previous_runtimes, bins=25)
+            distribution = Distribution.from_values("Runtime", previous_runtimes, nbins=25)
 
             # If requested, plot the distribution
             if plot_path is not None:
@@ -128,7 +128,7 @@ class RuntimeEstimator(object):
                 log.debug("On the basis of " + str(len(estimated_runtimes)) + " previously run simulations with the same number of photon packages, " + str(len(estimated_runtimes)) + " runtimes could be estimated")
 
                 # Create a probability distribution from the estimated runtimes
-                distribution = Distribution.from_values(estimated_runtimes, bins=25)
+                distribution = Distribution.from_values("Runtime", estimated_runtimes, nbins=25)
 
                 # If requested, plot the distribution
                 if plot_path is not None:
@@ -150,7 +150,7 @@ class RuntimeEstimator(object):
                 if len(estimated_runtimes) != 0: #raise RuntimeError("The runtime could not be estimated: no reference with the same number of photon packages")
 
                     # Create the probability distribution of estimated runtimes
-                    distribution = Distribution.from_values(estimated_runtimes, bins=25)
+                    distribution = Distribution.from_values("Runtime", estimated_runtimes, nbins=25)
 
                     # If requested, plot the distribution
                     if plot_path is not None:
@@ -171,7 +171,7 @@ class RuntimeEstimator(object):
                     estimated_runtimes = self.estimated_runtimes_for_all_hosts_all_npackages(parameters, parallelization)
 
                     # Create the probability distribution of estimated runtimes
-                    distribution = Distribution.from_values(estimated_runtimes, bins=25)
+                    distribution = Distribution.from_values("Runtime", estimated_runtimes, nbins=25)
 
                     # If requested, plot the distribution
                     if plot_path is not None:

@@ -369,7 +369,7 @@ class SEDFitter(FittingComponent):
             normalized_probabilities = np.array(self.parameter_probabilities[label]["Probability"]) / sum(self.parameter_probabilities[label]["Probability"])
 
             # Create the probability distributions for the different parameters
-            self.distributions[label] = Distribution.from_probabilities(normalized_probabilities, self.parameter_probabilities[label]["Value"], label)
+            self.distributions[label] = Distribution.from_probabilities(label, normalized_probabilities, self.parameter_probabilities[label]["Value"])
 
     # -----------------------------------------------------------------
 

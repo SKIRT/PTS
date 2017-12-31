@@ -524,7 +524,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
             not_nan = Mask.is_nan(self.images[label]).inverse()
 
             # Create the distribution from the image pixel values
-            distribution = Distribution.from_values(self.images[label][not_nan].flatten() + self.sky_values[label])
+            distribution = Distribution.from_values("Pixel value", self.images[label][not_nan].flatten() + self.sky_values[label])
 
             # Create an array of all the pixels used for estimating the sky
             #notnan = np.logical_not(np.isnan(self.apertures))
@@ -533,7 +533,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
             sky_values = self.apertures[label][notnan]
 
             # Create the distribution of pixel values used for the sky estimation
-            sky_distribution = Distribution.from_values(sky_values)
+            sky_distribution = Distribution.from_values("Pixel value", sky_values)
 
             # Add the distributions
             plotter.add_distribution(distribution, label)
@@ -596,12 +596,12 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
             not_nan = Mask.is_nan(self.images[label]).inverse()
 
             # Create the distribution from the image pixel values
-            distribution = Distribution.from_values(self.images[label][not_nan].flatten())
+            distribution = Distribution.from_values("Pixel value", self.images[label][not_nan].flatten())
 
             not_nan = Mask.is_nan(self.errors[label]).inverse()
 
             # Create the distribution from the error values
-            error_distribution = Distribution.from_values(self.errors[label][not_nan].flatten())
+            error_distribution = Distribution.from_values("Error", self.errors[label][not_nan].flatten())
 
             # Add an entry to the distribution grid plotter
             plotter.add_distribution(distribution, label)
@@ -644,7 +644,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
             rel_errors = self.errors[label] / self.images[label]
 
             # Create a distribution from the relative errors
-            rel_error_distribution = Distribution.from_values(rel_errors)
+            rel_error_distribution = Distribution.from_values("Relative error", rel_errors)
 
             # Add the distribution to the plotter
             plotter.add_distribution(rel_error_distribution, label)

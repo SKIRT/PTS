@@ -326,7 +326,7 @@ class MapsAnalysisComponent(AnalysisComponent, MapMakerBase):
         values = np.delete(values, indices)
 
         # Create distribution
-        distribution = Distribution.from_values(values, bins=nbins)
+        distribution = Distribution.from_values("Residual", values, nbins=nbins)
 
         # Return the distribution
         return distribution

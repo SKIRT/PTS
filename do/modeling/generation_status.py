@@ -206,15 +206,15 @@ for simulation in generation.simulations:
 if config.plot_runtimes:
 
     # Create distributions
-    total = Distribution.from_values(total_times, unit="min")
-    setup = Distribution.from_values(setup_times, unit="min")
-    stellar = Distribution.from_values(stellar_times, unit="min")
-    spectra = Distribution.from_values(spectra_times, unit="min")
-    dust = Distribution.from_values(dust_times, unit="min")
-    writing = Distribution.from_values(writing_times, unit="min")
-    waiting = Distribution.from_values(waiting_times, unit="min")
-    communication = Distribution.from_values(communication_times, unit="min")
-    intermediate = Distribution.from_values(intermediate_times, unit="min")
+    total = Distribution.from_values("Runtime", total_times, unit="min")
+    setup = Distribution.from_values("Runtime", setup_times, unit="min")
+    stellar = Distribution.from_values("Runtime", stellar_times, unit="min")
+    spectra = Distribution.from_values("Runtime", spectra_times, unit="min")
+    dust = Distribution.from_values("Runtime", dust_times, unit="min")
+    writing = Distribution.from_values("Runtime", writing_times, unit="min")
+    waiting = Distribution.from_values("Runtime", waiting_times, unit="min")
+    communication = Distribution.from_values("Runtime", communication_times, unit="min")
+    intermediate = Distribution.from_values("Runtime", intermediate_times, unit="min")
 
     # Plot
     total.plot(title="Total")
@@ -233,12 +233,12 @@ if config.plot_runtimes:
 if config.plot_memory:
 
     # Create distributions
-    total = Distribution.from_values(total_memories, unit="GB")
-    setup = Distribution.from_values(setup_memories, unit="GB")
-    stellar = Distribution.from_values(stellar_memories, unit="GB")
-    spectra = Distribution.from_values(spectra_memories, unit="GB")
-    dust = Distribution.from_values(dust_memories, unit="GB")
-    writing = Distribution.from_values(writing_memories, unit="GB")
+    total = Distribution.from_values("Memory usage", total_memories, unit="GB")
+    setup = Distribution.from_values("Memory usage", setup_memories, unit="GB")
+    stellar = Distribution.from_values("Memory usage", stellar_memories, unit="GB")
+    spectra = Distribution.from_values("Memory usage", spectra_memories, unit="GB")
+    dust = Distribution.from_values("Memory usage", dust_memories, unit="GB")
+    writing = Distribution.from_values("Memory usage", writing_memories, unit="GB")
 
     # Plot
     total.plot(title="Total")

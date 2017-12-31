@@ -423,7 +423,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the distribution
-        self.distribution = Distribution.from_values(self.valid_heating_fractions, bins=20, weights=self.valid_cell_weights)
+        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions, nbins=20, weights=self.valid_cell_weights)
 
     # -----------------------------------------------------------------
 

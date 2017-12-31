@@ -72,6 +72,26 @@ class Curve(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the curve
+        curve = super(Curve, cls).from_file(path)
+
+        # Set x name and y name
+        curve.x_name = curve.column_info[0][0]
+        curve.y_name = curve.column_info[1][0]
+
+        # Return the curve
+        return curve
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_data_file(cls, path, x_name="x", x_description="x values", x_unit=None, y_name="y",
                        y_description="y values", y_unit=None, x_column=0, y_column=1, skiprows=0, conversion_info=None):
 

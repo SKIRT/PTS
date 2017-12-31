@@ -1228,7 +1228,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
                     continue
 
                 # Create distribution
-                distribution = Distribution.from_values(values, bins=self.config.nbins)
+                distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
 
             # Add the distribution
             self.residuals_distributions.append(fltr, distribution)
@@ -1270,7 +1270,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
                     continue
 
                 # Create distribution
-                distribution = Distribution.from_values(values, bins=self.config.nbins)
+                distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
 
             # Add the distribution
             self.weighed_distributions.append(fltr, distribution)
