@@ -1336,6 +1336,32 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def axvline(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.axvline(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def bar(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.bar(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
     def fill(self, *args, **kwargs):
 
         """
@@ -1792,8 +1818,7 @@ class MPLFigure(Figure):
 
         # Define hspace
         wspace = 0.0
-        if share_axis:
-            hspace = 0.0
+        if share_axis: hspace = 0.0
         else: hspace = 0.05
 
         # Make the grid
@@ -1838,6 +1863,7 @@ class MPLFigure(Figure):
             # Hide x axis
             #first_plot.hide_xticks()
 
+            # Add the first plot
             plots.append(first_plot)
 
             # Create next plots
@@ -1881,8 +1907,10 @@ class MPLFigure(Figure):
             if x_label is not None: raise ValueError("Cannot specify one x label when not sharing axis")
             #if x_scale is not None:
 
+            # Create plots
             for index in range(size):
 
+                # Get plot
                 plot = plt.subplot(gs[index])
 
                 if x_labels is not None:
@@ -1917,6 +1945,165 @@ class MPLFigure(Figure):
                     limits = y_limits[index]
                     plot.set_ylim(*limits)
 
+                # Add the plot
+                plots.append(MPLPlot(plot=plot))
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def create_row(self, size, share_axis=False, width_ratios=None, y_label=None, y_label_fontsize="small",
+                   y_labels=None, x_labels=None, x_label_fontsize="small", y_scale="linear", y_scales=None,
+                   x_scales=None, y_limits=None, x_limits=None, y_log_scalar=False, x_log_scalar=False):
+
+        """
+        This function ...
+        :param size:
+        :param share_axis:
+        :param width_ratios:
+        :param y_label:
+        :param y_label_fontsize:
+        :param y_labels:
+        :param x_labels:
+        :param x_label_fontsize:
+        :param y_scale:
+        :param y_scales:
+        :param x_scales:
+        :param y_limits:
+        :param x_limits:
+        :param y_log_scalar:
+        :param x_log_scalar:
+        :return:
+        """
+
+        # Define hspace
+        if share_axis: wspace = 0.0
+        else: wspace = 0.05
+
+        # Make the grid
+        gs = gridspec.GridSpec(1, size, width_ratios=width_ratios, wspace=wspace)
+
+        # Create the (sub)plots
+        plots = []
+        if share_axis:
+
+            if y_labels is not None: raise ValueError("Cannot specify different y labels when sharing axis")
+            if y_scales is not None: raise ValueError("Cannot specify different y scales when sharing axis")
+
+            first_mpl_plot = plt.subplot(gs[0])
+            first_plot = MPLPlot(plot=first_mpl_plot)
+
+            if x_labels is not None:
+                label = x_labels[0]
+                if label is not None: first_plot.set_xlabel(label, fontsize=x_label_fontsize)
+                else: first_plot.hide_xaxis()
+
+            if x_scales is not None:
+                scale = x_scales[0]
+                first_plot.set_xscale(scale)
+
+            # Scalar?
+            if y_log_scalar: first_plot.set_y_scalar()
+
+            # Set shared y scale
+            first_plot.set_yscale(y_scale)
+
+            # Set shared y label
+            # if y_label is not None: last_plot.set_ylabel(y_label, fontsize=y_label_fontsize)
+            if y_label is not None: first_plot.set_ylabel(y_label, fontsize=y_label_fontsize)
+
+            # Scalar?
+            if y_log_scalar: first_plot.set_y_scalar()
+
+            if y_limits is not None:
+                lower, upper = y_limits
+                first_plot.set_ylim(lower, upper)
+
+            if x_limits is not None:
+                limits = x_limits[0]
+                first_plot.set_xlim(*limits)
+
+            # Add the first plot
+            plots.append(first_plot)
+
+            # Create next plots
+            for index in range(1, size):
+
+                next_plot = plt.subplot(gs[index], sharey=first_mpl_plot)
+                next_plot = MPLPlot(plot=next_plot)
+
+                # Set x label
+                if x_labels is not None:
+                    label = x_labels[index]
+                    if label is not None: next_plot.set_xlabel(label, fontsize=x_label_fontsize)
+                    else: next_plot.hide_xaxis()
+
+                # Set x scale
+                if x_scales is not None:
+                    scale = x_scales[index]
+                    next_plot.set_xscale(scale)
+
+                # Scalar?
+                if x_log_scalar: next_plot.set_x_scalar()
+
+                # Set x limits
+                if x_limits is not None:
+                    limits = x_limits[index]
+                    next_plot.set_xlim(*limits)
+
+                # Add the next plot
+                plots.append(next_plot)
+
+            last_plot = plots[-1]
+
+            # Set shared y label
+            #if y_label is not None: last_plot.set_ylabel(y_label, fontsize=y_label_fontsize)
+
+        # Not sharing axis
+        else:
+
+            if y_label is not None: raise ValueError("Cannot specify one y label when not sharing axis")
+
+            # Create plots
+            for index in range(size):
+
+                # Get plot
+                plot = plt.subplot(gs[index])
+
+                if y_labels is not None:
+                    label = y_labels[index]
+                    if label is not None: plot.set_ylabel(label, fontsize=y_label_fontsize)
+                    else: plot.hide_yaxis()
+
+                if x_labels is not None:
+                    label = x_labels[index]
+                    if label is not None: plot.set_xlabel(label, fontsize=x_label_fontsize)
+                    else: plot.hide_xaxis()
+
+                if y_scales is not None:
+                    scale = y_scales[index]
+                    plot.set_yscale(scale)
+
+                # Scalar?
+                if y_log_scalar: plot.set_y_scalar()
+
+                if x_scales is not None:
+                    scale = x_scales[index]
+                    plot.set_xscale(scale)
+
+                # Scalar?
+                if x_log_scalar: plot.set_x_scalar()
+
+                if y_limits is not None:
+                    limits = y_limits[index]
+                    plot.set_ylim(*limits)
+
+                if x_limits is not None:
+                    limits = x_limits[index]
+                    plot.set_xlim(*limits)
+
+                # Add the plot
                 plots.append(MPLPlot(plot=plot))
 
         # Return the plots

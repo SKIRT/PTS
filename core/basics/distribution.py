@@ -222,6 +222,18 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
+    @property
+    def value_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x_name
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def values(self):
 
@@ -579,6 +591,221 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def local_maxima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_local_maxima(self.values, self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def local_minima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_local_minima(self.values, self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def smooth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        order = 2
+        s = InterpolatedUnivariateSpline(self.values, self.frequencies, k=order)
+
+        # Return the spline curve
+        return s
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def smooth_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        not_zero = self.frequencies != 0
+
+        centers = self.values[not_zero]
+        counts = self.frequencies[not_zero]
+
+        order = 2
+        s = InterpolatedUnivariateSpline(centers, np.log10(counts), k=order)
+
+        # Return the spline curve
+        return s
+
+    # -----------------------------------------------------------------
+
+    def smooth_values(self, x_min=None, x_max=None, npoints=200):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
+        :return:
+        """
+
+        if x_min is None: x_min = self.min_value
+        if x_max is None: x_max = self.max_value
+
+        x_smooth = np.linspace(x_min, x_max, npoints)
+
+        s = self.smooth
+        y_smooth = s(x_smooth)
+
+        # Return
+        return x_smooth, y_smooth
+
+    # -----------------------------------------------------------------
+
+    def smooth_values_log(self, x_min=None, x_max=None, npoints=200):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
+        :return:
+        """
+
+        if x_min is None: x_min = self.min_value
+        if x_max is None: x_max = self.max_value
+
+        x_smooth = np.linspace(x_min, x_max, npoints)
+
+        s = self.smooth_log
+        y_smooth_log = s(x_smooth)
+
+        # Return
+        return x_smooth, 10.**y_smooth_log
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def local_maxima_smooth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_smooth, y_smooth = self.smooth_values()
+        return get_local_maxima(x_smooth, y_smooth)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def local_minima_smooth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_smooth, y_smooth = self.smooth_values()
+        return get_local_minima(x_smooth, y_smooth)
+
+    # -----------------------------------------------------------------
+
+    def cumulative_smooth(self, x_min, x_max, npoints=200):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
+        :return:
+        """
+
+        if self._cum_smooth is None:
+
+            x_smooth, y_smooth = self.smooth_values(x_min, x_max, npoints)
+
+            # Set negative values to zero
+            y_smooth[y_smooth < 0.0] = 0.0
+
+            # Normalize y by calculating the integral
+            #total = simps(y_smooth, x_smooth)
+
+            # NO, by calculating the sum (why?)
+            total = np.sum(y_smooth)
+
+            # Now, y should be normalized within x_min:x_max
+            y_smooth /= total
+
+            # Return the cumulative distribution
+            #return x_smooth, np.cumsum(y_smooth)
+
+            self._cum_smooth = (x_smooth, np.cumsum(y_smooth))
+
+        return self._cum_smooth
+
+    # -----------------------------------------------------------------
+
+    def cumulative_log_smooth(self, x_min, x_max, npoints=200):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
+        :return:
+        """
+
+        x_smooth, y_smooth = self.smooth_values_log(x_min, x_max, npoints)
+
+        # Normalize y by calculating the integral
+        #total = simps(y_smooth, x_smooth)
+
+        # NO, by calculating the sum (why?)
+        total = np.sum(y_smooth)
+
+        # Now, y should be normalized within x_min:x_max
+        y_smooth /= total
+
+        # Return the cumulative distribution
+        return x_smooth, np.cumsum(y_smooth)
+
+    # -----------------------------------------------------------------
+
+    def random(self, x_min, x_max):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :return:
+        """
+
+        # Draw a random uniform variate between 0 and 1
+        uniform = np.random.uniform(low=0.0, high=1.0)
+
+        x, y_cumulative = self.cumulative_smooth(x_min, x_max)
+
+        from ..tools import nr
+        index = nr.locate_clip(y_cumulative, uniform)
+
+        return x[index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def edges(self):
 
         """
@@ -806,449 +1033,6 @@ class Distribution(Curve):
 
         return self.last_edge_log
 
-# -----------------------------------------------------------------
-
-class oldDistribution(object):
-    
-    """
-    This class ...
-    """
-    
-    def __init__(self, counts, edges, centers, mean, median, percentile_16, percentile_84, name=None, unit=None):
-        
-        """
-        The constructor ...
-        :param counts:
-        :param edges:
-        :param centers:
-        :param mean:
-        :param median:
-        :param unit:
-        """
-
-        # Set attributes
-        self.counts = counts
-        self.edges = edges
-        self.centers = np.array(centers)
-        self.mean = float(mean)
-        self.median = float(median)
-        self.percentile_16 = float(percentile_16) if percentile_16 is not None else None
-        self.percentile_84 = float(percentile_84) if percentile_84 is not None else None
-
-        # Set name
-        self.name = name
-
-        self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
-
-        # The unit
-        self.unit = unit
-
-        # The path
-        self.path = None
-
-    # -----------------------------------------------------------------
-
-    def __len__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.counts)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_probabilities(cls, probabilities, values, name=None):
-
-        """
-        This function ...
-        :param probabilities:
-        :param values:
-        :param name:
-        :return:
-        """
-
-        if isinstance(probabilities, list): probabilities = np.array(probabilities)
-        if isinstance(values, list): values = np.array(values)
-
-        # Calculate the mean value (weigh each value by its probability and calculate the normalized sum)
-        mean = np.sum(values * probabilities) / np.sum(probabilities)
-
-        # Calculate the edges
-        edges = [0]
-        for i in range(len(values) - 1):
-            edges.append(0.5 * (values[i] + values[i + 1]))
-        edges[0] = values[0] - (edges[1] - values[0])
-        edges.append(values[-1] + (values[-1] - edges[-1]))
-
-        # Calculate the 16, 50 and 84 percentiles
-        percentile_16, median, percentile_84 = find_percentiles(values, probabilities)
-
-        # Return a new Distribution instance
-        centers = values
-        return cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84, name)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_values(cls, values, bins=20, weights=None, unit=None):
-
-        """
-        This function ...
-        :param values:
-        :param bins:
-        :param weights:
-        :param unit:
-        :return:
-        """
-
-        from ..tools import sequences
-
-        # Check whether has units
-        if sequences.have_units(values):
-            if unit is not None: values = sequences.without_units(values, unit=unit)
-            else:
-                unit = sequences.get_unit(values)
-                values = sequences.without_units(values)
-
-        counts, edges = np.histogram(values, bins=bins, density=True, weights=weights)
-
-        centers = []
-        for i in range(len(edges) - 1): centers.append(0.5 * (edges[i] + edges[i + 1]))
-
-        mean = np.mean(values)
-        median = np.median(values)
-
-        percentile_16 = np.percentile(values, 15.86)
-        percentile_84 = np.percentile(values, 84.14)
-
-        return cls(counts, edges, centers, mean, median, percentile_16, percentile_84, unit=unit)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path, logarithmic=False):
-
-        """
-        This function ...
-        :param path:
-        :param logarithmic:
-        :return:
-        """
-
-        from ..tools import numbers
-
-        # Read the table from file
-        fill_values = [('--', '0')]
-        table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
-
-        parameter_name = table.colnames[0]
-
-        # Get values
-        values = table[parameter_name]
-        probabilities = np.array(table["Probability"])
-
-        # Calculate mean value
-        #mean = np.sum(values * probabilities) / np.sum(probabilities)
-        #geometric = numbers.geometric_mean()
-        mean = numbers.weighed_arithmetic_mean(values, probabilities)
-        #geometric =
-
-        edges = [0]
-
-        for i in range(len(values) - 1):
-            edges.append(0.5 * (values[i] + values[i + 1]))
-
-        edges[0] = values[0] - (edges[1] - values[0])
-        edges.append(values[-1] + (values[-1] - edges[-1]))
-
-        centers = values
-
-        median = table.meta["median"]
-        percentile_16 = table.meta["percentile16"]
-        percentile_84 = table.meta["percentile84"]
-
-        distribution = cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
-
-        # Set the path
-        distribution.path = path
-
-        # Return the distribution
-        return distribution
-
-    # -----------------------------------------------------------------
-
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether the path is valid
-        if self.path is None: raise RuntimeError("Path is not defined")
-
-        # Save
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
-    def as_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.name is None:
-            warnings.warn("Name of the parameter of the distribution is not defined")
-            name = "Parameter"
-        else: name = self.name
-
-        data = [self.centers, self.counts]
-        names = [name, "Probability"]
-        meta = {"mean": self.mean, "median": self.median, "percentile16": self.percentile_16,
-                "percentile84": self.percentile_84}
-
-        table = Table(data=data, names=names, meta=meta, masked=True)
-        return table
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Get table
-        table = self.as_table()
-
-        # Save the table
-        table.write(path, format="ascii.ecsv")
-
-        # Update the path
-        self.path = path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.centers)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bin_widths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        widths = []
-        for i in range(len(self.edges) - 1):
-            widths.append(self.edges[i+1] - self.edges[i])
-        return widths
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bin_width(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        widths = self.bin_widths
-
-        if not all_close(widths):
-
-            print(widths)
-            raise RuntimeError("Bin widths not equal")
-
-        width = (self.max_value - self.min_value) / self.bins
-
-        assert np.isclose(width, widths[0])
-
-        return width
-
-    # -----------------------------------------------------------------
-
-    @property
-    def most_frequent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        index = np.argmax(self.counts)
-        return self.centers[index]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def least_frequent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        index = np.argmin(self.counts)
-        return self.centers[index]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def least_frequent_non_zero(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ma = np.ma.masked_equal(self.counts, 0.0, copy=False)
-        index = np.argmin(ma)
-        return self.centers[index]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.edges[0]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.edges[-1]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_count(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.max(self.counts)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_count(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.min(self.counts)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_count_nonzero(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ma = np.ma.masked_equal(self.counts, 0.0, copy=False)
-        return np.min(ma)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def local_maxima(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return get_local_maxima(self.centers, self.counts)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def local_minima(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return get_local_minima(self.centers, self.counts)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def smooth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        order = 2
-        s = InterpolatedUnivariateSpline(self.centers, self.counts, k=order)
-
-        # Return the spline curve
-        return s
-
-    # -----------------------------------------------------------------
-
-    @property
-    def smooth_log(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        centers = np.array(self.centers)
-        counts = np.array(self.counts)
-
-        not_zero = counts != 0
-
-        centers = centers[not_zero]
-        counts = counts[not_zero]
-
-        order = 2
-        s = InterpolatedUnivariateSpline(centers, np.log10(counts), k=order)
-
-        # Return the spline curve
-        return s
-
     # -----------------------------------------------------------------
 
     def fit_gaussian(self):
@@ -1271,486 +1055,9 @@ class oldDistribution(object):
         #plt.plot(self.centers, self.counts, 'ko')
         #plt.show()
 
-        gaussian_fit = fitter(gaussian_init, self.centers, self.counts)
+        gaussian_fit = fitter(gaussian_init, self.values, self.frequencies)
 
         return gaussian_fit
-
-    # -----------------------------------------------------------------
-
-    def smooth_values(self, x_min=None, x_max=None, npoints=200):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :param npoints:
-        :return:
-        """
-
-        if x_min is None: x_min = self.min_value
-        if x_max is None: x_max = self.max_value
-
-        x_smooth = np.linspace(x_min, x_max, npoints)
-
-        s = self.smooth
-        y_smooth = s(x_smooth)
-
-        return x_smooth, y_smooth
-
-    # -----------------------------------------------------------------
-
-    def smooth_values_log(self, x_min=None, x_max=None, npoints=200):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :param npoints:
-        :return:
-        """
-
-        if x_min is None: x_min = self.min_value
-        if x_max is None: x_max = self.max_value
-
-        x_smooth = np.linspace(x_min, x_max, npoints)
-
-        s = self.smooth_log
-        y_smooth_log = s(x_smooth)
-
-        return x_smooth, 10.**y_smooth_log
-
-    # -----------------------------------------------------------------
-
-    @property
-    def local_maxima_smooth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        x_smooth, y_smooth = self.smooth_values()
-        return get_local_maxima(x_smooth, y_smooth)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def local_minima_smooth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        x_smooth, y_smooth = self.smooth_values()
-        return get_local_minima(x_smooth, y_smooth)
-
-    # -----------------------------------------------------------------
-
-    def cumulative_smooth(self, x_min, x_max, npoints=200):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :param npoints:
-        :return:
-        """
-
-        if self._cum_smooth is None:
-
-            x_smooth, y_smooth = self.smooth_values(x_min, x_max, npoints)
-
-            # Set negative values to zero
-            y_smooth[y_smooth < 0.0] = 0.0
-
-            # Normalize y by calculating the integral
-            #total = simps(y_smooth, x_smooth)
-
-            # NO, by calculating the sum (why?)
-            total = np.sum(y_smooth)
-
-            # Now, y should be normalized within x_min:x_max
-            y_smooth /= total
-
-            # Return the cumulative distribution
-            #return x_smooth, np.cumsum(y_smooth)
-
-            self._cum_smooth = (x_smooth, np.cumsum(y_smooth))
-
-        return self._cum_smooth
-
-    # -----------------------------------------------------------------
-
-    def cumulative_log_smooth(self, x_min, x_max, npoints=200):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :param npoints:
-        :return:
-        """
-
-        x_smooth, y_smooth = self.smooth_values_log(x_min, x_max, npoints)
-
-        # Normalize y by calculating the integral
-        #total = simps(y_smooth, x_smooth)
-
-        # NO, by calculating the sum (why?)
-        total = np.sum(y_smooth)
-
-        # Now, y should be normalized within x_min:x_max
-        y_smooth /= total
-
-        # Return the cumulative distribution
-        return x_smooth, np.cumsum(y_smooth)
-
-    # -----------------------------------------------------------------
-
-    def random(self, x_min, x_max):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :return:
-        """
-
-        # Draw a random uniform variate between 0 and 1
-        uniform = np.random.uniform(low=0.0, high=1.0)
-
-        x, y_cumulative = self.cumulative_smooth(x_min, x_max)
-
-        from ..tools import nr
-        index = nr.locate_clip(y_cumulative, uniform)
-
-        return x[index]
-
-    # -----------------------------------------------------------------
-
-    def normalize(self, value=1.0, method="integral"):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: implement this function further
-
-        self.counts /= self.max_count
-
-    # -----------------------------------------------------------------
-
-    def normalized(self, value=1.0, method="integral"):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: implement this function
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def plot_cumulative(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
-
-        """
-        This function ...
-        :param title:
-        :param path:
-        :param logscale:
-        :param x_limits:
-        :param y_limits:
-        :param npoints:
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def plot_cumulative_smooth(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
-
-        """
-        This function ...
-        :param title:
-        :param path:
-        :param logscale:
-        :param x_limits:
-        :param y_limits:
-        :param npoints:
-        :return:
-        """
-
-        # Create a canvas to place the subgraphs
-        figure = plt.figure()
-        rect = figure.patch
-        rect.set_facecolor('white')
-
-        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
-        #sp1 = figure.add_subplot(111)
-        sp1 = figure.gca()
-
-        # Determine the x limits
-        if x_limits is None:
-            x_min = 0.8 * self.min_value
-            x_max = 1.2 * self.max_value
-        else:
-            x_min = x_limits[0]
-            x_max = x_limits[1]
-
-        # Determine the y limits
-        if y_limits is None:
-            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
-            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
-        else:
-            y_min = y_limits[0]
-            y_max = y_limits[1]
-
-        # Set the axis limits
-        sp1.set_xlim(x_min, x_max)
-        sp1.set_ylim(y_min, y_max)
-
-        if logscale:
-            x_smooth, y_smooth = self.cumulative_log_smooth(x_min=x_min, x_max=x_max, npoints=npoints)
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-        else:
-            x_smooth, y_smooth = self.cumulative_smooth(x_min=x_min, x_max=x_max, npoints=npoints)
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-
-        #print(self.mean, self.median, self.most_frequent)
-        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
-        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
-        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
-        plt.legend()
-
-        # Colorcode the tick tabs
-        sp1.tick_params(axis='x', colors='red')
-        sp1.tick_params(axis='y', colors='red')
-
-        # Colorcode the spine of the graph
-        sp1.spines['bottom'].set_color('r')
-        sp1.spines['top'].set_color('r')
-        sp1.spines['left'].set_color('r')
-        sp1.spines['right'].set_color('r')
-
-        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
-        else: xlabel = "Values"
-
-        # Put the title and labels
-        if title is not None: sp1.set_title(title, color='red')
-        sp1.set_xlabel(xlabel, color='red')
-        sp1.set_ylabel('Cumulative probability', color='red')
-
-        if logscale: sp1.set_yscale("log", nonposx='clip')
-
-        plt.tight_layout()
-        plt.grid(alpha=0.8)
-
-        if path is None: plt.show()
-        else: figure.savefig(path)
-
-    # -----------------------------------------------------------------
-
-    def plot_smooth(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None, npoints=200):
-
-        """
-        This function ...
-        :param title:
-        :param path:
-        :param logscale:
-        :param xlogscale:
-        :param x_limits:
-        :param y_limits:
-        :param npoints:
-        :return:
-        """
-
-        # Create a canvas to place the subgraphs
-        figure = plt.figure()
-        rect = figure.patch
-        rect.set_facecolor('white')
-
-        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
-        #sp1 = canvas.add_subplot(111)
-        sp1 = figure.gca()
-
-        # Determine the x limits
-        if x_limits is None:
-            x_min = 0.8 * self.min_value
-            x_max = 1.2 * self.max_value
-        else:
-            x_min = x_limits[0]
-            x_max = x_limits[1]
-
-        # Determine the y limits
-        if y_limits is None:
-            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
-            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
-        else:
-            y_min = y_limits[0]
-            y_max = y_limits[1]
-
-        # Set the axis limits
-        sp1.set_xlim(x_min, x_max)
-        sp1.set_ylim(y_min, y_max)
-
-        if logscale:
-            x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max, npoints=npoints)
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-        else:
-            x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max, npoints=npoints)
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-
-        x, y = get_local_maxima(x_smooth, y_smooth)
-        sp1.plot(x, y, 'g^')
-
-        x, y = get_local_minima(x_smooth, y_smooth)
-        sp1.plot(x, y, 'rv')
-
-        # print(self.mean, self.median, self.most_frequent)
-        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
-        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
-        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
-        plt.legend()
-
-        # Colorcode the tick tabs
-        sp1.tick_params(axis='x', colors='red')
-        sp1.tick_params(axis='y', colors='red')
-
-        # Colorcode the spine of the graph
-        sp1.spines['bottom'].set_color('r')
-        sp1.spines['top'].set_color('r')
-        sp1.spines['left'].set_color('r')
-        sp1.spines['right'].set_color('r')
-
-        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
-        else: xlabel = "Values"
-
-        # Put the title and labels
-        if title is not None: sp1.set_title(title, color='red')
-        sp1.set_xlabel(xlabel, color='red')
-        sp1.set_ylabel('Probability', color='red')
-
-        if logscale: sp1.set_yscale("log", nonposx='clip')
-        if xlogscale: sp1.set_xscale("log")
-
-        plt.tight_layout()
-        plt.grid(alpha=0.8)
-
-        if path is None: plt.show()
-        else: figure.savefig(path)
-
-    # -----------------------------------------------------------------
-
-    def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
-             add_smooth=False, format=None, add_extrema=False, model=None):
-
-        """
-        This function ...
-        :param title:
-        :param path:
-        :param logscale:
-        :param xlogscale:
-        :param x_limits:
-        :param y_limits:
-        :param add_smooth:
-        :param format:
-        :param add_extrema:
-        :param model:
-        :return:
-        """
-
-        # Create a canvas to place the subgraphs
-        figure = plt.figure()
-        rect = figure.patch
-        rect.set_facecolor('white')
-
-        #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
-        #sp1 = canvas.add_subplot(111)
-        sp1 = figure.gca()
-
-        #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
-
-        sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_widths, alpha=0.5)
-
-        # Determine the x limits
-        if x_limits is None:
-            x_min = self.min_value
-            x_max = self.max_value
-        else:
-            x_min = x_limits[0]
-            x_max = x_limits[1]
-
-        # Determine the y limits
-        if y_limits is None:
-            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
-            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
-        else:
-            y_min = y_limits[0]
-            y_max = y_limits[1]
-
-        # Set the axis limits
-        sp1.set_xlim(x_min, x_max)
-        sp1.set_ylim(y_min, y_max)
-
-        # Add smooth
-        if add_smooth:
-
-            if logscale:
-                x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
-                sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-            else:
-                x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
-                sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-
-        if add_extrema:
-
-            x, y = self.local_maxima
-            sp1.plot(x, y, 'g^')
-
-            x, y = self.local_minima
-            sp1.plot(x, y, 'rv')
-
-        if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
-
-        #print(self.mean, self.median, self.most_frequent)
-        mean_line = sp1.axvline(self.mean, color="green", linestyle="dashed", label="Mean")
-        median_line = sp1.axvline(self.median, color="purple", linestyle="dashed", label="Median")
-        max_line = sp1.axvline(self.most_frequent, color="orange", linestyle="dashed", label="Max")
-        plt.legend()
-
-        # Colorcode the tick tabs
-        #sp1.tick_params(axis='x', colors='red')
-        #sp1.tick_params(axis='y', colors='red')
-
-        # Colorcode the spine of the graph
-        #sp1.spines['bottom'].set_color('r')
-        #sp1.spines['top'].set_color('r')
-        #sp1.spines['left'].set_color('r')
-        #sp1.spines['right'].set_color('r')
-
-        if self.unit is not None: xlabel = "Values [" + str(self.unit) + "]"
-        else: xlabel = "Values"
-
-        # Put the title and labels
-        if title is not None: sp1.set_title(strings.split_in_lines(title))
-        sp1.set_xlabel(xlabel)
-        sp1.set_ylabel('Probability')
-
-        if logscale: sp1.set_yscale("log", nonposx='clip')
-        if xlogscale: sp1.set_xscale("log")
-
-        plt.tight_layout()
-        #plt.grid(alpha=0.8)
-
-        if path is None: plt.show()
-        else: figure.savefig(path, format=format)
-
-        plt.close()
 
 # -----------------------------------------------------------------
 
@@ -1887,6 +1194,7 @@ def get_local_maxima(x, y):
     x_maxima = [x[i] for i in m]
     y_maxima = [y[i] for i in m]
 
+    # Return
     return x_maxima, y_maxima
 
 # -----------------------------------------------------------------
@@ -1909,6 +1217,7 @@ def get_local_minima(x, y):
     x_minima = [x[i] for i in m]
     y_minima = [y[i] for i in m]
 
+    # Return
     return x_minima, y_minima
 
 # -----------------------------------------------------------------

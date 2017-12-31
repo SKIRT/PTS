@@ -114,8 +114,6 @@ class SEDPlotter(Configurable):
         self.title = None
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
-        #self.models = OrderedDict()
-        #self.models_no_residuals = OrderedDict()
         self.models = []
         self.observations = OrderedDict()
 
@@ -155,6 +153,18 @@ class SEDPlotter(Configurable):
         """
 
         return len(self.models) + len(self.observations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nseds == 0
 
     # -----------------------------------------------------------------
 
@@ -282,7 +292,7 @@ class SEDPlotter(Configurable):
             self.out_path = full_output_path
 
         # Add SED files present in the current working directory (if nothing is added manually)
-        if self.nseds == 0: self.load_seds()
+        if self.no_seds: self.load_seds()
 
         # Initialize the plot
         if len(self.observations) > 1 and len(self.models) > 0:
@@ -330,7 +340,7 @@ class SEDPlotter(Configurable):
         # Inform the user
         log.info("Loading SED files ...")
 
-        # Loop over the sed files
+        # Loop over the SED files
         for path in self.config.seds:
 
             # Get the SED name
@@ -363,7 +373,7 @@ class SEDPlotter(Configurable):
         # Inform the user
         log.info("Loading SED files in the current working directory ...")
 
-        # Create simulation definitions from the working directory and add them to the queue
+        # Loop over the files
         for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"]):
 
             # Skip emission lines
@@ -1817,9 +1827,6 @@ class SEDPlotter(Configurable):
         # Save the figure
         if self.out_path is not None: self.save_figure()
 
-        # Close
-        #self.figure.close()s
-
     # -----------------------------------------------------------------
 
     def __del__(self):
@@ -1841,11 +1848,13 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        if types.is_string_type(self.out_path):
+        # Debugging
+        log.debug("Saving figure ...")
 
+        # Determine path
+        if types.is_string_type(self.out_path):
             if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds" + self.config.format)
             else: path = self.out_path
-
         else: path = self.out_path
 
         # Save

@@ -32,6 +32,7 @@ analyse_simulation | -- | launch.analyser.SimulationAnalyser | arguments | Analy
 
 # PLOTTING
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs
+plot_distributions | -- | plot.distribution.DistributionPlotter | arguments | Plot a series of distributions
 plot_simulation_seds | -- | plot.simulationseds.SimulationSEDPlotter | arguments | Plot the SEDS of a SKIRT simulation
 plot_scaling | -- | plot.scaling.ScalingPlotter | arguments | Plot the performance and or memory scaling of a (batch of) simulation(s)
 plot_timelines | -- | plot.timeline.TimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
