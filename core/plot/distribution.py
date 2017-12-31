@@ -887,10 +887,12 @@ class DistributionPlotter(Configurable):
             # Add frequencies
             if self.config.frequencies:
                 for value, frequency in zip(distribution.values, distribution.frequencies):
-                    self.main_plot.text(value, frequency, str(frequency), color=color, fontweight='bold', va='center')
+                    y_value = frequency + 0.02
+                    self.main_plot.text(value, y_value, tostr(frequency, round=True, ndigits=2), color=color, fontweight='bold', va='center')
 
             min_value = distribution.min_edge
-            max_value = distribution.max_edge
+            if self.config.frequencies: max_value = distribution.max_edge + 0.02
+            else: max_value = distribution.max_edge
             min_frequency = 0. if not self.logfrequency else 0.5 * distribution.min_frequency_nonzero
             max_frequency = 1.1 * distribution.max_frequency if not self.logfrequency else 2. * distribution.max_frequency
 
@@ -1084,11 +1086,12 @@ class DistributionPlotter(Configurable):
                 if self.config.frequencies:
                     for value, frequency in zip(distribution.values, distribution.frequencies):
                         y_value = frequency + 0.02
-                        plot.text(value, frequency, tostr(frequency, round=True, ndigits=2), color=color, horizontalalignment='center', size="small") # fontweight='bold'?
+                        plot.text(value, y_value, tostr(frequency, round=True, ndigits=2), color=color, horizontalalignment='center', size="small") # fontweight='bold'?
 
                 # Get min and max values
                 min_value = distribution.min_edge
-                max_value = distribution.max_edge
+                if self.config.frequencies: max_value = distribution.max_edge + 0.02
+                else: max_value = distribution.max_edge
                 min_frequency = 0. if not self.logfrequency else 0.5 * distribution.min_frequency_nonzero
                 max_frequency = 1.1 * distribution.max_frequency if not self.logfrequency else 2. * distribution.max_frequency
 
