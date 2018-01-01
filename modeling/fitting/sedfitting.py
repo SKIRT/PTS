@@ -520,7 +520,7 @@ class SEDFitter(FittingComponent):
         path = fs.join(self.fitting_run.prob_distributions_path, "distributions.pdf")
 
         # Plot in different panels
-        plot_distributions(self.distributions, panels=True, extrema=True, frequencies=True, path=path)
+        plot_distributions(self.distributions, panels=True, extrema=True, frequencies=True, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 

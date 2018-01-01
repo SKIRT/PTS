@@ -173,7 +173,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 # -----------------------------------------------------------------
 
 def plot_distributions(distributions, panels=False, smooth=False, statistics=False, extrema=False, edges=False,
-                       frequencies=False, path=None):
+                       frequencies=False, path=None, logscale=False, logfrequency=False):
 
     """
     This function ...
@@ -185,6 +185,8 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     :param edges:
     :param frequencies:
     :param path:
+    :param logscale:
+    :param logfrequency:
     :return:
     """
 
@@ -197,6 +199,10 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     plotter.config.extrema = extrema
     plotter.config.edges = edges
     plotter.config.frequencies = frequencies
+
+    # Logscales
+    plotter.config.logscale = logscale
+    plotter.config.logfrequency = logfrequency
 
     # Add distributions
     for label in distributions:
@@ -1037,7 +1043,7 @@ class DistributionPlotter(Configurable):
             panel_label = panel_labels[0]
             labels.append(panel_label)
         if not sequences.all_equal(labels): raise ValueError("Y labels of panels are not equal")
-        return labels[0]
+        return labels[0].replace("_", "\_")
 
     # -----------------------------------------------------------------
 
@@ -1086,7 +1092,7 @@ class DistributionPlotter(Configurable):
                 if value_unit is not None: label += " [" + str(value_unit) + "]"
 
             # Add label
-            labels.append(label)
+            labels.append(label.replace("_", "\_"))
 
         # Return labels
         return labels
