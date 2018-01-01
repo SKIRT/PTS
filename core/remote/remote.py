@@ -2655,7 +2655,7 @@ class Remote(object):
         if expect is None:
 
             try: matched = self.ssh.prompt(timeout=timeout)
-            except pexpect.EOF: raise RuntimeError("End-of-file encountered")
+            except pexpect.EOF: raise RuntimeError("End-of-file encountered: connection broken?")
 
             # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
             if contains_extra_eof: matched = self.ssh.prompt()
@@ -2667,7 +2667,7 @@ class Remote(object):
         else:
 
             try: index = self.ssh.expect(expect, timeout=timeout)
-            except pexpect.EOF: raise RuntimeError("End-of-file encountered")
+            except pexpect.EOF: raise RuntimeError("End-of-file encountered: connection broken?")
             assert index == 0
 
         # Set the log file back to 'None'

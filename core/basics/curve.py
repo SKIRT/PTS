@@ -329,8 +329,6 @@ class WavelengthCurve(Curve):
         # From astropy call ...
         else: self.distance = None
 
-        self.values()
-
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)
 

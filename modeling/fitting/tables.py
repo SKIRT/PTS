@@ -961,6 +961,20 @@ class ParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = dict()
+        for label in self.parameter_labels: units[label] = self.unit_for(label)
+        return units
+
+    # -----------------------------------------------------------------
+
     def parameter_values_for_simulation(self, simulation_name):
 
         """

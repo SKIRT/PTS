@@ -1027,7 +1027,17 @@ class DistributionPlotter(Configurable):
         :return:
         """
 
-        return "Frequency"
+        from ..tools import sequences
+
+        labels = []
+        for panel in self.panels:
+            distributions = self.get_distributions_panel(panel)
+            panel_labels = [distribution.y_name for distribution in distributions]
+            if not sequences.all_equal(panel_labels): raise ValueError("Y labels of panel distributions are not equal")
+            panel_label = panel_labels[0]
+            labels.append(panel_label)
+        if not sequences.all_equal(labels): raise ValueError("Y labels of panels are not equal")
+        return labels[0]
 
     # -----------------------------------------------------------------
 
@@ -1064,8 +1074,16 @@ class DistributionPlotter(Configurable):
             else:
                 distributions = self.get_distributions_panel(panel)
                 value_names = [distribution.value_name for distribution in distributions]
+                value_units = [distribution.unit for distribution in distributions]
+
+                # Determine name
                 if not sequences.all_equal(value_names): label = value_names[0]
                 else: label = "Value"
+
+                # Determine unit
+                if not sequences.all_equal(value_units): raise ValueError("Value units are different")
+                value_unit = sequences.get_first_not_none_value(value_units)
+                if value_unit is not None: label += " [" + str(value_unit) + "]"
 
             # Add label
             labels.append(label)
@@ -1139,9 +1157,6 @@ class DistributionPlotter(Configurable):
                 # Get min and max frequency
                 min_frequency = 0. if not self.logfrequency else 0.5 * distribution.min_frequency_nonzero
                 max_frequency = 1.1 * distribution.max_frequency if not self.logfrequency else 2. * distribution.max_frequency
-                #print(max_frequency)
-                #if self.config.frequencies: max_frequency += 0.05
-                #print(max_frequency)
 
                 # Keep track of minimum and maximum value
                 if self.min_values[panel] is None or min_value < self.min_values[panel]: self.min_values[panel] = min_value

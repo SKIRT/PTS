@@ -78,11 +78,8 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
     """
 
     masked_list = sigma_clip(data, sigma=sigma, iters=None, copy=False)
-
     new_mask = copy.deepcopy(mask) if mask is not None else [0]*len(data)
-
     for i, masked in enumerate(masked_list.mask):
-
         if masked: new_mask[i] = True
 
     # Return the new or updated mask

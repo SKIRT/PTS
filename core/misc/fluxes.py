@@ -41,6 +41,7 @@ from ...magic.core.datacube import DataCube
 from ...magic.core import fits
 from ..simulation.wavelengthgrid import WavelengthGrid
 from ..plot.sed import SEDPlotter
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -1010,7 +1011,9 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
     for wavelength_micron in used_wavelengths:
         filters = used_wavelengths[wavelength_micron]
         filter_names = [str(f) for f in filters]
-        log.debug(" - " + str(wavelength_micron) + " micron: " + ", ".join(filter_names))
+        nfilters = len(filter_names)
+        if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
+        else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
     log.debug("")
 
     # Show which wavelengths are used to create filter frames

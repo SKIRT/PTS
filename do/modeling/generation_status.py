@@ -21,6 +21,8 @@ from pts.core.tools import strings
 from pts.core.tools.stringify import tostr
 from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
+from pts.core.tools import numbers
+from pts.core.plot.distribution import plot_distribution
 
 # -----------------------------------------------------------------
 
@@ -44,6 +46,16 @@ definition.add_required("generation", "string", "generation name")
 definition.add_flag("plot_runtimes", "plot runtimes")
 definition.add_flag("plot_memory", "plot memory usage")
 definition.add_flag("plot_chisquared", "plot chi squared")
+
+# Show
+definition.add_flag("show_runtimes", "show runtimes")
+definition.add_flag("show_memory", "show memory")
+
+# Show parameters
+definition.add_flag("parameters", "show the parameter values")
+
+# Flags
+definition.add_flag("offline", "offline modus")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -78,12 +90,13 @@ memory = fitting_run.memory_table
 nsimulations = generation.nsimulations
 nretrieved = generation.nretrieved_simulations
 nanalysed = generation.nanalysed_simulations
-#print(nsimulations, nretrieved, nanalysed)
 fraction_analysed = float(nanalysed) / nsimulations
 
+# -----------------------------------------------------------------
+
 print("")
-print("Total number of simulations: " + str(nsimulations))
-print("Number of analysed simulations: " + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
+print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
+print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
 print("")
 
 # -----------------------------------------------------------------
@@ -109,18 +122,39 @@ writing_memories = []
 
 # -----------------------------------------------------------------
 
-# Inform the user
-log.info("Loading the remotes ...")
-
-# Create the remote instances
 remotes = dict()
-for host_id in generation.host_ids: remotes[host_id] = SKIRTRemote(host_id=host_id)
+states = dict()
+if not config.offline:
+
+    # Inform the user
+    log.info("Loading the remotes ...")
+
+    # Create the remote instances
+    for host_id in generation.host_ids: remotes[host_id] = SKIRTRemote(host_id=host_id)
+
+    # Get screen states
+    for host_id in remotes: states[host_id] = remotes[host_id].screen_states()
 
 # -----------------------------------------------------------------
 
-# Get screen states
-states = dict()
-for host_id in remotes: states[host_id] = remotes[host_id].screen_states()
+# Get the parameters table
+parameters = generation.parameters_table
+
+# Get parameter units
+#parameter_units = parameters.parameter_units
+parameter_units = [parameters.unit_for(label) for label in fitting_run.free_parameter_labels]
+
+# -----------------------------------------------------------------
+
+# Number of digits for parameter values
+parameters_ndigits = 3
+
+# -----------------------------------------------------------------
+
+# Print header
+if config.parameters:
+    print(" " * 40 + "\t" + "\t".join(fitting_run.free_parameter_labels))
+    print(" " * 40 + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
 
 # -----------------------------------------------------------------
 
@@ -131,6 +165,16 @@ for simulation in generation.simulations:
     simulation_name = simulation.name
     host_id = simulation.host_id
 
+    # Get the parameter values
+    if config.parameters: parameter_values = parameters.parameter_values_for_simulation(simulation_name)
+    else: parameter_values = None
+
+    # Get parameter string
+    if parameter_values is not None:
+        parameter_strings = [tostr(parameter_values[label].value, scientific=True, decimal_places=3) + "  " for label in fitting_run.free_parameter_labels]
+        parameters_string = "\t".join(parameter_strings)
+    else: parameters_string = ""
+
     # Already analysed
     if simulation.analysed:
 
@@ -138,17 +182,18 @@ for simulation in generation.simulations:
         chisq = chi_squared.chi_squared_for(simulation_name)
         ndecimal = 1
         ndigits = 7
-        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + fmt.reset)
+        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
 
     elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
     else:
 
         # Not yet retrieved, what is the status?
-        simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+        if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+        else: simulation_status = " unknown"
 
         # Show
-        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + ": " + simulation_status + fmt.reset)
-        else: print(" - " + fmt.red + simulation_name + ": " + simulation_status + fmt.reset)
+        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+        else: print(" - " + fmt.red + simulation_name + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
 
     # Get timing
     if timing.has_simulation(simulation_name):
@@ -202,6 +247,122 @@ for simulation in generation.simulations:
 
 # -----------------------------------------------------------------
 
+# Make scalar
+total_times = [time.to("min").value for time in total_times]
+setup_times = [time.to("min").value for time in setup_times]
+stellar_times = [time.to("min").value for time in stellar_times]
+spectra_times = [time.to("min").value for time in spectra_times]
+dust_times = [time.to("min").value for time in dust_times]
+writing_times = [time.to("min").value for time in writing_times]
+waiting_times = [time.to("min").value for time in waiting_times]
+communication_times = [time.to("min").value for time in communication_times]
+intermediate_times = [time.to("min").value for time in intermediate_times]
+
+# Make scalar
+total_memories = [memory.to("GB").value for memory in total_memories]
+setup_memories = [memory.to("GB").value for memory in setup_memories]
+stellar_memories = [memory.to("GB").value for memory in stellar_memories]
+spectra_memories = [memory.to("GB").value for memory in spectra_memories]
+dust_memories = [memory.to("GB").value for memory in dust_memories]
+writing_memories = [memory.to("GB").value for memory in writing_memories]
+
+# -----------------------------------------------------------------
+
+# Get number of measurements
+ntotal_times = len(total_times)
+nsetup_times = len(setup_times)
+nstellar_times = len(stellar_times)
+nspectra_times = len(spectra_times)
+ndust_times = len(dust_times)
+nwriting_times = len(writing_times)
+nwaiting_times = len(waiting_times)
+ncommunication_times = len(communication_times)
+nintermediate_times = len(intermediate_times)
+ntotal_memories = len(total_memories)
+nsetup_memories = len(setup_memories)
+nstellar_memories = len(stellar_memories)
+nspectra_memories = len(spectra_memories)
+ndust_memories = len(dust_memories)
+nwriting_memories = len(writing_memories)
+
+# -----------------------------------------------------------------
+
+# Sigma clip runtimes
+total_times, total_time_noutliers = numbers.sigma_clip(total_times, return_nmasked=True)
+setup_times, setup_time_noutliers = numbers.sigma_clip(setup_times, return_nmasked=True)
+stellar_times, stellar_time_noutliers = numbers.sigma_clip(stellar_times, return_nmasked=True)
+spectra_times, spectra_time_noutliers = numbers.sigma_clip(spectra_times, return_nmasked=True)
+dust_times, dust_time_noutliers = numbers.sigma_clip(dust_times, return_nmasked=True)
+writing_times, writing_time_noutliers = numbers.sigma_clip(writing_times, return_nmasked=True)
+waiting_times, waiting_time_noutliers = numbers.sigma_clip(waiting_times, return_nmasked=True)
+communication_times, communication_time_noutliers = numbers.sigma_clip(communication_times, return_nmasked=True)
+intermediate_times, intermediate_time_noutliers = numbers.sigma_clip(intermediate_times, return_nmasked=True)
+
+# Sigma clip memory usages
+total_memories, total_memory_noutliers = numbers.sigma_clip(total_memories, return_nmasked=True)
+setup_memories, setup_memory_noutliers = numbers.sigma_clip(setup_memories, return_nmasked=True)
+stellar_memories, stellar_memory_noutliers = numbers.sigma_clip(stellar_memories, return_nmasked=True)
+spectra_memories, spectra_memory_noutliers = numbers.sigma_clip(spectra_memories, return_nmasked=True)
+dust_memories, dust_memory_noutliers = numbers.sigma_clip(dust_memories, return_nmasked=True)
+writing_memories, writing_memory_noutliers = numbers.sigma_clip(writing_memories, return_nmasked=True)
+
+# -----------------------------------------------------------------
+
+# Show?
+if config.show_runtimes:
+
+    # Total
+    total = numbers.arithmetic_mean(*total_times)
+    total_err = numbers.standard_deviation(*total_times, mean=total)
+
+    # Setup
+    setup = numbers.arithmetic_mean(*setup_times)
+    setup_err = numbers.standard_deviation(*setup_times, mean=setup)
+
+    # Stellar
+    stellar = numbers.arithmetic_mean(*stellar_times)
+    stellar_err = numbers.standard_deviation(*stellar_times, mean=stellar)
+
+    # Spectra
+    spectra = numbers.arithmetic_mean(*spectra_times)
+    spectra_err = numbers.standard_deviation(*spectra_times, mean=spectra)
+
+    # Dust
+    dust = numbers.arithmetic_mean(*dust_times)
+    dust_err = numbers.standard_deviation(*dust_times, mean=dust)
+
+    # Writing
+    writing = numbers.arithmetic_mean(*writing_times)
+    writing_err = numbers.standard_deviation(*writing_times, mean=writing)
+
+    # Waiting
+    waiting = numbers.arithmetic_mean(*waiting_times)
+    waiting_err = numbers.standard_deviation(*waiting_times, mean=waiting)
+
+    # Communication
+    communication = numbers.arithmetic_mean(*communication_times)
+    communication_err = numbers.standard_deviation(*communication_times, mean=communication)
+
+    # Intermediate
+    intermediate = numbers.arithmetic_mean(*intermediate_times)
+    intermediate_err = numbers.standard_deviation(*intermediate_times, mean=intermediate)
+
+    # Show
+    print("")
+    print(fmt.bold + "Runtimes:" + fmt.reset)
+    print("")
+    print(" - Total time: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") minutes [" + str(total_time_noutliers) + " outliers out of " + str(ntotal_times) + " data points]")
+    print(" - Setup time: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") minutes [" + str(setup_time_noutliers) + " outliers out of " + str(nsetup_times) + " data points]")
+    print(" - Stellar time: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") minutes [" + str(stellar_time_noutliers) + " outliers out of " + str(nstellar_times) + " data points]")
+    print(" - Spectra time: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") minutes [" + str(spectra_time_noutliers) + " outliers out of " + str(nspectra_times) + " data points]")
+    print(" - Dust time: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") minutes [" + str(dust_time_noutliers) + " outliers out of " + str(ndust_times) + " data points]")
+    print(" - Writing time: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") minutes [" + str(writing_time_noutliers) + " outliers out of " + str(nwriting_times) + " data points]")
+    print(" - Waiting time: (" + tostr(waiting, round=True, ndigits=3) + " ± " + tostr(waiting_err, round=True, ndigits=3) + ") minutes [" + str(waiting_time_noutliers) + " outliers out of " + str(nwaiting_times) + " data points]")
+    print(" - Communication time: (" + tostr(communication, round=True, ndigits=3) + " ± " + tostr(communication_err, round=True, ndigits=3) + ") minutes [" + str(communication_time_noutliers) + " outliers out of " + str(ncommunication_times) + " data points]")
+    print(" - Intermediate time: (" + tostr(intermediate, round=True, ndigits=3) + " ± " + tostr(intermediate_err, round=True, ndigits=3) + ") minutes [" + str(intermediate_time_noutliers) + " outliers out of " + str(nintermediate_times) + " data points]")
+
+# -----------------------------------------------------------------
+
 # Plot?
 if config.plot_runtimes:
 
@@ -217,15 +378,55 @@ if config.plot_runtimes:
     intermediate = Distribution.from_values("Runtime", intermediate_times, unit="min")
 
     # Plot
-    total.plot(title="Total")
-    setup.plot(title="Setup")
-    stellar.plot(title="Stellar")
-    spectra.plot(title="Spectra")
-    dust.plot(title="Dust")
-    writing.plot(title="Writing")
-    waiting.plot(title="Waiting")
-    communication.plot(title="Communication")
-    intermediate.plot(title="Intermediate")
+    plot_distribution(total, title="Total")
+    plot_distribution(setup, title="Setup")
+    plot_distribution(stellar, title="Stellar")
+    plot_distribution(spectra, title="Spectra")
+    plot_distribution(dust, title="Dust")
+    plot_distribution(writing, title="Writing")
+    plot_distribution(waiting, title="Waiting")
+    plot_distribution(communication, title="Communication")
+    plot_distribution(intermediate, title="Intermediate")
+
+# -----------------------------------------------------------------
+
+# Show
+if config.show_memory:
+
+    # Total
+    total = numbers.arithmetic_mean(*total_memories)
+    total_err = numbers.standard_deviation(*total_memories, mean=total)
+
+    # Setup
+    setup = numbers.arithmetic_mean(*setup_memories)
+    setup_err = numbers.standard_deviation(*setup_memories, mean=setup)
+
+    # Stellar
+    stellar = numbers.arithmetic_mean(*stellar_memories)
+    stellar_err = numbers.standard_deviation(*stellar_memories, mean=stellar)
+
+    # Spectra
+    spectra = numbers.arithmetic_mean(*spectra_memories)
+    spectra_err = numbers.standard_deviation(*spectra_memories, mean=spectra)
+
+    # Dust
+    dust = numbers.arithmetic_mean(*dust_memories)
+    dust_err = numbers.standard_deviation(*dust_memories, mean=dust)
+
+    # Writing
+    writing = numbers.arithmetic_mean(*writing_memories)
+    writing_err = numbers.standard_deviation(*writing_memories, mean=writing)
+
+    # Show
+    print("")
+    print(fmt.bold + "Memory usage:" + fmt.reset)
+    print("")
+    print(" - Total memory: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") GB [" + str(total_memory_noutliers) + " outliers out of " + str(ntotal_memories) + " data points]")
+    print(" - Setup memory: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") GB [" + str(setup_memory_noutliers) + " outliers out of " + str(nsetup_memories) + " data points]")
+    print(" - Stellar memory: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") GB [" + str(stellar_memory_noutliers) + " outliers out of " + str(nstellar_memories) + " data points]")
+    print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_memory_noutliers) + " outliers out of " + str(nspectra_memories) + " data points]")
+    print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_memory_noutliers) + " outliers out of " + str(ndust_memories) + " data points]")
+    print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_memory_noutliers) + " outliers out of " + str(nwriting_memories) + " data points]")
 
 # -----------------------------------------------------------------
 
@@ -241,12 +442,12 @@ if config.plot_memory:
     writing = Distribution.from_values("Memory usage", writing_memories, unit="GB")
 
     # Plot
-    total.plot(title="Total")
-    setup.plot(title="Setup")
-    stellar.plot(title="Stellar")
-    spectra.plot(title="Spectra")
-    dust.plot(title="Dust")
-    writing.plot(title="Writing")
+    plot_distribution(total, title="Total")
+    plot_distribution(setup, title="Setup")
+    plot_distribution(stellar, title="Stellar")
+    plot_distribution(spectra, title="Spectra")
+    plot_distribution(dust, title="Dust")
+    plot_distribution(writing, title="Writing")
 
 # -----------------------------------------------------------------
 

@@ -78,22 +78,28 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, name, values, nbins=20, weights=None, unit=None, logarithmic=False, density=True):
+    def from_values(cls, name, values, nbins=20, weights=None, unit=None, logarithmic=False, density=True,
+                    sigma_clip=False, sigma_level=3):
 
         """
         This function ...
         :param name:
         :param values:
-        :param bins:
+        :param nbins:
         :param weights:
         :param unit:
         :param logarithmic:
         :param density:
+        :param sigma_clip:
+        :param sigma_level:
         :return:
         """
 
         from ..tools import sequences
         from ..tools import numbers
+
+        # Sigma-clip?
+        if sigma_clip: values = numbers.sigma_clip(values, sigma_level=sigma_level)
 
         # Check whether has units
         if sequences.have_units(values):
@@ -292,6 +298,21 @@ class Distribution(Curve):
 
         from ..tools import numbers
         value = numbers.weighed_arithmetic_mean(self.values, weights=self.frequencies)
+        if self.has_unit: return value * self.unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        value = numbers.weighed_standard_deviation(self.values, weights=self.frequencies)
         if self.has_unit: return value * self.unit
         else: return value
 

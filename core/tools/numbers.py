@@ -1059,6 +1059,34 @@ def arithmetic_mean(*numbers):
 
 # -----------------------------------------------------------------
 
+def variance(*numbers, **kwargs):
+
+    """
+    This function ...
+    :param numbers:
+    :return:
+    """
+
+    nnumbers = len(numbers)
+    mean = kwargs.pop("mean", arithmetic_mean(*numbers))
+    return sum(squared_differences(numbers, mean)) / (nnumbers - 1)
+
+# -----------------------------------------------------------------
+
+def standard_deviation(*numbers, **kwargs):
+
+    """
+    This function ...
+    :param numbers:
+    :param kwargs:
+    :return:
+    """
+
+    var = variance(*numbers, **kwargs)
+    return math.sqrt(var)
+
+# -----------------------------------------------------------------
+
 def weighed_arithmetic_mean(numbers, weights):
 
     """
@@ -1070,6 +1098,58 @@ def weighed_arithmetic_mean(numbers, weights):
 
     #return np.sum(numbers * weights) / np.sum(weights)
     return sum([number * weight for number, weight in zip(numbers, weights)]) / sum(weights)
+
+# -----------------------------------------------------------------
+
+def squared_differences(numbers, reference):
+
+    """
+    This function ...
+    :param numbers:
+    :param reference:
+    :return:
+    """
+
+    squared_differences = []
+    for number in numbers:
+        difference = number - reference
+        squared_diff = difference ** 2
+        squared_differences.append(squared_diff)
+    return squared_differences
+
+# -----------------------------------------------------------------
+
+def weighed_squared_differences(numbers, reference, weights):
+
+    """
+    This function ...
+    :param numbers:
+    :param reference:
+    :param weights:
+    :return:
+    """
+
+    result = []
+    sq_diff = squared_differences(numbers, reference)
+    for squared_difference, weight in zip(sq_diff, weights):
+        weighed = squared_difference * weight
+        result.append(weighed)
+    return result
+
+# -----------------------------------------------------------------
+
+def weighed_standard_deviation(numbers, weights, mean=None):
+
+    """
+    This function ...
+    :param numbers:
+    :param weights:
+    :param mean:
+    :return:
+    """
+
+    if mean is None: mean = weighed_arithmetic_mean(numbers, weights)
+    return sum(weighed_squared_differences(numbers, mean, weights))
 
 # -----------------------------------------------------------------
 
@@ -1435,5 +1515,59 @@ def missing_integers(integers):
 
     # Return the missing integers
     return missing
+
+# -----------------------------------------------------------------
+
+def sigma_clip_mask(values, sigma_level=3.0, return_nmasked=False):
+
+    """
+    This function ...
+    :param values:
+    :param sigma_level:
+    :param return_nmasked:
+    :return:
+    """
+
+    from astropy.stats import sigma_clip
+
+    # Sigma-clip
+    masked_array = sigma_clip(values, sigma=sigma_level, iters=None)
+
+    # Get the mask
+    mask = list(masked_array.mask)
+
+    # Get the number of masked values
+    nmasked = np.sum(masked_array.mask)
+
+    # Return the mask as a list
+    if return_nmasked: return mask, nmasked
+    else: return mask
+
+# -----------------------------------------------------------------
+
+def sigma_clip(values, sigma_level=3.0, return_nmasked=False):
+
+    """
+    This function ...
+    :param values:
+    :param sigma_level:
+    :param return_nmasked:
+    :return:
+    """
+
+    from astropy.stats import sigma_clip
+
+    # Sigma-clip
+    masked_array = sigma_clip(values, sigma=sigma_level, iters=None)
+
+    # Get the number of masked values
+    nmasked = np.sum(masked_array.mask)
+
+    # Get the clipped list of values
+    clipped = list(masked_array.compressed())
+
+    # Return as list
+    if return_nmasked: return clipped, nmasked
+    else: return clipped
 
 # -----------------------------------------------------------------
