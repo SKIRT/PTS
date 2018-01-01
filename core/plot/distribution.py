@@ -890,11 +890,14 @@ class DistributionPlotter(Configurable):
                     y_value = frequency + 0.02
                     self.main_plot.text(value, y_value, tostr(frequency, round=True, ndigits=2), color=color, fontweight='bold', va='center')
 
+            # Get min and max value
             min_value = distribution.min_edge
-            if self.config.frequencies: max_value = distribution.max_edge + 0.02
-            else: max_value = distribution.max_edge
+            max_value = distribution.max_edge
+
+            # Set min and max frequency
             min_frequency = 0. if not self.logfrequency else 0.5 * distribution.min_frequency_nonzero
             max_frequency = 1.1 * distribution.max_frequency if not self.logfrequency else 2. * distribution.max_frequency
+            #if self.config.frequencies: max_frequency += 0.05
 
             # Keep track of minimum and maximum value
             if self._min_value is None or min_value < self._min_value: self._min_value = min_value
@@ -1075,6 +1078,7 @@ class DistributionPlotter(Configurable):
                 # Pick color
                 color = next(colors)
 
+                # Plot
                 if self.logscale:
                     plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
                             linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
@@ -1090,10 +1094,14 @@ class DistributionPlotter(Configurable):
 
                 # Get min and max values
                 min_value = distribution.min_edge
-                if self.config.frequencies: max_value = distribution.max_edge + 0.02
-                else: max_value = distribution.max_edge
+                max_value = distribution.max_edge
+
+                # Get min and max frequency
                 min_frequency = 0. if not self.logfrequency else 0.5 * distribution.min_frequency_nonzero
                 max_frequency = 1.1 * distribution.max_frequency if not self.logfrequency else 2. * distribution.max_frequency
+                #print(max_frequency)
+                #if self.config.frequencies: max_frequency += 0.05
+                #print(max_frequency)
 
                 # Keep track of minimum and maximum value
                 if self.min_values[panel] is None or min_value < self.min_values[panel]: self.min_values[panel] = min_value
@@ -1224,6 +1232,9 @@ class DistributionPlotter(Configurable):
         log.debug("Finishing plot with panels ...")
 
         # Set y limits
+        if self.min_frequency is None: self.min_frequency = self._min_frequency
+        if self.max_frequency is None: self.max_frequency = self._max_frequency
+        #print(self.min_frequency, self.max_frequency)
         self.first_panel_plot.set_ylim(self.min_frequency, self.max_frequency)
 
         # Set x limits
