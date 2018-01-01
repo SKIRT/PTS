@@ -172,6 +172,47 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
 # -----------------------------------------------------------------
 
+def plot_distributions(distributions, panels=False, smooth=False, statistics=False, extrema=False, edges=False,
+                       frequencies=False, path=None):
+
+    """
+    This function ...
+    :param distributions:
+    :param panels:
+    :param smooth:
+    :param statistics:
+    :param extrema:
+    :param edges:
+    :param frequencies:
+    :param path:
+    :return:
+    """
+
+    # Initialize plotter
+    plotter = DistributionPlotter()
+
+    # Set options
+    plotter.config.smooth = smooth
+    plotter.config.statistics = statistics
+    plotter.config.extrema = extrema
+    plotter.config.edges = edges
+    plotter.config.frequencies = frequencies
+
+    # Add distributions
+    for label in distributions:
+
+        # Get the distribution
+        distribution = distributions[label]
+
+        # Add the distribution
+        if panels: plotter.add_distribution(distribution, label, panel=label)
+        else: plotter.add_distribution(distribution, label)
+
+    # Run the plotter
+    plotter.run(output=path)
+
+# -----------------------------------------------------------------
+
 def plot_cumulative(distribution, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
 
     """
@@ -728,8 +769,7 @@ class DistributionPlotter(Configurable):
             if fs.has_extension(full_output_path):
                 directory_path = fs.directory_of(full_output_path)
                 if not fs.is_directory(directory_path): fs.create_directory(directory_path)
-            elif not fs.is_directory(full_output_path):
-                fs.create_directory(full_output_path)
+            elif not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
             self.out_path = full_output_path
 
         # Add distribution files present in the current working directory (if nothing is added manually)
@@ -1283,7 +1323,7 @@ class DistributionPlotter(Configurable):
 
         # Determine path
         if types.is_string_type(self.out_path):
-            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds" + self.config.format)
+            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "distributions" + self.config.format)
             else: path = self.out_path
         else: path = self.out_path
 

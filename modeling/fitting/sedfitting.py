@@ -26,6 +26,7 @@ from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
 from .tables import ModelProbabilitiesTable, ParameterProbabilitiesTable
 from ...core.tools.utils import lazyproperty
+from ...core.plot.distribution import plot_distributions
 
 # -----------------------------------------------------------------
 
@@ -501,19 +502,25 @@ class SEDFitter(FittingComponent):
         log.info("Plotting the probability distributions ...")
 
         # Loop over the different fit parameters
-        for parameter_name in self.distributions:
+        #for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Plotting the probability distribution of the " + self.fitting_run.parameter_descriptions[parameter_name] + " ...")
+            #log.debug("Plotting the probability distribution of the " + self.fitting_run.parameter_descriptions[parameter_name] + " ...")
 
             # Get the probability distribution for this parameter
-            distribution = self.distributions[parameter_name]
-            description = self.fitting_run.parameter_descriptions[parameter_name]
+            #distribution = self.distributions[parameter_name]
+            #description = self.fitting_run.parameter_descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
-            path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
-            try: distribution.plot(title="Probability of the " + description, path=path, logscale=False, xlogscale=True)
-            except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
+            #path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
+            #try: distribution.plot(title="Probability of the " + description, path=path, logscale=False, xlogscale=True)
+            #except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
+
+        # Determine the path
+        path = fs.join(self.fitting_run.prob_distributions_path, "distributions.pdf")
+
+        # Plot in different panels
+        plot_distributions(self.distributions, panels=True, extrema=True, frequencies=True, path=path)
 
     # -----------------------------------------------------------------
 
