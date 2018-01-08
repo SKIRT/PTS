@@ -14,9 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.remote.mounter import RemoteMounter
+from pts.core.remote.mounter import mount_and_open
 from pts.core.remote.host import all_host_ids
-from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -30,13 +29,7 @@ config = parse_arguments("mount", definition, description="Mount a remote config
 
 # -----------------------------------------------------------------
 
-# Create the mounter
-mounter = RemoteMounter()
-
-# Mount and get the mount path
-path = mounter.mount(config.remote, config.path)
-
-# Open the directory
-fs.open_directory(path)
+# Mount and open
+mount_and_open(config.remote, path=config.path)
 
 # -----------------------------------------------------------------

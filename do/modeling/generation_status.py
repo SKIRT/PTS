@@ -23,6 +23,7 @@ from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.plot.distribution import plot_distribution
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -57,6 +58,7 @@ definition.add_flag("extra", "show extra info")
 
 # Flags
 definition.add_flag("offline", "offline modus")
+definition.add_flag("lazy", "lazy modus")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -159,12 +161,32 @@ if config.parameters:
 
 # -----------------------------------------------------------------
 
-# Get the simulations
-for simulation in generation.simulations:
+# Loop over the simulations
+#for simulation in generation.simulations:
+for simulation_name in generation.simulation_names:
 
     # Get simlation name and host ID
-    simulation_name = simulation.name
-    host_id = simulation.host_id
+    #simulation_name = simulation.name
+
+    # Get the simulation
+    if config.lazy or not generation.has_simulation(simulation_name):
+
+        # No simulation object
+        simulation = None
+
+        # Get host ID and simulation ID from generation assignment table
+        host_id = generation.get_host_id(simulation_name)
+        simulation_id = generation.get_simulation_id(simulation_name)
+
+    # Simulation file is not present anymore
+    else:
+
+        # Load the simulation
+        simulation = generation.get_simulation(simulation_name)
+
+        # Get properties
+        host_id = simulation.host_id
+        simulation_id = simulation.id
 
     # Get the parameter values
     if config.parameters: parameter_values = parameters.parameter_values_for_simulation(simulation_name)
@@ -179,30 +201,48 @@ for simulation in generation.simulations:
     # Get extra info
     if config.extra:
         ndigits = 3
-        id_string = strings.integer(simulation.id, ndigits)
+        id_string = strings.integer(simulation_id, ndigits)
         host_string = strings.to_length(host_id, 5)
         extra_string = " (" + host_string + " " + id_string + ")"
     else: extra_string = ""
 
-    # Already analysed
-    if simulation.analysed:
+    # No simulation object
+    if simulation is None:
 
-        # Get chi squared
-        chisq = chi_squared.chi_squared_for(simulation_name)
-        ndecimal = 1
-        ndigits = 7
-        print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+        # Determine simulation path
+        simulation_path = generation.get_simulation_path(simulation_name)
+        simulation_output_path = fs.join(simulation_path, "out")
+        simulation_extr_path = fs.join(simulation_path, "extr")
+        simulation_plot_path = fs.join(simulation_path, "plot")
+        simulation_misc_path = fs.join(simulation_path, "misc")
 
-    elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+        # Empty output?
+        if not fs.is_empty(simulation_misc_path): print(" - " + fmt.green + simulation_name + extra_string + ": done")
+        elif not fs.is_empty(simulation_output_path): print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved")
+        else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown")
+
+    # Simulation object
     else:
 
-        # Not yet retrieved, what is the status?
-        if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
-        else: simulation_status = " unknown"
+        # Already analysed
+        if simulation.analysed:
 
-        # Show
-        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
-        else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+            # Get chi squared
+            chisq = chi_squared.chi_squared_for(simulation_name)
+            ndecimal = 1
+            ndigits = 7
+            print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+
+        elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+        else:
+
+            # Not yet retrieved, what is the status?
+            if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+            else: simulation_status = " unknown"
+
+            # Show
+            if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+            else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
 
     # Get timing
     if timing.has_simulation(simulation_name):

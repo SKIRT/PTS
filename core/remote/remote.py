@@ -161,6 +161,18 @@ def get_host_id(host_id):
 
 # -----------------------------------------------------------------
 
+def get_home_path(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    return Remote(host_id=host_id).home_directory
+
+# -----------------------------------------------------------------
+
 class Remote(object):
 
     """
@@ -3827,6 +3839,22 @@ class Remote(object):
         for line in output:
             if add_sep: yield line + "\n"
             else: yield line
+
+    # -----------------------------------------------------------------
+
+    def get_noccurences(self, path, string):
+
+        """
+        Thisn function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        count = 0
+        for line in self.read_lines(path):
+            if string in line: count += 1
+        return count
 
     # -----------------------------------------------------------------
 

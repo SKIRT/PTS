@@ -33,6 +33,43 @@ if not fs.is_directory(pts_remotes_path): fs.create_directory(pts_remotes_path)
 
 # -----------------------------------------------------------------
 
+def mount_remote(host_id, path=None):
+
+    """
+    This function ...
+    :param host_id:
+    :param path:
+    :return:
+    """
+
+    # Create the mounter
+    mounter = RemoteMounter()
+
+    # Mount and get the mount path
+    mount_path = mounter.mount(host_id, path=path)
+
+    # Return the mount_path
+    return mount_path
+
+# -----------------------------------------------------------------
+
+def mount_and_open(host_id, path=None):
+
+    """
+    This function ...
+    :param host_id:
+    :param path:
+    :return:
+    """
+
+    # Mount and get the mount path
+    mount_path = mount_remote(host_id, path=path)
+
+    # Open the directory
+    fs.open_directory(mount_path)
+
+# -----------------------------------------------------------------
+
 class RemoteMounter(object):
 
     """

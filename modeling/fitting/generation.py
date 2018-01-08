@@ -26,7 +26,9 @@ from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
 from ...core.tools.utils import lazyproperty
 from ...core.launch.batchlauncher import SimulationAssignmentTable
-from ...core.simulation.remote import get_simulation_for_host
+from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host
+from ...core.remote.host import find_host_ids
+from ...core.simulation.screen import ScreenScript
 
 # -----------------------------------------------------------------
 
@@ -214,6 +216,116 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def screen_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = find_host_ids(schedulers=False)
+        names = []
+
+        # Loop over the screen scripts
+        for path in self.screen_script_paths:
+
+            # Get filename
+            filename = fs.strip_extension(fs.name(path))
+
+            # Split
+            splitted = filename.split("_")
+            if len(splitted) == 1: continue
+
+            # Get host ID
+            host_id = splitted[-1]
+            if host_id not in host_ids: continue
+
+            # Add the screen name
+            name = "_".join(splitted[:-1])
+            names.append(name)
+
+        # Return the screen names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nscreens(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.screen_names)
+
+    # -----------------------------------------------------------------
+
+    def get_screen_name(self, script_path):
+
+        """
+        This function ...
+        :param script_path:
+        :return:
+        """
+
+        # Get all remote host IDs
+        host_ids = find_host_ids(schedulers=False)
+
+        # Get filename
+        filename = fs.strip_extension(fs.name(script_path))
+
+        # Split
+        splitted = filename.split("_")
+        if len(splitted) == 1: return None
+
+        # Get host ID
+        host_id = splitted[-1]
+        if host_id not in host_ids: return None
+
+        # Add the screen name
+        name = "_".join(splitted[:-1])
+        return name
+
+    # -----------------------------------------------------------------
+
+    def get_screen_script_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Loop over the screen scripts
+        for path in self.screen_script_paths:
+
+            # Check name
+            screen_name = self.get_screen_name(path)
+            if screen_name == name: return path
+
+        # Error
+        raise ValueError("No such screen")
+
+    # -----------------------------------------------------------------
+
+    def get_screen_script(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get path
+        path = self.get_screen_script_path(name)
+
+        # Load the screen script
+        return ScreenScript.from_file(path)
+
+    # -----------------------------------------------------------------
+
     @property
     def assignment_table_path(self):
 
@@ -304,6 +416,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_ids_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.assignment_table.ids_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
     def get_simulations_for_host(self, host_id):
 
         """
@@ -318,6 +442,58 @@ class Generation(object):
             simulation = get_simulation_for_host(host_id, simulation_id)
             simulations.append(simulation)
         return simulations
+
+    # -----------------------------------------------------------------
+
+    def has_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        host_id = self.get_host_id(name)
+        simulation_id = self.get_simulation_id(name)
+        return has_simulation_for_host(host_id, simulation_id)
+
+    # -----------------------------------------------------------------
+
+    def get_host_id(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.assignment_table.get_host_id_for_simulation(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_id(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.assignment_table.get_simulation_id_for_simulation(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation(self, name):
+
+        """
+        This function ...
+        :param host_id:
+        :param name:
+        :return:
+        """
+
+        # Load and return the simulation
+        return get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
 
     # -----------------------------------------------------------------
 

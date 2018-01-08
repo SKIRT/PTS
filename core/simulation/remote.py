@@ -38,6 +38,32 @@ from .screen import ScreenScript
 
 # -----------------------------------------------------------------
 
+def get_simulation_path_for_host(host_id, simulation_id):
+
+    """
+    This function ...
+    :param host_id:
+    :param simulation_id:
+    :return:
+    """
+
+    return fs.join(introspection.skirt_run_dir, host_id, str(simulation_id) + ".sim")
+
+# -----------------------------------------------------------------
+
+def has_simulation_for_host(host_id, simulation_id):
+
+    """
+    This function ...
+    :param host_id:
+    :param simulation_id:
+    :return:
+    """
+
+    return fs.is_file(get_simulation_path_for_host(host_id, simulation_id))
+
+# -----------------------------------------------------------------
+
 def get_simulation_for_host(host_id, simulation_id):
 
     """
@@ -48,24 +74,34 @@ def get_simulation_for_host(host_id, simulation_id):
     """
 
     # Determine the simulation path
-    simulation_path = fs.join(introspection.skirt_run_dir, host_id, str(simulation_id) + ".sim")
+    simulation_path = get_simulation_path_for_host(host_id, simulation_id)
+    if not fs.is_file(simulation_path): raise ValueError("Simulation file does not exist")
 
     # load the simulation and return
     return RemoteSimulation.from_file(simulation_path)
 
 # -----------------------------------------------------------------
 
-def get_simulations_for_host(host_id, as_dict=False):
+def get_simulations_for_host(host_id, as_dict=False, names=None):
 
     """
     This function ...
     :param host_id:
     :param as_dict:
+    :param names:
     :return:
     """
 
+    # Get simulations for this host
     simulations = [get_simulation_for_host(host_id, simulation_id) for simulation_id in introspection.simulation_ids_for_host(host_id)]
+
+    # Filter
+    if names is not None: simulations = [simulation for simulation in simulations if simulation.name in names]
+
+    # Get the number of simulations
     nsimulations = len(simulations)
+
+    # Return
     if as_dict:
         dictionary = OrderedDict((simulation.name, simulation) for simulation in simulations)
         if len(dictionary) < nsimulations: raise ValueError("Something went wrong: simulation names not unique")
@@ -83,6 +119,52 @@ def get_simulation_names_for_host(host_id):
     """
 
     return [simulation.name for simulation in get_simulations_for_host(host_id)]
+
+# -----------------------------------------------------------------
+
+def get_simulation_ids(host_id, names, as_dict=False):
+
+    """
+    This function ...
+    :param host_id:
+    :param names:
+    :param as_dict:
+    :return:
+    """
+
+    # Get the simulations for this host
+    simulations = get_simulations_for_host(host_id, names=names)
+    nnames = len(names)
+
+    # Return the IDs
+    if as_dict:
+        dictionary = OrderedDict((simulation.name, simulation.id) for simulation in simulations)
+        if len(dictionary) < nnames: raise ValueError("Something went wrong: simulation names not unique")
+        return dictionary
+    else: return [simulation.id for simulation in simulations]
+
+# -----------------------------------------------------------------
+
+def get_simulation_id(host_id, name):
+
+    """
+    This function ...
+    :param host_id:
+    :param name:
+    :return:
+    """
+
+    # Loop over the simulation IDs
+    for simulation_id in introspection.simulation_ids_for_host(host_id):
+
+        # Load simulation
+        simulation = get_simulation_for_host(host_id, simulation_id)
+
+        # Check name
+        if simulation.name == name: return simulation_id
+
+    # None found
+    raise ValueError("Simulation with name '" + name + "' does not exist for remote host '" + host_id + "'")
 
 # -----------------------------------------------------------------
 

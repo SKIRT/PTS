@@ -17,7 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
 from pts.core.remote.remote import Remote
-from pts.core.simulation.remote import get_simulation_for_host
+from pts.core.simulation.remote import get_simulation_for_host, get_simulation_id
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,8 @@ definition = ConfigurationDefinition()
 
 # Add required
 definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
-definition.add_required("id", "positive_integer", "simulation ID")
+definition.add_positional_optional("id", "positive_integer", "simulation ID")
+definition.add_optional("name", "string", "simulation name")
 
 # -----------------------------------------------------------------
 
@@ -35,8 +36,16 @@ config = parse_arguments("show_simulation_log", definition, description="Show th
 
 # -----------------------------------------------------------------
 
+# Determine simulation ID
+if config.name is not None:
+    if config.id is not None: raise ValueError("Cannot specifiy both name and simulation ID")
+    simulation_id = get_simulation_id(config.remote, config.name)
+else: simulation_id = config.id
+
+# -----------------------------------------------------------------
+
 # Open the simulation
-simulation = get_simulation_for_host(config.remote, config.id)
+simulation = get_simulation_for_host(config.remote, simulation_id)
 
 # The name of the ski file (the simulation prefix)
 ski_name = simulation.prefix()
