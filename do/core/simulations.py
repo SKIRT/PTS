@@ -28,6 +28,7 @@ definition = ConfigurationDefinition()
 # Add required
 definition.add_required("host_ids", "string_list", "names of the remote hosts", choices=find_host_ids())
 definition.add_positional_optional("simulation_ids", "integer_list", "simulations to show")
+definition.add_optional("names", "string_list", "simulation names to show")
 
 # Add flag
 definition.add_flag("analysis", "show analysis options", False)

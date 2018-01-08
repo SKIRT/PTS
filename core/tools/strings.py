@@ -1115,6 +1115,7 @@ def add_whitespace(string, length, position="end"):
     This function ...
     :param string:
     :param length:
+    :param position:
     :return:
     """
 
@@ -1127,6 +1128,23 @@ def add_whitespace(string, length, position="end"):
         if position == "end": return string + " " * nspaces
         elif position == "start": return " " * nspaces + string
         else: raise ValueError("Invalid option for 'position'")
+
+# -----------------------------------------------------------------
+
+def to_length(string, length, ellipsis_position="end", whitespace_position="end", fill=" "):
+
+    """
+    This function ...
+    :param string:
+    :param length:
+    :param ellipsis_position:
+    :param whitespace_position:
+    :param fill:
+    :return:
+    """
+
+    if fill != " ": raise NotImplementedError("Not yet implemented")
+    return add_whitespace_or_ellipsis(string, length, ellipsis_position=ellipsis_position, whitespace_position=whitespace_position)
 
 # -----------------------------------------------------------------
 
@@ -1281,6 +1299,27 @@ def remove_hash_words(string):
     """
 
     return " ".join(filter(lambda x: x[0] != '#', string.split()))
+
+# -----------------------------------------------------------------
+
+def integer(number, ndigits, fill="0"):
+
+    """
+    This function ...
+    :param number:
+    :param ndigits:
+    :param fill:
+    :return:
+    """
+
+    number = int(number)
+    string = str(number)
+
+    if len(string) > ndigits: raise ValueError("Cannot represent the integer number '" + str(number) + "' with only " + str(ndigits) + " digits")
+
+    # Return
+    before = fill * (ndigits - len(string))
+    return before + string
 
 # -----------------------------------------------------------------
 

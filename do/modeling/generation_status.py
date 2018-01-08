@@ -53,6 +53,7 @@ definition.add_flag("show_memory", "show memory")
 
 # Show parameters
 definition.add_flag("parameters", "show the parameter values")
+definition.add_flag("extra", "show extra info")
 
 # Flags
 definition.add_flag("offline", "offline modus")
@@ -175,6 +176,14 @@ for simulation in generation.simulations:
         parameters_string = "\t".join(parameter_strings)
     else: parameters_string = ""
 
+    # Get extra info
+    if config.extra:
+        ndigits = 3
+        id_string = strings.integer(simulation.id, ndigits)
+        host_string = strings.to_length(host_id, 5)
+        extra_string = " (" + host_string + " " + id_string + ")"
+    else: extra_string = ""
+
     # Already analysed
     if simulation.analysed:
 
@@ -182,7 +191,7 @@ for simulation in generation.simulations:
         chisq = chi_squared.chi_squared_for(simulation_name)
         ndecimal = 1
         ndigits = 7
-        print(" - " + fmt.green + simulation_name + ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+        print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
 
     elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
     else:
@@ -192,8 +201,8 @@ for simulation in generation.simulations:
         else: simulation_status = " unknown"
 
         # Show
-        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
-        else: print(" - " + fmt.red + simulation_name + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+        if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+        else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
 
     # Get timing
     if timing.has_simulation(simulation_name):
