@@ -12,9 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..component import FittingComponent
-from ....core.tools import tables
 from ....core.tools import filesystem as fs
 from ....magic.tools import wavelengths
 from ....core.basics.log import log
@@ -196,79 +198,11 @@ class FittingInitializerBase(FittingComponent):
         # Inform the user
         log.info("Calculating the weight to give to each band ...")
 
-        # Initialize lists to contain the filters of the different wavelength ranges
-        uv_bands = []
-        optical_bands = []
-        nir_bands = []
-        mir_bands = []
-        fir_bands = []
-        submm_bands = []
+        # Get the weights
+        weights = calculate_weights_filters(self.fitting_run.fitting_filters)
 
-        # Loop over the observed SED filters
-        for fltr in self.fitting_run.fitting_filters:
-
-            # Get the central wavelength
-            wavelength = fltr.center
-
-            # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
-            spectrum = wavelengths.name_in_spectrum(wavelength)
-
-            # Determine to which group
-            if spectrum[0] == "UV": uv_bands.append(fltr)
-            elif spectrum[0] == "Optical": optical_bands.append(fltr)
-            elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
-            elif spectrum[0] == "IR":
-                if spectrum[1] == "NIR": nir_bands.append(fltr)
-                elif spectrum[1] == "MIR": mir_bands.append(fltr)
-                elif spectrum[1] == "FIR": fir_bands.append(fltr)
-                else: raise RuntimeError("Unknown IR range")
-            elif spectrum[0] == "Submm": submm_bands.append(fltr)
-            else: raise RuntimeError("Unknown wavelength range")
-
-        # Set the number of groups
-        number_of_groups = 0
-
-        # Check which groups are present
-        has_uv = len(uv_bands) > 0
-        has_optical = len(optical_bands) > 0
-        has_nir = len(nir_bands) > 0
-        has_mir = len(mir_bands) > 0
-        has_fir = len(fir_bands) > 0
-        has_submm = len(submm_bands) > 0
-
-        if has_uv: number_of_groups += 1
-        if has_optical: number_of_groups += 1
-        if has_nir: number_of_groups += 1
-        if has_mir: number_of_groups += 1
-        if has_fir: number_of_groups += 1
-        if has_submm: number_of_groups += 1
-
-        # Detemrine total number of data points
-        number_of_data_points = len(self.fitting_run.fitting_filters)
-
-        # Determine the weight for each group of filters
-        uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points if has_uv else 0.0
-        optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points if has_optical else 0.0
-        nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points if has_nir else 0.0
-        mir_weight = 1. / (len(mir_bands) * number_of_groups) * number_of_data_points if has_mir else 0.0
-        fir_weight = 1. / (len(fir_bands) * number_of_groups) * number_of_data_points if has_fir else 0.0
-        submm_weight = 1. / (len(submm_bands) * number_of_groups) * number_of_data_points if has_submm else 0.0
-
-        # Debugging
-        if has_uv: log.debug("UV: number of bands = " + str(len(uv_bands)) + ", weight = " + str(uv_weight))
-        if has_optical: log.debug("Optical: number of bands = " + str(len(optical_bands)) + ", weight = " + str(optical_weight))
-        if has_nir: log.debug("NIR: number of bands = " + str(len(nir_bands)) + ", weight = " + str(nir_weight))
-        if has_mir: log.debug("MIR: number of bands = " + str(len(mir_bands)) + ", weight = " + str(mir_weight))
-        if has_fir: log.debug("FIR: number of bands = " + str(len(fir_bands)) + ", weight = " + str(fir_weight))
-        if has_submm: log.debug("Submm: number of bands = " + str(len(submm_bands)) + ", weight = " + str(submm_weight))
-
-        # Loop over the bands in each group and set the weight in the weights table
-        for fltr in uv_bands: self.weights.add_point(fltr, uv_weight)
-        for fltr in optical_bands: self.weights.add_point(fltr, optical_weight)
-        for fltr in nir_bands: self.weights.add_point(fltr, nir_weight)
-        for fltr in mir_bands: self.weights.add_point(fltr, mir_weight)
-        for fltr in fir_bands: self.weights.add_point(fltr, fir_weight)
-        for fltr in submm_bands: self.weights.add_point(fltr, submm_weight)
+        # Add to weights table
+        for fltr in weights: self.weights.add_point(fltr, weights[fltr])
 
     # -----------------------------------------------------------------
 
@@ -422,5 +356,154 @@ class FittingInitializerBase(FittingComponent):
 
         # Write
         write_dict(self.input_map_paths, self.input_maps_path)
+
+# -----------------------------------------------------------------
+
+def calculate_weights_filters(filters):
+
+    """
+    This function ...
+    :param filters:
+    :return:
+    """
+
+    # Get bands per regime
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands = split_filters_regimes(filters)
+
+    # Get nbands per regime
+    nuv = len(uv_bands)
+    noptical = len(optical_bands)
+    nnir = len(nir_bands)
+    nmir = len(mir_bands)
+    nfir = len(fir_bands)
+    nsubmm = len(submm_bands)
+
+    # Determine regime weights
+    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm)
+
+    # Initialize dictionary for the weights per filter
+    weights = OrderedDict()
+
+    # Loop over the bands in each group and set the weight in the weights table
+    for fltr in uv_bands: weights[fltr] = uv_weight
+    for fltr in optical_bands: weights[fltr] = optical_weight
+    for fltr in nir_bands: weights[fltr] = nir_weight
+    for fltr in mir_bands: weights[fltr] = mir_weight
+    for fltr in fir_bands: weights[fltr] = fir_weight
+    for fltr in submm_bands: weights[fltr] = submm_weight
+
+    # Return the weights
+    return weights
+
+# -----------------------------------------------------------------
+
+def split_filters_regimes(filters):
+
+    """
+    This function ...
+    :param filters:
+    :return:
+    """
+
+    # Initialize lists to contain the filters of the different wavelength ranges
+    uv_bands = []
+    optical_bands = []
+    nir_bands = []
+    mir_bands = []
+    fir_bands = []
+    submm_bands = []
+
+    # Loop over the observed SED filters
+    for fltr in filters:
+
+        # Get the central wavelength
+        wavelength = fltr.center
+
+        # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
+        spectrum = wavelengths.name_in_spectrum(wavelength)
+
+        # Determine to which group
+        if spectrum[0] == "UV": uv_bands.append(fltr)
+        elif spectrum[0] == "Optical": optical_bands.append(fltr)
+        elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
+        elif spectrum[0] == "IR":
+            if spectrum[1] == "NIR": nir_bands.append(fltr)
+            elif spectrum[1] == "MIR": mir_bands.append(fltr)
+            elif spectrum[1] == "FIR": fir_bands.append(fltr)
+            else: raise RuntimeError("Unknown IR range")
+        elif spectrum[0] == "Submm": submm_bands.append(fltr)
+        else: raise RuntimeError("Unknown wavelength range")
+
+    # Return
+    return uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands
+
+# -----------------------------------------------------------------
+
+def get_nbands_per_regime(filters):
+
+    """
+    This function ...
+    :param filters:
+    :return:
+    """
+
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands = split_filters_regimes(filters)
+    return len(uv_bands), len(optical_bands), len(nir_bands), len(mir_bands), len(fir_bands), len(submm_bands)
+
+# -----------------------------------------------------------------
+
+def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm):
+
+    """
+    This function ...
+    :param nuv:
+    :param noptical:
+    :param nnir:
+    :param nmir:
+    :param nfir:
+    :param nsubmm:
+    :return:
+    """
+
+    # Set the number of groups
+    number_of_groups = 0
+
+    # Check which groups are present
+    has_uv = nuv > 0
+    has_optical = noptical > 0
+    has_nir = nnir > 0
+    has_mir = nmir > 0
+    has_fir = nfir > 0
+    has_submm = nsubmm > 0
+
+    if has_uv: number_of_groups += 1
+    if has_optical: number_of_groups += 1
+    if has_nir: number_of_groups += 1
+    if has_mir: number_of_groups += 1
+    if has_fir: number_of_groups += 1
+    if has_submm: number_of_groups += 1
+
+    # Detemrine total number of data points
+    #number_of_data_points = len(filters)
+    number_of_data_points = nuv + noptical + nnir + nmir + nfir + nsubmm
+
+    # Determine the weight for each group of filters
+    uv_weight = 1. / (nuv * number_of_groups) * number_of_data_points if has_uv else 0.0
+    optical_weight = 1. / (noptical * number_of_groups) * number_of_data_points if has_optical else 0.0
+    nir_weight = 1. / (nnir * number_of_groups) * number_of_data_points if has_nir else 0.0
+    mir_weight = 1. / (nmir * number_of_groups) * number_of_data_points if has_mir else 0.0
+    fir_weight = 1. / (nfir * number_of_groups) * number_of_data_points if has_fir else 0.0
+    submm_weight = 1. / (nsubmm * number_of_groups) * number_of_data_points if has_submm else 0.0
+
+    # Debugging
+    if has_uv: log.debug("UV: number of bands = " + str(nuv) + ", weight = " + str(uv_weight))
+    if has_optical: log.debug("Optical: number of bands = " + str(noptical) + ", weight = " + str(optical_weight))
+    if has_nir: log.debug("NIR: number of bands = " + str(nnir) + ", weight = " + str(nir_weight))
+    if has_mir: log.debug("MIR: number of bands = " + str(nmir) + ", weight = " + str(mir_weight))
+    if has_fir: log.debug("FIR: number of bands = " + str(nfir) + ", weight = " + str(fir_weight))
+    if has_submm: log.debug("Submm: number of bands = " + str(nsubmm) + ", weight = " + str(submm_weight))
+
+    # Return the weights
+    return uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight
 
 # -----------------------------------------------------------------

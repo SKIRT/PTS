@@ -248,6 +248,7 @@ if config.statistics:
         # Get most probable parameter value
         most_probable_value = generation.get_most_probable_parameter_value(label)
 
+        print("    * Initial guess value: " + tostr(initial_parameter_values[label], ndigits=3))
         print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
         print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(parameter_units[label]))
         if config.nsimulations > 1: print("    * Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(parameter_units[label]))
