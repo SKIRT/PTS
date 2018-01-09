@@ -908,9 +908,10 @@ class DistributionPlotter(Configurable):
         colors = iter(pretty_colours)
 
         # Plot the distributions
-        for label in self.distributions:
+        for label in self.distributions[self.single_panel]:
 
-            distribution = self.distributions[label]
+            # Get the distribution
+            distribution = self.distributions[self.single_panel][label]
 
             # Plot the distribution as a histogram
             alpha = None

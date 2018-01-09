@@ -52,11 +52,14 @@ class SEDFitter(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
-        # The model probabilities tables
+        # The model probabilities (per generation)
         self.model_probabilities = dict()
 
-        # The parameter probabilities tables
+        # The parameter probabilities (per generation)
         self.parameter_probabilities = dict()
+
+        # All generations parameter probabilities
+        self.parameter_probabilities_all = dict()
 
         # The model parameter table
         self.parameter_tables = dict()
@@ -100,6 +103,18 @@ class SEDFitter(FittingComponent):
 
         # 6. Writing
         self.write()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def free_parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.free_parameter_labels
 
     # -----------------------------------------------------------------
 
@@ -209,6 +224,9 @@ class SEDFitter(FittingComponent):
             # Check if the generation is already in the best parameters table
             if generation_name in self.fitting_run.best_parameters_table.generation_names: continue
 
+            # Debugging
+            log.debug("Getting the best parameter values for generation '" + generation_name + "' ...")
+
             # Otherwise, add the best parameter values
             values, chi_squared = self.fitting_run.best_parameter_values_for_generation(generation_name, return_chi_squared=True, only_finished=self.only_finished)
 
@@ -227,15 +245,18 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Calculating the probabilities ...")
 
-        # Calculate the probability tables
-        self.calculate_model_probabilities()
+        # Get the probability tables
+        self.get_model_probabilities()
 
-        # Calcualte the combined probability tables (all finished generations)
+        # Calculate the parameter probabilities for each generation separately
         self.calculate_parameter_probabilities()
+
+        # Calculate the combined probabilities for all generations
+        self.calculate_all_parameter_probabilities()
 
     # -----------------------------------------------------------------
 
-    def calculate_model_probabilities(self):
+    def get_model_probabilities(self):
 
         """
         This function ...
@@ -243,62 +264,120 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
+        log.info("Getting the model probabilities for the generations ...")
 
         # Loop over the finished generations
         for generation_name in self.generation_names:
 
             # Check whether the probabilities table is already present for this generation
-            if fs.is_file(self.prob_generations_table_paths[generation_name]):
-
-                # Debugging
-                log.debug("Loading the model probabilities table for generation " + generation_name + " ...")
-
-                # Load the probabilities table
-                probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
-
-                # Add to the dictionary
-                self.model_probabilities[generation_name] = probabilities_table
+            if fs.is_file(self.prob_generations_table_paths[generation_name]): self.load_model_probabilities_generation(generation_name)
 
             # Otherwise, calculate the probabilities based on the chi squared table
-            else:
+            else: self.calculate_model_probabilities_generation(generation_name)
 
-                # Load the parameter table
-                parameter_table = self.fitting_run.parameters_table_for_generation(generation_name)
+    # -----------------------------------------------------------------
 
-                # Load the chi squared table
-                chi_squared_table = self.fitting_run.chi_squared_table_for_generation(generation_name)
+    def load_model_probabilities_generation(self, generation_name):
 
-                # Sort the table for decreasing chi squared value
-                chi_squared_table.sort("Chi squared")
-                chi_squared_table.reverse()
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
 
-                # Get the chi squared values
-                chi_squared_values = chi_squared_table["Chi squared"]
+        # Debugging
+        log.debug("Loading the model probabilities table for generation '" + generation_name + "' ...")
 
-                # Calculate the probability for each model
-                probabilities = np.exp(-0.5 * chi_squared_values)
+        # Load the probabilities table
+        probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
 
-                # Create the probabilities table
-                probabilities_table = ModelProbabilitiesTable(parameters=self.fitting_run.free_parameter_labels, units=self.fitting_run.parameter_units)
+        # Add to the dictionary
+        self.model_probabilities[generation_name] = probabilities_table
 
-                # Add the entries to the model probabilities table
-                for i in range(len(chi_squared_table)):
+    # -----------------------------------------------------------------
 
-                    # Get the simulation name
-                    simulation_name = chi_squared_table["Simulation name"][i]
+    def get_simulation_names_parameters_and_chi_squared_for_generation(self, generation_name):
 
-                    # Get a dictionary with the parameter values for this simulation
-                    parameter_values = parameter_table.parameter_values_for_simulation(simulation_name)
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
 
-                    # Add an entry to the table
-                    probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
+        # Load the parameter table
+        parameter_table = self.fitting_run.parameters_table_for_generation(generation_name)
 
-                # Save the model probabilities table
-                probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
+        # Load the chi squared table
+        chi_squared_table = self.fitting_run.chi_squared_table_for_generation(generation_name)
 
-                # Add to the dictionary
-                self.model_probabilities[generation_name] = probabilities_table
+        # Sort the table for decreasing chi squared value
+        chi_squared_table.sort("Chi squared")
+        chi_squared_table.reverse()
+
+        # Get the chi squared values
+        chi_squared_values = list(chi_squared_table["Chi squared"])
+
+        # Initialize lists
+        simulation_names = []
+        parameter_values = []
+
+        # Loop over the simulations
+        for i in range(len(chi_squared_table)):
+
+            # Get the simulation name
+            simulation_name = chi_squared_table["Simulation name"][i]
+
+            # Get a dictionary with the parameter values for this simulation
+            values = parameter_table.parameter_values_for_simulation(simulation_name)
+
+            # Add to lists
+            simulation_names.append(simulation_name)
+            parameter_values.append(values)
+
+        # Return
+        return simulation_names, parameter_values, chi_squared_values
+
+    # -----------------------------------------------------------------
+
+    def calculate_model_probabilities_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Calculating model probabilities for generation '" + generation_name + "' ...")
+
+        # Get simulation names with parameter values and chi squared values
+        simulation_names, parameter_values, chi_squared_values = self.get_simulation_names_parameters_and_chi_squared_for_generation(generation_name)
+        nsimulations = len(simulation_names)
+
+        # Calculate the probability for each model
+        probabilities = np.exp(-0.5 * np.asarray(chi_squared_values))
+
+        # Create the probabilities table
+        probabilities_table = ModelProbabilitiesTable(parameters=self.fitting_run.free_parameter_labels,
+                                                      units=self.fitting_run.parameter_units)
+
+        # Add the entries to the model probabilities table
+        for i in range(nsimulations):
+
+            # Get the simulation name
+            simulation_name = simulation_names[i]
+
+            # Get a dictionary with the parameter values for this simulation
+            values = parameter_values[i]
+
+            # Add an entry to the table
+            probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
+
+        # Save the model probabilities table
+        probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
+
+        # Add to the dictionary
+        self.model_probabilities[generation_name] = probabilities_table
 
     # -----------------------------------------------------------------
 
@@ -310,7 +389,58 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Calculating the probabilities of the different parameter values ...")
+        log.info("Calculating the probabilities of the different parameter values for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Initialize dictionary for this generation
+            self.parameter_probabilities[generation_name] = dict()
+
+            # Loop over the free parameters
+            for label in self.free_parameter_labels:
+
+                # Create a set for the unique values
+                unique_values = set()
+
+                # Initialize a ParameterProbabilitiesTable instance for this parameter
+                table = ParameterProbabilitiesTable()
+
+                # Loop over the values of this parameter for this generation, and expand the set accordingly
+                for value in self.model_probabilities[generation_name][label]: unique_values.add(value)
+
+                # Get a (sorted) list of all the unique values for this parameter
+                unique_values = sorted(list(unique_values))
+
+                # Add an entry for each unique parameter value that has been encountered
+                for value in unique_values:
+
+                    # Get an array of the probabilities of all the models that have this unique value
+                    simulation_indices = self.model_probabilities[generation_name][label] == value
+                    #nsimulations_for_value = np.sum(simulation_indices)
+                    #individual_probabilities += list(self.model_probabilities[generation_name]["Probability"][simulation_indices])
+                    individual_probabilities = self.model_probabilities[generation_name]["Probability"][simulation_indices]
+
+                    # Combine the individual probabilities
+                    combined_probability = np.sum(np.asarray(individual_probabilities))
+
+                    # Add an entry to the table
+                    table.add_entry(value, combined_probability)
+
+                # Set the table
+                self.parameter_probabilities[generation_name][label] = table
+
+    # -----------------------------------------------------------------
+
+    def calculate_all_parameter_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the probabilities of the different parameter values for all generations ...")
 
         # Loop over the free parameters
         for label in self.fitting_run.free_parameter_labels:
@@ -349,7 +479,7 @@ class SEDFitter(FittingComponent):
                 table.add_entry(value, combined_probability)
 
             # Set the table
-            self.parameter_probabilities[label] = table
+            self.parameter_probabilities_all[label] = table
 
     # -----------------------------------------------------------------
 
@@ -366,11 +496,14 @@ class SEDFitter(FittingComponent):
         # Loop over the free parameters
         for label in self.fitting_run.free_parameter_labels:
 
+            # Debugging
+            log.debug("Creating distribution for the '" + label + "' parameter ...")
+
             # Convert the probability lists into NumPy arrays and normalize them
-            normalized_probabilities = np.array(self.parameter_probabilities[label]["Probability"]) / sum(self.parameter_probabilities[label]["Probability"])
+            normalized_probabilities = np.array(self.parameter_probabilities_all[label]["Probability"]) / sum(self.parameter_probabilities_all[label]["Probability"])
 
             # Create the probability distributions for the different parameters
-            self.distributions[label] = Distribution.from_probabilities(label, normalized_probabilities, self.parameter_probabilities[label]["Value"])
+            self.distributions[label] = Distribution.from_probabilities(label, normalized_probabilities, self.parameter_probabilities_all[label]["Value"])
 
     # -----------------------------------------------------------------
 
@@ -423,6 +556,9 @@ class SEDFitter(FittingComponent):
         # Write the parameter probabilities
         self.write_parameter_probabilities()
 
+        # Write all generations parameter probabilities
+        self.write_all_parameter_probabilities()
+
         # Write the ski file of the best simulation
         self.write_best_parameters()
 
@@ -445,13 +581,25 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the parameter probabilities ...")
+        log.info("Writing the parameter probabilities for each generation ...")
+
+    # -----------------------------------------------------------------
+
+    def write_all_parameter_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the parameter probabilities from all generations ...")
 
         # Loop over the probability tables for the different free parameter
         for label in self.fitting_run.free_parameter_labels:
 
             # Save the table
-            self.parameter_probabilities[label].saveto(self.fitting_run.get_parameter_probabilities_path(label))
+            self.parameter_probabilities_all[label].saveto(self.fitting_run.get_parameter_probabilities_path(label))
 
     # -----------------------------------------------------------------
 
@@ -501,21 +649,6 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Plotting the probability distributions ...")
 
-        # Loop over the different fit parameters
-        #for parameter_name in self.distributions:
-
-            # Debugging
-            #log.debug("Plotting the probability distribution of the " + self.fitting_run.parameter_descriptions[parameter_name] + " ...")
-
-            # Get the probability distribution for this parameter
-            #distribution = self.distributions[parameter_name]
-            #description = self.fitting_run.parameter_descriptions[parameter_name]
-
-            # Create a plot file for the probability distribution
-            #path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
-            #try: distribution.plot(title="Probability of the " + description, path=path, logscale=False, xlogscale=True)
-            #except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
-
         # Determine the path
         path = fs.join(self.fitting_run.prob_distributions_path, "distributions.pdf")
 
@@ -539,15 +672,6 @@ class SEDFitter(FittingComponent):
 
         # Write the animation
         self.animation.saveto(path)
-
-# -----------------------------------------------------------------
-
-#if False:
-#    "THIS DOES NOT WORK!"
-#    "Need to interpolate somehow because the 3 parameter vectors have different lengths..."
-#    fig = plt.figure(figsize=(10, 4))
-#    plotContours(params1, MdustProb, FyoungProb, FionizedProb)
-#    fig.savefig(outpath + "plotChi2Contours.pdf", format='pdf')
 
 # -----------------------------------------------------------------
 

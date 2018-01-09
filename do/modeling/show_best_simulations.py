@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
@@ -20,6 +23,8 @@ from pts.core.tools.stringify import tostr
 from pts.core.tools import filesystem as fs
 from pts.core.tools import nr
 from pts.core.tools import numbers
+from pts.core.basics.distribution import Distribution
+from pts.core.plot.distribution import plot_distributions
 
 # -----------------------------------------------------------------
 
@@ -44,6 +49,9 @@ definition.add_positional_optional("nsimulations", "positive_integer", "number o
 
 # Options
 definition.add_flag("sed", "show the SED plot")
+definition.add_flag("counts", "show the counts")
+definition.add_flag("plot_counts", "plot the counts")
+definition.add_flag("statistics", "show statistics", True)
 
 # Create the configuration
 config = parse_arguments("show_best_simulations", definition)
@@ -95,13 +103,10 @@ unique_values_scalar = dict()
 for label in unique_values:
     values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
     unique_values_scalar[label] = values
-#print(unique_values)
-#print(unique_values_scalar)
 
 # -----------------------------------------------------------------
 
 initial_parameter_values = fitting_run.first_guess_parameter_values
-#print(initial_parameter_values)
 
 # Show initial parameter values
 print("")
@@ -111,8 +116,20 @@ for label in parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": "
 
 # -----------------------------------------------------------------
 
-# Get best simulation name
+# Initialize the counts dictionary
+counts = dict()
+for label in parameter_labels: counts[label] = defaultdict(int)
+
+# Fill with zeros
+for label in parameter_labels:
+    for value in unique_values_scalar[label]: counts[label][value] = 0
+
+# -----------------------------------------------------------------
+
+# Get all simulation names
 simulation_names = chi_squared.get_best_simulation_names(config.nsimulations)
+
+# -----------------------------------------------------------------
 
 # Loop over the simulations
 for index, simulation_name in enumerate(simulation_names):
@@ -132,6 +149,7 @@ for index, simulation_name in enumerate(simulation_names):
     print("  - parameters:")
     for label in parameter_values:
 
+        # Get properties
         unit = parameter_units[label]
         initial_value = initial_parameter_values[label]
         initial_value_scalar = initial_value.to(unit).value
@@ -156,19 +174,17 @@ for index, simulation_name in enumerate(simulation_names):
         #indicator += "|"
         indicator += "]"
 
+        # Show
         print("     * " + fmt.bold + label + fmt.reset + ": " + tostr(value) + "   " + indicator)
+
+        # Add count for this parameter
+        counts[label][value_scalar] += 1
 
     # Show SED?
     if config.sed:
 
-        # Determine simulation path
-        simulation_path = generation.get_simulation_path(simulation_name)
-
-        # Simulation paths
-        output_path = fs.join(simulation_path, "out")
-        extract_path = fs.join(simulation_path, "extr")
-        plot_path = fs.join(simulation_path, "plot")
-        misc_path = fs.join(simulation_path, "misc")
+        # Determine the plot path
+        plot_path = generation.get_simulation_plot_path(simulation_name)
 
         # Determine SED path
         sed_plot_path = fs.join(plot_path, "sed.pdf")
@@ -177,5 +193,55 @@ for index, simulation_name in enumerate(simulation_names):
         fs.open_file(sed_plot_path)
 
 print("")
+
+# -----------------------------------------------------------------
+
+# Make counts distributions
+counts_distributions = dict()
+for label in parameter_labels: counts_distributions[label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
+
+# -----------------------------------------------------------------
+
+# Show counts
+if config.counts:
+    print("Counts in best simulations:")
+    for label in parameter_labels:
+        print("")
+        print(" - " + fmt.bold + label + fmt.reset + ":")
+        print("")
+        for value in sorted(counts[label].keys()):
+            count = counts[label][value]
+            relcount = float(count) / config.nsimulations
+            print("    * " + tostr(value) + ": " + str(counts[label][value]) + " (" + tostr(relcount*100) + "%)")
+
+# -----------------------------------------------------------------
+
+# Plot the distributions
+if config.plot_counts: plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True)
+
+# -----------------------------------------------------------------
+
+# Show statistics?
+if config.statistics:
+
+    # Get best simulation name and chi squared
+    best_simulation_name, best_chi_squared = chi_squared.best_simulation_name_and_chi_squared
+
+    # Get best simulation parameter values
+    best_parameter_values = parameters.parameter_values_for_simulation(best_simulation_name)
+
+    print("")
+    print("Statistics:")
+
+    # Loop over the free parameter labels
+    for label in parameter_labels:
+
+        print("")
+        print(" - " + fmt.bold + label + fmt.reset + ":")
+        print("")
+
+        print(" - Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
+        print(" - Most probable value: " + tostr())
+        if config.nsimulations > 1: print(" - Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3))
 
 # -----------------------------------------------------------------

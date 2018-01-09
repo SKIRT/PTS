@@ -130,7 +130,7 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_columns(cls, name, values, frequencies, y_name="Frequency", unit=None):
+    def from_columns(cls, name, values, frequencies, y_name="Frequency", unit=None, sort=False):
 
         """
         This function ...
@@ -139,6 +139,7 @@ class Distribution(Curve):
         :param frequencies:
         :param y_name:
         :param unit:
+        :param sort:
         :return:
         """
 
@@ -147,7 +148,13 @@ class Distribution(Curve):
 
         # Check if sorted
         from ..tools import sequences
-        if not sequences.is_sorted(values): raise ValueError("Values are not sorted")
+        if not sequences.is_sorted(values):
+            if sort:
+                # Create sorted lists
+                indices = sequences.argsort(values)
+                values = [values[index] for index in indices]
+                frequencies = [frequencies[index] for index in indices]
+            else: raise ValueError("Values are not sorted")
 
         # Set data
         distr[name] = np.array(values)
@@ -159,7 +166,7 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_probabilities(cls, name, probabilities, values, unit=None):
+    def from_probabilities(cls, name, probabilities, values, unit=None, sort=False):
 
         """
         This function ...
@@ -167,16 +174,17 @@ class Distribution(Curve):
         :param values:
         :param name:
         :param unit:
+        :param sort:
         :return:
         """
 
         # Create
-        return cls.from_columns(name, values, probabilities, y_name="Probability", unit=unit)
+        return cls.from_columns(name, values, probabilities, y_name="Probability", unit=unit, sort=sort)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_counts(cls, name, counts, values, unit=None):
+    def from_counts(cls, name, counts, values, unit=None, sort=False):
 
         """
         This function ...
@@ -184,10 +192,11 @@ class Distribution(Curve):
         :param counts:
         :param values:
         :param unit:
+        :param sort:
         :return:
         """
 
-        return cls.from_columns(name, values, counts, y_name="Counts", unit=unit)
+        return cls.from_columns(name, values, counts, y_name="Counts", unit=unit, sort=sort)
 
     # -----------------------------------------------------------------
 
@@ -389,6 +398,18 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @property
+    def has_single_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nvalues == 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def nbins(self):
 
         """
@@ -397,6 +418,18 @@ class Distribution(Curve):
         """
 
         return self.nvalues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_bin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nbins == 1
 
     # -----------------------------------------------------------------
 
@@ -845,9 +878,11 @@ class Distribution(Curve):
             edges.append(edge)
 
         # Calculate first and last edge widths
-        first_edge_width = self.second_value - self.first_value
+        if self.has_single_bin: first_edge_width = 0.1 * self.values[0]
+        else: first_edge_width = self.second_value - self.first_value
         first_edge_half_width = 0.5 * first_edge_width
-        last_edge_width = self.last_value - self.second_last_value
+        if self.has_single_bin: last_edge_width = 0.1 * self.values[0]
+        else: last_edge_width = self.last_value - self.second_last_value
         last_edge_half_width = 0.5 * last_edge_width
 
         # Set first edge position
@@ -966,9 +1001,11 @@ class Distribution(Curve):
             edges.append(edge)
 
         # Calculate first and last edge widths (factors)
-        first_edge_factor = self.second_value / self.first_value
+        if self.has_single_bin: first_edge_factor = 2.
+        else: first_edge_factor = self.second_value / self.first_value
         first_edge_sqrt_factor = np.sqrt(first_edge_factor)
-        last_edge_factor = self.last_value / self.second_last_value
+        if self.has_single_bin: last_edge_factor = 2.
+        else: last_edge_factor = self.last_value / self.second_last_value
         last_edge_sqrt_factor = np.sqrt(last_edge_factor)
 
         # Set first edge position

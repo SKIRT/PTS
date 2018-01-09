@@ -31,6 +31,22 @@ def ordered(sequence):
 
 # -----------------------------------------------------------------
 
+def argsort(seq):
+
+    """
+    This function ...
+    :param seq:
+    :return:
+    """
+
+    # Determine sort key
+    sortkey = seq.__getitem__
+
+    # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
+    return sorted(range(len(seq)), key=sortkey)
+
+# -----------------------------------------------------------------
+
 def repeat(sequence, ntimes):
 
     """
