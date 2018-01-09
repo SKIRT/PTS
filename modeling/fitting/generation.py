@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools import filesystem as fs
 from ..build.component import get_model_definition, get_representation
-from .tables import IndividualsTable, ParametersTable, ChiSquaredTable
+from .tables import IndividualsTable, ParametersTable, ChiSquaredTable, ParameterProbabilitiesTable, ModelProbabilitiesTable
 from ...evolve.optimize.tables import ElitismTable, CrossoverTable, ScoresTable, RecurrenceTable
 from ...evolve.optimize.stepwise import load_population
 from ...core.basics.configurable import load_input
@@ -1789,6 +1789,117 @@ class Generation(object):
 
         from .run import FittingRun
         return FittingRun.from_path(self.fitting_run_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generations_probabilities_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.fitting_run.prob_path, "generations")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def probabilities_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.generations_probabilities_path, self.name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_probabilities_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.probabilities_path, "models.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_probabilities_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ModelProbabilitiesTable.from_file(self.model_probabilities_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def most_probable_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_probabilities_table.most_probable_simulation
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_probabilities_table_path(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return fs.join(self.probabilities_path, label + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def has_parameter_probabilities_table(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        path = self.get_parameter_probabilities_table_path(label)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_probabilities_table(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        path = self.get_parameter_probabilities_table_path(label)
+        return ParameterProbabilitiesTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_most_probable_parameter_value(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        table = self.get_parameter_probabilities_table(label)
+        return table.most_probable_value
 
     # -----------------------------------------------------------------
 

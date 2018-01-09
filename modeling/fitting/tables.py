@@ -1309,6 +1309,19 @@ class ModelProbabilitiesTable(SmartTable):
         # Add a row to the table
         self.add_row(values)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def most_probable_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmax(self["Probability"])
+        return self["Simulation name"][index]
+
 # -----------------------------------------------------------------
 
 class ParameterProbabilitiesTable(SmartTable):
@@ -1348,5 +1361,18 @@ class ParameterProbabilitiesTable(SmartTable):
 
         # Add a row to the table
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def most_probable_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmax(self["Probability"])
+        return self["Value"][index]
 
 # -----------------------------------------------------------------

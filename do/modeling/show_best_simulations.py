@@ -230,6 +230,11 @@ if config.statistics:
     # Get best simulation parameter values
     best_parameter_values = parameters.parameter_values_for_simulation(best_simulation_name)
 
+    # Most probable model: should be same as simulation with lowest chi squared
+    most_probable_simulation_name = generation.most_probable_model
+    #print(most_probable_simulation_name)
+    assert most_probable_simulation_name == best_simulation_name
+
     print("")
     print("Statistics:")
 
@@ -240,8 +245,11 @@ if config.statistics:
         print(" - " + fmt.bold + label + fmt.reset + ":")
         print("")
 
-        print(" - Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
-        print(" - Most probable value: " + tostr())
-        if config.nsimulations > 1: print(" - Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3))
+        # Get most probable parameter value
+        most_probable_value = generation.get_most_probable_parameter_value(label)
+
+        print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
+        print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(parameter_units[label]))
+        if config.nsimulations > 1: print("    * Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(parameter_units[label]))
 
 # -----------------------------------------------------------------
