@@ -74,7 +74,8 @@ class SEDFitter(FittingComponent):
         self.prob_generations_path = None
 
         # The dictionary with ...
-        self.prob_generations_table_paths = dict()
+        #self.prob_generations_table_paths = dict()
+        self.prob_generations_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -103,6 +104,9 @@ class SEDFitter(FittingComponent):
 
         # 6. Writing
         self.write()
+
+        # 7. Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -188,12 +192,21 @@ class SEDFitter(FittingComponent):
         if not self.has_finished_generations and not self.config.unfinished: raise RuntimeError("There are no finished generations")
         if not self.has_generations: raise RuntimeError("There are no generations")
 
-        # For each finished generation, determine the path to the probability table
-        for generation_name in self.generation_names:
+        # For each finished generation, determine the path to the probabilities directory
+        for generation_name in self.generation_names: self.prob_generations_paths[generation_name] = fs.create_directory_in(self.prob_generations_path, generation_name)
 
-            # Determine probabilities table path
-            path = fs.join(self.prob_generations_path, generation_name + ".dat")
-            self.prob_generations_table_paths[generation_name] = path
+        # Rerun?
+        if self.config.rerun_all:
+            fs.clear_directory(self.parameters_directory_path)
+            fs.clear_directory(self.distributions_directory_path)
+            for generation_name in self.generation_names:
+                generation_path = self.prob_generations_paths[generation_name]
+                fs.clear_directory(generation_path)
+        elif self.config.rerun is not None:
+            fs.clear_directory(self.parameters_directory_path)
+            fs.clear_directory(self.distributions_directory_path)
+            generation_path = self.prob_generations_paths[self.config.rerun]
+            fs.clear_directory(generation_path)
 
     # -----------------------------------------------------------------
 
@@ -256,6 +269,58 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_model_probabilities_table_path_for_generation(self, generation_name):
+
+        """
+        Thisf unction ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.prob_generations_paths[generation_name], "models.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_model_probabilities_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        path = self.get_model_probabilities_table_path_for_generation(generation_name)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_probabilities_table_path_for_generation(self, generation_name, parameter_label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param parameter_label:
+        :return:
+        """
+
+        return fs.join(self.prob_generations_paths[generation_name], parameter_label + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def has_parameter_probabilities_table_path_for_generation(self, generation_name, parameter_label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param parameter_label:
+        :return:
+        """
+
+        path = self.get_parameter_probabilities_table_path_for_generation(generation_name, parameter_label)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
     def get_model_probabilities(self):
 
         """
@@ -270,7 +335,7 @@ class SEDFitter(FittingComponent):
         for generation_name in self.generation_names:
 
             # Check whether the probabilities table is already present for this generation
-            if fs.is_file(self.prob_generations_table_paths[generation_name]): self.load_model_probabilities_generation(generation_name)
+            if self.has_model_probabilities_table_for_generation(generation_name): self.load_model_probabilities_generation(generation_name)
 
             # Otherwise, calculate the probabilities based on the chi squared table
             else: self.calculate_model_probabilities_generation(generation_name)
@@ -288,8 +353,11 @@ class SEDFitter(FittingComponent):
         # Debugging
         log.debug("Loading the model probabilities table for generation '" + generation_name + "' ...")
 
+        # Determine the path
+        path = self.get_model_probabilities_table_path_for_generation(generation_name)
+
         # Load the probabilities table
-        probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
+        probabilities_table = ModelProbabilitiesTable.from_file(path)
 
         # Add to the dictionary
         self.model_probabilities[generation_name] = probabilities_table
@@ -370,11 +438,15 @@ class SEDFitter(FittingComponent):
             # Get a dictionary with the parameter values for this simulation
             values = parameter_values[i]
 
+            # Get the probability
+            probability = probabilities[i]
+
             # Add an entry to the table
-            probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
+            probabilities_table.add_entry(simulation_name, values, probability)
 
         # Save the model probabilities table
-        probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
+        table_path = self.get_model_probabilities_table_path_for_generation(generation_name)
+        probabilities_table.saveto(table_path)
 
         # Add to the dictionary
         self.model_probabilities[generation_name] = probabilities_table
@@ -543,6 +615,18 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_description(self, parameter_label):
+
+        """
+        This function ...
+        :param parameter_label:
+        :return:
+        """
+
+        return self.fitting_run.parameter_descriptions[parameter_label]
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -565,9 +649,6 @@ class SEDFitter(FittingComponent):
         # Write the probability distributions in table format
         self.write_distributions()
 
-        # Plot the probability distributions as histograms
-        self.plot_distributions()
-
         # Write the animated GIF
         if self.config.visualise: self.write_animation()
 
@@ -582,6 +663,45 @@ class SEDFitter(FittingComponent):
 
         # Inform the user
         log.info("Writing the parameter probabilities for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Loop over the free parameters
+            for label in self.free_parameter_labels:
+
+                # Get the parameter probabilities
+                probabilities = self.parameter_probabilities[generation_name][label]
+
+                # Determine the path
+                path = self.get_parameter_probabilities_table_path_for_generation(generation_name, label)
+
+                # Save the table
+                probabilities.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameters_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.prob_parameters_path
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_probabilities_table_path(self, parameter_label):
+
+        """
+        This function ...
+        :param parameter_label:
+        :return:
+        """
+
+        return self.fitting_run.get_parameter_probabilities_path(parameter_label)
 
     # -----------------------------------------------------------------
 
@@ -598,8 +718,14 @@ class SEDFitter(FittingComponent):
         # Loop over the probability tables for the different free parameter
         for label in self.fitting_run.free_parameter_labels:
 
+            # Debugging
+            log.debug("Writing the parameter probabilities for the " + self.get_description(label) + " ...")
+
+            # Get path
+            path = self.get_parameter_probabilities_table_path(label)
+
             # Save the table
-            self.parameter_probabilities_all[label].saveto(self.fitting_run.get_parameter_probabilities_path(label))
+            self.parameter_probabilities_all[label].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -618,6 +744,30 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def distributions_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.prob_distributions_path
+
+    # -----------------------------------------------------------------
+
+    def get_distribution_table_path(self, parameter_label):
+
+        """
+        This function ...
+        :param parameter_label:
+        :return:
+        """
+
+        return self.fitting_run.get_parameter_distribution_path(parameter_label)
+
+    # -----------------------------------------------------------------
+
     def write_distributions(self):
 
         """
@@ -632,10 +782,59 @@ class SEDFitter(FittingComponent):
         for label in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.fitting_run.parameter_descriptions[label] + " ...")
+            log.debug("Writing the probability distribution of the " + self.get_description(label) + " ...")
+
+            # Get path
+            path = self.get_distribution_table_path(label)
 
             # Write the table of probabilities for this parameter
-            self.distributions[label].saveto(self.fitting_run.get_parameter_distribution_path(label))
+            self.distributions[label].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the parameter probabilities per generation
+        self.plot_probabilities()
+
+        # Plot the probability distributions as histograms
+        self.plot_distributions()
+
+    # -----------------------------------------------------------------
+
+    def plot_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the parameter probabilities for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Determine the path
+            path = fs.join(self.prob_generations_paths[generation_name], "probabilities.pdf")
+
+            # Make distributions
+            distributions = dict()
+            for label in self.free_parameter_labels:
+                distribution = Distribution.from_probabilities(label, self.parameter_probabilities[generation_name][label]["Probability"], self.parameter_probabilities[generation_name][label]["Value"])
+                distribution.normalize(method="sum")
+                distributions[label] = distribution
+
+            # Plot in different panels
+            plot_distributions(distributions, panels=True, extrema=True, frequencies=True, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 

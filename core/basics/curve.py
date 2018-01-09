@@ -232,6 +232,13 @@ class Curve(SmartTable):
             self[self.y_name] *= factor
             self[self.y_name].unit = None
 
+        elif method == "sum":
+
+            sum_value = np.sum(self[self.y_name])
+            factor = value / sum_value
+            self[self.y_name] *= factor
+            self[self.y_name].unit = None
+
         elif method == "integral": raise NotImplementedError("Not implemented yet")
         else: raise ValueError("Invalid option for 'method'")
 

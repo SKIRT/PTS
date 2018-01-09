@@ -33,5 +33,11 @@ definition.add_flag("visualise", "make visualisations")
 
 # Flags
 definition.add_flag("unfinished", "also include unfinished generations")
+definition.add_optional("rerun", "string", "rerun for a certain generation")
+definition.add_flag("rerun_all", "rerun all")
+
+# -----------------------------------------------------------------
+
+definition.add_flag("plot", "make plots", True)
 
 # -----------------------------------------------------------------
