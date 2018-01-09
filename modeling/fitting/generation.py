@@ -31,6 +31,7 @@ from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.input import SimulationInput
+from ...core.data.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -526,6 +527,67 @@ class Generation(object):
 
         path = self.get_simulation_misc_path(name)
         return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_misc_fluxes_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_path(name), "fluxes")
+
+    # -----------------------------------------------------------------
+
+    def has_misc_fluxes(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_misc_fluxes_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_mock_sed_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_mock_sed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_simulation_mock_sed_path(name))
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_mock_sed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return ObservedSED.from_file(self.get_simulation_mock_sed_path(name))
 
     # -----------------------------------------------------------------
 

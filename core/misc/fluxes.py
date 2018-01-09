@@ -195,6 +195,7 @@ class ObservedFluxCalculator(Configurable):
 
         # Set output path
         self.config.output = output_path
+        #print("output", self.config.output)
 
         # Get the masks
         self.masks = kwargs.pop("masks", None)

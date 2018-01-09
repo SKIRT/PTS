@@ -359,11 +359,17 @@ class FittingInitializerBase(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def calculate_weights_filters(filters):
+def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm=1):
 
     """
     This function ...
     :param filters:
+    :param uv:
+    :param optical:
+    :param nir:
+    :param mir:
+    :param fir:
+    :param submm:
     :return:
     """
 
@@ -379,7 +385,7 @@ def calculate_weights_filters(filters):
     nsubmm = len(submm_bands)
 
     # Determine regime weights
-    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm)
+    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm=submm)
 
     # Initialize dictionary for the weights per filter
     weights = OrderedDict()
@@ -452,7 +458,7 @@ def get_nbands_per_regime(filters):
 
 # -----------------------------------------------------------------
 
-def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm):
+def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, nir=1, mir=1, fir=1, submm=1):
 
     """
     This function ...
@@ -462,6 +468,12 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm):
     :param nmir:
     :param nfir:
     :param nsubmm:
+    :param uv:
+    :param optical:
+    :param nir:
+    :param mir:
+    :param fir:
+    :param submm:
     :return:
     """
 
@@ -487,13 +499,22 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm):
     #number_of_data_points = len(filters)
     number_of_data_points = nuv + noptical + nnir + nmir + nfir + nsubmm
 
+    # Determine normalizations
+    total_normalization = uv + optical + nir + mir + fir + submm
+    uv = float(uv) / total_normalization * 6
+    optical = float(optical) / total_normalization * 6
+    nir = float(nir) / total_normalization * 6
+    mir = float(mir) / total_normalization * 6
+    fir = float(fir) / total_normalization * 6
+    submm = float(submm) / total_normalization * 6
+
     # Determine the weight for each group of filters
-    uv_weight = 1. / (nuv * number_of_groups) * number_of_data_points if has_uv else 0.0
-    optical_weight = 1. / (noptical * number_of_groups) * number_of_data_points if has_optical else 0.0
-    nir_weight = 1. / (nnir * number_of_groups) * number_of_data_points if has_nir else 0.0
-    mir_weight = 1. / (nmir * number_of_groups) * number_of_data_points if has_mir else 0.0
-    fir_weight = 1. / (nfir * number_of_groups) * number_of_data_points if has_fir else 0.0
-    submm_weight = 1. / (nsubmm * number_of_groups) * number_of_data_points if has_submm else 0.0
+    uv_weight = uv / (nuv * number_of_groups) * number_of_data_points if has_uv else 0.0
+    optical_weight = optical / (noptical * number_of_groups) * number_of_data_points if has_optical else 0.0
+    nir_weight = nir / (nnir * number_of_groups) * number_of_data_points if has_nir else 0.0
+    mir_weight = mir / (nmir * number_of_groups) * number_of_data_points if has_mir else 0.0
+    fir_weight = fir / (nfir * number_of_groups) * number_of_data_points if has_fir else 0.0
+    submm_weight = submm / (nsubmm * number_of_groups) * number_of_data_points if has_submm else 0.0
 
     # Debugging
     if has_uv: log.debug("UV: number of bands = " + str(nuv) + ", weight = " + str(uv_weight))

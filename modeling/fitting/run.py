@@ -125,6 +125,9 @@ class FittingRun(object):
 
         # -----------------------------------------------------------------
 
+        ## NEW: REWEIGING DIRECTORY
+        self.reweighing_path = fs.create_directory_in(self.path, "reweiging")
+
         ## WEIGHTS TABLE
 
         # Set the path to the weights table file
