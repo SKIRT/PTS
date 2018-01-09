@@ -514,7 +514,7 @@ class SEDFitModelAnalyser(FittingComponent):
         """
 
         # Debugging
-        log.debug("Loading simulation with ID '" + self.simulation_id + "' from remote host '" + self.config.remote + "' ...")
+        log.debug("Loading simulation with ID '" + str(self.simulation_id) + "' from remote host '" + self.config.remote + "' ...")
 
         # Load
         self.simulation = get_simulation_for_host(self.config.remote, self.simulation_id)

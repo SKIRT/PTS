@@ -225,7 +225,7 @@ class SimulationSEDPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting SEDs for the different instruments seperately ...")
+        log.info("Plotting SEDs for the different instruments separately ...")
 
         # Create a new SEDPlotter instance
         plotter = SEDPlotter()

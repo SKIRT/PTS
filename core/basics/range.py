@@ -958,7 +958,7 @@ class QuantityRange(Range):
             if unit is None: raise ValueError("Unit must be specified if min_value and max_value are not quantities")
             elif types.is_string_type(unit): unit = u(unit)
 
-        else: raise ValueError("min_value and max_value must be either both quantities or both floats (with unit specified seperately)")
+        else: raise ValueError("min_value and max_value must be either both quantities or both floats (with unit specified separately)")
 
         # Call the constructor of the base class
         super(QuantityRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)

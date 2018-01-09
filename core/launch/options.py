@@ -245,7 +245,7 @@ class AnalysisOptions(Options):
 
         ## Animation
         self.misc.add_property("animations", "boolean", "make an animation of the images of the simulated datacube(s)", False)
-        self.misc.add_property("write_animation_frames", "boolean", "write the frames of the created animations seperately", False)
+        self.misc.add_property("write_animation_frames", "boolean", "write the frames of the created animations separately", False)
 
         ## Observed fluxes and images
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
