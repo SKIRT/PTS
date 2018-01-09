@@ -14,13 +14,221 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..launch.basicanalyser import BasicAnalyser
+from ..launch.basicanalyser import BasicAnalyser, steps, extraction, plotting, misc
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.log import log
 from ..simulation.simulation import RemoteSimulation
 from ..tools import filesystem as fs
 from ..simulation.remote import get_simulation_for_host
+from ..tools import sequences
+from .options import extraction_names, plotting_names, misc_names
+
+# -----------------------------------------------------------------
+
+batch = "batch"
+scaling = "scaling"
+
+# -----------------------------------------------------------------
+
+all_steps = steps + [batch, scaling]
+
+# -----------------------------------------------------------------
+
+def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_features=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param steps:
+    :param features:
+    :param not_steps:
+    :param not_features:
+    :return:
+    """
+
+    # Only one step defined
+    if len(steps) == 1:
+
+        # Flag indicating whether this simulation has been analysed or not
+        simulation.analysed = False
+
+        # Get the step
+        step = steps[0]
+
+        # Extraction
+        if step == extraction:
+
+            # All features
+            if features is None: simulation.analysed_extraction = []
+
+            # Select features
+            else: simulation.analysed_extraction = sequences.elements_not_in_other(extraction_names, features, check_existing=True)
+
+        # Plotting
+        elif step == plotting:
+
+            # All features
+            if features is None: simulation.analysed_plotting = []
+
+            # Select features
+            else: simulation.analysed_plotting = sequences.elements_not_in_other(plotting_names, features, check_existing=True)
+
+        # Misc
+        elif step == misc:
+
+            # All features
+            if features is None: simulation.analysed_misc = []
+
+            # Select features
+            else: simulation.analysed_misc = sequences.elements_not_in_other(misc_names, features, check_existing=True)
+
+        # Batch
+        elif step == batch:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for the batch simulation analysis")
+
+            # Set analysed_batch flag to False
+            simulation.analysed_batch = False
+
+        # Scaling
+        elif step == scaling:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for scaling simulation analysis")
+
+            # Set analysed_scaling flag to False
+            simulation.analysed_scaling = False
+
+        # Invalid
+        else: raise ValueError("Invalid step: '" + step + "'")
+
+    # Multiple steps defined
+    else:
+
+        # Check whether features are not defined
+        if features is not None: raise ValueError("Features cannot be specified with multiple steps")
+
+        # Flag indicating whether this simulation has been analysed or not
+        simulation.analysed = False
+
+        # Reset extraction
+        if extraction in steps: simulation.analysed_extraction = []
+
+        # Reset plotting
+        if plotting in steps: simulation.analysed_plotting = []
+
+        # Reset misc
+        if misc in steps: simulation.analysed_misc = []
+
+        # Reset batch
+        if batch in steps: simulation.analysed_batch = False
+
+        # Reset scaling
+        if scaling in steps: simulation.analysed_scaling = False
+
+    # Now analyse the simulation
+    analyse_simulation(simulation, not_steps=not_steps, not_features=not_features)
+
+# -----------------------------------------------------------------
+
+def analyse_simulation(simulation, not_steps=None, not_features=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param not_steps:
+    :param not_features:
+    :return:
+    """
+
+    # Steps are defined
+    if not_steps is not None:
+
+        # One step is defined
+        if len(not_steps) == 1:
+
+            # Get the step
+            not_step = not_steps[0]
+
+            # Extraction
+            if not_step == extraction:
+
+                # Features are not specified
+                if not_features is None: simulation.analysed_extraction = extraction_names
+
+                # Features are defined
+                else: sequences.extend_unique(simulation.analysed_extraction, not_features)
+
+            # Plotting
+            elif not_step == plotting:
+
+                # Features are not specified
+                if not_features is None: simulation.analysed_plotting = plotting_names
+
+                # Features are defined
+                else: sequences.extend_unique(simulation.analysed_plotting, not_features)
+
+            # Misc
+            elif not_step == misc:
+
+                # Features are not specified
+                if not_features is None: simulation.analysed_misc = misc_names
+
+                # Features are defined
+                else: sequences.extend_unique(simulation.analysed_misc, not_features)
+
+            # Batch
+            elif not_step == batch:
+
+                # Check whether features are not defined
+                if not_features is not None: raise ValueError("Cannot define features for the batch simulation analysis")
+
+                # Set flag
+                simulation.analysed_batch = True
+
+            # Scaling
+            elif not_step == scaling:
+
+                # Check whether features are not defined
+                if not_features is not None: raise ValueError("Cannot define features for scaling simulation analysis")
+
+                # Set flag
+                simulation.analysed_scaling = True
+
+            # Invalid
+            else: raise ValueError("Invalid step '" + not_step + "'")
+
+        # Multiple steps are defined
+        else:
+
+            # Check whether features are not defined
+            if not_features is not None: raise ValueError("Features cannot be specified with multiple steps")
+
+            # Set all extracted
+            if extraction in not_steps: simulation.analysed_extraction = extraction_names
+
+            # Set all plotted
+            if plotting in not_steps: simulation.analysed_plotting = plotting_names
+
+            # Set all misc
+            if misc in not_steps: simulation.analysed_misc = misc_names
+
+            # Set batch
+            if batch in not_steps: simulation.analysed_batch = True
+
+            # Set scaling
+            if scaling in not_steps: simulation.analysed_scaling = True
+
+    # Steps are not defined
+    elif not_features is not None: raise ValueError("Cannot specify features when step is not defined")
+
+    # Create simulation analyser
+    analyser = SimulationAnalyser()
+
+    # Run the analyser on the simulation
+    analyser.run(simulation=simulation)
 
 # -----------------------------------------------------------------
 
