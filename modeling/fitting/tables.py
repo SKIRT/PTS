@@ -1147,6 +1147,18 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def has_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.simulation_names
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, chi_squared):
 
         """

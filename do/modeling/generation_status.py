@@ -23,7 +23,6 @@ from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.plot.distribution import plot_distribution
-from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -91,14 +90,25 @@ memory = fitting_run.memory_table
 
 # Get number of simulations
 nsimulations = generation.nsimulations
-nretrieved = generation.nretrieved_simulations
-nanalysed = generation.nanalysed_simulations
-fraction_analysed = float(nanalysed) / nsimulations
+
+# Determine number of retrieved and analysed simulations
+if config.lazy:
+    nretrieved = generation.nretrieved_simulations_basic
+    nanalysed = generation.nanalysed_simulations_basic
+else:
+    nretrieved = generation.nretrieved_simulations
+    nanalysed = generation.nanalysed_simulations
 
 # -----------------------------------------------------------------
 
+# Determine fraction analysed
+fraction_retrieved = float(nretrieved) / nsimulations
+fraction_analysed = float(nanalysed) / nsimulations
+
+# Show
 print("")
 print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
+print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(nretrieved) + " (" + tostr(fraction_retrieved*100, round=True, ndigits=2) + "%)")
 print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
 print("")
 
@@ -144,7 +154,6 @@ if not config.offline:
 parameters = generation.parameters_table
 
 # Get parameter units
-#parameter_units = parameters.parameter_units
 parameter_units = [parameters.unit_for(label) for label in fitting_run.free_parameter_labels]
 
 # -----------------------------------------------------------------
@@ -156,17 +165,23 @@ parameters_ndigits = 3
 
 # Print header
 if config.parameters:
-    print(" " * 40 + "\t" + "\t".join(fitting_run.free_parameter_labels))
-    print(" " * 40 + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
+
+    if config.extra: nspaces = 52
+    else: nspaces = 40
+
+    # Print
+    print(" " * nspaces + "\t" + "\t".join(fitting_run.free_parameter_labels))
+    print(" " * nspaces + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
+
+# -----------------------------------------------------------------
+
+chisq_ndecimal = 1
+chisq_ndigits = 7
 
 # -----------------------------------------------------------------
 
 # Loop over the simulations
-#for simulation in generation.simulations:
 for simulation_name in generation.simulation_names:
-
-    # Get simlation name and host ID
-    #simulation_name = simulation.name
 
     # Get the simulation
     if config.lazy or not generation.has_simulation(simulation_name):
@@ -209,17 +224,26 @@ for simulation_name in generation.simulation_names:
     # No simulation object
     if simulation is None:
 
-        # Determine simulation path
-        simulation_path = generation.get_simulation_path(simulation_name)
-        simulation_output_path = fs.join(simulation_path, "out")
-        simulation_extr_path = fs.join(simulation_path, "extr")
-        simulation_plot_path = fs.join(simulation_path, "plot")
-        simulation_misc_path = fs.join(simulation_path, "misc")
+        # Has chi squared
+        if generation.is_analysed(simulation_name):
 
-        # Empty output?
-        if not fs.is_empty(simulation_misc_path): print(" - " + fmt.green + simulation_name + extra_string + ": done")
-        elif not fs.is_empty(simulation_output_path): print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved")
-        else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown")
+            chisq = chi_squared.chi_squared_for(simulation_name)
+            print(" - " + fmt.green + simulation_name + extra_string + ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+
+        # Has miscellaneous output, but no chi squared
+        elif generation.has_misc_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": no chisq" + "\t" + parameters_string + fmt.reset)
+
+        # Has plotting output
+        elif generation.has_plotting_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": plotted" + "\t" + parameters_string + fmt.reset)
+
+        # Has extraction output
+        elif generation.has_extraction_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": extracted" + "\t" + parameters_string + fmt.reset)
+
+        # Has simulation output
+        elif generation.is_retrieved(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved" + "\t" + parameters_string + fmt.reset)
+
+        # No simulation output
+        else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown" + "\t"  + parameters_string + fmt.reset)
 
     # Simulation object
     else:
@@ -229,9 +253,7 @@ for simulation_name in generation.simulation_names:
 
             # Get chi squared
             chisq = chi_squared.chi_squared_for(simulation_name)
-            ndecimal = 1
-            ndigits = 7
-            print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, ndecimal, ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+            print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
 
         elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
         else:

@@ -65,6 +65,8 @@ generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
 reinitialize_fit | -- | fitting.reinitialization.FittingReinitializer | interactive | Re-initialize a fitting run for a particular model, from a previous fitting run, or from an analysis run
+*analyse_sed_fit_model | -- | fitting.modelanalyser.SEDFitModelAnalyser | arguments | Analyse fit model with SED
+*analyse_images_fit_model | -- | fitting.modelanalyser.ImagesFitModelAnalyser | arguments | Analyse fit model with images
 
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run

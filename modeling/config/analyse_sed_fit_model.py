@@ -15,14 +15,8 @@ from pts.core.remote.host import find_host_ids
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_positional_optional("remote", "string", "ID of the remote host", choices=find_host_ids())
-definition.add_positional_optional("id", "integer", "ID of the simulation")
-
-# Add flags
-definition.add_flag("ignore_missing_data", "ignore missing data when analysing the simulations", False)
-
-# Analyse
-definition.add_flag("basic", "do basic analysis", True)
-definition.add_flag("extra", "do extra analysis", True)
+definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
+definition.add_positional_optional("id", "positive_integer", "simulation ID")
+definition.add_optional("name", "string", "simulation name")
 
 # -----------------------------------------------------------------

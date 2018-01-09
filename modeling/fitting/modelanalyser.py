@@ -24,6 +24,8 @@ from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
 from ...core.filter.filter import parse_filter_from_instrument_and_band
 from .tables import WeightsTable
+from ...core.simulation.remote import get_simulation_id, get_simulation_for_host
+from ...core.launch.analyser import SimulationAnalyser
 
 # -----------------------------------------------------------------
 
@@ -278,9 +280,6 @@ class SEDFitModelAnalyser(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
-        # The name of the generation
-        self.generation_name = None
-
         # The weights given to each band for the calculation of the chi squared
         self.weights = None
 
@@ -332,19 +331,19 @@ class SEDFitModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 4. Calculate the differences
+        # 2. Calculate the differences
         self.calculate_differences()
 
-        # 5. Calculate the chi squared for this model
+        # 3. Calculate the chi squared for this model
         self.calculate_chi_squared()
 
-        # 6. Load the chi squared table
+        # 4. Load the chi squared table
         self.load_chi_squared_table()
 
-        # 7. Update the status of the generation if necessary
+        # 5. Update the status of the generation if necessary
         self.update_generation()
 
-        # 8. Write
+        # 6. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -361,10 +360,93 @@ class SEDFitModelAnalyser(FittingComponent):
 
         # Set the attributes to default values
         self.simulation = None
-        self.generation_name = None
         self.differences = None
         self.chi_squared = None
         self.chi_squared_table = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_base_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.base_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.simulation_base_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.generation_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.generations_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.generation_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.fitting_run_path)
 
     # -----------------------------------------------------------------
 
@@ -378,33 +460,14 @@ class SEDFitModelAnalyser(FittingComponent):
         # Call the setup function of the base class
         super(SEDFitModelAnalyser, self).setup(**kwargs)
 
-        # Get a reference to the flux calculator
-        simulationanalyser = kwargs.pop("simulation_analyser")
+        # Get the simulation
+        if not self.has_simulation: self.get_simulation(**kwargs)
 
-        # Make a local reference to the flux calculator
-        #if simulationanalyser.basic_analyser.image_flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.image_flux_calculator
-        #elif simulationanalyser.basic_analyser.flux_calculator is not None: self.flux_calculator = simulationanalyser.basic_analyser.flux_calculator
-        #else: raise RuntimeError("No ObservedFluxCalculator found; the calculate_observed_fluxes flag must be enabled on "
-        #                       "each simulation that is part of the radiative transfer modeling")
-
-        # Get mock observed fluxes
-        if simulationanalyser.basic_analyser.mock_seds_from_images is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds_from_images
-        elif simulationanalyser.basic_analyser.mock_seds is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds
-        else: raise ValueError("No mock observed fluxes could be obtained from the simulation analyser")
-
-        # Determine the generation directory
-        generation_path = fs.directory_of(self.simulation.base_path)
-        generations_path = fs.directory_of(generation_path)
-        fitting_run_path = fs.directory_of(generations_path)
-
-        # Set the name of the generation
-        self.generation_name = fs.name(fs.directory_of(self.simulation.base_path))
-
-        # Set the name of the fitting run
-        fitting_run_name = fs.name(fitting_run_path)
+        # Get the mock seds
+        self.get_mock_seds(**kwargs)
 
         # Load the fitting run
-        self.fitting_run = self.load_fitting_run(fitting_run_name)
+        self.fitting_run = self.load_fitting_run(self.fitting_run_name)
 
         # Load the weights table
         self.weights = WeightsTable.from_file(self.fitting_run.weights_table_path)
@@ -414,15 +477,101 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def fitting_run_name(self):
+    def get_simulation(self, **kwargs):
 
         """
-        Thisn function ...
+        This function ...
+        :param kwargs:
         :return:
         """
 
-        return self.fitting_run.name
+        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
+        else: self.load_simulation()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine simulation ID
+        if self.config.name is not None:
+            if self.config.id is not None: raise ValueError("Cannot specifiy both name and simulation ID")
+            return get_simulation_id(self.config.remote, self.config.name)
+        else: return self.config.id
+
+    # -----------------------------------------------------------------
+
+    def load_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading simulation with ID '" + self.simulation_id + "' from remote host '" + self.config.remote + "' ...")
+
+        # Load
+        self.simulation = get_simulation_for_host(self.config.remote, self.simulation_id)
+
+    # -----------------------------------------------------------------
+
+    def get_mock_seds(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Get a reference to the flux calculator
+        simulationanalyser = self.get_analyser(**kwargs)
+
+        # Get mock observed fluxes
+        if simulationanalyser.basic_analyser.mock_seds_from_images is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds_from_images
+        elif simulationanalyser.basic_analyser.mock_seds is not None: self.mock_seds = simulationanalyser.basic_analyser.mock_seds
+        else: raise ValueError("No mock observed fluxes could be obtained from the simulation analyser")
+
+    # -----------------------------------------------------------------
+
+    def get_analyser(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Load from kwargs
+        if "simulation_analyser" in kwargs: return kwargs.pop("simulation_analyser")
+        else: return self.load_analyser()
+
+    # -----------------------------------------------------------------
+
+    def load_analyser(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the simulation analyser ...")
+
+        # Create simulation analyser
+        analyser = SimulationAnalyser()
+        analyser.config.extra = False
+
+        # Run the analyser on the simulation
+        analyser.run(simulation=self.simulation)
+
+        # Return the analyser
+        return analyser
 
     # -----------------------------------------------------------------
 
@@ -703,9 +852,6 @@ class ImagesFitModelAnalyser(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
-        # The name of the generation
-        self.generation_name = None
-
         # The observed image maker
         self.image_maker = None
 
@@ -745,19 +891,19 @@ class ImagesFitModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 4. Calculate the residual maps
+        # 2. Calculate the residual maps
         self.calculate_residuals()
 
-        # 5. Calculate the chi squared for this model
+        # 3. Calculate the chi squared for this model
         self.calculate_chi_squared()
 
-        # 6. Load the chi squared table
+        # 4. Load the chi squared table
         self.load_chi_squared_table()
 
-        # 7. Update the status of the generation if necessary
+        # 5. Update the status of the generation if necessary
         self.update_generation()
 
-        # 8. Write
+        # 6. Write
         self.write()
 
     # -----------------------------------------------------------------

@@ -1597,7 +1597,7 @@ class ParameterExplorer(FittingComponent):
             path = self.fitting_run.input_map_paths[name]
             self.simulation_input.add_file(path, name)
 
-        # NEW: DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
+        # DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
         if self.use_file_tree_dust_grid: self.simulation_input.add_file(self.representation.dust_grid_tree_path)
 
         # Determine and set the path to the appropriate wavelength grid file

@@ -29,6 +29,8 @@ from ...core.launch.batchlauncher import SimulationAssignmentTable
 from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host
 from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
+from ...core.simulation.simulation import SkirtSimulation
+from ...core.simulation.input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -189,6 +191,18 @@ class Generation(object):
         """
 
         return fs.directory_of(self.fit_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def object_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.modeling_path)
 
     # -----------------------------------------------------------------
 
@@ -372,9 +386,7 @@ class Generation(object):
 
         directory_names = fs.directories_in_path(self.path, returns="name")
         simulation_names = self.individuals_table.simulation_names
-
         if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and ")
-
         return simulation_names
 
     # -----------------------------------------------------------------
@@ -389,6 +401,157 @@ class Generation(object):
 
         if name not in self.simulation_names: raise ValueError("Simulation does not exist")
         return fs.join(self.path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_ski_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_path(name), self.object_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    def has_ski_file(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_ski_path(name)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_output_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_path(name), "out")
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_output_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_extract_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_path(name), "extr")
+
+    # -----------------------------------------------------------------
+
+    def has_extraction_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_extract_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_path(name), "plot")
+
+    # -----------------------------------------------------------------
+
+    def has_plotting_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_plot_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_misc_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_path(name), "misc")
+
+    # -----------------------------------------------------------------
+
+    def has_misc_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_misc_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def is_retrieved(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Check whether the simulation output is present
+        return self.has_simulation_output(name)
+
+    # -----------------------------------------------------------------
+
+    def is_analysed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Check whether the chi squared is set in the chi squared table
+        return self.chi_squared_table.has_simulation(name)
 
     # -----------------------------------------------------------------
 
@@ -459,6 +622,25 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulations_basic_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        simulations = []
+        #simulation_ids = self.assignment_table.ids_for_remote(host_id)
+        simulation_names = self.assignment_table.simulations_for_remote(host_id)
+        #for simulation_id in simulation_ids:
+        for simulation_name in simulation_names:
+            simulation = self.get_simulation_basic(simulation_name)
+            simulations.append(simulation)
+        return simulations
+
+    # -----------------------------------------------------------------
+
     def get_host_id(self, name):
 
         """
@@ -487,13 +669,94 @@ class Generation(object):
 
         """
         This function ...
-        :param host_id:
         :param name:
         :return:
         """
 
         # Load and return the simulation
         return get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.wavelength_grids_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, self.wavelength_grid_name + ".dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def use_file_tree_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.prep.smile import SKIRTSmileSchema
+        smile = SKIRTSmileSchema()
+        return smile.supports_file_tree_grids and self.model_representation.has_dust_grid_tree
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initilize
+        simulation_input = SimulationInput()
+
+        # Set the paths to the input maps
+        for name in self.fitting_run.input_map_paths:
+            path = self.fitting_run.input_map_paths[name]
+            simulation_input.add_file(path, name)
+
+        # DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
+        if self.use_file_tree_dust_grid: simulation_input.add_file(self.model_representation.dust_grid_tree_path)
+
+        # Determine and set the path to the appropriate wavelength grid file
+        simulation_input.add_file(self.wavelength_grid_path, name="wavelengths.txt")
+
+        # Return the object
+        return simulation_input
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_basic(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get properties
+        ski_path = self.get_simulation_ski_path(name)
+        out_path = self.get_simulation_output_path(name)
+
+        # Create and return the simulation
+        return SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
 
     # -----------------------------------------------------------------
 
@@ -514,6 +777,22 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def simulations_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sims = []
+        for host_id in self.host_ids:
+            simulations = self.get_simulations_basic_for_host(host_id)
+            sims.extend(simulations)
+        return sims
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def retrieved_simulations(self):
 
         """
@@ -522,6 +801,18 @@ class Generation(object):
         """
 
         return [simulation for simulation in self.simulations if simulation.retrieved]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def retrieved_simulations_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [simulation for simulation in self.simulations_basic if self.is_retrieved(simulation.name)]
 
     # -----------------------------------------------------------------
 
@@ -538,6 +829,18 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def analysed_simulations_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [simulation for simulation in self.simulations_basic if self.is_analysed(simulation.name)]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nretrieved_simulations(self):
 
         """
@@ -550,6 +853,18 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nretrieved_simulations_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.retrieved_simulations_basic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nanalysed_simulations(self):
 
         """
@@ -558,6 +873,18 @@ class Generation(object):
         """
 
         return len(self.analysed_simulations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nanalysed_simulations_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.analysed_simulations_basic)
 
     # -----------------------------------------------------------------
 

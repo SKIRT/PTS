@@ -88,20 +88,20 @@ class SimulationAnalyser(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # If the simulation has no analysis options, finish the procedure right away
+        # 2. If the simulation has no analysis options, finish the procedure right away
         if self.simulation.analysis is None: return
 
-        # 2. Run the basic analysis
-        self.analyse_basic()
+        # 3. Run the basic analysis
+        if self.config.basic: self.analyse_basic()
 
-        # 3. Run the batch analysis
+        # 4. Run the batch analysis
         if self.simulation.from_batch and not self.analysed_batch: self.analyse_batch()
 
-        # 3. Analyse the scaling, if the simulation is part of a scaling test
+        # 5. Analyse the scaling, if the simulation is part of a scaling test
         if self.simulation.from_scaling_test and not self.analysed_scaling: self.analyse_scaling()
 
-        # 4. Perform extra analysis
-        self.analyse_extra()
+        # 6. Perform extra analysis
+        if self.config.extra: self.analyse_extra()
 
     # -----------------------------------------------------------------
 
