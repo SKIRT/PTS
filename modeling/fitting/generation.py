@@ -517,6 +517,33 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_sed_plot_path(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        # Determine SED plot path
+        plot_path = self.get_simulation_plot_path(name)
+        return fs.join(plot_path, "sed.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_sed_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_sed_plot_path(name)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
     def has_misc_output(self, name):
 
         """
@@ -1267,7 +1294,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def parameters_table(self):
 
         """
@@ -1276,6 +1303,43 @@ class Generation(object):
         """
 
         return ParametersTable.from_file(self.parameters_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_values_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get a dictionary with the parameter values for this simulation
+        return self.parameters_table.parameter_values_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_for_parameter_values(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        return self.parameters_table.simulation_for_parameter_values(values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters_table.unique_parameter_values
 
     # -----------------------------------------------------------------
 

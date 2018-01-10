@@ -26,7 +26,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from .modelanalyser import FluxDifferencesTable
 from ...core.tools import sequences
-from .initialization.base import wavelength_regimes
 
 # -----------------------------------------------------------------
 
@@ -81,7 +80,7 @@ class Refitter(FittingComponent):
         # 2. Get the differences
         self.get_differences()
 
-        # 3. Calculate the chi squared for this model
+        # 3. Calculate the chi squared values
         self.calculate_chi_squared()
 
         # 2. Get the parameters of the best models for each generation

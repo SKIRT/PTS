@@ -1001,6 +1001,26 @@ class ParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def simulation_for_parameter_values(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        # Get list of values and list of parameter labels
+        labels = values.keys()
+        scalar_values = [values[label].to(self.column_unit(label)).value for label in values]
+
+        # Find index of the simulation
+        index = tables.find_one_index(self, scalar_values, labels)
+
+        # Return the simulation name
+        return self["Simulation name"][index]
+
+    # -----------------------------------------------------------------
+
     @property
     def unique_parameter_values(self):
 

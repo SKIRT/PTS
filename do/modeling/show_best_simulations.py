@@ -184,10 +184,7 @@ for index, simulation_name in enumerate(simulation_names):
     if config.sed:
 
         # Determine the plot path
-        plot_path = generation.get_simulation_plot_path(simulation_name)
-
-        # Determine SED path
-        sed_plot_path = fs.join(plot_path, "sed.pdf")
+        sed_plot_path = generation.get_simulation_sed_plot_path(simulation_name)
 
         # Show the plot
         fs.open_file(sed_plot_path)

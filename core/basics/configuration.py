@@ -277,6 +277,25 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
 
 # -----------------------------------------------------------------
 
+def prompt_choices(name, description, choices):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param choices:
+    :return:
+    """
+
+    # Determine parsing type
+    list_ptype, string = stringify.stringify_list(choices)
+    ptype = list_ptype.rsplit("_list", 1)[0]
+
+    # Prompt
+    return prompt_variable(name, ptype, description, choices=choices)
+
+# -----------------------------------------------------------------
+
 def prompt_variable(name, parsing_type, description, choices=None, default=None, suggestions=None, required=True, default_alias=None, convert_default=False):
 
     """
@@ -3542,9 +3561,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("Choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
@@ -3562,9 +3582,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("Choose one of the following options")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -3759,9 +3780,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("or choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
@@ -3782,9 +3804,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("or choose one of the following options")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -3989,9 +4012,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("or choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -4014,9 +4038,10 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 log.info("or choose one of the following options")
 
-                for index, label in enumerate(choices_list):
+                for index, choice_value in enumerate(choices_list):
+                    label = tostr(choice_value)
                     choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment

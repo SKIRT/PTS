@@ -149,6 +149,27 @@ def find_indices(table, key, column_name=None):
 
 # -----------------------------------------------------------------
 
+def find_one_index(table, key, column_name=None):
+
+    """
+    This function ...
+    :param table:
+    :param key:
+    :param column_name:
+    :return:
+    """
+
+    #print(table)
+    #print(key)
+    #print(column_name)
+
+    indices = find_indices(table, key, column_name=column_name)
+    if len(indices) == 0: raise ValueError("Not found")
+    elif len(indices) > 1: raise ValueError("Multiple matches found")
+    else: return indices[0]
+
+# -----------------------------------------------------------------
+
 def equal_columns(columns):
 
     """
