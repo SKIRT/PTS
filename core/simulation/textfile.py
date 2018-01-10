@@ -142,6 +142,9 @@ def get_descriptions_and_units(filepath, remote=None):
         # Add the unit
         units.append(unit)
 
+    # Garbage-collect the generator (to close the file handles)
+    del lines_generator
+
     # Return
     return descriptions, units
 

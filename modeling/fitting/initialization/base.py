@@ -28,6 +28,10 @@ from ...build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
+wavelength_regimes = ["uv", "optical", "nir", "mir", "fir", "submm"]
+
+# -----------------------------------------------------------------
+
 class FittingInitializerBase(FittingComponent):
     
     """

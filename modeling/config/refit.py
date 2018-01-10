@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.config.component import definition
+from pts.modeling.fitting.initialization.base import wavelength_regimes
 
 # -----------------------------------------------------------------
 
@@ -21,8 +22,8 @@ definition = definition.copy()
 
 # -----------------------------------------------------------------
 
-# Name for the reweighing
-definition.add_required("name", "string", "name for the reweiging")
+# Name for the refitting
+definition.add_required("name", "string", "name for the refitting")
 
 # The fitting run for which to adapt the configuration
 if runs.empty: raise RuntimeError("No fitting runs are present")
@@ -34,10 +35,6 @@ definition.add_positional_optional("generations", "string_list", "generation nam
 
 # -----------------------------------------------------------------
 
-wavelength_regimes = ["uv", "optical", "nir", "mir", "fir", "submm"]
-
-# -----------------------------------------------------------------
-
 definition.add_optional("filters", "filter_list", "filters to use for the evaluation (None means default fitting filters)")
 definition.add_optional("regimes", "string_list", "wavelength regimes to use", default=wavelength_regimes, choices=wavelength_regimes)
 
@@ -46,6 +43,12 @@ definition.add_optional("regimes", "string_list", "wavelength regimes to use", d
 # Flags
 definition.add_flag("show", "show")
 definition.add_flag("plot", "make plots")
+
+# -----------------------------------------------------------------
+
+# Redo
+definition.add_flag("reweigh", "recalculate weights", None)
+definition.add_flag("rediff", "recalculate differences", None)
 
 # -----------------------------------------------------------------
 

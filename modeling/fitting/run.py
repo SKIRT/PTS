@@ -125,8 +125,8 @@ class FittingRun(object):
 
         # -----------------------------------------------------------------
 
-        ## NEW: REWEIGING DIRECTORY
-        self.reweighing_path = fs.create_directory_in(self.path, "reweiging")
+        ## NEW: REFITTING DIRECTORY
+        self.refitting_path = fs.create_directory_in(self.path, "refitting")
 
         ## WEIGHTS TABLE
 
@@ -184,6 +184,20 @@ class FittingRun(object):
 
         ## INPUT MAP PATHS FILE
         self.input_maps_file_path = fs.join(self.path, "input_maps.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the weights table
+        from .tables import WeightsTable
+        return WeightsTable.from_file(self.weights_table_path)
 
     # -----------------------------------------------------------------
 

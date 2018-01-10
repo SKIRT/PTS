@@ -280,9 +280,6 @@ class SEDFitModelAnalyser(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
-        # The weights given to each band for the calculation of the chi squared
-        self.weights = None
-
         # The flux differences table
         self.differences = None
 
@@ -469,11 +466,20 @@ class SEDFitModelAnalyser(FittingComponent):
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.fitting_run_name)
 
-        # Load the weights table
-        self.weights = WeightsTable.from_file(self.fitting_run.weights_table_path)
-
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.weights
 
     # -----------------------------------------------------------------
 

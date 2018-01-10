@@ -67,7 +67,7 @@ finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Fin
 reinitialize_fit | -- | fitting.reinitialization.FittingReinitializer | interactive | Re-initialize a fitting run for a particular model, from a previous fitting run, or from an analysis run
 *analyse_sed_fit_model | -- | fitting.modelanalyser.SEDFitModelAnalyser | arguments | Analyse fit model with SED
 *analyse_images_fit_model | -- | fitting.modelanalyser.ImagesFitModelAnalyser | arguments | Analyse fit model with images
-reweigh | -- | fitting.reweigher.Reweigher | arguments | Try out a different weiging and check the result on the fitting
+refit | -- | fitting.refitter.Refitter | arguments | Refit one or more generations based on existing simulation output
 
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run

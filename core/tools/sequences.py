@@ -1562,6 +1562,23 @@ def removed(sequence, remove):
 
 # -----------------------------------------------------------------
 
+def removed_item(sequence, remove):
+
+    """
+    This function ...
+    :param sequence:
+    :param remove:
+    :return:
+    """
+
+    new = []
+    for item in sequence:
+        if item == remove: continue
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
+
 def remove_indices(sequence, indices):
 
     """

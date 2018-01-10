@@ -591,6 +591,45 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_sed_differences_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_path(name), "differences.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_sed_differences(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_sed_differences_path(name)
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_sed_differences(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        from .modelanalyser import FluxDifferencesTable
+        path = self.get_simulation_sed_differences_path(name)
+        return FluxDifferencesTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
     def is_retrieved(self, name):
 
         """
