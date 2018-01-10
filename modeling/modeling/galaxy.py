@@ -1397,7 +1397,10 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
-        return self.check_needs_step("build_model")
+        if self.is_galaxy_modeler: return self.check_needs_step("build_model_galaxy")
+        elif self.is_sed_modeler: return self.check_needs_step("build_model_sed")
+        elif self.is_images_modeler: return self.check_needs_step("build_model_images")
+        else: raise RuntimeError("Something horribly went wrong")
 
     # -----------------------------------------------------------------
 
