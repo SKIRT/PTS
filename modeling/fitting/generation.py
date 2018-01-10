@@ -888,6 +888,19 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_or_basic(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_simulation(name): return self.get_simulation(name)
+        else: return self.get_simulation_basic(name)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def simulations(self):
 
@@ -1355,7 +1368,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def chi_squared_table(self):
 
         """
@@ -1364,6 +1377,18 @@ class Generation(object):
         """
 
         return ChiSquaredTable.from_file(self.chi_squared_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_chi_squared(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.chi_squared_table.chi_squared_for(simulation_name)
 
     # -----------------------------------------------------------------
 

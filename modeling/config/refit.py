@@ -48,7 +48,14 @@ definition.add_flag("plot", "make plots")
 
 # Redo
 definition.add_flag("reweigh", "recalculate weights", None)
+definition.add_flag("reflux", "recalculate mock observed fluxes", None)
 definition.add_flag("rediff", "recalculate differences", None)
+
+# -----------------------------------------------------------------
+
+# Flux calculation options
+definition.add_flag("spectral_convolution", "enable spectral convolution for calculating fluxes (None means default for generation)")
+definition.add_flag("fluxes_from_images", "use images to calculate observed fluxes (None means default for generation)")
 
 # -----------------------------------------------------------------
 
@@ -76,5 +83,11 @@ definition.add_flag("no_nir", "give no weight to NIR bands")
 definition.add_flag("no_mir", "give no weight to MIR bands")
 definition.add_flag("no_fir", "give no weight to FIR bands")
 definition.add_flag("no_submm", "give no weight to submm bands")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("nbest", "positive_integer", "number of best simulations to show", 10)
+definition.add_flag("show_best_sed", "plot the SED of the best simulation")
+definition.add_flag("plot_chi_squared", "plot the chi squared distributions")
 
 # -----------------------------------------------------------------

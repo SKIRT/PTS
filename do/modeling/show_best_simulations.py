@@ -20,11 +20,10 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
-from pts.core.tools import filesystem as fs
-from pts.core.tools import nr
-from pts.core.tools import numbers
 from pts.core.basics.distribution import Distribution
 from pts.core.plot.distribution import plot_distributions
+from pts.modeling.fitting.refitter import show_best_simulations
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -84,7 +83,7 @@ grid_settings = fitting_run.grid_settings
 parameter_scales = dict()
 for label in parameter_labels:
     key = label + "_scale"
-    parameter_scales[label]= grid_settings[key]
+    parameter_scales[label] = grid_settings[key]
 
 # -----------------------------------------------------------------
 
@@ -98,14 +97,6 @@ parameters = generation.parameters_table
 
 # -----------------------------------------------------------------
 
-unique_values = parameters.unique_parameter_values
-unique_values_scalar = dict()
-for label in unique_values:
-    values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
-    unique_values_scalar[label] = values
-
-# -----------------------------------------------------------------
-
 initial_parameter_values = fitting_run.first_guess_parameter_values
 
 # Show initial parameter values
@@ -116,80 +107,23 @@ for label in parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": "
 
 # -----------------------------------------------------------------
 
-# Initialize the counts dictionary
-counts = dict()
-for label in parameter_labels: counts[label] = defaultdict(int)
-
-# Fill with zeros
-for label in parameter_labels:
-    for value in unique_values_scalar[label]: counts[label][value] = 0
+# Show
+simulation_names, counts = show_best_simulations(config.nsimulations, parameter_labels, chi_squared, parameters, parameter_units, parameter_scales, initial_parameter_values)
+print("")
 
 # -----------------------------------------------------------------
 
-# Get all simulation names
-simulation_names = chi_squared.get_best_simulation_names(config.nsimulations)
+# Show SED?
+if config.sed:
 
-# -----------------------------------------------------------------
-
-# Loop over the simulations
-for index, simulation_name in enumerate(simulation_names):
-
-    # Get the chi squared value
-    chisq = chi_squared.chi_squared_for(simulation_name)
-
-    # Get parameter values
-    parameter_values = parameters.parameter_values_for_simulation(simulation_name)
-
-    # Show
-    print("")
-    print(" " + str(index+1) + ". " + fmt.green + fmt.underlined + simulation_name + fmt.reset)
-    print("")
-
-    print("  - chi squared: " + str(chisq))
-    print("  - parameters:")
-    for label in parameter_values:
-
-        # Get properties
-        unit = parameter_units[label]
-        initial_value = initial_parameter_values[label]
-        initial_value_scalar = initial_value.to(unit).value
-        value = parameter_values[label]
-        value_scalar = value.to(unit).value
-        nunique_values = len(unique_values_scalar[label])
-
-        # Get index of value and index of initial value
-        i = unique_values_scalar[label].index(value_scalar)
-        j = nr.locate_continuous(unique_values_scalar[label], initial_value_scalar, scale=parameter_scales[label])
-        if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
-        j = int(round(j))
-
-        # Show
-        #indicator = "| "
-        indicator = "[ "
-        for _ in range(nunique_values):
-            if _ == j: character = "+"
-            else: character = "o"
-            if _ == i: indicator += fmt.red + character + fmt.reset + " "
-            else: indicator += character + " "
-        #indicator += "|"
-        indicator += "]"
-
-        # Show
-        print("     * " + fmt.bold + label + fmt.reset + ": " + tostr(value) + "   " + indicator)
-
-        # Add count for this parameter
-        counts[label][value_scalar] += 1
-
-    # Show SED?
-    if config.sed:
+    # Loop over the simulations
+    for simulation_name in simulation_names:
 
         # Determine the plot path
         sed_plot_path = generation.get_simulation_sed_plot_path(simulation_name)
 
         # Show the plot
         fs.open_file(sed_plot_path)
-
-print("")
 
 # -----------------------------------------------------------------
 

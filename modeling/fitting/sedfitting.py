@@ -426,8 +426,7 @@ class SEDFitter(FittingComponent):
         probabilities = np.exp(-0.5 * np.asarray(chi_squared_values))
 
         # Create the probabilities table
-        probabilities_table = ModelProbabilitiesTable(parameters=self.fitting_run.free_parameter_labels,
-                                                      units=self.fitting_run.parameter_units)
+        probabilities_table = ModelProbabilitiesTable(parameters=self.free_parameter_labels, units=self.fitting_run.parameter_units)
 
         # Add the entries to the model probabilities table
         for i in range(nsimulations):
@@ -515,7 +514,7 @@ class SEDFitter(FittingComponent):
         log.info("Calculating the probabilities of the different parameter values for all generations ...")
 
         # Loop over the free parameters
-        for label in self.fitting_run.free_parameter_labels:
+        for label in self.free_parameter_labels:
 
             # Create a set for the unique values
             unique_values = set()
@@ -566,7 +565,7 @@ class SEDFitter(FittingComponent):
         log.info("Creating the probability distributions ...")
 
         # Loop over the free parameters
-        for label in self.fitting_run.free_parameter_labels:
+        for label in self.free_parameter_labels:
 
             # Debugging
             log.debug("Creating distribution for the '" + label + "' parameter ...")
@@ -643,7 +642,7 @@ class SEDFitter(FittingComponent):
         # Write all generations parameter probabilities
         self.write_all_parameter_probabilities()
 
-        # Write the ski file of the best simulation
+        # Write the best parameters table
         self.write_best_parameters()
 
         # Write the probability distributions in table format
