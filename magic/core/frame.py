@@ -5278,13 +5278,17 @@ def sum_frames_quadratically(*args):
     """
 
     #arrays = [np.array(arg)**2 for arg in args]
+
+    if len(args) == 0: raise ValueError("No frames are passed")
+
+    arrays = []
+
     for arg in args:
-        if arg in args is None:
-            arrays = np.NaN
-            return Frame(np.NaN)
-        else:
-            arrays = [arg.data**2]
-            return Frame(np.sqrt(np.sum(arrays, axis=0)))
+        if arg is None: continue
+        else: arrays.append(arg.data**2)
+
+    # Return
+    return Frame(np.sqrt(np.sum(arrays, axis=0)))
 
 # -----------------------------------------------------------------
 
