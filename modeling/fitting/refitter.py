@@ -873,8 +873,7 @@ class Refitter(FittingComponent):
         """
 
         if self.config.rediff is not None: return self.config.rediff
-        elif self.reflux: return True
-        else: return self.different_filters
+        else: return self.different_filters or self.reflux or self.reweigh # also after reweighing because chi squared terms are calculated during differences!
 
     # -----------------------------------------------------------------
 
