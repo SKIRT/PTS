@@ -41,8 +41,8 @@ definition.add_optional("regimes", "string_list", "wavelength regimes to use", d
 # -----------------------------------------------------------------
 
 # Flags
-definition.add_flag("show", "show")
-definition.add_flag("plot", "make plots")
+definition.add_flag("show", "show", True)
+definition.add_flag("plot", "make plots", True)
 
 # -----------------------------------------------------------------
 
@@ -59,12 +59,12 @@ definition.add_flag("fluxes_from_images", "use images to calculate observed flux
 
 # -----------------------------------------------------------------
 
-definition.add_optional("uv", "positive_real", "relative weight for UV bands", 1.)
-definition.add_optional("optical", "positive_real", "relative weight for optical bands", 1.)
-definition.add_optional("nir", "positive_real", "relative weight for NIR bands", 1.)
-definition.add_optional("mir", "positive_real", "relative weight for MIR bands", 1.)
-definition.add_optional("fir", "positive_real", "relative weight for FIR bands", 1.)
-definition.add_optional("submm", "positive_real", "relative weight for submm bands", 1.)
+definition.add_optional("uv", "positive_real", "default relative weight for UV bands", 1.)
+definition.add_optional("optical", "positive_real", "default relative weight for optical bands", 1.)
+definition.add_optional("nir", "positive_real", "default relative weight for NIR bands", 1.)
+definition.add_optional("mir", "positive_real", "default relative weight for MIR bands", 1.)
+definition.add_optional("fir", "positive_real", "defult relative weight for FIR bands", 1.)
+definition.add_optional("submm", "positive_real", "default relative weight for submm bands", 1.)
 
 # -----------------------------------------------------------------
 

@@ -65,10 +65,10 @@ class Refitter(FittingComponent):
         self.weights = None
 
         # The fluxes
-        self.fluxes = defaultdict(lambda: defaultdict)
+        self.fluxes = defaultdict(defaultdict)
 
         # The flux differences
-        self.differences = defaultdict(lambda: defaultdict)
+        self.differences = defaultdict(defaultdict)
 
         # The chi squared tables
         self.chi_squared_tables = dict()
@@ -259,7 +259,7 @@ class Refitter(FittingComponent):
         for generation_name in self.generation_names:
             generation = self.generations[generation_name]
             for simulation_name in generation.simulation_names:
-                paths[generation][simulation_name] = fs.create_directory_in(self.generation_paths[generation_name], simulation_name)
+                paths[generation_name][simulation_name] = fs.create_directory_in(self.generation_paths[generation_name], simulation_name)
         return paths
 
     # -----------------------------------------------------------------
@@ -287,7 +287,8 @@ class Refitter(FittingComponent):
             self.chi_squared_tables[generation_name] = table
 
         # Initialize best parameters table
-        self.best_parameters_table = BestParametersTable()
+        self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
+        self.best_parameters_table.setup()
 
     # -----------------------------------------------------------------
 
@@ -535,7 +536,8 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return len(self.config.filters) > len(self.fitting_run.fitting_filters)
+        if self.config.filters is None: return False
+        else: return len(self.config.filters) > len(self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
@@ -547,7 +549,8 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return sequences.has_other(self.config.filters, self.fitting_run.fitting_filters)
+        if self.config.filters is None: return False
+        else: return sequences.has_other(self.config.filters, self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
