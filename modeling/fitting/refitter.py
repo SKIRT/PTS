@@ -951,6 +951,9 @@ class Refitter(FittingComponent):
                 # Get simulation name
                 simulation_name = simulation.name
 
+                # Debugging
+                log.debug("Calculating differences for the '" + simulation_name + "' simulation ...")
+
                 # Initialize the differences table
                 differences = FluxDifferencesTable()
 
