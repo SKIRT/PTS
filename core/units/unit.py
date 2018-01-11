@@ -817,7 +817,8 @@ class PhotometricUnit(CompositeUnit):
         :return: 
         """
 
-        return self.is_intensity or self.is_surface_brightness
+        return self.has_solid_angle_unit
+        #return self.is_intensity or self.is_surface_brightness
 
     # -----------------------------------------------------------------
 
@@ -829,7 +830,8 @@ class PhotometricUnit(CompositeUnit):
         :return: 
         """
 
-        return self.is_intrinsic_surface_brightness
+        return self.has_extent_unit
+        #return self.is_intrinsic_surface_brightness
 
     # -----------------------------------------------------------------
 

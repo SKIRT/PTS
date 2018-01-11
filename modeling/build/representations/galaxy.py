@@ -508,7 +508,8 @@ def create_faceon_projection(deprojection):
 
     # Create the face-on projection system
     #faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    faceon_projection = FaceOnProjection(distance, npixels.x, npixels.y, center_physical.x, center_physical.y, field.x, field.y)
+    faceon_projection = FaceOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y, center_x=center_physical.x, center_y=center_physical.y,
+                                         field_x=field.x, field_y=field.y)
 
     # Return the projection
     return faceon_projection
@@ -549,7 +550,8 @@ def create_edgeon_projection(deprojection, z_extent):
     center_physical = get_physical_center(field, npixels, center)
 
     # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    edgeon_projection = EdgeOnProjection(distance, npixels.x, npixels.y, center_physical.x, center_physical.y, field.x, field.y)
+    edgeon_projection = EdgeOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y, center_x=center_physical.x, center_y=center_physical.y,
+                                         field_x=field.x, field_y=field.y)
 
     # Return the projection
     return edgeon_projection

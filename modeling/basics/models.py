@@ -2451,7 +2451,10 @@ def intrinsic_z_flattening(qprime, inclination):
     i = inclination.to("radian").value
 
     # Calculate the intrinsic flattening
-    q = math.sqrt((qprime**2 - math.cos(i)**2)/math.sin(i)**2)
+    difference = qprime**2 - math.cos(i)**2
+
+    if difference < 0: q = qprime
+    else: q = math.sqrt(difference/math.sin(i)**2)
 
     # Return the intrinsic flattening
     return q

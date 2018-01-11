@@ -578,7 +578,10 @@ class Projector(GalaxyModelingComponent):
 
         # Set the faceon projection
         if self.has_wcs: self.faceon_projection = FaceOnProjection.from_wcs(self.wcs, self.center_sky, self.config.distance)
-        elif self.has_basic_projection_properties: self.faceon_projection = FaceOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.center_physical.x, self.center_physical.y, self.config.field.x, self.config.field.y)
+        elif self.has_basic_projection_properties: self.faceon_projection = FaceOnProjection(distance=self.config.distance, pixels_x=self.config.npixels.x,
+                                                                                             pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
+                                                                                             center_y=self.center_physical.y, field_x=self.config.field.x,
+                                                                                             field_y=self.config.field.y)
         else: raise ValueError("Cannot set the face-on projection: projection properties not set and coordinate system not specified")
 
     # -----------------------------------------------------------------
@@ -595,7 +598,10 @@ class Projector(GalaxyModelingComponent):
 
         # Set the edgeon projection
         if self.has_wcs: self.edgeon_projection = EdgeOnProjection.from_wcs(self.wcs, self.center_sky, self.config.distance)
-        elif self.has_basic_projection_properties: self.edgeon_projection = EdgeOnProjection(self.config.distance, self.config.npixels.x, self.config.npixels.y, self.center_physical.x, self.center_physical.y, self.config.field.x, self.config.field.y)
+        elif self.has_basic_projection_properties: self.edgeon_projection = EdgeOnProjection(distance=self.config.distance, pixels_x=self.config.npixels.x,
+                                                                                             pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
+                                                                                             center_y=self.center_physical.y, field_x=self.config.field.x,
+                                                                                             field_y=self.config.field.y)
         else: raise ValueError("Cannot set the edge-on projection: projection properties not set and coordinate system not specified")
 
     # -----------------------------------------------------------------

@@ -1077,6 +1077,9 @@ class DataPreparer(PreparationComponent):
             # Determine the new path
             new_path = fs.join(directory_path, result_name)
 
+            # Set image distance
+            image.distance = self.galaxy_distance
+
             # Save the image
             image.saveto(new_path)
 
