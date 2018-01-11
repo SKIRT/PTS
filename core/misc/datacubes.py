@@ -183,6 +183,9 @@ class DatacubesMiscMaker(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Looking for total datacube files in directory '" + output_path + "' ...")
+
         # Get datacube paths
         #datacube_paths = fs.files_in_path(self.config.path, extension="fits")
         total_datacube_paths = fs.files_in_path(output_path, extension="fits", endswith="_total")
@@ -200,7 +203,13 @@ class DatacubesMiscMaker(Configurable):
                 raise IOError("Not all datacubes have the same simulation prefix")
         if prefix is None: raise IOError("No datacubes were found")
 
-        # Set the paths to the toatl FITS files created by the simulation
+        # Show the datacubes
+        log.debug("Found datacubes:")
+        for path in total_datacube_paths:
+            filename = fs.name(path)
+            log.debug(" - " + filename)
+
+        # Set the paths to the total FITS files created by the simulation
         self.datacube_paths = total_datacube_paths
 
         from ..data.sed import load_sed
