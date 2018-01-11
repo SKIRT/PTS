@@ -20,7 +20,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
 from pts.core.data.sed import load_sed
 from pts.core.basics.composite import load_composite
-from pts.core.basics.distribution import newDistribution
+from pts.core.basics.distribution import Distribution
 from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
 
@@ -106,9 +106,7 @@ def load_structure(path, filetype, columns=None):
     elif filetype == distribution:
 
         # Load distribution
-        #structure = Distribution.from_file(path)
-        #tab = structure.as_table()
-        structure = newDistribution.from_old_file(path)
+        structure = Distribution.from_file(path)
         tab = structure
 
         # Remove columns?

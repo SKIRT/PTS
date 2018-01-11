@@ -567,11 +567,8 @@ class WavelengthGridPlotter(Configurable):
         # Add regimes
         if self.config.add_regimes: self.add_regimes()
 
-        # Get figure size
-        figsize = self.config.plot.figsize
-
         # Create the plot
-        if self.config.library == mpl: self.figure = MPLFigure(size=figsize)
+        if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
@@ -591,6 +588,18 @@ class WavelengthGridPlotter(Configurable):
 
         # Check
         if self.config.plot_differences and not self.has_single_reference_grid: raise ValueError("Has to have one reference grid to plot differences")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def figsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.config.plot.xsize, self.config.plot.ysize)
 
     # -----------------------------------------------------------------
 

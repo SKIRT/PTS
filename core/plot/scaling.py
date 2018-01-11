@@ -2796,6 +2796,18 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def figsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.config.plot.xsize, self.config.plot.ysize)
+
+    # -----------------------------------------------------------------
+
     def plot_runtimes_phase(self, phase):
 
         """
@@ -2808,7 +2820,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the runtimes for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3042,7 +3054,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the speedups for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3265,7 +3277,7 @@ class ScalingPlotter(Configurable):
         log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3465,7 +3477,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the CPU times for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3670,7 +3682,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the memory scaling for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3846,7 +3858,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the memory gain scaling for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -3989,7 +4001,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the total memory scaling (all processes combined) for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.plot.figsize)
+        plt.figure(figsize=self.figsize)
         plt.clf()
 
         # Set background
@@ -4212,13 +4224,13 @@ class ScalingPlotter(Configurable):
                                                                    totals=True, unordered=True, cpu=True, title=title,
                                                                    rpc='p', add_border=self.config.plot.add_border,
                                                                    label_fontsize=self.config.plot.label_fontsize,
-                                                                   figsize=self.config.plot.figsize,
+                                                                   figsize=self.figsize,
                                                                    title_fontsize=self.config.plot.title_fontsize,
                                                                    ticks_fontsize=self.config.plot.ticks_fontsize)
                 else: create_timeline_plot(data, ncores_list, plot_file_path,
                                            percentages=self.config.timelines.percentages, totals=True, unordered=True,
                                            cpu=True, title=title, rpc='c', add_border=self.config.plot.add_border,
-                                           label_fontsize=self.config.plot.label_fontsize, figsize=self.config.plot.figsize,
+                                           label_fontsize=self.config.plot.label_fontsize, figsize=self.figsize,
                                            title_fontsize=self.config.plot.title_fontsize, ticks_fontsize=self.config.plot.ticks_fontsize)
 
     # -----------------------------------------------------------------

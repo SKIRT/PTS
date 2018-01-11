@@ -785,16 +785,8 @@ class DistributionPlotter(Configurable):
         for panel in self.panels: self.min_values[panel] = None
         for panel in self.panels: self.max_values[panel] = None
 
-        # Initialize the plot
-        if self.has_single_panel: figsize = self.config.plot.figsize
-        else:
-            xsize = self.config.plot.figsize[0] * self.npanels
-            ysize = self.config.plot.figsize[1]
-            figsize = (xsize, ysize)
-            #print("figsize:", figsize)
-
         # Create the plot
-        if self.config.library == mpl: self.figure = MPLFigure(size=figsize)
+        if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
@@ -802,6 +794,43 @@ class DistributionPlotter(Configurable):
         if self.config.show is None:
             if self.out_path is not None: self.config.show = False
             else: self.config.show = True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_single_panel: return self.config.plot.xsize
+        else: return self.config.plot.xsize[0] * self.npanels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def figsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.xsize, self.ysize)
 
     # -----------------------------------------------------------------
 

@@ -1336,19 +1336,6 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def axvline(self, *args, **kwargs):
-
-        """
-        This function ...
-        :param args:
-        :param kwargs:
-        :return:
-        """
-
-        return self._plot.axvline(*args, **kwargs)
-
-    # -----------------------------------------------------------------
-
     def bar(self, *args, **kwargs):
 
         """
@@ -1385,44 +1372,6 @@ class MPLPlot(Plot):
         """
 
         return self._plot.legend(*args, **kwargs)
-
-    # -----------------------------------------------------------------
-
-    # def create_legends(self, nlegends):
-    #
-    #     """
-    #     This function ...
-    #     :param nlegends:
-    #     :return:
-    #     """
-    #
-    #     # Create a legend for the first line.
-    #     #first_legend = plt.legend(handles=[line1], loc=1)
-    #
-    #     # Add the legend manually to the current Axes.
-    #     #ax = plt.gca().add_artist(first_legend)
-    #
-    #     # Create another legend for the second line.
-    #     #plt.legend(handles=[line2], loc=4)
-    #
-    #     legends = []
-    #
-    #     # Create legends
-    #     for index in range(nlegends):
-    #
-    #         legendi = self.axes.legend()
-    #
-    #         print(legendi)
-    #
-    #         # Add to plot?
-    #         last = index == nlegends - 1
-    #         if not last: self.axes.add_artist(legendi)
-    #
-    #         # Add the legend to the list
-    #         legends.append(legendi)
-    #
-    #     # Return the legends
-    #     return legends
 
     # -----------------------------------------------------------------
 
@@ -1761,6 +1710,19 @@ class MPLPlot(Plot):
         # No ticks
         self.yaxis.set_ticks([])
 
+    # -----------------------------------------------------------------
+
+    def set_grid(self, config, which="major"):
+
+        """
+        This function ...
+        :param config:
+        :param which:
+        :return:
+        """
+
+        if config.add_grid: self.axes.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle, color=config.grid_color, which=which)
+
 # -----------------------------------------------------------------
 
 class MPLFigure(Figure):
@@ -1786,7 +1748,6 @@ class MPLFigure(Figure):
         self.ax = self.figure.gca()
 
         # Properties
-        self.add_borders = False
         self.transparent = False
         self.format = None
 
@@ -2177,7 +2138,9 @@ class MPLFigure(Figure):
         """
 
         # Set border width
-        if config.add_borders: [i.set_linewidth(config.borderwidth) for i in self.ax.spines.itervalues()]
+        if config.add_border:
+            #print("Adding borders ...")
+            [i.set_linewidth(config.borderwidth) for i in self.ax.spines.itervalues()]
 
         # Remove borders
         else:

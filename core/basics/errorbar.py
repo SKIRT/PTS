@@ -194,6 +194,80 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_upper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return self.upper != numbers.inf
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lower(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return self.lower != numbers.min_inf
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_upper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_upper
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_lower(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_lower
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_upper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_upper and self.no_lower
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_lower(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_lower and self.no_upper
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """

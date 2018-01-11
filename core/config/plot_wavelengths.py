@@ -11,7 +11,7 @@ from pts.core.config.plot import definition as plot_definition
 from pts.core.basics.plot import plotting_libraries, mpl
 from pts.core.prep.wavelengthgrids import subgrids
 from pts.magic.tools import wavelengths
-from pts.core.basics.emissionlines import get_identifiers, important_lines, strong_lines
+from pts.core.basics.emissionlines import get_identifiers, strong_lines
 from pts.core.tools import parsing
 
 # -----------------------------------------------------------------
@@ -114,7 +114,9 @@ definition.add_optional("ages", "time_quantity_list", "ages for Bruzual-Charlot 
 
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
-definition.sections["plot"].optional["figsize"].default = (12,6)
+#definition.sections["plot"].optional["figsize"].default = (12,6)
+definition.sections["plot"].optional["xsize"].default = 12
+definition.sections["plot"].optional["ysize"].default = 6
 
 # The unit in which to plot
 definition.add_optional("wavelength_unit", "length_unit", "unit of wavelength", "micron", convert_default=True)

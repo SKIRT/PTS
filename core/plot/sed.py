@@ -13,15 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.patches as patches
 from collections import OrderedDict
-from textwrap import wrap
 from matplotlib.ticker import FormatStrFormatter
-import matplotlib.gridspec as gridspec
 from matplotlib import rc
 from scipy.interpolate import interp1d
 from operator import itemgetter
@@ -31,11 +28,12 @@ from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED, load_sed, load_multiple_seds
-from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
+from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh, dark_pretty_colors, pretty_colors, filled_markers
 from ..tools import types
 from ..filter.broad import BroadBandFilter
 from ..basics.errorbar import ErrorBar
 from ..tools import numbers
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -44,8 +42,6 @@ rc('text', usetex=True)
 # -----------------------------------------------------------------
 
 line_styles = ['-', '--', '-.', ':']
-
-filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd'] * 6
 
 distinguishable_colormaps = ["spring", "winter", "copper", "cool", "PRGn", "coolwarm"]
 other_colormaps = ["YlGn", "YlGnBu", "YlOrRd", "Purples", "inferno", "plasma", "Spectral", "terrain"]
@@ -59,8 +55,6 @@ for name, rgb in colors.ColorConverter.colors.items():
     color_hex[name] = hex_
 
 color_plt_identifiers = color_hex.keys()
-
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
 
 # -----------------------------------------------------------------
 
@@ -294,14 +288,8 @@ class SEDPlotter(Configurable):
         # Add SED files present in the current working directory (if nothing is added manually)
         if self.no_seds: self.load_seds()
 
-        # Initialize the plot
-        if len(self.observations) > 1 and len(self.models) > 0:
-            number_of_observations = len(self.observations)
-            figsize = (self.config.plot.figsize[0], self.config.plot.figsize[1] + (number_of_observations - 1) * 1.1)
-        else: figsize = self.config.plot.figsize
-
         # Create the plot
-        if self.config.library == mpl: self.figure = MPLFigure(size=figsize)
+        if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
 
@@ -309,6 +297,46 @@ class SEDPlotter(Configurable):
         if self.config.show is None:
             if self.out_path is not None: self.config.show = False
             else: self.config.show = True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot.xsize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.nobservations > 1 and self.nmodels > 0:
+            main_size = self.config.plot.ysize * self.config.plot.main_relsize
+            other_size = float(self.config.plot.ysize) - main_size
+            return main_size + (self.nobservations - 1) * other_size
+        else: return self.config.plot.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def figsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.xsize, self.ysize)
 
     # -----------------------------------------------------------------
 
@@ -520,6 +548,51 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unique_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_unique_labels(self.observations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def most_npoints_observation_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        most_npoints = None
+        most_npoints_label = None
+
+        for label in self.observations:
+            observation = self.observations[label]
+            if most_npoints_label is None or len(observation) > most_npoints:
+                most_npoints = len(observation)
+                most_npoints_label = label
+
+        return most_npoints_label
+
+    # -----------------------------------------------------------------
+
+    @property
+    def most_npoints_observation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observations[self.most_npoints_observation_label]
+
+    # -----------------------------------------------------------------
+
     def plot_more_observations(self):
 
         """
@@ -530,52 +603,27 @@ class SEDPlotter(Configurable):
         # Debugging
         log.debug("Plotting multiple observed SEDs ...")
 
-        # http://matplotlib.org/examples/color/colormaps_reference.html
-        #gradient = np.linspace(0, 1, 256)
-        #gradient = np.vstack((gradient, gradient))
-
-        # For each observed SED (different color map name):
-        # Make a small new axis (like a legend)
-        #    ax.imshow(gradient, aspect='auto', cmap=plt.get_cmap(name))
-
-        # Make smaller plot inside other axis:
-        # http://stackoverflow.com/questions/17458580/embedding-small-plots-inside-subplots-in-matplotlib
-        #ax_number = add_subplot_axes(ax,rect)
-
-        # CREATE MAIN PLOT AND ONE RESIDUAL PLOT
-        #self.main_plot, residual_plot = self.figure.create_column(2, share_axis=True, height_ratios=[4,1])
-        #self.residual_plots.append(residual_plot)
-
         nplots = 2
         height_ratios = [4, 1]
 
         # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
-        # self.main_plot, residual_plot = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
         plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        # self.residual_plots.append(residual_plot)
         self.main_plot = plots[0]
         residual_plot = plots[1]
         self.residual_plots.append(residual_plot)
 
-        # Count the number of observed SEDs
-        number_of_observations = len(self.observations)
-
         # Keep track of whether we are plotting the first observed SED
-        first = True
-        reference_sed = None
-
-        # Make iterable from color map names
-        #color_maps = iter(distinguishable_colormaps + other_colormaps)
-        #ncolor_maps = len(distinguishable_colormaps + other_colormaps)
+        #first = True
+        #reference_sed = None
 
         # Make iterable from distinct colors
-        different_colors = iter(pretty_colors)
+        different_colors = iter(dark_pretty_colors)
 
         # Unique labels
-        unique_labels = get_unique_labels(self.observations)
+        #unique_labels = get_unique_labels(self.observations)
 
         # Markers for the unique labels
-        markers = filled_markers[:len(unique_labels)]
+        markers = filled_markers[:len(self.unique_labels)]
 
         # Used labels
         used_labels = []
@@ -586,7 +634,13 @@ class SEDPlotter(Configurable):
         legend_rectangles = []
         rectangle_labels = []
 
-        #with_errors = []
+        # Remember colors for each observation
+        observation_colors = dict()
+
+        # Determine the reference SED
+        reference_sed_label = self.most_npoints_observation_label
+        #print("reference", reference_sed_label)
+        reference_sed = self.observations[reference_sed_label]
 
         # Loop over the different observed SEDs
         for label in self.observations:
@@ -597,9 +651,6 @@ class SEDPlotter(Configurable):
             # Get the observed SED
             observation = self.observations[label]
 
-            #print(label)
-            #print(observation)
-
             # Get wavelengths, fluxes, instruments, bands, errors
             wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
             fluxes = observation.photometry(unit=self.config.unit, add_unit=False)
@@ -607,34 +658,13 @@ class SEDPlotter(Configurable):
             bands = observation.bands()
             errors = observation.errors(unit=self.config.unit, add_unit=False)
 
-            #print(errors)
-
-            # Check whether has errors
-            #has_errors = sequences.has_not_none(errors)
-            #if has_errors: with_errors.append(label)
-
-            #print(label)
-            #print(fluxes)
-
             # Create color range
-            # if number_of_observations <= 3:
-            #     colormap = plt.get_cmap(next(color_maps))
-            #     colors = colormap(np.linspace(0, 1, len(wavelengths)))
-            # else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
-            colors = [color_hex[next(different_colors)]] * len(wavelengths)
-
-            #print(colors)
+            observation_color = color_hex[next(different_colors)]
+            #colors = [] * len(wavelengths)
+            observation_colors[label] = observation_color
 
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
-
-            # Reference SED for comparison with other observed SEDs
-            if first: reference_sed = observation
-
-            #if label == "Observation (SED)": continue
-
-            # TEST
-            #if not first: wavelengths = [wavelength * 1.1 for wavelength in wavelengths]
 
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
@@ -646,42 +676,34 @@ class SEDPlotter(Configurable):
                     fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
                     if fltr in self.config.ignore_filters: continue
 
-                # Get flux
-                #wavelength = wavelengths[k]
-                #flux = fluxes[k]
-                #print(k, wavelength, flux)
-
-                # if first:
-                #     #if k % 2 == 0: continue
-                #     if k % 2 != 0: continue
-                # else:
-                #     #if k % 2 != 0: continue
-                #     if k % 2 == 0: continue
-
                 # Check validity of flux value
                 if fluxes[k] <= 0.0:
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                     continue
 
                 # Get marker
-                marker = markers[unique_labels.index(labels[k])]
+                marker = markers[self.unique_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
                 #if sequences.has_any(with_errors) and error is None:
                 if self.has_any_observation_errors and error is None: error = ErrorBar.zero()
 
+                # Ignore upper limits?
+                if self.config.ignore_upper and error.only_upper: continue
+
+                #print(used_labels)
+
                 # Plot the flux data point on the main axis with the specified marker and color
-                # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch = False
-                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, colors[k], return_patch=True)
+                patch, new_label = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, observation_color, return_new=True)
 
                 # Add the patch and label
-                if patch is not None:
+                if patch is not None and new_label:
                     legend_patches.append(patch)
                     legend_labels.append(labels[k])
 
                 # Plot on axis 2
-                if first:
+                if label == reference_sed_label:
 
                     if errors[k] is not None:
 
@@ -722,7 +744,7 @@ class SEDPlotter(Configurable):
                 if value is not None and error is not None:
 
                     yerr, lolims, uplims = process_errorbar(error)
-                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2, lolims=lolims, uplims=uplims)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims)
 
             # The next observation is not the first anymore
             first = False
@@ -732,7 +754,7 @@ class SEDPlotter(Configurable):
             #ax3.imshow(gradient, aspect='auto', cmap=colormap)
 
             # Create rectangle for this observation
-            rectangle = patches.Rectangle((0, 0), 1, 1, fc=colors[0])
+            rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
             legend_rectangles.append(rectangle)
             rectangle_labels.append(label)
 
@@ -1302,8 +1324,7 @@ class SEDPlotter(Configurable):
                 #print(labels[k])
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                # axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False
-                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, color, return_patch=True)
+                patch = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, color)
 
                 # Add patch and label
                 if patch is not None:
@@ -1452,7 +1473,7 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False):
+    def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color, return_new=False):
 
         """
         This function ...
@@ -1464,7 +1485,7 @@ class SEDPlotter(Configurable):
         :param error:
         :param marker:
         :param color:
-        :param return_patch:
+        :param return_new:
         :return:
         """
 
@@ -1494,20 +1515,16 @@ class SEDPlotter(Configurable):
         if self._min_wavelength is None or wavelength < self._min_wavelength: self._min_wavelength = wavelength
         if self._max_wavelength is None or wavelength > self._max_wavelength: self._max_wavelength = wavelength
 
-        # If requested, the patch is returned
-        patch = None
-
-        #print(label, used_labels)
-
         # Check if a data point of this instrument has already been plotted
-        if label not in used_labels:
+        new_label = label not in used_labels
+        if new_label:
+
+            used_labels.append(label)
 
             if error is not None:
 
                 lower_flux = flux + error.lower
                 upper_flux = flux + error.upper
-
-                #print(label, flux, lower_flux, upper_flux)
 
                 lolims = False
                 uplims = False
@@ -1523,25 +1540,14 @@ class SEDPlotter(Configurable):
                 flux_upper_flux = flux / upper_flux
 
                 yerr = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
-                #yerr, lolims, uplims = process_errorbar(ErrorBar(np.log10(flux_lower_flux), np.log10(flux_upper_flux)))
-
-                used_labels.append(label)
-
-                #print("a", wavelength, flux)
                 patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
-            #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else:
-
-                #print(type(axis))
-
-                #axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
-                #print("b", wavelength, flux)
-                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black') #markerfacecolor=color) #label=label)
+            else: patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=7, color=color, markeredgecolor='black') #markerfacecolor=color) #label=label)
 
         # A data point of this instrument has already been plotted
         else:
 
+            # There is an error bar
             if error is not None:
 
                 lolims = False
@@ -1560,7 +1566,8 @@ class SEDPlotter(Configurable):
             else: patch = axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
         # Return the patch if requested
-        if return_patch: return patch
+        if return_new: return patch, new_label
+        else: return patch
 
     # -----------------------------------------------------------------
 
@@ -1700,6 +1707,9 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Finishing the plot ...")
+
         had_min_flux = self.min_flux is not None
         had_max_flux = self.max_flux is not None
         had_min_wavelength = self.min_wavelength is not None
@@ -1738,42 +1748,18 @@ class SEDPlotter(Configurable):
         # Set log x scale
         self.main_plot.set_xscale('log')
 
-        # Format the axis ticks and create a grid
-        #ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10)
-        #self.main_plot.set_xlim(ticks[0], ticks[-1])
-
-        # Set x ticks
-        #self.main_plot.set_xticks(ticks)
-        #self.main_plot.set_xticklabels(ticks)
-
-        #print(type(self.main_plot))
-
-        #self.main_plot.set_xticks(ticks, fontsize=self.config.plot.ticks_fontsize)
+        # Set ticks
         self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
-        #tick_params(labelsize=6)
-
-        #self.main_plot.xaxis.set_major_formatter(FormatStrFormatter('%g'))
-        #self.main_plot.yaxis.set_major_formatter(FormatStrFormatter('%g'))
-
-        #self._figure.subplots_adjust(hspace=0)
-        #plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)
-
-        # Set ticks fontsize
-        #plt.setp(self.main_plot.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
-        #plt.setp(self.main_plot.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Add axis labels and a legend
-        #self.main_plot.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
-        from ..tools.stringify import tostr
-        #unit_string = r"Log $" + self.config.unit.latex_symbol + "$$[" + tostr(self.config.unit) + "]$"
         y_label = r"Log $" + self.config.unit.latex_string + r"$"
-        #print(y_label)
-        #print(list(y_label))
         self.main_plot.set_ylabel(y_label, fontsize='large')
 
         # Set grid
-        self.figure.set_grid(self.config.plot, which="both")
+        #self.figure.set_grid(self.config.plot, which="both")
+        self.main_plot.set_grid(self.config.plot, which="both")
+        for plot in self.residual_plots: plot.set_grid(self.config.plot, which="both")
 
         # Set borders
         self.figure.set_borders(self.config.plot)
@@ -1795,9 +1781,19 @@ class SEDPlotter(Configurable):
         # Add the legend
         if for_legend_patches is not None:
 
+            legend_properties = dict()
+            legend_properties["loc"] = "lower center"
+            #legend_properties["numpoints"] = 4
+            legend_properties["scatterpoints"] = 4
+            legend_properties["ncol"] = 2
+            legend_properties["shadow"] = False
+            legend_properties["frameon"] = True
+            legend_properties["facecolor"] = None
+            legend_properties["fontsize"] = self.config.plot.legend_fontsize
+
             # Set legend
             # fancybox=True makes the legend corners rounded
-            legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
+            legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, **legend_properties)
             legends.append(legend)
 
             # Extra legend
@@ -1809,13 +1805,23 @@ class SEDPlotter(Configurable):
         # No extra legend, no patches for the legend
         else:
 
-            legend = self.main_plot.legend(numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
+            legend_properties = dict()
+            legend_properties["loc"] = "lower center"
+            legend_properties["numpoints"] = 1
+            legend_properties["scatterpoints"] = 4
+            legend_properties["ncol"] = 2
+            legend_properties["shadow"] = False
+            legend_properties["frameon"] = True
+            legend_properties["facecolor"] = None
+            legend_properties["fontsize"] = self.config.plot.legend_fontsize
+
+            legend = self.main_plot.legend(**legend_properties)
             legends.append(legend)
 
-        # Set legends
-        for legend in legends:
-            if legend is None: continue # Bokeh
-            set_legend(legend, self.config.plot)
+        # Set legend properties
+        #for legend in legends:
+        #    if legend is None: continue # Bokeh
+        #    set_legend(legend, self.config.plot)
 
         # Add title if requested
         if self.title is not None: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
@@ -2047,13 +2053,19 @@ def process_errorbar(error):
 
     lolims = False
     uplims = False
+
     error_limits = [[abs(error.lower), abs(error.upper)]]
-    if error.lower == numbers.min_inf:
+
+    if error.no_lower:
+
         error_limits[0][0] = error_limits[0][1]
         uplims = [[True]]
-    if error.upper == numbers.inf:
+
+    if error.no_upper:
+
         error_limits[0][1] = error_limits[0][0]
         lolims = [[True]]
+
     yerr = np.array(error_limits).T
     return yerr, lolims, uplims
 

@@ -292,7 +292,19 @@ class TransmissionPlotter(Configurable):
         else: self.output = self.config.output
 
         # Initialize the plot
-        self.plt = MPLFigure(size=self.config.plot.figsize)
+        self.plt = MPLFigure(size=self.figsize)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def figsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.config.plot.xsize, self.config.plot.ysize)
 
     # -----------------------------------------------------------------
 
