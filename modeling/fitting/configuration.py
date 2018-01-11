@@ -1372,7 +1372,7 @@ class FittingConfigurer(FittingComponent):
         setter = InteractiveConfigurationSetter("Parameter descriptions", add_cwd=False, add_logging=False)
 
         # Get the config and set the descriptions configuration
-        config = setter.run(self.descriptions_config, prompt_optional=self.prompt_optional_descriptions)
+        config = setter.run(self.descriptions_definition, prompt_optional=self.prompt_optional_descriptions)
         self.descriptions_config = Configuration(descriptions=config)
 
     # -----------------------------------------------------------------
