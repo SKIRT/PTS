@@ -32,6 +32,7 @@ from ...core.basics.distribution import Distribution
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.tools import nr, numbers
+from ...core.plot.distribution import plot_distributions, plot_distribution
 
 # -----------------------------------------------------------------
 
@@ -88,6 +89,10 @@ class Refitter(FittingComponent):
         # Probability distributions
         self.distributions = dict()
 
+        # Best simulations
+        self.best_simulations = dict()
+        self.best_simulation_counts = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -122,13 +127,16 @@ class Refitter(FittingComponent):
         # 8. Calculate the probability distributions
         self.create_distributions()
 
-        # 9. Writing
+        # 9. Get best simulation
+        self.get_best_simulations()
+
+        # 10. Writing
         self.write()
 
-        # 10. Show
+        # 11. Show
         if self.config.show: self.show()
 
-        # 11. Plot
+        # 12. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -498,8 +506,12 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        if self.config.filters is not None: return self.config.filters
-        else: return self.fitting_run.fitting_filters
+        if self.config.filters is not None: filters = self.config.filters
+        else: filters = self.fitting_run.fitting_filters
+
+        # Remove certain filters?
+        if self.config.not_filters is not None: return sequences.removed(filters, self.config.not_filters)
+        else: return filters
 
     # -----------------------------------------------------------------
 
@@ -523,8 +535,9 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        if self.config.filters is not None: return sequences.same_contents(self.config.filters, self.fitting_run.fitting_filters)
-        else: return False
+        #if self.config.filters is not None: return sequences.same_contents(self.config.filters, self.fitting_run.fitting_filters)
+        #else: return False
+        return sequences.same_contents(self.filters, self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
@@ -536,8 +549,9 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        if self.config.filters is None: return False
-        else: return len(self.config.filters) > len(self.fitting_run.fitting_filters)
+        #if self.config.filters is None: return False
+        #else: return len(self.config.filters) > len(self.fitting_run.fitting_filters)
+        return len(self.filters) > len(self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
@@ -549,8 +563,9 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        if self.config.filters is None: return False
-        else: return sequences.has_other(self.config.filters, self.fitting_run.fitting_filters)
+        #if self.config.filters is None: return False
+        #else: return sequences.has_other(self.config.filters, self.fitting_run.fitting_filters)
+        return sequences.has_other(self.filters, self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
@@ -1332,6 +1347,65 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_best_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the best simulations for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Getting best " + str(self.config.nbest) + " simulations of generation '" + generation_name + "' ...")
+
+            # Get the chi squared table
+            chi_squared = self.chi_squared_tables[generation_name]
+            parameters = self.fitting_run.parameters_table_for_generation(generation_name)
+
+            # Show
+            simulation_names, counts = show_best_simulations(self.config.nbest, self.free_parameter_labels, chi_squared,
+                                                             parameters, self.parameter_units, self.parameter_scales,
+                                                             self.initial_parameter_values)
+
+            # Set
+            self.best_simulations[generation_name] = simulation_names
+            self.best_simulation_counts[generation_name] = counts
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_simulation_counts_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        counts_distributions = defaultdict(dict)
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Get counts for this generation
+            counts = self.best_simulation_counts[generation_name]
+
+            # Make counts distributions
+            for label in self.free_parameter_labels:
+
+                # Create distribution
+                counts_distributions[label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
+
+        # Return
+        return counts_distributions
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1612,6 +1686,9 @@ class Refitter(FittingComponent):
         # Show the best simulations
         self.show_best()
 
+        # Show statistics
+        self.show_statistics()
+
     # -----------------------------------------------------------------
 
     @property
@@ -1696,29 +1773,105 @@ class Refitter(FittingComponent):
             print("")
             for label in self.free_parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
 
-            # Get the chi squared table
+            # Loop over the simulations
+            simulation_names = self.best_simulations[generation_name]
+            for index, simulation_name in enumerate(simulation_names):
+
+                # Determine the plot path
+                sed_plot_path = self.generations[generation_name].get_simulation_sed_plot_path(simulation_name)
+
+                # Copy the SED file to the generation path
+                filename = "best_" + str(index) + "_" + simulation_name + ".pdf"
+                fs.copy_file(sed_plot_path, self.generation_paths[generation_name], new_name=filename)
+
+                # Show the plot
+                if self.config.show_best_sed: fs.open_file(sed_plot_path)
+
+            # Show counts
+            if self.config.show_counts:
+
+                # Get the counts
+                counts = self.best_simulation_counts[generation_name]
+
+                print("Counts in best simulations:")
+                for label in self.free_parameter_labels:
+
+                    print("")
+                    print(" - " + fmt.bold + label + fmt.reset + ":")
+                    print("")
+                    for value in sorted(counts[label].keys()):
+
+                        count = counts[label][value]
+                        relcount = float(count) / self.config.nbest
+                        print("    * " + tostr(value) + ": " + str(counts[label][value]) + " (" + tostr(relcount * 100) + "%)")
+
+            # Plot the distributions
+            if self.config.plot_counts:
+
+                # Get the distributions
+                counts_distributions = self.best_simulation_counts_distributions[generation_name]
+
+                # Determine path
+                path = fs.join(self.generation_paths[generation_name], "best_counts.pdf")
+
+                # Plot
+                plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True, path=path)
+
+    # -----------------------------------------------------------------
+
+    def show_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing statistics for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Showing statistics for generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Get the chi squared table and parameters table
             chi_squared = self.chi_squared_tables[generation_name]
             parameters = self.fitting_run.parameters_table_for_generation(generation_name)
 
-            # Show
-            simulation_names, counts = show_best_simulations(self.config.nbest, self.free_parameter_labels, chi_squared, parameters, self.parameter_units, self.parameter_scales, self.initial_parameter_values)
+            # Get best simulation name and chi squared
+            best_simulation_name, best_chi_squared = chi_squared.best_simulation_name_and_chi_squared
+
+            # Get best simulation parameter values
+            best_parameter_values = parameters.parameter_values_for_simulation(best_simulation_name)
+
+            # Most probable model: should be same as simulation with lowest chi squared
+            most_probable_simulation_name = generation.most_probable_model
+            assert most_probable_simulation_name == best_simulation_name
+
             print("")
+            print("Statistics:")
 
-            # Make counts distributions
-            counts_distributions = dict()
-            for label in self.free_parameter_labels: counts_distributions[label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
+            # Get the counts distributions
+            counts_distributions = self.best_simulation_counts_distributions[generation_name]
 
-            # Show seds?
-            if self.config.show_best_sed:
+            # Loop over the free parameter labels
+            for label in self.free_parameter_labels:
 
-                # Loop over the simulations
-                for simulation_name in simulation_names:
+                print("")
+                print(" - " + fmt.bold + label + fmt.reset + ":")
+                print("")
 
-                    # Determine the plot path
-                    sed_plot_path = self.generations[generation_name].get_simulation_sed_plot_path(simulation_name)
+                # Get most probable parameter value
+                most_probable_value = generation.get_most_probable_parameter_value(label)
 
-                    # Show the plot
-                    fs.open_file(sed_plot_path)
+                print("    * Initial guess value: " + tostr(self.initial_parameter_values[label], ndigits=3))
+                print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
+                print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(self.parameter_units[label]))
+                if self.config.nbest > 1: print("    * Most counted in " + str(self.config.nbest) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(self.parameter_units[label]))
 
     # -----------------------------------------------------------------
 
@@ -1734,6 +1887,12 @@ class Refitter(FittingComponent):
 
         # Chi squared values
         if self.config.plot_chi_squared: self.plot_chi_squared()
+
+        # Plot the parameter probabilities per generation
+        self.plot_probabilities()
+
+        # Plot the probability distributions as histograms
+        self.plot_distributions()
 
     # -----------------------------------------------------------------
 
@@ -1756,8 +1915,57 @@ class Refitter(FittingComponent):
             # Set title
             title = "Chi squared values of generation '" + generation_name + "'"
 
+            # Determine path
+            path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
+
             # Plot chi squared?
-            self.chi_squared_tables[generation_name].distribution.plot(title=title, xlogscale=True)
+            plot_distribution(self.chi_squared_tables[generation_name].distribution, title=title, logscale=True, path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the parameter probabilities for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Determine the path
+            path = fs.join(self.prob_generations_paths[generation_name], "probabilities.pdf")
+
+            # Make distributions
+            distributions = dict()
+            for label in self.free_parameter_labels:
+                distribution = Distribution.from_probabilities(label, self.parameter_probabilities[generation_name][label]["Probability"], self.parameter_probabilities[generation_name][label]["Value"])
+                distribution.normalize(method="sum")
+                distributions[label] = distribution
+
+            # Plot in different panels
+            plot_distributions(distributions, panels=True, extrema=True, frequencies=True, path=path, logscale=True)
+
+    # -----------------------------------------------------------------
+
+    def plot_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the probability distributions ...")
+
+        # Determine the path
+        path = fs.join(self.prob_distributions_path, "distributions.pdf")
+
+        # Plot in different panels
+        plot_distributions(self.distributions, panels=True, extrema=True, frequencies=True, path=path, logscale=True)
 
 # -----------------------------------------------------------------
 

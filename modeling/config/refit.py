@@ -37,6 +37,7 @@ definition.add_positional_optional("generations", "string_list", "generation nam
 
 definition.add_optional("filters", "filter_list", "filters to use for the evaluation (None means default fitting filters)")
 definition.add_optional("regimes", "string_list", "wavelength regimes to use", default=wavelength_regimes, choices=wavelength_regimes)
+definition.add_optional("not_filters", "lazy_filter_list", "filters to ignore for the fitting")
 
 # -----------------------------------------------------------------
 
@@ -87,7 +88,9 @@ definition.add_flag("no_submm", "give no weight to submm bands")
 # -----------------------------------------------------------------
 
 definition.add_optional("nbest", "positive_integer", "number of best simulations to show", 10)
-definition.add_flag("show_best_sed", "plot the SED of the best simulation")
-definition.add_flag("plot_chi_squared", "plot the chi squared distributions")
+definition.add_flag("show_best_sed", "plot the SED of the best simulation", False)
+definition.add_flag("show_counts", "show the counts of different parameter values in the best simulations", True)
+definition.add_flag("plot_counts", "plot the counts", True)
+definition.add_flag("plot_chi_squared", "plot the chi squared distributions", True)
 
 # -----------------------------------------------------------------

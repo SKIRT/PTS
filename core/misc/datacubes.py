@@ -68,6 +68,18 @@ class DatacubesMiscMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ndatacubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.datacube_paths)
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -89,6 +101,9 @@ class DatacubesMiscMaker(Configurable):
         elif "simulation_output_path" in kwargs:
             self.initialize_from_output_path(kwargs.pop("simulation_output_path"))
         else: self.initialize_from_cwd()
+
+        # Check whether we have datacubes
+        if self.datacube_paths is None or self.ndatacubes == 0: raise ValueError("No datacubes")
 
         # Get output directory
         output_path = kwargs.pop("output_path", None)
