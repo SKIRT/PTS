@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from scipy.special import gammaincinv
 from scipy import ndimage
 import itertools
+import warnings
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -2453,7 +2454,10 @@ def intrinsic_z_flattening(qprime, inclination):
     # Calculate the intrinsic flattening
     difference = qprime**2 - math.cos(i)**2
 
-    if difference < 0: q = qprime
+    if difference < 0:
+        # Give warning
+        warnings.warn("Could not convert an apparent flattening of " + str(qprime) + " with an inclination of " + str(inclination) + " to a vertical flattening: using the apparent flattening")
+        q = qprime
     else: q = math.sqrt(difference/math.sin(i)**2)
 
     # Return the intrinsic flattening
