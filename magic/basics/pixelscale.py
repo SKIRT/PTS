@@ -345,6 +345,42 @@ class PhysicalPixelscale(PhysicalExtent):
         angular = (self.abs_y / distance).to(unit, equivalencies=dimensionless_angles())
         return angular
 
+    # -----------------------------------------------------------------
+
+    def x_extent(self, unit="kpc"):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        return self.abs_x.to(unit)
+
+    # -----------------------------------------------------------------
+
+    def y_extent(self, unit="kpc"):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        return self.abs_y.to(unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x_extent() * self.y_extent()
+
 # -----------------------------------------------------------------
 
 def only_physical(quantity, unit=None):

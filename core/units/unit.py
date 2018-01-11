@@ -1720,9 +1720,6 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
-        #print(self, self.density)
-        #print(to_unit)
-
         # Parse "to unit"
         to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
@@ -1771,16 +1768,22 @@ class PhotometricUnit(CompositeUnit):
             pixelscale = parsing.quantity(pixelscale)
 
         # Make PixelScale instance
+        physical_pixelscale = None
         if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
         elif isinstance(pixelscale, Pixelscale): pass
         elif pixelscale is None: pass
         elif isinstance(pixelscale, PhysicalPixelscale):
-            if distance is None: raise ValueError("Distance should be defined when passing a physical pixelscale")
-            pixelscale = Pixelscale.from_physical(pixelscale, distance=distance)
+            #if distance is None: raise ValueError("Distance should be defined when passing a physical pixelscale")
+            #pixelscale = Pixelscale.from_physical(pixelscale, distance=distance)
+            physical_pixelscale = pixelscale
+            pixelscale = None
         else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
 
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)
         if solid_angle is None and pixelscale is not None: solid_angle = pixelscale.solid_angle
+
+        # If pixelscale is None and solid angle not, convert solid angle to pixelscale: NO?
+        #if pixelscale is None and solid_angle is not None: pixelscale = Pixelscale.from_solid_angle()
 
         #print(self, self.physical_type, self.is_neutral_density, self.is_wavelength_density, self.is_frequency_density)
 
@@ -1882,11 +1885,13 @@ class PhotometricUnit(CompositeUnit):
             # Luminosity to intrinsic surface brightness
             elif to_unit.is_intrinsic_surface_brightness:
 
-                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is not None:
+                    if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                    area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Divide by pixel area
-                area = pixelscale.pixel_area(distance)
                 new_unit /= area
 
                 # Determine factor
@@ -1946,13 +1951,14 @@ class PhotometricUnit(CompositeUnit):
             elif to_unit.is_intrinsic_surface_brightness:
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is not None: area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by 4 pi distance**2
                 new_unit *= 4.0 * math.pi * distance ** 2
 
                 # Divide by pixel area
-                area = pixelscale.pixel_area(distance)
                 new_unit /= area
 
                 # Determine factor
@@ -2007,15 +2013,18 @@ class PhotometricUnit(CompositeUnit):
             # Intensity to intrinsic surface brightness
             elif to_unit.is_intrinsic_surface_brightness:
 
-                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                if pixelscale is not None:
+                    if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                    area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by solid angle
                 new_unit *= solid_angle
 
                 # Divide by pixel area
-                area = pixelscale.pixel_area(distance)
                 new_unit /= area
 
                 # Determine factor
@@ -2073,7 +2082,10 @@ class PhotometricUnit(CompositeUnit):
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                if pixelscale is not None: area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by 4 pi distance**2
                 new_unit *= (4.0 * math.pi * distance **2)
@@ -2082,7 +2094,6 @@ class PhotometricUnit(CompositeUnit):
                 new_unit *= solid_angle
 
                 # Divide by pixel area
-                area = pixelscale.pixel_area(distance)
                 new_unit /= area
 
                 # Determine factor
@@ -2115,10 +2126,12 @@ class PhotometricUnit(CompositeUnit):
             elif to_unit.base_physical_type == "flux":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                if pixelscale is not None: area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by the pixelarea
-                area = pixelscale.pixel_area(distance)
                 new_unit *= area
 
                 # Divide by 4 pi distance**2
@@ -2130,12 +2143,15 @@ class PhotometricUnit(CompositeUnit):
             # Intrinsic surface brightness to intensity
             elif to_unit.base_physical_type == "intensity":
 
-                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is not None:
+                    if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                    area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by the pixelarea
-                area = pixelscale.pixel_area(distance)
                 new_unit *= area
 
                 # Divide by solid angle
@@ -2148,11 +2164,14 @@ class PhotometricUnit(CompositeUnit):
             elif to_unit.base_physical_type == "surface brightness":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
-                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                if pixelscale is not None: area = pixelscale.pixel_area(distance)
+                elif physical_pixelscale is not None: area = physical_pixelscale.pixel_area
+                else: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Multiply by the pixelarea
-                area = pixelscale.pixel_area(distance)
                 new_unit *= area
 
                 # Divide by the solid angle
