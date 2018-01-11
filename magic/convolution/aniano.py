@@ -304,7 +304,8 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="Gauss", check_valid=True):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False,
+                        from_model=None, to_model=None, check_valid=True):
 
         """
         This function ...
@@ -325,10 +326,15 @@ class AnianoKernels(Kernels):
         if types.is_string_type(to_filter): to_filter = parse_filter(to_filter)
 
         # For variable FWHM of input image
-        if has_variable_fwhm(from_filter): # Is SDSS
+        if has_variable_fwhm(from_filter):
 
             # Check whether FWHM is specified
             if from_fwhm is None: raise ValueError("When convolving an SDSS image, the FWHM of that image must be specified")
+
+            # Set model
+            # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
+            if from_filter.is_sdss: from_model = "BiGauss"
+            else: from_model = "Gauss"
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = from_fwhm.to("arcsec").value
@@ -344,6 +350,11 @@ class AnianoKernels(Kernels):
 
             # Check whether FWHM is specified
             if to_fwhm is None: raise ValueError("When convolving to the resolution of a SDSS image, the FWHM of that image must be specified")
+
+            # Set model
+            # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
+            if to_filter.is_sdss: to_model = "BiGauss"
+            else: to_model = "Gauss"
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = to_fwhm.to("arcsec").value
