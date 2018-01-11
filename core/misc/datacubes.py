@@ -196,11 +196,16 @@ class DatacubesMiscMaker(Configurable):
         # Determine prefix
         prefix = None
         for path in total_datacube_paths:
+
             filename = fs.strip_extension(fs.name(path))
-            if prefix is None:
-                prefix = filename.split("_")[0]
-            elif prefix != filename.split("_")[0]:
-                raise IOError("Not all datacubes have the same simulation prefix")
+
+            # Determine the prefix
+            first = filename.rsplit("_total", 1)[0]
+            simulation_prefix, instr_name = first.rsplit("_", 1)
+
+            if prefix is None: prefix = simulation_prefix
+            elif prefix != simulation_prefix: raise IOError("Not all datacubes have the same simulation prefix")
+
         if prefix is None: raise IOError("No datacubes were found")
 
         # Show the datacubes
