@@ -26,7 +26,8 @@ definition.add_flag("panels", "plot the distributions in separate panels")
 
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
-definition.sections["plot"].optional["figsize"].default = (8,4)
+definition.sections["plot"].optional["xsize"].default = 8
+definition.sections["plot"].optional["ysize"].default = 4
 definition.add_flag("logscale", "use value log scale")
 definition.add_flag("logfrequency", "use log scale for frequency")
 

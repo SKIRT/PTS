@@ -367,7 +367,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True, conversion_info=None):
 
         """
         This function ...
@@ -377,10 +377,11 @@ class SED(WavelengthCurve):
         :param density:
         :param brightness:
         :param interpolate:
+        :param conversion_info:
         :return:
         """
 
-        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, interpolate=interpolate)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, interpolate=interpolate, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
@@ -789,7 +790,7 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True, density=False, brightness=False):
+    def photometry(self, unit=None, asarray=False, add_unit=True, density=False, brightness=False, conversion_info=None):
 
         """
         This function ...
@@ -798,14 +799,15 @@ class ObservedSED(FilterCurve):
         :param add_unit:
         :param density:
         :param brightness:
+        :param conversion_info:
         :return:
         """
 
-        return self.values(unit, asarray, add_unit, density=density, brightness=brightness)
+        return self.values(unit, asarray, add_unit, density=density, brightness=brightness, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, conversion_info=None):
 
         """
         This function ...
@@ -814,10 +816,11 @@ class ObservedSED(FilterCurve):
         :param add_unit:
         :param density:
         :param brightness:
+        :param conversion_info:
         :return:
         """
 
-        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
@@ -888,7 +891,7 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def errors(self, unit=None, add_unit=True, density=False, brightness=False):
+    def errors(self, unit=None, add_unit=True, density=False, brightness=False, conversion_info=None):
 
         """
         This function ...
@@ -896,11 +899,12 @@ class ObservedSED(FilterCurve):
         :param add_unit:
         :param density:
         :param brightness:
+        :param conversion_info:
         :return:
         """
 
         column_units = [self.column_unit("Error-"), self.column_unit("Error+")]
-        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit, column_units=column_units, density=density, brightness=brightness)
+        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit, column_units=column_units, density=density, brightness=brightness, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 

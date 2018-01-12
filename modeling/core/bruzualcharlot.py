@@ -259,7 +259,7 @@ def create_bruzual_charlot_sed(metallicity, age, mass=1.):
     luminosity_column = np.array(new_jv) * deltas * mass_in_solar
 
     # Create the SED
-    sed = SED.from_arrays(new_wavelengths, luminosity_column, wavelength_unit="m", photometry_unit="W") # ACTUALLY WHAT IS THE LUMINOSITY UNIT?
+    sed = SED.from_arrays(new_wavelengths, luminosity_column, wavelength_unit="m", photometry_unit="W/micron") # ACTUALLY WHAT IS THE LUMINOSITY UNIT?
 
     # Return the SED
     return sed
@@ -297,7 +297,7 @@ def load_bruzual_charlot_data():
         #print(filepath)
 
         # Inform the user
-        log.info("Reading SED data from file " + filepath + "...")
+        log.info("Reading SED data from file " + filepath + " ...")
 
         fh = fs.read_words(filepath, newlines=True)
 

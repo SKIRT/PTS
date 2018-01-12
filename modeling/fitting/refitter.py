@@ -1772,6 +1772,7 @@ class Refitter(FittingComponent):
             print("Parameter ranges:")
             print("")
             for label in self.free_parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
+            print("")
 
             # Loop over the simulations
             simulation_names = self.best_simulations[generation_name]

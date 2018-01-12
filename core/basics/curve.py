@@ -456,7 +456,8 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True, conversion_info=None):
+    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False,
+                             interpolate=True, conversion_info=None):
 
         """
         This function ...
