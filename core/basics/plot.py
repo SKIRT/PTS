@@ -19,14 +19,11 @@ from io import BytesIO
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
-#import matplotlib.patches as patches
-#from collections import OrderedDict
 from textwrap import wrap
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.gridspec as gridspec
-#from matplotlib import rc
-#from scipy.interpolate import interp1d
-from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoLocator, NullLocator
+from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -1545,41 +1542,177 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def set_xticks(self, ticks=None, fontsize=None):
+    @property
+    def xticklabels(self):
 
         """
         This function ...
-        :param ticks:
-        :param fontsize:
         :return:
         """
 
-        if ticks is not None:
-            self._plot.set_xticks(ticks)
-            self._plot.set_xticklabels(ticks)
-
-        # Format
-        self._plot.xaxis.set_major_formatter(FormatStrFormatter('%g'))
-        plt.setp(self._plot.get_xticklabels(), rotation='horizontal', fontsize=fontsize)
+        return self._plot.get_xticklabels()
 
     # -----------------------------------------------------------------
 
-    def set_yticks(self, ticks=None, fontsize=None):
+    def set_xticks(self, ticks=None, fontsize=None, major_locator=None, minor_locator=None, major_formatter=None,
+                   minor_formatter=None, log_subs=(1., 2., 5.), formatter=None, minor=True):
 
         """
         This function ...
         :param ticks:
         :param fontsize:
+        :param major_locator:
+        :param minor_locator:
+        :param major_formatter:
+        :param minor_formatter:
+        :param log_subs:
+        :param formatter:
+        :param minor:
         :return:
         """
 
+        # Set the ticks
         if ticks is not None:
+
+            # Check
+            if major_locator is not None: raise ValueError("Cannot specify ticks and pass major locator")
+            if minor_locator is not None: raise ValueError("Cannot specify ticks and pass minor locator")
+
+            # Set
+            self._plot.set_xticks(ticks)
+            self._plot.set_xticklabels(ticks)
+
+        # Set locator automatically
+        if major_locator is None:
+            if self.log_xscale: major_locator = LogLocator(subs=log_subs)
+            elif self.linear_xscale: major_locator = LinearLocator()
+            else: raise ValueError("Unknown xscale")
+        if minor_locator is None:
+            if minor: # have minor ticks
+                if self.log_xscale: minor_locator = None
+                elif self.linear_xscale: minor_locator = AutoMinorLocator()
+                else: raise ValueError("Unknown xscale")
+            else: minor_locator = NullLocator()
+
+        # Set the locators
+        self.xaxis.set_major_locator(major_locator)
+        if minor_locator is not None: self.xaxis.set_minor_locator(minor_locator)
+
+        # Set major formatter automatically
+        if major_formatter is None:
+            if formatter is None: major_formatter = FormatStrFormatter('%g') # default
+            elif self.log_xscale:
+                if formatter == "scalar": major_formatter = ScalarFormatter()
+                elif formatter == "log": major_formatter = LogFormatter()
+                elif formatter == "math": major_formatter = LogFormatterMathtext()
+                elif formatter == "sci": major_formatter = LogFormatterSciNotation()
+                elif formatter == "eng": major_formatter = EngFormatter()
+                else: raise ValueError("Invalid formatter for log scale: '" + formatter + "'")
+            elif self.linear_xscale:
+                if formatter == "scalar": major_formatter = ScalarFormatter()
+                elif formatter == "eng": major_formatter = EngFormatter()
+                elif formatter == "percent": major_formatter = PercentFormatter()
+                else: raise ValueError("Invalid formatter for linear scale : '" + formatter + "'")
+            else: raise ValueError("Unknown xscale")
+
+        # Set minor formatter automatically
+        if minor_formatter is None: minor_formatter = NullFormatter()
+
+        # Set major formatter
+        self.xaxis.set_major_formatter(major_formatter)
+
+        # Set minor formatter
+        self.xaxis.set_minor_formatter(minor_formatter)
+
+        # Set fontsize
+        plt.setp(self.xticklabels, rotation='horizontal', fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yticklabels(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self._plot.get_yticklabels()
+
+    # -----------------------------------------------------------------
+
+    def set_yticks(self, ticks=None, fontsize=None, major_locator=None, minor_locator=None, major_formatter=None,
+                   minor_formatter=None, log_subs=(1., 2., 5.), formatter=None, minor=True):
+
+        """
+        This function ...
+        :param ticks:
+        :param fontsize:
+        :param major_locator:
+        :param minor_locator:
+        :param major_formatter:
+        :param minor_formatter:
+        :param log_subs:
+        :param formatter:
+        :param minor:
+        :return:
+        """
+
+        # Set the ticks
+        if ticks is not None:
+
+            # Check
+            if major_locator is not None: raise ValueError("Cannot specify ticks and pass major locator")
+            if minor_locator is not None: raise ValueError("Cannot specify ticks and pass minor locator")
+
+            # Set
             self._plot.set_yticks(ticks)
             self._plot.set_yticklabels(ticks)
 
-        # Format
-        self._plot.yaxis.set_major_formatter(FormatStrFormatter('%g'))
-        plt.setp(self._plot.get_yticklabels(), rotation='horizontal', fontsize=fontsize)
+        # Set locator automatically
+        if major_locator is None:
+            if self.log_yscale: major_locator = LogLocator(subs=log_subs)
+            elif self.linear_yscale: major_locator = AutoLocator()
+            else: raise ValueError("Unknown yscale")
+        if minor_locator is None:
+            if minor: # have minor ticks
+                if self.log_yscale: minor_locator = None # auto
+                elif self.linear_yscale: minor_locator = AutoMinorLocator() # auto
+                else: raise ValueError("Unknown yscale")
+            else: minor_locator = NullLocator()
+
+        # Set the locators
+        self.yaxis.set_major_locator(major_locator)
+        if minor_locator is not None: self.yaxis.set_minor_locator(minor_locator)
+
+        # Set major formatter automatically
+        if major_formatter is None:
+            if formatter is None: major_formatter = FormatStrFormatter('%g')  # default
+            elif self.log_yscale:
+                if formatter == "scalar": major_formatter = ScalarFormatter()
+                elif formatter == "log": major_formatter = LogFormatter()
+                elif formatter == "math": major_formatter = LogFormatterMathtext()
+                elif formatter == "sci": major_formatter = LogFormatterSciNotation()
+                elif formatter == "eng": major_formatter = EngFormatter()
+                else: raise ValueError("Invalid formatter for log scale: '" + formatter + "'")
+            elif self.linear_yscale:
+                if formatter == "scalar": major_formatter = ScalarFormatter()
+                elif formatter == "eng": major_formatter = EngFormatter()
+                elif formatter == "percent": major_formatter = PercentFormatter()
+                else: raise ValueError("Invalid formatter for linear scale : '" + formatter + "'")
+            else: raise ValueError("Unknown yscale")
+
+        # Set minor formatter automatically
+        if minor_formatter is None: minor_formatter = NullFormatter()
+
+        # Set major formatter
+        self.yaxis.set_major_formatter(major_formatter)
+
+        # Set minor formatter
+        self.yaxis.set_minor_formatter(minor_formatter)
+
+        # Set fontsize
+        plt.setp(self.yticklabels, rotation='horizontal', fontsize=fontsize)
 
     # -----------------------------------------------------------------
 
@@ -1597,6 +1730,42 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    @property
+    def xscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xaxis.get_scale()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def linear_xscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xscale == "linear"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def log_xscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xscale == "log"
+
+    # -----------------------------------------------------------------
+
     def set_yscale(self, *args, **kwargs):
 
         """
@@ -1607,6 +1776,42 @@ class MPLPlot(Plot):
         """
 
         self._plot.set_yscale(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.yaxis.get_scale()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def linear_yscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.yscale == "linear"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def log_yscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.yscale == "log"
 
     # -----------------------------------------------------------------
 

@@ -2485,11 +2485,6 @@ class Frame(NDDataArray):
         # Set the wavelength
         if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
 
-        #print(self.unit, self.unit.density)
-        #print(to_unit, to_unit.density)
-
-        #print(self.name)
-
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance,
                                              pixelscale=self.pixelscale, density=density, brightness=brightness,

@@ -1776,7 +1776,8 @@ class PhotometricUnit(CompositeUnit):
             #if distance is None: raise ValueError("Distance should be defined when passing a physical pixelscale")
             #pixelscale = Pixelscale.from_physical(pixelscale, distance=distance)
             physical_pixelscale = pixelscale
-            pixelscale = None
+            if distance is not None: pixelscale = Pixelscale.from_physical(physical_pixelscale, distance=distance)
+            else: pixelscale = None
         else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
 
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)

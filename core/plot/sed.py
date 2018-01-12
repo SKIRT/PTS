@@ -1750,7 +1750,7 @@ class SEDPlotter(Configurable):
 
         # Set ticks
         self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
-        self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
+        self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize) # minor = False is possible
 
         # Add axis labels and a legend
         y_label = r"Log $" + self.config.unit.latex_string + r"$"
