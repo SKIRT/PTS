@@ -190,6 +190,10 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     :return:
     """
 
+    # Check input
+    ndistributions = len(distributions)
+    if ndistributions == 0: raise ValueError("No distributions are passed")
+
     # Initialize plotter
     plotter = DistributionPlotter()
 
@@ -806,7 +810,7 @@ class DistributionPlotter(Configurable):
         """
 
         if self.has_single_panel: return self.config.plot.xsize
-        else: return self.config.plot.xsize[0] * self.npanels
+        else: return self.config.plot.xsize * self.npanels
 
     # -----------------------------------------------------------------
 
@@ -952,6 +956,10 @@ class DistributionPlotter(Configurable):
 
             # Pick color
             color = next(colors)
+
+            #print(distribution.edges_log)
+            #print(distribution.frequencies)
+            #print(distribution.bin_widths_log)
 
             if self.logscale:
                 self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,

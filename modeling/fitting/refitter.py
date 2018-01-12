@@ -1137,8 +1137,8 @@ class Refitter(FittingComponent):
         # Load the parameter table
         parameter_table = self.fitting_run.parameters_table_for_generation(generation_name)
 
-        # Load the chi squared table
-        chi_squared_table = self.generations[generation_name].chi_squared_table.copy()
+        # Get the NEW chi squared table
+        chi_squared_table = self.chi_squared_tables[generation_name].copy()
 
         # Sort the table for decreasing chi squared value
         chi_squared_table.sort("Chi squared")
@@ -1368,9 +1368,7 @@ class Refitter(FittingComponent):
             parameters = self.fitting_run.parameters_table_for_generation(generation_name)
 
             # Show
-            simulation_names, counts = show_best_simulations(self.config.nbest, self.free_parameter_labels, chi_squared,
-                                                             parameters, self.parameter_units, self.parameter_scales,
-                                                             self.initial_parameter_values)
+            simulation_names, counts = get_best_simulations(self.config.nbest, self.free_parameter_labels, chi_squared, parameters, self.parameter_units)
 
             # Set
             self.best_simulations[generation_name] = simulation_names
@@ -1399,7 +1397,7 @@ class Refitter(FittingComponent):
             for label in self.free_parameter_labels:
 
                 # Create distribution
-                counts_distributions[label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
+                counts_distributions[generation_name][label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
 
         # Return
         return counts_distributions
@@ -1774,8 +1772,18 @@ class Refitter(FittingComponent):
             for label in self.free_parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
             print("")
 
-            # Loop over the simulations
+            # Get the best simulation names
             simulation_names = self.best_simulations[generation_name]
+
+            # Get the chi squared table
+            chi_squared_table = self.chi_squared_tables[generation_name]
+            parameters_table = self.fitting_run.parameters_table_for_generation(generation_name)
+
+            # Show the best simulations
+            show_best_simulations(simulation_names, chi_squared_table, parameters_table, self.parameter_units, self.parameter_scales, self.initial_parameter_values)
+            print("")
+
+            # Loop over the simulations
             for index, simulation_name in enumerate(simulation_names):
 
                 # Determine the plot path
@@ -1805,6 +1813,8 @@ class Refitter(FittingComponent):
                         count = counts[label][value]
                         relcount = float(count) / self.config.nbest
                         print("    * " + tostr(value) + ": " + str(counts[label][value]) + " (" + tostr(relcount * 100) + "%)")
+
+                print("")
 
             # Plot the distributions
             if self.config.plot_counts:
@@ -1850,8 +1860,13 @@ class Refitter(FittingComponent):
             best_parameter_values = parameters.parameter_values_for_simulation(best_simulation_name)
 
             # Most probable model: should be same as simulation with lowest chi squared
-            most_probable_simulation_name = generation.most_probable_model
+            most_probable_simulation_name = self.model_probabilities[generation_name].most_probable_simulation
+            #print(most_probable_simulation_name, best_simulation_name)
             assert most_probable_simulation_name == best_simulation_name
+
+            # Show whether or not the best simulation corresponds to the best simulation of the original fit
+            if most_probable_simulation_name == generation.most_probable_model: log.success("The best simulation from this refitting is the same as for the original fit (" + most_probable_simulation_name + ")")
+            else: log.success("The best simulation from this refitting (" + most_probable_simulation_name + ") is different from the best simulation of the original fit (" + generation.most_probable_model + ")")
 
             print("")
             print("Statistics:")
@@ -1873,6 +1888,7 @@ class Refitter(FittingComponent):
                 print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
                 print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(self.parameter_units[label]))
                 if self.config.nbest > 1: print("    * Most counted in " + str(self.config.nbest) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(self.parameter_units[label]))
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -1914,7 +1930,7 @@ class Refitter(FittingComponent):
             log.debug("Plotting chi squared table for generation '" + generation_name + "' ...")
 
             # Set title
-            title = "Chi squared values of generation '" + generation_name + "'"
+            title = "Chi squared values of generation '" + generation_name.replace("_", "\_") + "'"
 
             # Determine path
             path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
@@ -1970,7 +1986,124 @@ class Refitter(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def show_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units, parameter_scales, initial_values):
+def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units):
+
+    """
+    This function ...
+    :param nsimulations:
+    :param parameter_labels:
+    :param chi_squared_table:
+    :param parameters_table:
+    :param parameter_units:
+    :return:
+    """
+
+    # Initialize the counts dictionary
+    counts = dict()
+    for label in parameter_labels: counts[label] = defaultdict(int)
+
+    unique_values = parameters_table.unique_parameter_values
+    unique_values_scalar = dict()
+    for label in unique_values:
+        values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
+        unique_values_scalar[label] = values
+
+    # Fill with zeros
+    for label in parameter_labels:
+        for value in unique_values_scalar[label]: counts[label][value] = 0
+
+    # Get best simulation names
+    simulation_names = chi_squared_table.get_best_simulation_names(nsimulations)
+
+    # Loop over the simulations
+    for index, simulation_name in enumerate(simulation_names):
+
+        # Get parameter values
+        parameter_values = parameters_table.parameter_values_for_simulation(simulation_name)
+
+        # Get the counts
+        for label in parameter_values:
+
+            # Get properties
+            unit = parameter_units[label]
+            value = parameter_values[label]
+            value_scalar = value.to(unit).value
+
+            # Add count for this parameter
+            counts[label][value_scalar] += 1
+
+    # Return the simulation names
+    return simulation_names, counts
+
+# -----------------------------------------------------------------
+
+def show_best_simulations(simulation_names, chi_squared_table, parameters_table, parameter_units, parameter_scales, initial_values):
+
+    """
+    This function ...
+    :param simulation_names:
+    :param chi_squared_table:
+    :param parameters_table:
+    :param parameter_units:
+    :param parameter_scales:
+    :param initial_values:
+    :return:
+    """
+
+    unique_values = parameters_table.unique_parameter_values
+    unique_values_scalar = dict()
+    for label in unique_values:
+        values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
+        unique_values_scalar[label] = values
+
+    # Loop over the simulations
+    for index, simulation_name in enumerate(simulation_names):
+
+        # Get the chi squared value
+        chisq = chi_squared_table.chi_squared_for(simulation_name)
+
+        # Get parameter values
+        parameter_values = parameters_table.parameter_values_for_simulation(simulation_name)
+
+        # Show
+        print("")
+        print(" " + str(index + 1) + ". " + fmt.green + fmt.underlined + simulation_name + fmt.reset)
+        print("")
+
+        # Show chi squared and parameter values
+        print("  - chi squared: " + str(chisq))
+        print("  - parameters:")
+        for label in parameter_values:
+
+            # Get properties
+            unit = parameter_units[label]
+            initial_value = initial_values[label]
+            initial_value_scalar = initial_value.to(unit).value
+            value = parameter_values[label]
+            value_scalar = value.to(unit).value
+            nunique_values = len(unique_values_scalar[label])
+
+            # Get index of value and index of initial value
+            i = unique_values_scalar[label].index(value_scalar)
+            j = nr.locate_continuous(unique_values_scalar[label], initial_value_scalar, scale=parameter_scales[label])
+            if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
+            j = int(round(j))
+
+            # Show
+            indicator = "[ "
+            for _ in range(nunique_values):
+                if _ == j: character = "+"
+                else: character = "o"
+                if _ == i: indicator += fmt.red + character + fmt.reset + " "
+                else: indicator += character + " "
+            indicator += "]"
+
+            # Show
+            print("     * " + fmt.bold + label + fmt.reset + ": " + tostr(value) + "   " + indicator)
+
+# -----------------------------------------------------------------
+
+def get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units, parameter_scales, initial_values):
 
     """
     This function ...

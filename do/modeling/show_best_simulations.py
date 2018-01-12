@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import defaultdict
-
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
@@ -22,7 +19,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
 from pts.core.basics.distribution import Distribution
 from pts.core.plot.distribution import plot_distributions
-from pts.modeling.fitting.refitter import show_best_simulations
+from pts.modeling.fitting.refitter import get_and_show_best_simulations
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -108,7 +105,7 @@ for label in parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": "
 # -----------------------------------------------------------------
 
 # Show
-simulation_names, counts = show_best_simulations(config.nsimulations, parameter_labels, chi_squared, parameters, parameter_units, parameter_scales, initial_parameter_values)
+simulation_names, counts = get_and_show_best_simulations(config.nsimulations, parameter_labels, chi_squared, parameters, parameter_units, parameter_scales, initial_parameter_values)
 print("")
 
 # -----------------------------------------------------------------
