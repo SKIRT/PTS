@@ -586,7 +586,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the old stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[old_component_name], model_map_filename, self.parameters[old_component_name].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle,
+                                                        self.maps[old_component_name], model_map_filename,
+                                                        self.parameters[old_component_name].scale_height,
+                                                        inclination=self.disk_inclination)
 
         # Set the deprojection model
         self.deprojections[old_component_name] = deprojection
@@ -647,7 +650,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_young_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_young_metallicity)
         definition.add_optional("scale_height", "quantity", "scale height", default=self.young_scaleheight)
-        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
         definition.add_optional("neutral_luminosity", "photometric_density_quantity", "intrinsic neutral luminosity density at FUV wavelength", default=self.intrinsic_young_fuv_luminosity)
 
         # Set label
@@ -655,11 +657,6 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Get the parameters
         config = self.get_parameters(label, definition)
-
-        # Convert the flux density into a spectral luminosity
-        #luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
-        #luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
-        #assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Convert neutral luminosity to spectral luminosity
         luminosity = config.neutral_luminosity.to("W/micron", wavelength=self.fuv_wavelength)
@@ -757,7 +754,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the young stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[young_component_name], model_map_filename, self.parameters[young_component_name].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle,
+                                                        self.maps[young_component_name], model_map_filename,
+                                                        self.parameters[young_component_name].scale_height,
+                                                        inclination=self.disk_inclination)
 
         # Set the deprojection model
         self.deprojections[young_component_name] = deprojection
@@ -937,7 +937,10 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the ionizing stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[ionizing_component_name], model_map_filename, self.parameters[ionizing_component_name].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle,
+                                                        self.maps[ionizing_component_name], model_map_filename,
+                                                        self.parameters[ionizing_component_name].scale_height,
+                                                        inclination=self.disk_inclination)
 
         # Set the deprojection model
         self.deprojections[ionizing_component_name] = deprojection
