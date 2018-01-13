@@ -1811,10 +1811,12 @@ class ParameterExplorer(FittingComponent):
 
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
         try: self.launcher.run(ncells=self.ndust_cells)
-        except:
+        except Exception as e:
 
             # Something went wrong, show error message
             log.error("No simulations could be launched: removing generation")
+            log.error(str(e))
+            if log.is_debug(): traceback.print_exc()
             log.error("Try again later")
             log.error("Cleaning up generation and quitting ...")
 
