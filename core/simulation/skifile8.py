@@ -436,7 +436,7 @@ class SkiFile8:
         elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
         # Get the number of packages
-        return int(float(elems[0].get("packages")))
+        return int(float(elems[0].get("numPackages")))
 
     ## This function looks for elements with a given name
     def find_elements(self, name):
@@ -631,7 +631,7 @@ class SkiFile8:
     def dustselfabsorption(self):
         try:
             pandustsystem = self.tree.xpath("//PanDustSystem")[0]
-            return (pandustsystem.attrib["selfAbsorption"] == "true")
+            return (pandustsystem.attrib["includeSelfAbsorption"] == "true")
         except:
             return False
 
@@ -644,7 +644,7 @@ class SkiFile8:
         if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
 
         # Enable dust self-absorption
-        self.set_value(dust_system, "selfAbsorption", "true")
+        self.set_value(dust_system, "includeSelfAbsorption", "true")
 
     def disable_selfabsorption(self):
 
@@ -655,7 +655,7 @@ class SkiFile8:
         if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
 
         # Disable dust self-absorption
-        self.set_value(dust_system, "selfAbsorption", "false")
+        self.set_value(dust_system, "includeSelfAbsorption", "false")
 
     def enable_all_dust_system_writing_options(self):
 
@@ -753,14 +753,6 @@ class SkiFile8:
 
         # Set the 'writeISRF' setting to true
         self.set_value(dust_system, "writeISRF", str_from_bool(value, lower=True))
-
-    def set_write_absorption(self, value=True):
-
-        # Get the dust system
-        dust_system = self.get_dust_system()
-
-        # Set the 'writeAbsorption' setting to true
-        self.set_value(dust_system, "writeAbsorption", str_from_bool(value, lower=True))
 
     def set_write_grid(self, value=True):
 
@@ -1001,7 +993,7 @@ class SkiFile8:
             dust_system.attrib.pop("writeISRF")
             dust_system.attrib.pop("writeTemperature")
             dust_system.attrib.pop("writeEmissivity")
-            dust_system.attrib.pop("selfAbsorption")
+            dust_system.attrib.pop("includeSelfAbsorption")
             dust_system.attrib.pop("emissionBoost")
             if "cycles" in dust_system.attrib: dust_system.attrib.pop("cycles")
             if "emissionBias" in dust_system.attrib: dust_system.attrib.pop("emissionBias")

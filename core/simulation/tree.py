@@ -445,7 +445,7 @@ class DustGridTreeDistribution(Distribution):
         """
 
         for index in range(len(self)):
-            if self.counts[index] != 0: return index
+            if self.frequencies[index] != 0: return index
 
     # -----------------------------------------------------------------
 
@@ -458,7 +458,7 @@ class DustGridTreeDistribution(Distribution):
         """
 
         for index in reversed(range(len(self))):
-            if self.counts[index] != 0: return index
+            if self.frequencies[index] != 0: return index
 
     # -----------------------------------------------------------------
 
@@ -470,7 +470,7 @@ class DustGridTreeDistribution(Distribution):
         :return:
         """
 
-        return self.centers[self.min_level_index]
+        return self.values[self.min_level_index]
 
     # -----------------------------------------------------------------
 
@@ -482,7 +482,7 @@ class DustGridTreeDistribution(Distribution):
         :return:
         """
 
-        return self.centers[self.max_level_index]
+        return self.values[self.max_level_index]
 
     # -----------------------------------------------------------------
 
@@ -496,7 +496,7 @@ class DustGridTreeDistribution(Distribution):
 
         total = 0
         for index in range(self.min_level_index, self.max_level_index+1):
-            total += self.counts[index]
+            total += self.values[index]
         return total
 
 # -----------------------------------------------------------------

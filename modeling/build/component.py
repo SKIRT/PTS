@@ -301,7 +301,7 @@ class BuildComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_deprojection_for_map(self, galaxy_properties, disk_position_angle, map, filename, scaleheight):
+    def create_deprojection_for_map(self, galaxy_properties, disk_position_angle, map, filename, scaleheight, inclination=None):
 
         """
         This function ...
@@ -309,11 +309,12 @@ class BuildComponent(ModelingComponent):
         :param disk_position_angle:
         :param map:
         :param filename:
-        :param scaleheight
+        :param scaleheight:
+        :param inclination:
         :return:
         """
 
-        return self.suite.create_deprojection_for_map(galaxy_properties, disk_position_angle, map, filename, scaleheight)
+        return self.suite.create_deprojection_for_map(galaxy_properties, disk_position_angle, map, filename, scaleheight, inclination=inclination)
 
 # -----------------------------------------------------------------
 
