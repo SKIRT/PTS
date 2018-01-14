@@ -22,11 +22,18 @@ from ...core.tools import filesystem as fs
 from ...core.units.parsing import parse_unit as u
 from ...core.tools.utils import lazyproperty
 from ...core.tools import nr
+from ...core.tools.introspection import skirt_main_version, has_skirt
+
+# -----------------------------------------------------------------
+
+if not has_skirt(): version_number = 8
+else: version_number = skirt_main_version()
 
 # -----------------------------------------------------------------
 
 # Determine the path to the Mappings SED directory
-mappings_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Mappings")
+if version_number == 8: mappings_path = fs.join(introspection.skirt_repo_dir, "SKIRT", "data", "SED", "Mappings")
+else: mappings_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Mappings")
 
 # -----------------------------------------------------------------
 

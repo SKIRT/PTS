@@ -7,19 +7,19 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
-from pts.modeling.core.environment import verify_modeling_cwd
-from pts.modeling.fitting.run import FittingRuns
+from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = verify_modeling_cwd()
-runs = FittingRuns(modeling_path)
+environment = load_modeling_environment_cwd()
+runs = environment.fitting_runs
 
 # -----------------------------------------------------------------
 
-default_generation_method = "genetic"
+modeling_config = environment.modeling_configuration
+default_generation_method = modeling_config.fitting_method
 generation_methods = ["genetic", "grid"]
 
 # -----------------------------------------------------------------
@@ -39,8 +39,11 @@ definition.add_positional_optional("generation_method", "string", "model generat
 ## Remote execution
 
 # Remote hosts
-if len(find_host_ids()) > 0: definition.add_positional_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
-else: definition.add_fixed("remotes", "remote hosts", [])
+all_host_ids = find_host_ids()
+has_remotes = len(all_host_ids) > 0
+if has_remotes: definition.add_positional_optional("remotes", "string_list", "remote hosts to use", default=modeling_config.fitting_host_ids, choices=all_host_ids)
+else: definition.add_fixed("remotes", [])
+definition.add_flag("local", "run everything locally")
 
 # Options
 definition.add_flag("attached", "run remote simulations in attached mode")
@@ -61,6 +64,7 @@ definition.add_flag("visualise", "make visualisations")
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
 definition.add_flag("adjust_npackages", "adjust the number of packages to the number of dust cells", True)
+definition.add_optional("ncells_npackages_factor", "percentage", "relative number of photon packages w.r.t. the number of dust cells (used when adjust_npackages is enabled)", 0.75)
 
 # Use a different wavelength grid or use a different representation
 definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)

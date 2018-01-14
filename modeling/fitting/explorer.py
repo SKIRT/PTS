@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import traceback
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.basics.log import log
@@ -226,6 +229,9 @@ class ParameterExplorer(FittingComponent):
 
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup(**kwargs)
+
+        # Run locally?
+        if self.config.local: self.config.remotes = []
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)
@@ -1385,7 +1391,7 @@ class ParameterExplorer(FittingComponent):
 
             if self.config.adjust_npackages:
                 log.debug("Adjusting the number of photon packages from " + str(npackages) + " to the number of dust cells (" + str(self.ndust_cells) + ") ...")
-                npackages = self.ndust_cells
+                npackages = self.ndust_cells * self.config.ncells_npackages_factor
             else: log.warning("The number of photon packages (" + str(npackages) + ") is less than the number of dust cells (" + str(self.ndust_cells) + ")")
 
         # Return the number of photon packages
@@ -1805,10 +1811,12 @@ class ParameterExplorer(FittingComponent):
 
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
         try: self.launcher.run(ncells=self.ndust_cells)
-        except:
+        except Exception as e:
 
             # Something went wrong, show error message
             log.error("No simulations could be launched: removing generation")
+            log.error(str(e))
+            if log.is_debug(): traceback.print_exc()
             log.error("Try again later")
             log.error("Cleaning up generation and quitting ...")
 
@@ -2105,7 +2113,6 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the generations table ...")
 
         # Add an entry to the generations table
-        #print(self.parameter_scales)
         self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges, self.parameter_scales)
 
         # Save the table

@@ -23,11 +23,18 @@ from ...core.units.parsing import parse_unit as u
 from pts.core.tools.utils import lazyproperty
 from ...core.basics.log import log
 from ...core.tools import nr
+from ...core.tools.introspection import skirt_main_version, has_skirt
+
+# -----------------------------------------------------------------
+
+if not has_skirt(): version_number = 8
+else: version_number = skirt_main_version()
 
 # -----------------------------------------------------------------
 
 # Determine the path to the Bruzual-Charlot SED directory
-bc_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "BruzualCharlot")
+if version_number == 8: bc_path = fs.join(introspection.skirt_repo_dir, "SKIRT", "data", "SED", "BruzualCharlot")
+else: bc_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "BruzualCharlot")
 chabrier_path = fs.join(bc_path, "chabrier") # chabrier IMF
 
 # -----------------------------------------------------------------

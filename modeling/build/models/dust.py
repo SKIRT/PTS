@@ -285,7 +285,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[disk_component_name], model_map_filename, self.parameters[disk_component_name].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle,
+                                                        self.maps[disk_component_name], model_map_filename,
+                                                        self.parameters[disk_component_name].scale_height,
+                                                        inclination=self.disk_inclination)
 
         # Set the deprojection model
         self.deprojections[disk_component_name] = deprojection

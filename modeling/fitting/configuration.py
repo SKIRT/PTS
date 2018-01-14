@@ -991,8 +991,8 @@ class FittingConfigurer(FittingComponent):
                 highest_pixelscale_name = name
             #description = "representation '" + name + "' with: " + tostr(representation.properties)
             description = "representation with instrument resolution of " + tostr(representation.earth_pixelscale.average.to("arcsec"), round=True, ndigits=3) + " with a " + representation.dust_grid_type + " dust grid"
-            if representation.has_dust_grid_tree_distribution:
-                description += " with " + str(representation.ndust_cells) + " dust cells (min level = " + str(representation.dust_grid_min_level) + ", max level = " + str(representation.dust_grid_max_level) + ")"
+            #if representation.has_dust_grid_tree_distribution:
+                #description += " with " + str(representation.ndust_cells) + " dust cells (min level = " + str(representation.dust_grid_min_level) + ", max level = " + str(representation.dust_grid_max_level) + ")"
 
             # Add the option
             options[option] = description
