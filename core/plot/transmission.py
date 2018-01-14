@@ -49,6 +49,25 @@ filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd
 
 # -----------------------------------------------------------------
 
+def plot_filters(filters):
+
+    """
+    This function ...
+    :param filters:
+    :return:
+    """
+
+    # Initialize the plotter
+    plotter = TransmissionPlotter()
+
+    # Add the filters
+    plotter.add_filters(filters)
+
+    # Run the plotter
+    plotter.run()
+
+# -----------------------------------------------------------------
+
 class TransmissionPlotter(Configurable):
     
     """

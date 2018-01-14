@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.plot.transmission import TransmissionPlotter
+from pts.core.plot.transmission import plot_filters
 
 # -----------------------------------------------------------------
 
@@ -42,13 +42,7 @@ fitting_run = runs.load(config.fitting_run)
 
 # -----------------------------------------------------------------
 
-# Initialize the plotter
-plotter = TransmissionPlotter()
-
-# Add the filters
-plotter.add_filters(fitting_run.fitting_filters)
-
-# Run the plotter
-plotter.run()
+# Plot the fitting filters
+plot_filters(fitting_run.fitting_filters)
 
 # -----------------------------------------------------------------

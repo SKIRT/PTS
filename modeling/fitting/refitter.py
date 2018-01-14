@@ -35,6 +35,9 @@ from ...core.tools import nr, numbers
 from ...core.plot.distribution import plot_distributions, plot_distribution
 from .run import FittingRun
 from .tables import GenerationsTable
+from ...core.filter.filter import parse_filter
+from ...core.plot.transmission import plot_filters
+from .generation import GenerationInfo
 
 # -----------------------------------------------------------------
 
@@ -350,6 +353,10 @@ class Refitter(FittingComponent):
         # As run: create run directory
         if self.as_run: self.create_fitting_run()
 
+        # Show filters
+        #print(self.filters)
+        #plot_filters(self.filters)
+
     # -----------------------------------------------------------------
 
     @property
@@ -378,7 +385,7 @@ class Refitter(FittingComponent):
         self.new_run_path = fs.create_directory_in(self.fit_path, self.new_run_name)
 
         # Create the fitting run
-        self.new_run = FittingRun(self.config.path, self.new_run_name, self.model_name)
+        self.new_run = FittingRun(self.config.path, self.new_run_name, self.model_name, passive=True)
 
         # Create directories
         self.new_best_path = fs.create_directory_in(self.new_run_path, "best")
@@ -442,7 +449,18 @@ class Refitter(FittingComponent):
                 self.new_simulation_misc_paths[generation_name][simulation_name] = misc_path
 
             # Copy files in the generation directory
-            fs.copy_files_from_directory(generation_path, new_generation_path, exact_not_name="chi_squared")
+            fs.copy_files_from_directory(generation_path, new_generation_path, exact_not_name=["info", "chi_squared"])
+
+            # Create the generation info
+            info_path = fs.join(generation_path, "info.dat")
+            info = GenerationInfo.from_file(info_path)
+
+            # Set the new generation path
+            info.path = new_generation_path
+
+            # Save the new info
+            new_info_path = fs.join(new_generation_path, "info.dat")
+            info.saveto(new_info_path)
 
     # -----------------------------------------------------------------
 
@@ -657,6 +675,18 @@ class Refitter(FittingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def not_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return map(parse_filter, self.config.not_filters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def filters(self):
 
         """
@@ -668,7 +698,8 @@ class Refitter(FittingComponent):
         else: filters = self.fitting_run.fitting_filters
 
         # Remove certain filters?
-        if self.config.not_filters is not None: return sequences.removed(filters, self.config.not_filters)
+        print(self.config.not_filters)
+        if self.config.not_filters is not None: return sequences.removed(filters, self.not_filters)
         else: return filters
 
     # -----------------------------------------------------------------
@@ -695,7 +726,7 @@ class Refitter(FittingComponent):
 
         #if self.config.filters is not None: return sequences.same_contents(self.config.filters, self.fitting_run.fitting_filters)
         #else: return False
-        return sequences.same_contents(self.filters, self.fitting_run.fitting_filters)
+        return not sequences.same_contents(self.filters, self.fitting_run.fitting_filters)
 
     # -----------------------------------------------------------------
 
@@ -850,6 +881,11 @@ class Refitter(FittingComponent):
 
                 # Set fluxes
                 self.fluxes[generation_name][simulation_name] = fluxes
+
+                # Copy the fluxes directory into the new generation directory
+                if self.as_run:
+                    fluxes_path = fs.join(generation.get_simulation_misc_fluxes_path(simulation_name))
+                    fs.copy_directory(fluxes_path, self.new_simulation_misc_paths[generation_name][simulation_name])
 
     # -----------------------------------------------------------------
 
@@ -1583,6 +1619,7 @@ class Refitter(FittingComponent):
 
         # Adapt fitting filters?
         if self.different_filters: self.new_fitting_config.filters = self.filters
+        else: raise RuntimeError("No diff filters")
 
     # -----------------------------------------------------------------
 
@@ -1610,6 +1647,9 @@ class Refitter(FittingComponent):
 
         # Chi squared tables
         self.write_chi_squared()
+
+        # Write the model probabilities
+        self.write_model_probabilities()
 
         # Write the parameter probabilities
         self.write_parameter_probabilities()
@@ -1762,6 +1802,43 @@ class Refitter(FittingComponent):
 
             # Save the table
             chi_squared_table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_model_probabilities_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        if self.as_run: return fs.join(self.new_prob_generation_paths[generation_name], "models.dat")
+        else: return fs.join(self.prob_generations_paths[generation_name], "models.dat")
+
+    # -----------------------------------------------------------------
+
+    def write_model_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model probabilities for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Determine the path
+            path = self.get_model_probabilities_table_path_for_generation(generation_name)
+
+            # Get the table
+            table = self.model_probabilities[generation_name]
+
+            # Save the table
+            table.saveto(path)
 
     # -----------------------------------------------------------------
 

@@ -56,6 +56,7 @@ config = parse_arguments("show_best_simulations", definition)
 
 # Load the fitting run and the generation
 fitting_run = runs.load(config.name)
+#path = fitting_run.get_generation_path(config.generation)
 generation = fitting_run.get_generation(config.generation)
 
 # -----------------------------------------------------------------
@@ -180,5 +181,6 @@ if config.statistics:
         print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
         print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(parameter_units[label]))
         if config.nsimulations > 1: print("    * Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(parameter_units[label]))
+    print("")
 
 # -----------------------------------------------------------------

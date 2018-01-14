@@ -49,13 +49,14 @@ class FittingRun(object):
     This class...
     """
 
-    def __init__(self, modeling_path, name, model_name):
+    def __init__(self, modeling_path, name, model_name, passive=False):
 
         """
         The constructor ...
         :param modeling_path:
         :param name:
         :param model_name:
+        :param passive:
         :return:
         """
 
@@ -66,7 +67,8 @@ class FittingRun(object):
         fit_path = fs.join(modeling_path, "fit")
 
         # Set the path for this fitting run
-        self.path = fs.create_directory_in(fit_path, self.name)
+        if passive: self.path = fs.join(fit_path, self.name)
+        else: self.path = fs.create_directory_in(fit_path, self.name)
 
         # Set the name of the model used
         self.model_name = model_name
@@ -91,27 +93,33 @@ class FittingRun(object):
         self.template_ski_path = fs.join(self.path, "template.ski")
 
         # Set the path to the fit/generations directory
-        self.generations_path = fs.create_directory_in(self.path, "generations")
+        if passive: self.generations_path = fs.join(self.path, "generations")
+        else: self.generations_path = fs.create_directory_in(self.path, "generations")
 
         # Set the path to the fit/wavelength grids directory
-        self.wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
+        if passive: self.wavelength_grids_path = fs.join(self.path, "wavelength grids")
+        else: self.wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
 
         # Set the path to the wavelength grids table
         self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
-        self.best_path = fs.create_directory_in(self.path, "best")
+        if passive: self.best_path = fs.join(self.path, "best")
+        else: self.best_path = fs.create_directory_in(self.path, "best")
 
         # Set the path to the fit/prob directory
-        self.prob_path = fs.create_directory_in(self.path, "prob")
+        if passive: self.prob_path = fs.join(self.path, "prob")
+        else: self.prob_path = fs.create_directory_in(self.path, "prob")
 
         # Set the path to the fit/geometries directory
-        self.geometries_path = fs.create_directory_in(self.path, "geometries")
+        if passive: self.geometries_path = fs.join(self.path, "geometries")
+        else: self.geometries_path = fs.create_directory_in(self.path, "geometries")
 
         # -----------------------------------------------------------------
 
-        ## NEW: REFITTING DIRECTORY
-        self.refitting_path = fs.create_directory_in(self.path, "refitting")
+        ## REFITTING DIRECTORY
+        if passive: self.refitting_path = fs.join(self.path, "refitting")
+        else: self.refitting_path = fs.create_directory_in(self.path, "refitting")
 
         ## WEIGHTS TABLE
 
@@ -124,7 +132,7 @@ class FittingRun(object):
         self.timing_table_path = fs.join(self.path, "timing.dat")
 
         # Initialize the timing table if necessary
-        if not fs.is_file(self.timing_table_path):
+        if not passive and not fs.is_file(self.timing_table_path):
             timing_table = TimingTable()
             timing_table.saveto(self.timing_table_path)
 
@@ -134,7 +142,7 @@ class FittingRun(object):
         self.memory_table_path = fs.join(self.path, "memory.dat")
 
         # Initialize the memory table if necessary
-        if not fs.is_file(self.memory_table_path):
+        if not passive and not fs.is_file(self.memory_table_path):
             memory_table = MemoryTable()
             memory_table.saveto(self.memory_table_path)
 
@@ -144,17 +152,19 @@ class FittingRun(object):
         self.generations_table_path = fs.join(self.path, "generations.dat")
 
         # Initialize the generations table if necessary
-        if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
+        if not passive and not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
             generations_table = GenerationsTable(parameters=self.free_parameter_labels, units=self.parameter_units)
             generations_table.saveto(self.generations_table_path)
 
         ## PROBABILITY DISTRIBUTION TABLES
 
         # The directory with the probability distributions for the different free parameters
-        self.prob_distributions_path = fs.create_directory_in(self.prob_path, "distributions")
+        if passive: self.prob_distributions_path = fs.join(self.prob_path, "distributions")
+        else: self.prob_distributions_path = fs.create_directory_in(self.prob_path, "distributions")
 
         # The directory with the combined probability tables for the different free parameters
-        self.prob_parameters_path = fs.create_directory_in(self.prob_path, "parameters")
+        if passive: self.prob_parameters_path = fs.join(self.prob_path, "parameters")
+        else: self.prob_parameters_path = fs.create_directory_in(self.prob_path, "parameters")
 
         ## BEST PARAMETERS TABLE
 
@@ -162,9 +172,8 @@ class FittingRun(object):
         self.best_parameters_table_path = fs.join(self.path, "best_parameters.dat")
 
         # Initialize the best parameters table if necessary
-        if not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
-            best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels,
-                                                        units=self.parameter_units)
+        if not passive and not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
+            best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
             best_parameters_table.saveto(self.best_parameters_table_path)
 
         ## INPUT MAP PATHS FILE

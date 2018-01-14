@@ -1551,6 +1551,9 @@ def removed(sequence, remove):
     :return:
     """
 
+    #print("sequence:", sequence)
+    #print("remove:", remove)
+
     new = []
 
     for item in sequence:
