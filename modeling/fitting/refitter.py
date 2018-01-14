@@ -386,9 +386,9 @@ class Refitter(FittingComponent):
         self.new_prob_path = fs.create_directory_in(self.new_run_path, "prob")
 
         # Create prob subdirectories
-        self.new_prob_generations_path = fs.join(self.new_prob_path, "generations")
-        self.new_prob_parameters_path = fs.join(self.new_prob_path, "parameters")
-        self.new_prob_distributions_path = fs.join(self.new_prob_path, "distributions")
+        self.new_prob_generations_path = fs.create_directory_in(self.new_prob_path, "generations")
+        self.new_prob_parameters_path = fs.create_directory_in(self.new_prob_path, "parameters")
+        self.new_prob_distributions_path = fs.create_directory_in(self.new_prob_path, "distributions")
 
         # Create prob generation paths
         for generation_name in self.generation_names: self.new_prob_generation_paths[generation_name] = fs.create_directory_in(self.new_prob_generations_path, generation_name)
@@ -401,7 +401,7 @@ class Refitter(FittingComponent):
         fs.copy_file(self.fitting_run.template_ski_path, self.new_run_path)
 
         # Copy generations table
-        self.new_generations_table_path = fs.copy_directory(self.fitting_run.generations_table_path, self.new_run_path)
+        self.new_generations_table_path = fs.copy_file(self.fitting_run.generations_table_path, self.new_run_path)
 
         # Copy timing and memory tables
         fs.copy_file(self.fitting_run.timing_table_path, self.new_run_path)
@@ -421,7 +421,7 @@ class Refitter(FittingComponent):
             self.new_generation_paths[generation_name] = new_generation_path
 
             # Loop over the simulation names
-            for path, simulation_name in fs.directories_in_path(generation_path):
+            for path, simulation_name in fs.directories_in_path(generation_path, returns=["path", "name"]):
 
                 # Make a new simulation directory
                 new_path = fs.create_directory_in(self.new_generation_paths[generation_name], simulation_name)
