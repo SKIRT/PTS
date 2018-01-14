@@ -1614,6 +1614,9 @@ def copy_directory(path, directory_path, new_name=None):
     # Copy contents
     copy_from_directory(path, copy_path)
 
+    # Return the directory path
+    return copy_path
+
 # -----------------------------------------------------------------
 
 def copy_contents(path, directory_path):
@@ -1659,11 +1662,42 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     """
 
     # Copy files
-    copy_files(files_in_path(from_directory, **kwargs), to_directory)
+    copy_files_from_directory(from_directory, to_directory, **kwargs)
 
+    # Remove invalid parameters for directories_in_path
     if "extension" in kwargs: del kwargs["extension"]
     if "not_extension" in kwargs: del kwargs["not_extension"]
     if "extensions" in kwargs: del kwargs["extensions"]
+
+    # Copy directories
+    copy_directories_from_directory(from_directory, to_directory, **kwargs)
+
+# -----------------------------------------------------------------
+
+def copy_files_from_directory(from_directory, to_directory, **kwargs):
+
+    """
+    This function ...
+    :param from_directory:
+    :param to_directory:
+    :param kwargs:
+    :return:
+    """
+
+    # Copy files
+    copy_files(files_in_path(from_directory, **kwargs), to_directory)
+
+# -----------------------------------------------------------------
+
+def copy_directories_from_directory(from_directory, to_directory, **kwargs):
+
+    """
+    This function ...
+    :param from_directory:
+    :param to_directory:
+    :param kwargs:
+    :return:
+    """
 
     # Copy directories
     copy_directories(directories_in_path(from_directory, **kwargs), to_directory)

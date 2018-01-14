@@ -99,26 +99,11 @@ class FittingRun(object):
         # Set the path to the wavelength grids table
         self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, "grids.dat")
 
-        # Set the path to the fit/dust grids directory
-        #self.dust_grids_path = fs.create_directory_in(self.path, "dust grids")
-
-        # Set the path to the dust grids table
-        #self.dust_grids_table_path = fs.join(self.dust_grids_path, "grids.dat")
-
         # Set the path to the fit/best directory
         self.best_path = fs.create_directory_in(self.path, "best")
 
         # Set the path to the fit/prob directory
         self.prob_path = fs.create_directory_in(self.path, "prob")
-
-        # Set the path to the fit/instruments directory
-        #self.instruments_path = fs.create_directory_in(self.path, "instruments")
-
-        # Set the path to the SED and frame instrument
-        # NOW MOVED TO REPRESENTATION
-        #self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
-        #self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
-        #self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
 
         # Set the path to the fit/geometries directory
         self.geometries_path = fs.create_directory_in(self.path, "geometries")
@@ -228,8 +213,6 @@ class FittingRun(object):
         :param name:
         :return:
         """
-
-        #from .component import get_model_for_run
 
         from .context import FittingContext
         context = FittingContext.from_modeling_path(modeling_path)

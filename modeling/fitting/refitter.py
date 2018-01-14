@@ -33,6 +33,8 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.tools import nr, numbers
 from ...core.plot.distribution import plot_distributions, plot_distribution
+from .run import FittingRun
+from .tables import GenerationsTable
 
 # -----------------------------------------------------------------
 
@@ -93,6 +95,26 @@ class Refitter(FittingComponent):
         self.best_simulations = dict()
         self.best_simulation_counts = dict()
 
+        # New run, directory path and new fitting configuration
+        self.new_run = None
+        self.new_run_path = None
+        self.new_fitting_config = None
+
+        # New paths
+        self.new_best_path = None
+        self.new_generations_path = None
+        self.new_prob_path = None
+        self.new_prob_generations_path = None
+        self.new_prob_generation_paths = dict()
+        self.new_prob_parameters_path = None
+        self.new_prob_distributions_path = None
+        self.new_geometries_path = None
+        self.new_wavelength_grids_path = None
+        self.new_generations_table_path = None
+        self.new_generation_paths = dict()
+        self.new_simulation_paths = defaultdict(dict)
+        self.new_simulation_misc_paths = defaultdict(dict)
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -129,6 +151,9 @@ class Refitter(FittingComponent):
 
         # 9. Get best simulation
         self.get_best_simulations()
+
+        # 10. Create the configuration
+        self.create_config()
 
         # 10. Writing
         self.write()
@@ -272,6 +297,30 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def as_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.as_run is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.as_run
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -297,6 +346,115 @@ class Refitter(FittingComponent):
         # Initialize best parameters table
         self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
         self.best_parameters_table.setup()
+
+        # As run: create run directory
+        if self.as_run: self.create_fitting_run()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_for_run(self.config.fitting_run)
+
+    # -----------------------------------------------------------------
+
+    def create_fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the new fitting run ...")
+
+        # Create directory
+        self.new_run_path = fs.create_directory_in(self.fit_path, self.new_run_name)
+
+        # Create the fitting run
+        self.new_run = FittingRun(self.config.path, self.new_run_name, self.model_name)
+
+        # Create directories
+        self.new_best_path = fs.create_directory_in(self.new_run_path, "best")
+        self.new_generations_path = fs.create_directory_in(self.new_run_path, "generations")
+        self.new_prob_path = fs.create_directory_in(self.new_run_path, "prob")
+
+        # Create prob subdirectories
+        self.new_prob_generations_path = fs.join(self.new_prob_path, "generations")
+        self.new_prob_parameters_path = fs.join(self.new_prob_path, "parameters")
+        self.new_prob_distributions_path = fs.join(self.new_prob_path, "distributions")
+
+        # Create prob generation paths
+        for generation_name in self.generation_names: self.new_prob_generation_paths[generation_name] = fs.create_directory_in(self.new_prob_generations_path, generation_name)
+
+        # Copy directories
+        self.new_geometries_path = fs.copy_directory(self.fitting_run.geometries_path, self.new_run_path)
+        self.new_wavelength_grids_path = fs.copy_directory(self.fitting_run.wavelength_grids_path, self.new_run_path)
+
+        # Copy template ski file
+        fs.copy_file(self.fitting_run.template_ski_path, self.new_run_path)
+
+        # Copy generations table
+        self.new_generations_table_path = fs.copy_directory(self.fitting_run.generations_table_path, self.new_run_path)
+
+        # Copy timing and memory tables
+        fs.copy_file(self.fitting_run.timing_table_path, self.new_run_path)
+        fs.copy_file(self.fitting_run.memory_table_path, self.new_run_path)
+
+        # Copy input maps file
+        fs.copy_file(self.fitting_run.input_maps_file_path, self.new_run_path)
+
+        # Copy the generations
+        for generation_name in self.generation_names:
+
+            # Get generation path
+            generation_path = self.fitting_run.get_generation_path(generation_name)
+
+            # Create generation directory
+            new_generation_path = fs.create_directory_in(self.new_generations_path, generation_name)
+            self.new_generation_paths[generation_name] = new_generation_path
+
+            # Loop over the simulation names
+            for path, simulation_name in fs.directories_in_path(generation_path):
+
+                # Make a new simulation directory
+                new_path = fs.create_directory_in(self.new_generation_paths[generation_name], simulation_name)
+                self.new_simulation_paths[generation_name][simulation_name] = new_path
+
+                # Copy ski file, output, plot and extr
+                ski_path = fs.join(path, self.object_name + ".ski")
+                out_path = fs.join(path, "out")
+                extr_path = fs.join(path, "extr")
+                plot_path = fs.join(path, "plot")
+                fs.copy_file(ski_path, new_path)
+                fs.copy_directory(out_path, new_path)
+                fs.copy_directory(extr_path, new_path)
+                fs.copy_directory(plot_path, new_path)
+
+                # Create misc path
+                misc_path = fs.create_directory_in(new_path, "misc")
+                self.new_simulation_misc_paths[generation_name][simulation_name] = misc_path
+
+            # Copy files in the generation directory
+            fs.copy_files_from_directory(generation_path, new_generation_path, exact_not_name="chi_squared")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def new_generations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GenerationsTable.from_file(self.new_generations_table_path)
 
     # -----------------------------------------------------------------
 
@@ -805,8 +963,14 @@ class Refitter(FittingComponent):
                 # Debugging
                 log.debug("Calculating the mock observed fluxes for the '" + simulation_name + "' simulation ...")
 
+                # Determine fluxes calculation output path
+                if self.as_run:
+                    misc_path = self.new_simulation_misc_paths[generation_name][simulation_name]
+                    fluxes_path = fs.create_directory_in(misc_path, "fluxes")
+                    output_path = fluxes_path
+                else: output_path = self.simulation_paths[generation_name][simulation_name]
+
                 # Calculate fluxes
-                output_path = self.simulation_paths[generation_name][simulation_name]
                 if from_images: fluxes = self.calculate_observed_fluxes_from_images_for_simulation(simulation, output_path, spectral_convolution)
                 else: fluxes = self.calculate_observed_fluxes_for_simulation(simulation, output_path, spectral_convolution)
 
@@ -1404,6 +1568,24 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the fitting run configuration ...")
+
+        # Get original fitting configuration
+        self.new_fitting_config = self.fitting_run.fitting_configuration
+
+        # Adapt fitting filters?
+        if self.different_filters: self.new_fitting_config.filters = self.filters
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1413,6 +1595,12 @@ class Refitter(FittingComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the fitting configuration
+        if self.as_run: self.write_config()
+
+        # Write the runs table
+        if self.as_run: self.write_table()
 
         # Weights
         self.write_weights()
@@ -1438,6 +1626,50 @@ class Refitter(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def new_fitting_config_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.new_run_path, "configuration.cfg")
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the new fitting configuration ...")
+
+        # Save the config
+        self.new_fitting_config.saveto(self.new_fitting_config_path)
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the runs table ...")
+
+        # Open the runs table, add the new run and save
+        table = self.runs_table
+        table.add_run(self.new_run)
+        table.save()
+
+    # -----------------------------------------------------------------
+
+    @property
     def weights_table_path(self):
 
         """
@@ -1459,8 +1691,12 @@ class Refitter(FittingComponent):
         # Inform the user
         log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
+        # Determine the path
+        if self.as_run: path = fs.join(self.new_run_path, "weights.dat")
+        else: path = self.weights_table_path
+
         # Write the table with weights
-        self.weights.saveto(self.weights_table_path)
+        self.weights.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1493,7 +1729,8 @@ class Refitter(FittingComponent):
                 differences = self.differences[generation_name][simulation_name]
 
                 # Determine the path
-                path = fs.join(self.simulation_paths[generation_name][simulation_name], "differences.dat")
+                if self.as_run: path = fs.join(self.new_simulation_misc_paths[generation_name][simulation_name], "differences.dat")
+                else: path = fs.join(self.simulation_paths[generation_name][simulation_name], "differences.dat")
 
                 # Save
                 differences.saveto(path)
@@ -1520,7 +1757,8 @@ class Refitter(FittingComponent):
             chi_squared_table = self.chi_squared_tables[generation_name]
 
             # Determine the path
-            path = self.chi_squared_table_paths[generation_name]
+            if self.as_run: path = fs.join(self.new_generation_paths[generation_name], "chi_squared.dat")
+            else: path = self.chi_squared_table_paths[generation_name]
 
             # Save the table
             chi_squared_table.saveto(path)
@@ -1536,7 +1774,8 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return fs.join(self.prob_generations_paths[generation_name], parameter_label + ".dat")
+        if self.as_run: return fs.join(self.new_prob_generation_paths[generation_name], parameter_label + ".dat")
+        else: return fs.join(self.prob_generations_paths[generation_name], parameter_label + ".dat")
 
     # -----------------------------------------------------------------
 
@@ -1588,7 +1827,8 @@ class Refitter(FittingComponent):
         """
 
         # Determine the path for the table
-        return fs.join(self.prob_parameters_path, label + ".dat")
+        if self.as_run: return fs.join(self.new_prob_parameters_path, label + ".dat")
+        else: return fs.join(self.prob_parameters_path, label + ".dat")
 
     # -----------------------------------------------------------------
 
@@ -1627,7 +1867,8 @@ class Refitter(FittingComponent):
         log.info("Writing the best model parameters table ...")
 
         # Determine the path
-        path = fs.join(self.path, "best_parameters.dat")
+        if self.as_run: path = fs.join(self.new_run_path, "best_parameters.dat")
+        else: path = fs.join(self.path, "best_parameters.dat")
 
         # Save the best parameters table
         self.best_parameters_table.saveto(path)
@@ -1643,7 +1884,8 @@ class Refitter(FittingComponent):
         """
 
         # Determine the path for the table
-        return fs.join(self.prob_distributions_path, label + ".dat")
+        if self.as_run: return fs.join(self.new_prob_distributions_path, label + ".dat")
+        else: return fs.join(self.prob_distributions_path, label + ".dat")
 
     # -----------------------------------------------------------------
 
@@ -1790,8 +2032,9 @@ class Refitter(FittingComponent):
                 sed_plot_path = self.generations[generation_name].get_simulation_sed_plot_path(simulation_name)
 
                 # Copy the SED file to the generation path
-                filename = "best_" + str(index) + "_" + simulation_name + ".pdf"
-                fs.copy_file(sed_plot_path, self.generation_paths[generation_name], new_name=filename)
+                if not self.as_run:
+                    filename = "best_" + str(index) + "_" + simulation_name + ".pdf"
+                    fs.copy_file(sed_plot_path, self.generation_paths[generation_name], new_name=filename)
 
                 # Show the plot
                 if self.config.show_best_sed: fs.open_file(sed_plot_path)
@@ -1823,7 +2066,8 @@ class Refitter(FittingComponent):
                 counts_distributions = self.best_simulation_counts_distributions[generation_name]
 
                 # Determine path
-                path = fs.join(self.generation_paths[generation_name], "best_counts.pdf")
+                if self.as_run: path = None
+                else: path = fs.join(self.generation_paths[generation_name], "best_counts.pdf")
 
                 # Plot
                 plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True, path=path)
@@ -1861,7 +2105,6 @@ class Refitter(FittingComponent):
 
             # Most probable model: should be same as simulation with lowest chi squared
             most_probable_simulation_name = self.model_probabilities[generation_name].most_probable_simulation
-            #print(most_probable_simulation_name, best_simulation_name)
             assert most_probable_simulation_name == best_simulation_name
 
             # Show whether or not the best simulation corresponds to the best simulation of the original fit
@@ -1933,7 +2176,8 @@ class Refitter(FittingComponent):
             title = "Chi squared values of generation '" + generation_name.replace("_", "\_") + "'"
 
             # Determine path
-            path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
+            if self.as_run: path = None
+            else: path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
 
             # Plot chi squared?
             plot_distribution(self.chi_squared_tables[generation_name].distribution, title=title, logscale=True, path=path)
@@ -1954,7 +2198,8 @@ class Refitter(FittingComponent):
         for generation_name in self.generation_names:
 
             # Determine the path
-            path = fs.join(self.prob_generations_paths[generation_name], "probabilities.pdf")
+            if self.as_run: path = fs.join(self.new_prob_generation_paths[generation_name], "probabilities.pdf")
+            else: path = fs.join(self.prob_generations_paths[generation_name], "probabilities.pdf")
 
             # Make distributions
             distributions = dict()
@@ -1979,7 +2224,8 @@ class Refitter(FittingComponent):
         log.info("Plotting the probability distributions ...")
 
         # Determine the path
-        path = fs.join(self.prob_distributions_path, "distributions.pdf")
+        if self.as_run: path = fs.join(self.new_prob_distributions_path, "distributions.pdf")
+        else: path = fs.join(self.prob_distributions_path, "distributions.pdf")
 
         # Plot in different panels
         plot_distributions(self.distributions, panels=True, extrema=True, frequencies=True, path=path, logscale=True)

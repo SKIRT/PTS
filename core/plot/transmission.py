@@ -34,7 +34,7 @@ from ..filter.filter import parse_filter
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
-from ..basics.plot import MPLFigure
+from ..basics.plot import MPLFigure, pretty_colors, dark_pretty_colors
 from ..tools import filesystem as fs
 from pts.core.tools.utils import lazyproperty
 
@@ -46,7 +46,6 @@ rc('text', usetex=True)
 
 line_styles = ['-', '--', '-.', ':']
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
 
 # -----------------------------------------------------------------
 
@@ -86,16 +85,14 @@ class TransmissionPlotter(Configurable):
         self._min_transmission = None
         self._max_transmission = None
 
-        # The figure
-        self._figure = None
-
         # Properties
         self.colormap = "rainbow"  # or "nipy_spectral"
         self.format = None
         self.transparent = False
 
-        # The plot
-        self.plt = None
+        # The figure and plot
+        self.figure = None
+        self.main_plot = None
 
     # -----------------------------------------------------------------
 
@@ -139,6 +136,19 @@ class TransmissionPlotter(Configurable):
 
         # Invalid
         else: raise ValueError("A Filter object must be passed")
+
+    # -----------------------------------------------------------------
+
+    def add_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Add all filters
+        for fltr in filters: self.add_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -231,10 +241,10 @@ class TransmissionPlotter(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Write
+        # 2. Write
         if self.config.write: self.write()
 
-        # 2. Make the plot
+        # 3. Make the plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -292,7 +302,8 @@ class TransmissionPlotter(Configurable):
         else: self.output = self.config.output
 
         # Initialize the plot
-        self.plt = MPLFigure(size=self.figsize)
+        self.figure = MPLFigure(size=self.figsize)
+        self.main_plot = self.figure.create_one_plot()
 
     # -----------------------------------------------------------------
 
@@ -326,7 +337,6 @@ class TransmissionPlotter(Configurable):
         self._max_wavelength = None
         self._min_transmission = None
         self._max_transmission = None
-        self._figure = None
         self.colormap = "rainbow"
         self.format = None
         self.transparent = False
@@ -480,6 +490,18 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def axes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.main_plot.axes
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -490,13 +512,12 @@ class TransmissionPlotter(Configurable):
         # Inform the user
         log.info("Plotting the transmission plot ...")
 
-        # Set axes limits
-        plt.xlim(self.min_wavelength, self.max_wavelength)
-        plt.ylim(self.min_transmission, self.max_transmission*1.05)
+        # Set limits
+        self.main_plot.set_xlim(self.min_wavelength, self.max_wavelength)
+        self.main_plot.set_ylim(self.min_transmission, self.max_transmission*1.05)
 
-        plt.xscale('log')
-
-        plt.tick_params(labelsize=17)
+        # Set scale
+        self.figure.set_x_log_scale()
 
         # Get the color map
         cm = plt.get_cmap(self.colormap)
@@ -532,59 +553,29 @@ class TransmissionPlotter(Configurable):
         for index, wavelength in enumerate(self.wavelengths):
 
             label = self.wavelength_labels[index] if index in self.wavelength_labels else None
-            plt.axvline(wavelength.to("micron").value, color="0.8", label=label)
+            self.main_plot.axvline(wavelength.to("micron").value, color="0.8", label=label)
 
-        # Get axes
-        ax = plt.gca()
-
-        # Set background
-        #set_background(plt.gcf(), plt.gca(), self.config.plot) # it crashes with this
-
-        # Set the plot title
-        if self.config.plot.add_titles and self.title is not None:
-            #title = "Transmission curves"
-            title = "\n".join(wrap(self.title, 60))
-            plt.suptitle(self.title, fontsize=self.config.plot.title_fontsize)
+        # Add title if requested
+        if self.config.plot.add_titles and self.title is not None: self.figure.set_title(self.title) # fontsize=self.config.plot.title_fontsize?
 
         # Set the ticks
-        set_ticks(ax, self.config.plot, RealRange(min_wavelength, max_wavelength), len(self.curves) * 2)
+        self.main_plot.set_xticks()
+        self.main_plot.set_yticks()
 
         # Set grid
-        set_grid(self.config.plot)
+        self.main_plot.set_grid(self.config.plot)
 
         # Set the borders
-        set_borders(ax, self.config.plot)
+        self.figure.set_borders(self.config.plot)
 
         # Set the labels
-        self.plt.set_labels('$\lambda [\mu m]$', '$T_\lambda$', fontsize=self.config.plot.label_fontsize)
+        self.figure.set_labels('$\lambda [\mu m]$', '$T_\lambda$', fontsize=self.config.plot.label_fontsize)
 
         # Add the legend
-        add_legend(ax, self.config.plot, "Filters")
+        add_legend(self.axes, self.config.plot, "Filters")
 
         # Finish
-        self.plt.finish(self.output)
-
-# -----------------------------------------------------------------
-
-def set_borders(ax, config):
-
-    """
-    This function ...
-    :param ax:
-    :param config:
-    :return:
-    """
-
-    # Set border width
-    if config.add_borders: [i.set_linewidth(config.borderwidth) for i in ax.spines.itervalues()]
-
-    # Remove borders
-    else:
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.tick_params(axis=u'both', which=u'both', length=0)
+        self.figure.finish(self.output)
 
 # -----------------------------------------------------------------
 
@@ -630,43 +621,6 @@ def add_legend(ax, config, legend_title=None):
 
     # Set fontsize
     plt.setp(legend.get_title(), fontsize=str(config.legend_title_fontsize))
-
-# -----------------------------------------------------------------
-
-def set_ticks(ax, config, x_range, nxticks):
-
-    """
-    This function ...
-    :param config:
-    :param x_range:
-    :param nxticks:
-    :return:
-    """
-
-    # Format the axis ticks and create a grid
-    ticks = x_range.log(nxticks)
-    ax.set_xticks(ticks)
-    ax.set_xticklabels(ticks)
-
-    # Tick formatter
-    ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
-
-    # Set ticks fontsize
-    plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=config.ticks_fontsize)
-    plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=config.ticks_fontsize)
-
-# -----------------------------------------------------------------
-
-def set_grid(config):
-
-    """
-    This function ...
-    :param config:
-    :return:
-    """
-
-    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle, color=config.grid_color)
 
 # -----------------------------------------------------------------
 

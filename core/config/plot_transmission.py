@@ -26,7 +26,6 @@ definition.add_flag("emission", "add emission lines")
 definition.import_section("plot", "plotting options", plot_definition)
 
 # Change defaults
-#definition.sections["plot"].optional["figsize"].default = (17,4)
 definition.sections["plot"].optional["xsize"].default = 17
 definition.sections["plot"].optional["ysize"].default = 4
 

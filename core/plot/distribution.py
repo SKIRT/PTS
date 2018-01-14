@@ -35,7 +35,7 @@ from ..tools.stringify import tostr
 # -----------------------------------------------------------------
 
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
-                      y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None):
+                      y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf"):
 
     """
     This function ...
@@ -49,27 +49,16 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param color:
     :param x_label:
     :param y_label:
+    :param format:
     :return:
     """
-
-    #def plot(self, title=None, path=None, logscale=False, xlogscale=False, x_limits=None, y_limits=None,
-    #         add_smooth=False, format=None, add_extrema=False, model=None):
 
     # Create a canvas to place the subgraphs
     figure = plt.figure()
     rect = figure.patch
     rect.set_facecolor('white')
 
-    #sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
-    #sp1 = canvas.add_subplot(111)
     sp1 = figure.gca()
-
-    #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
-
-    #print(distribution.values)
-    #print(distribution.edges_log)
-    #print(distribution.edges)
-    #print(distribution.frequencies)
 
     alpha = None
     edgecolor = "black"
@@ -81,13 +70,8 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     if logscale: sp1.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
     else: sp1.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
 
-    #print("min", distribution.min_value)
-    #print("max", distribution.max_value)
-
     # Determine the x limits
     if x_limits is None:
-        #x_min = distribution.min_value
-        #x_max = distribution.max_value
         if logscale:
             x_min = distribution.min_edge_log
             x_max = distribution.max_edge_log
@@ -110,44 +94,11 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     sp1.set_xlim(x_min, x_max)
     sp1.set_ylim(y_min, y_max)
 
-    # Add smooth
-    #if add_smooth:
-    #    if logscale:
-    #        x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
-    #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-    #    else:
-    #        x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
-    #        sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-
-    #if add_extrema:
-    #    x, y = self.local_maxima
-    #    sp1.plot(x, y, 'g^')
-    #    x, y = self.local_minima
-    #    sp1.plot(x, y, 'rv')
-
-    #if model is not None: sp1.plot(self.centers, model(self.centers), label='Model')
-
-    #if logscale: print("mean", distribution.geometric_mean)
-    #else: print("mean", distribution.mean)
-    #print("median", distribution.median)
-    #print("max", distribution.most_frequent)
-
-    #print(self.mean, self.median, self.most_frequent)
     if logscale: mean_line = sp1.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
     else: mean_line = sp1.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
     median_line = sp1.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
     max_line = sp1.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
     plt.legend()
-
-    # Colorcode the tick tabs
-    #sp1.tick_params(axis='x', colors='red')
-    #sp1.tick_params(axis='y', colors='red')
-
-    # Colorcode the spine of the graph
-    #sp1.spines['bottom'].set_color('r')
-    #sp1.spines['top'].set_color('r')
-    #sp1.spines['left'].set_color('r')
-    #sp1.spines['right'].set_color('r')
 
     if x_label is None: x_label = distribution.value_name
     if y_label is None: y_label = distribution.y_name
