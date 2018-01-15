@@ -164,6 +164,30 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def primary_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame_names[0]
+
+    # -----------------------------------------------------------------
+
+    def is_primary(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name == self.primary_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_errors(self):
 
         """
@@ -1452,6 +1476,80 @@ class Image(object):
 
             # Crop the region
             self.regions[region_name] = self.regions[region_name].cropped(x_min, x_max, y_min, y_max)
+
+    # -----------------------------------------------------------------
+
+    def downsample(self, factor, order=3, dilate_masks=False, dilate_nans=True, dilate_infs=True, convert=None):
+
+        """
+        This function ...
+        :param factor:
+        :param order:
+        :param dilate_masks:
+        :param dilate_nans:
+        :param dilate_infs:
+        :param convert:
+        :return:
+        """
+
+        new_wcs = None
+        new_shape = None
+
+        # Are there frames?
+        if self.has_frames:
+
+            # Debugging
+            log.debug("Downsampling the '" + self.primary_name + "' frame [primary] ...")
+
+            # Downsample the primary frame
+            new_wcs = self.primary.downsample(factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs, convert=convert)
+            new_shape = self.primary.shape
+
+            # Loop over all other frames
+            for frame_name in self.frames:
+
+                # Skip the primary frame
+                if self.is_primary(frame_name): continue
+
+                # Inform the user
+                log.debug("Downsampling the '" + frame_name + "' frame ...")
+
+                # Rebin this frame to the new coordinate system
+                if new_wcs is not None: self.frames[frame_name].rebin(new_wcs, convert=convert)
+                else: self.frames[frame_name].downsample(factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs, convert=convert)
+
+                # Check shape
+                if new_shape != self.frames[frame_name].shape: raise RuntimeError("Something went wrong")
+
+        # Are there masks?
+        for mask_name in self.masks:
+
+            # Inform the user
+            log.debug("Downsampling the '" + mask_name + "' mask ...")
+
+            # Rebin this mask
+            if new_wcs is not None: self.masks[mask_name].rebin(new_wcs, dilate=dilate_masks)
+            else: new_wcs = self.masks[mask_name].downsample(factor, dilate=dilate_masks)
+            if new_shape is None: new_shape = self.masks[mask_name].shape
+
+            # Check shape
+            if new_shape != self.masks[mask_name].shape: raise RuntimeError("Something went wrong")
+
+        # Loop over all segmentation maps
+        for segments_name in self.segments:
+
+            # Inform the user
+            #log.debug("Downsampling the '" + segments_name + "' segmentation map ...")
+
+            raise NotImplementedError("Not implemented")
+
+        # Loop over all regions
+        for region_name in self.regions:
+
+            # Inform the user
+            #log.debug("Downsampling the " + region_name + " region ...")
+
+            raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 

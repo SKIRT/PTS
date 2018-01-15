@@ -60,3 +60,7 @@ make_multiband_tir_maps | -- | maps.tir.multi.MultiBandTIRMapMaker | arguments |
 
 # YOUNG STARS MAPS
 make_young_stars_maps | -- | maps.youngstars.young.YoungStellarMapsMaker | arguments | Make young stellar maps
+
+# PLOTTING
+plot_images | -- | plot.imagegrid.StandardImageGridPlotter | arguments | Plot images in a grid
+plot_residuals | -- | plot.imagegrid.ResidualImageGridPlotter | arguments | Plot images in a grid with residuals

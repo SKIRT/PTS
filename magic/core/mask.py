@@ -422,7 +422,8 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True, threshold=0.5):
+    def rebin(self, reference_wcs, exact=False, parallel=True, threshold=0.5, dilate=False, rank=2, connectivity=1,
+              iterations=2):
 
         """
         This function ...
@@ -430,6 +431,10 @@ class Mask(MaskBase):
         :param exact:
         :param parallel:
         :param threshold:
+        :param dilate:
+        :param rank:
+        :param connectivity:
+        :param iterations:
         :return:
         """
 
@@ -441,24 +446,35 @@ class Mask(MaskBase):
         # Check whether the WCS is the same
         if self.wcs == reference_wcs: return Frame.ones_like(self)
 
+        #from ..tools import plotting
+        #print(self._data.shape)
+        #plotting.plot_box(self._data.astype(int), title="before")
+
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
         else: new_data, footprint = reproject_interp((self._data.astype(int), self.wcs), reference_wcs, shape_out=reference_wcs.shape)
 
-        #print(np.isnan(new_data))
+        #from ..tools import plotting
+        #print(new_data.shape)
+        #plotting.plot_box(new_data, title="after")
+
+        # Get binary mask data
         mask_data = np.logical_or(new_data > threshold, np.isnan(new_data))
-        #print(mask_data)
 
         # Replace the data and WCS
         self._data = mask_data
         self._wcs = reference_wcs.copy()
+
+        # Dilate?
+        if dilate: self.dilate_rc(rank, connectivity=connectivity, iterations=iterations)  # 1 also worked in test
 
         # Return the footprint
         return Frame(footprint, wcs=reference_wcs.copy())
 
     # -----------------------------------------------------------------
 
-    def rebinned(self, reference_wcs, exact=False, parallel=True):
+    def rebinned(self, reference_wcs, exact=False, parallel=True, threshold=0.5, dilate=False, rank=2, connectivity=1,
+                 iterations=2):
 
         """
         This function ...
@@ -469,7 +485,63 @@ class Mask(MaskBase):
         """
 
         new = self.copy()
-        new.rebin(reference_wcs, exact=exact, parallel=parallel)
+        new.rebin(reference_wcs, exact=exact, parallel=parallel, threshold=threshold, dilate=dilate, rank=rank, connectivity=connectivity, iterations=iterations)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def downsample(self, factor, threshold=0.5, dilate=False, rank=2, connectivity=1, iterations=2):
+
+        """
+        This function ...
+        :param factor:
+        :param threshold:
+        :param dilate:
+        :param rank:
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        from scipy import ndimage
+        data = ndimage.interpolation.zoom(self.data.astype(int), zoom=1.0/factor, order=0)
+        new_xsize = data.shape[1]
+        new_ysize = data.shape[0]
+
+        # Set the data
+        new_data = data > threshold
+
+        # Dilate?
+        if dilate: self.dilate_rc(rank, connectivity=connectivity, iterations=iterations)
+
+        # Has coordinate system?
+        if self.has_wcs: new_wcs = self.wcs.scaled(new_xsize, new_ysize)
+        else: new_wcs = None
+
+        # Set the new data and wcs
+        self._data = new_data
+        self._wcs = new_wcs
+
+        # Return the new coordinate system
+        return new_wcs
+
+    # -----------------------------------------------------------------
+
+    def downsampled(self, factor, threshold=0.5, dilate=False, rank=2, connectivity=1, iterations=2):
+
+        """
+        This function ...
+        :param factor:
+        :param threshold:
+        :param dilate:
+        :param rank:
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        new = self.copy()
+        new.downsample(factor, threshold=threshold, dilate=dilate, rank=rank, connectivity=connectivity, iterations=iterations)
         return new
 
     # -----------------------------------------------------------------

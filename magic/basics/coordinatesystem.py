@@ -34,10 +34,11 @@ from ..tools import coordinates
 from .pixelscale import Pixelscale, PhysicalPixelscale
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.range import QuantityRange
-from pts.magic.basics.stretch import PixelStretch
+from .stretch import PixelStretch
 from ...core.basics.log import log
 from ...core.tools import sequences
 from ...core.tools import types
+from .vector import Position
 
 # -----------------------------------------------------------------
 
@@ -179,12 +180,12 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_properties(cls, size, center_pixel, center_sky, pixelscale):
+    def from_properties(cls, size, reference_pixel, center_sky, pixelscale):
 
         """
         This fucntion ...
         :param size: 
-        :param center_pixel: 
+        :param reference_pixel:
         :param center_sky: 
         :param pixelscale: 
         :return: 
@@ -196,10 +197,10 @@ class CoordinateSystem(wcs.WCS):
         # Construct header
         header = Header()
 
-        header["CRPIX1"] = center_pixel.x
+        header["CRPIX1"] = reference_pixel.x
         header["CRVAL1"] = center_sky.ra.to("deg").value
         header["CDELT1"] = pixelscale.x.to("deg").value
-        header["CRPIX2"] = center_pixel.y
+        header["CRPIX2"] = reference_pixel.y
         header["CRVAL2"] = center_sky.dec.to("deg").value
         header["CDELT2"] = pixelscale.y.to("deg").value
         header["NAXIS1"] = size.x
@@ -214,12 +215,12 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_properties_try(cls, size, center_pixel, center_sky, pixelscale):
+    def from_properties_try(cls, size, reference_pixel, center_sky, pixelscale):
 
         """
         This function ...
         :param size:
-        :param center_pixel:
+        :param reference_pixel:
         :param center_sky:
         :param pixelscale:
         :return:
@@ -241,8 +242,8 @@ class CoordinateSystem(wcs.WCS):
         #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
         #system.wcs.set_pv([(2, 1, 45.0)])
 
-        center_x = center_pixel.x
-        center_y = center_pixel.y
+        center_x = reference_pixel.x
+        center_y = reference_pixel.y
 
         # Create a new WCS object.  The number of axes must be set
         # from the start
@@ -362,39 +363,6 @@ class CoordinateSystem(wcs.WCS):
         pixels_y = projection.pixels_y
         center_x = projection.center_x
         center_y = projection.center_y
-
-        # Create a new coordinate system
-        #system = cls(naxis=2, naxis1=pixels_x, naxis2=pixels_y)
-
-        # Set projection
-        #system.wcs.crpix = [center_x, center_y]
-        #system.wcs.cdelt = np.array([])
-        #system.wcs.crval = []
-        #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
-        ##system.wcs.set_pv([(2, 1, 45.0)])
-
-        # Return the coordinate system
-        #return system
-
-        # FROM SKIRT FITSINOUT
-
-        # double xref = (nx+1.0)/2.0;
-        # double yref = (ny+1.0)/2.0;
-
-        # // Add the relevant keywords
-        # ffpky(fptr, TDOUBLE, "BSCALE", &one, "", &status);
-        # ffpky(fptr, TDOUBLE, "BZERO", &zero, "", &status);
-        # ffpkys(fptr, "DATE"  , const_cast<char*>(stamp.c_str()), "Date and time of creation (UTC)", &status);
-        # ffpkys(fptr, "ORIGIN", const_cast<char*>("SKIRT simulation"), "Astronomical Observatory, Ghent University", &status);
-        # ffpkys(fptr, "BUNIT" , const_cast<char*>(dataunits.c_str()), "Physical unit of the array values", &status);
-        # ffpky(fptr, TDOUBLE, "CRPIX1", &xref, "X-axis coordinate system reference pixel", &status);
-        # ffpky(fptr, TDOUBLE, "CRVAL1", &xc, "Coordinate system value at X-axis reference pixel", &status);
-        # ffpky(fptr, TDOUBLE, "CDELT1", &incx, "Coordinate increment along X-axis", &status);
-        # ffpkys(fptr, "CTYPE1", const_cast<char*>(xyunits.c_str()), "Physical units of the X-axis increment", &status);
-        # ffpky(fptr, TDOUBLE, "CRPIX2", &yref, "Y-axis coordinate system reference pixel", &status);
-        # ffpky(fptr, TDOUBLE, "CRVAL2", &yc, "Coordinate system value at Y-axis reference pixel", &status);
-        # ffpky(fptr, TDOUBLE, "CDELT2", &incy, "Coordinate increment along Y-axis", &status);
-        # ffpkys(fptr, "CTYPE2", const_cast<char*>(xyunits.c_str()), "Physical units of the Y-axis increment", &status);
 
         # Construct header
         header = Header()
@@ -542,7 +510,8 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        return self.center_pixel
+        x, y = self.wcs.crpix
+        return PixelCoordinate(x, y)
 
     # -----------------------------------------------------------------
 
@@ -724,19 +693,6 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
-    def center_pixel(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        x, y = self.wcs.crpix
-        return PixelCoordinate(x, y)
-
-    # -----------------------------------------------------------------
-
-    @property
     def center_sky(self):
 
         """
@@ -745,7 +701,7 @@ class CoordinateSystem(wcs.WCS):
         """
 
         # Return the coordinate of the center in sky coordinates
-        return SkyCoordinate.from_pixel(self.center_pixel, self)
+        return SkyCoordinate.from_pixel(self.reference_pixel, self)
 
     # -----------------------------------------------------------------
 
@@ -773,6 +729,65 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def scale(self, new_xsize, new_ysize):
+
+        """
+        This function ...
+        :param new_xsize:
+        :param new_ysize:
+        :return:
+        """
+
+        # Determine the new position of the reference pixel
+        relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
+        new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
+
+        # Change the center pixel position
+        self.wcs.crpix[0] = new_center.x
+        self.wcs.crpix[1] = new_center.y
+
+        # Get original xsize and ysize
+        original_xsize = self.xsize
+        original_ysize = self.ysize
+
+        # Change the number of pixels of the axes
+        self.naxis1 = new_xsize
+        self.naxis2 = new_ysize
+        self._naxis1 = self.naxis1
+        self._naxis2 = self.naxis2
+
+        #print(self.pixel_scale_matrix)
+        #print(self.wcs.cdelt)
+
+        # Change the pixel scale
+        self.wcs.cdelt[0] *= float(original_xsize) / float(new_xsize)
+        self.wcs.cdelt[1] *= float(original_ysize) / float(new_ysize)
+
+        # Return the new center and new pixelscale
+        return self.reference_pixel, self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    def scaled(self, new_xsize, new_ysize):
+
+        """
+        This function ...
+        :param new_xsize:
+        :param new_ysize:
+        :return:
+        """
+
+        # Make a copy
+        new_wcs = self.copy()
+
+        # Scale
+        new_wcs.scale(new_xsize, new_ysize)
+
+        # Return
+        return new_wcs
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other_wcs):
 
         """
@@ -782,24 +797,7 @@ class CoordinateSystem(wcs.WCS):
         """
 
         try:
-
-            #print(self.wcs.crpix[0], other_wcs.wcs.crpix[0])
-            #print(self.wcs.crpix[1], other_wcs.wcs.crpix[1])
-            #print(self.pixel_scale_matrix.flatten(), other_wcs.pixel_scale_matrix.flatten())
-            #print(self.wcs.crval[0], other_wcs.wcs.crval[0])
-            #print(self.wcs.crval[1], other_wcs.wcs.crval[1])
-            #print(self.naxis, other_wcs.naxis)
-            #print(self.naxis1, other_wcs.naxis1)
-            #print(self.naxis2, other_wcs.naxis2)
-
             comparisons = self.make_comparisons(other_wcs)
-            #print(comparisons)
-            #exit()
-
-            # If all of the above tests succeeded, the coordinate systems may be considered equal
-            #return True
-
-            #print(sequences.all_true(comparisons))
             return sequences.all_true(comparisons)
 
         # Error occured
@@ -1174,7 +1172,7 @@ class CoordinateSystem(wcs.WCS):
         #print(pix_x, pix_y)
 
         # Get the center pixel of the coordinate system
-        center = self.center_pixel
+        center = self.reference_pixel
         center_coordinate = self.center_sky
 
         # Calculate the new pixel position

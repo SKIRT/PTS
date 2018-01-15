@@ -1271,6 +1271,19 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def imshow(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return self._plot.imshow(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
     def text(self, x, y, s, *args, **kwargs):
 
         """
@@ -1958,6 +1971,18 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_one_plot(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        plot = MPLPlot(plot=self.ax)
+        return plot
+
+    # -----------------------------------------------------------------
+
     def create_column(self, size, share_axis=False, height_ratios=None, x_label=None, x_label_fontsize="small",
                       x_labels=None, y_labels=None, y_label_fontsize="small", x_scale="linear", x_scales=None, y_scales=None,
                       x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False):
@@ -2277,15 +2302,89 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_one_plot(self):
+    def create_grid(self, nrows, ncols, wspace=0.0, hspace=0.0):
 
         """
-        Thisf unction ...
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param wspace:
+        :param hspace:
         :return:
         """
 
-        plot = MPLPlot(plot=self.ax)
-        return plot
+        # def standard_setup(sp):
+        #     sp.set_frame_color('black')
+        #     sp.set_tick_labels_font(size='10')
+        #     sp.set_axis_labels_font(size='12')
+        #     # sp.set_tick_labels_format(xformat='hh:mm',yformat='dd:mm')
+        #     sp.set_xaxis_coord_type('scalar')
+        #     sp.set_yaxis_coord_type('scalar')
+        #     sp.set_tick_color('black')
+        #     sp.recenter(x=0.0, y=0.0, width=3., height=0.6)
+        #     sp.set_tick_xspacing(0.4)
+        #     sp.set_tick_yspacing(0.25)
+        #     sp.set_system_latex(True)
+        #     sp.tick_labels.hide()
+        #     sp.axis_labels.hide()
+
+        # Create grid
+        # self._grid = AxesGrid(self._figure, 111,
+        #                      nrows_ncols=(nrows, self.ncols),
+        #                      axes_pad=0.0,
+        #                      label_mode="L",
+        #                      #share_all=True,
+        #                      share_all=False,
+        #                      cbar_location="right",
+        #                      cbar_mode="single",
+        #                      cbar_size="0.5%",
+        #                      cbar_pad="0.5%")  # cbar_mode="single"
+
+        # Create the figure
+        #self._figure = plt.figure(figsize=(self.width, height))
+        #self._figure.subplots_adjust(hspace=0.0, wspace=0.0)
+
+        #self._figure.text(0.385, 0.97, "Offset from centre (degrees)", color='black', size='16', weight='bold')
+        #self._figure.text(0.02, 0.615, "Offset from centre (degrees)", color='black', size='16', weight='bold', rotation='vertical')
+
+        # Create grid spec
+        gs = gridspec.GridSpec(nrows, ncols, wspace=wspace, hspace=hspace)
+
+        # Initialize structure to contain the plots
+        plots = [[None for i in range(ncols)] for j in range(nrows)]
+
+        # Loop over the images
+        for row in range(nrows):
+            for col in range(ncols):
+
+                # Get sub plot specification
+                subplotspec = gs[row, col]
+
+                # points = subplotspec.get_position(self._figure).get_points()
+                # print(points)
+                # x_min = points[0, 0]
+                # x_max = points[1, 0]
+                # y_min = points[0, 1]
+                # y_max = points[1, 1]
+                # width = x_max - x_min
+                # height = y_max - y_min
+                # ax = self._figure.add_axes([x_min, y_min, width, height])
+
+                # ax = plt.subplot(subplotspec)
+                # shareax = ax if ax is not None else None
+                # ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy(), sharex=shareax, sharey=shareax)
+
+                # Get the axes
+                plot = plt.subplot(subplotspec) #projection=frame.wcs.to_astropy())
+
+                # Create plot
+                plot = MPLPlot(plot=plot)
+
+                # Add the plot
+                plots[row][col] = plot
+
+        # Return the plots
+        return plots
 
     # -----------------------------------------------------------------
 

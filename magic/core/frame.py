@@ -3680,7 +3680,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True, convert=False):
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None):
 
         """
         This function ...
@@ -3702,14 +3702,7 @@ class Frame(NDDataArray):
         if self.wcs == reference_wcs: return Frame.ones_like(self)
 
         # Check the unit
-        original_unit = None
-        if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that rebinning a frame not in brightness units gives an incorrect result")
-        elif not self.is_per_angular_or_intrinsic_area:
-            if not self.has_pixelscale: raise RuntimeError("The pixelscale of the frame is not defined")
-            if convert:
-                original_unit = self.unit
-                self.convert_to_corresponding_angular_or_intrinsic_area_unit()
-            else: raise RuntimeError("The frame is not defined in units per angular or physical area. Convert to a related intensity or brightness unit prior to rebinning")
+        original_unit = self._test_angular_or_intrinsic_area("rebinning", convert=convert)
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
@@ -3724,6 +3717,50 @@ class Frame(NDDataArray):
 
         # Return the footprint
         return Frame(footprint, wcs=reference_wcs.copy())
+
+    # -----------------------------------------------------------------
+
+    def _test_angular_or_intrinsic_area(self, task, convert=None):
+
+        """
+        This function ...
+        :param task:
+        :param convert:
+        :return:
+        """
+
+        original_unit = None
+
+        # The unit of the frame is not defined
+        if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that " + task + " a frame not in brightness units gives an incorrect result")
+        elif not self.is_per_angular_or_intrinsic_area:
+
+            # Pixelscale is not defined
+            if not self.has_pixelscale: raise RuntimeError("The pixelscale of the frame is not defined")
+
+            # Whether or not to convert is not specified
+            if convert is None: raise RuntimeError("The frame is not defined in units per angular or physical area, but in units of " + str(self.unit) + " [" + str(self.unit.physical_type) + "]. Convert to a related intensity or brightness unit prior to " + task)
+
+            # Convert to angular or intrinsic area unit
+            elif convert is True:
+
+                original_unit = self.unit
+                self.convert_to_corresponding_angular_or_intrinsic_area_unit()
+
+            # Don't convert:
+            elif convert is False:
+
+                # Give warning
+                log.warning("Not converting the unit prior to " + task + " will provide incorrect pixel values")
+
+                # Return None: no conversion needed afterwards
+                return None
+
+            # Invalid
+            else: raise ValueError("Invalid value for 'convert'")
+
+        # Return the original unit
+        return original_unit
 
     # -----------------------------------------------------------------
 
@@ -3890,19 +3927,6 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    # WHY WAS THIS EVER CALLED CENTER?
-    # @property
-    # def center(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
-
-    # -----------------------------------------------------------------
-
     @property
     def pixel_center(self):
 
@@ -4035,33 +4059,37 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def downsampled(self, factor, order=3):
-
-        """
-        This function ...
-        :return:
-        """
-
-        new = self.copy()
-        new.downsample(factor, order)
-        return new
-
-    # -----------------------------------------------------------------
-
-    def downsample(self, factor, order=3):
+    def downsampled(self, factor, order=3, dilate_nans=True, dilate_infs=True):
 
         """
         This function ...
         :param factor:
         :param order:
+        :param dilate_nans:
+        :param dilate_infs:
         :return:
         """
 
-        # Check if factor is 1.
-        if factor == 1: return
+        new = self.copy()
+        new.downsample(factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
+        return new
 
-        #print(self.nans.data)
-        #print(self.data[0,0], type(self.data[0,0]), self.data[0,0] is nan_value)
+    # -----------------------------------------------------------------
+
+    def downsample(self, factor, order=3, dilate_nans=True, dilate_infs=True, convert=None):
+
+        """
+        This function ...
+        :param factor:
+        :param order:
+        :param dilate_nans
+        :param dilate_infs:
+        :param convert:
+        :return:
+        """
+
+        # Check if factor is 1: nothing needs to be done
+        if factor == 1: return
 
         # Get mask of nans and infs
         if self.has_nans: nans = self.nans
@@ -4069,109 +4097,127 @@ class Frame(NDDataArray):
         if self.has_infs: infs = self.infs
         else: infs = None
 
-        # REMOVE NANS?
-        #self.replace_nans(zero_value)
-        #self.replace_infs(zero_value)
+        # Put zeroes where nans and infs were
         if nans is not None: self.apply_mask(nans)
         if infs is not None: self.apply_mask(infs)
 
-        #print(factor)
-        #print(self._data)
-        #print(self.nnans, self.ninfs)
+        # Check the unit
+        original_unit = self._test_angular_or_intrinsic_area("downsampling", convert=convert)
 
         # Calculate the downsampled array
         new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
-        #print(new_data)
-
         new_xsize = new_data.shape[1]
         new_ysize = new_data.shape[0]
 
-        relative_center = Position(self.reference_pixel.x / self.xsize, self.reference_pixel.y / self.ysize)
+        # Does the frame have a WCS?
+        new_wcs = None
+        if self.wcs is not None: new_wcs, nans, infs = self._scale_wcs_and_masks(new_xsize, new_ysize, nans, infs, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
 
-        new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
+        # No WCS
+        else: nans, infs = self._downsample_masks(factor, new_xsize, new_ysize, nans, infs, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
 
-        if self.wcs is not None:
+        #print(new_data.shape)
+        #if nans is not None: print(nans.data.shape)
+        #if infs is not None: print(infs.data.shape)
 
-            # Make a copy of the current WCS
-            new_wcs = self.wcs.copy()
-
-            # Change the center pixel position
-            new_wcs.wcs.crpix[0] = new_center.x
-            new_wcs.wcs.crpix[1] = new_center.y
-
-            # Change the number of pixels
-            new_wcs.naxis1 = new_xsize
-            new_wcs.naxis2 = new_ysize
-
-            new_wcs._naxis1 = new_wcs.naxis1
-            new_wcs._naxis2 = new_wcs.naxis2
-
-            # Change the pixel scale
-            new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
-            new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
-
-            # Rebin the masks
-            if nans is not None:
-
-                nans.rebin(new_wcs)
-                nans.dilate_rc(2, connectivity=1, iterations=2) # 1 also worked in test
-                #print("NANS", nans.data)
-                new_data[nans.data] = nan_value
-
-            if infs is not None:
-
-                infs.rebin(new_wcs)
-                infs.dilate_rc(2, connectivity=1, iterations=2)  # 1 also worked in test
-                #print("INFS", infs.data)
-                new_data[infs.data] = inf_value
-
-        else:
-
-            new_wcs = None
-
-            # Zoom the masks
-            if nans is not None:
-
-                new_nans_data = ndimage.interpolation.zoom(nans.data.astype(int), zoom=1.0/factor, order=0)
-
-                # Check the shapes
-                if new_nans_data.shape[1] != new_data.shape[1]:
-                    log.warning("Could not downsample the mask of NaN values: all NaNs have been replaced by zero")
-                elif new_nans_data.shape[0] != new_data.shape[0]:
-                    log.warning("Could not downsample the mask of NaN values: all NaNs have been replaced by zero")
-
-                # Apply the masks
-                else:
-
-                    new_nans = Mask.above(new_nans_data, 0.5)
-                    #new_nans = new_nans_data > 0.5
-                    new_nans.dilate_rc(2, connectivity=1, iterations=2)
-                    new_data[new_nans] = nan_value
-
-            if infs is not None:
-
-                new_infs_data = ndimage.interpolation.zoom(infs.data.astype(int), zoom=1.0 / factor, order=0)
-
-                if new_infs_data.shape[1] != new_data.shape[1]:
-                    log.warning("Could not downsample the mask of infinite values: all infinities have been replaced by zero")
-                elif new_infs_data.shape[0] != new_data.shape[0]:
-                    log.warning("Could not downsample the mask of infinite values: all infinities have been replaced by zero")
-
-                # Apply the masks
-                else:
-
-                    new_infs = Mask.above(new_infs_data, 0.5)
-                    #new_infs = new_infs_data > 0.5
-                    new_infs.dilate_rc(2, connectivity=1, iterations=2)
-                    new_data[new_infs] = inf_value
+        # Apply masks
+        if nans is not None: new_data[nans.data] = nan_value
+        if infs is not None: new_data[infs.data] = inf_value
 
         # Set the new data and wcs
         self._data = new_data
         self._wcs = new_wcs
 
+        # Convert back?
+        if original_unit is not None: self.convert_to(original_unit)
+
+        # Return the new coordinate system
+        return new_wcs
+
     # -----------------------------------------------------------------
 
-    def downsample_to_ratio(self, ratio, order=3, integer=True, above_or_below=None, even_or_odd=None):
+    def _scale_wcs_and_masks(self, new_xsize, new_ysize, nans, infs, dilate_nans=True, dilate_infs=True):
+
+        """
+        This function ...
+        :param new_xsize:
+        :param new_ysize:
+        :param nans:
+        :param infs:
+        :param dilate_nans:
+        :param dilate_infs:
+        :return:
+        """
+
+        # Create the new WCS
+        new_wcs = self.wcs.scaled(new_xsize, new_ysize)
+
+        # Rebin nans
+        if nans is not None: nans.rebin(new_wcs, dilate=dilate_nans)
+
+        # Rebin infs
+        if infs is not None: infs.rebin(new_wcs, dilate=dilate_infs)
+
+        # Return the new WCS and masks
+        return new_wcs, nans, infs
+
+    # -----------------------------------------------------------------
+
+    def _downsample_masks(self, factor, new_xsize, new_ysize, nans, infs, dilate_nans=True, dilate_infs=True):
+
+        """
+        This function ...
+        :param factor:
+        :param new_xsize:
+        :param new_ysize:
+        :param dilate_nans:
+        :param dilate_infs:
+        :return:
+        """
+
+        # Downsample nans
+        if nans is not None:
+
+            # Downsample with dilation
+            new_nans = nans.downsampled(factor, dilate=dilate_nans)
+
+            # Check the shapes
+            if new_nans.shape[1] != new_xsize or new_nans.shape[0] != new_ysize:
+
+                # Give warning
+                log.warning("Could not downsample the mask of NaN values: all NaNs have been replaced by zero")
+
+                # Set nans to None
+                new_nans = None
+
+        # No nans mask
+        else: new_nans = None
+
+        # Downsample infs
+        if infs is not None:
+
+            # Downsample with dilation
+            new_infs = infs.downsampled(factor, dilate=dilate_infs)
+
+            # Check the shapes
+            if new_infs.shape[1] != new_xsize or new_infs.shape[0] != new_ysize:
+
+                # Give warning
+                log.warning("Could not downsample the mask of infinite values: all infinities have been replaced by zero")
+
+                # Set infs to None
+                new_infs = None
+
+        # No infs mask
+        else: new_infs = None
+
+        # Return the masks
+        return new_nans, new_infs
+
+    # -----------------------------------------------------------------
+
+    def downsample_to_ratio(self, ratio, order=3, integer=True, above_or_below=None, even_or_odd=None, dilate_nans=True,
+                            dilate_infs=True):
 
         """
         This function ...
@@ -4180,6 +4226,8 @@ class Frame(NDDataArray):
         :param integer:
         :param above_or_below:
         :param even_or_odd:
+        :param dilate_nans:
+        :param dilate_infs:
         :return:
         """
 
@@ -4222,14 +4270,15 @@ class Frame(NDDataArray):
         log.debug("Downsampling with a factor of " + str(downsample_factor) + " ...")
 
         # Downsample
-        self.downsample(downsample_factor, order=order)
+        self.downsample(downsample_factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
 
         # Return the downsample factor
         return downsample_factor
 
     # -----------------------------------------------------------------
 
-    def downsample_to_npixels(self, npixels, order=3, integer=True, above_or_below=None, even_or_odd=None):
+    def downsample_to_npixels(self, npixels, order=3, integer=True, above_or_below=None, even_or_odd=None,
+                              dilate_nans=True, dilate_infs=True):
 
         """
         This function ...
@@ -4238,6 +4287,8 @@ class Frame(NDDataArray):
         :param integer:
         :param above_or_below:
         :param even_or_odd:
+        :param dilate_nans:
+        :param dilate_infs:
         :return:
         """
 
@@ -4253,11 +4304,13 @@ class Frame(NDDataArray):
         log.debug("The ratio between the number of pixels along longest axis and the maximum number of pixels is " + str(ratio))
 
         # Downsample
-        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below, even_or_odd=even_or_odd)
+        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below,
+                                        even_or_odd=even_or_odd, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
 
     # -----------------------------------------------------------------
 
-    def downsample_to_pixelscale(self, pixelscale, order=3, integer=True, above_or_below=None, even_or_odd=None):
+    def downsample_to_pixelscale(self, pixelscale, order=3, integer=True, above_or_below=None, even_or_odd=None,
+                                 dilate_nans=True, dilate_infs=True):
 
         """
         This function ...
@@ -4266,6 +4319,8 @@ class Frame(NDDataArray):
         :param integer:
         :param above_or_below: None, 'above', or 'below'
         :param even_or_odd:
+        :param dilate_nans:
+        :param dilate_infs:
         :return:
         """
 
@@ -4282,7 +4337,8 @@ class Frame(NDDataArray):
         log.debug("The ratio between the target pixelscale and the original pixelscale is " + str(ratio))
 
         # Downsample
-        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below, even_or_odd=even_or_odd)
+        return self.downsample_to_ratio(ratio, order=order, integer=integer, above_or_below=above_or_below,
+                                        even_or_odd=even_or_odd, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
 
     # -----------------------------------------------------------------
 

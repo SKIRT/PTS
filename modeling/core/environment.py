@@ -746,6 +746,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def photometry_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(filter_name) for filter_name in self.photometry_image_names]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def photometry_image_paths(self):
 
         """

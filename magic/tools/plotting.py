@@ -508,7 +508,8 @@ def plot_frame(frame, **kwargs):
 
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
-             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None):
+             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None,
+             axes=None, xsize=7, ysize=7, interpolation="nearest"):
 
     """
     This function ...
@@ -531,6 +532,10 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param soft_min_scaling:
     :param soft_max_scaling:
     :param region:
+    :param axes:
+    :param xsize:
+    :param ysize:
+    :param interpolation:
     :return:
     """
 
@@ -607,14 +612,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
         vmin, vmax = interval
 
-        #print(vmin, vmax)
-
         if soft_min: vmin = max(vmin/soft_min_scaling, normalize_min)
         if soft_max: vmax = min(vmax*soft_max_scaling, normalize_max)
-
-        #print(soft_min, soft_max)
-        #print(normalize_min, normalize_max)
-        #print(vmin, vmax)
 
     # String -> parse
     elif isinstance(interval, basestring):
@@ -632,30 +631,43 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
-    # Make the plot
-    plt.figure(figsize=(7,7))
-    plt.imshow(data, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap)
-    plt.xlim(0, box.shape[1]-1)
-    plt.ylim(0, box.shape[0]-1)
+    # Create figure if necessary, get the axes
+    only_axes = False
+    if axes is None:
+        plt.figure(figsize=(xsize,ysize))
+        plt.xlim(0, box.shape[1] - 1)
+        plt.ylim(0, box.shape[0] - 1)
+        axes = plt.gca()
+    else: only_axes = True
+
+    # Show the data
+    axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap, aspect=1)
 
     # Add region
     if region is not None:
-        ax = plt.gca()
+
+        # Add elliptical patch
         ell = plt_Ellipse((region.center.x, region.center.y), 2.0 * region.radius.x, 2.0 * region.radius.y, region.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
-        ax.add_patch(ell)
+        axes.add_patch(ell)
 
-    # Show axis?
-    if not show_axes: plt.axis('off')
+    # Axes were not provided: we are supposed to create the whole figure thingy and close it
+    if not only_axes:
 
-    if title is not None: plt.title(title)
+        # Show axis?
+        if not show_axes: plt.axis('off')
 
-    # Add colorbar?
-    if colorbar: plt.colorbar()
+        # Add title
+        if title is not None: plt.title(title)
 
-    if path is None: plt.show()
-    else: plt.savefig(path, format=format, transparent=transparent)
+        # Add colorbar?
+        if colorbar: plt.colorbar()
 
-    plt.close()
+        # Show or save as file
+        if path is None: plt.show()
+        else: plt.savefig(path, format=format, transparent=transparent)
+
+        # Close the figure
+        plt.close()
 
     # Return vmin and vmax
     return vmin, vmax

@@ -141,6 +141,28 @@ def load_as_sky_region_list(path, wcs, **kwargs):
 
 # -----------------------------------------------------------------
 
+def region_to_region_list(region):
+
+    """
+    This function ...
+    :param region:
+    :return:
+    """
+
+    # Create region list object
+    if isinstance(region, PixelRegion): regions = PixelRegionList()
+    elif isinstance(region, SkyRegion): regions = SkyRegionList()
+    elif isinstance(region, PhysicalRegion): regions = PhysicalRegionList()
+    else: raise ValueError("Invalid region object")
+
+    # Add the region
+    regions.append(region)
+
+    # Return the regions
+    return regions
+
+# -----------------------------------------------------------------
+
 region_type_or_coordsys_re = re.compile("^#? *(-?)([a-zA-Z0-9]+)")
 
 # -----------------------------------------------------------------
