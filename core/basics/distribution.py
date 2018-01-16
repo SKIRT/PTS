@@ -461,6 +461,20 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
+    def get_edges_for_bin(self, index, logscale=False):
+
+        """
+        This function ...
+        :param index:
+        :param logscale:
+        :return:
+        """
+
+        if logscale: return self.edges_log[index], self.edges_log[index+1]
+        else: return self.edges[index], self.edges[index+1]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def bin_width(self):
 
@@ -496,6 +510,18 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def most_frequent_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.argmax(self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def most_frequent(self):
 
         """
@@ -503,8 +529,19 @@ class Distribution(Curve):
         :return:
         """
 
-        index = np.argmax(self.frequencies)
-        return self.values[index]
+        return self.values[self.most_frequent_index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def least_frequent_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.argmin(self.frequencies)
 
     # -----------------------------------------------------------------
 
@@ -516,8 +553,7 @@ class Distribution(Curve):
         :return:
         """
 
-        index = np.argmin(self.frequencies)
-        return self.values[index]
+        return self.values[self.least_frequent_index]
 
     # -----------------------------------------------------------------
 
@@ -532,6 +568,174 @@ class Distribution(Curve):
         ma = np.ma.masked_equal(self.frequencies, 0.0, copy=False)
         index = np.argmin(ma)
         return self.values[index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(sorted(range(self.nvalues), key=lambda index: self[self.y_name][index]))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_indices_reversed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(reversed(self.sorted_indices))
+
+    # -----------------------------------------------------------------
+
+    def get_leading_indices(self, fraction, return_fraction=False):
+
+        """
+        This function ...
+        :param fraction:
+        :param return_fraction:
+        :return:
+        """
+
+        # Get the total count/frequency/prob
+        total = np.sum(self[self.y_name])
+
+        indices = []
+        current_fraction = 0.0
+
+        # Loop over the indices of the rows, from most frequent (highest prob) to lowest
+        for index in self.sorted_indices_reversed:
+
+            # Get the count/frequency/prob
+            frequency = self[self.y_name][index]
+            relative = float(frequency) / total
+
+            # Add index
+            indices.append(index)
+
+            # Add to current fraction
+            current_fraction += relative
+
+            # Break the loop if we have enough
+            if current_fraction >= fraction: break
+
+        # Return the indices
+        if return_fraction: return indices, current_fraction
+        else: return indices
+
+    # -----------------------------------------------------------------
+
+    def get_leading_values(self, fraction, add_unit=True, return_fraction=False):
+
+        """
+        This function ...
+        :param fraction:
+        :param add_unit:
+        :param return_fraction:
+        :return:
+        """
+
+        # Get the indices
+        indices, total_fraction = self.get_leading_indices(fraction, return_fraction=True)
+
+        # Get the values, in the same order
+        values = []
+        for index in indices:
+            value = self.get_value(self.value_name, index, add_unit=add_unit)
+            values.append(value)
+
+        # Return the values
+        if return_fraction: return values, total_fraction
+        else: return values
+
+    # -----------------------------------------------------------------
+
+    def get_leading_edges(self, fraction, logscale=False, add_unit=True, return_fraction=False):
+
+        """
+        This function ...
+        :param fraction:
+        :param logscale:
+        :param add_unit:
+        :param return_fraction:
+        :return:
+        """
+
+        # Get the indices
+        indices, total_fraction = self.get_leading_indices(fraction, return_fraction=True)
+
+        min_edge = None
+        max_edge = None
+
+        # Loop over the indices, get edges
+        for index in indices:
+
+            # Get edges
+            edges = self.get_edges_for_bin(index, logscale=logscale)
+
+            # Adapt edges
+            if min_edge is None or edges[0] < min_edge: min_edge = edges[0]
+            if max_edge is None or edges[1] > max_edge: max_edge = edges[1]
+
+        # Add unit?
+        if add_unit and self.has_unit:
+            min_edge = min_edge * self.unit
+            max_edge = max_edge * self.unit
+
+        # Return
+        if return_fraction: return min_edge, max_edge, total_fraction
+        else: return min_edge, max_edge
+
+    # -----------------------------------------------------------------
+
+    def get_leading_values_and_edges(self, fraction, add_unit=True, logscale=False, return_fraction=False):
+
+        """
+        This function ...
+        :param fraction:
+        :param add_unit:
+        :param logscale:
+        :param return_fraction:
+        :return:
+        """
+
+        # Get the indices
+        indices, total_fraction = self.get_leading_indices(fraction, return_fraction=True)
+
+        # Get the values, in the same order
+        values = []
+        for index in indices:
+            value = self.get_value(self.value_name, index, add_unit=add_unit)
+            values.append(value)
+
+        min_edge = None
+        max_edge = None
+
+        # Loop over the indices, get edges
+        for index in indices:
+
+            # Get edges
+            edges = self.get_edges_for_bin(index, logscale=logscale)
+
+            # Adapt edges
+            if min_edge is None or edges[0] < min_edge: min_edge = edges[0]
+            if max_edge is None or edges[1] > max_edge: max_edge = edges[1]
+
+        # Add unit?
+        if add_unit and self.has_unit:
+            min_edge = min_edge * self.unit
+            max_edge = max_edge * self.unit
+
+        # Return
+        if return_fraction: return values, min_edge, max_edge, total_fraction
+        else: return values, min_edge, max_edge
 
     # -----------------------------------------------------------------
 

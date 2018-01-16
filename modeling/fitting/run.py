@@ -1919,12 +1919,11 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    def get_parameter_distribution(self, label, normalized=True):
+    def get_parameter_distribution(self, label):
 
         """
         This function ...
         :param label:
-        :param normalized:
         :return:
         """
 
@@ -1932,7 +1931,7 @@ class FittingRun(object):
         distribution = Distribution.from_file(self.get_parameter_distribution_path(label))
 
         # Normalize the distribution
-        if normalized: distribution.normalize(value=1.0, method="max")
+        #if normalized: distribution.normalize(value=1.0, method="max")
 
         # Return the distribution
         return distribution

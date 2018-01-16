@@ -2421,7 +2421,7 @@ class MPLFigure(Figure):
             # lower-left axes
             ax = grid.axes_column[0][-1]
             _tick_only(ax, bottom_on=False, left_on=False)
-    
+
             for col in grid.axes_column[1:]:
                 # axes with no labels
                 for ax in col[:-1]: _tick_only(ax, bottom_on=True, left_on=True)

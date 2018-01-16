@@ -36,6 +36,11 @@ definition.add_positional_optional("generation_method", "string", "model generat
 
 # -----------------------------------------------------------------
 
+# Just a test
+definition.add_flag("test", "just testing: don't create a generation")
+
+# -----------------------------------------------------------------
+
 ## Remote execution
 
 # Remote hosts
@@ -51,9 +56,19 @@ definition.add_optional("nsimulations", "even_positive_integer", "number of simu
 definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
+# -----------------------------------------------------------------
+
+# Ranges
+definition.add_flag("prompt_ranges", "prompt for the parameter ranges", True)
+definition.add_flag("auto_ranges", "determine the parameter ranges automatically based on the previous generation")
+
+# -----------------------------------------------------------------
+
 # Number of points per free parameter
 definition.add_optional("npoints", "string_integer_dictionary", "number of grid points for the different free parameters")
-definition.add_flag("prompt_npoints", "prompt for the number of grid points for each free parameter")
+definition.add_flag("prompt_npoints", "prompt for the number of grid points for each free parameter", False)
+#definition.add_flag("auto_npoints", "determine the number of points automatically based on the previous generation")
+definition.add_optional("npoints_all", "positive_integer", "number of points for all free parameters")
 
 # -----------------------------------------------------------------
 

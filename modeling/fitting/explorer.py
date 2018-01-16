@@ -36,6 +36,7 @@ from ...core.basics.configuration import prompt_proceed, prompt_integer
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.utils import lazyproperty
 from ...core.prep.deploy import Deployer
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -118,6 +119,18 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def testing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.test
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -139,7 +152,7 @@ class ParameterExplorer(FittingComponent):
         self.set_info()
 
         # 5. Create the generation
-        self.create_generation()
+        if not self.testing: self.create_generation()
 
         # 6. Generate the model parameters
         self.generate_models()
@@ -151,16 +164,16 @@ class ParameterExplorer(FittingComponent):
         self.adjust_ski()
 
         # 9. Fill the tables for the current generation
-        self.fill_tables()
+        if not self.testing: self.fill_tables()
 
         # 10. Writing
-        self.write()
+        if not self.testing: self.write()
+
+        # Show stuff
+        self.show()
 
         # 11. Launch the simulations for different parameter values
-        # Test whether simulations are required, because if the optimizer detects recurrence of earlier models,
-        # it is possible that no simulations have to be done
-        if self.needs_simulations: self.launch()
-        else: self.set_finishing_time()
+        if not self.testing: self.launch_or_finish()
 
     # -----------------------------------------------------------------
 
@@ -255,7 +268,7 @@ class ParameterExplorer(FittingComponent):
         #if self.ngenerations == 0 and self.uses_schedulers:
         #    raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
-        # Check whether initialize_fit has been called
+        # Check whether the wavelength grids table is present
         if self.is_galaxy_modeling:
             if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
 
@@ -266,6 +279,79 @@ class ParameterExplorer(FittingComponent):
 
         # Deploy SKIRT
         if self.has_host_ids and self.config.deploy: self.deploy()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nprevious_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.ngenerations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.generation_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nprevious_generations == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nprevious_genetic_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.ngenetic_generations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_genetic_generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.genetic_generations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_genetic_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.genetic_fitting: raise ValueError("Not a genetic generation")
+        else: return self.nprevious_generations == 0
 
     # -----------------------------------------------------------------
 
@@ -326,10 +412,24 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Prompt
         if self.config.prompt_npoints:
+
+            # Check
+            if self.config.npoints_all is not None: raise ValueError("Npoints is specified already through 'npoints_all'")
+
+            # Prompt
             npoints_dict = dict()
             for label in self.parameter_labels: npoints_dict[label] = prompt_integer("npoints_" + label, "number of points for the " + self.get_description(label), default=self.get_default_npoints(label))
             return npoints_dict
+
+        # Npoints all
+        elif self.config.npoints_all is not None:
+            npoints_dict = dict()
+            for label in self.parameter_labels: npoints_dict[label] = self.config.npoints_all
+            return npoints_dict
+
+        # Npoints dict
         else: return self.config.npoints
 
     # -----------------------------------------------------------------
@@ -1175,6 +1275,77 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the parameter ranges ...")
 
+        # Automatic: based on previous generation(s)
+        if self.config.auto_ranges and not self.first_generation: self.determine_ranges()
+
+        # Prompt
+        elif self.config.prompt_ranges: self.prompt_ranges()
+
+        # Default
+        else: self.set_default_ranges()
+
+    # -----------------------------------------------------------------
+
+    def determine_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining the parameter ranges automatically ...")
+
+        # Loop over the free parameters
+        for label in self.parameter_labels:
+
+            # If range is already defined
+            if label in self.ranges: continue
+
+            # Get the parameter distribution
+            distribution = self.fitting_run.get_parameter_distribution(label)
+
+            # Get the parameter unit
+            unit = self.fitting_run.parameter_units[label]
+
+            # Get leading values
+            values, min_value, max_value, total_fraction = distribution.get_leading_values_and_edges(.99, logscale=True, return_fraction=True)
+
+            # Add units if necessary
+            if not hasattr(min_value, "unit"): min_value = min_value * unit
+            if not hasattr(max_value, "unit"): max_value = max_value * unit
+
+            # Debugging
+            log.debug("")
+            log.debug("Parameter '" + label + "':")
+            log.debug(" - Most probable value: " + tostr(distribution.most_frequent))
+            log.debug(" - Least probable value: " + tostr(distribution.least_frequent))
+            log.debug(" - Number of unique values: " + tostr(distribution.nvalues))
+            log.debug(" - Value(s) with (combined) >= 99% of the probablity: " + tostr(values))
+            log.debug(" - Combined probability: " + tostr(total_fraction * 100, round=True, ndigits=5) + "%")
+            log.debug(" - Old minimum value: " + tostr(distribution.min_value))
+            log.debug(" - Old maximum value: " + tostr(distribution.max_value))
+            log.debug(" - New minimum value: " + tostr(min_value))
+            log.debug(" - New maximum value: " + tostr(max_value))
+
+            # Set the range for this parameter
+            self.ranges[label] = QuantityRange(min_value, max_value)
+
+        # One more line
+        log.debug("")
+
+    # -----------------------------------------------------------------
+
+    def prompt_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for the parameter ranges ...")
+
         # Create definition
         definition = self.create_parameter_ranges_definition()
 
@@ -1192,6 +1363,30 @@ class ParameterExplorer(FittingComponent):
 
             # Set the range
             self.ranges[label] = config[label + "_range"]
+
+    # -----------------------------------------------------------------
+
+    def set_default_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Using the default parameter ranges for each parameter ...")
+
+        # Loop over the free parameters, add a setting slot for each parameter range
+        for label in self.parameter_labels:
+
+            # Skip if range is already defined for this label
+            if label in self.ranges: continue
+
+            # Get the default range
+            default_range = self.fitting_run.fitting_configuration[label + "_range"]
+
+            # Set the range
+            self.ranges[label] = default_range
 
     # -----------------------------------------------------------------
 
@@ -1778,6 +1973,24 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def launch_or_finish(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Test whether simulations are required, because if the optimizer detects recurrence of earlier models,
+        # it is possible that no simulations have to be done
+
+        # Launch simulations
+        if self.needs_simulations: self.launch()
+
+        # No simulations need to be launched
+        else: self.set_finishing_time()
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -2162,5 +2375,47 @@ class ParameterExplorer(FittingComponent):
 
         # Save the chi squared table
         self.chi_squared_table.saveto(self.generation.chi_squared_table_path)
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing ...")
+
+        # Show the ranges
+        self.show_ranges()
+
+        # Show the number of points
+        self.show_npoints()
+
+    # -----------------------------------------------------------------
+
+    def show_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the parameter ranges ...")
+
+    # -----------------------------------------------------------------
+
+    def show_npoints(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the number of points ...")
 
 # -----------------------------------------------------------------
