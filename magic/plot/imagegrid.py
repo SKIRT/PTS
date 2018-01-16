@@ -47,6 +47,7 @@ from ..tools import plotting
 from ...core.tools.utils import lazyproperty
 from ..region.list import load_region_list
 from ..core.mask import Mask
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -224,7 +225,7 @@ class ImageGridPlotter(Configurable):
         log.debug("Finishing the plot ...")
 
         # Tight layout
-        plt.tight_layout()
+        #plt.tight_layout()
 
         # Add title if requested
         if self.title is not None: self.figure.set_title(self.title)
@@ -294,6 +295,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.masks = defaultdict(dict)
         self.regions = defaultdict(dict)
 
+        # The colorbar
+        self.colorbar = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -335,10 +339,72 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
+        #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
+        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.frames[name].wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.names[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.names[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.first_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.first_wcs
 
     # -----------------------------------------------------------------
 
@@ -430,7 +496,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        return self.config.plot.xsize * self.ncolumns
+        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height
 
     # -----------------------------------------------------------------
 
@@ -443,6 +509,61 @@ class StandardImageGridPlotter(ImageGridPlotter):
         """
 
         return self.config.plot.ysize * self.nrows
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_width_to_height(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = []
+
+        # Loop over the frames
+        for name in self.names: values.append(self.get_width_to_height(name))
+
+        # Return the mean
+        return numbers.arithmetic_mean(*values)
+
+    # -----------------------------------------------------------------
+
+    def get_width_to_height(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        width = self.get_width(name)
+        height = self.get_height(name)
+        return float(width) / float(height)
+
+    # -----------------------------------------------------------------
+
+    def get_width(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.frames[name].xsize
+
+    # -----------------------------------------------------------------
+
+    def get_height(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.frames[name].ysize
 
     # -----------------------------------------------------------------
 
@@ -850,10 +971,11 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _process_frame(self, frame, copy=True):
+    def _process_frame(self, name, frame, copy=True):
 
         """
         This function ...
+        :param name:
         :param frame:
         :param copy:
         :return:
@@ -867,6 +989,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Crop the frame
         if self.crop_to is not None:
 
+            # Debugging
+            log.debug("Cropping the '" + name + "' frame ...")
+
             # Create cropped frame
             if copy: frame = frame.cropped_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
             else: frame.crop_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
@@ -877,10 +1002,13 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Downsampling required?
         if self.config.downsample and frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
 
+            # Debugging
+            log.debug("Downsampling the '" + name + "' frame ...")
+
             # Determine the downsample factor
             downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
 
-            print(frame.name, downsample_factor)
+            #print(frame.name, downsample_factor)
 
             # Downsample
             if _cropped or not copy: frame.downsample(downsample_factor, convert=False, dilate_nans=False, dilate_infs=False)
@@ -891,6 +1019,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
         # Normalize the frame
         if self.config.normalize:
+
+            # Debugging
+            log.debug("Normalizing the '" + name + "' frame ...")
 
             # Create normalized frame
             if (_cropped or _downsampled) or not copy: frame.normalize()
@@ -929,7 +1060,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         if self.has_frame(name): raise ValueError("Name '" + name + "' is already in use")
 
         # Process the frame
-        if process: frame = self._process_frame(frame, copy=copy)
+        if process: frame = self._process_frame(name, frame, copy=copy)
         elif copy: frame = frame.copy()
 
         # Add the frame
@@ -1126,7 +1257,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_frame(self, name, row, col, vmin=None, vmax=None):
+    def _plot_frame(self, name, row, col, vmin=None, vmax=None, return_image=False, return_normalization=False):
 
         """
         This function ...
@@ -1135,6 +1266,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
         :param col:
         :param vmin:
         :param vmax:
+        :param return_image:
+        :param return_normalization:
         :return:
         """
 
@@ -1147,60 +1280,21 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Get the plot
         plot = self.plots[row][col]
 
-        # ax = self._grid[counter]
+        # Color spines
+        #print(plot.axes.spines.keys())
+        plot.axes.spines['bottom'].set_color("white")
+        plot.axes.spines['top'].set_color("white")
+        plot.axes.spines['left'].set_color("white")
+        plot.axes.spines['right'].set_color("white")
 
-        # subplotspec = gs[row, col]
+        # Color ticks
+        #plot.axes.xaxis.label.set_color("white")
+        #plot.axes.yaxis.label.set_color("white")
+        plot.axes.tick_params(axis='x', colors="white", direction="inout")
+        plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
-        # points = subplotspec.get_position(self._figure).get_points()
-        # print(points)
-        # x_min = points[0, 0]
-        # x_max = points[1, 0]
-        # y_min = points[0, 1]
-        # y_max = points[1, 1]
-        # width = x_max - x_min
-        # height = y_max - y_min
-        # ax = self._figure.add_axes([x_min, y_min, width, height])
-
-        # ax = plt.subplot(subplotspec)
-        # shareax = ax if ax is not None else None
-        # ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy(), sharex=shareax, sharey=shareax)
-
-        # ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy())
-
-        # lon = ax.coords[0]
-        # lat = ax.coords[1]
-
-        # overlay = ax.get_coords_overlay('fk5')
-        # overlay.grid(color='white', linestyle='solid', alpha=0.5)
-
-        # Determine the maximum value in the box and the mimimum value for plotting
-        # norm = ImageNormalize(stretch=LogStretch())
-        # min_value = np.nanmin(frame)
-        # min_value = self.vmin if self.vmin is not None else np.nanmin(frame)
-        # max_value = 0.5 * (np.nanmax(frame) + min_value)
-
-        # f1.show_colorscale(vmin=min_value, vmax=max_value, cmap="viridis")
-        # f1.show_beam(major=0.01, minor=0.01, angle=0, fill=True, color='white')
-        ## f1.axis_labels.show_y()
-        # f1.tick_labels.set_xposition('top')
-        # f1.tick_labels.show()r
-
-        plot.axes.set_xticks([])
-        plot.axes.set_yticks([])
-        plot.axes.xaxis.set_ticklabels([])
-        plot.axes.yaxis.set_ticklabels([])
-
-        # ax.spines['bottom'].set_color("white")
-        # ax.spines['top'].set_color("white")
-        # ax.spines['left'].set_color("white")
-        # ax.spines['right'].set_color("white")
-        plot.axes.xaxis.label.set_color("white")
-        plot.axes.yaxis.label.set_color("white")
-        plot.axes.tick_params(axis='x', colors="white")
-        plot.axes.tick_params(axis='y', colors="white")
-
-        # Set background color
-        plot.axes.set_axis_bgcolor(self.background_color)
+        # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
 
         # Add mask if present
         if self.has_masks_for_frame(name):
@@ -1212,8 +1306,18 @@ class StandardImageGridPlotter(ImageGridPlotter):
         if self.config.share_scale and vmin is not None: interval = [vmin, vmax]
         else: interval = self.config.interval
 
+        #from matplotlib.axes import subplot_class_factory
+        # Set projection
+        #projection_class, extra_kwargs = frame.wcs._as_mpl_axes()
+        #projection_class, kwargs, key = process_projection_requirements(self.figure.figure, *args, **kwargs)
+        #a = subplot_class_factory(projection_class)(self.figure.figure, **extra_kwargs)
+        #plot.sca(a)
+
         # Plot
-        vmin_image, vmax_image = plotting.plot_box(frame.data, axes=plot.axes, interval=interval, scale=self.config.scale, cmap=self.colormap)
+        plot.axes.set_adjustable('box-forced')
+        vmin_image, vmax_image, image, normalization = plotting.plot_box(frame.data, axes=plot.axes, interval=interval, scale=self.config.scale, cmap=self.colormap, alpha=self.config.alpha, return_image=True, return_normalization=True)
+        #plot.axes.set_adjustable('box-forced')
+        #ax2.set_adjustable('box-forced')
 
         # Add region if present
         if self.has_regions_for_frame(name):
@@ -1224,7 +1328,50 @@ class StandardImageGridPlotter(ImageGridPlotter):
         plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")  # fontweight='bold'
 
         # Return vmin and vmax
-        return vmin_image, vmax_image
+        if return_image:
+            if return_normalization: return vmin_image, vmax_image, image, normalization
+            else: return vmin_image, vmax_image, image
+        else:
+            if return_normalization: return vmin_image, vmax_image, normalization
+            else: return vmin_image, vmax_image
+
+    # -----------------------------------------------------------------
+
+    def _plot_empty(self, row, col):
+
+        """
+        This function ...
+        :param row:
+        :param col:
+        :return:
+        """
+
+        # Get the plot
+        plot = self.plots[row][col]
+
+        # Color spines
+        plot.axes.spines['bottom'].set_color("white")
+        plot.axes.spines['top'].set_color("white")
+        plot.axes.spines['left'].set_color("white")
+        plot.axes.spines['right'].set_color("white")
+
+        # Color ticks
+        #plot.axes.xaxis.label.set_color("white")
+        #plot.axes.yaxis.label.set_color("white")
+        plot.axes.tick_params(axis='x', colors="white", direction="inout")
+        plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+        # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+
+        # Create NaNs image
+        #nans = np.full((100,100), np.nan)
+
+        #vmin_image, vmax_image = plotting.plot_box(nans, axes=plot.axes, interval=interval, scale=self.config.scale, cmap=self.colormap, alpha=self.config.alpha)
+
+        #extent = None
+        #aspect = "equal"
+        #plot.axes.imshow(nans, origin="lower", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap, aspect=aspect, extent=extent)
 
     # -----------------------------------------------------------------
 
@@ -1412,6 +1559,43 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def npanels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows * self.ncolumns
+
+    # -----------------------------------------------------------------
+
+    def _plot_reference_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the name
+        name = self.config.scale_reference
+
+        # Get the index of the frame
+        index = self.index_of_frame(self.config.scale_reference)
+
+        # Get row and column index
+        row = int(index / self.ncolumns)
+        col = index % self.ncolumns
+
+        # Plot the frame
+        vmin, vmax = self._plot_frame(name, row, col)
+
+        # Return
+        return vmin, vmax, name
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -1425,90 +1609,83 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Initialize vmin and vmax
         vmin = vmax = None
 
+        # Initialize list
+        plotted = []
+
+        image = None
+        normalization = None
+
         # First plot the image of which we use the scale as reference
         if self.config.share_scale and self.config.scale_reference is not None:
 
-            # Get the name
-            name = self.config.scale_reference
+            # Plot
+            vmin, vmax, name = self._plot_reference_frame()
 
-            # Get the index of the frame
-            index = self.index_of_frame(self.config.scale_reference)
-
-            # Get row and column index
-            row = int(index / self.ncolumns)
-            col = index % self.ncolumns
-
-            # Plot the frame
-            vmin, vmax = self._plot_frame(name, row, col)
+            # Add to plotted
+            plotted.append(name)
 
         # Loop over the images
-        for index, name in enumerate(self.names):
+        for index in range(self.npanels):
 
             # Get row and column index
             row = int(index / self.ncolumns)
             col = index % self.ncolumns
 
-            # Plot the frame
-            vmin_image, vmax_image = self._plot_frame(name, row, col, vmin=vmin, vmax=vmax)
+            # Plot a frame
+            if index < self.nframes:
 
-            # Set vmin and vmax
-            if self.config.share_scale:
-                vmin = vmin_image
-                vmax = vmax_image
+                # Get name
+                name = self.names[index]
+                if name in plotted: continue
 
-            #ax.coords.grid(color='white')
+                # Plot the frame
+                vmin_image, vmax_image, image, normalization = self._plot_frame(name, row, col, vmin=vmin, vmax=vmax, return_image=True, return_normalization=True)
 
-        # all_axes = self.figure.get_axes()
-        # # show only the outside spines
-        # for ax in all_axes:
-        #     for sp in ax.spines.values():
-        #         sp.set_visible(False)
+                # Set vmin and vmax
+                if self.config.share_scale:
+                    vmin = vmin_image
+                    vmax = vmax_image
 
-            #if ax.is_first_row():
-            #    ax.spines['top'].set_visible(True)
-            #if ax.is_last_row():
-            #    ax.spines['bottom'].set_visible(True)
-            #if ax.is_first_col():
-            #    ax.spines['left'].set_visible(True)
-            #if ax.is_last_col():
-            #    ax.spines['right'].set_visible(True)
+            # Empty
+            else: self._plot_empty(row, col)
 
-        # Add a colourbar
+        # Set colorbar
+        if image is None: raise RuntimeError("No image is plotted")
+        self.figure.figure.colorbar(image, cax=self.colorbar)
+        #print(normalization)
+        #colorbar = self.colorbar.colorbar(image, norm=normalization) # doesn't set the scale
 
-        #axisf3 = self._figure.add_axes(gs[row, col+1:])
+        #self.colorbar.solids.set_rasterized(True)
+        #self.colorbar.outline.set_visible(False)
+        #self.colorbar.set_ticks([])
+        self.colorbar.get_xaxis().set_ticks([])
+        self.colorbar.get_yaxis().set_ticks([])
 
-        #subplotspec = gs[row, col+1:]
-        #points = subplotspec.get_position(self._figure).get_points()
-        #print("colorbar points:", points)
+        self.colorbar.set_axis_off()
 
-        #x_min = points[0,0]
-        #x_max = points[1,0]
-        #y_min = points[0,1]
-        #y_max = points[1,1]
+        #print(vars(self.colorbar))
 
-        #points_flattened = points.flatten()
-        #print("colorbar:", points_flattened)
+        # DOESN'T WORK
+        #self.colorbar.yaxis._visible = False
 
-        #x_center = 0.5 * (x_min + x_max)
-        #y_center = 0.5 * (y_min + y_max)
+        # DOESN'T WORK
+        #from matplotlib.spines import Spine
+        #for child in self.colorbar.get_children():
+        #    if isinstance(child, Spine):
+        #        child.set_color("white")
 
-        #width = 0.9* (x_max - x_min)
-        #height = 0.2 * (y_max - y_min)
+        # DOESN'T WORK
+        # Color spines
+        #self.colorbar.spines['bottom'].set_color("white")
+        #self.colorbar.spines['top'].set_color("white")
+        #self.colorbar.spines['left'].set_color("white")
+        #self.colorbar.spines['right'].set_color("white")
 
-        #x_min = x_center - 0.5 * width
-        #x_max = x_center + 0.5 * width
-        #y_min = y_center - 0.5 * height
-        #y_max = y_center + 0.5 * height
-
-        #ax_cm = plt.subplot(points)
-
-        #ax_cm = plt.axes(points_flattened)
-
-        #ax_cm = self.figure.add_axes([x_min, y_min, width, height])
-        #cm_cm = cm.get_cmap(self.colormap)
-        #norm_cm = mpl_colors.Normalize(vmin=0, vmax=1)
-        #cb = mpl_colorbar.ColorbarBase(ax_cm, cmap=cm_cm, norm=norm_cm, orientation='horizontal')
-        #cb.set_label('Flux (arbitrary units)')
+        # Color ticks
+        #self.colorbar.xaxis.label.set_color("white")
+        #self.colorbar.yaxis.label.set_color("white")
+        #self.colorbar.tick_params(axis='x', colors="white")
+        #self.colorbar.tick_params(axis='y', colors="white")
 
         # Finish the plot
         self.finish_plot()

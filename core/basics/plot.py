@@ -24,6 +24,7 @@ from matplotlib.ticker import FormatStrFormatter
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoLocator, NullLocator
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -37,12 +38,26 @@ class ScalarFormatterForceFormat(ScalarFormatter):
 
 # -----------------------------------------------------------------
 
+uniform_colormaps = ["viridis", "plasma", "inferno", "magma"]
+misc_colormaps = ["flag", "prism", "ocean", "gist_earth", "terrain", "gist_stern", "gnuplot", "gnuplot2", "CMRmap", "cubehelix", "brg", "hsv", "gist_rainbow", "rainbow", "jet", "nipy_spectral", "gist_ncar"]
+sequential_colormaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd',
+                        'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn', 'binary', 'gist_yarg',
+                        'gist_gray', 'gray', 'bone', 'pink', 'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia',
+                        'hot', 'afmhot', 'gist_heat', 'copper']
+diverging_colormaps = ['PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']
+qualitative_colormaps = ['Pastel1', 'Pastel2', 'Paired', 'Accent', 'Dark2', 'Set1', 'Set2', 'Set3', 'tab10', 'tab20', 'tab20b', 'tab20c']
+
+# -----------------------------------------------------------------
+
+all_colormaps = uniform_colormaps + sequential_colormaps + misc_colormaps + diverging_colormaps + qualitative_colormaps
+
+# -----------------------------------------------------------------
+
 line_styles = ['-', '--', '-.', ':']
 
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd'] * 6
 
 distinguishable_colormaps = ["spring", "winter", "copper", "cool", "PRGn", "coolwarm"]
-
 other_colormaps = ["YlGn", "YlGnBu", "YlOrRd", "Purples"]
 
 # http://matplotlib.org/examples/color/named_colors.html
@@ -2302,6 +2317,157 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_image_grid(self, nrows, ncols, wspace=0.0, hspace=0.0, return_colorbar=False, colorbar_relsize=0.05,
+                          edgecolor=None, projection=None):
+
+        """
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param wspace:
+        :param hspace:
+        :param return_colorbar:
+        :param colorbar_relsize:
+        :param edgecolor:
+        :param projection:
+        :return:
+        """
+
+        # Set colorbar size in percentage
+        cbar_size = str(colorbar_relsize*100) + "%"
+
+        cbar_mode = "single"
+        axes_pad = (wspace, hspace)
+
+        # No axes for the main figure
+        self.ax.set_axis_off()
+
+        #if edgecolor is not None:
+        #    self.ax.spines['bottom'].set_color("white")
+        #    self.ax.spines['top'].set_color("white")
+        #    self.ax.spines['left'].set_color("white")
+        #    self.ax.spines['right'].set_color("white")
+
+        #axes_class, axes_class_args = axes_class
+
+        # Set axes class and projection
+        #axes_class = ImageGrid._defaultLocatableAxesClass
+        #axes_kwargs = {}
+        #if projection is not None: axes_kwargs["projection"] = projection
+        #axes_class = (axes_class, axes_kwargs)
+
+        if projection is not None:
+
+            from mpl_toolkits.axes_grid1.axes_divider import locatable_axes_factory
+            projection_class, extra_kwargs = projection._as_mpl_axes()
+            loc_axes_class = locatable_axes_factory(projection_class)
+            axes_class = (loc_axes_class, extra_kwargs)
+
+            label_mode = None #### I ADAPTED THE IMAGEGRID CLASS SO TO AVOID A CRASH WITH WCS AXES
+
+        else:
+            axes_class = None
+            label_mode = "L"
+
+        # Create the grid
+        grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=True, cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size, axes_class=axes_class, label_mode=label_mode)
+
+        if projection is not None:
+
+            # SET LABEL MODE, FOR WCS PROJECTIONS!!! BUG???
+            def _tick_only(ax, bottom_on, left_on):
+
+                bottom_off = not bottom_on
+                left_off = not left_on
+                # [l.set_visible(bottom_off) for l in ax.get_xticklabels()]
+                # [l.set_visible(left_off) for l in ax.get_yticklabels()]
+                # ax.xaxis.label.set_visible(bottom_off)
+                # ax.yaxis.label.set_visible(left_off)
+
+                #xaxis = ax.xaxis
+                #yaxis = ax.yaxis
+
+                #print(type(xaxis), vars(xaxis))
+                #for label in vars(xaxis):
+                    #if "label" in label: print(label, getattr(xaxis, label))
+
+                # OUTPUT:
+                # _label
+                # isDefault_label True
+                # label Text(0.5,0,u'')
+                # labelpad 4.0
+                # _autolabelpos True
+                # label_position bottom
+
+                try:
+                    # Original, also works
+                    # ax.axis["bottom"].toggle(ticklabels=bottom_off, label=bottom_off)
+                    # ax.axis["left"].toggle(ticklabels=left_off, label=left_off)
+                    # Try
+                    ax.xaxis.toggle(ticklabels=bottom_off, label=bottom_off)
+                    ax.yaxis.toggle(ticklabels=left_off, label=left_off)
+                except:
+                    xaxis = ax.xaxis
+                    yaxis = ax.yaxis
+                    xaxis.label = None
+                    xaxis.label_position = None
+                    yaxis.label = None
+                    yaxis.label_position = None
+
+            # left-most axes
+            for ax in grid.axes_column[0][:-1]:
+                _tick_only(ax, bottom_on=True, left_on=False)
+
+            # lower-left axes
+            ax = grid.axes_column[0][-1]
+            _tick_only(ax, bottom_on=False, left_on=False)
+    
+            for col in grid.axes_column[1:]:
+                # axes with no labels
+                for ax in col[:-1]: _tick_only(ax, bottom_on=True, left_on=True)
+
+                # bottom
+                ax = col[-1]
+                _tick_only(ax, bottom_on=False, left_on=True)
+
+        #print(grid._divider)
+        #subplotspec = grid._divider._subplotspec
+        #for label in vars(subplotspec): print(label, vars(subplotspec)[label])
+        #gs = subplotspec._gridspec
+        #print(gs[0, 0])
+        #print(gs[1, 0])
+        #print(gs[0, 1])
+
+        # Set the color map axes
+        colorbar = grid.cbar_axes[0]
+        #grid[0].cax = colorbar # set colorbar axes explicitly
+
+        # Initialize structure to contain the plots
+        plots = [[None for i in range(ncols)] for j in range(nrows)]
+
+        # Loop over the images
+        index = 0
+        for row in range(nrows):
+            for col in range(ncols):
+
+                # Get axes, create subplot?
+                ax = grid[index]
+                plot = ax
+
+                # Create plot
+                plot = MPLPlot(plot=plot)
+
+                # Add the plot
+                plots[row][col] = plot
+
+                index += 1
+
+        # Return the plots
+        if return_colorbar: return plots, colorbar
+        else: return plots
+
+    # -----------------------------------------------------------------
+
     def create_grid(self, nrows, ncols, wspace=0.0, hspace=0.0):
 
         """
@@ -2347,8 +2513,11 @@ class MPLFigure(Figure):
         #self._figure.text(0.385, 0.97, "Offset from centre (degrees)", color='black', size='16', weight='bold')
         #self._figure.text(0.02, 0.615, "Offset from centre (degrees)", color='black', size='16', weight='bold', rotation='vertical')
 
+        width_ratios = [1] * ncols
+        height_ratios = [1] * nrows
+
         # Create grid spec
-        gs = gridspec.GridSpec(nrows, ncols, wspace=wspace, hspace=hspace)
+        gs = gridspec.GridSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios)
 
         # Initialize structure to contain the plots
         plots = [[None for i in range(ncols)] for j in range(nrows)]

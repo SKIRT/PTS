@@ -32,6 +32,24 @@ min_inf = float("-inf")
 
 # -----------------------------------------------------------------
 
+def equal_parts(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    if not is_integer(number): raise ValueError("Not an integer number")
+
+    if is_even(number): a = int(number/2)
+    else: a = int(number/2)
+
+    # Return
+    return a, number - a
+
+# -----------------------------------------------------------------
+
 def is_number(value_or_string):
 
     """

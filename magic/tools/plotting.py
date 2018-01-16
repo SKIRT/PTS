@@ -509,7 +509,7 @@ def plot_frame(frame, **kwargs):
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None,
-             axes=None, xsize=7, ysize=7, interpolation="nearest"):
+             axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False, return_normalization=False):
 
     """
     This function ...
@@ -536,6 +536,9 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param xsize:
     :param ysize:
     :param interpolation:
+    :param alpha:
+    :param return_image:
+    :param return_normalization:
     :return:
     """
 
@@ -544,6 +547,10 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Get the data
     if isinstance(box, np.ndarray): data = box
     else: data = box.data
+
+    # Get dimension
+    nxpix = data.shape[1]
+    nypix = data.shape[0]
 
     # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
     from ..region.region import SkyRegion, PixelRegion
@@ -635,13 +642,37 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     only_axes = False
     if axes is None:
         plt.figure(figsize=(xsize,ysize))
-        plt.xlim(0, box.shape[1] - 1)
-        plt.ylim(0, box.shape[0] - 1)
+        plt.xlim(0, nxpix - 1)
+        plt.ylim(0, nypix - 1)
         axes = plt.gca()
     else: only_axes = True
 
     # Show the data
-    axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap, aspect=1)
+    #aspect = 1
+    #aspect = None
+    #aspect = 'auto'
+    #aspect = "equal"
+    # if nxpix > nypix:
+    #     diff = nxpix - nypix
+    #     from ...core.tools import numbers
+    #     diffa, diffb = numbers.equal_parts(diff)
+    #     bottom = -diffa
+    #     top = nypix + diffb
+    #     left = 0
+    #     right = nxpix
+    # else:
+    #     diff = nypix - nxpix
+    #     from ...core.tools import numbers
+    #     diffa, diffb = numbers.equal_parts(diff)
+    #     left = -diffa
+    #     right = nxpix + diffb
+    #     bottom = 0
+    #     top = nypix
+    # extent = (left, right, bottom, top)
+    extent = None
+    aspect = "equal"
+    image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap,
+                alpha=alpha, aspect=aspect, extent=extent)
 
     # Add region
     if region is not None:
@@ -670,7 +701,12 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         plt.close()
 
     # Return vmin and vmax
-    return vmin, vmax
+    if return_image:
+        if return_normalization: return vmin, vmax, image, norm
+        else: return vmin, vmax, image
+    else:
+        if return_normalization: return vmin, vmax
+        else: return vmin, vmax, norm
 
 # -----------------------------------------------------------------
 

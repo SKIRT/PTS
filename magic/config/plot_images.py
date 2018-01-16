@@ -11,7 +11,13 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.config.plot import definition as plot_definition
-from pts.core.basics.plot import plotting_libraries, mpl
+from pts.core.basics.plot import plotting_libraries, mpl, all_colormaps
+
+# -----------------------------------------------------------------
+
+styles = ["dark", "light"]
+formats = ["pdf", "png"]
+default_colormap = "magma"
 
 # -----------------------------------------------------------------
 
@@ -57,8 +63,8 @@ definition.add_optional("output", "directory_path", "output path")
 definition.import_section("plot", "plotting options", plot_definition)
 
 # Change defaults: sizes per grid panel!
-definition.sections["plot"].optional["xsize"].default = 4
-definition.sections["plot"].optional["ysize"].default = 4
+definition.sections["plot"].optional["xsize"].default = 3
+definition.sections["plot"].optional["ysize"].default = 3
 
 # -----------------------------------------------------------------
 
@@ -68,12 +74,10 @@ definition.add_optional("library", "string", "plotting library", mpl, plotting_l
 # -----------------------------------------------------------------
 
 # Plotting options
-styles = ["dark", "light"]
-formats = ["pdf", "png"]
 definition.add_optional("style", "string", "plotting style", "dark", choices=styles)
 definition.add_flag("transparent", "transparency", True)
 definition.add_optional("format", "string", "plotting format", "pdf", choices=formats)
-definition.add_optional("colormap", "string", "color map", "viridis")
+definition.add_optional("colormap", "string", "color map", default_colormap, choices=all_colormaps)
 
 # -----------------------------------------------------------------
 
@@ -81,6 +85,9 @@ scales = ["log", "sqrt"]
 definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", "pts")
 #definition.add_optional("colours", "string", "colour or colour scale", "red")
+definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
+
+definition.add_flag("background", "plot a background", True)
 
 # -----------------------------------------------------------------
 
@@ -93,5 +100,10 @@ definition.add_optional("scale_reference", "string", "name of the image to deter
 
 definition.add_flag("write", "write out the processed frames, masks and regions", False)
 definition.add_flag("show", "show the plot (default is automatic)", None)
+
+# -----------------------------------------------------------------
+
+# Add coordinates?
+definition.add_flag("coordinates", "show the coordinates", True)
 
 # -----------------------------------------------------------------
