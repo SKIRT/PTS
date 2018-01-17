@@ -494,9 +494,12 @@ class DustGridTreeDistribution(Distribution):
         :return:
         """
 
+        #print("min level:", self.min_level_index)
+        #print("max level:", self.max_level_index)
+
         total = 0
         for index in range(self.min_level_index, self.max_level_index+1):
-            total += self.values[index]
+            total += self.frequencies[index]
         return total
 
 # -----------------------------------------------------------------
