@@ -1263,3 +1263,97 @@ def load_component_map(path):
     return Frame.from_file(map_path)
 
 # -----------------------------------------------------------------
+
+def load_stellar_deprojections(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    # Load the model suite
+    suite = ModelSuite.from_modeling_path(modeling_path)
+
+    # Return the deprojections
+    return get_stellar_deprojections(suite, model_name)
+
+# -----------------------------------------------------------------
+
+def get_stellar_deprojections(suite, model_name, deprojections=None, add_title=False):
+
+    """
+    This function ...
+    :param suite:
+    :param model_name:
+    :param deprojections:
+    :param add_title:
+    :return:
+    """
+
+    # Initialize dictinoary
+    return_deprojections = True
+    if deprojections is None: deprojections = dict()
+    else: return_deprojections = False
+
+    # Loop over the stellar components
+    for name in suite.get_stellar_component_names(model_name):
+
+        # Load the deprojection of the component, if applicable
+        title, deprojection = suite.load_stellar_component_deprojection(model_name, name)
+        if deprojection is not None:
+            if add_title: deprojections[(name, title)] = deprojection
+            else: deprojections[name] = deprojection
+
+    # Return the deprojections
+    if return_deprojections: return deprojections
+
+# -----------------------------------------------------------------
+
+def load_dust_deprojections(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    # Load the model suite
+    suite = ModelSuite.from_modeling_path(modeling_path)
+
+    # Return the deprojections
+    return get_dust_deprojections(suite, model_name)
+
+# -----------------------------------------------------------------
+
+def get_dust_deprojections(suite, model_name, deprojections=None, add_title=False):
+
+    """
+    This function ...
+    :param suite:
+    :param model_name:
+    :param deprojections:
+    :param add_title:
+    :return:
+    """
+
+    # Initialize dictionary
+    return_deprojections = True
+    if deprojections is not None: deprojections = dict()
+    else: return_deprojections = False
+
+    # Loop over the dust components
+    for name in suite.get_dust_component_names(model_name):
+
+        # Load the deprojection of the component, if applicable
+        title, deprojection = suite.load_dust_component_deprojection(model_name, name)
+        if deprojection is not None:
+            if add_title: deprojections[(name, title)] = deprojection
+            else: deprojections[name] = deprojection
+
+    # Return the deprojections
+    if return_deprojections: return deprojections
+
+# -----------------------------------------------------------------

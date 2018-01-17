@@ -38,7 +38,7 @@ from ..region.list import RegionList
 from ..region.region import Region
 from ..region.list import region_to_region_list
 from ..core.image import Image
-from ..core.frame import Frame
+from ..core.frame import Frame, AllZeroError
 from ...core.tools import filesystem as fs
 from ...core.tools.numbers import nan
 from ...core.basics.containers import ordered_by_value
@@ -96,9 +96,12 @@ class ImageGridPlotter(Configurable):
         # Output path
         self.out_path = None
 
-        # Crop to
+        # Rebinning
+        self.rebin_to = None
+
+        # Cropping
         self.crop_to = None
-        self.cropping_factor = 1.
+        self.cropping_factor = 1.2
 
     # -----------------------------------------------------------------
 
@@ -131,7 +134,10 @@ class ImageGridPlotter(Configurable):
             if self.out_path is not None: self.config.show = False
             else: self.config.show = True
 
-        # Get 'crop to'
+        # Rebinning
+        if "rebin_to" in kwargs: self.rebin_to = kwargs.pop("rebin_to")
+
+        # Cropping
         if "crop_to" in kwargs: self.crop_to = kwargs.pop("crop_to")
         if "cropping_factor" in kwargs: self.cropping_factor = kwargs.pop("cropping_factor")
 
@@ -225,7 +231,7 @@ class ImageGridPlotter(Configurable):
         log.debug("Finishing the plot ...")
 
         # Tight layout
-        #plt.tight_layout()
+        plt.tight_layout()
 
         # Add title if requested
         if self.title is not None: self.figure.set_title(self.title)
@@ -863,21 +869,23 @@ class StandardImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        # Downsampling required?
-        copied = False
-        if process and self.config.downsample and image.xsize > self.config.max_npixels or image.ysize > self.config.max_npixels:
-
-            # Determine the downsample factor
-            downsample_factor = max(image.xsize, image.ysize) / float(self.config.max_npixels)
-
-            # Downsample
-            if copy:
-                image = image.copy()
-                copied = True
-            image.downsample(downsample_factor, convert=False, dilate_nans=False, dilate_infs=False)
+        # NO: don't do the downsampling here, why would we.. it is done for each frame (and mask) separately in add_frame,
+        # by doing it here we are downsampling other frames and mask we don't actually need imported
+        # # Downsampling required?
+        # copied = False
+        # if process and self.config.downsample and image.xsize > self.config.max_npixels or image.ysize > self.config.max_npixels:
+        #
+        #     # Determine the downsample factor
+        #     downsample_factor = max(image.xsize, image.ysize) / float(self.config.max_npixels)
+        #
+        #     # Downsample
+        #     if copy:
+        #         image = image.copy()
+        #         copied = True
+        #     image.downsample(downsample_factor, convert=False, dilate_nans=False, dilate_infs=False)
 
         # Is copy still required?
-        copy = copy and not copied
+        #copy = copy and not copied
 
         # Remember the names of the frames that we have added
         frame_names = []
@@ -971,6 +979,18 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def preserve_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.normalize
+
+    # -----------------------------------------------------------------
+
     def _process_frame(self, name, frame, copy=True):
 
         """
@@ -982,9 +1002,23 @@ class StandardImageGridPlotter(ImageGridPlotter):
         """
 
         # Initialize flags
+        _rebinned = False
         _cropped = False
         _downsampled = False
         _normalized = False
+
+        # Rebin the frame
+        if self.rebin_to is not None:
+
+            # Debugging
+            log.debug("Rebinning the '" + name + "' frame ...")
+
+            # Rebin
+            if copy: frame = frame.rebinned(self.rebin_to, convert=self.preserve_units)
+            else: frame.rebin(self.rebin_to, convert=self.preserve_units)
+
+            # Set flag
+            _rebinned = True
 
         # Crop the frame
         if self.crop_to is not None:
@@ -992,9 +1026,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
             # Debugging
             log.debug("Cropping the '" + name + "' frame ...")
 
-            # Create cropped frame
-            if copy: frame = frame.cropped_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
-            else: frame.crop_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
+            # Crop
+            if _rebinned or not copy: frame.crop_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
+            else: frame = frame.cropped_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
 
             # Set flag
             _cropped = True
@@ -1002,17 +1036,15 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Downsampling required?
         if self.config.downsample and frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
 
-            # Debugging
-            log.debug("Downsampling the '" + name + "' frame ...")
-
             # Determine the downsample factor
             downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
 
-            #print(frame.name, downsample_factor)
+            # Debugging
+            log.debug("Downsampling the '" + name + "' frame with a factor of " + str(downsample_factor) + "...")
 
             # Downsample
-            if _cropped or not copy: frame.downsample(downsample_factor, convert=False, dilate_nans=False, dilate_infs=False)
-            else: frame = frame.downsampled(downsample_factor, convert=False, dilate_nans=False, dilate_infs=False)
+            if (_rebinned or _cropped) or not copy: frame.downsample(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
+            else: frame = frame.downsampled(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
 
             # Set flag
             _downsampled = True
@@ -1023,15 +1055,19 @@ class StandardImageGridPlotter(ImageGridPlotter):
             # Debugging
             log.debug("Normalizing the '" + name + "' frame ...")
 
-            # Create normalized frame
-            if (_cropped or _downsampled) or not copy: frame.normalize()
-            else: frame = frame.normalized()
+            try:
 
-            # Set flag
-            _normalized = True
+                # Create normalized frame
+                if (_rebinned or _cropped or _downsampled) or not copy: frame.normalize()
+                else: frame = frame.normalized()
+
+                # Set flag
+                _normalized = True
+
+            except AllZeroError: log.warning("The '" + name + "' frame could not be normalized")
 
         # If no processing is performed, make a copy if necessary
-        processed = _normalized or _cropped or _downsampled
+        processed = _rebinned or _normalized or _cropped or _downsampled
         if not processed and copy: frame = frame.copy()
 
         # Return the new frame
@@ -1638,13 +1674,20 @@ class StandardImageGridPlotter(ImageGridPlotter):
                 name = self.names[index]
                 if name in plotted: continue
 
-                # Plot the frame
-                vmin_image, vmax_image, image, normalization = self._plot_frame(name, row, col, vmin=vmin, vmax=vmax, return_image=True, return_normalization=True)
+                # Does this frame have any finite data?
+                has_data = not (self.frames[name].all_zeroes or self.frames[name].all_nans or self.frames[name].all_infs)
+                if has_data:
 
-                # Set vmin and vmax
-                if self.config.share_scale:
-                    vmin = vmin_image
-                    vmax = vmax_image
+                    # Plot the frame
+                    vmin_image, vmax_image, image, normalization = self._plot_frame(name, row, col, vmin=vmin, vmax=vmax, return_image=True, return_normalization=True)
+
+                    # Set vmin and vmax
+                    if self.config.share_scale:
+                        vmin = vmin_image
+                        vmax = vmax_image
+
+                # No data
+                else: self._plot_empty(row, col)
 
             # Empty
             else: self._plot_empty(row, col)

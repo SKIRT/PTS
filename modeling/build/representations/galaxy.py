@@ -388,9 +388,9 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
     center_y = y_center * physical_pixelscale
 
     # Create projections
-    # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
-    earth_projection = GalaxyProjection(galaxy_distance, galaxy_inclination, azimuth,
-                                        disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent, extent)
+    earth_projection = GalaxyProjection(distance=galaxy_distance, inclination=galaxy_inclination, azimuth=azimuth,
+                                        position_angle=disk_position_angle, pixels_x=pixels_x, pixels_y=pixels_y,
+                                        center_x=center_x, center_y=center_y, field_x=extent, field_y=extent)
     faceon_projection = FaceOnProjection.from_projection(earth_projection)
     edgeon_projection = EdgeOnProjection.from_projection(earth_projection)
 
@@ -415,11 +415,9 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :return:
     """
 
-    # Reference dprojection name not given
-    if reference_deprojection_name is None:
-
-        # Get the desired deprojection to base the instruments on
-        reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
+    # Reference deprojection name not given
+    # Get the desired deprojection to base the instruments on
+    if reference_deprojection_name is None: reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
 
     # Reference deprojection name is given
     else: reference_deprojection, deprojection_name = get_deprojection(deprojections, reference_deprojection_name), reference_deprojection_name

@@ -17,6 +17,7 @@ import copy
 from collections import OrderedDict
 import warnings
 from abc import ABCMeta
+import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..tools import parsing
@@ -346,8 +347,9 @@ class SimplePropertyComposite(object):
                 if name not in self._ptypes: raise AttributeError("A " + self.__class__.__name__ + " object has no attribute '" + name + "'")
 
                 # Try converting the string back to the type it actually needs to be
-                the_type = self._ptypes[name]
-                parsing_function = getattr(parsing, the_type)
+                #the_type = self._ptypes[name]
+                #parsing_function = getattr(parsing, the_type)
+                parsing_function = self.parser_for_property(name)
                 try: value = parsing_function(string)
                 except ValueError: raise ValueError("The value of '" + str(value) + "' for '" + name +  "' given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
 
@@ -565,15 +567,26 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def get_value(self, name):
+    def get_value(self, name, add_unit=True, unit=None):
 
         """
         This funtion ...
         :param name:
+        :param add_unit:
+        :param unit:
         :return:
         """
 
-        return getattr(self, name)
+        value = getattr(self, name)
+
+        # Return
+        if value is None: return None
+        elif self.has_unit(name):
+            if add_unit: return value
+            else:
+                if unit is None: return value.value
+                else: return value.to(unit).value
+        else: return value
 
     # -----------------------------------------------------------------
 
@@ -802,6 +815,140 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def parser_for_property(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        ptype = self.type_for_property(name)
+        return getattr(parsing, ptype)
+
+    # -----------------------------------------------------------------
+
+    def get_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.type_for_property(name)
+
+    # -----------------------------------------------------------------
+
+    def get_parent_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        from .configuration import parent_type
+        return parent_type(self.get_type(name))
+
+    # -----------------------------------------------------------------
+
+    def is_boolean(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "boolean"
+
+    # -----------------------------------------------------------------
+
+    def is_integer(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "integer"
+
+    # -----------------------------------------------------------------
+
+    def is_real(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "real"
+
+    # -----------------------------------------------------------------
+
+    def is_string(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "string"
+
+    # -----------------------------------------------------------------
+
+    def is_quantity(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "quantity"
+
+    # -----------------------------------------------------------------
+
+    def is_unit(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "unit"
+
+    # -----------------------------------------------------------------
+
+    def is_filter(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "filter"
+
+    # -----------------------------------------------------------------
+
+    def is_list(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_parent_type(name) == "list"
+
+    # -----------------------------------------------------------------
+
     @property
     def property_units(self):
 
@@ -825,6 +972,19 @@ class SimplePropertyComposite(object):
 
         # Return the list of units
         return units
+
+    # -----------------------------------------------------------------
+
+    def has_unit(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        value = getattr(self, name)
+        return hasattr(value, "unit")
 
     # -----------------------------------------------------------------
 
@@ -917,7 +1077,120 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def to_lines(self, line_prefix="", ignore=None, ignore_none=False, bullet="-"):
+    def differences(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        differences = OrderedDict()
+        none_a = []
+        none_b = []
+        different = []
+
+        # Loop over the parameters
+        for name in self.property_names:
+
+            # Get the values
+            value_a = self.get_value(name)
+            value_b = other.get_value(name)
+
+            # Both None
+            if value_a is None and value_b is None: continue
+
+            # Value b is None
+            if value_a is not None and value_b is None:
+                none_b.append(name)
+                continue
+
+            # Value a is None
+            if value_b is not None and value_a is None:
+                none_a.append(name)
+                continue
+
+            # Get difference
+            if self.is_integer(name) or self.is_real(name) or self.is_quantity(name): differences[name] = value_a - value_b
+            elif value_a != value_b: different.append(name)
+            else: continue
+
+        # Return
+        return differences, none_a, none_b, different
+
+    # -----------------------------------------------------------------
+
+    def isclose(self, other, ignore_none=False, ignore_other=False, rtol=1e-05, atol=1e-08):
+
+        """
+        This function ...
+        :param other:
+        :param ignore_none:
+        :param ignore_other: check things other than numbers
+        :param rtol:
+        :param atol:
+        :return:
+        """
+
+        # Get differences
+        differences, none_a, none_b, different = self.differences(other)
+
+        # Check none
+        if not ignore_none and len(none_a) > 0: return False
+        if not ignore_none and len(none_b) > 0: return False
+
+        # Check other
+        if not ignore_other and len(different) > 0: return False
+
+        # Check numbers
+        for name in differences:
+
+            # Get unit for this property
+            if self.has_unit(name): unit = self.unit_for_property(name)
+            else: unit = None
+
+            # Get the values
+            value_a = self.get_value(name, unit=unit, add_unit=False)
+            value_b = other.get_value(name, unit=unit, add_unit=False)
+
+            #print(value_a, value_b, np.isclose(value_a, value_b, rtol=rtol, atol=atol))
+
+            # Check whether close
+            if not np.isclose(value_a, value_b, rtol=rtol, atol=atol): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Get differences
+        differences, none_a, none_b, different = self.differences(other)
+
+        if len(none_a) > 0: return False
+        if len(none_b) > 0: return False
+        if len(different) > 0: return False
+
+        # Check numbers
+        for name in differences:
+
+            value_a = self.get_value(name)
+            value_b = other.get_value(name)
+            if value_a != value_b: return False
+
+        # ALl checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def to_lines(self, line_prefix="", ignore=None, ignore_none=False, bullet="-", bold=True):
 
         """
         This function ...
@@ -925,6 +1198,7 @@ class SimplePropertyComposite(object):
         :param ignore:
         :param ignore_none:
         :param bullet:
+        :param bold:
         :return:
         """
 
@@ -945,7 +1219,9 @@ class SimplePropertyComposite(object):
             # Multiline sequences
             if types.is_sequence(value):
 
-                line =  " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+                if bold: line =  " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+                else: line =  " " + bullet + " " + name + ": "
+
                 lines.append(line_prefix + line)
 
                 if len(value) > 0:
@@ -956,8 +1232,12 @@ class SimplePropertyComposite(object):
 
             # Multiline dictionaries
             elif types.is_dictionary(value):
-                line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+
+                if bold: line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": "
+                else: line = " " + bullet + " " + name + ": "
+
                 lines.append(line_prefix + line)
+
                 if len(value) > 0:
                     for key in value:
                         line = line_prefix + "    * " + key + ": " + tostr(value[key])
@@ -968,7 +1248,10 @@ class SimplePropertyComposite(object):
 
                 # Generate line
                 dtype, value = stringify(value)
-                line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": " + value
+
+                if bold: line = " " + bullet + " " + fmt.bold + name + fmt.reset + ": " + value
+                else: line = " " + bullet + " " + name + ": " + value
+
                 lines.append(line_prefix + line)
 
         # Sections
@@ -977,7 +1260,9 @@ class SimplePropertyComposite(object):
             # Check ignore
             if ignore is not None and name in ignore: continue
 
-            line = " - " + fmt.bold + name + fmt.reset + ":"
+            if bold: line = " - " + fmt.bold + name + fmt.reset + ":"
+            else: line = " - " + name + ":"
+
             lines.append(line_prefix + line)
 
             if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = [line for line in getattr(self, name).to_lines(line_prefix=line_prefix+"    ")]
@@ -987,7 +1272,9 @@ class SimplePropertyComposite(object):
                 section = getattr(self, name)
                 for key in section:
 
-                    line = line_prefix + "    " + " " + bullet + " " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+                    if bold: line = line_prefix + "    " + " " + bullet + " " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+                    else: line = line_prefix + "    " + " " + bullet + " " + key + ": " + tostr(section[key])
+
                     section_lines.append(line)
 
             else: raise ValueError("Unknown type for section: " + str(type(getattr(self, name))))
@@ -999,7 +1286,7 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix="", ignore=None, ignore_none=False, bullet="-"):
+    def to_string(self, line_prefix="", ignore=None, ignore_none=False, bullet="-", bold=True):
 
         """
         This function ...
@@ -1007,11 +1294,12 @@ class SimplePropertyComposite(object):
         :param ignore:
         :param ignore_none:
         :param bullet:
+        :param bold:
         :return:
         """
 
         # Return
-        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none, bullet=bullet))
+        return "\n".join(self.to_lines(line_prefix=line_prefix, ignore=ignore, ignore_none=ignore_none, bullet=bullet, bold=bold))
 
     # -----------------------------------------------------------------
 

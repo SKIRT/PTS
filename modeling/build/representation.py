@@ -395,4 +395,146 @@ class Representation(object):
 
         return properties
 
+    # -----------------------------------------------------------------
+
+    # BELOW THIS: TOO MUCH OF A HACK, BUT AT THE MOMENT THE REFERENCE DEPROJECTION NAME IS SAVED NOWHERE, AND WE NEED THIS INFO
+
+    @property
+    def representations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def build_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.representations_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_path(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return fs.directory_of(self.build_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .suite import ModelSuite
+        return ModelSuite.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .suite import get_dust_deprojections, get_stellar_deprojections
+
+        # Get deprojections
+        deprojections = dict()
+
+        # Load the stellar deprojections
+        get_stellar_deprojections(self.model_suite, self.model_name, deprojections=deprojections)
+
+        # Load the dust deprojections
+        get_dust_deprojections(self.model_suite, self.model_name, deprojections=deprojections)
+
+        # Return the deprojections
+        return deprojections
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_projection.distance
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_deprojection_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        azimuth = 0.0
+
+        matching_names = []
+
+        # Loop over the deprojections
+        for component_name in self.deprojections:
+
+            # Get the deprojection
+            deprojection = self.deprojections[component_name]
+
+            # Create the 'earth' projection system
+            earth_projection = GalaxyProjection.from_deprojection(deprojection, self.galaxy_distance, azimuth)
+
+            # Check if equivalent
+            if self.earth_projection.isclose(earth_projection, rtol=1e-4): matching_names.append(component_name)
+
+        # Check the result
+        if len(matching_names) > 1: raise ValueError("Multiple possible deprojections")
+        elif len(matching_names) == 0: raise ValueError("No matching deprojection")
+        else: return matching_names[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.deprojections[self.reference_deprojection_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.reference_deprojection.filepath
+
 # -----------------------------------------------------------------

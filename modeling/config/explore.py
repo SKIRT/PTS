@@ -61,6 +61,7 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 # Ranges
 definition.add_flag("prompt_ranges", "prompt for the parameter ranges", True)
 definition.add_flag("auto_ranges", "determine the parameter ranges automatically based on the previous generation")
+definition.add_optional("range_probability", "percentage", "percentage of the total probability to use to select the new ranges automatically", .99)
 
 # -----------------------------------------------------------------
 
@@ -144,5 +145,11 @@ definition.add_flag("deploy", "deploy SKIRT where necessary", False)
 definition.add_flag("check_versions", "check versions of SKIRT where necessary", True)
 definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
+
+# -----------------------------------------------------------------
+
+definition.add_flag("plot", "make plots", False)
+definition.add_optional("reference_images_colormap", "string", "colormap for plotting the reference images", "magma")
+definition.add_flag("write_reference_images", "write the reference images and the plot (only when plotting is enabled)", True)
 
 # -----------------------------------------------------------------

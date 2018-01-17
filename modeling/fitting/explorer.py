@@ -37,6 +37,8 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.utils import lazyproperty
 from ...core.prep.deploy import Deployer
 from ...core.basics.range import QuantityRange
+from ...core.tools import formatting as fmt
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -171,6 +173,9 @@ class ParameterExplorer(FittingComponent):
 
         # Show stuff
         self.show()
+
+        # Plot
+        self.plot()
 
         # 11. Launch the simulations for different parameter values
         if not self.testing: self.launch_or_finish()
@@ -576,7 +581,19 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def reference_component_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.reference_deprojection_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def reference_map_path(self):
 
         """
@@ -584,7 +601,7 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        raise NotImplementedError("Not yet implemented")
+        return self.representation.reference_map_path
 
     # -----------------------------------------------------------------
 
@@ -1309,7 +1326,7 @@ class ParameterExplorer(FittingComponent):
             unit = self.fitting_run.parameter_units[label]
 
             # Get leading values
-            values, min_value, max_value, total_fraction = distribution.get_leading_values_and_edges(.99, logscale=True, return_fraction=True)
+            values, min_value, max_value, total_fraction = distribution.get_leading_values_and_edges(self.config.range_probability, logscale=True, return_fraction=True)
 
             # Add units if necessary
             if not hasattr(min_value, "unit"): min_value = min_value * unit
@@ -1848,6 +1865,33 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.use_images: return self.representation.simple_instrument
+        else: return self.representation.sed_instrument
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        instrs = dict()
+        instrs[self.earth_instrument_name] = self.earth_instrument
+        return instrs
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -1873,14 +1917,8 @@ class ParameterExplorer(FittingComponent):
         # Set model representation
         self.set_representation()
 
-        # Use images?
-        if self.use_images:
-
-            # Remove the existing instruments
-            self.ski.remove_all_instruments()
-
-            # Add the instrument
-            self.ski.add_instrument(self.earth_instrument_name, self.representation.simple_instrument)
+        # Set instruments
+        self.set_instruments()
 
     # -----------------------------------------------------------------
 
@@ -1970,6 +2008,24 @@ class ParameterExplorer(FittingComponent):
 
         # Set the dust grid
         self.ski.set_dust_grid(dust_grid)
+
+    # -----------------------------------------------------------------
+
+    def set_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the instruments ...")
+
+        # Remove the existing instruments
+        self.ski.remove_all_instruments()
+
+        # Add the instrument
+        self.ski.add_instrument(self.earth_instrument_name, self.earth_instrument)
 
     # -----------------------------------------------------------------
 
@@ -2394,6 +2450,18 @@ class ParameterExplorer(FittingComponent):
         # Show the number of points
         self.show_npoints()
 
+        # Show the simulation options
+        self.show_simulation_options()
+
+        # Show instruments
+        self.show_instruments()
+
+        # Show execution options
+        self.show_execution_options()
+
+        # Show analysis options
+        self.show_analysis_options()
+
     # -----------------------------------------------------------------
 
     def show_ranges(self):
@@ -2406,6 +2474,21 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Showing the parameter ranges ...")
 
+        print("")
+        print(fmt.green + fmt.underlined + "Parameter ranges:" + fmt.reset)
+        print("")
+
+        # Loop over the parameters
+        for label in self.ranges:
+
+            # Get the range
+            parameter_range = self.ranges[label]
+
+            # Show
+            print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(parameter_range))
+
+        print("")
+
     # -----------------------------------------------------------------
 
     def show_npoints(self):
@@ -2417,5 +2500,235 @@ class ParameterExplorer(FittingComponent):
 
         # Inform the user
         log.info("Showing the number of points ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Number of grid points:" + fmt.reset)
+        print("")
+
+        # Loop over the parameters
+        for label in self.npoints:
+
+            # Get the npoints
+            npoints = self.npoints[label]
+
+            # Show
+            print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(npoints))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing simulation options ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Simulation options:" + fmt.reset)
+        print("")
+
+        print(" - number of wavelengths: " + tostr(self.nwavelengths) + " (" + self.wavelength_grid_name + ")")
+        print(" - number of dust cells: " + tostr(self.ndust_cells, scientific_int=False) + " (" + self.representation_name + ")")
+        print(" - number of photon packages per wavelength: " + tostr(self.npackages, scientific_int=False))
+        print(" - selfabsorption: " + tostr(self.selfabsorption))
+        print(" - transient heating: " + tostr(self.transient_heating))
+        print(" - dust grid type: " + tostr(self.representation.dust_grid_type))
+        if self.representation.has_dust_grid_tree_distribution:
+            print(" - dust grid minimum level: " + tostr(self.representation.dust_grid_min_level))
+            print(" - dust_grid_maximum_level: " + tostr(self.representation.dust_grid_max_level))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the instruments ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Instruments:" + fmt.reset)
+        print("")
+
+        # Loop over the instruments
+        for name in self.instruments:
+
+            instrument = self.instruments[name]
+            instr_class = str(type(instrument).__name__)
+
+            print(" - " + fmt.bold + name + fmt.reset + " (" + instr_class + "):")
+            print("")
+            print(instrument.to_string(line_prefix="  ", bullet="*", bold=False))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_execution_options(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing execution options ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Execution:" + fmt.reset)
+        print("")
+
+        print(" - remote hosts: " + tostr(self.remote_host_ids))
+        if self.config.cores_per_process is not None: print(" - number of cores per process: " + tostr(self.config.cores_per_process))
+        else: print(" - number of cores per process determined automatically")
+
+        if self.uses_remotes:
+            if self.config.nprocesses_remote is not None and self.has_single_remote: nprocesses = self.config.nprocesses_remote
+            else: nprocesses = None
+            if self.config.data_parallel_remote is not None and self.has_single_remote: data_parallel = self.config.data_parallel_remote
+            else: data_parallel = None
+        else:
+            nprocesses = self.config.nprocesses_local
+            data_parallel = self.config.data_parallel_local
+
+        if nprocesses is not None: print(" - number of processes: " + tostr(nprocesses))
+        else: print(" - number of processes determined automatically")
+        if data_parallel is not None: print(" - data parallelization: " + tostr(data_parallel))
+        else: print(" - data parallelization enabled or disabled automatically")
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing analysis options ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Analysis options:" + fmt.reset)
+        print("")
+
+        print(" - spectral convolution: " + tostr(self.spectral_convolution))
+        print(" - use images: " + tostr(self.use_images))
+
+        print(" - extract progress: " + tostr(self.config.extract_progress))
+        print(" - extract timeline: " + tostr(self.extract_timeline))
+        print(" - extract memory: " + tostr(self.extract_memory))
+        print(" - plotting format: " + tostr(self.config.plotting_format))
+
+        # From images
+        if self.use_images:
+
+            print(" - instrument reference image: " + tostr(self.reference_component_name))
+            print(" - reference image xsize: " + tostr(self.reference_wcs.xsize))
+            print(" - reference image ysize: " + tostr(self.reference_wcs.ysize))
+            print(" - reference image pixelscale: " + tostr(self.reference_wcs.average_pixelscale.to("arcsec")))
+
+            # For plotting:
+            #print(" - fluxes_from_images_masks: " + tostr(self.environment.photometry_image_paths_for_filter_names))
+
+        # Observation filters
+        print(" - observation_filters: " + tostr(self.observed_filter_names))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot reference images
+        self.plot_reference_images()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.fitting_run.path, "refimages__" + self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.fitting_filters
+
+    # -----------------------------------------------------------------
+
+    def plot_reference_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the reference images ...")
+
+        # Create plotter
+        plotter = StandardImageGridPlotter()
+
+        # Set output directory
+        plotter.config.output = self.reference_images_path
+
+        # Extra
+        plotter.config.normalize = True
+        plotter.config.colormap = self.config.reference_images_colormap
+
+        # Write data
+        plotter.config.write = self.config.write_reference_images
+
+        # Rebin and crop
+        plotter.rebin_to = self.reference_wcs
+        plotter.crop_to = self.environment.truncation_box
+
+        # Loop over the filters
+        for fltr in self.environment.photometry_image_paths_for_filters:
+
+            # Check whether fitting filter
+            #if fltr not in self.fitting_filters: continue
+
+            # Get path
+            path = self.environment.photometry_image_paths_for_filters[fltr]
+
+            # Add to plot
+            plotter.add_image_from_file(path, masks=False, regions=False)
+
+        # Run the plotter
+        plotter.run()
 
 # -----------------------------------------------------------------

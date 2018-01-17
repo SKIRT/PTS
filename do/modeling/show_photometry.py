@@ -104,9 +104,6 @@ for fltr in filters:
     # Get path
     path = environment.photometry_image_paths_for_filters[fltr]
 
-    # Load the image
-    image = Image.from_file(path)
-
     # Add to plot
     plotter.add_image_from_file(path, masks=False, regions=False)
 
