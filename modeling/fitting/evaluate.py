@@ -22,6 +22,7 @@ from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.filelock import FileLock
 from ...core.tools.stringify import tostr
 from ...evolve.optimize.parameters import get_parameters_from_genome
+from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -181,6 +182,47 @@ def generate_simulation_name():
 
     # Return the name
     return simulation_name
+
+# -----------------------------------------------------------------
+
+def make_test_definition(simulation_name, ski, parameter_values, object_name, simulation_input, scientific=False,
+                         fancy=False, ndigits=None):
+
+    """
+    This function ...
+    :param simulation_name:
+    :param ski:
+    :param parameter_values:
+    :param object_name:
+    :param simulation_input:
+    :param scientific:
+    :param fancy:
+    :param ndigits:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Adjusting ski file for the following model parameters:")
+    for label in parameter_values: log.debug(" - " + label + ": " + tostr(parameter_values[label], scientific=scientific, fancy=fancy, ndigits=ndigits[label]))
+
+    # Set the parameter values in the ski file template
+    ski.set_labeled_values(parameter_values)
+
+    # Create a directory for this simulation
+    simulation_path = introspection.create_temp_dir(simulation_name)
+
+    # Create an output directory for this simulation
+    simulation_output_path = fs.create_directory_in(simulation_path, "out")
+
+    # Put the ski file with adjusted parameters into the simulation directory
+    ski_path = fs.join(simulation_path, object_name + ".ski")
+    ski.saveto(ski_path)
+
+    # Create the SKIRT simulation definition
+    definition = SingleSimulationDefinition(ski_path, simulation_output_path, simulation_input, name=simulation_name)
+
+    # Return the definition
+    return definition
 
 # -----------------------------------------------------------------
 

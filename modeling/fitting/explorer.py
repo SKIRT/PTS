@@ -28,7 +28,7 @@ from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.remote.host import load_host
 from ...core.basics.configuration import ConfigurationDefinition, create_configuration_interactive
-from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
+from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual, make_test_definition
 from ...core.simulation.input import SimulationInput
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
@@ -166,19 +166,19 @@ class ParameterExplorer(FittingComponent):
         self.adjust_ski()
 
         # 9. Fill the tables for the current generation
-        if not self.testing: self.fill_tables()
+        self.fill_tables()
 
         # 10. Writing
         if not self.testing: self.write()
 
-        # Show stuff
+        # 11. Show stuff
         self.show()
 
-        # Plot
-        self.plot()
+        # 12. Plot
+        if self.config.plot: self.plot()
 
-        # 11. Launch the simulations for different parameter values
-        if not self.testing: self.launch_or_finish()
+        # 13. Launch the simulations for different parameter values
+        self.launch_or_finish()
 
     # -----------------------------------------------------------------
 
@@ -284,6 +284,9 @@ class ParameterExplorer(FittingComponent):
 
         # Deploy SKIRT
         if self.has_host_ids and self.config.deploy: self.deploy()
+
+        # Initialize tables
+        self.initialize_generation_tables()
 
     # -----------------------------------------------------------------
 
@@ -718,6 +721,10 @@ class ParameterExplorer(FittingComponent):
 
         # Set runtimes plot path
         self.launcher.config.runtimes_plot_path = self.visualisation_path
+
+        # ALL SOCKETS?
+        self.launcher.config.all_sockets = self.config.all_sockets
+        self.launcher.config.nsockets = self.config.nsockets
 
     # -----------------------------------------------------------------
 
@@ -1594,9 +1601,13 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        # Determine the number of photon packages
-        if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
-        else: npackages = self.fitting_run.current_npackages
+        # Defined?
+        if self.config.npackages is not None: npackages = self.config.npackages
+        else:
+
+            # Determine the number of photon packages from previous number
+            if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
+            else: npackages = self.fitting_run.current_npackages
 
         # Check
         if npackages < self.ndust_cells:
@@ -1839,9 +1850,6 @@ class ParameterExplorer(FittingComponent):
         # Set the path to the generation directory
         self.generation_info.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
 
-        # Initialize tables
-        self.initialize_generation_tables()
-
         # Create the generation object
         self.generation = Generation(self.generation_info)
 
@@ -1853,6 +1861,9 @@ class ParameterExplorer(FittingComponent):
         This function ...
         :return: 
         """
+
+        # Debugging
+        log.debug("Initializing generation tables ...")
 
         # Initialize the individuals table
         self.individuals_table = IndividualsTable()
@@ -2057,9 +2068,11 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Launching the simulations ...")
 
-        # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
-        # Just use the directory created for the generation
-        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info.path)
+        # Only if not testing, because otherwise generation path does not exist
+        if not self.testing:
+            # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
+            # Just use the directory created for the generation
+            for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info.path)
 
         # Enable screen output logging for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
@@ -2071,12 +2084,17 @@ class ParameterExplorer(FittingComponent):
             parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
 
             # Prepare simulation directories, ski file, and return the simulation definition
-            definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name,
-                                            self.simulation_input, self.generation_info.path, scientific=True, fancy=True,
-                                            ndigits=self.fitting_run.ndigits_dict)
+            if not self.testing:
+                definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name,
+                                                self.simulation_input, self.generation_info.path, scientific=True, fancy=True,
+                                                ndigits=self.fitting_run.ndigits_dict)
+            else: definition = make_test_definition(simulation_name, self.ski, parameter_values, self.object_name, self.simulation_input, scientific=True, fancy=True, ndigits=self.fitting_run.ndigits_dict)
 
             # Put the parameters in the queue and get the simulation object
             self.launcher.add_to_queue(definition, simulation_name)
+
+        # Set the TEST flag if testing
+        self.launcher.config.test = self.testing
 
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
         try: self.launcher.run(ncells=self.ndust_cells)
@@ -2097,7 +2115,7 @@ class ParameterExplorer(FittingComponent):
             fs.remove_directory(self.generation_path)
 
         # Check the launched simulations
-        self.check_simulations()
+        if not self.testing: self.check_simulations()
 
     # -----------------------------------------------------------------
 

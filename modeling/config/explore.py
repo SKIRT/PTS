@@ -81,6 +81,7 @@ definition.add_optional("npackages_factor", "positive_real", "the factor with wh
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
 definition.add_flag("adjust_npackages", "adjust the number of packages to the number of dust cells", True)
 definition.add_optional("ncells_npackages_factor", "percentage", "relative number of photon packages w.r.t. the number of dust cells (used when adjust_npackages is enabled)", 0.75)
+definition.add_optional("npackages", "positive_real", "define the number of photon packages explicitly")
 
 # Use a different wavelength grid or use a different representation
 definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)
@@ -102,6 +103,8 @@ definition.add_optional("nprocesses_local", "positive_integer", "number of paral
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
 definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
+definition.add_flag("all_sockets", "use all sockets, not just the determined number of 'free' sockets (for remote execution)", False)
+definition.add_optional("nsockets", "positive_integer", "use this number of sockets (for remote execution)")
 
 # -----------------------------------------------------------------
 

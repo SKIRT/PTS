@@ -65,3 +65,14 @@ definition.add_flag("check_parallelization", "check the specified parallelizatio
 definition.add_flag("write", "enable writing", False)
 
 # -----------------------------------------------------------------
+
+# Test mode
+definition.add_flag("test", "test mode", False)
+
+# -----------------------------------------------------------------
+
+# VERY ADVANCED
+definition.add_flag("all_sockets", "use all sockets, not just the determined number of 'free' sockets", False)
+definition.add_optional("nsockets", "positive_integer", "use this number of sockets")
+
+# -----------------------------------------------------------------

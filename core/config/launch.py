@@ -38,7 +38,10 @@ definition.import_section_from_composite_class("logging", "logging options", Log
 # Analysis options
 definition.import_section_from_composite_class("analysis", "simulation analysis options", AnalysisOptions)
 
-# NEW: show the output of finished simulations
-definition.add_flag("show", "show the output of finished simulations", False)
+# Show stuff
+definition.add_flag("show", "show", True)
+
+# Show the output of finished simulations
+definition.add_flag("show_finished", "show the output of finished simulations", False)
 
 # -----------------------------------------------------------------

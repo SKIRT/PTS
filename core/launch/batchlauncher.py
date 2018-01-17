@@ -1274,6 +1274,19 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_parallelization_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        if not self.has_parallelization_for_host(host_id): raise ValueError("Parallelization is not defined for remote host '" + host_id + "'")
+        return self.parallelization_hosts[host_id]
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_simulation(self, name, parallelization):
 
         """
@@ -1285,6 +1298,19 @@ class BatchLauncher(Configurable):
 
         # Set the parallelization for this host and this simulation
         self.parallelization_simulations[name] = parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization_for_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if not self.has_parallelization_for_simulation(name): raise ValueError("Parallelization is not defined for simulation '" + name + "'")
+        return self.parallelization_simulations[name]
 
     # -----------------------------------------------------------------
 
@@ -1365,7 +1391,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def has_paralleliation_for_host(self, host_id):
+    def has_parallelization_for_host(self, host_id):
 
         """
         This funtion ...
@@ -1373,7 +1399,47 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return host_id in self.parallelization_hosts[host_id] and self.parallelization_hosts[host_id] is not None
+        return host_id in self.parallelization_hosts and self.parallelization_hosts[host_id] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_parallelization_for_any_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for host_id in self.host_ids:
+            if self.has_parallelization_for_host(host_id): return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    def has_parallelization_for_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.parallelization_simulations and self.parallelization_simulations[name] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_parallelization_for_any_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation_name in self.all_simulation_names:
+            if self.has_parallelization_for_simulation(simulation_name): return True
+        return False
 
     # -----------------------------------------------------------------
 
@@ -1524,6 +1590,18 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def testing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.test
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -1544,14 +1622,17 @@ class BatchLauncher(Configurable):
         # 4. Estimate the runtimes if necessary
         if self.uses_schedulers and self.has_timing_table: self.estimate_runtimes()
 
-        # 5. Launch the simulations
-        self.launch()
+        # 5. Show
+        if self.config.show: self.show()
 
-        # 6. Retrieve the simulations that are finished
-        self.try_retrieving()
+        # 6. Launch the simulations
+        if not self.testing: self.launch()
 
-        # 7. Show the simulations that are finished
-        if self.has_simulations and self.config.show: self.show()
+        # 7. Retrieve the simulations that are finished
+        if not self.testing: self.try_retrieving()
+
+        # 8. Show the simulations that are finished
+        if self.has_simulations and self.config.show_finished: self.show_finished()
 
         # 8. Analyse the output of the retrieved simulations
         if self.has_simulations: self.try_analysing()
@@ -2174,6 +2255,32 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def all_remote_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for host_id in self.host_ids: names.extend(self.get_simulation_names_for_host(host_id))
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.local_simulation_names + self.all_remote_simulation_names
+
+    # -----------------------------------------------------------------
+
     def get_first_simulation_name_for_host(self, host_id):
 
         """
@@ -2517,7 +2624,10 @@ class BatchLauncher(Configurable):
         if remote.scheduler: return remote.host.cluster.sockets_per_node
 
         # Remote does not use a scheduling system
-        else: return int(math.floor(remote.free_sockets))
+        else:
+            if self.config.nsockets is not None: return self.config.nsockets
+            elif self.config.all_sockets: return int(remote.sockets_per_node) # should be int already
+            else: return int(math.floor(remote.free_sockets))
 
     # -----------------------------------------------------------------
 
@@ -3707,6 +3817,249 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing ...")
+
+        # Showing basic info
+        self.show_info()
+
+        # Show remote status
+        if self.uses_remotes: self.show_status()
+
+        # Show parallelizations
+        self.show_parallelization()
+
+    # -----------------------------------------------------------------
+
+    def show_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing basic info ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Basic info:" + fmt.reset)
+        print("")
+
+        # Show local queue
+        if self.has_queued_local: print(" - number of simulations in local queue: " + tostr(self.in_local_queue))
+
+        # Show remote queues
+        if self.has_queued_remote:
+            print(" - number of simulations in remote queues: " + tostr(self.in_remote_queues))
+            for host_id in self.host_ids: print("    * " + fmt.bold + host_id + fmt.reset + ": " + tostr(self.in_remote_queue(host_id)))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the status of the execution platforms ...")
+
+        # Remotes
+        if self.uses_remotes: self.show_status_remotes()
+
+        # Local
+        else: self.show_status_local()
+
+    # -----------------------------------------------------------------
+
+    def show_status_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the status of the remote hosts ...")
+
+        # Loop over the remote hosts
+        for host_id in self.host_ids:
+
+            # Get host properties
+            prop = self.get_properties_for_host(host_id)
+
+            print("")
+            print(fmt.yellow + fmt.bold + host_id.upper() + fmt.reset)
+            print("")
+
+            # Show the properties
+            for name in prop: print(" - " + name + ": " + tostr(prop[name]))
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def show_status_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the status of the local host ...")
+
+        # Get the current memory and cpu load of the system
+        memory = monitoring.free_memory()
+        free_cpus = monitoring.free_cpus()
+
+        print("")
+        print(fmt.yellow + fmt.bold + "LOCAL" + fmt.reset)
+        print("")
+
+        print(" - number of free cores: " + tostr(free_cpus))
+        print(" - free virtual memory: " + tostr(memory))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_local_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parallelization_local is not None
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the parallelization schemes ...")
+
+        # Local
+        if self.has_local_parallelization: self.show_local_parallelization()
+
+        # Remotes
+        if self.has_parallelization_for_any_host: self.show_parallelization_hosts()
+
+        # Simulations
+        if self.has_parallelization_for_any_simulation: self.show_parallelization_simulations()
+
+    # -----------------------------------------------------------------
+
+    def show_local_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the parallelization scheme for local execution ...")
+
+        print("")
+        print(self.parallelization_local)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the parallelization schemes for the remote hosts ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Host parallelization schemes:" + fmt.reset)
+        print("")
+
+        # Loop over the hosts
+        for host_id in self.host_ids:
+
+            # Check whether has parallelization
+            if not self.has_parallelization_for_host(host_id): continue
+
+            # Show host name
+            print(fmt.yellow + fmt.bold + host_id.upper() + fmt.reset)
+            print("")
+
+            # Show parallelization
+            parallelization = self.get_parallelization_for_host(host_id)
+            print(parallelization)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the parallelization schemes for the simulations ...")
+
+        print("")
+        print(fmt.green + fmt.underlined + "Simulation parallelization schemes:" + fmt.reset)
+        print("")
+
+        print(fmt.yellow + fmt.bold + "LOCAL" + fmt.reset)
+        print("")
+
+        # Loop over the local simulations
+        for simulation_name in self.local_simulation_names:
+
+            # Check whether has parallelization
+            if not self.has_parallelization_for_simulation(simulation_name): continue
+
+            # Show parallelization
+            parallelization = self.get_parallelization_for_simulation(simulation_name)
+            print(parallelization)
+            print("")
+
+        # Loop over the hosts
+        for host_id in self.host_ids:
+
+            # Show host name
+            print(fmt.yellow + fmt.bold + host_id.upper() + fmt.reset)
+            print("")
+
+            # Loop over the simulations in the queue
+            for simulation_name in self.get_simulation_names_for_host(host_id):
+
+                # Check whether has parallelization
+                if not self.has_parallelization_for_simulation(simulation_name): continue
+
+                # Show parallelization
+                parallelization = self.get_parallelization_for_simulation(simulation_name)
+                print(parallelization)
+                print("")
+
+    # -----------------------------------------------------------------
+
+    def show_finished(self):
 
         """
         This function ...
