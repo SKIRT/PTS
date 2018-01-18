@@ -1026,27 +1026,41 @@ class ObservedImageMaker(DatacubesMiscMaker):
                     log.success("All images for the '" + instr_name + "' have already been created: skipping ...")
                     continue
 
-            # Debugging
-            log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
-
-            # Load datacube remotely
-            if self.needs_remote(path): datacube = self.load_datacube_remote(path)
-
-            # Load datacube locally
-            else: datacube = self.load_datacube_local(path)
-
-            # If datacube is None, something went wrong, skip the datacube
+            # Try loading the datacube
+            datacube = self.load_datacube(path, instr_name)
             if datacube is None: continue
 
             # If the distance is defined, set the distance
             if self.has_distance(instr_name): datacube.distance = self.distances[instr_name]
 
             # Convert the datacube from neutral flux density to wavelength flux density
-            #datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
             datacube.convert_to_corresponding_wavelength_density_unit()
 
             # Add the datacube to the dictionary
             self.datacubes[instr_name] = datacube
+
+    # -----------------------------------------------------------------
+
+    def load_datacube(self, path, instr_name):
+
+        """
+        This function ...
+        :param path:
+        :param instr_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
+
+        # Load datacube remotely
+        if self.needs_remote(path): datacube = self.load_datacube_remote(path)
+
+        # Load datacube locally
+        else: datacube = self.load_datacube_local(path)
+
+        # Return the datacube
+        return datacube
 
     # -----------------------------------------------------------------
 

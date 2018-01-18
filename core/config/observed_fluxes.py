@@ -34,3 +34,9 @@ definition.add_flag("plot", "plot the mock observed SEDs", False)
 definition.add_optional("images_nprocesses", "positive_integer", "number of parallel processes for creating images", 1)
 
 # -----------------------------------------------------------------
+
+# Update PTS on the remote
+definition.add_flag("deploy_pts", "deply (install or update) PTS on the remote host", True)
+definition.add_flag("update_dependencies", "update PTS dependencies (use with care!)", False)
+
+# -----------------------------------------------------------------

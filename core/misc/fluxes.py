@@ -38,10 +38,18 @@ from ..tools import numbers
 from ..tools.utils import lazyproperty
 from .images import get_datacube_instrument_name
 from ...magic.core.datacube import DataCube
+from ...magic.core.remote import RemoteDataCube
 from ...magic.core import fits
 from ..simulation.wavelengthgrid import WavelengthGrid
 from ..plot.sed import SEDPlotter
 from ..tools import formatting as fmt
+from ..remote.remote import Remote
+from ..prep.deploy import Deployer
+
+# -----------------------------------------------------------------
+
+default_filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
+                        "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
 
 # -----------------------------------------------------------------
 
@@ -80,8 +88,7 @@ class ObservedFluxCalculator(Configurable):
         self.wavelengths = None
 
         # Filter names
-        self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
-                             "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+        self.filter_names = default_filter_names
 
         # Instrument names
         self.instrument_names = None
@@ -112,6 +119,14 @@ class ObservedFluxCalculator(Configurable):
 
         # For plotting, reference SED
         self.reference_sed = None
+
+        # The host id
+        self.host_id = None
+
+        # Remote options
+        self.remote_threshold = None
+        self.remote_spectral_convolution = False
+        self.remote_rebin_threshold = None
 
     # -----------------------------------------------------------------
 
@@ -195,7 +210,6 @@ class ObservedFluxCalculator(Configurable):
 
         # Set output path
         self.config.output = output_path
-        #print("output", self.config.output)
 
         # Get the masks
         self.masks = kwargs.pop("masks", None)
@@ -205,6 +219,95 @@ class ObservedFluxCalculator(Configurable):
 
         # Reference SED
         self.reference_sed = kwargs.pop("reference_sed", None)
+
+        # Get remote host ID
+        self.get_host_id(**kwargs)
+
+        # Update the remote
+        if self.has_remote and self.config.deploy_pts: self.deploy_pts()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host_id is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Remote(host_id=self.host_id)
+
+    # -----------------------------------------------------------------
+
+    def get_host_id(self, **kwargs):
+
+        """
+        Thisf unction ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Getting remote host ...")
+
+        # Get the host ID
+        self.host_id = kwargs.pop("host_id", None)
+
+        # Remote spectral convolution flag
+        self.remote_spectral_convolution = kwargs.pop("remote_spectral_convolution", False)
+
+        # Remote threshold
+        self.remote_threshold = kwargs.pop("remote_threshold", None)
+
+        # Rebin threshold
+        self.remote_rebin_threshold = kwargs.pop("remote_rebin_threshold", None)
+
+    # -----------------------------------------------------------------
+
+    def deploy_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deploying PTS remotely ...")
+
+        # Create the deployer
+        deployer = Deployer()
+
+        # Don't do anything locally
+        deployer.config.local = False
+
+        # Only deploy PTS
+        deployer.config.skirt = False
+        deployer.config.pts = True
+
+        # Set the host ids
+        deployer.config.host_ids = [self.host_id]
+
+        # Check versions between local and remote
+        deployer.config.check = self.config.check_versions
+
+        # Update PTS dependencies
+        deployer.config.update_dependencies = self.config.update_dependencies
+
+        # Run the deployer
+        deployer.run()
 
     # -----------------------------------------------------------------
 
@@ -283,8 +386,9 @@ class ObservedFluxCalculator(Configurable):
             # Debugging
             log.debug("Creating images from the '" + instr_name + "' instrument ...")
 
-            # Load the datacube
-            datacube = self.load_datacube_local(datacube_path)
+            # Try loading the datacube
+            datacube = self.load_datacube(datacube_path, instr_name)
+            if datacube is None: continue
 
             # Get the instrument distance
             distance = self.ski.get_instrument_distance(instr_name)
@@ -340,6 +444,29 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    def load_datacube(self, path, instr_name):
+
+        """
+        This function ...
+        :param path:
+        :param instr_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading total datacube of '" + instr_name + "' instrument from '" + path + "' ...")
+
+        # Load datacube remotely
+        if self.needs_remote(path): datacube = self.load_datacube_remote(path)
+
+        # Load datacube locally
+        else: datacube = self.load_datacube_local(path)
+
+        # Return
+        return datacube
+
+    # -----------------------------------------------------------------
+
     def load_datacube_local(self, path):
 
         """
@@ -363,26 +490,71 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    # def load_datacube_remote(self, path):
-    #
-    #     """
-    #     This function ...
-    #     :param self:
-    #     :param path:
-    #     :return:
-    #     """
-    #
-    #     # Debugging
-    #     log.debug("Trying to load the datacube '" + path + "' remotely ...")
-    #
-    #     # Load
-    #     try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
-    #     except fits.DamagedFITSFileError as e:
-    #         log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
-    #         datacube = None
-    #
-    #     # Return
-    #     return datacube
+    def load_datacube_remote(self, path):
+
+        """
+        This function ...
+        :param self:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Trying to load the datacube '" + path + "' remotely ...")
+
+        # Load
+        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
+        except fits.DamagedFITSFileError as e:
+            log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
+            datacube = None
+
+        # Return
+        return datacube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.spectral_convolution_filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_convolution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nspectral_convolution_filters > 0
+
+    # -----------------------------------------------------------------
+
+    def needs_remote(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # No remote is set
+        if self.host_id is None: return False
+
+        # File size is exceeded
+        if self.remote_threshold is not None and fs.file_size(path) > self.remote_threshold: return True
+
+        # Remote spectral convolution
+        if self.has_spectral_convolution_filters and self.remote_spectral_convolution: return True
+
+        # Not remote
+        return False
 
     # -----------------------------------------------------------------
 
