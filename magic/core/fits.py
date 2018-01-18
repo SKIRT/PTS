@@ -660,8 +660,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                 # Get name and description of frame
                 name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
                 if name == "primary":
-                    if plane_type != classname_plane:
-                        log.warning("The plane that is called 'primary' is actually not a " + classname + ", but a " + plane_type + ". Make sure that you are working with the correct file or specify the plane you want to use with 'index' or 'plane'")
+                    if plane_type != classname_plane and data_converter is None: log.warning("The plane that is called 'primary' is actually not a " + classname + ", but a " + plane_type + ". Make sure that you are working with the correct file or specify the plane you want to use with 'index' or 'plane' (or specify a data converter)")
                     index = i
                     break
 

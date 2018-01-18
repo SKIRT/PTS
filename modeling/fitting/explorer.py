@@ -692,8 +692,8 @@ class ParameterExplorer(FittingComponent):
         # Set path
         self.launcher.config.path = self.generation_path
 
-        # Write assignments and leftover queues
-        self.launcher.config.write = True
+        # Write assignments and leftover queues (if not testing)
+        self.launcher.config.write = not self.testing
 
         # Simulations have approximately the same requirements
         self.launcher.config.same_requirements = True

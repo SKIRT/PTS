@@ -352,7 +352,7 @@ class AnalysisOptions(Options):
         :return:
         """
 
-        return self.misc.rgb or self.misc.animations or self.misc.fluxes or self.misc.images
+        return self.misc.rgb or self.misc.animations or self.misc.fluxes or self.misc.fluxes_from_images or self.misc.images
 
     # -----------------------------------------------------------------
 
