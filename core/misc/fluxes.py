@@ -311,6 +311,7 @@ class ObservedFluxCalculator(Configurable):
             #print("spectral convolution filters", self.spectral_convolution_filters)
 
             spec_filters = []
+            #print("filters", self.filters)
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             nprocesses = 1

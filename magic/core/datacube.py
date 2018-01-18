@@ -865,8 +865,8 @@ class DataCube(Image):
         for index in used_wavelength_indices:
             wavelength = self.get_wavelength(index)
             wavelength_micron = wavelength.to("micron").value
-            filters = used_wavelength_indices[index]
-            filter_names = [str(f) for f in filters]
+            used_filters = used_wavelength_indices[index]
+            filter_names = [str(f) for f in used_filters]
             nfilters = len(filter_names)
             if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
             else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
@@ -1256,7 +1256,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_brightness()
+            factor = self.frames[i].convert_to_corresponding_brightness()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1379,7 +1382,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_angular_or_intrinsic_area_unit()
+            factor = self.frames[i].convert_to_corresponding_angular_or_intrinsic_area_unit()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1430,7 +1436,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+            factor = self.frames[i].convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1481,7 +1490,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_angular_area_unit()
+            factor = self.frames[i].convert_to_corresponding_angular_area_unit()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1532,7 +1544,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_intrinsic_area_unit()
+            factor = self.frames[i].convert_to_corresponding_intrinsic_area_unit()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1571,7 +1586,10 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_non_brightness_unit()
+            factor = self.frames[i].convert_to_corresponding_non_brightness_unit()
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1716,7 +1734,10 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength)
+            factor = self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength)
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
@@ -1785,7 +1806,10 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_neutral_density_unit(wavelength=wavelength)
+            factor = self.frames[i].convert_to_corresponding_neutral_density_unit(wavelength=wavelength)
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 
