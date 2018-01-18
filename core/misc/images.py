@@ -437,6 +437,9 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # 12. Clear intermediate results
         if not self.config.keep_intermediate: self.clear()
 
+        # 13. Plot
+        if self.config.plot: self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -1921,9 +1924,32 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Inform the user
         log.info("Writing the images ...")
 
-        # Write (grouped or not)
-        if self.config.group: self.write_images_grouped()
-        else: self.write_images()
+        # Loop over the different images (self.images is a nested dictionary of dictionaries)
+        for instr_name in self.images.keys():  # explicit keys to avoid error that dict changed
+
+            # Debugging
+            log.debug("Writing the images of the '" + instr_name + "' instrument ...")
+
+            # Loop over the images for this instrument
+            for filter_name in self.images[instr_name].keys():  # explicit keys to avoid error that dict changed
+
+                # Debugging
+                log.debug("Writing the '" + filter_name + "' image ...")
+
+                # Determine the path to the output FITS file
+                path = self.get_image_path(instr_name, filter_name)
+
+                # Save the image
+                self.images[instr_name][filter_name].saveto(path)
+
+                # Remove from memory?
+                del self.images[instr_name][filter_name]
+
+                # Set the path
+                self.paths[instr_name][filter_name] = path
+
+            # Cleanup?
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -1994,6 +2020,28 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     # -----------------------------------------------------------------
 
+    def get_instrument_plot_path(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        # Group per instrument
+        if self.config.group:
+
+            # Get instrument directory path
+            instrument_path = self.output_path_directory(instr_name, create=True)
+
+            # Return the filepath
+            return fs.join(instrument_path, "images.pdf")
+
+        # Don't group
+        else: return self.output_path_file(instr_name + ".pdf")
+
+    # -----------------------------------------------------------------
+
     def get_image_path(self, instr_name, filter_name):
 
         """
@@ -2017,63 +2065,68 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     # -----------------------------------------------------------------
 
-    def write_images_grouped(self):
+    def plot(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over the different instruments (datacubes)
-        for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
+        # Inform the user
+        log.info("Plotting ...")
 
-            # Loop over the images for this instrument
-            for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
-
-                # Determine path to the output FITS file
-                path = self.get_image_path(instr_name, filter_name)
-
-                # Save the image
-                self.images[instr_name][filter_name].saveto(path)
-
-                # Remove from memory?
-                del self.images[instr_name][filter_name]
-
-                # Set the path
-                self.paths[instr_name][filter_name] = path
-
-            # Cleanup?
-            gc.collect()
+        # Images
+        if self.config.plot_images: self.plot_images()
 
     # -----------------------------------------------------------------
 
-    def write_images(self):
+    def plot_images(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over the different images (self.images is a nested dictionary of dictionaries)
-        for instr_name in self.images.keys(): # explicit keys to avoid error that dict changed
+        from ...magic.plot.imagegrid import StandardImageGridPlotter
+
+        # Inform the user
+        log.info("Plotting the images ...")
+
+        # Loop over the different images
+        for instr_name in self.images.keys():
+
+            # Debugging
+            log.debug("Plotting the images for the '" + instr_name + "' instrument ...")
+
+            # Determine plot path
+            plot_path = self.get_instrument_plot_path(instr_name)
+
+            # Create plotter
+            plotter = StandardImageGridPlotter()
+
+            # Set output directory
+            plotter.config.output = plot_path
+
+            # Extra
+            plotter.config.normalize = True
+            # plotter.config.colormap =
+
+            # Write data
+            plotter.config.write = False
+
+            # Rebin and crop
+            # plotter.rebin_to =
+            # plotter.crop_to =
 
             # Loop over the images for this instrument
-            for filter_name in self.images[instr_name].keys(): # explicit keys to avoid error that dict changed
+            for filter_name in self.images[instr_name].keys():
 
-                # Determine the path to the output FITS file
-                path = self.get_image_path(instr_name, filter_name)
+                # Add the frame
+                frame = self.images[instr_name][filter_name]
+                plotter.add_frame(frame)
 
-                # Save the image
-                self.images[instr_name][filter_name].saveto(path)
-
-                # Remove from memory?
-                del self.images[instr_name][filter_name]
-
-                # Set the path
-                self.paths[instr_name][filter_name] = path
-
-            # Cleanup?
-            gc.collect()
+            # Run the plotter
+            plotter.run()
 
     # -----------------------------------------------------------------
 

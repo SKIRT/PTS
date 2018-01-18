@@ -1571,6 +1571,9 @@ class BasicAnalyser(Configurable):
         self.image_flux_calculator.config.from_images = True
         self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
 
+        # Plot
+        self.image_flux_calculator.config.plot_images = self.misc_options.plot_fluxes_images
+
         # Run
         self.image_flux_calculator.run(**self.observed_fluxes_from_images_input)
 
@@ -1750,6 +1753,9 @@ class BasicAnalyser(Configurable):
         # Set other
         self.image_maker.config.write_intermediate = self.misc_options.write_intermediate_images
         self.image_maker.config.write_kernels = self.misc_options.write_convolution_kernels
+
+        # Plot
+        self.image_maker.config.plot_images = self.misc_options.plot_fluxes_images
 
         # Run
         self.image_maker.run(**self.observed_images_input)

@@ -1058,6 +1058,9 @@ class ParameterExplorer(FittingComponent):
             #self.launcher.config.analysis.misc.fluxes_from_images_remote_npixels_threshold =
             #self.launcher.config.analysis.misc.fluxes_from_images_rebin_remote_threshold =
 
+            # Make a plot of the images
+            self.launcher.config.analysis.misc.plot_fluxes_images = True
+
         # From SEDs
         else:
 

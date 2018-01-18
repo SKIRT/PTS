@@ -59,3 +59,9 @@ definition.add_flag("deploy_pts", "deply (install or update) PTS on the remote h
 definition.add_flag("update_dependencies", "update PTS dependencies (use with care!)", False)
 
 # -----------------------------------------------------------------
+
+# Plot?
+definition.add_flag("plot", "make plots", True)
+definition.add_flag("plot_images", "plot the mock obseved images", False)
+
+# -----------------------------------------------------------------

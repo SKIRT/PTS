@@ -27,7 +27,9 @@ definition.add_flag("write_images", "write the images created from the output da
 # -----------------------------------------------------------------
 
 # Plot
-definition.add_flag("plot", "plot the mock observed SEDs", False)
+definition.add_flag("plot", "make plots", True)
+definition.add_flag("plot_seds", "plot the mock observed SEDs", False)
+definition.add_flag("plot_images", "plot the images created from the output datacubes", False)
 
 # -----------------------------------------------------------------
 

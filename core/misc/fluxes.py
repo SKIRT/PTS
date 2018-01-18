@@ -837,7 +837,10 @@ class ObservedFluxCalculator(Configurable):
         log.info("Plotting ...")
 
         # Plot the mock observed SEDs
-        self.plot_seds()
+        if self.config.plot_seds: self.plot_seds()
+
+        # Plot the images
+        if self.config.plot_images: self.plot_images()
 
     # -----------------------------------------------------------------
 
@@ -897,6 +900,58 @@ class ObservedFluxCalculator(Configurable):
 
         # Run the plotter
         plotter.run(output=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...magic.plot.imagegrid import StandardImageGridPlotter
+
+        # Inform the user
+        log.info("Plotting the images ...")
+
+        # Loop over the instruments
+        for instr_name in self.images:
+
+            # Debugging
+            log.debug("Plotting the images for the '" + instr_name + "' instrument ...")
+
+            # Create directory for this instrument
+            instr_path = fs.create_directory_in(self.images_output_path, instr_name)
+
+            # Create plotter
+            plotter = StandardImageGridPlotter()
+
+            # Set output directory
+            plotter.config.output = instr_path
+
+            # Extra
+            plotter.config.normalize = True
+            # plotter.config.colormap =
+
+            # Write data
+            plotter.config.write = False
+
+            # Rebin and crop
+            # plotter.rebin_to =
+            # plotter.crop_to =
+
+            # Loop over the filters
+            for fltr in self.images[instr_name]:
+
+                # Get the image frame
+                frame = self.images[instr_name][fltr]
+
+                # Add to plot
+                plotter.add_frame(frame)
+
+            # Run the plotter
+            plotter.run()
 
 # -----------------------------------------------------------------
 

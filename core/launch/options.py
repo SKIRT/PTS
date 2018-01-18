@@ -266,6 +266,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("plot_fluxes_from_images", "boolean", "plot the fluxes from images", False)
         self.misc.add_property("plot_fluxes_reference_sed", "file_path", "reference SED for plotting fluxes")
         self.misc.add_property("plot_fluxes_from_images_reference_sed", "file_path", "reference SED for plotting fluxes")
+        self.misc.add_property("plot_fluxes_images", "boolean", "plot the images created to calculate the fluxes", False)
 
         ## Observed fluxes from images REMOTE
         self.misc.add_property("fluxes_from_images_remote", "string", "perform the creation of the observed images for fluxes on a remote host", None)
@@ -282,6 +283,7 @@ class AnalysisOptions(Options):
         self.misc.add_property("write_intermediate_images", "boolean", "write intermediate results from the observed image making procedure", False)
         self.misc.add_property("write_convolution_kernels", "boolean", "write the convolution kernels used in the observed image making procedure", False)
         self.misc.add_property("no_images_filters", "filter_list", "don't create observed images for these filters", [])
+        self.misc.add_property("plot_images", "boolean", "plot the mock observed images", False)
 
         ## CONVOLUTION
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
