@@ -96,6 +96,7 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Non
 definition.add_flag("spectral_convolution", "use spectral convolution for evaluating the simulations", None)
 definition.add_flag("use_images", "use images for evaluating the simulations", None)
 definition.add_flag("fit_not_clipped", "fit to the observed fluxes from the truncated (not clipped) images", False)
+definition.add_flag("local_analysis", "perform all analysis locally", False)
 
 # -----------------------------------------------------------------
 

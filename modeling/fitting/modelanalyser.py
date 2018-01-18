@@ -30,6 +30,10 @@ from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
+earth_instrument_name = "earth"
+
+# -----------------------------------------------------------------
+
 class FluxDifferencesTable(SmartTable):
 
     """
@@ -629,7 +633,6 @@ class SEDFitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the differences between the observed and simulated SED ...")
 
-        earth_instrument_name = "earth"
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
         #mock_sed_name = self.object_name + "_earth"

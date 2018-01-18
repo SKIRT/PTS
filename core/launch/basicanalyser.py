@@ -1210,6 +1210,31 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_fluxes_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create input dictionary
+        input_dict = dict()
+
+        # Set input
+        input_dict["simulation"] = self.simulation
+        input_dict["output_path"] = self.fluxes_output_path
+        input_dict["filter_names"] = self.filters_for_fluxes
+        input_dict["instrument_names"] = self.misc_options.observation_instruments
+        input_dict["errors"] = self.misc_options.flux_errors
+        input_dict["no_spectral_convolution_filters"] = self.misc_options.no_fluxes_spectral_convolution_filters
+        input_dict["reference_sed"] = self.fluxes_reference_sed
+
+        # Return the input
+        return input_dict
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes(self):
 
         """
@@ -1230,12 +1255,7 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.config.plot = self.misc_options.plot_fluxes
 
         # Run
-        self.flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_output_path,
-                                 filter_names=self.filters_for_fluxes,
-                                 instrument_names=self.misc_options.observation_instruments,
-                                 errors=self.misc_options.flux_errors,
-                                 no_spectral_convolution_filters=self.misc_options.no_fluxes_spectral_convolution_filters,
-                                 reference_sed=self.fluxes_reference_sed)
+        self.flux_calculator.run(**self.observed_fluxes_input)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_name)
@@ -1494,6 +1514,40 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_fluxes_from_images_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set input
+        input_dict = dict()
+
+        # Set input
+        input_dict["simulation"] = self.simulation
+        input_dict["output_path"] = self.fluxes_from_images_output_path
+        input_dict["filter_names"] = self.filters_for_fluxes_from_images
+        input_dict["instrument_names"] = self.fluxes_from_images_instruments
+        input_dict["errors"] = self.misc_options.fluxes_from_images_errors
+        input_dict["no_spectral_convolution_filters"] = self.misc_options.no_fluxes_from_images_spectral_convolution_filters
+        input_dict["coordinate_systems"] = self.fluxes_from_images_coordinate_systems
+        input_dict["masks"] = self.fluxes_from_images_masks
+        input_dict["reference_sed"] = self.fluxes_from_images_reference_sed
+
+        # Remote
+        input_dict["host_id"] = self.misc_options.fluxes_from_images_remote
+        input_dict["remote_images_spectral_convolution"] = self.misc_options.fluxes_from_images_remote_spectral_convolution
+        input_dict["remote_threshold"] = self.misc_options.fluxes_from_images_remote_threshold
+        input_dict["remote_npixels_threshold"] = self.misc_options.fluxes_from_images_remote_npixels_threshold
+        input_dict["remote_rebin_threshold"] = self.misc_options.fluxes_from_images_rebin_remote_threshold
+
+        # Return the input
+        return input_dict
+
+    # -----------------------------------------------------------------
+
     def calculate_observed_fluxes_from_images(self):
 
         """
@@ -1517,18 +1571,8 @@ class BasicAnalyser(Configurable):
         self.image_flux_calculator.config.from_images = True
         self.image_flux_calculator.config.write_images = self.misc_options.write_fluxes_images
 
-        #print("instruments:", self.fluxes_from_images_instruments)
-        #print("masks:" , self.fluxes_from_images_masks)
-        #print("wcs:", self.fluxes_from_images_coordinate_systems)
-
         # Run
-        self.image_flux_calculator.run(simulation=self.simulation, output_path=self.fluxes_from_images_output_path,
-                                       filter_names=self.filters_for_fluxes_from_images,
-                                       instrument_names=self.fluxes_from_images_instruments,
-                                       errors=self.misc_options.fluxes_from_images_errors,
-                                       no_spectral_convolution_filters=self.misc_options.no_fluxes_from_images_spectral_convolution_filters,
-                                       coordinate_systems=self.fluxes_from_images_coordinate_systems,
-                                       masks=self.fluxes_from_images_masks, reference_sed=self.fluxes_from_images_reference_sed)
+        self.image_flux_calculator.run(**self.observed_fluxes_from_images_input)
 
         # Done
         self.simulation.analysed_misc.append(fluxes_from_images_name)
@@ -1624,33 +1668,13 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_observed_images(self):
+    @lazyproperty
+    def observed_images_input(self):
 
         """
         This function ...
         :return:
         """
-
-        # Inform the user
-        log.info("Making the observed images (this may take a while) ...")
-
-        # Create and run an ObservedImageMaker object
-        self.image_maker = ObservedImageMaker()
-
-        # Set spectral convolution flags
-        #self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
-        self.image_maker.config.spectral_convolution = self.misc_options.images_spectral_convolution
-
-        # Set group flag
-        self.image_maker.config.group = self.misc_options.group_images
-
-        # Set number of processes
-        self.image_maker.config.nprocesses_local = self.misc_options.images_nprocesses_local
-        self.image_maker.config.nprocesses_remote = self.misc_options.images_nprocesses_remote
-
-        # Set other
-        self.image_maker.config.write_intermediate = self.misc_options.write_intermediate_images
-        self.image_maker.config.write_kernels = self.misc_options.write_convolution_kernels
 
         # Set input
         input_dict = dict()
@@ -1664,7 +1688,6 @@ class BasicAnalyser(Configurable):
         input_dict["instrument_names"] = self.misc_options.observation_instruments
 
         # Coordinate system of the datacubes
-        #input_dict["wcs"] =
         if types.is_dictionary(self.misc_options.images_wcs): input_dict["wcs_paths"] = self.misc_options.images_wcs
         elif types.is_string_type(self.misc_options.images_wcs): input_dict["wcs_path"] = self.misc_options.images_wcs
         elif self.misc_options.images_wcs is not None: raise ValueError("Invalid value for 'images_wcs' misc option: " + str(self.misc_options.images_wcs))
@@ -1676,30 +1699,60 @@ class BasicAnalyser(Configurable):
         # Convolution
         input_dict["auto_psfs"] = self.misc_options.images_psfs_auto
         input_dict["kernel_paths"] = self.misc_options.images_kernels
-        #input_dict["psf_paths"] =
         if self.misc_options.fwhms_dataset is not None: input_dict["fwhms_dataset"] = self.misc_options.fwhms_dataset
 
         # Rebinning
         if types.is_dictionary(self.misc_options.rebin_wcs): input_dict["rebin_wcs_paths"] = self.misc_options.rebin_wcs
         elif types.is_string_type(self.misc_options.rebin_wcs): input_dict["rebin_wcs_path"] = self.misc_options.rebin_wcs
         elif self.misc_options.rebin_wcs is not None: raise ValueError("Invalid value for 'rebin_wcs' misc option: " + str(self.misc_options.rebin_wcs))
-
-        #input_dict["rebin_wcs"] =
-        input_dict["rebin_dataset"] = self.misc_options.rebin_dataset # path
+        input_dict["rebin_dataset"] = self.misc_options.rebin_dataset  # path
         input_dict["rebin_instrument"] = self.misc_options.rebin_instrument
 
         # Remote
         input_dict["host_id"] = self.misc_options.make_images_remote
         input_dict["remote_spectral_convolution"] = self.misc_options.remote_spectral_convolution
         input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
+        input_dict["remote_npixels_threshold"] = self.misc_options.images_remote_npixels_threshold
         input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
         input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold
 
         # NO SPECTRAL CONVOLUTION FOR CERTAIN IMAGES?
         input_dict["no_spectral_convolution_filters"] = self.misc_options.no_images_spectral_convolution_filters
 
+        # Return the input
+        return input_dict
+
+    # -----------------------------------------------------------------
+
+    def make_observed_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the observed images (this may take a while) ...")
+
+        # Create and run an ObservedImageMaker object
+        self.image_maker = ObservedImageMaker()
+
+        # Set spectral convolution flag
+        self.image_maker.config.spectral_convolution = self.misc_options.images_spectral_convolution
+
+        # Set group flag
+        self.image_maker.config.group = self.misc_options.group_images
+
+        # Set number of processes
+        self.image_maker.config.nprocesses_local = self.misc_options.images_nprocesses_local
+        self.image_maker.config.nprocesses_remote = self.misc_options.images_nprocesses_remote
+
+        # Set other
+        self.image_maker.config.write_intermediate = self.misc_options.write_intermediate_images
+        self.image_maker.config.write_kernels = self.misc_options.write_convolution_kernels
+
         # Run
-        self.image_maker.run(**input_dict)
+        self.image_maker.run(**self.observed_images_input)
 
         # Done
         self.simulation.analysed_misc.append(images_name)

@@ -530,6 +530,69 @@ class ParameterExplorer(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def modeling_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.modeling_configuration
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.local_analysis: return []
+        elif self.modeling_config.host_ids is None: return []
+        else: return self.modeling_config.host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nother_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.other_host_ids)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nother_host_ids > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_other_host_ids: return None
+        else: return self.other_host_ids[0]
+
+    # -----------------------------------------------------------------
+
+    @property
     def record_timing(self):
 
         """
@@ -987,6 +1050,13 @@ class ParameterExplorer(FittingComponent):
             # Plot fluxes
             self.launcher.config.analysis.misc.plot_fluxes_from_images = True
             self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.fit_sed_path
+
+            # Set remote for creating images from datacubes
+            self.launcher.config.analysis.misc.fluxes_from_images_remote = self.other_host_id
+            self.launcher.config.analysis.misc.fluxes_from_images_remote_spectral_convolution = True
+            #self.launcher.config.analysis.misc.fluxes_from_images_remote_threshold =
+            #self.launcher.config.analysis.misc.fluxes_from_images_remote_npixels_threshold =
+            #self.launcher.config.analysis.misc.fluxes_from_images_rebin_remote_threshold =
 
         # From SEDs
         else:

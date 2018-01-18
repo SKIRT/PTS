@@ -267,6 +267,13 @@ class AnalysisOptions(Options):
         self.misc.add_property("plot_fluxes_reference_sed", "file_path", "reference SED for plotting fluxes")
         self.misc.add_property("plot_fluxes_from_images_reference_sed", "file_path", "reference SED for plotting fluxes")
 
+        ## Observed fluxes from images REMOTE
+        self.misc.add_property("fluxes_from_images_remote", "string", "perform the creation of the observed images for fluxes on a remote host", None)
+        self.misc.add_property("fluxes_from_images_remote_spectral_convolution", "boolean", "perform spectral convolution with the datacubes for observed fluxes from images remotely", False)
+        self.misc.add_property("fluxes_from_images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes for fluxes from images", "2 GB", convert_default=True)
+        self.misc.add_property("fluxes_from_images_remote_npixels_threshold", "positive_integer", "threshold for working remotely of the number of pixels (nx * ny) of the datacubes", 1e4)
+        self.misc.add_property("fluxes_from_images_rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning of images for fluxes", "0.5 GB", convert_default=True)
+
         ## Observed images
         self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
         self.misc.add_property("wcs_instrument", "string", "instrument for which to take the images_wcs as the WCS (if not a dictionary)")
@@ -282,9 +289,10 @@ class AnalysisOptions(Options):
         self.misc.add_property("fwhms_dataset", "file_path", "path to the dataset that should be used to get the target FWHM for the different images", None)
 
         # Remote thresholds
-        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
+        self.misc.add_property("make_images_remote", "string", "perform the calculation of the observed images on a remote host (this is a memory and CPU intensive step)", None)
         self.misc.add_property("remote_spectral_convolution", "boolean", "perform spectral convolution with the datacube remotely", False)
         self.misc.add_property("images_remote_threshold", "data_quantity", "file size threshold for working with remote datacubes", "2 GB", convert_default=True)
+        self.misc.add_property("images_remote_npixels_threshold", "positive_integer", "threshold for working remotely of the number of pixels (nx * ny) of the datacubes", 1e4)
         self.misc.add_property("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
         self.misc.add_property("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
 

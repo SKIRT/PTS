@@ -88,13 +88,10 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # The host id
         self.host_id = None
 
-        # Threshold for using remote datacubes
-        self.remote_threshold = None
-
-        # Flag
+        # Remote options
         self.remote_spectral_convolution = False
-
-        # Thresholds (frame size) for remote rebinning and convolution
+        self.remote_threshold = None
+        self.remote_npixels_threshold = None
         self.remote_rebin_threshold = None
         self.remote_convolve_threshold = None
 
@@ -858,10 +855,9 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Remote spectral convolution flag
         self.remote_spectral_convolution = kwargs.pop("remote_spectral_convolution", False)
 
-        # Remote threshold
+        # Get thresholds
         self.remote_threshold = kwargs.pop("remote_threshold", None)
-
-        # Seperate rebin and convolve thresholds
+        self.remote_npixels_threshold = kwargs.pop("remote_npixels_threshold", None)
         self.remote_rebin_threshold = kwargs.pop("remote_rebin_threshold", None)
         self.remote_convolve_threshold = kwargs.pop("remote_convolve_threshold", None)
 
@@ -974,11 +970,16 @@ class ObservedImageMaker(DatacubesMiscMaker):
         :return:
         """
 
+        from ...magic.core.fits import get_npixels
+
         # No remote is set
         if self.host_id is None: return False
 
         # File size is exceeded
         if self.remote_threshold is not None and fs.file_size(path) > self.remote_threshold: return True
+
+        # Number of pixels is exceeded
+        if self.remote_npixels_threshold is not None and get_npixels(path) > self.remote_npixels_threshold: return True
 
         # Remote spectral convolution
         if self.has_spectral_convolution_filters and self.remote_spectral_convolution: return True

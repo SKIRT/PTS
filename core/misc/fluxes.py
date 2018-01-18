@@ -124,8 +124,9 @@ class ObservedFluxCalculator(Configurable):
         self.host_id = None
 
         # Remote options
+        self.remote_images_spectral_convolution = False
         self.remote_threshold = None
-        self.remote_spectral_convolution = False
+        self.remote_npixels_threshold = None
         self.remote_rebin_threshold = None
 
     # -----------------------------------------------------------------
@@ -267,12 +268,11 @@ class ObservedFluxCalculator(Configurable):
         self.host_id = kwargs.pop("host_id", None)
 
         # Remote spectral convolution flag
-        self.remote_spectral_convolution = kwargs.pop("remote_spectral_convolution", False)
+        self.remote_images_spectral_convolution = kwargs.pop("remote_images_spectral_convolution", False)
 
-        # Remote threshold
+        # Threshold for remote
         self.remote_threshold = kwargs.pop("remote_threshold", None)
-
-        # Rebin threshold
+        self.remote_npixels_threshold = kwargs.pop("remote_npixels_threshold", None)
         self.remote_rebin_threshold = kwargs.pop("remote_rebin_threshold", None)
 
     # -----------------------------------------------------------------
@@ -544,14 +544,19 @@ class ObservedFluxCalculator(Configurable):
         :return:
         """
 
+        from ...magic.core.fits import get_npixels
+
         # No remote is set
         if self.host_id is None: return False
 
         # File size is exceeded
         if self.remote_threshold is not None and fs.file_size(path) > self.remote_threshold: return True
 
+        # Number of pixels is exceeded
+        if self.remote_npixels_threshold is not None and get_npixels(path) > self.remote_npixels_threshold: return True
+
         # Remote spectral convolution
-        if self.has_spectral_convolution_filters and self.remote_spectral_convolution: return True
+        if self.has_spectral_convolution_filters and self.remote_images_spectral_convolution: return True
 
         # Not remote
         return False

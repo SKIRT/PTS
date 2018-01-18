@@ -178,6 +178,33 @@ def get_info(path):
 
 # -----------------------------------------------------------------
 
+def get_npixels(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    header = get_header(path)
+    return header["NAXIS1"] * header["NAXIS2"]
+
+# -----------------------------------------------------------------
+
+def get_total_npixels(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    header = get_header(path)
+    if "NAXIS3" in header: return header["NAXIS1"] * header["NAXIS2"] * header["NAXIS3"]
+    else: return header["NAXIS1"] * header["NAXIS2"]
+
+# -----------------------------------------------------------------
+
 def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False,
                 hdulist_index=0, no_filter=False, no_wcs=False, density=False, brightness=False, density_strict=False,
                 brightness_strict=False):
