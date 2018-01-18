@@ -253,6 +253,21 @@ class ObservedFluxCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def session(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #new_connection = False
+        new_connection = True
+        session = self.remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
+        return session
+
+    # -----------------------------------------------------------------
+
     def get_host_id(self, **kwargs):
 
         """
