@@ -30,3 +30,7 @@ definition.add_flag("write_images", "write the images created from the output da
 definition.add_flag("plot", "plot the mock observed SEDs", False)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("images_nprocesses", "positive_integer", "number of parallel processes for creating images", 1)
+
+# -----------------------------------------------------------------

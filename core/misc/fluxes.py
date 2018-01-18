@@ -280,6 +280,9 @@ class ObservedFluxCalculator(Configurable):
             # Check if already encountered this instrument
             if instr_name in self.images: raise ValueError("Already encountered datacube for '" + instr_name + "' instrument")
 
+            # Debugging
+            log.debug("Creating images from the '" + instr_name + "' instrument ...")
+
             # Load the datacube
             datacube = self.load_datacube_local(datacube_path)
 
@@ -293,7 +296,6 @@ class ObservedFluxCalculator(Configurable):
             log.debug("Setting the coordinate system of the '" + instr_name + "' instrument ...")
 
             # Set the coordinate system for this datacube
-            #self.datacubes[instr_name].wcs = self.coordinate_systems[instr_name]
             datacube.wcs = self.coordinate_systems[instr_name]
 
             # Debugging
@@ -305,12 +307,14 @@ class ObservedFluxCalculator(Configurable):
             # Convert to non- angular or intrinsic area unit
             if datacube.is_per_angular_or_intrinsic_area: datacube.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
 
-            print("spectral convolution filters", self.spectral_convolution_filters)
+            #print(self.config.spectral_convolution)
+            #print("spectral convolution filters", self.spectral_convolution_filters)
+
+            spec_filters = []
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             nprocesses = 1
-            frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,
-                                                 nprocesses=nprocesses, check_previous_sessions=True, as_dict=True)
+            frames = datacube.frames_for_filters(self.filters, convolve=spec_filters, nprocesses=nprocesses, check_previous_sessions=True, as_dict=True)
 
             # Mask the images
             for fltr in frames:
@@ -408,7 +412,7 @@ class ObservedFluxCalculator(Configurable):
         filters = []
 
         # Loop over the filters
-        for fltr in filters:
+        for fltr in self.filters:
 
             if fltr in self.no_spectral_convolution_filters: pass
             else: filters.append(fltr)

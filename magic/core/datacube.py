@@ -35,6 +35,7 @@ from ..basics.vector import Pixel
 from ...core.tools.parallelization import ParallelTarget
 from ...core.tools import types
 from ...core.tools import formatting as fmt
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -727,28 +728,18 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False):
+    def _initialize_frames_for_filters(self, filters, convolve=False):
 
         """
         This function ...
         :param filters:
         :param convolve:
-        :param nprocesses:
-        :param check_previous_sessions:
-        :param as_dict:
         :return:
         """
 
-        # Inform the user
-        log.info("Getting frames for " + str(len(filters)) + " different filters ...")
-
-        # Limit the number of processes to the number of filters
-        nprocesses = min(nprocesses, len(filters))
-
+        # Initialize
         frames = []
         for_convolution = []
-
-        # Rem
         used_wavelength_indices = defaultdict(list)
 
         # Loop over the filters
@@ -799,6 +790,75 @@ class DataCube(Image):
                 # Get the frame
                 frames.append(frame)
 
+        # Return
+        return frames, for_convolution, used_wavelength_indices
+
+    # -----------------------------------------------------------------
+
+    def _create_convolved_frames(self, filters, nprocesses=8, check_previous_sessions=False):
+
+        """
+        This function ...
+        :param filters:
+        :param nprocesses:
+        :param check_previous_sessions:
+        :return:
+        """
+
+        convolved_frames = []
+
+        # Calculate convolved frames
+        nconvolution = len(filters)
+        needs_convolution = nconvolution > 0
+        if needs_convolution:
+
+            # Debugging
+            log.debug(str(nconvolution) + " filters require spectral convolution")
+
+            # Make the frames by convolution
+            convolved_frames, wavelengths_for_filters = self.convolve_with_filters(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions, return_wavelengths=True)
+
+            # Show which wavelengths are used to create filter frames
+            log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+            log.debug("")
+            for fltr in wavelengths_for_filters:
+                filter_name = str(fltr)
+                wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+                log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+            log.debug("")
+
+            # Set the filters just to be sure
+            for fltr, frame in zip(filters, convolved_frames): frame.filter = fltr
+
+        # No spectral convolution
+        else: log.debug("Spectral convolution will be used for none of the filters")
+
+        # Return
+        return convolved_frames
+
+    # -----------------------------------------------------------------
+
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False):
+
+        """
+        This function ...
+        :param filters:
+        :param convolve: boolean or sequence of filters for which spectral convolution should be used
+        :param nprocesses:
+        :param check_previous_sessions:
+        :param as_dict:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting frames for " + str(len(filters)) + " different filters ...")
+
+        # Limit the number of processes to the number of filters
+        nprocesses = min(nprocesses, len(filters))
+
+        # Initialize
+        frames, for_convolution, used_wavelength_indices = self._initialize_frames_for_filters(filters, convolve=convolve)
+
         # Show which wavelengths are used to create filter frames
         log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")
         log.debug("")
@@ -812,39 +872,11 @@ class DataCube(Image):
             else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
         log.debug("")
 
-        # Calculate convolved frames
-        if len(for_convolution) > 0:
+        # Create convolved frames
+        convolved_frames = self._create_convolved_frames(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
 
-            # Debugging
-            log.debug(str(len(for_convolution)) + " filters require spectral convolution")
-
-            # Make the frames by convolution
-            convolved_frames, wavelengths_for_filters = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions, return_wavelengths=True)
-
-            # Show which wavelengths are used to create filter frames
-            log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
-            log.debug("")
-            for fltr in wavelengths_for_filters:
-                filter_name = str(fltr)
-                wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
-                log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
-            log.debug("")
-
-        # No spectral convolution
-        else:
-            # Debugging
-            log.debug("Spectral convolution will be used for none of the filters")
-            convolved_frames = []
-
-        # Add the convolved frames
-        for fltr, frame in zip(for_convolution, convolved_frames):
-
-            # Set filter to be sure
-            frame.filter = fltr
-
-            # Set the frame
-            index = filters.index(fltr)
-            frames[index] = frame
+        # Add the convolved frames to the list of frames
+        for fltr, frame in zip(for_convolution, convolved_frames): frames[filters.index(fltr)] = frame
 
         # Return the list of frames
         if as_dict: return {fltr: frame for fltr, frame in zip(filters, frames)}
@@ -1612,7 +1644,10 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance)
+            factor = self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance)
+
+            # Debugging
+            log.debug("Conversion factor for frame " + str(i+1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
     # -----------------------------------------------------------------
 

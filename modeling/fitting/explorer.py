@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import traceback
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -887,6 +888,32 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def photometry_image_paths_for_fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create new dictionary
+        paths = OrderedDict()
+
+        # Loop over the paths
+        for filter_name in self.environment.photometry_image_paths_for_filter_names:
+
+            # Skip filters that are not in the fitting filters list
+            if filter_name not in self.fitting_filter_names: continue
+
+            # Add the path
+            path = self.environment.photometry_image_paths_for_filter_names[filter_name]
+            paths[filter_name] = path
+
+        # Return
+        return paths
+
+    # -----------------------------------------------------------------
+
     def set_misc_options(self):
 
         """
@@ -899,12 +926,6 @@ class ParameterExplorer(FittingComponent):
 
         # Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
-
-        # if self.is_images_modeling: # images modeling #self.launcher.config.analysis.misc.fluxes = False #self.launcher.config.analysis.misc.images = True #self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path) #self.launcher.config.analysis.misc.images_unit = "Jy" #self.launcher.config.analysis.misc.images_kernels = None #self.launcher.config.analysis.misc.rebin_wcs = None
-        #     pass
-        #
-        # # Galaxy and SED modeling
-        # else:
 
         # From images
         if self.use_images:
@@ -922,7 +943,7 @@ class ParameterExplorer(FittingComponent):
             self.launcher.config.analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
 
             # Set mask paths
-            self.launcher.config.analysis.misc.fluxes_from_images_masks = self.environment.photometry_image_paths_for_filter_names # only for galaxy modeling
+            self.launcher.config.analysis.misc.fluxes_from_images_masks = self.photometry_image_paths_for_fitting_filter_names
             self.launcher.config.analysis.misc.fluxes_from_images_mask_from_nans = True
 
             # Write the fluxes images
@@ -944,7 +965,8 @@ class ParameterExplorer(FittingComponent):
             self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.observed_sed_path
 
         # Observation filters and observation instruments
-        self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
+        #self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
+        self.launcher.config.analysis.misc.observation_filters = self.fitting_filter_names
         self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
         # Set spectral convolution flag
@@ -2708,6 +2730,18 @@ class ParameterExplorer(FittingComponent):
         """
 
         return self.fitting_run.fitting_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.fitting_filters]
 
     # -----------------------------------------------------------------
 
