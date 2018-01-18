@@ -1013,11 +1013,46 @@ class SKIRTRemote(Remote):
         # If an output path is not specified by the user, place a directory called 'out' next to the simulation's 'in' directory
         else: remote_output_path = fs.join(remote_simulation_path, "out")
 
+        # Prepare the input (upload it)
+        remote_input_path = self.prepare_input(definition.input_path, remote_simulation_path, remote_input_path, has_remote_input=has_remote_input)
+
+        # Create the remote output directory
+        self.create_directory(remote_output_path)
+
+        # Set the remote ski file path
+        local_ski_path = definition.ski_path
+        ski_name = fs.name(local_ski_path)
+        remote_ski_path = fs.join(remote_simulation_path, ski_name)
+
+        # Set the base simulation options such as ski path, input path and output path (remote)
+        arguments.ski_pattern = remote_ski_path
+        arguments.input_path = remote_input_path
+        arguments.output_path = remote_output_path
+
+        # Copy the input directory and the ski file to the remote host
+        self.upload(local_ski_path, remote_simulation_path)
+
+        # Return the SKIRT arguments instance
+        return arguments
+
+    # -----------------------------------------------------------------
+
+    def prepare_input(self, input_path, remote_simulation_path, remote_input_path=None, has_remote_input=False):
+
+        """
+        This function ...
+        :param input_path:
+        :param remote_simulation_path:
+        :param remote_input_path:
+        :param has_remote_input:
+        :return:
+        """
+
         # The simulation does not require input
-        if definition.input_path is None: remote_input_path = None
+        if input_path is None: remote_input_path = None
 
         # The simulation input is defined in terms of a single local directory
-        elif isinstance(definition.input_path, basestring):
+        elif isinstance(input_path, basestring):
 
             # Check has_remote_input flag
             if has_remote_input: raise ValueError("Cannot enable 'has_remote_input' flag when input is a directory, only when input is defined in terms of a list or dictionary of filepaths (or SimulationInput object)")
@@ -1029,7 +1064,7 @@ class SKIRTRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Copy the input directory to the remote host
-                self.upload(definition.input_path, remote_input_path, show_output=True)
+                self.upload(input_path, remote_input_path, show_output=True)
 
             # The specified remote input directory (for re-usage of already uploaded input) does not exist
             else:
@@ -1037,9 +1072,9 @@ class SKIRTRemote(Remote):
                 if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If the simulation input is defined as a list of seperate file paths
-        elif isinstance(definition.input_path, list):
+        elif isinstance(input_path, list):
 
-            local_input_file_paths = definition.input_path # the list of file paths
+            local_input_file_paths = input_path # the list of file paths
 
             # A remote input path is not specified, this means that we have yet to copy the input files to a new
             # remote directory
@@ -1071,7 +1106,7 @@ class SKIRTRemote(Remote):
                 if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If we have a SimulationInput instance
-        elif isinstance(definition.input_path, SimulationInput):
+        elif isinstance(input_path, SimulationInput):
 
             # Check
             if has_remote_input: raise ValueError("Currently, has_remote_input is not possible with SimulationInput objects (due to internal checking in the latter class)")
@@ -1086,7 +1121,7 @@ class SKIRTRemote(Remote):
                 self.create_directory(remote_input_path)
 
                 # Upload the local input files to the new remote directory
-                for name, path in definition.input_path:
+                for name, path in input_path:
 
                     # Debugging
                     log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
@@ -1100,7 +1135,7 @@ class SKIRTRemote(Remote):
                 if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # We have a dictionary
-        elif types.is_dictionary(definition.input_path):
+        elif types.is_dictionary(input_path):
 
             # If a remote input path is not specified
             if remote_input_path is None:
@@ -1112,7 +1147,7 @@ class SKIRTRemote(Remote):
                 self.create_directory(remote_input_path)
 
                 # Upload the local input files to the new remote directory
-                for name, path in definition.input_path.items():
+                for name, path in input_path.items():
 
                     # Check
                     if has_remote_input:
@@ -1155,24 +1190,8 @@ class SKIRTRemote(Remote):
         # Invalid format for arguments.input_path
         else: raise ValueError("Invalid value for 'input_path': must be None, local directory path, list of file paths or SimulationInput object")
 
-        # Create the remote output directory
-        self.create_directory(remote_output_path)
-
-        # Set the remote ski file path
-        local_ski_path = definition.ski_path
-        ski_name = fs.name(local_ski_path)
-        remote_ski_path = fs.join(remote_simulation_path, ski_name)
-
-        # Set the base simulation options such as ski path, input path and output path (remote)
-        arguments.ski_pattern = remote_ski_path
-        arguments.input_path = remote_input_path
-        arguments.output_path = remote_output_path
-
-        # Copy the input directory and the ski file to the remote host
-        self.upload(local_ski_path, remote_simulation_path)
-
-        # Return the SKIRT arguments instance
-        return arguments
+        # Return the remote input path
+        return remote_input_path
 
     # -----------------------------------------------------------------
 

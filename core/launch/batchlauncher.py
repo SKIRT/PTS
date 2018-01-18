@@ -3597,11 +3597,12 @@ class BatchLauncher(Configurable):
                 self.assignment.add_remote_simulation(name, remote.host_id, cluster_name=cluster_name, simulation_id=simulation.id, success=None) # We don't know yet whether launching will actually be succesful!
 
             # Exception was raised
-            except Exception:
+            except Exception as e:
 
                 # Print error
                 log.error("Adding simulation '" + name + "' to the queue failed:")
                 traceback.print_exc()
+                log.error(str(e))
                 log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
 
                 # Add the failed simulation back to the queue

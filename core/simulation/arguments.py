@@ -592,6 +592,8 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
         # (see https://www.open-mpi.org/faq/?category=tuning)
         if bind_to_cores:
 
+            # TODO: SHOULD WE ALWAYS USE MAY BY SOCKET, OR DO WE HAVE TO CHECK HOW THE NUMBER OF PROCESSES COMPARES TO THE NUMBER OF USED SOCKETS?
+
             # Hyperthreading: threads_per_core will be > 1
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)
