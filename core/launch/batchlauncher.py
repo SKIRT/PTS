@@ -49,6 +49,7 @@ from ..tools.stringify import tostr
 from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools.serialization import write_list
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -2006,6 +2007,9 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Determining one parallelization scheme for all local simulations ...")
+
         # Determine the number of processes
         processes = self.get_nprocesses_local()
 
@@ -2029,6 +2033,7 @@ class BatchLauncher(Configurable):
         log.debug("The number of thread per core is " + str(threads_per_core))
         log.debug("The number of processes is " + str(processes))
 
+        # Data parallelization?
         if self.data_parallel_local is not None: data_parallel = self.data_parallel_local
         else: data_parallel = self.config.data_parallel_local
 
@@ -2043,10 +2048,14 @@ class BatchLauncher(Configurable):
     def set_parallelization_local_different(self):
 
         """
-        Thisj function ...
+        This function ...
         :return:
         """
 
+        # Debugging
+        log.debug("Determining the best parallelization scheme for each local simulation separately ...")
+
+        # Data parallelization?
         if self.data_parallel_local is not None: data_parallel = self.data_parallel_local
         else: data_parallel = self.config.data_parallel_local
 
@@ -2602,7 +2611,12 @@ class BatchLauncher(Configurable):
         remote = self.get_remote(host_id)
 
         # If the remote uses a scheduling system
-        if remote.scheduler: return self.config.nnodes
+        if remote.scheduler:
+
+            # Get the number of nodes from configuration
+            if self.config.nnodes_per_host is not None and host_id in self.config.nnodes_per_host: return self.config.nnodes_per_host[host_id]
+            elif self.config.nnodes is not None: return self.config.nnodes
+            else: raise ValueError("Number of nodes must be specified for host with scheduling system")
 
         # Remote does not use a scheduling system
         else: return 1
@@ -2770,33 +2784,37 @@ class BatchLauncher(Configurable):
                  " the parallelization scheme has not been defined yet) ...")
 
         # Loop over the different remote hosts
-        for remote in self.remotes:
+        for host_id in self.host_ids:
+
+            # Debugging
+            log.debug("Setting parallelization scheme(s) for remote host '" + host_id + "' ...")
 
             # Check whether the parallelization has already been defined by the user for this remote host
-            if remote.host_id in self.parallelization_hosts:
-                # CHECK THE PARALLELIZATION?
-                if self.config.check_parallelization: self.check_parallelization_for_host(remote.host_id)
+            if host_id in self.parallelization_hosts:
+
+                # Check the parallelization?
+                if self.config.check_parallelization: self.check_parallelization_for_host(host_id)
                 else: continue
 
             # Number of processes is defined for this host
-            if self.has_nprocesses_for_host(remote.host_id):
+            if self.has_nprocesses_for_host(host_id):
 
                 # Try to set one parallelization for the host
-                try: self.set_parallelization_for_remote_from_nprocesses(remote.host_id)
-                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(remote.host_id)
+                try: self.set_parallelization_for_remote_from_nprocesses(host_id)
+                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(host_id)
 
             # The number of processes per node is defined for this host
-            elif self.has_nprocesses_per_node_for_host(remote.host_id):
+            elif self.has_nprocesses_per_node_for_host(host_id):
 
                 # Try to set one parallelization for the host
-                try: self.set_parallelization_for_remote_from_nprocesses_per_node(remote.host_id)
-                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(remote.host_id)
+                try: self.set_parallelization_for_remote_from_nprocesses_per_node(host_id)
+                except (DifferentNwavelengths, DifferentDustLibDimensions) as e: self.set_parallelization_different_for_remote(host_id)
 
             # Determine the parallelization scheme for each remote host
-            elif self.config.same_requirements: self.set_parallelization_same_for_remote(remote.host_id)
+            elif self.config.same_requirements: self.set_parallelization_same_for_remote(host_id)
 
             # Determine the parallelization scheme with the parallelization tool separately for each simulation
-            else: self.set_parallelization_different_for_remote(remote.host_id)
+            else: self.set_parallelization_different_for_remote(host_id)
 
     # -----------------------------------------------------------------
 
@@ -2809,7 +2827,7 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Checking the parallelization scheme ...")
+        log.info("Checking the parallelization scheme for remote host '" + host_id + "' ...")
 
         # Get the remote instance
         remote = self.get_skirt_remote(host_id)
@@ -2830,7 +2848,6 @@ class BatchLauncher(Configurable):
             if parallelization.threads > hardware_threads_per_node: raise RuntimeError("The number of requested threads per process exceeds the number of allowed threads per node")
 
             # Determine the number of processes per node (this same calculation is also done in JobScript)
-            # self.remote.cores = cores per node
             processes_per_node = remote.cores_per_node // parallelization.threads
 
             # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
@@ -2857,6 +2874,34 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_data_parallel(self, host_id, nprocesses):
+
+        """
+        This function ...
+        :param host_id:
+        :param nprocesses:
+        :return:
+        """
+
+        # Set data parallelization flag
+        if host_id in self.data_parallel_hosts: data_parallel = self.data_parallel_hosts[host_id]
+        elif self.config.data_parallel_remote is not None: data_parallel = self.config.data_parallel
+        else:
+
+            # User thinks all simulations have the same requirements
+            if self.config.same_requirements: data_parallel = self.get_first_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_first_dustlib_dimension_for_host(host_id) == 3  # assured to be safe even if simulations differ
+
+            # Check whether we can find that all simulations have the same number of wavelengths and dustlib dimension
+            elif self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True  # can return errors for non-uniformity
+
+            # Not data-parallel
+            else: data_parallel = False
+
+        # Return the flag
+        return data_parallel
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_remote_from_nprocesses(self, host_id):
 
         """
@@ -2868,47 +2913,49 @@ class BatchLauncher(Configurable):
         # Get the number of processes
         nprocesses = self.get_nprocesses_for_host(host_id)
 
+        # Debugging
+        log.debug("Determining one parallelization scheme for all simulations of remote host '" + host_id + "' with " + str(nprocesses) + " processes ...")
+
         # Get host properties
         prop = self.get_properties_for_host(host_id)
 
+        # Get number of sockets to use and the number of cores per socket
+        nnodes = prop.nnodes
+        nsockets = prop.nsockets # nsockets per node
+        ncores = prop.ncores # ncores per socket
+
+        # Check the number of processes and the number of nodes (the total number of processes must be a multiple of the number of nodes)
+        if not numbers.is_multiple_of(nprocesses, nnodes): raise ValueError("The total number of processes (" + str(nprocesses) + ") must be a multiple of the number of nodes (" + str(nnodes) + ")")
+        nprocesses_per_node = numbers.as_integer_check_division(nprocesses, nnodes)
+
+        # Check the number of processes per node and the number of sockets
+        if self.config.allow_multisocket_processes:
+            if not numbers.is_multiple_or_divisor_of(nprocesses_per_node, nsockets): raise ValueError("The number of processes per node (" + str(nprocesses_per_node) + ") must be a multiple or divisor of (or equal to) the number of sockets per node (" + str(nsockets) + ")")
+        else:
+            if not numbers.is_multiple_of(nprocesses_per_node, nsockets): raise ValueError("The number of processes per node (" + str(nprocesses_per_node) + ") must be a multiple of (or equal to) the number of sockets per node (" + str(nsockets) + ")")
+
         # Determine cores per node and total number of cores
-        cores_per_node = prop.nsockets * prop.ncores
+        cores_per_node = nsockets * ncores
         total_ncores = prop.nnodes * cores_per_node
 
         # Check number of processes
-        if nprocesses > cores_per_node: raise ValueError("The number of processes cannot be larger than the number of cores per node (" + str(cores_per_node) + ")")
+        if nprocesses > cores_per_node: raise ValueError("The number of processes (" + str(nprocesses) + ") cannot be larger than the number of cores per node (" + str(cores_per_node) + ")")
 
         # Determine other parameters
-        ppn = prop.nsockets * prop.ncores
-        nprocesses_per_node = int(nprocesses / prop.nnodes)
-        nprocesses = nprocesses_per_node * prop.nnodes
+        ppn = nsockets * ncores
+        nprocesses = nprocesses_per_node * nnodes
         ncores_per_process = ppn / nprocesses_per_node
         threads_per_core = prop.threads_per_core if prop.hyperthreading else 1
         threads_per_process = threads_per_core * ncores_per_process
 
-        # Set data parallelization flag
-        if host_id in self.data_parallel_hosts: data_parallel = self.data_parallel_hosts[host_id]
-        elif self.config.data_parallel_remote is not None: data_parallel = self.config.data_parallel
-        else:
-
-            # Determine data-parallel flag
-
-            # User thinks all simulations have the same requirements
-            if self.config.same_requirements: data_parallel = self.get_first_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_first_dustlib_dimension_for_host(host_id) == 3 # assured to be safe even if simulations differ
-
-            # Check whether we can find that all simulations have the same number of wavelengths and dustlib dimension
-            elif self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True # can return errors for non-uniformity
-
-            # Not data-parallel
-            else: data_parallel = False
+        # Get data parallelization flag
+        data_parallel = self.get_data_parallel(host_id, nprocesses)
 
         # Create the parallelization object
-        parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
-                                                    threads_per_process=threads_per_process,
-                                                    data_parallel=data_parallel)
+        para = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=data_parallel)
 
-        # Set
-        self.set_parallelization_for_host(host_id, parallelization)
+        # Set the parallelization for this remote
+        self.set_parallelization_for_host(host_id, para)
 
     # -----------------------------------------------------------------
 
@@ -2923,38 +2970,38 @@ class BatchLauncher(Configurable):
         # Get the number of processes per node
         nprocesses_per_node = self.get_nprocesses_per_node_for_host(host_id)
 
+        # Debugging
+        log.debug("Determining one parallelization scheme for all simulations of remote host '" + host_id + "' with " + str(nprocesses_per_node) + " processes on each node ...")
+
         # Get host properties
         prop = self.get_properties_for_host(host_id)
 
+        # Get the number of sockets to use and the number of cores per socket
+        nsockets = prop.nsockets
+        ncores = prop.ncores
+
+        # Check the number of processes per node with the number of sockets per node
+        if self.config.allow_multisocket_processes:
+            if not numbers.is_multiple_or_divisor_of(nprocesses_per_node, nsockets): raise ValueError("The number of processes per node (" + str(nprocesses_per_node) + ") must be a multiple or divisor of (or equal to) the number of sockets per node (" + str(nsockets) + ")")
+        else:
+            if not numbers.is_multiple_of(nprocesses_per_node, nsockets): raise ValueError("The number of processes per node (" + str(nprocesses_per_node) + ") must be a multiple of (or equal to) the number of sockets per node (" + str(nsockets) + ")")
+
         # Determine other parameters
-        ppn = prop.nsockets * prop.ncores
+        ppn = nsockets * ncores
         nprocesses = nprocesses_per_node * self.config.nnodes
         ncores_per_process = ppn / nprocesses_per_node
         threads_per_core = prop.threads_per_core if prop.hyperthreading else 1
         threads_per_process = threads_per_core * ncores_per_process
         total_ncores = prop.nnodes * prop.nsockets * prop.ncores
 
-        # Set data parallelization flag
-        if host_id in self.data_parallel_hosts: data_parallel = self.data_parallel_hosts[host_id]
-        elif self.config.data_parallel_remote is not None: data_parallel = self.config.data_parallel
-        else:
-
-            # Determine data-parallel flag
-            #if self.config.data_parallel_remote is None:
-
-            if self.get_nwavelengths_for_host(host_id) >= 10 * nprocesses and self.get_dustlib_dimension_for_host(host_id) == 3: data_parallel = True
-            else: data_parallel = False
-
-        # Up to the user
-        #else: data_parallel = self.config.data_parallel_remote
+        # Get data parallelization flag
+        data_parallel = self.get_data_parallel(host_id, nprocesses)
 
         # Create the parallelization object
-        parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core,
-                                                         threads_per_process=threads_per_process,
-                                                         data_parallel=data_parallel)
+        para = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=data_parallel)
 
         # Set
-        self.set_parallelization_for_host(host_id, parallelization)
+        self.set_parallelization_for_host(host_id, para)
 
     # -----------------------------------------------------------------
 
@@ -2969,7 +3016,7 @@ class BatchLauncher(Configurable):
         # TODO: use data parallelization flags?
 
         # Debugging
-        log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")
+        log.debug("Determining one parallelization scheme for all simulations of remote host '" + host_id + "' ...")
 
         # Determine the number of wavelengths
         if self.nwavelengths is not None: nwavelengths = self.nwavelengths
@@ -3010,7 +3057,7 @@ class BatchLauncher(Configurable):
         # TODO: use data parallelization flags?
 
         # Debugging
-        log.debug("Setting the parallelization schemes for host '" + host_id + "' ...")
+        log.debug("Determining the parallelization schemes for host '" + host_id + "' for each simulation separately ...")
 
         # Loop over the simulations in the queue for the current remote host
         for definition, simulation_name, _ in self.queues[host_id]:

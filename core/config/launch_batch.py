@@ -23,6 +23,7 @@ else: definition.add_fixed("remotes", "remote hosts", [])
 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "number of computing nodes to be used (for remote hosts that use a scheduling system, for other remotes the current load of the system will be probed)")
+definition.add_optional("nnodes_per_host", "string_integer_dictionary", "number of computing nodes to be used, per scheduling remote")
 
 # Advanced options
 definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
@@ -74,5 +75,6 @@ definition.add_flag("test", "test mode", False)
 # VERY ADVANCED
 definition.add_flag("all_sockets", "use all sockets, not just the determined number of 'free' sockets", False)
 definition.add_optional("nsockets", "positive_integer", "use this number of sockets")
+definition.add_flag("allow_multisocket_processes", "allow using multiple sockets per process", False)
 
 # -----------------------------------------------------------------

@@ -292,6 +292,7 @@ class Parallelization(object):
         cores = cores_per_process * processes
 
         # Create a new class instance and return it
+        # cores, threads_per_core, processes, data_parallel
         return cls(cores, threads_per_core, processes, data_parallel)
 
     # -----------------------------------------------------------------

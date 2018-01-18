@@ -105,6 +105,7 @@ definition.add_flag("data_parallel_local", "use data-parallelization", False)
 definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
 definition.add_flag("all_sockets", "use all sockets, not just the determined number of 'free' sockets (for remote execution)", False)
 definition.add_optional("nsockets", "positive_integer", "use this number of sockets (for remote execution)")
+definition.add_flag("allow_multisocket_processes", "allow using multiple sockets per process", False)
 
 # -----------------------------------------------------------------
 

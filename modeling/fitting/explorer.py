@@ -722,9 +722,10 @@ class ParameterExplorer(FittingComponent):
         # Set runtimes plot path
         self.launcher.config.runtimes_plot_path = self.visualisation_path
 
-        # ALL SOCKETS?
+        # Advanced parallelization options
         self.launcher.config.all_sockets = self.config.all_sockets
         self.launcher.config.nsockets = self.config.nsockets
+        self.launcher.config.allow_multisocket_processes = self.config.allow_multisocket_processes
 
     # -----------------------------------------------------------------
 
@@ -2100,7 +2101,10 @@ class ParameterExplorer(FittingComponent):
         try: self.launcher.run(ncells=self.ndust_cells)
         except Exception as e:
 
-            # Something went wrong, show error message
+            # Raise the exception again if we are just testing
+            if self.testing: raise e
+
+            # Something went wrong launching the simulations, show error message
             log.error("No simulations could be launched: removing generation")
             log.error(str(e))
             if log.is_debug(): traceback.print_exc()

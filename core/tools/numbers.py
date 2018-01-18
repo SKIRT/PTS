@@ -32,6 +32,45 @@ min_inf = float("-inf")
 
 # -----------------------------------------------------------------
 
+def is_multiple_of(number, other_number):
+
+    """
+    This function ...
+    :param number:
+    :param other_number:
+    :return:
+    """
+
+    return number % other_number == 0
+
+# -----------------------------------------------------------------
+
+def is_divisor_of(number, other_number):
+
+    """
+    This function ...
+    :param number:
+    :param other_number:
+    :return:
+    """
+
+    return other_number % number == 0
+
+# -----------------------------------------------------------------
+
+def is_multiple_or_divisor_of(number, other_number):
+
+    """
+    This function ...
+    :param number:
+    :param other_number:
+    :return:
+    """
+
+    return is_multiple_of(number, other_number) or is_divisor_of(number, other_number)
+
+# -----------------------------------------------------------------
+
 def equal_parts(number):
 
     """
@@ -170,6 +209,22 @@ def as_integer_check(value, absolute=True, rtol=1.e-5, atol=1.e-8):
 
     if absolute: return int(value)
     else: return int(round(value))
+
+# -----------------------------------------------------------------
+
+def as_integer_check_division(value_a, value_b, absolute=True, rtol=1.e-5, atol=1.e-8):
+
+    """
+    This function ...
+    :param value_a:
+    :param value_b:
+    :param absolute:
+    :param rtol:
+    :param atol:
+    :return:
+    """
+
+    return as_integer_check(value_a/value_b, absolute=absolute, rtol=rtol, atol=atol)
 
 # -----------------------------------------------------------------
 
