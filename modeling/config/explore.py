@@ -95,6 +95,7 @@ definition.add_flag("selfabsorption", "dust self-absorption", None)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
 definition.add_flag("spectral_convolution", "use spectral convolution for evaluating the simulations", None)
 definition.add_flag("use_images", "use images for evaluating the simulations", None)
+definition.add_flag("fit_not_clipped", "fit to the observed fluxes from the truncated (not clipped) images", False)
 
 # -----------------------------------------------------------------
 

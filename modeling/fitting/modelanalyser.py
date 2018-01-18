@@ -23,9 +23,10 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
 from ...core.filter.filter import parse_filter_from_instrument_and_band
-from .tables import WeightsTable
 from ...core.simulation.remote import get_simulation_id, get_simulation_for_host
 from ...core.launch.analyser import SimulationAnalyser
+from .generation import Generation, GenerationInfo
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -399,6 +400,30 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def generation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GenerationInfo.from_generation_path(self.generation_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Generation.from_path(self.generation_path)
+
+    # -----------------------------------------------------------------
+
     @property
     def generations_path(self):
 
@@ -581,6 +606,19 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fit_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.generation_info.fit_not_clipped: return self.truncated_sed
+        else: return self.observed_sed
+
+    # -----------------------------------------------------------------
+
     def calculate_differences(self):
 
         """
@@ -611,22 +649,22 @@ class SEDFitModelAnalyser(FittingComponent):
             fluxdensity = mock_sed["Photometry"][i]
 
             # Find the corresponding flux in the SED derived from observation
-            observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
+            observed_fluxdensity = self.fit_sed.photometry_for_band(instrument, band, unit="Jy").value
 
             # Find the corresponding flux error in the SED derived from observation
-            observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+            observed_fluxdensity_error = self.fit_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
 
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
                 log.warning("The observed flux density could not be found for the " + instrument + " " + band + " band")
                 continue
 
+            # Calculate difference and relative difference
             difference = fluxdensity - observed_fluxdensity
             relative_difference = difference / observed_fluxdensity
 
             # Find the index of the current band in the weights table
             index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
-
             if index is None: continue # Skip this band if a weight is not found
 
             # Get the weight

@@ -66,10 +66,31 @@ class GenerationInfo(SimplePropertyComposite):
         self.add_boolean_property("transient_heating", "transient heating enabled")
         self.add_boolean_property("spectral_convolution", "spectral convolution enabled")
         self.add_boolean_property("use_images", "use images")
+        self.add_boolean_property("fit_not_clipped", "fit to not-clipped image fluxes (truncated images)")
         self.add_string_property("path", "generation path")
 
         # Set properties
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_generation_path(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Determine info path
+        info_path = fs.join(path, "info.dat")
+
+        # Check if present
+        if not fs.is_file(info_path): raise IOError("The generation info file is not present at '" + info_path + "'")
+
+        # Load the info
+        return cls.from_file(info_path)
 
 # -----------------------------------------------------------------
 
@@ -100,14 +121,8 @@ class Generation(object):
         :return:
         """
 
-        # Determine info path
-        info_path = fs.join(directory_path, "info.dat")
-
-        # Check if present
-        if not fs.is_file(info_path): raise IOError("The generation info file is not present at '" + info_path + "'")
-
         # Load the info
-        info = GenerationInfo.from_file(info_path)
+        info = GenerationInfo.from_generation_path(directory_path)
 
         # Create the generation object and return
         return cls(info)

@@ -867,6 +867,32 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def truncated_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.truncated_sed_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.is_galaxy_modeling: return [self.observed_sed_path, self.truncated_sed_path]
+        elif self.is_sed_modeling: return [self.observed_sed_path]
+        else: raise ValueError("Observed SED not defined for modeling types other than 'galaxy' or 'sed'")
+
+    # -----------------------------------------------------------------
+
     def set_plotting_options(self):
 
         """
@@ -880,7 +906,7 @@ class ParameterExplorer(FittingComponent):
         # Plotting
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
         self.launcher.config.analysis.plotting.seds = self.config.plot_seds    # Plot the output SEDs
-        self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
+        self.launcher.config.analysis.plotting.reference_seds = self.observed_sed_paths  # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.format = self.config.plotting_format  # plot format
         self.launcher.config.analysis.plotting.progress = self.config.plot_progress
         self.launcher.config.analysis.plotting.timeline = self.config.plot_timeline
@@ -914,6 +940,19 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fit_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.fit_not_clipped: return self.truncated_sed_path
+        else: return self.observed_sed_path
+
+    # -----------------------------------------------------------------
+
     def set_misc_options(self):
 
         """
@@ -934,10 +973,6 @@ class ParameterExplorer(FittingComponent):
             self.launcher.config.analysis.misc.fluxes = False
             self.launcher.config.analysis.misc.images = False
 
-            # Plot fluxes
-            self.launcher.config.analysis.misc.plot_fluxes_from_images = True
-            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
-
             # Set instrument and coordinate system path
             self.launcher.config.analysis.misc.fluxes_from_images_instrument = self.earth_instrument_name
             self.launcher.config.analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
@@ -951,7 +986,7 @@ class ParameterExplorer(FittingComponent):
 
             # Plot fluxes
             self.launcher.config.analysis.misc.plot_fluxes_from_images = True
-            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.observed_sed_path
+            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.fit_sed_path
 
         # From SEDs
         else:
@@ -962,10 +997,9 @@ class ParameterExplorer(FittingComponent):
 
             # Plot fluxes
             self.launcher.config.analysis.misc.plot_fluxes = True
-            self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.observed_sed_path
+            self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.fit_sed_path
 
         # Observation filters and observation instruments
-        #self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
         self.launcher.config.analysis.misc.observation_filters = self.fitting_filter_names
         self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
@@ -1786,6 +1820,19 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fit_not_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.use_images and self.config.fit_not_clipped: raise ValueError("Cannot fit to non-clipped fluxes when using images for calculating observed fluxes (clip masks are used)")
+        else: return self.config.fit_not_clipped
+
+    # -----------------------------------------------------------------
+
     def set_info(self):
 
         """
@@ -1805,7 +1852,8 @@ class ParameterExplorer(FittingComponent):
         self.generation_info.wavelength_grid_name = self.wavelength_grid_name
         self.generation_info.model_representation_name = self.representation_name
 
-        #self.generation.nsimulations = self.config.nsimulations # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
+        # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
+        #self.generation.nsimulations = self.config.nsimulations
 
         # Set number of photon packages
         self.generation_info.npackages = self.npackages
@@ -1815,6 +1863,9 @@ class ParameterExplorer(FittingComponent):
         self.generation_info.transient_heating = self.transient_heating
         self.generation_info.spectral_convolution = self.spectral_convolution
         self.generation_info.use_images = self.use_images
+
+        # Fit options
+        self.generation_info.fit_not_clipped = self.fit_not_clipped
 
     # -----------------------------------------------------------------
 

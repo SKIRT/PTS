@@ -270,6 +270,19 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def truncated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_galaxy_modeling: raise RuntimeError("Something went wrong")
+        return self.environment.truncated_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_sed_path(self):
 
         """
@@ -289,6 +302,19 @@ class ModelingComponent(Configurable):
         if self.is_galaxy_modeling: return self.environment.observed_sed_path
         elif self.is_sed_modeling: return self.environment.sed_path
         else: raise ValueError("Observed SED not defined for modeling types other than 'galaxy' or 'sed'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncated_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.is_galaxy_modeling: raise RuntimeError("Something went wrong")
+        return self.environment.truncated_sed_path
 
     # -----------------------------------------------------------------
 

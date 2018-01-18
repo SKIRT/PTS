@@ -722,6 +722,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def truncated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.truncated_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_dustpedia_sed(self):
 
         """
