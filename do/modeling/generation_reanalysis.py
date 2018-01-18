@@ -40,6 +40,9 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 # Generations to remove
 definition.add_required("generation", "string", "generation name")
 
+# Simulations to reanalyse
+definition.add_positional_optional("simulations", "string_list", "simulation names")
+
 # Reanalyse which steps?
 definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
 definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
@@ -59,6 +62,9 @@ generation = fitting_run.get_generation(config.generation)
 
 # Loop over the simulations
 for simulation in generation.simulations:
+
+    # Check
+    if config.simulations is not None and simulation.name not in config.simulations: continue
 
     # Inform the user
     log.info("Re-analysing simulation '" + simulation.name + "' ...")

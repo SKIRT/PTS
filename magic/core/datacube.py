@@ -34,6 +34,7 @@ from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
 from ...core.tools.parallelization import ParallelTarget
 from ...core.tools import types
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -803,9 +804,12 @@ class DataCube(Image):
         log.debug("")
         for index in used_wavelength_indices:
             wavelength = self.get_wavelength(index)
+            wavelength_micron = wavelength.to("micron").value
             filters = used_wavelength_indices[index]
             filter_names = [str(f) for f in filters]
-            log.debug(" - " + str(wavelength) + ": " + ", ".join(filter_names))
+            nfilters = len(filter_names)
+            if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
+            else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
         log.debug("")
 
         # Calculate convolved frames

@@ -305,6 +305,8 @@ class ObservedFluxCalculator(Configurable):
             # Convert to non- angular or intrinsic area unit
             if datacube.is_per_angular_or_intrinsic_area: datacube.convert_to_corresponding_non_angular_or_intrinsic_area_unit()
 
+            print("spectral convolution filters", self.spectral_convolution_filters)
+
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             nprocesses = 1
             frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,

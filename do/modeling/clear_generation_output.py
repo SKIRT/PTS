@@ -40,7 +40,7 @@ definition.add_flag("backup", "make backups of non-empty directories", False)
 definition.add_flag("adapt_simulations", "unset retrieved and analysed flags of the corresponding simulations", False)
 
 # Generations to remove
-definition.add_required("generation", "string", "generations to remove (none means all)")
+definition.add_required("generation", "string", "generation to remove (none means all)")
 
 # Get configuration
 config = parse_arguments("clear_generation_output", definition)

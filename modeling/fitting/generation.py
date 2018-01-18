@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools import filesystem as fs
@@ -26,7 +29,7 @@ from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
 from ...core.tools.utils import lazyproperty
 from ...core.launch.batchlauncher import SimulationAssignmentTable
-from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host
+from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host
 from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
 from ...core.simulation.simulation import SkirtSimulation
@@ -716,6 +719,37 @@ class Generation(object):
         """
 
         return self.assignment_table.ids_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_paths_for_host(self, host_id, as_dict=True, id_or_name="name"):
+
+        """
+        This function ...
+        :param host_id:
+        :param as_dict:
+        :param id_or_name:
+        :return:
+        """
+
+        paths = OrderedDict()
+        simulation_ids = self.assignment_table.ids_for_remote(host_id)
+        for simulation_id in simulation_ids:
+
+            # Get the filepath
+            filepath = get_simulation_path_for_host(host_id, simulation_id)
+            if not fs.is_file(filepath): raise ValueError("Simulation file does not exist")
+
+            # Set key
+            if id_or_name == "id": key = simulation_id
+            else: key = self.assignment_table.get_simulation_name_for_id(simulation_id)
+
+            # Add
+            paths[key] = filepath
+
+        # Return
+        if as_dict: return paths
+        else: return paths.values()
 
     # -----------------------------------------------------------------
 

@@ -211,6 +211,18 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_index_for_simulation_id(self, simulation_id):
+
+        """
+        This function ...
+        :param simulation_id:
+        :return:
+        """
+
+        return tables.find_index(self, simulation_id, "ID")
+
+    # -----------------------------------------------------------------
+
     def get_host_id_for_simulation(self, simulation_name):
 
         """
@@ -234,6 +246,19 @@ class SimulationAssignmentTable(SmartTable):
 
         index = self.get_index_for_simulation(simulation_name)
         return self["ID"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_for_id(self, simulation_id):
+
+        """
+        This function ...
+        :param simulation_id:
+        :return:
+        """
+
+        index = self.get_index_for_simulation_id(simulation_id)
+        return self["Simulation name"][index]
 
     # -----------------------------------------------------------------
 
