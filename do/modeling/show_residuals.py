@@ -56,7 +56,7 @@ plotter = ResidualImageGridPlotter()
 # Downsampling
 #plotter.config.downsample = config.downsample
 #plotter.config.max_npixels = config.max_npixels
-#plotter.config.output = config.output
+plotter.config.output = config.output
 
 # Extra
 #plotter.config.normalize = config.normalize
@@ -69,7 +69,7 @@ plotter = ResidualImageGridPlotter()
 plotter.config.write = config.write_data
 
 # Crop to
-plotter.crop_to=environment.truncation_box
+plotter.crop_to = environment.truncation_box
 
 # -----------------------------------------------------------------
 

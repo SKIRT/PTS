@@ -54,7 +54,7 @@ definition.add_flag("sort_filters", "sort the frames on filter", True)
 # -----------------------------------------------------------------
 
 # Downsampling
-definition.add_flag("downsample", "perform downsampling")
+definition.add_flag("downsample", "perform downsampling", False)
 definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels to enabled downsampling", 400)
 
 # -----------------------------------------------------------------

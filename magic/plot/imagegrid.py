@@ -14,11 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-from scipy import ndimage
-import copy
 import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.axes_grid1 import AxesGrid
 from matplotlib import colors
 from matplotlib import cm
 from collections import OrderedDict
@@ -144,6 +140,18 @@ class ImageGridPlotter(Configurable):
         if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preserve_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.normalize
 
     # -----------------------------------------------------------------
 
@@ -1244,7 +1252,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def colormap(self):
 
         """
@@ -1256,7 +1264,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def background_color(self):
 
         """
@@ -1280,7 +1288,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_frame(self, name, row, col, vmin=None, vmax=None, return_image=False, return_normalization=False):
+    def _plot_frame(self, name, row, col, vmin=None, vmax=None, return_image=False, return_normalization=False, add_label=True):
 
         """
         This function ...
@@ -1291,6 +1299,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         :param vmax:
         :param return_image:
         :param return_normalization:
+        :param add_label:
         :return:
         """
 
@@ -1348,7 +1357,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
                 for patch in self.regions[name][label].to_mpl_patches(): plot.axes.add_patch(patch)
 
         # Add the label
-        plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")  # fontweight='bold'
+        if add_label: plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")  # fontweight='bold'
 
         # Return vmin and vmax
         if return_image:
@@ -1835,6 +1844,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         elif regions is None: pass
         else: raise ValueError("Invalid input")
 
+        # If either observation or model is None, don't create residuals
+        if observation is None or model is None: residuals = False
+
         # Make entry
         entry = Map()
         entry.observation = observation
@@ -2049,6 +2061,101 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     # -----------------------------------------------------------------
 
     @property
+    def width(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def height(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot.ysize * self.nrows
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_width_to_height(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = []
+
+        # Loop over the frames
+        for name in self.names: values.append(self.get_width_to_height(name))
+
+        # Return the mean
+        return numbers.arithmetic_mean(*values)
+
+    # -----------------------------------------------------------------
+
+    def get_width_to_height(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        width = self.get_width(name)
+        height = self.get_height(name)
+        return float(width) / float(height)
+
+    # -----------------------------------------------------------------
+
+    def get_width(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        observation = self.get_observation(name)
+        model = self.get_model(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.xsize
+        elif model is None: return observation.xsize
+        else:
+            if observation.xsize != model.xsize: raise ValueError("Inconsistent sizes for row '" + name + "'")
+            return observation.xsize
+
+    # -----------------------------------------------------------------
+
+    def get_height(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        observation = self.get_observation(name)
+        model = self.get_model(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.ysize
+        elif model is None: return observation.ysize
+        else:
+            if observation.ysize != model.ysize: raise ValueError("Inconsistent sizes for row '" + name + "'")
+            return observation.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
     def nrows(self):
 
         """
@@ -2234,20 +2341,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Set default values for all attributes
-        self.title = None
-        self.rows = OrderedDict()
-        self.errors = dict()
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def with_residuals_row_names(self):
 
@@ -2398,7 +2491,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         for name in self.with_residuals_row_names:
 
             # Check
-            if self.has_data(name): raise ValueError("No data for the '" + name + " row to create residuals")
+            if self.has_data(name):
+                log.warning("No data for the '" + name + "' row to create residuals: skipping ...")
+                continue
+                #raise ValueError("No data for the '" + name + "' row to create residuals")
 
             # Get the observation and model
             observation = self.get_observation(name)
@@ -2886,7 +2982,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def colormap(self):
 
         """
@@ -2898,7 +2994,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def background_color(self):
 
         """
@@ -2907,6 +3003,31 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         return self.colormap(0.0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residuals_colormap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.residuals_colormap is not None: return cm.get_cmap(self.config.residuals_colormap)
+        else: return cm.get_cmap(self.config.colormap)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residuals_background_color(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.residuals_colormap(0.0)
 
     # -----------------------------------------------------------------
 
