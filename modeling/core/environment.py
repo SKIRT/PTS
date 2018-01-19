@@ -769,6 +769,20 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    def has_photometry_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        from ...core.tools import types
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return fltr in self.photometry_filters
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def photometry_image_paths(self):
 

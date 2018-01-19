@@ -21,6 +21,11 @@ default_colormap = "magma"
 
 # -----------------------------------------------------------------
 
+scales = ["log", "sqrt"]
+default_scale = "log"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition()
 
@@ -81,12 +86,9 @@ definition.add_optional("colormap", "string", "color map", default_colormap, cho
 
 # -----------------------------------------------------------------
 
-scales = ["log", "sqrt"]
-definition.add_optional("scale", "string", "scaling", "log", scales)
+definition.add_optional("scale", "string", "scaling", default_scale, scales)
 definition.add_optional("interval", "string", "interval", "pts")
-#definition.add_optional("colours", "string", "colour or colour scale", "red")
 definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
-
 definition.add_flag("background", "plot a background", True)
 
 # -----------------------------------------------------------------

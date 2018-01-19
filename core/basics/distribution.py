@@ -78,6 +78,33 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_data(cls, name, data, **kwargs):
+
+        """
+        This function ...
+        :param name:
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the data
+        if isinstance(data, np.ndarray): pass
+        elif hasattr(data, "data"): data = data.data
+        else: data = np.asarray(data)
+
+        # Get a mask of the finite values
+        finite = np.logical_not(np.logical_or(np.isnan(data), np.isinf(data)))
+
+        # Get the finite values
+        values = data[finite]
+
+        # Create the distribution
+        return cls.from_values(name, values, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_values(cls, name, values, nbins=20, weights=None, unit=None, logarithmic=False, density=True,
                     sigma_clip=False, sigma_level=3):
 

@@ -22,12 +22,8 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 from matplotlib import colors
 from matplotlib import cm
 from collections import OrderedDict
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractproperty
 from collections import defaultdict
-
-# Import astronomical modules
-from astropy.visualization import SqrtStretch, LogStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
@@ -48,18 +44,9 @@ from ...core.tools.utils import lazyproperty
 from ..region.list import load_region_list
 from ..core.mask import Mask
 from ...core.tools import numbers
-
-# -----------------------------------------------------------------
-
-# EXISTS:
-
-# astropy.visualization.wcsaxes.WCSAxesSubplot(fig, *args, **kwargs)[source] [edit on github]¶
-# For making subplots with WCS
-
-# A subclass class for WCSAxes
-# fig is a matplotlib.figure.Figure instance.
-# args is the tuple (numRows, numCols, plotNum), where the array of subplots in the figure has dimensions numRows, numCols, and where plotNum is the number of the subplot being created. plotNum starts at 1 in the upper left corner and increases to the right.
-# If numRows <= numCols <= plotNum < 10, args can be the decimal integer numRows * 100 + numCols * 10 + plotNum.
+from ...core.basics.map import Map
+from ...core.tools import sequences
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -157,6 +144,90 @@ class ImageGridPlotter(Configurable):
         if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
         elif self.config.library == bokeh: self.figure = BokehFigure()
         else: raise ValueError("Invalid libary: " + self.config.library)
+
+    # -----------------------------------------------------------------
+
+    def _process_frame(self, name, frame, copy=True):
+
+        """
+        This function ...
+        :param name:
+        :param frame:
+        :param copy:
+        :return:
+        """
+
+        # Initialize flags
+        _rebinned = False
+        _cropped = False
+        _downsampled = False
+        _normalized = False
+
+        # Rebin the frame
+        if self.rebin_to is not None:
+
+            # Debugging
+            log.debug("Rebinning the '" + name + "' frame ...")
+
+            # Rebin
+            if copy: frame = frame.rebinned(self.rebin_to, convert=self.preserve_units)
+            else: frame.rebin(self.rebin_to, convert=self.preserve_units)
+
+            # Set flag
+            _rebinned = True
+
+        # Crop the frame
+        if self.crop_to is not None:
+
+            # Debugging
+            log.debug("Cropping the '" + name + "' frame ...")
+
+            # Crop
+            if _rebinned or not copy: frame.crop_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
+            else: frame = frame.cropped_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
+
+            # Set flag
+            _cropped = True
+
+        # Downsampling required?
+        if self.config.downsample and frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
+
+            # Determine the downsample factor
+            downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
+
+            # Debugging
+            log.debug("Downsampling the '" + name + "' frame with a factor of " + str(downsample_factor) + "...")
+
+            # Downsample
+            if (_rebinned or _cropped) or not copy: frame.downsample(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
+            else: frame = frame.downsampled(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
+
+            # Set flag
+            _downsampled = True
+
+        # Normalize the frame
+        if self.config.normalize:
+
+            # Debugging
+            log.debug("Normalizing the '" + name + "' frame ...")
+
+            try:
+
+                # Create normalized frame
+                if (_rebinned or _cropped or _downsampled) or not copy: frame.normalize()
+                else: frame = frame.normalized()
+
+                # Set flag
+                _normalized = True
+
+            except AllZeroError: log.warning("The '" + name + "' frame could not be normalized")
+
+        # If no processing is performed, make a copy if necessary
+        processed = _rebinned or _normalized or _cropped or _downsampled
+        if not processed and copy: frame = frame.copy()
+
+        # Return the new frame
+        return frame
 
     # -----------------------------------------------------------------
 
@@ -991,90 +1062,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _process_frame(self, name, frame, copy=True):
-
-        """
-        This function ...
-        :param name:
-        :param frame:
-        :param copy:
-        :return:
-        """
-
-        # Initialize flags
-        _rebinned = False
-        _cropped = False
-        _downsampled = False
-        _normalized = False
-
-        # Rebin the frame
-        if self.rebin_to is not None:
-
-            # Debugging
-            log.debug("Rebinning the '" + name + "' frame ...")
-
-            # Rebin
-            if copy: frame = frame.rebinned(self.rebin_to, convert=self.preserve_units)
-            else: frame.rebin(self.rebin_to, convert=self.preserve_units)
-
-            # Set flag
-            _rebinned = True
-
-        # Crop the frame
-        if self.crop_to is not None:
-
-            # Debugging
-            log.debug("Cropping the '" + name + "' frame ...")
-
-            # Crop
-            if _rebinned or not copy: frame.crop_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
-            else: frame = frame.cropped_to(self.crop_to, factor=self.cropping_factor, out_of_bounds="expand")
-
-            # Set flag
-            _cropped = True
-
-        # Downsampling required?
-        if self.config.downsample and frame.xsize > self.config.max_npixels or frame.ysize > self.config.max_npixels:
-
-            # Determine the downsample factor
-            downsample_factor = max(frame.xsize, frame.ysize) / float(self.config.max_npixels)
-
-            # Debugging
-            log.debug("Downsampling the '" + name + "' frame with a factor of " + str(downsample_factor) + "...")
-
-            # Downsample
-            if (_rebinned or _cropped) or not copy: frame.downsample(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
-            else: frame = frame.downsampled(downsample_factor, convert=self.preserve_units, dilate_nans=False, dilate_infs=False)
-
-            # Set flag
-            _downsampled = True
-
-        # Normalize the frame
-        if self.config.normalize:
-
-            # Debugging
-            log.debug("Normalizing the '" + name + "' frame ...")
-
-            try:
-
-                # Create normalized frame
-                if (_rebinned or _cropped or _downsampled) or not copy: frame.normalize()
-                else: frame = frame.normalized()
-
-                # Set flag
-                _normalized = True
-
-            except AllZeroError: log.warning("The '" + name + "' frame could not be normalized")
-
-        # If no processing is performed, make a copy if necessary
-        processed = _rebinned or _normalized or _cropped or _downsampled
-        if not processed and copy: frame = frame.copy()
-
-        # Return the new frame
-        return frame
-
-    # -----------------------------------------------------------------
-
     def add_frame(self, frame, name=None, mask=None, regions=None, copy=True, process=True):
 
         """
@@ -1109,7 +1096,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         else: raise ValueError("Invalid input")
 
         # Add regions
-        if types.is_dictionary(mask): self.add_region_lists(name, regions)
+        if types.is_dictionary(regions): self.add_region_lists(name, regions)
         elif isinstance(regions, RegionList): self.add_region_list(name, regions)
         elif isinstance(regions, Region): self.add_region(name, regions)
         elif regions is None: pass
@@ -1735,6 +1722,13 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
 # -----------------------------------------------------------------
 
+observation_index = 0
+model_index = 1
+residuals_index = 2
+distribution_index = 3
+
+# -----------------------------------------------------------------
+
 class ResidualImageGridPlotter(ImageGridPlotter):
 
     """
@@ -1752,81 +1746,213 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Call the constructor of the base class
         super(ResidualImageGridPlotter, self).__init__(*args, **kwargs)
 
-        # Set the weighed flag
-        self.weighed = None
-
-        # Set the histogram flag
-        self.histogram = None
-
         # The rows of the grid
         self.rows = OrderedDict()
-        self.plot_residuals = []
 
-        # Error maps (for weighed residuals)
+        # Masks and regions to be overlayed on the images
+        self.masks = defaultdict(dict)
+        self.regions = defaultdict(dict)
+
+        # Error maps
         self.errors = dict()
 
-        # The names of the columns
-        if self.weighed: self.column_names = ["Observation", "Model", "Weighed residuals"]
-        else: self.column_names = ["Observation", "Model", "Residuals"]
+        # The residual maps and distributions
+        self.residuals = OrderedDict()
+        self.distributions = OrderedDict()
 
-        # Box (SkyRectangle) where to cut off the maps
-        self.box = None
-
-        self._plotted_rows = 0
-
-        self.absolute = False
+        # The colorbar
+        self.colorbar = None
 
     # -----------------------------------------------------------------
 
-    def set_bounding_box(self, box):
+    def has_row(self, name):
 
         """
-        This function ...
-        :param box:
+        Thisn function ...
+        :param name:
         :return:
         """
 
-        self.box = box
+        return name in self.names
 
     # -----------------------------------------------------------------
 
-    def add_row(self, frame_a, frame_b, name, residuals=True, errors=None):
+    def _process_frames(self, name, observation, model, copy=True):
 
         """
         This function ...
-        :param frame_a:
-        :param frame_b:
+        :param name:
+        :param observation:
+        :param model:
+        :param copy:
+        :return:
+        """
+
+        # Process observation
+        if observation is not None: observation = self._process_frame(name + " observation image", observation, copy=copy)
+
+        # Process
+        if model is not None: model = self._process_frame(name + " model image", model, copy=copy)
+
+        # Return
+        return observation, model
+
+    # -----------------------------------------------------------------
+
+    def add_row(self, observation, model, name, residuals=True, errors=None, mask=None, regions=None, copy=True, process=True):
+
+        """
+        This function ...
+        :param observation:
+        :param model:
         :param name:
         :param residuals:
         :param errors:
+        :param mask:
+        :param regions:
+        :param copy:
+        :param process:
         :return:
         """
 
+        # Check name
+        if self.has_row(name): raise ValueError("Name '" + name + "' is already in use")
+
+        # Process the frames if necessary
+        if process: observation, model = self._process_frames(name, observation, model, copy=copy)
+        elif copy: observation, model = observation.copy(), model.copy()
+
+        # Check masks
+        if types.is_dictionary(mask): masks = mask
+        elif isinstance(mask, MaskBase): masks = {name: mask}
+        elif mask is None: masks = None
+        else: raise ValueError("Invalid input")
+
+        # Check regions
+        if types.is_dictionary(regions): pass
+        elif isinstance(regions, RegionList): regions = {name: regions}
+        elif isinstance(regions, Region): regions = {name: region_to_region_list(regions)}
+        elif regions is None: pass
+        else: raise ValueError("Invalid input")
+
+        # Make entry
+        entry = Map()
+        entry.observation = observation
+        entry.model = model
+        entry.residuals = residuals
+        entry.errors = errors
+        entry.masks = masks
+        entry.regions = regions
+
         # Add the row
-        self.rows[name] = (frame_a, frame_b)
+        self.rows[name] = entry
 
-        # If residuals have to be plotted
-        if residuals:
-
-            self.plot_residuals.append(name)
-            if self.weighed:
-                if errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
-                self.errors[name] = errors
+        # If weighed residuals have to be plotted, we need error map
+        if self.config.weighed and errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
 
     # -----------------------------------------------------------------
 
-    def set_column_names(self, name_a, name_b, name_residual="Residual"):
+    def add_observation(self, observation, name, replace=False):
 
         """
         This function ...
-        :param name_a:
-        :param name_b:
-        :param name_residual:
+        :param observation:
+        :param name:
+        :param replace:
         :return:
         """
 
-        # Set names
-        self.column_names = [name_a, name_b, name_residual]
+        # Already a row added
+        if name in self.names:
+
+            # Already an observation for this row
+            if self.rows[name].observation is not None:
+
+                # Replace?
+                if replace: self.rows[name].observation = observation
+                else: raise ValueError("Already an observation image for the row '" + name + "'")
+
+            # Observation not yet defined for this row
+            else: self.rows[name].observation = observation
+
+        # New row
+        else: self.add_row(observation, None, name)
+
+    # -----------------------------------------------------------------
+
+    def add_model(self, model, name, replace=False):
+
+        """
+        This function ...
+        :param model:
+        :param name:
+        :param replace:
+        :return:
+        """
+
+        # Already a row added
+        if name in self.names:
+
+            # Already a model for this row
+            if self.rows[name].model is not None:
+
+                # Replace?
+                if replace: self.rows[name].model = model
+                else: raise ValueError("Already a model image for the row '" + name + "'")
+
+            # Model not yet defined for this row
+            else: self.rows[name].model = model
+
+        # New row
+        else: self.add_row(None, model, name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.same_contents(self.with_residuals_row_names, self.residuals_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_all_residuals
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.same_contents(self.with_residuals_row_names, self.distribution_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.distributions and not self.has_all_distributions
 
     # -----------------------------------------------------------------
 
@@ -1841,10 +1967,16 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Write
+        # 2. Create the residuals
+        if self.needs_residuals: self.create_residuals()
+
+        # 3. Create the distributions
+        if self.needs_distributions: self.create_distributions()
+
+        # 4. Write
         if self.config.write: self.write()
 
-        # 3. Make the plot
+        # 5. Make the plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -1860,6 +1992,246 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Call the setup function of the base class
         super(ResidualImageGridPlotter, self).setup(**kwargs)
 
+        # Check config
+        if self.config.weighed and self.config.absolute: raise ValueError("Cannot enable both 'weighed' and 'absolute' residual maps")
+
+        # Load the images
+        if self.no_rows:
+            if self.config.from_data: self.load_data()
+            else: self.load_images()
+
+        # Initialize the figure
+        self.initialize_figure()
+
+        # Setup the plots
+        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+
+        # Sort the frames on filter
+        if self.config.sort_filters: self.sort()
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading images from file ...")
+
+    # -----------------------------------------------------------------
+
+    def load_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading data from file ...")
+
+    # -----------------------------------------------------------------
+
+    def sort(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Sort on filter
+        self.rows = ordered_by_value(self.rows, key=lambda entry: entry.observation.wavelength if entry.observation is not None else entry.model.wavelength)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.rows)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmasks(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return len(self.masks)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmasks > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmasks == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nregions(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return len(self.regions)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nregions > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nregions == 0
+
+    # -----------------------------------------------------------------
+
+    def nregions_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.names: raise ValueError("Invalid row '" + name + "'")
+
+        if self.rows[name].regions is None: return 0
+        else: return len(self.rows[name].regions)
+
+    # -----------------------------------------------------------------
+
+    def has_regions_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.nregions_for_row(name) > 0
+
+    # -----------------------------------------------------------------
+
+    def no_regions_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.nregions_for_row(name) == 0
+
+    # -----------------------------------------------------------------
+
+    def nmasks_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.names: raise ValueError("Invalid row '" + name + "'")
+
+        if self.rows[name].masks is None: return 0
+        else: return len(self.rows[name].masks)
+
+    # -----------------------------------------------------------------
+
+    def has_masks_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.nmasks_for_row(name) > 0
+
+    # -----------------------------------------------------------------
+
+    def no_masks_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.nmasks_for_row(name) == 0
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -1873,21 +2245,47 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.title = None
         self.rows = OrderedDict()
         self.errors = dict()
-        self.plot_residuals = []
-        self.column_names = ["Observation", "Model", "Residual"]
-        self._plotted_rows = 0
 
     # -----------------------------------------------------------------
 
-    @property
-    def nresidual_rows(self):
+    @lazyproperty
+    def with_residuals_row_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return len(self.plot_residuals)
+        names = []
+        for name in self.rows:
+            entry = self.rows[name]
+            if not entry.residuals: continue
+            names.append(name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    def do_residuals(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.with_residuals_row_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nwith_residuals_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.with_residuals_row_names)
 
     # -----------------------------------------------------------------
 
@@ -1899,7 +2297,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        return self.nresidual_rows > 0
+        return self.nwith_residuals_rows > 0
 
     # -----------------------------------------------------------------
 
@@ -1913,8 +2311,188 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         if not self.has_residual_rows: return 2
         else:
-            if self.histogram: return 4
+            if self.config.distributions: return 4
             else: return 3
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        observation = self.get_observation(name)
+        model = self.get_model(name)
+
+        if observation is None and model is None: raise ValueError("No observation nor model for row '" + name + "'")
+        elif observation is None: return model.wcs
+        elif model is None: return observation.wcs
+        else:
+            if observation.wcs != model.wcs: raise ValueError("Inconsistent coordinate system")
+            return observation.wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.names[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.names[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.first_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.first_wcs
+
+    # -----------------------------------------------------------------
+
+    def create_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the residual frames ...")
+
+        # Loop over the rows for which residuals have to be calculated
+        for name in self.with_residuals_row_names:
+
+            # Check
+            if self.has_data(name): raise ValueError("No data for the '" + name + " row to create residuals")
+
+            # Get the observation and model
+            observation = self.get_observation(name)
+            model = self.get_model(name)
+            errors = self.get_errors(name)
+
+            # Error-weighed residuals
+            if self.config.weighed: residual = (model - observation) / errors
+
+            # Absolute residuals
+            elif self.config.absolute: residual = model - observation
+
+            # Relative residuals
+            else: residual = (model - observation) / model
+
+            # Add the residual frame
+            self.residuals[name] = residual
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_names(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.residuals.keys()
+
+    # -----------------------------------------------------------------
+
+    def get_residuals(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.residuals_names: raise ValueError("No residuals map for the '" + name + "' row")
+        return self.residuals[name]
+
+    # -----------------------------------------------------------------
+
+    def create_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the residual distributions ...")
+
+        # Loop over the residual maps
+        for name in self.residuals_names:
+
+            # Debugging
+            log.debug("Creating distribution for the '" + name + "' residuals ...")
+
+            # Get the residual map
+            residuals = self.get_residuals(name)
+
+            # Create the distribution
+            distribution = Distribution.from_data("Residual", residuals)
+
+            # Add the distribution
+            self.distributions[name] = distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.distributions.keys()
+
+    # -----------------------------------------------------------------
+
+    def get_distribution(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.distribution_names: raise ValueError("No residuals distribution for the '" + name + "' row")
+        return self.distributions[name]
 
     # -----------------------------------------------------------------
 
@@ -1928,12 +2506,55 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the frames
-        self.write_frames()
+        # Write the observation
+        self.write_observations()
+
+        # Write the models
+        self.write_models()
+
+        # Write the regions
+        if self.has_regions: self.write_regions()
+
+        # Write the masks
+        if self.has_masks: self.write_masks()
+
+        # Write the residual frames
+        self.write_residuals()
+
+        # Write the distributions
+        if self.config.distributions: self.write_distributions()
 
     # -----------------------------------------------------------------
 
-    def write_frames(self):
+    @lazyproperty
+    def observation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in self.names:
+            if not self.has_observation_data(name): continue
+            names.append(name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("observations", create=True)
+
+    # -----------------------------------------------------------------
+
+    def write_observations(self):
 
         """
         This function ...
@@ -1941,7 +2562,589 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Inform the user
-        log.info("Writing the frames ...")
+        log.info("Writing the observation frames ...")
+
+        # Loop over the frames
+        for name in self.observation_names:
+
+            # Get the observation
+            observation = self.get_observation(name)
+
+            # Determine path
+            path = fs.join(self.observations_path, name + ".fits")
+
+            # Save the observation image
+            observation.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in self.names:
+            if not self.has_model_data(name): continue
+            names.append(name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def models_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("models", create=True)
+
+    # -----------------------------------------------------------------
+
+    def write_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model frames ...")
+
+        # Loop over the frames
+        for name in self.model_names:
+
+            # Get the model
+            model = self.get_model(name)
+
+            # Determine the path
+            path = fs.join(self.models_path, name + ".fits")
+
+            # Save the model image
+            model.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def regions_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("regions", create=True)
+
+    # -----------------------------------------------------------------
+
+    def write_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the regions ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def masks_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("masks", create=True)
+
+    # -----------------------------------------------------------------
+
+    def write_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing masks ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_directory("residuals", create=True)
+
+    # -----------------------------------------------------------------
+
+    def write_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the residual frames ...")
+
+        # Loop over the residuals
+        for name in self.residuals_names:
+
+            # Get the residuals frame
+            residuals = self.get_residuals(name)
+
+            # Determine path
+            path = fs.join(self.residuals_path, name + ".fits")
+
+            # Write the residuals map
+            residuals.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def distributions_path(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.output_path_directory("distributions", create=True)
+    
+    # -----------------------------------------------------------------
+
+    def write_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the residual distributions ...")
+
+        # Loop over the distributions
+        for name in self.distribution_names:
+
+            # Get the distribution
+            distribution = self.get_distribution(name)
+
+            # Determine the path
+            path = fs.join(self.distributions_path, name + ".dat")
+
+            # Write the distribution
+            distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.rows.keys()
+
+    # -----------------------------------------------------------------
+
+    def index_for_row(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.names.index(name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_row_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.scale_reference is None: return None
+        elif self.config.scale_reference not in self.names: raise ValueError("Invalid reference row name")
+        else: return self.config.scale_reference
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_row_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.index_for_row(self.reference_row_name)
+
+    # -----------------------------------------------------------------
+
+    def _plot_reference_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the frame
+        vmin, vmax = self._plot_row(self.reference_row_name, self.reference_row_index)
+
+        # Return
+        return vmin, vmax, self.reference_row_name
+
+    # -----------------------------------------------------------------
+
+    def _plot_row(self, name, index, vmin=None, vmax=None, return_images=False, return_normalizations=False):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :param vmin:
+        :param vmax:
+        :param return_images:
+        :param return_normalizations:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding the '" + name + "' row to the plot ...")
+
+        # Plot the observation
+        vmin_observation, vmax_observation, obs_image, obs_normalization = self._plot_observation(name, index, vmin=vmin, vmax=vmax)
+
+        # Plot the model, on the same scale
+        vmin_model, vmax_model, model_image, model_normalization = self._plot_model(name, index, vmin=vmin_observation, vmax=vmax_observation)
+
+        # Plot the residuals
+        if self.config.same_residuals_scale: vmin_res, vmax_res = vmin_observation, vmax_observation
+        else: vmin_res = vmax_res = None
+        if self.do_residuals(name): vmin_res, vmax_res, res_image, res_normalization = self._plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
+        else: vmin_res = vmax_res = res_image = res_normalization = None
+
+        # Plot the distribution
+        if self.config.distributions: distr_image = self._plot_distribution(name, index)
+        else: distr_image = None
+
+        # Make list of the images
+        images = [obs_image, model_image, res_image, distr_image]
+
+        # Return vmin and vmax
+        if return_images:
+            if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, images, obs_normalization, res_normalization
+            else: return vmin_observation, vmax_observation, vmin_res, vmax_res, images
+        else:
+            if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, obs_normalization, res_normalization
+            else: return vmin_observation, vmax_observation, vmin_res, vmax_res
+
+    # -----------------------------------------------------------------
+
+    def get_mask(self, name, label):
+
+        """
+        This function ...
+        :param name:
+        :param label:
+        :return:
+        """
+
+        return self.rows[name].masks[label]
+
+    # -----------------------------------------------------------------
+
+    def get_regions(self, name, label):
+
+        """
+        This function ...
+        :param name:
+        :param label:
+        :return:
+        """
+
+        return self.rows[name].regions[label]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colormap(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cm.get_cmap(self.config.colormap)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def background_color(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colormap(0.0)
+
+    # -----------------------------------------------------------------
+
+    def _plot_frame(self, name, frame, row, col, vmin=None, vmax=None, add_label=True):
+
+        """
+        This function ...
+        :param name:
+        :param frame:
+        :param row:
+        :param col:
+        :param vmin:
+        :param vmax:
+        :param add_label:
+        :return:
+        """
+
+        # Get the plot
+        plot = self.plots[row][col]
+
+        # Color spines
+        plot.axes.spines['bottom'].set_color("white")
+        plot.axes.spines['top'].set_color("white")
+        plot.axes.spines['left'].set_color("white")
+        plot.axes.spines['right'].set_color("white")
+
+        # Color ticks
+        # plot.axes.xaxis.label.set_color("white")
+        # plot.axes.yaxis.label.set_color("white")
+        plot.axes.tick_params(axis='x', colors="white", direction="inout")
+        plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+        # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+
+        # Add mask if present
+        if self.has_masks_for_row(name):
+            for label in self.rows[name].masks:
+                mask = self.get_mask(name, label)
+                frame[mask] = nan
+
+        # Plot
+        if self.config.share_scale and vmin is not None: interval = [vmin, vmax]
+        else: interval = self.config.interval
+
+        # Plot
+        plot.axes.set_adjustable('box-forced')
+        vmin_image, vmax_image, image, normalization = plotting.plot_box(frame.data, axes=plot.axes, interval=interval,
+                                                                         scale=self.config.scale, cmap=self.colormap,
+                                                                         alpha=self.config.alpha, return_image=True,
+                                                                         return_normalization=True)
+
+        # Add region if present
+        if self.has_regions_for_row(name):
+            for label in self.rows[name].regions:
+                regions = self.get_regions(name, label)
+                for patch in regions.to_mpl_patches(): plot.axes.add_patch(patch)
+
+        # Add the label
+        if add_label: plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")
+
+        # Return
+        return vmin_image, vmax_image, image, normalization
+
+    # -----------------------------------------------------------------
+
+    def _plot_observation(self, name, index, vmin=None, vmax=None):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :param vmin:
+        :param vmax:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the '" + name + "' observation image ...")
+
+        # Get the observation
+        observation = self.get_observation(name)
+
+        # Plot
+        return self._plot_frame(name, observation, index, observation_index, vmin=vmin, vmax=vmax, add_label=True)
+
+    # -----------------------------------------------------------------
+
+    def _plot_model(self, name, index, vmin=None, vmax=None):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :param vmin:
+        :param vmax:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the '" + name + "' model image ...")
+
+        # Get the model
+        model = self.get_model(name)
+
+        # Plot
+        return self._plot_frame(name, model, index, observation_index, vmin=vmin, vmax=vmax, add_label=False)
+
+    # -----------------------------------------------------------------
+
+    def _plot_residuals(self, name, index, vmin=None, vmax=None):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :param vmin:
+        :param vmax:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the '" + name + "' residual map ...")
+
+        # Get the residual map
+        residuals = self.get_residuals(name)
+
+        # Plot
+        return self._plot_frame(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax, add_label=False)
+
+    # -----------------------------------------------------------------
+
+    def _plot_distribution(self, name, index):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the '" + name + "' residuals distribution ...")
+
+        # Get the distribution
+        distribution = self.get_distribution(name)
+
+        # Get the plot
+        plot = self.plots[index][distribution_index]
+
+        # Color spines
+        # print(plot.axes.spines.keys())
+        plot.axes.spines['bottom'].set_color("white")
+        plot.axes.spines['top'].set_color("white")
+        plot.axes.spines['left'].set_color("white")
+        plot.axes.spines['right'].set_color("white")
+
+        # Color ticks
+        # plot.axes.xaxis.label.set_color("white")
+        # plot.axes.yaxis.label.set_color("white")
+        plot.axes.tick_params(axis='x', colors="white", direction="inout")
+        plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    def get_observation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.rows[name].observation
+
+    # -----------------------------------------------------------------
+
+    def get_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.rows[name].model
+
+    # -----------------------------------------------------------------
+
+    def get_errors(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.rows[name].errors
+
+    # -----------------------------------------------------------------
+
+    def has_observation_data(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        frame = self.get_observation(name)
+        return not (frame is None or frame.all_zeroes or frame.all_nans or frame.all_infs)
+
+    # -----------------------------------------------------------------
+
+    def has_model_data(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        frame = self.get_model(name)
+        return not (frame is None or frame.all_zeroes or frame.all_nans or frame.all_infs)
+
+    # -----------------------------------------------------------------
+
+    def has_data(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_observation_data(name) and self.has_model_data(name)
 
     # -----------------------------------------------------------------
 
@@ -1949,237 +3152,76 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting ...")
 
-        # Determine the wcs with the smallest pixelscale
-        reference_wcs = None
-        for label in self.rows:
-            if reference_wcs is None or reference_wcs.average_pixelscale > self.rows[label][0].average_pixelscale: reference_wcs = copy.deepcopy(self.rows[label][0].wcs)
+        # Initialize vmin and vmax
+        vmin = vmax = None
 
-        number_of_rows = len(self.rows)
-        axisratio = float(self.rows[self.rows.keys()[0]][0].xsize) / float(self.rows[self.rows.keys()[0]][0].ysize)
-        #print("axisratio", axisratio)
+        # Initialize list
+        plotted = []
 
-        one_frame_x_size = 3.
-        fig_x_size = 3. * one_frame_x_size
-        #fig_y_size = number_of_rows * one_frame_x_size / axisratio
-        fig_y_size = one_frame_x_size * number_of_rows * 0.7
+        # The last image and normalization
+        #image = None
+        #image_normalization = None
 
-        # Create a figure
-        #self._figure = plt.figure(figsize=(fig_x_size, fig_y_size))
-        #self._figure.subplots_adjust(left=0.05, right=0.95)
+        # First plot the image of which we use the scale as reference
+        if self.config.share_scale and self.config.scale_reference is not None:
 
-        # Create grid
-        self._grid = AxesGrid(self._figure, 111,
-                                nrows_ncols=(len(self.rows), self.ncolumns),
-                                axes_pad=0.02,
-                                label_mode="L",
-                                share_all=True,
-                                cbar_location="right",
-                                cbar_mode="single",
-                                cbar_size="0.5%",
-                                cbar_pad="0.5%",
-                                )  # cbar_mode="single"
+            # Plot
+            vmin, vmax, name = self._plot_reference_frame()
 
-        for cax in self._grid.cbar_axes:
-            cax.toggle_label(False)
+            # Add to plotted
+            plotted.append(name)
 
-        #rectangle_reference_wcs = self.box.to_pixel(reference_wcs)
+        # Loop over the images
+        for index, name in enumerate(self.names):
 
-        data = OrderedDict()
+            # Get name
+            name = self.names[index]
+            if name in plotted: continue
 
-        greatest_shape = None
+            # Has observation and model data
+            if self.has_data(name):
 
-        if self.box is not None:
+                # Plot the frame
+                vmin_image, vmax_image, vmin_res, vmax_res, images, image_normalization, residual_normalization = self._plot_row(name, index, vmin=vmin, vmax=vmax, return_images=True, return_normalizations=True)
 
-            for label in self.rows:
-                wcs = self.rows[label][0].wcs
+                # Set vmin and vmax
+                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
-                rectangle = self.box.to_pixel(wcs)
+            # Only observation data
+            elif self.has_observation_data(name):
 
-                print(rectangle)
-                print(rectangle.lower_left)
-                print(rectangle.upper_right)
+                # Plot
+                vmin_image, vmax_image, image, normalization = self._plot_observation(name, index, vmin=vmin, vmax=vmax)
 
-                y_min = rectangle.lower_left.y
-                y_max = rectangle.upper_right.y
-                x_min = rectangle.lower_left.x
-                x_max = rectangle.upper_right.x
+                # Set vmin and vmax
+                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
-                reference = self.rows[label][0][y_min:y_max, x_min:x_max]
-                model = self.rows[label][1][y_min:y_max, x_min:x_max]
-                data[label] = (reference, model)
+            # Only model data
+            elif self.has_model_data(name):
 
-                #print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
+                # Plot
+                vmin_image, vmax_image, image, normalization = self._plot_model(name, index, vmin=vmin, vmax=vmax)
 
-                if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
+                # Set vmin and vmax
+                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
-        else:
+            # No data
+            else: raise ValueError("No data for the '" + name + "' row") #self._plot_empty(index)
 
-            for label in self.rows:
-                reference = self.rows[label][0]
-                model = self.rows[label][1]
-                data[label] = (reference, model)
-                if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
-
-        # Loop over the rows
-        for label in self.rows:
-
-            #wcs = self.rows[label][0].wcs
-
-            if data[label][0].shape == greatest_shape:
-                reference = data[label][0]
-                model = data[label][1]
-            else:
-                factor = float(greatest_shape[0]) / float(data[label][0].shape[0])
-                order = 0
-                reference = ndimage.zoom(data[label][0], factor, order=order)
-                model = ndimage.zoom(data[label][1], factor, order=order)
-
-            # CREATE THE RESIDUAL
-            if self.weighed:
-                errors = self.errors[label]
-                residual = (model - reference) / errors
-            else:
-                if self.absolute: residual = model - reference
-                else: residual = (model - reference)/model
-
-            # Plot the reference image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(reference, label, 0)
-
-            # Plot the model image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(model, label, 1, vlimits=(vmin,vmax))
-
-            # Plot the residual image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(residual, label, 2, vlimits=(vmin,vmax))
-
-            self._plotted_rows += 3
-
-        #self._grid.axes_llc.set_xlim(x0, x1)
-        #self._grid.axes_llc.set_ylim(y0, y1)
-
-        self._grid.axes_llc.set_xticklabels([])
-        self._grid.axes_llc.set_yticklabels([])
-        self._grid.axes_llc.get_xaxis().set_ticks([])  # To remove ticks
-        self._grid.axes_llc.get_yaxis().set_ticks([])  # To remove ticks
+        # Set colorbar
+        #if image is None: raise RuntimeError("No image is plotted")
+        #self.figure.figure.colorbar(image, cax=self.colorbar)
 
         # Finish the plot
         self.finish_plot()
 
-    # -----------------------------------------------------------------
-
-    def _plot_frame(self, name, row, col, vmin=None, vmax=None):
-
-        """
-        This function ...
-        :param name:
-        :param row:
-        :param col:
-        :param vmin:
-        :param vmax:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Adding the '" + name + "' frame to the plot ...")
-
-    # -----------------------------------------------------------------
-
-    def plot_frame(self, frame, row_label, column_index, borders=(0,0,0,0), vlimits=None):
-
-        """
-        This function ...
-        :param frame:
-        :param column_index:
-        :param row_label:
-        :param borders:
-        :param vlimits:
-        :return:
-        """
-
-        grid_index = self._plotted_rows + column_index
-
-        x0 = borders[0]
-        y0 = borders[1]
-
-        #x1 = frame.xsize
-        #y1 = frame.ysize
-        x1 = frame.shape[1]
-        y1 = frame.shape[0]
-
-        #vmax = np.max(frame)  # np.mean([np.max(data_ski),np.max(data_ref)])
-        #vmin = np.min(frame)  # np.mean([np.min(data_ski),np.min(data_ref)])
-        #if min_int == 0.: min_int = vmin
-        #else: vmin = min_int
-        #if max_int == 0.: max_int = vmax
-        #else: vmax = max_int
-
-        if vlimits is None:
-            min_value = self.vmin if self.vmin is not None else np.nanmin(frame)
-            max_value = 0.5 * (np.nanmax(frame) + min_value)
-        else:
-            min_value = vlimits[0]
-            max_value = vlimits[1]
-
-        aspect = "equal"
-        if column_index != 2:
-
-            # Get the color map
-            cmap = cm.get_cmap(self.colormap)
-
-            # Set background color
-            background_color = cmap(0.0)
-            self._grid[grid_index].set_axis_bgcolor(background_color)
-
-            # Plot
-            frame[np.isnan(frame)] = 0.0
-            norm = ImageNormalize(stretch=LogStretch())
-            im = self._grid[grid_index].imshow(frame, cmap=cmap, vmin=min_value, vmax=max_value, interpolation="nearest", origin="lower", aspect=aspect, norm=norm) # 'nipy_spectral_r', 'gist_ncar_r'
-
-        else:
-
-            if self.absolute:
-                # Get the color map
-                cmap = cm.get_cmap(self.colormap)
-                norm = ImageNormalize(stretch=LogStretch())
-            else:
-                cmap = discrete_cmap()
-                min_value = 0.001
-                max_value = 1.
-                norm = None
-
-            print(min_value, max_value)
-
-            im = self._grid[grid_index].imshow(frame, cmap=cmap, vmin=min_value, vmax=max_value, interpolation="nearest", origin="lower", aspect=aspect, norm=norm)
-            cb = self._grid[grid_index].cax.colorbar(im)
-
-            # cb.set_xticklabels(labelsize=1)
-            # grid[number+numb_of_grid].cax.toggle_label(True)
-            for cax in self._grid.cbar_axes:
-                cax.toggle_label(True)
-                cax.axis[cax.orientation].set_label(' ')
-                # cax.axis[cax.orientation].set_fontsize(3)
-                cax.tick_params(labelsize=3)
-                cax.set_ylim(min_value, max_value)
-                # cax.set_yticklabels([0, 0.5, 1])
-
-        if column_index == 0:
-            self._grid[grid_index].text(0.03, 0.95, row_label, color='black', transform=self._grid[grid_index].transAxes, fontsize=fsize + 2, fontweight='bold', va='top')
-
-        # if numb_of_grid==0:
-        #    crea_scale_bar(grid[number+numb_of_grid],x0,x1,y0,y1,pix2sec)
-        #    crea_scale_bar(grid[number+numb_of_grid],x0,x1,y0,y1,pix2sec)
-
-        return x0, x1, y0, y1, min_value, max_value
-
 # -----------------------------------------------------------------
-
-fsize = 2
 
 def sort_numbs(arr):
   numbers = []
@@ -2194,6 +3236,8 @@ def sort_numbs(arr):
     new_arr.append(arr[ind])
   return new_arr
 
+# -----------------------------------------------------------------
+
 def line_reg(header1):
   ima_pix2sec = float(header1['PIXSCALE_NEW'])
   nx = int(header1['NAXIS1'])
@@ -2206,21 +3250,32 @@ def line_reg(header1):
   
   return x1,y1,x2,y2,scale
 
-# Define new colormap for residuals
-def discrete_cmap(N=8):
-    # define individual colors as hex values
+# -----------------------------------------------------------------
+
+def create_discrete_colormap(N=8):
+
+    """
+    Define new colormap for residuals
+    :param N:
+    :return:
+    """
+
+    # Define individual colors as hex values
     cpool = [ '#000000', '#00EE00', '#0000EE', '#00EEEE', '#EE0000','#FFFF00', '#EE00EE', '#FFFFFF']
-    cmap_i8 = colors.ListedColormap(cpool[0:N], 'i8')
+    cmap_i8 = colors.ListedColormap(cpool[:N], 'i8')
     cm.register_cmap(cmap=cmap_i8)
     return cmap_i8
 
+# -----------------------------------------------------------------
 
 def define_scale_bar_length(x_extent,pix2sec):
     scale_bar = round((x_extent * pix2sec) / 6.,0)
     return int(5. * round(float(scale_bar)/5.)) # Length of the bar in arcsec
     
+# -----------------------------------------------------------------
 
 def crea_scale_bar(ax, x0, x1, y0, y1, pix2sec):
+
   offset_x_factor = 0.98
   offset_y_factor = 0.1 
   x_extent = x1 - x0
