@@ -100,20 +100,10 @@ class Refitter(FittingComponent):
 
         # New run, directory path and new fitting configuration
         self.new_run = None
-        self.new_run_path = None
         self.new_fitting_config = None
 
         # New paths
-        self.new_best_path = None
-        self.new_generations_path = None
-        self.new_prob_path = None
-        self.new_prob_generations_path = None
         self.new_prob_generation_paths = dict()
-        self.new_prob_parameters_path = None
-        self.new_prob_distributions_path = None
-        self.new_geometries_path = None
-        self.new_wavelength_grids_path = None
-        self.new_generations_table_path = None
         self.new_generation_paths = dict()
         self.new_simulation_paths = defaultdict(dict)
         self.new_simulation_misc_paths = defaultdict(dict)
@@ -371,6 +361,126 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def new_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_best_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.best_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_generations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.generations_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_prob_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.prob_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_prob_generations_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.new_run.prob_generations_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_prob_parameters_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.prob_parameters_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_prob_distributions_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.prob_distributions_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_geometries_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.geometries_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_wavelength_grids_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.wavelength_grids_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_generations_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_run.generations_table_path
+
+    # -----------------------------------------------------------------
+
     def create_fitting_run(self):
 
         """
@@ -382,90 +492,10 @@ class Refitter(FittingComponent):
         log.info("Creating the new fitting run ...")
 
         # Clone the fitting run
-        self.new_run, self.new_best_path, self.new_generations_path, self.new_prob_path, self.new_prob_generation_path, = clone_fitting_run(self.fitting_run, self.new_run_name, generations=self.generation_names,
+        self.new_run = clone_fitting_run(self.fitting_run, self.new_run_name, generations=self.generation_names,
                           new_prob_generation_paths=self.new_prob_generation_paths,
                           new_generation_paths=self.new_generation_paths, new_simulation_paths=self.new_simulation_paths,
                           new_simulation_misc_paths=self.new_simulation_misc_paths)
-
-        # Set new run path
-        self.new_run_path = self.new_run.path
-
-
-
-        # Create directories
-        self.new_best_path = fs.create_directory_in(self.new_run_path, "best")
-        self.new_generations_path = fs.create_directory_in(self.new_run_path, "generations")
-        self.new_prob_path = fs.create_directory_in(self.new_run_path, "prob")
-
-        # Create prob subdirectories
-        self.new_prob_generations_path = fs.create_directory_in(self.new_prob_path, "generations")
-        self.new_prob_parameters_path = fs.create_directory_in(self.new_prob_path, "parameters")
-        self.new_prob_distributions_path = fs.create_directory_in(self.new_prob_path, "distributions")
-
-        # Create prob generation paths
-        for generation_name in self.generation_names: self.new_prob_generation_paths[generation_name] = fs.create_directory_in(self.new_prob_generations_path, generation_name)
-
-        # Copy directories
-        self.new_geometries_path = fs.copy_directory(self.fitting_run.geometries_path, self.new_run_path)
-        self.new_wavelength_grids_path = fs.copy_directory(self.fitting_run.wavelength_grids_path, self.new_run_path)
-
-        # Copy template ski file
-        fs.copy_file(self.fitting_run.template_ski_path, self.new_run_path)
-
-        # Copy generations table
-        self.new_generations_table_path = fs.copy_file(self.fitting_run.generations_table_path, self.new_run_path)
-
-        # Copy timing and memory tables
-        fs.copy_file(self.fitting_run.timing_table_path, self.new_run_path)
-        fs.copy_file(self.fitting_run.memory_table_path, self.new_run_path)
-
-        # Copy input maps file
-        fs.copy_file(self.fitting_run.input_maps_file_path, self.new_run_path)
-
-        # Copy the generations
-        for generation_name in self.generation_names:
-
-            # Get generation path
-            generation_path = self.fitting_run.get_generation_path(generation_name)
-
-            # Create generation directory
-            new_generation_path = fs.create_directory_in(self.new_generations_path, generation_name)
-            self.new_generation_paths[generation_name] = new_generation_path
-
-            # Loop over the simulation names
-            for path, simulation_name in fs.directories_in_path(generation_path, returns=["path", "name"]):
-
-                # Make a new simulation directory
-                new_path = fs.create_directory_in(self.new_generation_paths[generation_name], simulation_name)
-                self.new_simulation_paths[generation_name][simulation_name] = new_path
-
-                # Copy ski file, output, plot and extr
-                ski_path = fs.join(path, self.object_name + ".ski")
-                out_path = fs.join(path, "out")
-                extr_path = fs.join(path, "extr")
-                plot_path = fs.join(path, "plot")
-                fs.copy_file(ski_path, new_path)
-                fs.copy_directory(out_path, new_path)
-                fs.copy_directory(extr_path, new_path)
-                fs.copy_directory(plot_path, new_path)
-
-                # Create misc path
-                misc_path = fs.create_directory_in(new_path, "misc")
-                self.new_simulation_misc_paths[generation_name][simulation_name] = misc_path
-
-            # Copy files in the generation directory
-            fs.copy_files_from_directory(generation_path, new_generation_path, exact_not_name=["info", "chi_squared"])
-
-            # Create the generation info
-            info_path = fs.join(generation_path, "info.dat")
-            info = GenerationInfo.from_file(info_path)
-
-            # Set the new generation path
-            info.path = new_generation_path
-
-            # Save the new info
-            new_info_path = fs.join(new_generation_path, "info.dat")
-            info.saveto(new_info_path)
 
     # -----------------------------------------------------------------
 
@@ -2623,5 +2653,8 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
             # Save the new info
             new_info_path = fs.join(new_generation_path, "info.dat")
             info.saveto(new_info_path)
+
+    # Return the new fitting run
+    return new_run
 
 # -----------------------------------------------------------------

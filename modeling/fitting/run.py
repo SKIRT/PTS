@@ -158,6 +158,10 @@ class FittingRun(object):
 
         ## PROBABILITY DISTRIBUTION TABLES
 
+        # The directory with the probability distributions for the different generations
+        if passive: self.prob_generations_path = fs.join(self.prob_path, "generations")
+        else: self.prob_generations_path = fs.create_directory_in(self.prob_path, "generations")
+
         # The directory with the probability distributions for the different free parameters
         if passive: self.prob_distributions_path = fs.join(self.prob_path, "distributions")
         else: self.prob_distributions_path = fs.create_directory_in(self.prob_path, "distributions")
