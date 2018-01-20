@@ -643,6 +643,18 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         string = add_info(string, self)
         return string
 
+    # -----------------------------------------------------------------
+
+    def to_mpl_patch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from matplotlib.patches import Rectangle as plt_Rectangle
+        raise NotImplementedError("Not yet implemented")
+
 # -----------------------------------------------------------------
 
 class SkyRectangleRegion(RectangleRegion, SkyRegion):

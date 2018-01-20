@@ -526,6 +526,18 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         string = add_info(string, self)
         return string
 
+    # -----------------------------------------------------------------
+
+    def to_mpl_patch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from matplotlib.patches import Ellipse as plt_Ellipse
+        return plt_Ellipse((self.center.x, self.center.y), 2.0 * self.radius.x, 2.0 * self.radius.y, self.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
+
 # -----------------------------------------------------------------
 
 class SkyEllipseRegion(EllipseRegion, SkyRegion):

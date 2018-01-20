@@ -1921,7 +1921,13 @@ class PixelRegionList(RegionList):
         patches = []
 
         # Add the patches from the shapes
-        for shape in self: patches.append(shape.to_mpl_patch())
+        for shape in self:
+            if isinstance(shape, CompositeRegion):
+                new_patches = shape.to_mpl_patches()
+                patches.extend(new_patches)
+            else:
+                patch = shape.to_mpl_patch()
+                patches.append(patch)
 
         # Return the list of patches
         return patches
