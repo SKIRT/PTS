@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.refitter import clone_fitting_run
 
 # -----------------------------------------------------------------

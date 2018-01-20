@@ -713,6 +713,33 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_entries(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        indices = tables.find_indices(self, names, "Generation name")
+        self.remove_rows(indices)
+
+    # -----------------------------------------------------------------
+
+    def remove_other_entries(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        indices = tables.find_indices(self, names, "Generation name")
+        other_indices = [index for index in range(len(self)) if index not in indices]
+        self.remove_rows(other_indices)
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, generation_info, ranges, scales):
 
         """

@@ -495,7 +495,7 @@ class Refitter(FittingComponent):
         self.new_run = clone_fitting_run(self.fitting_run, self.new_run_name, generations=self.generation_names,
                           new_prob_generation_paths=self.new_prob_generation_paths,
                           new_generation_paths=self.new_generation_paths, new_simulation_paths=self.new_simulation_paths,
-                          new_simulation_misc_paths=self.new_simulation_misc_paths)
+                          new_simulation_misc_paths=self.new_simulation_misc_paths, clone_configuration=False)
 
     # -----------------------------------------------------------------
 
@@ -2546,7 +2546,8 @@ def get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared_ta
 # -----------------------------------------------------------------
 
 def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_generation_paths=None,
-                      new_generation_paths=None, new_simulation_paths=None, new_simulation_misc_paths=None):
+                      new_generation_paths=None, new_simulation_paths=None, new_simulation_misc_paths=None,
+                      clone_configuration=True):
 
     """
     This function ...
@@ -2557,7 +2558,7 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
     :param new_generation_paths: supposed to be EMPTY dict
     :param new_simulation_paths: supposed to be EMPTY dict
     :param new_simulation_misc_paths: supposed to be EMPTY dict
-    :param
+    :param clone_configuration:
     :return:
     """
 
@@ -2572,6 +2573,10 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
 
     # Create the fitting run
     new_run = FittingRun(new_run_path, new_run_name, model_name, passive=True)
+
+    # Clone the fitting configuration
+    if clone_configuration: new_configuration_path = fs.copy_file(fitting_run.fitting_configuration_path, new_run_path)
+    else: new_configuration_path = None
 
     # Create directories
     new_best_path = fs.create_directory_in(new_run_path, "best")
@@ -2596,8 +2601,25 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
     # Copy template ski file
     fs.copy_file(fitting_run.template_ski_path, new_run_path)
 
+    #if generations is not None:
+
     # Copy generations table
     new_generations_table_path = fs.copy_file(fitting_run.generations_table_path, new_run_path)
+
+    # Open the generations table
+    generations_table = GenerationsTable.from_file(new_generations_table_path)
+
+    # Remove rows
+    if generations is not None: generations_table.remove_other_entries(generations)
+    else: generations_table.remove_all_rows()
+
+    # Save the table
+    generations_table.save()
+
+    # Create new generations table
+    #else:
+        #new_generations_table_path = fs.join(new_run_path, "generations.dat")
+        #generations_table = GenerationsTable(parameters=self.free_parameter_labels, units=self.parameter_units)
 
     # Copy timing and memory tables
     fs.copy_file(fitting_run.timing_table_path, new_run_path)

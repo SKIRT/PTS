@@ -320,8 +320,17 @@ class PixelCompositeRegion(CompositeRegion, PixelRegion):
         """
 
         from ..core.mask import Mask
-        masks = [element.to_mask(x_size, y_size) for element in self.elements]
-        return Mask.union(*masks)
+
+        include = []
+        exclude = []
+
+        for element in self.elements:
+
+            if element.include: include.append(element.to_mask(x_size, y_size))
+            else: exclude.append(element.to_mask(x_size, y_size, invert=True))
+
+        if len(exclude) > 0: return Mask.intersection(Mask.union(*include), Mask.union(*exclude))
+        else: return Mask.union(*include)
 
     # -----------------------------------------------------------------
 
