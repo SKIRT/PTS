@@ -733,7 +733,7 @@ class Refitter(FittingComponent):
         else: filters = self.fitting_run.fitting_filters
 
         # Remove certain filters?
-        print(self.config.not_filters)
+        #print(self.config.not_filters)
         if self.config.not_filters is not None: return sequences.removed(filters, self.not_filters)
         else: return filters
 
