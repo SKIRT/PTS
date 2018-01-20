@@ -19,14 +19,8 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "UVOT UVW2": "2.18%",
                       "UVOT UVM2": "0.63%",
                       "UVOT UVW1": "3.09%",
-                      #"SDSS u": "2%",
-                      #"SDSS g": "2%", # maybe less for DR12? (1%) http://www.sdss.org/dr12/algorithms/fluxcal/
-                      #"SDSS r": "2%", # maybe less for DR12? (1%)
                       "Mosaic Halpha": "5%",
                       "Halpha": "5%",
-                      #"SDSS i": "2%", # maybe less for DR12? (1%)
-                      #"SDSS z": "2%", # maybe less for DR12? (1%)
-                      # SDSS:
                       "SDSS u": "1.3%", # source: http://www.sdss.org/dr12/scope/
                       "SDSS g": "0.8%", # source: http://www.sdss.org/dr12/scope/
                       "SDSS r": "0.8%", # source: http://www.sdss.org/dr12/scope/
@@ -47,8 +41,9 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "MIPS 70mu": "5%",
                       # ref: Absolute_Calibration_and_Characterization_of_the_Multiband_Imaging_Photometer_for_Spitzer._II._70_micron_Imaging
                       "MIPS 160mu": "5%",
-                      "Pacs blue": "5%",
-                      "Pacs red": "5%",
+                      "Pacs blue": "7%",
+                      "Pacs green:": "7%",
+                      "Pacs red": "7%",
                       "SPIRE PSW": "4%",
                       "SPIRE PMW": "4%",
                       "SPIRE PLW": "4%"}

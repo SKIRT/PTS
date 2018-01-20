@@ -236,6 +236,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def fit_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def modeling_path(self):
 
         """
@@ -243,8 +255,19 @@ class FittingRun(object):
         :return:
         """
 
-        fit_path = fs.directory_of(self.path)
-        return fs.directory_of(fit_path)
+        return fs.directory_of(self.fit_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def object_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.modeling_path)
 
     # -----------------------------------------------------------------
 

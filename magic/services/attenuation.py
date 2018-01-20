@@ -63,7 +63,7 @@ irsa_names = {"SDSS u": "SDSS u",
 # Determine the path to the Extinction data directory
 extinction_data_path = fs.join(introspection.pts_dat_dir("magic"), "Extinction")
 
-# Determine thbe path to the RV=3.1 curve file
+# Determine the path to the RV=3.1 curve file
 rv31_path = fs.join(extinction_data_path, "al_av3_1.dat")
 
 # -----------------------------------------------------------------

@@ -84,7 +84,7 @@ definition.add_flag("same_residuals_scale", "use the same scale for the residual
 
 # -----------------------------------------------------------------
 
-definition.add_flag("write", "write out the processed frames, masks and regions", False)
+definition.add_flag("write", "write out the processed frames, masks, regions, residual maps and distributions", False)
 definition.add_flag("show", "show the plot (default is automatic)", None)
 
 # -----------------------------------------------------------------

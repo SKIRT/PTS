@@ -18,8 +18,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
-from matplotlib.patches import Rectangle as plt_Rectangle
-from matplotlib.patches import Ellipse as plt_Ellipse
 
 # Import astronomical modules
 from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
@@ -373,29 +371,56 @@ def plot_mask(mask, **kwargs):
     format = kwargs.pop("format", None)
     show_axes = kwargs.pop("show_axes", True)
     transparent = kwargs.pop("transparent", False)
+    axes = kwargs.pop("axes", None)
+    cmap = kwargs.pop("colormap", "Greys")
+    xsize = kwargs.pop("xsize", 7)
+    ysize = kwargs.pop("ysize", 7)
 
-    # Get raw data of mask as a numpy array
-    #if hasattr(mask, "data"): maskdata = mask.data
-    #else: maskdata = mask
-
+    # Get the data
     if isinstance(mask, np.ndarray): maskdata = mask
-    else: maskdata = mask.data
+    elif hasattr(mask, "data"): maskdata = mask.data
+    else: maskdata = np.asarray(mask)
 
     # Check if not completely masked or completely unmasked
     all_masked = np.all(maskdata)
     all_unmasked = np.all(np.logical_not(maskdata))
     if all_masked:
-        warnings.warn("Cannot plot a mask that is completely filled")
-        return
-    if all_unmasked:
-        warnings.warn("Cannot plot a mask that is completely empty")
-        return
+        warnings.warn("The mask is completely filled")
+        cmap = cmap + "_r"
+    if all_unmasked: warnings.warn("The mask is completely empty")
 
-    # Make the plot
-    plt.figure(figsize=(7,7))
-    plt.imshow(maskdata, origin="lower", interpolation="nearest", cmap='Greys')
-    plt.xlim(0, maskdata.shape[1] - 1)
-    plt.ylim(0, maskdata.shape[0] - 1)
+    nxpixels = maskdata.shape[1]
+    nypixels = maskdata.shape[0]
+
+    # Create figure if necessary, get the axes
+    only_axes = False
+    if axes is None:
+        plt.figure(figsize=(xsize, ysize))
+        plt.xlim(0, nxpixels - 1)
+        plt.ylim(0, nypixels - 1)
+        axes = plt.gca()
+    else: only_axes = True
+
+    # Plot the mask
+    aspect = "equal"
+    image = axes.imshow(maskdata, origin="lower", interpolation="nearest", cmap=cmap, aspect=aspect)
+
+    # Add region
+    region = kwargs.pop("region", None)
+    regions = kwargs.pop("regions", None)
+    if region is not None:
+
+        from ..region.composite import CompositeRegion
+        if isinstance(region, CompositeRegion):
+            for patch in region.to_mpl_patches(): axes.add_patch(patch)
+        else:
+            # Add patch
+            patch = region.to_mpl_patch()
+            axes.add_patch(patch)
+
+    # Add multiple regions
+    if regions is not None:
+        for patch in regions.to_mpl_patches(): axes.add_patch(patch)
 
     # Show axes?
     if not show_axes: plt.axis("off")
@@ -509,7 +534,8 @@ def plot_frame(frame, **kwargs):
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None,
-             axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False, return_normalization=False):
+             regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
+             return_normalization=False):
 
     """
     This function ...
@@ -532,6 +558,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param soft_min_scaling:
     :param soft_max_scaling:
     :param region:
+    :param regions:
     :param axes:
     :param xsize:
     :param ysize:
@@ -607,10 +634,6 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
             vmax = min(normalize_max, 0.)
             vmin = 0.5 * (normalize_min + vmax)
 
-        # Determine the maximum value in the box and the mimimum value for plotting
-        #vmin = max(np.nanmin(box), 0.)
-        #vmax = 0.5 * (np.nanmax(box) + vmin)
-
     # MINIMAX
     elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(pixels)
 
@@ -677,9 +700,17 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Add region
     if region is not None:
 
-        # Add elliptical patch
-        ell = plt_Ellipse((region.center.x, region.center.y), 2.0 * region.radius.x, 2.0 * region.radius.y, region.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
-        axes.add_patch(ell)
+        from ..region.composite import CompositeRegion
+        if isinstance(region, CompositeRegion):
+            for patch in region.to_mpl_patches(): axes.add_patch(patch)
+        else:
+            # Add patch
+            patch = region.to_mpl_patch()
+            axes.add_patch(patch)
+
+    # Add multiple regions
+    if regions is not None:
+        for patch in regions.to_mpl_patches(): axes.add_patch(patch)
 
     # Axes were not provided: we are supposed to create the whole figure thingy and close it
     if not only_axes:
@@ -705,8 +736,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         if return_normalization: return vmin, vmax, image, norm
         else: return vmin, vmax, image
     else:
-        if return_normalization: return vmin, vmax
-        else: return vmin, vmax, norm
+        if return_normalization: return vmin, vmax, norm
+        else: return vmin, vmax
 
 # -----------------------------------------------------------------
 

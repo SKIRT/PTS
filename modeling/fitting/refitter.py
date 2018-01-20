@@ -381,11 +381,16 @@ class Refitter(FittingComponent):
         # Inform the user
         log.info("Creating the new fitting run ...")
 
-        # Create directory
-        self.new_run_path = fs.create_directory_in(self.fit_path, self.new_run_name)
+        # Clone the fitting run
+        self.new_run, self.new_best_path, self.new_generations_path, self.new_prob_path, self.new_prob_generation_path, = clone_fitting_run(self.fitting_run, self.new_run_name, generations=self.generation_names,
+                          new_prob_generation_paths=self.new_prob_generation_paths,
+                          new_generation_paths=self.new_generation_paths, new_simulation_paths=self.new_simulation_paths,
+                          new_simulation_misc_paths=self.new_simulation_misc_paths)
 
-        # Create the fitting run
-        self.new_run = FittingRun(self.config.path, self.new_run_name, self.model_name, passive=True)
+        # Set new run path
+        self.new_run_path = self.new_run.path
+
+
 
         # Create directories
         self.new_best_path = fs.create_directory_in(self.new_run_path, "best")
@@ -2507,5 +2512,116 @@ def get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared_ta
 
     # Return the simulation names
     return simulation_names, counts
+
+# -----------------------------------------------------------------
+
+def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_generation_paths=None,
+                      new_generation_paths=None, new_simulation_paths=None, new_simulation_misc_paths=None):
+
+    """
+    This function ...
+    :param fitting_run:
+    :param new_run_name:
+    :param generations:
+    :param new_prob_generation_paths: supposed to be EMPTY dict
+    :param new_generation_paths: supposed to be EMPTY dict
+    :param new_simulation_paths: supposed to be EMPTY dict
+    :param new_simulation_misc_paths: supposed to be EMPTY dict
+    :param
+    :return:
+    """
+
+    # Get modeling object name
+    object_name = fitting_run.object_name
+
+    # Generate new fitting run directory
+    new_run_path = fs.create_directory_in(fitting_run.fit_path, new_run_name)
+
+    # Get the model name
+    model_name = fitting_run.model_name
+
+    # Create the fitting run
+    new_run = FittingRun(new_run_path, new_run_name, model_name, passive=True)
+
+    # Create directories
+    new_best_path = fs.create_directory_in(new_run_path, "best")
+    new_generations_path = fs.create_directory_in(new_run_path, "generations")
+    new_prob_path = fs.create_directory_in(new_run_path, "prob")
+
+    # Create prob subdirectories
+    new_prob_generations_path = fs.create_directory_in(new_prob_path, "generations")
+    new_prob_parameters_path = fs.create_directory_in(new_prob_path, "parameters")
+    new_prob_distributions_path = fs.create_directory_in(new_prob_path, "distributions")
+
+    # Create prob generation paths
+    if generations is not None:
+        for generation_name in generations:
+            path = fs.create_directory_in(new_prob_generations_path, generation_name)
+            if new_prob_generation_paths is not None: new_prob_generation_paths[generation_name] = path
+
+    # Copy directories
+    new_geometries_path = fs.copy_directory(fitting_run.geometries_path, new_run_path)
+    new_wavelength_grids_path = fs.copy_directory(fitting_run.wavelength_grids_path, new_run_path)
+
+    # Copy template ski file
+    fs.copy_file(fitting_run.template_ski_path, new_run_path)
+
+    # Copy generations table
+    new_generations_table_path = fs.copy_file(fitting_run.generations_table_path, new_run_path)
+
+    # Copy timing and memory tables
+    fs.copy_file(fitting_run.timing_table_path, new_run_path)
+    fs.copy_file(fitting_run.memory_table_path, new_run_path)
+
+    # Copy input maps file
+    fs.copy_file(fitting_run.input_maps_file_path, new_run_path)
+
+    # If generation names are given
+    if generations is not None:
+
+        # Copy the generations
+        for generation_name in generations:
+
+            # Get original generation path
+            generation_path = fitting_run.get_generation_path(generation_name)
+
+            # Create generation directory
+            new_generation_path = fs.create_directory_in(new_generations_path, generation_name)
+            if new_generation_paths is not None: new_generation_paths[generation_name] = new_generation_path
+
+            # Loop over the simulation names
+            for path, simulation_name in fs.directories_in_path(generation_path, returns=["path", "name"]):
+
+                # Make a new simulation directory
+                new_path = fs.create_directory_in(new_generation_path, simulation_name)
+                if new_simulation_paths is not None: new_simulation_paths[generation_name][simulation_name] = new_path
+
+                # Copy ski file, output, plot and extr
+                ski_path = fs.join(path, object_name + ".ski")
+                out_path = fs.join(path, "out")
+                extr_path = fs.join(path, "extr")
+                plot_path = fs.join(path, "plot")
+                fs.copy_file(ski_path, new_path)
+                fs.copy_directory(out_path, new_path)
+                fs.copy_directory(extr_path, new_path)
+                fs.copy_directory(plot_path, new_path)
+
+                # Create misc path
+                misc_path = fs.create_directory_in(new_path, "misc")
+                if new_simulation_misc_paths is not None: new_simulation_misc_paths[generation_name][simulation_name] = misc_path
+
+            # Copy files in the generation directory
+            fs.copy_files_from_directory(generation_path, new_generation_path, exact_not_name=["info", "chi_squared"])
+
+            # Create the generation info
+            info_path = fs.join(generation_path, "info.dat")
+            info = GenerationInfo.from_file(info_path)
+
+            # Set the new generation path
+            info.path = new_generation_path
+
+            # Save the new info
+            new_info_path = fs.join(new_generation_path, "info.dat")
+            info.saveto(new_info_path)
 
 # -----------------------------------------------------------------

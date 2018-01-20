@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.show_status Show the status page.
+## \package pts.do.modeling.clone_analysis_run Clone an analysis run (without the results).
 
 # -----------------------------------------------------------------
 
