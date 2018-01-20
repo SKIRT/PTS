@@ -142,6 +142,137 @@ class CompositeRegion(Region):
             if the_max is None or element.axis2_max > the_max: the_max = element.axis2_max
         return the_max
 
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __rmul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for element in self.elements: element *= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new /= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __rdiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        raise SyntaxError("You cannot divide by a region")
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for element in self.elements: element /= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __rtruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        raise SyntaxError("You cannot divide by a region")
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
+    # -----------------------------------------------------------------
+
+    def to_mpl_patches(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        patches = []
+        for element in self.elements:
+            patch = element.to_mpl_patch()
+            patches.append(patch)
+        return patches
+
 # -----------------------------------------------------------------
 
 class PixelCompositeRegion(CompositeRegion, PixelRegion):
