@@ -28,7 +28,7 @@ from ...build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
-wavelength_regimes = ["uv", "optical", "nir", "mir", "fir", "submm"]
+wavelength_regimes = ["uv", "optical", "nir", "mir", "fir", "submm-microwave"]
 
 # -----------------------------------------------------------------
 
@@ -363,7 +363,7 @@ class FittingInitializerBase(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm=1):
+def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
 
     """
     This function ...
@@ -373,12 +373,12 @@ def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, sub
     :param nir:
     :param mir:
     :param fir:
-    :param submm:
+    :param submm_microwave:
     :return:
     """
 
     # Get bands per regime
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands = split_filters_regimes(filters)
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes(filters)
 
     # Get nbands per regime
     nuv = len(uv_bands)
@@ -386,10 +386,10 @@ def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, sub
     nnir = len(nir_bands)
     nmir = len(mir_bands)
     nfir = len(fir_bands)
-    nsubmm = len(submm_bands)
+    nsubmm_microwave = len(submm_microwave_bands)
 
     # Determine regime weights
-    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm=submm)
+    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_radio_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm_microwave=submm_microwave)
 
     # Initialize dictionary for the weights per filter
     weights = OrderedDict()
@@ -400,7 +400,7 @@ def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, sub
     for fltr in nir_bands: weights[fltr] = nir_weight
     for fltr in mir_bands: weights[fltr] = mir_weight
     for fltr in fir_bands: weights[fltr] = fir_weight
-    for fltr in submm_bands: weights[fltr] = submm_weight
+    for fltr in submm_microwave_bands: weights[fltr] = submm_radio_weight
 
     # Return the weights
     return weights
@@ -421,13 +421,13 @@ def split_filters_regimes(filters):
     nir_bands = []
     mir_bands = []
     fir_bands = []
-    submm_bands = []
+    submm_microwave_bands = []
 
     # Loop over the observed SED filters
     for fltr in filters:
 
         # Get the central wavelength
-        wavelength = fltr.center
+        wavelength = fltr.wavelength
 
         # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
         spectrum = wavelengths.name_in_spectrum(wavelength)
@@ -441,11 +441,12 @@ def split_filters_regimes(filters):
             elif spectrum[1] == "MIR": mir_bands.append(fltr)
             elif spectrum[1] == "FIR": fir_bands.append(fltr)
             else: raise RuntimeError("Unknown IR range")
-        elif spectrum[0] == "Submm": submm_bands.append(fltr)
-        else: raise RuntimeError("Unknown wavelength range")
+        elif spectrum[0] == "Submm": submm_microwave_bands.append(fltr)
+        elif spectrum[0] == "Radio" and spectrum[1] == "Microwave": submm_microwave_bands.append(fltr)
+        else: raise RuntimeError("Unknown wavelength range: " + str(spectrum))
 
     # Return
-    return uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands
+    return uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands
 
 # -----------------------------------------------------------------
 
@@ -457,12 +458,12 @@ def get_nbands_per_regime(filters):
     :return:
     """
 
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_bands = split_filters_regimes(filters)
-    return len(uv_bands), len(optical_bands), len(nir_bands), len(mir_bands), len(fir_bands), len(submm_bands)
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes(filters)
+    return len(uv_bands), len(optical_bands), len(nir_bands), len(mir_bands), len(fir_bands), len(submm_microwave_bands)
 
 # -----------------------------------------------------------------
 
-def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, nir=1, mir=1, fir=1, submm=1):
+def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
 
     """
     This function ...
@@ -471,13 +472,13 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, 
     :param nnir:
     :param nmir:
     :param nfir:
-    :param nsubmm:
+    :param nsubmm_microwave:
     :param uv:
     :param optical:
     :param nir:
     :param mir:
     :param fir:
-    :param submm:
+    :param submm_microwave:
     :return:
     """
 
@@ -490,27 +491,28 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, 
     has_nir = nnir > 0
     has_mir = nmir > 0
     has_fir = nfir > 0
-    has_submm = nsubmm > 0
+    has_submm_microwave = nsubmm_microwave > 0
 
     if has_uv: number_of_groups += 1
     if has_optical: number_of_groups += 1
     if has_nir: number_of_groups += 1
     if has_mir: number_of_groups += 1
     if has_fir: number_of_groups += 1
-    if has_submm: number_of_groups += 1
+    if has_submm_microwave: number_of_groups += 1
 
-    # Detemrine total number of data points
-    #number_of_data_points = len(filters)
-    number_of_data_points = nuv + noptical + nnir + nmir + nfir + nsubmm
+    nall_groups = 6
+
+    # Determine total number of data points
+    number_of_data_points = nuv + noptical + nnir + nmir + nfir + nsubmm_microwave
 
     # Determine normalizations
-    total_normalization = uv + optical + nir + mir + fir + submm
-    uv = float(uv) / total_normalization * 6
-    optical = float(optical) / total_normalization * 6
-    nir = float(nir) / total_normalization * 6
-    mir = float(mir) / total_normalization * 6
-    fir = float(fir) / total_normalization * 6
-    submm = float(submm) / total_normalization * 6
+    total_normalization = uv + optical + nir + mir + fir + submm_microwave
+    uv = float(uv) / total_normalization * nall_groups
+    optical = float(optical) / total_normalization * nall_groups
+    nir = float(nir) / total_normalization * nall_groups
+    mir = float(mir) / total_normalization * nall_groups
+    fir = float(fir) / total_normalization * nall_groups
+    submm = float(submm_microwave) / total_normalization * nall_groups
 
     # Determine the weight for each group of filters
     uv_weight = uv / (nuv * number_of_groups) * number_of_data_points if has_uv else 0.0
@@ -518,7 +520,7 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, 
     nir_weight = nir / (nnir * number_of_groups) * number_of_data_points if has_nir else 0.0
     mir_weight = mir / (nmir * number_of_groups) * number_of_data_points if has_mir else 0.0
     fir_weight = fir / (nfir * number_of_groups) * number_of_data_points if has_fir else 0.0
-    submm_weight = submm / (nsubmm * number_of_groups) * number_of_data_points if has_submm else 0.0
+    submm_microwave_weight = submm / (nsubmm_microwave * number_of_groups) * number_of_data_points if has_submm_microwave else 0.0
 
     # Debugging
     if has_uv: log.debug("UV: number of bands = " + str(nuv) + ", weight = " + str(uv_weight))
@@ -526,9 +528,9 @@ def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm, uv=1, optical=1, 
     if has_nir: log.debug("NIR: number of bands = " + str(nnir) + ", weight = " + str(nir_weight))
     if has_mir: log.debug("MIR: number of bands = " + str(nmir) + ", weight = " + str(mir_weight))
     if has_fir: log.debug("FIR: number of bands = " + str(nfir) + ", weight = " + str(fir_weight))
-    if has_submm: log.debug("Submm: number of bands = " + str(nsubmm) + ", weight = " + str(submm_weight))
+    if has_submm_microwave: log.debug("Submm/microwave: number of bands = " + str(nsubmm_microwave) + ", weight = " + str(submm_microwave_weight))
 
     # Return the weights
-    return uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_weight
+    return uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_microwave_weight
 
 # -----------------------------------------------------------------

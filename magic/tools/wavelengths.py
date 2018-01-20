@@ -190,6 +190,21 @@ def regime_for_wavelength(wavelength):
 
 # -----------------------------------------------------------------
 
+def regime_for_filter(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...core.tools import types
+    from ...core.filter.filter import parse_filter
+    if types.is_string_type(fltr): fltr = parse_filter(fltr)
+    return name_in_spectrum(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
 def is_optical(wavelength):
 
     """
@@ -291,6 +306,19 @@ def is_fir_or_submm(wavelength):
 
     regime = regime_for_wavelength(wavelength)
     return regime[1] == "FIR" or regime[0] == "Submm"
+
+# -----------------------------------------------------------------
+
+def is_radio(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    regime = regime_for_wavelength(wavelength)
+    return regime[0] == "Radio"
 
 # -----------------------------------------------------------------
 
