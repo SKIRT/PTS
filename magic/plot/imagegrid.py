@@ -2491,7 +2491,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         for name in self.with_residuals_row_names:
 
             # Check
-            if self.has_data(name):
+            if not self.has_data(name):
                 log.warning("No data for the '" + name + "' row to create residuals: skipping ...")
                 continue
                 #raise ValueError("No data for the '" + name + "' row to create residuals")

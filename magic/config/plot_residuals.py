@@ -70,6 +70,13 @@ definition.add_optional("residuals_colormap", "string", "color map for residual 
 
 # -----------------------------------------------------------------
 
+definition.add_optional("scale", "string", "scaling", default_scale, scales)
+definition.add_optional("interval", "string", "interval", "pts")
+definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
+definition.add_flag("background", "plot a background", True)
+
+# -----------------------------------------------------------------
+
 definition.add_flag("weighed", "plot weighed residuals", None)
 definition.add_flag("distributions", "plot the residual distributions", False)
 definition.add_flag("absolute", "plot absolute residuals", False)
