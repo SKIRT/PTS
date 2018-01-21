@@ -1892,6 +1892,29 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def add_observation_from_file(self, path, name=None, replace=False, plane_index=None, plane=None):
+
+        """
+        This function ....
+        :param path:
+        :param name:
+        :param replace:
+        :param plane_index:
+        :param plane:
+        :return:
+        """
+
+        # Load the frame
+        observation = Frame.from_file(path, index=plane_index, plane=plane)
+
+        # Determine name
+        if name is None: name = fs.strip_extension(fs.name(path))
+
+        # Add
+        self.add_observation(observation, name, replace=replace)
+
+    # -----------------------------------------------------------------
+
     def add_model(self, model, name, replace=False):
 
         """
@@ -1917,6 +1940,95 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # New row
         else: self.add_row(None, model, name)
+
+    # -----------------------------------------------------------------
+
+    def add_model_from_file(self, path, name=None, replace=False, plane_index=None, plane=None):
+
+        """
+        This function ...
+        :param path:
+        :param name:
+        :param replace:
+        :param plane_index:
+        :param plane:
+        :return:
+        """
+
+        # Load the frame
+        model = Frame.from_file(path, index=plane_index, plane=plane)
+
+        # Determine name
+        if name is None: name = fs.strip_extension(fs.name(path))
+
+        # Add
+        self.add_model(model, name, replace=replace)
+
+    # -----------------------------------------------------------------
+
+    def add_residuals(self, residuals, name):
+
+        """
+        This function ...
+        :param residuals:
+        :param name:
+        :return:
+        """
+
+        self.residuals[name] = residuals
+
+    # -----------------------------------------------------------------
+
+    def add_residuals_from_file(self, path, name=None):
+
+        """
+        This function ....
+        :param path:
+        :param name:
+        :return:
+        """
+
+        # Load
+        residuals = Frame.from_file(path)
+
+        # Determine the name
+        if name is None: name = fs.strip_extension(fs.name(path))
+
+        # Add
+        self.add_residuals(residuals, name)
+
+    # -----------------------------------------------------------------
+
+    def add_distribution(self, distribution, name):
+
+        """
+        This function ...
+        :param distribution:
+        :param name:
+        :return:
+        """
+
+        self.distributions[name] = distribution
+
+    # -----------------------------------------------------------------
+
+    def add_distribution_from_file(self, path, name=None):
+
+        """
+        This function ...
+        :param path:
+        :param name:
+        :return:
+        """
+
+        # Load
+        distribution = Distribution.from_file(path)
+
+        # Determine the name
+        if name is None: name = fs.strip_extension(fs.name(path))
+
+        # Add
+        self.add_distribution(distribution, name)
 
     # -----------------------------------------------------------------
 
@@ -2006,6 +2118,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Check config
         if self.config.weighed and self.config.absolute: raise ValueError("Cannot enable both 'weighed' and 'absolute' residual maps")
+        if self.config.absolute and self.config.normalize: raise ValueError("Cannot plot the absolute residuals when normalizing the frames is enabled")
 
         # Load the images
         if self.no_rows:
@@ -2046,6 +2159,32 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Inform the user
         log.info("Loading data from file ...")
 
+        # Determine directory paths
+        observations_path = self.input_path_directory("observations", check=True)
+        models_path = self.input_path_directory("models", check=True)
+        residuals_path = self.input_path_directory("residuals")
+        distributions_path = self.input_path_directory("distributions")
+
+        # Load observations
+        for path, name in fs.files_in_path(observations_path, extension="fits", returns=["path", "name"]):
+
+            self.add_observation_from_file(path, name=name)
+
+        # Load models
+        for path, name in fs.files_in_path(models_path, extension="fits", returns=["path", "name"]):
+
+            self.add_model_from_file(path, name=name)
+
+        # Load residuals
+        if fs.is_directory(residuals_path):
+            for path, name in fs.files_in_path(residuals_path, extension="fits", returns=["path", "name"]):
+                self.add_residuals_from_file(path, name=name)
+
+        # Load distributions
+        if fs.is_directory(distributions_path):
+            for path, name in fs.files_in_path(distributions_path, extension="dat", returns=["path", "name"]):
+                self.add_distribution_from_file(path, name=name)
+
     # -----------------------------------------------------------------
 
     def sort(self):
@@ -2068,6 +2207,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
+        #print(self.config.plot.xsize, self.ncolumns, self.mean_width_to_height)
         return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height
 
     # -----------------------------------------------------------------
@@ -2080,6 +2220,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
+        #print(self.config.plot.ysize, self.nrows)
         return self.config.plot.ysize * self.nrows
 
     # -----------------------------------------------------------------
@@ -2956,6 +3097,52 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def column_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(range(self.ncolumns))
+
+    # -----------------------------------------------------------------
+
+    def _plot_empty_row(self, name, index):
+
+        """
+        This function ...
+        :param name:
+        :param index:
+        :return:
+        """
+
+        for col in self.column_indices:
+
+            # Get the plot
+            plot = self.plots[index][col]
+
+            # Color spines
+            plot.axes.spines['bottom'].set_color("white")
+            plot.axes.spines['top'].set_color("white")
+            plot.axes.spines['left'].set_color("white")
+            plot.axes.spines['right'].set_color("white")
+
+            # Color ticks
+            # plot.axes.xaxis.label.set_color("white")
+            # plot.axes.yaxis.label.set_color("white")
+            plot.axes.tick_params(axis='x', colors="white", direction="inout")
+            plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+            # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+            if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+
+            # Add the label
+            if col == 0: plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")
+
+    # -----------------------------------------------------------------
+
     def get_mask(self, name, label):
 
         """
@@ -3333,7 +3520,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
             # No data
-            else: raise ValueError("No data for the '" + name + "' row") #self._plot_empty(index)
+            else:
+                self._plot_empty_row(name, index)
+                #raise ValueError("No data for the '" + name + "' row") #self._plot_empty(index)
 
         # Set colorbar
         #if image is None: raise RuntimeError("No image is plotted")

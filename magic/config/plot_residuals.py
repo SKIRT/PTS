@@ -31,6 +31,11 @@ definition = ConfigurationDefinition()
 
 # -----------------------------------------------------------------
 
+# Load from data
+definition.add_flag("from_data", "load from data written out by the residuals image grid plotter")
+
+# -----------------------------------------------------------------
+
 # Sort on filters
 definition.add_flag("sort_filters", "sort the frames on filter", True)
 
