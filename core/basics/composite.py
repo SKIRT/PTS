@@ -350,6 +350,7 @@ class SimplePropertyComposite(object):
                 #the_type = self._ptypes[name]
                 #parsing_function = getattr(parsing, the_type)
                 parsing_function = self.parser_for_property(name)
+                the_type = self.type_for_property(name)
                 try: value = parsing_function(string)
                 except ValueError: raise ValueError("The value of '" + str(value) + "' for '" + name +  "' given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
 

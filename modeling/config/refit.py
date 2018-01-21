@@ -70,7 +70,7 @@ definition.add_optional("optical", "positive_real", "default relative weight for
 definition.add_optional("nir", "positive_real", "default relative weight for NIR bands", 1.)
 definition.add_optional("mir", "positive_real", "default relative weight for MIR bands", 1.)
 definition.add_optional("fir", "positive_real", "defult relative weight for FIR bands", 1.)
-definition.add_optional("submm", "positive_real", "default relative weight for submm bands", 1.)
+definition.add_optional("submm_microwave", "positive_real", "default relative weight for submm/microwave bands", 1.)
 
 # -----------------------------------------------------------------
 
@@ -79,7 +79,7 @@ definition.add_flag("only_optical", "only give weight to optical bands")
 definition.add_flag("only_nir", "only give weight to NIR bands")
 definition.add_flag("only_mir", "only give weight to MIR bands")
 definition.add_flag("only_fir", "only give weight to FIR bands")
-definition.add_flag("only_submm", "only give weight to submm bands")
+definition.add_flag("only_submm_microwave", "only give weight to submm/microwave bands")
 
 # -----------------------------------------------------------------
 
@@ -88,7 +88,7 @@ definition.add_flag("no_optical", "give no weight to optical bands")
 definition.add_flag("no_nir", "give no weight to NIR bands")
 definition.add_flag("no_mir", "give no weight to MIR bands")
 definition.add_flag("no_fir", "give no weight to FIR bands")
-definition.add_flag("no_submm", "give no weight to submm bands")
+definition.add_flag("no_submm_microwave", "give no weight to submm/microwave bands")
 
 # -----------------------------------------------------------------
 

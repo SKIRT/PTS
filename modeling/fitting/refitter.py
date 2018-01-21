@@ -343,10 +343,6 @@ class Refitter(FittingComponent):
         # As run: create run directory
         if self.as_run: self.create_fitting_run()
 
-        # Show filters
-        #print(self.filters)
-        #plot_filters(self.filters)
-
     # -----------------------------------------------------------------
 
     @property
@@ -527,7 +523,7 @@ class Refitter(FittingComponent):
             if self.config.only_nir: raise ValueError("Error")
             if self.config.only_mir: raise ValueError("Error")
             if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
             regimes = ["uv"]
 
         # Only optical
@@ -538,7 +534,7 @@ class Refitter(FittingComponent):
             if self.config.only_nir: raise ValueError("Error")
             if self.config.only_mir: raise ValueError("Error")
             if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
             regimes = ["optical"]
 
         # Only NIR
@@ -549,7 +545,7 @@ class Refitter(FittingComponent):
             if self.config.only_optical: raise ValueError("Error")
             if self.config.only_mir: raise ValueError("Error")
             if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
             regimes = ["nir"]
 
         # Only MIR
@@ -560,7 +556,7 @@ class Refitter(FittingComponent):
             if self.config.only_optical: raise ValueError("Error")
             if self.config.only_nir: raise ValueError("Error")
             if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
             regimes = ["mir"]
 
         # Only FIR
@@ -571,19 +567,19 @@ class Refitter(FittingComponent):
             if self.config.only_optical: raise ValueError("Error")
             if self.config.only_nir: raise ValueError("Error")
             if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_submm: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
             regimes = ["fir"]
 
-        # Only submm
-        elif self.config.only_submm:
+        # Only submm/microwave
+        elif self.config.only_submm_microwave:
 
-            if self.config.no_submm: raise ValueError("Error")
+            if self.config.no_submm_microwave: raise ValueError("Error")
             if self.config.only_uv: raise ValueError("Error")
             if self.config.only_optical: raise ValueError("Error")
             if self.config.only_nir: raise ValueError("Error")
             if self.config.only_mir: raise ValueError("Error")
             if self.config.only_fir: raise ValueError("Error")
-            regimes = ["submm"]
+            regimes = ["submm-microwave"]
 
         # Regimes
         else: regimes = self.config.regimes[:]
@@ -594,7 +590,7 @@ class Refitter(FittingComponent):
         if self.config.no_nir: regimes = sequences.removed_item(regimes, "nir")
         if self.config.no_mir: regimes = sequences.removed_item(regimes, "mir")
         if self.config.no_fir: regimes = sequences.removed_item(regimes, "fir")
-        if self.config.no_submm: regimes = sequences.removed_item(regimes, "submm")
+        if self.config.no_submm_microwave: regimes = sequences.removed_item(regimes, "submm-microwave")
 
         # Check number of regimes
         if len(regimes) == 0: raise ValueError("No regimes")
@@ -670,14 +666,14 @@ class Refitter(FittingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def submm_weight(self):
+    def submm_microwave_weight(self):
 
         """
         This function ...
         :return:
         """
 
-        if "submm" in self.regimes: return self.config.submm
+        if "submm-microwave" in self.regimes: return self.config.submm_microwave
         else: return 0.
 
     # -----------------------------------------------------------------
@@ -733,7 +729,6 @@ class Refitter(FittingComponent):
         else: filters = self.fitting_run.fitting_filters
 
         # Remove certain filters?
-        #print(self.config.not_filters)
         if self.config.not_filters is not None: return sequences.removed(filters, self.not_filters)
         else: return filters
 
@@ -850,7 +845,7 @@ class Refitter(FittingComponent):
         log.info("Calculating the weight to give to each band ...")
 
         # Get the weights
-        weights = calculate_weights_filters(self.filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm=self.submm_weight)
+        weights = calculate_weights_filters(self.filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm_microwave=self.submm_microwave_weight)
 
         # Add to weights table
         for fltr in weights: self.weights.add_point(fltr, weights[fltr])
@@ -2601,8 +2596,6 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
     # Copy template ski file
     fs.copy_file(fitting_run.template_ski_path, new_run_path)
 
-    #if generations is not None:
-
     # Copy generations table
     new_generations_table_path = fs.copy_file(fitting_run.generations_table_path, new_run_path)
 
@@ -2615,11 +2608,6 @@ def clone_fitting_run(fitting_run, new_run_name, generations=None, new_prob_gene
 
     # Save the table
     generations_table.save()
-
-    # Create new generations table
-    #else:
-        #new_generations_table_path = fs.join(new_run_path, "generations.dat")
-        #generations_table = GenerationsTable(parameters=self.free_parameter_labels, units=self.parameter_units)
 
     # Copy timing and memory tables
     fs.copy_file(fitting_run.timing_table_path, new_run_path)

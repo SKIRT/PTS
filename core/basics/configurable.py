@@ -301,15 +301,33 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def input_path_file(self, name):
+    def input_path_file(self, name, check=False):
 
         """
         This function ...
         :param name:
+        :param check:
         :return:
         """
 
-        return fs.join(self.input_path, name)
+        path = fs.join(self.input_path, name)
+        if check and not fs.is_file(path): raise ValueError("Input file '" + name + "' does not exist")
+        return path
+
+    # -----------------------------------------------------------------
+
+    def input_path_directory(self, name, check=False):
+
+        """
+        This function ...
+        :param name:
+        :param check:
+        :return:
+        """
+
+        path = fs.join(self.input_path, name)
+        if check and not fs.is_directory(path): raise ValueError("Input directory '" + name + "' does not exist")
+        return path
 
     # -----------------------------------------------------------------
 

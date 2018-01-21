@@ -25,6 +25,8 @@ from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict
 from ....core.prep.smile import SKIRTSmileSchema
 from ...build.suite import ModelSuite
+from ....core.tools.utils import lazyproperty
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -192,6 +194,177 @@ class FittingInitializerBase(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def regimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Only UV
+        if self.config.only_uv:
+
+            if self.config.no_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+            regimes = ["uv"]
+
+        # Only optical
+        elif self.config.only_optical:
+
+            if self.config.no_optical: raise ValueError("Error")
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+            regimes = ["optical"]
+
+        # Only NIR
+        elif self.config.only_nir:
+
+            if self.config.no_nir: raise ValueError("Error")
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+            regimes = ["nir"]
+
+        # Only MIR
+        elif self.config.only_mir:
+
+            if self.config.no_mir: raise ValueError("Error")
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+            regimes = ["mir"]
+
+        # Only FIR
+        elif self.config.only_fir:
+
+            if self.config.no_fir: raise ValueError("Error")
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+            regimes = ["fir"]
+
+        # Only submm/microwave
+        elif self.config.only_submm_microwave:
+
+            if self.config.no_submm_microwave: raise ValueError("Error")
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            regimes = ["submm-microwave"]
+
+        # Regimes
+        else: regimes = self.config.regimes[:]
+
+        # Ignore certain regimes?
+        if self.config.no_uv: regimes = sequences.removed_item(regimes, "uv")
+        if self.config.no_optical: regimes = sequences.removed_item(regimes, "optical")
+        if self.config.no_nir: regimes = sequences.removed_item(regimes, "nir")
+        if self.config.no_mir: regimes = sequences.removed_item(regimes, "mir")
+        if self.config.no_fir: regimes = sequences.removed_item(regimes, "fir")
+        if self.config.no_submm_microwave: regimes = sequences.removed_item(regimes, "submm-microwave")
+
+        # Check number of regimes
+        if len(regimes) == 0: raise ValueError("No regimes")
+
+        # Return the regimes
+        return regimes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uv_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "uv" in self.regimes: return self.config.uv
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def optical_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "optical" in self.regimes: return self.config.optical
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nir_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "nir" in self.regimes: return self.config.nir
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mir_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "mir" in self.regimes: return self.config.mir
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fir_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "fir" in self.regimes: return self.config.fir
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def submm_microwave_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "submm-microwave" in self.regimes: return self.config.submm_microwave
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
     def calculate_weights(self):
 
         """
@@ -203,7 +376,7 @@ class FittingInitializerBase(FittingComponent):
         log.info("Calculating the weight to give to each band ...")
 
         # Get the weights
-        weights = calculate_weights_filters(self.fitting_run.fitting_filters)
+        weights = calculate_weights_filters(self.fitting_run.fitting_filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm_microwave=self.submm_microwave_weight)
 
         # Add to weights table
         for fltr in weights: self.weights.add_point(fltr, weights[fltr])

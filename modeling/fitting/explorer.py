@@ -1744,7 +1744,7 @@ class ParameterExplorer(FittingComponent):
 
             if self.config.adjust_npackages:
                 log.debug("Adjusting the number of photon packages from " + str(npackages) + " to the number of dust cells (" + str(self.ndust_cells) + ") ...")
-                npackages = self.ndust_cells * self.config.ncells_npackages_factor
+                npackages = int(self.ndust_cells * self.config.ncells_npackages_factor)
             else: log.warning("The number of photon packages (" + str(npackages) + ") is less than the number of dust cells (" + str(self.ndust_cells) + ")")
 
         # Return the number of photon packages
