@@ -29,6 +29,8 @@ definition.add_flag("downsample", "perform downsampling")
 definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels to enabled downsampling", 400)
 definition.add_flag("truncate", "truncate the images", True)
 
+definition.add_flag("distributions", "show residual distributions", False)
+
 # Extra
 definition.add_flag("normalize", "normalize the images")
 definition.add_optional("share_scale_with", "string", "share the scale of all other images with this image")
@@ -52,6 +54,9 @@ environment = find_modeling_environment_up_cwd()
 
 # Create plotter
 plotter = ResidualImageGridPlotter()
+
+# Plot residual distributions
+plotter.config.distributions = config.distributions
 
 # Downsampling
 #plotter.config.downsample = config.downsample

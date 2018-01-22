@@ -44,6 +44,8 @@ from ...core.basics.map import Map
 from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
 from ...core.tools.stringify import tostr
+from ...core.plot.distribution import plot_distribution
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -1881,20 +1883,21 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def add_row(self, observation, model, name, residuals=None, errors=None, masks=None, regions=None, copy=True,
-                process=True):
+    def add_row(self, observation, model, name, with_residuals=None, errors=None, masks=None, regions=None, copy=True,
+                process=True, residuals=None):
 
         """
         This function ...
         :param observation:
         :param model:
         :param name:
-        :param residuals: True or False (or None: automatic)
+        :param with_residuals: True or False (or None: automatic)
         :param errors:
         :param masks:
         :param regions:
         :param copy:
         :param process:
+        :param residuals:
         :return:
         """
 
@@ -1917,16 +1920,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if regions is not None: regions = self._check_regions(regions, name)
 
         # Set residuals flag
-        if residuals is None:
+        if with_residuals is None:
+            # Residuals are passed
+            if residuals is not None: with_residuals = True
             # If either observation or model is None, don't create residuals
-            if observation is None or model is None: residuals = False
-            else: residuals = True
+            elif observation is None or model is None: with_residuals = False
+            else: with_residuals = True
 
         # Make entry
         entry = Map()
         entry.observation = observation
         entry.model = model
-        entry.residuals = residuals
+        entry.residuals = with_residuals
         entry.errors = errors
         entry.masks = masks
         entry.regions = regions
@@ -1934,8 +1939,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Add the row
         self.rows[name] = entry
 
+        # Add residuals
+        if residuals is not None: self.add_residuals(residuals, name, existing_row=True)
+
         # If weighed residuals have to be plotted, we need error map
-        if self.config.weighed and errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
+        elif self.config.weighed and errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
 
         # Succesfully added the row
         return True
@@ -1975,7 +1983,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # New row
         else:
             if existing_row: raise ValueError("There is no '" + name + "' row yet")
-            return self.add_row(observation, None, name, copy=copy, process=process, residuals=with_residuals)
+            return self.add_row(observation, None, name, copy=copy, process=process, with_residuals=with_residuals)
 
     # -----------------------------------------------------------------
 
@@ -2059,7 +2067,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # New row
         else:
             if existing_row: raise ValueError("There is no '" + name + "' row yet")
-            return self.add_row(None, model, name, copy=copy, process=process, residuals=with_residuals)
+            return self.add_row(None, model, name, copy=copy, process=process, with_residuals=with_residuals)
 
     # -----------------------------------------------------------------
 
@@ -2416,9 +2424,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
-        #if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
-        #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
+        #print(self.nrows, self.ncolumns)
+        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -2475,7 +2484,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         observations_path = self.input_path_directory("observations", check=True)
 
         # Load observations
-        for path in fs.files_in_path(observations_path, extension="fits"): self.add_observation_from_file(path)
+        for path, name in fs.files_in_path(observations_path, extension="fits", returns=["path", "name"]):
+
+            # Check the name
+            if self.config.contains is not None and not strings.contains_any(name, self.config.contains): continue
+            if self.config.not_contains is not None and strings.contains_any(name, self.config.not_contains): continue
+            if self.config.exact_name is not None and name not in self.config.exact_name: continue
+            if self.config.exact_not_name is not None and name in self.config.exact_not_name: continue
+            if self.config.startswith is not None and not strings.startswith_any(name, self.config.startswith): continue
+            if self.config.endswith is not None and not strings.endswith_any(name, self.config.endswith): continue
+
+            # Add the observation
+            self.add_observation_from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -2979,26 +2999,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         else:
             if self.config.distributions: return 4
             else: return 3
-
-    # -----------------------------------------------------------------
-
-    def get_wcs(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        observation = self.get_observation(name)
-        model = self.get_model(name)
-
-        if observation is None and model is None: raise ValueError("No observation nor model for row '" + name + "'")
-        elif observation is None: return model.wcs
-        elif model is None: return observation.wcs
-        else:
-            if observation.wcs != model.wcs: raise ValueError("Inconsistent coordinate system")
-            return observation.wcs
 
     # -----------------------------------------------------------------
 
@@ -3695,7 +3695,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         else: interval = self.config.interval
 
         # Plot
-        plot.axes.set_adjustable('box-forced')
+        #plot.axes.set_adjustable('box-forced')
         vmin_image, vmax_image, image, normalization = plotting.plot_box(frame.data, axes=plot.axes, interval=interval,
                                                                          scale=self.config.scale, cmap=self.colormap,
                                                                          alpha=self.config.alpha, return_image=True,
@@ -3812,7 +3812,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='x', colors="white", direction="inout")
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
-        return None
+        # Plot the distribution
+        image = plot_distribution(distribution, axes=plot.axes)
 
     # -----------------------------------------------------------------
 
@@ -4073,8 +4074,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plotted = []
 
         # The last image and normalization
-        #image = None
-        #image_normalization = None
+        images = None
+        image_normalization = None
 
         # First plot the image of which we use the scale as reference
         if self.config.share_scale and self.config.scale_reference is not None:
@@ -4128,8 +4129,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 #raise ValueError("No data for the '" + name + "' row") #self._plot_empty(index)
 
         # Set colorbar
-        #if image is None: raise RuntimeError("No image is plotted")
-        #self.figure.figure.colorbar(image, cax=self.colorbar)
+        #if images is None: raise RuntimeError("No image is plotted")
+        self.figure.figure.colorbar(images[0], cax=self.colorbar)
 
         # Finish the plot
         self.finish_plot()

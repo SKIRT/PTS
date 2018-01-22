@@ -31,6 +31,15 @@ definition = ConfigurationDefinition()
 
 # -----------------------------------------------------------------
 
+definition.add_optional("contains", "string_list", "only load images containing this string in their name")
+definition.add_optional("not_contains", "string_list", "don't load images containing this string in their name")
+definition.add_optional("exact_name", "string_list", "only load images with this exact string as their name")
+definition.add_optional("exact_not_name", "string_list", "don't load images with this exact string as their name")
+definition.add_optional("startswith", "string_list", "only load images whose name starts with this string")
+definition.add_optional("endswith", "string_list", "only load images whose name starts with this string")
+
+# -----------------------------------------------------------------
+
 # Layout
 definition.add_optional("max_nrows", "positive_integer", "maximum number of rows", 10)
 

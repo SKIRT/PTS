@@ -2370,7 +2370,12 @@ class MPLFigure(Figure):
             label_mode = "L"
 
         # Create the grid
-        grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=True, cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size, axes_class=axes_class, label_mode=label_mode)
+        #aspect = None
+        aspect = True
+        grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=aspect, cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size, axes_class=axes_class, label_mode=label_mode)
+
+        #print(nrows, ncols)
+        #grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols))
 
         if projection is not None:
 

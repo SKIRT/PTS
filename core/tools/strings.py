@@ -576,6 +576,36 @@ def startswith_any(line, patterns):
 
 # -----------------------------------------------------------------
 
+def endswith_any(line, patterns):
+
+    """
+    This function ...
+    :param line:
+    :param patterns:
+    :return:
+    """
+
+    for pattern in patterns:
+        if line.endswith(pattern): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def contains_any(line, patterns):
+
+    """
+    Thisf unction ...
+    :param line:
+    :param patterns:
+    :return:
+    """
+
+    for pattern in patterns:
+        if pattern in line: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def remove_escape_characters(string):
 
     """

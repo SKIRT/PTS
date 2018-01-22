@@ -35,7 +35,8 @@ from ..tools.stringify import tostr
 # -----------------------------------------------------------------
 
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
-                      y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf"):
+                      y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf", axes=None,
+                      xsize=5, ysize=5, return_image=False):
 
     """
     This function ...
@@ -50,15 +51,21 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param x_label:
     :param y_label:
     :param format:
+    :param axes:
+    :param xsize:
+    :param ysize:
+    :param return_image:
     :return:
     """
 
-    # Create a canvas to place the subgraphs
-    figure = plt.figure()
-    rect = figure.patch
-    rect.set_facecolor('white')
-
-    sp1 = figure.gca()
+    # Create figure if necessary, get the axes
+    only_axes = False
+    if axes is None:
+        figure = plt.figure(figsize=(xsize, ysize))
+        axes = plt.gca()
+        rect = figure.patch
+        rect.set_facecolor('white')
+    else: only_axes = True
 
     alpha = None
     edgecolor = "black"
@@ -67,8 +74,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     edgecolor_list = [edgecolor for _ in range(distribution.nvalues)]
     linewidth_list = [linewidth for _ in range(distribution.nvalues)]
 
-    if logscale: sp1.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
-    else: sp1.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+    # Plot the bar graph
+    if logscale: patch = axes.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+    else: patch = axes.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
 
     # Determine the x limits
     if x_limits is None:
@@ -91,35 +99,43 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         y_max = y_limits[1]
 
     # Set the axis limits
-    sp1.set_xlim(x_min, x_max)
-    sp1.set_ylim(y_min, y_max)
+    axes.set_xlim(x_min, x_max)
+    axes.set_ylim(y_min, y_max)
 
-    if logscale: mean_line = sp1.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
-    else: mean_line = sp1.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
-    median_line = sp1.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
-    max_line = sp1.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
-    plt.legend()
+    if logscale: mean_line = axes.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
+    else: mean_line = axes.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
+    median_line = axes.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
+    max_line = axes.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
 
-    if x_label is None: x_label = distribution.value_name
-    if y_label is None: y_label = distribution.y_name
-    if distribution.unit is not None: x_label += " [" + str(distribution.unit) + "]"
+    # Axes were not provided, but figure was created here
+    if not only_axes:
 
-    # Put the title and labels
-    if title is not None: sp1.set_title(strings.split_in_lines(title))
-    sp1.set_xlabel(x_label)
-    sp1.set_ylabel(y_label)
+        # Create legend
+        plt.legend()
 
-    if logfrequency: sp1.set_yscale("log", nonposx='clip')
-    if logscale: sp1.set_xscale("log")
+        if x_label is None: x_label = distribution.value_name
+        if y_label is None: y_label = distribution.y_name
+        if distribution.unit is not None: x_label += " [" + str(distribution.unit) + "]"
 
-    plt.tight_layout()
-    #plt.grid(alpha=0.8)
+        # Put the title and labels
+        if title is not None: axes.set_title(strings.split_in_lines(title))
+        axes.set_xlabel(x_label)
+        axes.set_ylabel(y_label)
 
-    if path is None: plt.show()
-    else: figure.savefig(path, format=format)
+        if logfrequency: axes.set_yscale("log", nonposx='clip')
+        if logscale: axes.set_xscale("log")
 
-    # Close the figure
-    plt.close()
+        plt.tight_layout()
+        #plt.grid(alpha=0.8)
+
+        if path is None: plt.show()
+        else: figure.savefig(path, format=format)
+
+        # Close the figure
+        plt.close()
+
+    # Return
+    if return_image: return patch
 
 # -----------------------------------------------------------------
 
