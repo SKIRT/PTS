@@ -1654,17 +1654,17 @@ class BatchLauncher(Configurable):
         # 6. Launch the simulations
         if not self.testing: self.launch()
 
-        # 7. Retrieve the simulations that are finished
+        # 7. Write (before trying to receive and analyse)
+        if self.config.write: self.write()
+
+        # 8. Retrieve the simulations that are finished
         if not self.testing: self.try_retrieving()
 
-        # 8. Show the simulations that are finished
+        # 9. Show the simulations that are finished
         if self.has_simulations and self.config.show_finished: self.show_finished()
 
-        # 8. Analyse the output of the retrieved simulations
+        # 10. Analyse the output of the retrieved simulations
         if self.has_simulations: self.try_analysing()
-
-        # 9. Write
-        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 

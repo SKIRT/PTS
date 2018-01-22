@@ -722,7 +722,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         if title is not None: plt.title(title)
 
         # Add colorbar?
-        if colorbar: plt.colorbar()
+        if colorbar: plt.colorbar(image)
 
         # Show or save as file
         if path is None: plt.show()
