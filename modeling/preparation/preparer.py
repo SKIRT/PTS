@@ -539,6 +539,8 @@ class DataPreparer(PreparationComponent):
         # Loop over all images of the initial dataset
         for name in self.all_initialized_directories:
 
+            if self.config.image is not None and name != self.config.image: continue
+
             # Debugging
             log.debug("Sorting the " + name + " image ...")
 
@@ -875,6 +877,10 @@ class DataPreparer(PreparationComponent):
             config["mask"]["annulus_outer_factor"] = self.config.annulus_outer_factor
             config["mask"]["saturation_expansion_factor"] = self.config.saturation_expansion_factor
             config["mask"]["stars_expansion_factor"] = self.config.stars_expansion_factor
+
+            # Check for an eliminate region
+            eliminate_path = fs.join(directory_path, "eliminate.reg")
+            if fs.is_file(eliminate_path): config["eliminate"] = eliminate_path
 
             # Subtract
             # image, sky_path, config, principal_sky_region, saturation_sky_region=None, star_sky_region=None, visualisation_path=None

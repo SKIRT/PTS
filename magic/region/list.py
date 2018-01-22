@@ -58,9 +58,10 @@ def load_region_list(path, **kwargs):
     # Get the second line of the region
     second_line = fs.get_line(path, 1)
     third_line = fs.get_line(path, 2)
+    fourth_line = fs.get_line(path, 3)
 
     # Image coordinates or sky coordinates
-    if "image" in second_line or "image" in third_line: return PixelRegionList.from_file(path, **kwargs)
+    if "image" in second_line or "image" in third_line or "image" in fourth_line: return PixelRegionList.from_file(path, **kwargs)
     else: return SkyRegionList.from_file(path, **kwargs)
 
 # -----------------------------------------------------------------
@@ -1237,7 +1238,7 @@ def make_regular_region(specs):
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
-            reg = PixelPolygonRegion(*coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
+            reg = PixelPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate given
         else: raise ValueError("No central coordinate")
