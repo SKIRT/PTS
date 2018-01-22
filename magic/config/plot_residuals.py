@@ -41,7 +41,8 @@ definition.add_optional("endswith", "string_list", "only load images whose name 
 # -----------------------------------------------------------------
 
 # Layout
-definition.add_optional("max_nrows", "positive_integer", "maximum number of rows", 10)
+definition.add_optional("max_nrows", "positive_integer", "maximum number of rows (per grid)", 10)
+definition.add_optional("ngrids", "positive_integer", "number of grids", 1)
 
 # -----------------------------------------------------------------
 

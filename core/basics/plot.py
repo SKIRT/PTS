@@ -2317,6 +2317,72 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_row_of_image_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0, colorbar_relsize=0.05):
+
+        """
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param ngrids:
+        :param wspace:
+        :param hspace:
+        :param colorbar_relsize:
+        :return:
+        """
+
+        # Set colorbar size in percentage
+        cbar_size = str(colorbar_relsize * 100) + "%"
+
+        cbar_mode = "single"
+        axes_pad = (wspace, hspace)
+
+        axes_class = None
+        label_mode = "L"
+
+        # No axes for the main figure
+        self.ax.set_axis_off()
+
+        grids = []
+
+        for index in range(ngrids):
+
+            rect = "1" + str(ngrids) + str(index+1)
+
+            aspect = True
+            grid = ImageGrid(self.figure, rect, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=aspect,
+                             cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size,
+                             axes_class=axes_class, label_mode=label_mode)
+            grids.append(grid)
+
+        # Initialize structure to contain the plots
+        plots = [[[None for i in range(ncols)] for j in range(nrows)] for k in range(ngrids)]
+
+        # Loop over the images
+        for i in range(ngrids):
+            index = 0
+
+            grid = grids[i]
+
+            for row in range(nrows):
+                for col in range(ncols):
+
+                    # Get axes, create subplot?
+                    ax = grid[index]
+                    plot = ax
+
+                    # Create plot
+                    plot = MPLPlot(plot=plot)
+
+                    # Add the plot
+                    plots[i][row][col] = plot
+
+                    index += 1
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
     def create_image_grid(self, nrows, ncols, wspace=0.0, hspace=0.0, return_colorbar=False, colorbar_relsize=0.05,
                           edgecolor=None, projection=None):
 

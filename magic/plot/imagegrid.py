@@ -1902,7 +1902,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Maximum number of rows?
-        if self.nrows == self.config.max_nrows:
+        if self.nrows_per_grid == self.config.max_nrows:
             log.warning("Cannot add the row '" + name + "': maximum number of rows has been reached")
             return False
 
@@ -2400,6 +2400,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def single_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.ngrids == 1
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -2424,10 +2436,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
-        #print(self.nrows, self.ncolumns)
-        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
-        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        if self.single_grid:
+            #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
+            #print(self.nrows, self.ncolumns)
+            if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+            else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        else: self.plots = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids)
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -2757,6 +2771,128 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         return len(self.rows)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrows_per_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nrows) / self.config.ngrids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_nrows_per_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(math.ceil(self.nrows_per_grid))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_nrows_per_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows // self.config.ngrids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nremaining_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows % self.config.ngrids
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def first_row_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        rows = []
+        for grid in range(self.config.ngrids):
+            if grid < self.nremaining_rows: start = grid * (self.min_nrows_per_grid + 1);
+            else: start = self.nremaining_rows * (self.min_nrows_per_grid + 1) + (grid - self.nremaining_rows) * self.min_nrows_per_grid
+            rows.append(start)
+        return rows
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def grid_assignment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        assignment = []
+
+        # Loop over the rows
+        for row in range(self.nrows):
+
+            if row < self.nremaining_rows * (self.min_nrows_per_grid + 1): grid = row // (self.min_nrows_per_grid + 1)
+            else:
+                tprime = row - self.nremaining_rows * (self.min_nrows_per_grid + 1)
+                grid = self.nremaining_rows + tprime // self.min_nrows_per_grid
+            assignment.append(grid)
+        return assignment
+
+    # -----------------------------------------------------------------
+
+    def get_relative_row(self, row):
+
+        """
+        This function ...
+        :param row:
+        :return:
+        """
+
+        # Get grid for row
+        grid = self.grid_assignment[row]
+
+        # Get relative row in grid
+        return row - self.first_row_grids[grid]
+
+    # -----------------------------------------------------------------
+
+    def get_grid_and_relative_row(self, row):
+
+        """
+        This function ...
+        :param row:
+        :return:
+        """
+
+        # Get grid for row
+        grid = self.grid_assignment[row]
+
+        # Get relative row in grid
+        relative_row = row - self.first_row_grids[grid]
+
+        # Return
+        return grid, relative_row
 
     # -----------------------------------------------------------------
 
@@ -3543,6 +3679,25 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def get_plot(self, abs_row_index, col_index):
+
+        """
+        This function ...
+        :param abs_row_index:
+        :param col_index:
+        :return:
+        """
+
+        # Only single grid
+        if self.single_grid: return self.plots[abs_row_index][col_index]
+
+        # Multiple grids
+        else:
+            grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
+            return self.plots[grid][rel_row_index][col_index]
+
+    # -----------------------------------------------------------------
+
     def _plot_empty_row(self, name, index):
 
         """
@@ -3552,10 +3707,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
+        # Loop over the columns
         for col in self.column_indices:
 
             # Get the plot
-            plot = self.plots[index][col]
+            plot = self.get_plot(index, col)
 
             # Color spines
             plot.axes.spines['bottom'].set_color("white")
@@ -3667,7 +3823,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Get the plot
-        plot = self.plots[row][col]
+        plot = self.get_plot(row, col)
 
         # Color spines
         plot.axes.spines['bottom'].set_color("white")
@@ -3797,7 +3953,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         distribution = self.get_distribution(name)
 
         # Get the plot
-        plot = self.plots[index][distribution_index]
+        plot = self.get_plot(index, distribution_index)
 
         # Color spines
         # print(plot.axes.spines.keys())
