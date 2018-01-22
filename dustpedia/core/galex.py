@@ -45,11 +45,13 @@ from ...core.tools.formatting import print_files_in_list, print_files_in_path, p
 from ...core.tools import formatting as fmt
 from ...core.tools import archive
 from ...core.tools import types
-
+from ...modeling.preparation import unitconversion
 # -----------------------------------------------------------------
 
 galex_bands = ["NUV", "FUV"]
 band_short = {"NUV": "nd", "FUV": "fd"}
+galex_fuv_zero_point = 18.82
+galex_nuv_zero_point = 20.08
 
 # -----------------------------------------------------------------
 
@@ -1265,6 +1267,28 @@ class GALEXMosaicMaker(Configurable):
             relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
             relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
 
+            # CONVERT TO JANSKY / PIX
+
+            # FROM COUNT / S TO AB MAG:
+            if band == "FUV":
+                mosaic = Frame(galex_fuv_zero_point - (2.5 * np.log10(mosaic)), wcs=mosaic.wcs)
+                errors = Frame(galex_fuv_zero_point - (2.5 * np.log10(errors)), wcs=errors.wcs)
+            elif band == "NUV":
+                mosaic = Frame(galex_nuv_zero_point - (2.5 * np.log10(mosaic)), wcs=mosaic.wcs)
+                errors = Frame(galex_nuv_zero_point - (2.5 * np.log10(errors)), wcs=errors.wcs)
+
+            # FROM AB MAG TO FLUX (JANSKY):
+            mosaic = Frame(unitconversion.ab_to_jansky(mosaic), wcs=mosaic.wcs)
+            errors = Frame(unitconversion.ab_to_jansky(errors), wcs=errors.wcs)
+
+            # SET IMAGE UNITS
+            mosaic.unit = "Jy/pix"
+            errors.unit = "Jy/pix"
+
+            # SET IMAGE FILTER
+            mosaic.filter = band
+            errors.filter = band
+
             # Set
             self.mosaics[band] = mosaic
             self.error_maps[band] = errors
@@ -1551,7 +1575,8 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
 
     # Read in image
     #raw_file_path = fs.join(temp_raw_path, raw_file)
-    in_fitsdata = open_fits(raw_file_path)
+    if raw_file_path.endswith('.dat'): return
+    in_fitsdata = open_fits(raw_file_path, ignore_missing_end=True)
     in_image = in_fitsdata[0].data
     in_header = in_fitsdata[0].header
     in_fitsdata.close()
@@ -1628,7 +1653,7 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
 
     # Do the convolution
     kernel = Tophat2DKernel(10)
-    conv_image = convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
+    conv_image = convolve_fft(out_image, kernel, nan_treatment='fill', normalize_kernel=True, allow_huge=True) #, ignore_edge_zeros=False, interpolate_nan=True, normalize_kernel=True)
 
     # Write the convolved map
     temp_convolve_image_path = fs.join(convolve_path, raw_file_name)                  ## NEW
