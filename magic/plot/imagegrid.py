@@ -43,6 +43,7 @@ from ...core.tools import numbers
 from ...core.basics.map import Map
 from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -155,13 +156,16 @@ class ImageGridPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _process_frame(self, name, frame, copy=True):
+    def _process_frame(self, name, frame, copy=True, unit=None, return_normalization_sum=False, normalization_sum=None):
 
         """
         This function ...
         :param name:
         :param frame:
         :param copy:
+        :param unit:
+        :param return_normalization_sum:
+        :param normalization_sum:
         :return:
         """
 
@@ -170,6 +174,10 @@ class ImageGridPlotter(Configurable):
         _cropped = False
         _downsampled = False
         _normalized = False
+        _converted = False
+
+        # Initialize normalization sum
+        norm_sum = None
 
         # Rebin the frame
         if self.rebin_to is not None:
@@ -219,23 +227,51 @@ class ImageGridPlotter(Configurable):
             # Debugging
             log.debug("Normalizing the '" + name + "' frame ...")
 
-            try:
+            # Normalize this frame based on the sum of another frame
+            if normalization_sum is not None:
 
-                # Create normalized frame
-                if (_rebinned or _cropped or _downsampled) or not copy: frame.normalize()
-                else: frame = frame.normalized()
+                # Normalize
+                if (_rebinned or _cropped or _downsampled) or not copy: frame /= normalization_sum
+                else: frame = frame / normalization_sum
 
-                # Set flag
-                _normalized = True
+                # Remove the unit
+                frame.unit = None
 
-            except AllZeroError: log.warning("The '" + name + "' frame could not be normalized")
+            # Try normalization this frame independently
+            else:
+
+                # Try
+                try:
+
+                    # Create normalized frame
+                    if (_rebinned or _cropped or _downsampled) or not copy: norm_sum = frame.normalize()
+                    else: frame, norm_sum = frame.normalized(return_sum=True)
+
+                    # Set flag
+                    _normalized = True
+
+                except AllZeroError: log.warning("The '" + name + "' frame could not be normalized")
+
+        # Convert the unit
+        if unit is not None and frame.unit != unit:
+
+            # Debugging
+            log.debug("Converting the unit of the '" + name + "' frame to " + tostr(unit) + " ...")
+
+            # Convert the unit
+            if (_rebinned or _cropped or _downsampled or _normalized) or not copy: frame.convert_to(unit)
+            else: frame = frame.converted_to(unit)
+
+            # Set flag
+            _converted = True
 
         # If no processing is performed, make a copy if necessary
-        processed = _rebinned or _normalized or _cropped or _downsampled
+        processed = _rebinned or _normalized or _cropped or _downsampled or _converted
         if not processed and copy: frame = frame.copy()
 
         # Return the new frame
-        return frame
+        if return_normalization_sum: return frame, norm_sum
+        else: return frame
 
     # -----------------------------------------------------------------
 
@@ -424,7 +460,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
         if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
         else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
 
@@ -1798,31 +1833,75 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Process observation
-        if observation is not None: observation = self._process_frame(name + " observation image", observation, copy=copy)
+        if observation is not None:
+            observation, normalization_sum = self._process_frame(name + " observation image", observation, copy=copy, return_normalization_sum=True)
+            observation_unit = observation.unit
+        else: observation_unit = normalization_sum = None
 
         # Process
-        if model is not None: model = self._process_frame(name + " model image", model, copy=copy)
+        if model is not None: model = self._process_frame(name + " model image", model, copy=copy, unit=observation_unit, normalization_sum=normalization_sum)
 
         # Return
         return observation, model
 
     # -----------------------------------------------------------------
 
-    def add_row(self, observation, model, name, residuals=True, errors=None, mask=None, regions=None, copy=True, process=True):
+    def _check_masks(self, mask, name):
+
+        """
+        This function ...
+        :param mask:
+        :param name:
+        :return:
+        """
+
+        if types.is_dictionary(mask): masks = mask
+        elif isinstance(mask, MaskBase): masks = {name: mask}
+        #elif mask is None: masks = None
+        else: raise ValueError("Invalid input")
+        return masks
+
+    # -----------------------------------------------------------------
+
+    def _check_regions(self, regions, name):
+
+        """
+        This function ...
+        :param regions:
+        :param name:
+        :return:
+        """
+
+        if types.is_dictionary(regions): pass
+        elif isinstance(regions, RegionList): regions = {name: regions}
+        elif isinstance(regions, Region): regions = {name: region_to_region_list(regions)}
+        #elif regions is None: pass
+        else: raise ValueError("Invalid input")
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def add_row(self, observation, model, name, residuals=None, errors=None, masks=None, regions=None, copy=True,
+                process=True):
 
         """
         This function ...
         :param observation:
         :param model:
         :param name:
-        :param residuals:
+        :param residuals: True or False (or None: automatic)
         :param errors:
-        :param mask:
+        :param masks:
         :param regions:
         :param copy:
         :param process:
         :return:
         """
+
+        # Maximum number of rows?
+        if self.nrows == self.config.max_nrows:
+            log.warning("Cannot add the row '" + name + "': maximum number of rows has been reached")
+            return False
 
         # Check name
         if self.has_row(name): raise ValueError("Name '" + name + "' is already in use")
@@ -1832,20 +1911,16 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         elif copy: observation, model = observation.copy(), model.copy()
 
         # Check masks
-        if types.is_dictionary(mask): masks = mask
-        elif isinstance(mask, MaskBase): masks = {name: mask}
-        elif mask is None: masks = None
-        else: raise ValueError("Invalid input")
+        if masks is not None: masks = self._check_masks(masks, name)
 
         # Check regions
-        if types.is_dictionary(regions): pass
-        elif isinstance(regions, RegionList): regions = {name: regions}
-        elif isinstance(regions, Region): regions = {name: region_to_region_list(regions)}
-        elif regions is None: pass
-        else: raise ValueError("Invalid input")
+        if regions is not None: regions = self._check_regions(regions, name)
 
-        # If either observation or model is None, don't create residuals
-        if observation is None or model is None: residuals = False
+        # Set residuals flag
+        if residuals is None:
+            # If either observation or model is None, don't create residuals
+            if observation is None or model is None: residuals = False
+            else: residuals = True
 
         # Make entry
         entry = Map()
@@ -1862,15 +1937,22 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # If weighed residuals have to be plotted, we need error map
         if self.config.weighed and errors is None: raise ValueError("Errors have to be specified to create weighed residuals")
 
+        # Succesfully added the row
+        return True
+
     # -----------------------------------------------------------------
 
-    def add_observation(self, observation, name, replace=False):
+    def add_observation(self, observation, name, replace=False, existing_row=False, copy=True, process=True, with_residuals=True):
 
         """
         This function ...
         :param observation:
         :param name:
         :param replace:
+        :param existing_row:
+        :param copy:
+        :param process:
+        :param with_residuals: assume residuals are going to be added or should be calculated
         :return:
         """
 
@@ -1881,47 +1963,80 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             if self.rows[name].observation is not None:
 
                 # Replace?
-                if replace: self.rows[name].observation = observation
+                if replace: self._set_observation(observation, name, copy=copy, process=process)
                 else: raise ValueError("Already an observation image for the row '" + name + "'")
 
             # Observation not yet defined for this row
-            else: self.rows[name].observation = observation
+            else: self._set_observation(observation, name, copy=copy, process=process)
+
+            # Has been added succesfully
+            return True
 
         # New row
-        else: self.add_row(observation, None, name)
+        else:
+            if existing_row: raise ValueError("There is no '" + name + "' row yet")
+            return self.add_row(observation, None, name, copy=copy, process=process, residuals=with_residuals)
 
     # -----------------------------------------------------------------
 
-    def add_observation_from_file(self, path, name=None, replace=False, plane_index=None, plane=None):
+    def _set_observation(self, observation, name, copy=True, process=True):
+
+        """
+        This function ...
+        :param observation:
+        :param name:
+        :param copy:
+        :param process:
+        :return:
+        """
+
+        # Process the observation frame
+        if process: observation = self._process_frame(name + " observation image", observation, copy=copy)
+
+        # Set the observation frame
+        self.rows[name].observation = observation
+
+    # -----------------------------------------------------------------
+
+    def add_observation_from_file(self, path, name=None, plane_index=None, plane=None, replace=False, existing_row=False,
+                                  process=True, only_if_row=False):
 
         """
         This function ....
         :param path:
         :param name:
-        :param replace:
         :param plane_index:
         :param plane:
+        :param replace:
+        :param existing_row:
+        :param process:
+        :param only_if_row:
         :return:
         """
+
+        # Determine name
+        if name is None: name = fs.strip_extension(fs.name(path))
+        if only_if_row and name not in self.names: return False
 
         # Load the frame
         observation = Frame.from_file(path, index=plane_index, plane=plane)
 
-        # Determine name
-        if name is None: name = fs.strip_extension(fs.name(path))
-
         # Add
-        self.add_observation(observation, name, replace=replace)
+        return self.add_observation(observation, name, replace=replace, existing_row=existing_row, copy=False, process=process)
 
     # -----------------------------------------------------------------
 
-    def add_model(self, model, name, replace=False):
+    def add_model(self, model, name, replace=False, existing_row=False, copy=True, process=True, with_residuals=True):
 
         """
         This function ...
         :param model:
         :param name:
         :param replace:
+        :param existing_row:
+        :param copy:
+        :param process:
+        :param with_residuals: assume residuals are going to be added or have to be calculated
         :return:
         """
 
@@ -1932,41 +2047,165 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             if self.rows[name].model is not None:
 
                 # Replace?
-                if replace: self.rows[name].model = model
-                else: raise ValueError("Already a model image for the row '" + name + "'")
+                if replace: self._set_model(model, name, copy=copy, process=process)
+                else: raise ValueError("Already a model image for the '" + name + "' row")
 
             # Model not yet defined for this row
-            else: self.rows[name].model = model
+            else: self._set_model(model, name, copy=copy, process=process)
+
+            # Has been added succesfully
+            return True
 
         # New row
-        else: self.add_row(None, model, name)
+        else:
+            if existing_row: raise ValueError("There is no '" + name + "' row yet")
+            return self.add_row(None, model, name, copy=copy, process=process, residuals=with_residuals)
 
     # -----------------------------------------------------------------
 
-    def add_model_from_file(self, path, name=None, replace=False, plane_index=None, plane=None):
+    def _set_model(self, model, name, copy=True, process=True):
+
+        """
+        This function ...
+        :param model:
+        :param name:
+        :param copy:
+        :param process:
+        :return:
+        """
+
+        # Get the observation unit
+        observation_unit = self.get_observation_unit(name)
+
+        # Process the model frame
+        if process: model = self._process_frame(name + " model image", model, copy=copy, unit=observation_unit)
+
+        # Set the model frame
+        self.rows[name].model = model
+
+    # -----------------------------------------------------------------
+
+    def add_model_from_file(self, path, name=None, plane_index=None, plane=None, replace=False, existing_row=False,
+                            process=True, only_if_row=False):
 
         """
         This function ...
         :param path:
         :param name:
-        :param replace:
         :param plane_index:
         :param plane:
+        :param replace:
+        :param existing_row:
+        :param process:
+        :param only_if_row:
         :return:
         """
+
+        # Determine name
+        if name is None: name = fs.strip_extension(fs.name(path))
+        if only_if_row and name not in self.names: return False
 
         # Load the frame
         model = Frame.from_file(path, index=plane_index, plane=plane)
 
-        # Determine name
-        if name is None: name = fs.strip_extension(fs.name(path))
-
         # Add
-        self.add_model(model, name, replace=replace)
+        return self.add_model(model, name, replace=replace, existing_row=existing_row, copy=False, process=process)
 
     # -----------------------------------------------------------------
 
-    def add_residuals(self, residuals, name):
+    def add_residuals(self, residuals, name, replace=False, existing_row=False, copy=True, process=True):
+
+        """
+        This function ...
+        :param residuals:
+        :param name:
+        :param replace:
+        :param existing_row:
+        :param copy:
+        :param process:
+        :return:
+        """
+
+        # Existing row
+        if name in self.names:
+
+            # Already a residual map for this row
+            if name in self.residuals:
+
+                # Replace
+                if replace: self._set_residuals(residuals, name, copy=copy, process=process)
+                else: raise ValueError("Already a residual map for the '" + name + "' row")
+
+            # Residual map not yet defined for this row
+            else: self._set_residuals(residuals, name, copy=copy, process=process)
+
+            # Has been added succesfully
+            return True
+
+        # New row
+        else:
+            if existing_row: raise ValueError("There is no '" + name + "' row yet")
+            self._set_residuals(residuals, name, copy=copy, process=process)
+            return True
+
+    # -----------------------------------------------------------------
+
+    def _process_residuals(self, name, residuals, copy=False):
+
+        """
+        This function ...
+        :param name:
+        :param residuals:
+        :param copy:
+        :return:
+        """
+
+        # Initialize flags
+        _rebinned = False
+        _converted = False
+
+        # Get the row coordinate system
+        row_wcs = self.get_wcs(name)
+
+        # Rebin the frame
+        if residuals.wcs != row_wcs is not None:
+
+            # Debugging
+            log.debug("Rebinning the '" + name + "' residuals frame ...")
+
+            # Rebin
+            if copy: residuals = residuals.rebinned(row_wcs)
+            else: residuals.rebin(row_wcs)
+
+            # Set flag
+            _rebinned = True
+
+        # Get the row unit
+        row_unit = self.get_unit(name)
+
+        # Convert the unit
+        if residuals.unit != row_unit:
+
+            # Debugging
+            log.debug("Converting the unit of the '" + name + "' residuals frame to " + tostr(row_unit) + " ...")
+
+            # Convert the unit
+            if _rebinned or not copy: residuals.convert_to(row_unit)
+            else: residuals = residuals.converted_to(row_unit)
+
+            # Set flag
+            _converted = True
+
+        # If no processing is performed, make a copy if necessary
+        processed = _rebinned or _converted
+        if not processed and copy: residuals = residuals.copy()
+
+        # Return the new residuals frame
+        return residuals
+
+    # -----------------------------------------------------------------
+
+    def _set_residuals(self, residuals, name, copy=True, process=True):
 
         """
         This function ...
@@ -1975,31 +2214,75 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
+        # Process the residuals map
+        if process: residuals = self._process_residuals(name, residuals, copy=copy)
+
+        # Set the residuals frame
         self.residuals[name] = residuals
 
     # -----------------------------------------------------------------
 
-    def add_residuals_from_file(self, path, name=None):
+    def add_residuals_from_file(self, path, name=None, replace=False, existing_row=False, process=True, only_if_row=False):
 
         """
         This function ....
         :param path:
         :param name:
+        :param replace:
+        :param existing_row:
+        :param process:
+        :param only_if_row:
         :return:
         """
+
+        # Determine the name
+        if name is None: name = fs.strip_extension(fs.name(path))
+        if only_if_row and name not in self.names: return False
 
         # Load
         residuals = Frame.from_file(path)
 
-        # Determine the name
-        if name is None: name = fs.strip_extension(fs.name(path))
-
         # Add
-        self.add_residuals(residuals, name)
+        return self.add_residuals(residuals, name, replace=replace, existing_row=existing_row, copy=False, process=process)
 
     # -----------------------------------------------------------------
 
-    def add_distribution(self, distribution, name):
+    def add_distribution(self, distribution, name, replace=False, existing_row=False):
+
+        """
+        This function ...
+        :param distribution:
+        :param name:
+        :param replace:
+        :param existing_row:
+        :return:
+        """
+
+        # Existing row
+        if name in self.names:
+
+            # Already a residual distribution for this row
+            if name in self.distributions:
+
+                # Replace
+                if replace: self._set_distribution(distribution, name)
+                else: raise ValueError("Already a distribution for the '" + name + "' row")
+
+            # Distribution not yet defined for this row
+            else: self._set_distribution(distribution, name)
+
+            # Has been added succesfully
+            return True
+
+        # New row
+        else:
+            if existing_row: raise ValueError("There is no '" + name + "' row yet")
+            self._set_distribution(distribution, name)
+            return True
+
+    # -----------------------------------------------------------------
+
+    def _set_distribution(self, distribution, name):
 
         """
         This function ...
@@ -2012,23 +2295,27 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def add_distribution_from_file(self, path, name=None):
+    def add_distribution_from_file(self, path, name=None, replace=False, existing_row=False, only_if_row=False):
 
         """
         This function ...
         :param path:
         :param name:
+        :param replace:
+        :param existing_row:
+        :param only_if_row:
         :return:
         """
+
+        # Determine the name
+        if name is None: name = fs.strip_extension(fs.name(path))
+        if only_if_row and name not in self.names: return False
 
         # Load
         distribution = Distribution.from_file(path)
 
-        # Determine the name
-        if name is None: name = fs.strip_extension(fs.name(path))
-
         # Add
-        self.add_distribution(distribution, name)
+        return self.add_distribution(distribution, name, replace=replace, existing_row=existing_row)
 
     # -----------------------------------------------------------------
 
@@ -2129,8 +2416,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
-        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
+        #if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -2159,31 +2447,91 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Inform the user
         log.info("Loading data from file ...")
 
-        # Determine directory paths
+        # Observations
+        self.load_observations()
+
+        # Models
+        self.load_models()
+
+        # Residuals
+        self.load_residuals()
+
+        # Distributions
+        self.load_distributions()
+
+    # -----------------------------------------------------------------
+
+    def load_observations(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the observed frames ...")
+
+        # Determine the path
         observations_path = self.input_path_directory("observations", check=True)
-        models_path = self.input_path_directory("models", check=True)
-        residuals_path = self.input_path_directory("residuals")
-        distributions_path = self.input_path_directory("distributions")
 
         # Load observations
-        for path, name in fs.files_in_path(observations_path, extension="fits", returns=["path", "name"]):
+        for path in fs.files_in_path(observations_path, extension="fits"): self.add_observation_from_file(path)
 
-            self.add_observation_from_file(path, name=name)
+    # -----------------------------------------------------------------
+
+    def load_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the model frames ...")
+
+        # Determine the path
+        models_path = self.input_path_directory("models", check=True)
 
         # Load models
-        for path, name in fs.files_in_path(models_path, extension="fits", returns=["path", "name"]):
+        for path in fs.files_in_path(models_path, extension="fits"): self.add_model_from_file(path, existing_row=True, only_if_row=True)
 
-            self.add_model_from_file(path, name=name)
+    # -----------------------------------------------------------------
+
+    def load_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the residual frames ...")
+
+        # Determine the path
+        residuals_path = self.input_path_directory("residuals")
 
         # Load residuals
         if fs.is_directory(residuals_path):
-            for path, name in fs.files_in_path(residuals_path, extension="fits", returns=["path", "name"]):
-                self.add_residuals_from_file(path, name=name)
+            for path in fs.files_in_path(residuals_path, extension="fits"): self.add_residuals_from_file(path, existing_row=True, only_if_row=True)
+
+    # -----------------------------------------------------------------
+
+    def load_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the residual distributions ...")
+
+        # Determine the path
+        distributions_path = self.input_path_directory("distributions")
 
         # Load distributions
         if fs.is_directory(distributions_path):
-            for path, name in fs.files_in_path(distributions_path, extension="dat", returns=["path", "name"]):
-                self.add_distribution_from_file(path, name=name)
+            for path in fs.files_in_path(distributions_path, extension="dat"): self.add_distribution_from_file(path, existing_row=True, only_if_row=True)
 
     # -----------------------------------------------------------------
 
@@ -2208,7 +2556,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         #print(self.config.plot.xsize, self.ncolumns, self.mean_width_to_height)
-        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height
+        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height * 1.5
 
     # -----------------------------------------------------------------
 
@@ -2264,15 +2612,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        observation = self.get_observation(name)
-        model = self.get_model(name)
-
-        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
-        elif observation is None: return model.xsize
-        elif model is None: return observation.xsize
-        else:
-            if observation.xsize != model.xsize: raise ValueError("Inconsistent sizes for row '" + name + "'")
-            return observation.xsize
+        return self.get_xsize(name)
 
     # -----------------------------------------------------------------
 
@@ -2284,14 +2624,106 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        observation = self.get_observation(name)
-        model = self.get_model(name)
+        return self.get_ysize(name)
+
+    # -----------------------------------------------------------------
+
+    def get_unit(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data
+        observation, model = self.get_data(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.unit
+        elif model is None: return observation.unit
+        else:
+            if model.unit != observation.unit: raise ValueError("Inconsistent units for '" + name + "' row")
+            return observation.unit
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data
+        observation, model = self.get_data(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.wcs
+        elif model is None: return observation.wcs
+        else:
+            if model.wcs != observation.wcs: raise ValueError("Inconsistent coordinate systems for '" + name + "' row")
+            return observation.wcs
+
+    # -----------------------------------------------------------------
+
+    def get_shape(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data
+        observation, model = self.get_data(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.shape
+        elif model is None: return observation.shape
+        else:
+            if model.shape != observation.shape: raise ValueError("Inconsistent shape for '" + name + "' row")
+            return observation.shape
+
+    # -----------------------------------------------------------------
+
+    def get_xsize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data
+        observation, model = self.get_data(name)
+
+        if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
+        elif observation is None: return model.xsize
+        elif model is None: return observation.xsize
+        else:
+            if observation.xsize != model.xsize: raise ValueError("Inconsistent xsize for '" + name + "' row")
+            return observation.xsize
+
+    # -----------------------------------------------------------------
+
+    def get_ysize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data
+        observation, model = self.get_data(name)
 
         if observation is None and model is None: raise ValueError("No data for the '" + name + "' row")
         elif observation is None: return model.ysize
         elif model is None: return observation.ysize
         else:
-            if observation.ysize != model.ysize: raise ValueError("Inconsistent sizes for row '" + name + "'")
+            if observation.ysize != model.ysize: raise ValueError("Inconsistent ysize for '" + name + "' row")
             return observation.ysize
 
     # -----------------------------------------------------------------
@@ -3084,6 +3516,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if self.config.distributions: distr_image = self._plot_distribution(name, index)
         else: distr_image = None
 
+        res_image = distr_image = vmin_res = vmax_res = res_normalization = None
+
         # Make list of the images
         images = [obs_image, model_image, res_image, distr_image]
 
@@ -3321,7 +3755,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         model = self.get_model(name)
 
         # Plot
-        return self._plot_frame(name, model, index, observation_index, vmin=vmin, vmax=vmax, add_label=False)
+        return self._plot_frame(name, model, index, model_index, vmin=vmin, vmax=vmax, add_label=False)
 
     # -----------------------------------------------------------------
 
@@ -3382,6 +3816,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def get_data(self, name):
+
+        """
+        This function ....
+        :param name:
+        :return:
+        """
+
+        return self.get_observation(name), self.get_model(name)
+
+    # -----------------------------------------------------------------
+
     def get_observation(self, name):
 
         """
@@ -3391,6 +3837,71 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         return self.rows[name].observation
+
+    # -----------------------------------------------------------------
+
+    def get_observation_unit(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_observation(name): return self.get_observation(name).unit
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_observation_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_observation(name): return self.get_observation(name).unit
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_observation_shape(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_observation_data(name): return self.get_observation(name).shape
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_observation_xsize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_observation(name): return self.get_observation(name).xsize
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_observation_ysize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_observation(name): return self.get_observation(name).ysize
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -3406,6 +3917,71 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def get_model_unit(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_model(name): return self.get_model(name).unit
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_model_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_model(name): return self.get_model(name).wcs
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_model_shape(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_model(name): return self.get_model(name).shape
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_model_xsize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_model(name): return self.get_model(name).xsize
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_model_ysize(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if self.has_model(name): return self.get_model(name).ysize
+        else: return None
+
+    # -----------------------------------------------------------------
+
     def get_errors(self, name):
 
         """
@@ -3415,6 +3991,30 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         return self.rows[name].errors
+
+    # -----------------------------------------------------------------
+
+    def has_observation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_row(name) and self.rows[name].observation is not None
+
+    # -----------------------------------------------------------------
+
+    def has_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_row(name) and self.rows[name].model is not None
 
     # -----------------------------------------------------------------
 
@@ -3487,6 +4087,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Loop over the images
         for index, name in enumerate(self.names):
+
+            # Debugging
+            log.debug("Plotting the '" + name + "' row ...")
 
             # Get name
             name = self.names[index]

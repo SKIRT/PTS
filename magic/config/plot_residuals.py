@@ -31,6 +31,11 @@ definition = ConfigurationDefinition()
 
 # -----------------------------------------------------------------
 
+# Layout
+definition.add_optional("max_nrows", "positive_integer", "maximum number of rows", 10)
+
+# -----------------------------------------------------------------
+
 # Load from data
 definition.add_flag("from_data", "load from data written out by the residuals image grid plotter")
 
@@ -102,6 +107,6 @@ definition.add_flag("show", "show the plot (default is automatic)", None)
 # -----------------------------------------------------------------
 
 # Add coordinates?
-definition.add_flag("coordinates", "show the coordinates", True)
+definition.add_flag("coordinates", "show the coordinates", False)
 
 # -----------------------------------------------------------------

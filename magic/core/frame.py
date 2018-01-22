@@ -3115,19 +3115,24 @@ class Frame(NDDataArray):
         # Set the unit to None
         self.unit = unit
 
+        # Return the sum
+        return sum
+
     # -----------------------------------------------------------------
 
-    def normalized(self, to=1.):
+    def normalized(self, to=1., return_sum=False):
         
         """
         This function ...
-        :param to: 
+        :param to:
+        :param return_sum:
         :return: 
         """
 
         new = self.copy()
-        new.normalize(to=to)
-        return new
+        normalization_sum = new.normalize(to=to)
+        if return_sum: return new, normalization_sum
+        else: return new
 
     # -----------------------------------------------------------------
 

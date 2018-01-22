@@ -2821,11 +2821,12 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def to_file(self, path):
+    def to_file(self, path, tight=True):
 
         """
         This function ...
         :param path:
+        :param tight:
         :return:
         """
 
@@ -2833,23 +2834,28 @@ class MPLFigure(Figure):
         log.info("Saving the plot to " + str(path) + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        if tight: bbox_inches = "tight"
+        else: bbox_inches = None
+        plt.savefig(path, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
 
     # -----------------------------------------------------------------
 
-    def to_buffer(self, buf):
+    def to_buffer(self, buf, tight=True):
 
         """
         This function ...
         :param buf:
+        :param tight:
         :return:
         """
 
         # Inform the user
-        log.info("Saving the SED plot to a buffer ...")
+        log.info("Saving the plot to a buffer ...")
 
         # Save to buffer
-        plt.savefig(buf, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        if tight: bbox_inches = "tight"
+        else: bbox_inches = None
+        plt.savefig(buf, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
 
     # -----------------------------------------------------------------
 
