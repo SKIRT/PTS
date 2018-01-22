@@ -83,3 +83,8 @@ definition.add_flag("add_extra_mask", "add the extra mask to the output maps", T
 definition.add_optional("mask_value", "real", "value to replace masked pixels", 0.0)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("interactive", "plot stuff")
+definition.add_optional("eliminate", "file_path", "file with regions that mark emission that needs to be eliminated before estimating the sky")
+
+# -----------------------------------------------------------------
