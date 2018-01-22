@@ -400,7 +400,7 @@ class ExtendedSourceFinder(Configurable):
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
             if source.principal and not source.has_detection: source.detection_from_parameters(self.frame, outer_factor)
-            elif source.companion and not source.has_source and source.has_extent: source.detection_from_parameters(self.frame, outer_factor)
+            elif source.companion and not source.has_detection and source.has_extent: source.detection_from_parameters(self.frame, outer_factor)
 
         # Inform the user
         log.info("Found a detection for {0} out of {1} objects ({2:.2f}%)".format(self.have_detection, len(self.sources), self.have_source/len(self.sources)*100.0))

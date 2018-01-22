@@ -480,6 +480,23 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def eliminate_mask(self):
+
+        """
+        gege
+        :return:
+        """
+
+        if self.config.eliminate is not None:
+
+            reg = load_as_pixel_region_list(self.config.eliminate, wcs=self.frame.wcs)
+            return reg.to_mask(self.frame.xsize, self.frame.ysize)
+
+        else: return None
+
+    # -----------------------------------------------------------------
+
     def create_mask(self):
 
         """
@@ -498,9 +515,9 @@ class SkySubtractor(Configurable):
 
         # Add outside mask
         if self.outside_mask is not None: masks.append(self.outside_mask)
-
+        if self.config.interactive: plotting.plot_mask(self.outside_mask, title="outside mask")
         # Add principal mask
-        if self.principal_mask is not None: masks.append(self.principal_mask)
+        #if self.principal_mask is not None: masks.append(self.principal_mask)
 
         # Add saturation mask
         if self.saturation_mask is not None: masks.append(self.saturation_mask)
@@ -510,6 +527,9 @@ class SkySubtractor(Configurable):
 
         # Add the extra mask (if specified)
         if self.extra_mask is not None: masks.append(self.extra_mask)
+
+        # Add the eliminate mask
+        if self.eliminate_mask is not None: masks.append(self.eliminate_mask)
 
         # NEW
         self.mask = newMask.union(*masks)
