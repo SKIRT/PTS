@@ -99,7 +99,8 @@ definition.add_flag("background", "plot a background", True)
 
 definition.add_flag("weighed", "plot weighed residuals", None)
 definition.add_flag("distributions", "plot the residual distributions", False)
-definition.add_flag("absolute", "plot absolute residuals", False)
+definition.add_flag("relative", "show relative residuals", True)
+definition.add_flag("absolute", "show the residuals as absolute values", False)
 
 # -----------------------------------------------------------------
 

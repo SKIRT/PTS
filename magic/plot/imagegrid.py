@@ -1806,8 +1806,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.residuals = OrderedDict()
         self.distributions = OrderedDict()
 
-        # The colorbar
-        self.colorbar = None
+        # The colorbar(s)
+        #self.colorbar = None
+        self.colorbars = None
 
     # -----------------------------------------------------------------
 
@@ -2424,8 +2425,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         super(ResidualImageGridPlotter, self).setup(**kwargs)
 
         # Check config
-        if self.config.weighed and self.config.absolute: raise ValueError("Cannot enable both 'weighed' and 'absolute' residual maps")
-        if self.config.absolute and self.config.normalize: raise ValueError("Cannot plot the absolute residuals when normalizing the frames is enabled")
+        #if self.config.weighed and not self.config.relative: raise ValueError("Cannot enable 'weighed' and disable 'relative' residual maps")
+        if not self.config.relative and self.config.normalize: raise ValueError("Cannot plot the actual (not relative) values of the residuals when normalizing the frames is enabled")
 
         # Load the images
         if self.no_rows:
@@ -2436,12 +2437,14 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        if self.single_grid:
+        #if self.single_grid:
             #self.plots = self.figure.create_grid(self.nrows, self.ncolumns)
             #print(self.nrows, self.ncolumns)
-            if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
-            else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
-        else: self.plots = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids)
+            #if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+            #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        #else: self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids, return_colorbars=True)
+
+        self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids, return_colorbars=True)
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -3214,10 +3217,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             if self.config.weighed: residual = (model - observation) / errors
 
             # Absolute residuals
-            elif self.config.absolute: residual = model - observation
+            elif self.config.relative: residual = (model - observation) / model
 
             # Relative residuals
-            else: residual = (model - observation) / model
+            else: residual = model - observation
 
             # Add the residual frame
             self.residuals[name] = residual
@@ -3620,7 +3623,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_row(self, name, index, vmin=None, vmax=None, return_images=False, return_normalizations=False):
+    def _plot_row(self, name, index, vmin=None, vmax=None):
 
         """
         This function ...
@@ -3628,8 +3631,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param index:
         :param vmin:
         :param vmax:
-        :param return_images:
-        :param return_normalizations:
         :return:
         """
 
@@ -3652,18 +3653,31 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if self.config.distributions: distr_image = self._plot_distribution(name, index)
         else: distr_image = None
 
-        res_image = distr_image = vmin_res = vmax_res = res_normalization = None
+        #res_image = distr_image = vmin_res = vmax_res = res_normalization = None
 
         # Make list of the images
         images = [obs_image, model_image, res_image, distr_image]
 
         # Return vmin and vmax
-        if return_images:
-            if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, images, obs_normalization, res_normalization
-            else: return vmin_observation, vmax_observation, vmin_res, vmax_res, images
-        else:
-            if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, obs_normalization, res_normalization
-            else: return vmin_observation, vmax_observation, vmin_res, vmax_res
+        #if return_images:
+        #    if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, images, obs_normalization, res_normalization
+        #    else: return vmin_observation, vmax_observation, vmin_res, vmax_res, images
+        #else:
+        #    if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, obs_normalization, res_normalization
+        #    else: return vmin_observation, vmax_observation, vmin_res, vmax_res
+
+        #
+        result = Map()
+        result.vmin_observation = vmin_observation
+        result.vmax_observation = vmax_observation
+        result.vmin_res = vmin_res
+        result.vmax_res = vmax_res
+        result.images = images
+        result.obs_normalization = obs_normalization
+        result.res_normalization = res_normalization
+
+        # Return
+        return result
 
     # -----------------------------------------------------------------
 
@@ -3689,12 +3703,13 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Only single grid
-        if self.single_grid: return self.plots[abs_row_index][col_index]
+        #if self.single_grid: return self.plots[abs_row_index][col_index]
 
         # Multiple grids
-        else:
-            grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
-            return self.plots[grid][rel_row_index][col_index]
+        #else:
+
+        grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
+        return self.plots[grid][rel_row_index][col_index]
 
     # -----------------------------------------------------------------
 
@@ -3759,6 +3774,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def colormap_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.colormap
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def colormap(self):
 
@@ -3767,7 +3794,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        return cm.get_cmap(self.config.colormap)
+        return cm.get_cmap(self.colormap_name)
 
     # -----------------------------------------------------------------
 
@@ -3784,6 +3811,25 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def residuals_colormap_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Colormap for residuals is specified
+        if self.config.residuals_colormap is not None: return cm.get_cmap(self.config.residuals_colormap)
+
+        # Not specified, plotting absolute values of residuals
+        elif self.config.absolute: return "BuPu" # sequential colormaps
+
+        # Plotting relative or weighed residuals of residuals
+        else: return "seismic" # diverging colormaps
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def residuals_colormap(self):
 
         """
@@ -3791,8 +3837,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        if self.config.residuals_colormap is not None: return cm.get_cmap(self.config.residuals_colormap)
-        else: return cm.get_cmap(self.config.colormap)
+        return cm.get_cmap(self.residuals_colormap_name)
 
     # -----------------------------------------------------------------
 
@@ -3808,7 +3853,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_frame(self, name, frame, row, col, vmin=None, vmax=None, add_label=True):
+    def _plot_frame(self, name, frame, row, col, vmin=None, vmax=None, add_label=True, colormap=None):
 
         """
         This function ...
@@ -3819,6 +3864,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param vmin:
         :param vmax:
         :param add_label:
+        :param colormap:
         :return:
         """
 
@@ -3852,8 +3898,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Plot
         #plot.axes.set_adjustable('box-forced')
+        if colormap is None: colormap = self.colormap
         vmin_image, vmax_image, image, normalization = plotting.plot_box(frame.data, axes=plot.axes, interval=interval,
-                                                                         scale=self.config.scale, cmap=self.colormap,
+                                                                         scale=self.config.scale, cmap=colormap,
                                                                          alpha=self.config.alpha, return_image=True,
                                                                          return_normalization=True)
 
@@ -3933,7 +3980,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         residuals = self.get_residuals(name)
 
         # Plot
-        return self._plot_frame(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax, add_label=False)
+        return self._plot_frame(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax, add_label=False, colormap=self.residuals_colormap)
 
     # -----------------------------------------------------------------
 
@@ -4230,8 +4277,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plotted = []
 
         # The last image and normalization
-        images = None
-        image_normalization = None
+        #images = None
+        #image_normalization = None
+
+        plotted_errorbar = [False for _ in range(self.config.ngrids)]
 
         # First plot the image of which we use the scale as reference
         if self.config.share_scale and self.config.scale_reference is not None:
@@ -4252,14 +4301,29 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             name = self.names[index]
             if name in plotted: continue
 
+            # Determine the grid index
+            grid_index = self.grid_assignment[index]
+
             # Has observation and model data
             if self.has_data(name):
 
                 # Plot the frame
-                vmin_image, vmax_image, vmin_res, vmax_res, images, image_normalization, residual_normalization = self._plot_row(name, index, vmin=vmin, vmax=vmax, return_images=True, return_normalizations=True)
+                result = self._plot_row(name, index, vmin=vmin, vmax=vmax)
+                vmin_observation = result.vmin_observation
+                vmax_observation = result.vmax_observation
+                vmin_res = result.vmin_res
+                vmax_res = result.vmax_res
+                images = result.images
+                obs_normalization = result.obs_normalization
+                res_normalization = result.res_normalization
 
                 # Set vmin and vmax
                 if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
+
+                # Set colorbar
+                if not plotted_errorbar[grid_index]:
+                    self._plot_colorbar(images[0], grid_index)
+                    plotted_errorbar[grid_index] = True
 
             # Only observation data
             elif self.has_observation_data(name):
@@ -4270,6 +4334,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 # Set vmin and vmax
                 if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
+                # Set colorbar
+                if not plotted_errorbar[grid_index]:
+                    self._plot_colorbar(image, grid_index)
+                    plotted_errorbar[grid_index] = True
+
             # Only model data
             elif self.has_model_data(name):
 
@@ -4279,17 +4348,38 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 # Set vmin and vmax
                 if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
 
-            # No data
-            else:
-                self._plot_empty_row(name, index)
-                #raise ValueError("No data for the '" + name + "' row") #self._plot_empty(index)
+                # Set colorbar
+                if not plotted_errorbar[grid_index]:
+                    self._plot_colorbar(image, grid_index)
+                    plotted_errorbar[grid_index] = True
 
-        # Set colorbar
-        #if images is None: raise RuntimeError("No image is plotted")
-        self.figure.figure.colorbar(images[0], cax=self.colorbar)
+            # No data
+            else: self._plot_empty_row(name, index)
 
         # Finish the plot
         self.finish_plot()
+
+    # -----------------------------------------------------------------
+
+    def _plot_colorbar(self, image, grid_index):
+
+        """
+        This function ...
+        :param image:
+        :param grid_index:
+        :return:
+        """
+
+        # Get the colorbar
+        colorbar = self.colorbars[grid_index]
+
+        # Plot
+        self.figure.figure.colorbar(image, cax=colorbar)
+
+        # Set properties
+        colorbar.get_xaxis().set_ticks([])
+        colorbar.get_yaxis().set_ticks([])
+        colorbar.set_axis_off()
 
 # -----------------------------------------------------------------
 

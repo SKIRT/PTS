@@ -2169,18 +2169,56 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def random(cls, shape, wcs=None, filter=None):
+    def random(cls, shape, min_value=0., max_value=1., **kwargs):
 
         """
         This function ...
-        :param shape: 
-        :param wcs: 
-        :param filter:
+        :param shape:
+        :param min_value:
+        :param max_value:
+        :param kwargs:
         :return: 
         """
 
         # Create a new frame
-        new = cls(np.random.random(shape), wcs=wcs, filter=filter)
+        data = (max_value - min_value) * np.random.random(shape) + min_value
+        new = cls(data, **kwargs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def random_normal(cls, shape, mean=0.0, sigma=1., **kwargs):
+
+        """
+        This function ...
+        :param shape:
+        :param mean:
+        :param sigma:
+        :param kwargs:
+        :return:
+        """
+
+        data = sigma * np.random.randn(shape[0], shape[1]) + mean
+        new = cls(data, **kwargs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def random_integers(cls, shape, min_value, max_value, **kwargs):
+
+        """
+        This function ...
+        :param shape:
+        :param min_value:
+        :param max_value:
+        :param kwargs:
+        :return:
+        """
+
+        data = np.random.random_integers(min_value, max_value, size=shape)
+        new = cls(data, **kwargs)
         return new
 
     # -----------------------------------------------------------------

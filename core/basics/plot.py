@@ -2317,7 +2317,21 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_row_of_image_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0, colorbar_relsize=0.05):
+    def create_row_of_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0):
+
+        """
+        This functino ...
+        :param nrows:
+        :param ncols:
+        :param ngrids:
+        :param wspace:
+        :param hspace:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_row_of_image_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0, colorbar_relsize=0.05, return_colorbars=False):
 
         """
         This function ...
@@ -2327,6 +2341,7 @@ class MPLFigure(Figure):
         :param wspace:
         :param hspace:
         :param colorbar_relsize:
+        :param return_colorbars:
         :return:
         """
 
@@ -2343,6 +2358,7 @@ class MPLFigure(Figure):
         self.ax.set_axis_off()
 
         grids = []
+        colorbars = []
 
         for index in range(ngrids):
 
@@ -2353,6 +2369,9 @@ class MPLFigure(Figure):
                              cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size,
                              axes_class=axes_class, label_mode=label_mode)
             grids.append(grid)
+
+            colorbar = grid.cbar_axes[0]
+            colorbars.append(colorbar)
 
         # Initialize structure to contain the plots
         plots = [[[None for i in range(ncols)] for j in range(nrows)] for k in range(ngrids)]
@@ -2378,8 +2397,9 @@ class MPLFigure(Figure):
 
                     index += 1
 
-        # Return the plots
-        return plots
+        # Return the plots (and errorbars)
+        if return_colorbars: return plots, colorbars
+        else: return plots
 
     # -----------------------------------------------------------------
 
