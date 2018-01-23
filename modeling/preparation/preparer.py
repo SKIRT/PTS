@@ -958,7 +958,7 @@ class DataPreparer(PreparationComponent):
             directory_path = fs.directory_of(path)
 
             # Get the sky directory path
-            sky_path = fs.join(directory_path, sky_name)
+            #sky_path = fs.join(directory_path, sky_name)
 
             # Get the filter
             fltr = parse_filter(name)
@@ -1001,15 +1001,19 @@ class DataPreparer(PreparationComponent):
             else: log.debug("No error frame found in the " + name + " image under the name 'errors'")
 
             # Load noise frame
-            noise_frame = get_noise_frame_from_sky_path(sky_path)
-            if noise_frame is not None:
+            #noise_frame = get_noise_frame_from_sky_path(sky_path)
+            #if noise_frame is not None:
+            #    # Add the sky errors
+            #    error_maps.append(noise_frame)
+            #    error_contributions.append("noise")
+            ## No noise map found
+            #else: log.warning("Noise map from sky subtraction could not be found for the '" + name + "' image")
 
-                # Add the sky errors
-                error_maps.append(noise_frame)
+            # Add the sky errors
+            if "sky_errors" in image.frames:
+                error_maps.append(image.frames["sky_errors"])
                 error_contributions.append("noise")
-
-            # No noise map found
-            else: log.warning("Noise map from sky subtraction could not be found for the '" + name + "' image")
+            else: log.warning("Sky errors (noise) map could not be found for the '" + name + "' image")
 
             # Add additional error frames indicated by the user
             #if self.config.error_frame_names is not None:
@@ -1673,6 +1677,9 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     interpolated_noise_path = fs.join(sky_path, "interpolated_noise.fits")
     if isinstance(sky_subtractor.noise, Frame): sky_subtractor.noise.saveto(interpolated_noise_path)
 
+    subtraction_mask_path = fs.join(sky_path, "subtraction_mask.fits")
+    sky_subtractor.subtraction_mask.saveto(subtraction_mask_path)
+
     # WRITE THE MASK
     #mask_path = fs.join(mask_path, )
 
@@ -1728,8 +1735,8 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
         #animation.saveto(path)
 
     # NEW: WRITE THE NOISE FRAME
-    noise_frame_path = fs.join(sky_path, "noise.fits")
-    sky_subtractor.noise_frame.saveto(noise_frame_path)
+    #noise_frame_path = fs.join(sky_path, "noise.fits")
+    #sky_subtractor.noise_frame.saveto(noise_frame_path)
 
     # IMPORTANT: SET FLAG
     image.sky_subtracted = True

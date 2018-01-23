@@ -884,8 +884,10 @@ class SkySubtractor(Configurable):
         # Debugging
         log.debug("Interpolating using polynomial ...")
 
+        if self.config.interactive: plotting.plot_box(np.ma.array(frame.data, mask=self.mask.data))
+
         # Fit
-        polynomial = fitting.fit_polynomial(frame, self.config.estimation.photutils.polynomial_order, mask=self.mask)
+        polynomial = fitting.fit_polynomial(frame.data, self.config.estimation.photutils.polynomial_order, mask=self.mask)
 
         # Evaluate the polynomial
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
