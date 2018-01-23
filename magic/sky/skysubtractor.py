@@ -769,7 +769,7 @@ class SkySubtractor(Configurable):
         background, background_rms = self._get_photutils_background(cutout, mask_cutout)
 
         # Make frames
-        background, background_rms = self._make_background_frames(background, background_rms, mask_cutout)
+        background, background_rms = self._make_background_frames(background, background_rms)
 
         # Interpolate the sky frame
         self._interpolate_sky(background)
@@ -779,7 +779,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _make_background_frames(self, background, background_rms, mask_cutout):
+    def _make_background_frames(self, background, background_rms):
 
         """
         This function ...
@@ -789,12 +789,10 @@ class SkySubtractor(Configurable):
         # Masked background
         background_frame = Frame.nans_like(self.frame)
         background_frame[self.cutout_y_slice, self.cutout_x_slice] = background
-        background_frame[self.cutout_y_slice, self.cutout_x_slice][mask_cutout] = np.NaN
 
         # Masked background rms
         background_rms_frame = Frame.nans_like(self.frame)
         background_rms_frame[self.cutout_y_slice, self.cutout_x_slice] = background_rms
-        background_rms_frame[self.cutout_y_slice, self.cutout_x_slice][mask_cutout] = np.NaN
 
         # Return
         return background_frame, background_rms_frame
@@ -808,6 +806,9 @@ class SkySubtractor(Configurable):
         :param background:
         :return:
         """
+
+        # Debugging
+        log.debug("Interpolating the sky frame ...")
 
         # Mean
         if self.config.estimation.photutils.sky_interpolation_method == "mean": self.sky = self._interpolate_mean(background)
@@ -834,6 +835,9 @@ class SkySubtractor(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Interpolating using mean ...")
+
         mean_value = np.nanmean(frame.data)
         new = frame.copy()
         new[self.mask] = mean_value
@@ -848,6 +852,9 @@ class SkySubtractor(Configurable):
         :param frame:
         :return:
         """
+
+        # Debugging
+        log.debug("Interpolating using median ...")
 
         median_value = np.nanmedian(frame.data)
         new = frame.copy()
@@ -874,11 +881,16 @@ class SkySubtractor(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Interpolating using polynomial ...")
+
         # Fit
         polynomial = fitting.fit_polynomial(frame, self.config.estimation.photutils.polynomial_order, mask=self.mask)
 
         # Evaluate the polynomial
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+        if self.config.interactive: plotting.plot_box(data, "fitted polynomial")
 
         # Make
         new = frame.copy()
@@ -896,6 +908,9 @@ class SkySubtractor(Configurable):
         :param background_rms:
         :return:
         """
+
+        # Debugging
+        log.debug("Interpolating the noise frame ...")
 
         # Mean
         if self.config.estimation.photutils.noise_interpolation_method == "mean": self.noise = self._interpolate_mean(background_rms)
@@ -1534,10 +1549,7 @@ class SkySubtractor(Configurable):
         if self.config.set_zero_outside: result[self.subtraction_mask.inverse()] = 0.0
 
         # Eliminate negatives
-        if self.config.eliminate_negatives:
-
-            # Set all negative pixels to zero
-            result[result <= 0.] = 0.0
+        if self.config.eliminate_negatives: result[result <= 0.] = 0.0
 
         # mask extra
         if self.extra_mask is not None and self.config.add_extra_mask:
