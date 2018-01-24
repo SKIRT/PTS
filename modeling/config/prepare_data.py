@@ -41,8 +41,14 @@ definition.add_flag("dustpedia_aperture", "use the DustPedia aperture instead of
 definition.add_optional("aperture_galaxy_region_factor", "real", "if the galaxy region is used for the aperture, use this scaling factor on the region", 1.5)
 
 # Sky subtraction
+definition.add_optional("sky_estimation_method", "string", "sky estimation method", "photutils")
+definition.add_optional("sky_interpolation_method", "string", "interpolation method for photutils sky frame", "polynomial")
+definition.add_optional("noise_interpolation_method", "string", "interpolation method for photutils noise frame", "idw")
+definition.add_optional("sky_photutils_polynomial_order", "positive_integer", "blabla", 3)
+definition.add_optional("sky_photutils_polynomial_fitter", "string", "fitter", "levenberg-marquardt")
 definition.add_optional("annulus_inner_factor", "real", "annulus_inner_factor", 1.2)
 definition.add_optional("annulus_outer_factor", "real", "annulus_outer_factor", 4.0)
+definition.add_flag("interactive_sky", "run the sky subtractor in interactive mode")
 
 definition.add_optional("saturation_expansion_factor", "real", "saturation expansion factor", 1.5)
 definition.add_optional("stars_expansion_factor", "real", "stars expansion factor", 2.)

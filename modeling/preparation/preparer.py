@@ -850,6 +850,18 @@ class DataPreparer(PreparationComponent):
 
             config = dict()
 
+            config["estimation"] = dict()
+            config["estimation"]["method"] = self.config.sky_estimation_method
+
+            config["estimation"]["photutils"] = dict()
+            config["estimation"]["photutils"]["sky_interpolation_method"] = self.config.sky_interpolation_method
+            config["estimation"]["photutils"]["noise_interpolation_method"] = self.config.noise_interpolation_method
+
+            config["estimation"]["photutils"]["polynomial_order"] = self.config.sky_photutils_polynomial_order
+            config["estimation"]["photutils"]["polynomial_fitter"] = self.config.sky_photutils_polynomial_fitter
+
+            config["interactive"] = self.config.interactive_sky
+
             config["write"] = False
             config["plot"] = False
 
@@ -954,7 +966,7 @@ class DataPreparer(PreparationComponent):
             directory_path = fs.directory_of(path)
 
             # Get the sky directory path
-            sky_path = fs.join(directory_path, sky_name)
+            #sky_path = fs.join(directory_path, sky_name)
 
             # Get the filter
             fltr = parse_filter(name)
@@ -997,15 +1009,19 @@ class DataPreparer(PreparationComponent):
             else: log.debug("No error frame found in the " + name + " image under the name 'errors'")
 
             # Load noise frame
-            noise_frame = get_noise_frame_from_sky_path(sky_path)
-            if noise_frame is not None:
+            #noise_frame = get_noise_frame_from_sky_path(sky_path)
+            #if noise_frame is not None:
+            #    # Add the sky errors
+            #    error_maps.append(noise_frame)
+            #    error_contributions.append("noise")
+            ## No noise map found
+            #else: log.warning("Noise map from sky subtraction could not be found for the '" + name + "' image")
 
-                # Add the sky errors
-                error_maps.append(noise_frame)
+            # Add the sky errors
+            if "sky_errors" in image.frames:
+                error_maps.append(image.frames["sky_errors"])
                 error_contributions.append("noise")
-
-            # No noise map found
-            else: log.warning("Noise map from sky subtraction could not be found for the '" + name + "' image")
+            else: log.warning("Sky errors (noise) map could not be found for the '" + name + "' image")
 
             # Add additional error frames indicated by the user
             #if self.config.error_frame_names is not None:
@@ -1639,16 +1655,16 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     sky_subtractor.region.saveto(region_path)
 
     # Write the apertures frame
-    apertures_frame_path = fs.join(sky_path, "apertures.fits")
-    if sky_subtractor.apertures_frame is not None: sky_subtractor.apertures_frame.saveto(apertures_frame_path)
+    #apertures_frame_path = fs.join(sky_path, "apertures.fits")
+    #if sky_subtractor.apertures_frame is not None: sky_subtractor.apertures_frame.saveto(apertures_frame_path)
 
     # Write the apertures mean frame
-    apertures_mean_path = fs.join(sky_path, "apertures_values.fits")
-    if sky_subtractor.apertures_values_frame is not None: sky_subtractor.apertures_values_frame.saveto(apertures_mean_path)
+    #apertures_mean_path = fs.join(sky_path, "apertures_values.fits")
+    #if sky_subtractor.apertures_values_frame is not None: sky_subtractor.apertures_values_frame.saveto(apertures_mean_path)
 
     # Write the apertures noise frame
-    apertures_noise_path = fs.join(sky_path, "apertures_noise.fits")
-    if sky_subtractor.apertures_noise_frame is not None: sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
+    #apertures_noise_path = fs.join(sky_path, "apertures_noise.fits")
+    #if sky_subtractor.apertures_noise_frame is not None: sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
 
     # Write photutils results
     background_mesh_path = fs.join(sky_path, "background_mesh.fits")
@@ -1657,11 +1673,20 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     background_rms_mesh_path = fs.join(sky_path, "background_rms_mesh.fits")
     if sky_subtractor.phot_background_rms_mesh is not None: sky_subtractor.phot_background_rms_mesh.saveto(background_rms_mesh_path)
 
-    estimated_sky_path = fs.join(sky_path, "estimated_sky.fits")
-    if sky_subtractor.phot_sky is not None: sky_subtractor.phot_sky.saveto(estimated_sky_path)
+    photutils_sky_path = fs.join(sky_path, "photutils_sky.fits")
+    if sky_subtractor.phot_sky is not None: sky_subtractor.phot_sky.saveto(photutils_sky_path)
 
-    estimated_sky_rms_path = fs.join(sky_path, "estimated_sky_rms.fits")
-    if sky_subtractor.phot_rms is not None: sky_subtractor.phot_rms.saveto(estimated_sky_rms_path)
+    photutils_sky_rms_path = fs.join(sky_path, "photutils_sky_rms.fits")
+    if sky_subtractor.phot_rms is not None: sky_subtractor.phot_rms.saveto(photutils_sky_rms_path)
+
+    interpolated_sky_path = fs.join(sky_path, "interpolated_sky.fits")
+    if isinstance(sky_subtractor.sky, Frame): sky_subtractor.sky.saveto(interpolated_sky_path)
+
+    interpolated_noise_path = fs.join(sky_path, "interpolated_noise.fits")
+    if isinstance(sky_subtractor.noise, Frame): sky_subtractor.noise.saveto(interpolated_noise_path)
+
+    subtraction_mask_path = fs.join(sky_path, "subtraction_mask.fits")
+    sky_subtractor.subtraction_mask.saveto(subtraction_mask_path)
 
     # WRITE THE MASK
     #mask_path = fs.join(mask_path, )
@@ -1718,8 +1743,8 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
         #animation.saveto(path)
 
     # NEW: WRITE THE NOISE FRAME
-    noise_frame_path = fs.join(sky_path, "noise.fits")
-    sky_subtractor.noise_frame.saveto(noise_frame_path)
+    #noise_frame_path = fs.join(sky_path, "noise.fits")
+    #sky_subtractor.noise_frame.saveto(noise_frame_path)
 
     # IMPORTANT: SET FLAG
     image.sky_subtracted = True
@@ -1728,10 +1753,6 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     #return sky_subtractor.noise_frame
 
     return sky_subtractor
-
-# -----------------------------------------------------------------
-
-
 
 #-----------------------------------------------------------------
 

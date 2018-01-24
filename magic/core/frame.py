@@ -4816,6 +4816,20 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replaced_nans(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new.replace_nans(value)
+        return new
+
+    # -----------------------------------------------------------------
+
     def replace_nans_by_zeroes(self):
 
         """
