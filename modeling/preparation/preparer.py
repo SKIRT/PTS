@@ -852,6 +852,14 @@ class DataPreparer(PreparationComponent):
 
             config["estimation"] = dict()
             config["estimation"]["method"] = self.config.sky_estimation_method
+
+            config["estimation"]["photutils"] = dict()
+            config["estimation"]["photutils"]["sky_interpolation_method"] = self.config.sky_interpolation_method
+            config["estimation"]["photutils"]["noise_interpolation_method"] = self.config.noise_interpolation_method
+
+            config["estimation"]["photutils"]["polynomial_order"] = self.config.sky_photutils_polynomial_order
+            config["estimation"]["photutils"]["polynomial_fitter"] = self.config.sky_photutils_polynomial_fitter
+
             config["interactive"] = self.config.interactive_sky
 
             config["write"] = False

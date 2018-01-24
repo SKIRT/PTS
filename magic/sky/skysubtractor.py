@@ -131,19 +131,19 @@ class SkySubtractor(Configurable):
         # 4. Estimate the sky and sky noise
         self.estimate()
 
-        # Show
+        # 5. Show
         self.show()
 
-        # 5. Set statistics
+        # 6. Set statistics
         self.set_statistics()
 
-        # 6. Create distributions
+        # 7. Create distributions
         self.create_distributions()
 
-        # 7. Write
+        # 8. Write
         if self.config.write: self.write()
 
-        # 8. Plot
+        # 9. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -178,271 +178,6 @@ class SkySubtractor(Configurable):
         self.extra_mask = kwargs.pop("extra_mask", None)
         self.saturation_region = kwargs.pop("saturation_region", None)
         self.star_region = kwargs.pop("star_region", None)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def inner_annulus_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.principal_shape * self.config.mask.annulus_inner_factor
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def outer_annulus_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.principal_shape * self.config.mask.annulus_outer_factor
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def inner_annulus_mask(self):
-
-        """
-        eg
-        :return:
-        """
-
-        return self.inner_annulus_region.to_mask(self.frame.xsize, self.frame.ysize)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def outer_annulus_mask(self):
-
-        """
-        geeh
-        :return:
-        """
-
-        return self.outer_annulus_region.to_mask(self.frame.xsize, self.frame.ysize)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def subtraction_mask(self):
-
-        """
-        This property ..
-        :return:
-        """
-
-        if self.config.sky_region is not None: return self.principal_mask
-        else: return self.inner_annulus_mask
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the sky region ...")
-
-        # If the sky region has to be loaded from file
-        if self.config.sky_region is not None:
-
-            sky_region = SkyRegionList.from_file(self.config.sky_region)
-            return sky_region.to_pixel(self.frame.wcs)
-
-        # If no region file is given by the user, create an annulus from the principal ellipse
-        elif self.principal_shape is not None:
-
-            inner = self.inner_annulus_region.copy()
-            outer = self.outer_annulus_region.copy()
-            inner.include = False
-
-            # Create the annulus
-            annulus = PixelCompositeRegion(outer, inner)
-
-            # Create the sky region consisting of only the annulus
-            region = PixelRegionList()
-            region.append(annulus)
-            return region
-
-        else: raise ValueError("Cannot create region")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region_bounding_box(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.region.bounding_box if self.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region_x_min(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.region.x_min if self.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region_x_max(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.region.x_max if self.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region_y_min(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.region.y_min if self.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region_y_max(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.region.y_max if self.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def outside_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If region is defined
-        if self.region is not None:
-
-            # Create a mask from the pixels outside of the sky region
-            outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
-            return outside_mask
-
-        # Region not defined
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def principal_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If principal shape is provided
-        if self.principal_shape is not None:
-
-            # Create a mask from the principal shape
-            principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
-            #masks.append(principal_mask)
-            return principal_mask
-
-        # Principal shape not defined
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def saturation_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether saturation contours are defined
-        if self.saturation_region is not None:
-
-            # Expand all contours
-            expanded_region = self.saturation_region * self.config.mask.saturation_expansion_factor
-
-            # Create the saturation mask
-            saturation_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
-            #self.mask += saturation_mask
-
-            return saturation_mask
-
-        # Saturation region is not provided
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def stars_mask(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # If star region is defined
-        if self.star_region is not None:
-
-            # Expand
-            expanded_region = self.star_region * self.config.mask.stars_expansion_factor
-
-            # Create the mask
-            stars_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
-
-            # Return the mask
-            return stars_mask
-
-        # Star region not provided
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def eliminate_mask(self):
-
-        """
-        gege
-        :return:
-        """
-
-        if self.config.eliminate is not None:
-
-            reg = load_as_pixel_region_list(self.config.eliminate, wcs=self.frame.wcs)
-            return reg.to_mask(self.frame.xsize, self.frame.ysize)
-
-        else: return None
 
     # -----------------------------------------------------------------
 
@@ -610,6 +345,33 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def estimate_sky_photutils(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky and sky noise by using photutils ...")
+
+        # Make cutout
+        cutout, mask_cutout = self._make_cutout()
+
+        # Run photutils
+        background, background_rms = self._get_photutils_background(cutout, mask_cutout)
+
+        # Make frames
+        background, background_rms = self._make_background_frames(background, background_rms)
+
+        # Interpolate the sky frame
+        self._interpolate_sky(background)
+
+        # Interpolate the noise frame
+        self._interpolate_noise(background_rms)
+
+    # -----------------------------------------------------------------
+
     def determine_aperture_radius(self):
 
         """
@@ -639,82 +401,6 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def integer_aperture_diameter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 2 * self.integer_aperture_radius
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def integer_aperture_radius(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return int(math.ceil(self.aperture_radius))
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_xmin(self):
-
-        return self.phot_boundaries["x_min"]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_xmax(self):
-
-        return self.phot_boundaries["x_max"]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_ymin(self):
-
-        return self.phot_boundaries["y_min"]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_ymax(self):
-
-        return self.phot_boundaries["y_max"]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_x_slice(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return slice(self.cutout_xmin, self.cutout_xmax)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cutout_y_slice(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return slice(self.cutout_ymin, self.cutout_ymax)
-
-    # -----------------------------------------------------------------
-
     def _make_cutout(self):
 
         """
@@ -722,17 +408,20 @@ class SkySubtractor(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Making cutout for the sky estimation ...")
+
         # Borders
         x_min = self.region_x_min
         x_max = self.region_x_max
-        y_min = self.region.y_min
-        y_max = self.region.y_max
+        y_min = self.region_y_min
+        y_max = self.region_y_max
 
         x_min = max(int(x_min), 0)
-        x_max = min(int(x_max), self.frame.xsize)
+        x_max = min(int(x_max), self.xsize)
 
         y_min = max(int(y_min), 0)
-        y_max = min(int(y_max), self.frame.ysize)
+        y_max = min(int(y_max), self.ysize)
 
         # Set the phot_boundaries
         self.phot_boundaries = dict()
@@ -749,33 +438,6 @@ class SkySubtractor(Configurable):
 
         # Return
         return cutout, mask_cutout
-
-    # -----------------------------------------------------------------
-
-    def estimate_sky_photutils(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Estimating the sky and sky noise by using photutils ...")
-
-        # Make cutout
-        cutout, mask_cutout = self._make_cutout()
-
-        # Run photils
-        background, background_rms = self._get_photutils_background(cutout, mask_cutout)
-
-        # Make frames
-        background, background_rms = self._make_background_frames(background, background_rms)
-
-        # Interpolate the sky frame
-        self._interpolate_sky(background)
-
-        # Interpolate the noise frame
-        self._interpolate_noise(background_rms)
 
     # -----------------------------------------------------------------
 
@@ -820,7 +482,7 @@ class SkySubtractor(Configurable):
         elif self.config.estimation.photutils.sky_interpolation_method == "polynomial": self.sky = self._interpolate_polynomial(background)
 
         # IDW (photutils default)
-        elif self.config.estimation.photutils.sky_interpolation_method == "idw": self.sky = background
+        elif self.config.estimation.photutils.sky_interpolation_method == "idw": self.sky = self._interpolate_idw(background)
 
         # Invalid
         else: raise ValueError("Invalid interpolation method")
@@ -841,6 +503,7 @@ class SkySubtractor(Configurable):
         mean_value = np.nanmean(frame.data)
         new = frame.copy()
         new[self.mask] = mean_value
+        new.replace_nans(mean_value)
         return new
 
     # -----------------------------------------------------------------
@@ -859,19 +522,10 @@ class SkySubtractor(Configurable):
         median_value = np.nanmedian(frame.data)
         new = frame.copy()
         new[self.mask] = median_value
+        new.replace_nans(median_value)
         return new
 
     # -----------------------------------------------------------------
-
-    @property
-    def xsize(self):
-
-        return self.frame.xsize
-
-    @property
-    def ysize(self):
-
-        return self.frame.ysize
 
     def _interpolate_polynomial(self, frame):
 
@@ -884,13 +538,34 @@ class SkySubtractor(Configurable):
         # Debugging
         log.debug("Interpolating using polynomial ...")
 
-        if self.config.interactive: plotting.plot_box(np.ma.array(frame.data, mask=self.mask.data))
+        masked_data = np.ma.array(frame.data, mask=self.mask.data)
+
+        if self.config.interactive: plotting.plot_box(masked_data)
+
+        mean_value = np.nanmean(masked_data)
+
+        # Normalize the data to have a mean of 1. to avoid miniscule differences
+        normalized = frame / mean_value
 
         # Fit
-        polynomial = fitting.fit_polynomial(frame.data, self.config.estimation.photutils.polynomial_order, mask=self.mask)
+        polynomial = fitting.fit_polynomial(normalized, self.config.estimation.photutils.polynomial_order, mask=self.mask,
+                                            show_warnings=True, fitter=self.config.estimation.photutils.polynomial_fitter)
+
+        #print(polynomial)
+        if fitting.all_zero_parameters(polynomial):
+
+            # Debugging
+            log.debug("Using the mean value of " + str(mean_value) + " in the estimated sky as the zero order polynomial term ...")
+
+            polynomial = fitting.fit_polynomial(normalized, self.config.estimation.photutils.polynomial_order,
+                                                mask=self.mask, show_warnings=True,
+                                                fitter=self.config.estimation.photutils.polynomial_fitter, zero_order=1.)
+
+            if fitting.all_zero_parameters(polynomial): raise RuntimeError("Could not fit a polynomial to the data")
 
         # Evaluate the polynomial
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+        data *= mean_value
 
         if self.config.interactive: plotting.plot_box(data, "fitted polynomial")
 
@@ -898,8 +573,23 @@ class SkySubtractor(Configurable):
         new = frame.copy()
         new[self.mask] = data[self.mask]
 
+        nans = new.nans
+        new[nans] = data[nans]
+
         # Return
         return new
+
+    # -----------------------------------------------------------------
+
+    def _interpolate_idw(self, background):
+
+        """
+        This function ...
+        :return:
+        """
+
+        mean = np.nanmean(background)
+        return background.replace_nans(mean)
 
     # -----------------------------------------------------------------
 
@@ -924,7 +614,7 @@ class SkySubtractor(Configurable):
         elif self.config.estimation.photutils.noise_interpolation_method == "polynomial": self.noise = self._interpolate_polynomial(background_rms)
 
         # IDW (photutils default)
-        elif self.config.estimation.photutils.noise_interpolation_method == "idw": self.noise = background_rms
+        elif self.config.estimation.photutils.noise_interpolation_method == "idw": self.noise = self._interpolate_idw(background_rms)
 
         # Invalid
         else: raise ValueError("Invalid interpolation method")
@@ -964,9 +654,6 @@ class SkySubtractor(Configurable):
             plotting.plot_mask(mask_cutout, title="mask")
             raise RuntimeError("Sky subtraction is not possible for this image")
 
-        plotting.plot_box(bkg.background)
-        plotting.plot_box(bkg.background_rms)
-
         # Keep the background 2D object
         self.photutils_bkg = bkg
 
@@ -987,7 +674,6 @@ class SkySubtractor(Configurable):
         self.phot_sky[self.cutout_y_slice, self.cutout_x_slice] = bkg.background
 
         self.phot_rms = Frame.nans_like(self.frame)
-
         self.phot_rms.name = "phot_rms"
         self.phot_rms.description = "photutils rms"
         self.phot_rms.unit = self.frame.unit
@@ -1000,20 +686,6 @@ class SkySubtractor(Configurable):
 
         # Return the background frame and the background rms
         return bkg.background, bkg.background_rms
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def nunmasked_pixels(self):
-
-        """
-        This function ....
-        :return:
-        """
-
-        # Determine the number of unmasked pixels
-        npixels = np.sum(self.mask.inverse())
-        return npixels
 
     # -----------------------------------------------------------------
 
@@ -1456,6 +1128,361 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def integer_aperture_diameter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 2 * self.integer_aperture_radius
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def integer_aperture_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(math.ceil(self.aperture_radius))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_xmin(self):
+
+        return self.phot_boundaries["x_min"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_xmax(self):
+
+        return self.phot_boundaries["x_max"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_ymin(self):
+
+        return self.phot_boundaries["y_min"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_ymax(self):
+
+        return self.phot_boundaries["y_max"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_x_slice(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return slice(self.cutout_xmin, self.cutout_xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cutout_y_slice(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return slice(self.cutout_ymin, self.cutout_ymax)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def inner_annulus_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.principal_shape * self.config.mask.annulus_inner_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def outer_annulus_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.principal_shape * self.config.mask.annulus_outer_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def inner_annulus_mask(self):
+
+        """
+        eg
+        :return:
+        """
+
+        return self.inner_annulus_region.to_mask(self.frame.xsize, self.frame.ysize)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def outer_annulus_mask(self):
+
+        """
+        geeh
+        :return:
+        """
+
+        return self.outer_annulus_region.to_mask(self.frame.xsize, self.frame.ysize)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def subtraction_mask(self):
+
+        """
+        This property ..
+        :return:
+        """
+
+        if self.config.sky_region is not None: return self.principal_mask
+        else: return self.inner_annulus_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the sky region ...")
+
+        # If the sky region has to be loaded from file
+        if self.config.sky_region is not None:
+
+            sky_region = SkyRegionList.from_file(self.config.sky_region)
+            return sky_region.to_pixel(self.frame.wcs)
+
+        # If no region file is given by the user, create an annulus from the principal ellipse
+        elif self.principal_shape is not None:
+
+            inner = self.inner_annulus_region.copy()
+            outer = self.outer_annulus_region.copy()
+            inner.include = False
+
+            # Create the annulus
+            annulus = PixelCompositeRegion(outer, inner)
+
+            # Create the sky region consisting of only the annulus
+            region = PixelRegionList()
+            region.append(annulus)
+            return region
+
+        else: raise ValueError("Cannot create region")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.region.bounding_box if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_x_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.region.x_min if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_x_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.region.x_max if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_y_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.region.y_min if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_y_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.region.y_max if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        return self.frame.xsize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        return self.frame.ysize
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def outside_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If region is defined
+        if self.region is not None:
+
+            # Create a mask from the pixels outside of the sky region
+            outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
+            return outside_mask
+
+        # Region not defined
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def principal_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If principal shape is provided
+        if self.principal_shape is not None:
+
+            # Create a mask from the principal shape
+            principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+            #masks.append(principal_mask)
+            return principal_mask
+
+        # Principal shape not defined
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def saturation_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether saturation contours are defined
+        if self.saturation_region is not None:
+
+            # Expand all contours
+            expanded_region = self.saturation_region * self.config.mask.saturation_expansion_factor
+
+            # Create the saturation mask
+            saturation_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
+            #self.mask += saturation_mask
+
+            return saturation_mask
+
+        # Saturation region is not provided
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stars_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If star region is defined
+        if self.star_region is not None:
+
+            # Expand
+            expanded_region = self.star_region * self.config.mask.stars_expansion_factor
+
+            # Create the mask
+            stars_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
+
+            # Return the mask
+            return stars_mask
+
+        # Star region not provided
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def eliminate_mask(self):
+
+        """
+        gege
+        :return:
+        """
+
+        if self.config.eliminate is not None:
+
+            reg = load_as_pixel_region_list(self.config.eliminate, wcs=self.frame.wcs)
+            return reg.to_mask(self.frame.xsize, self.frame.ysize)
+
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sky_frame(self):
 
         """
@@ -1473,6 +1500,20 @@ class SkySubtractor(Configurable):
 
         # Return the result
         return result
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nunmasked_pixels(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        # Determine the number of unmasked pixels
+        npixels = np.sum(self.mask.inverse())
+        return npixels
 
     # -----------------------------------------------------------------
 
@@ -1506,7 +1547,7 @@ class SkySubtractor(Configurable):
         """
 
         # Return the sigma-clipped mean
-        return np.ma.mean(np.ma.masked_array(self.frame, mask=self.mask))
+        return np.ma.mean(np.ma.masked_array(self.frame.data, mask=self.mask.data))
 
     # -----------------------------------------------------------------
 
@@ -1519,7 +1560,7 @@ class SkySubtractor(Configurable):
         """
 
         # Return the sigma-clipped median
-        return np.median(np.ma.masked_array(self.frame, mask=self.mask).compressed())
+        return np.median(np.ma.masked_array(self.frame.data, mask=self.mask.data).compressed())
 
     # -----------------------------------------------------------------
 

@@ -85,6 +85,7 @@ definition.sections["estimation"].sections["photutils"].add_optional("global", "
 definition.sections["estimation"].sections["photutils"].add_optional("sky_interpolation_method", "string", "interpolation method for the final sky frame", default_sky_interpolation_method, choices=photutils_interpolation_methods) #, suggestions=["median", "polynomial", "idw"])
 definition.sections["estimation"].sections["photutils"].add_optional("noise_interpolation_method", "string", "interpolation method for the final noise frame", default_noise_interpolation_method, choices=photutils_interpolation_methods) #, suggestions=["mean", "idw"])
 definition.sections["estimation"].sections["photutils"].add_optional("polynomial_order", "positive_integer", "order of the polynomial", 3)
+definition.sections["estimation"].sections["photutils"].add_optional("polynomial_fitter", "string", "name of the fitter to be used for the polynomial", "levenberg-marquardt")
 definition.sections["estimation"].sections["photutils"].add_optional("exclude_mesh_percentile", "positive_real", "who knows (ask Nersesian)", 50.)
 
 # -----------------------------------------------------------------

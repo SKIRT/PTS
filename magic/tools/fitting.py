@@ -79,7 +79,8 @@ def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_cent
 
 # -----------------------------------------------------------------
 
-def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
+def fit_polynomial(data, degree, mask=None, sigma_clip_background=False, show_warnings=False,
+                   fitter="levenberg-marquardt", zero_order=None):
 
     """
     This function ...
@@ -87,6 +88,8 @@ def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
     :param degree:
     :param mask:
     :param sigma_clip_background:
+    :param show_warnings:
+    :param fitter:
     :return:
     """
 
@@ -94,22 +97,57 @@ def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
 
     # Fit the data using astropy.modeling
     poly_init = models.Polynomial2D(degree=degree)
-    fit_model = fitting.LevMarLSQFitter()
+
+    # Set initial values
+    if zero_order is not None: poly_init.c0_0 = zero_order
+    #poly_init.c1_0 = 1.0
+    #poly_init.c2_0 = 2.0
+    #poly_init.c3_0 = 3.0
+    #poly_init.c0_1 = 4.0
+    #poly_init.c0_2 = 5.0
+    #poly_init.c0_3 = 6.0
+    #poly_init.c1_1 = 7.0
+    #poly_init.c1_2 = 8.0
+    #poly_init.c2_1 = 9.0
+
+    # Get the fitter
+    if fitter == "levenberg-marquardt": fit_model = fitting.LevMarLSQFitter()
+    elif fitter == "linear":
+        if degree > 1: raise ValueError("Cannot use linear fitter for polynomials with degree > 1")
+        fit_model = fitting.LinearLSQFitter()
+    elif fitter == "simplex": fit_model = fitting.SimplexLSQFitter()
+    elif fitter == "sequential_least_squares": fit_model = fitting.SLSQPLSQFitter()
+    else: raise ValueError("Invalid vlaue for 'fitter'")
 
     # Split x, y and z values that are not masked
     x_values, y_values, z_values = general.split_xyz(data, mask=mask, arrays=True)
 
     # Ignore model linearity warning from the fitter
-    with warnings.catch_warnings():
+    if show_warnings: poly = fit_model(poly_init, x_values, y_values, z_values)
+    else:
+        with warnings.catch_warnings():
 
-        warnings.simplefilter('ignore')
-        poly = fit_model(poly_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
+            warnings.simplefilter('ignore')
+            poly = fit_model(poly_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
 
     # Return the polynomial model and the new mask
     if sigma_clip_background: return poly, mask
 
     # Return the polynomial model
     else: return poly
+
+# -----------------------------------------------------------------
+
+def all_zero_parameters(polynomial):
+
+    """
+    This function ...
+    :param polynomial:
+    :return:
+    """
+
+    from ...core.tools import sequences
+    return sequences.all_equal_to(polynomial.parameters, 0.0)
 
 # -----------------------------------------------------------------
 
