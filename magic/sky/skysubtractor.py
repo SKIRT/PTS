@@ -458,6 +458,73 @@ class SkySubtractor(Configurable):
 
         # Return
         return background_frame, background_rms_frame
+    # -----------------------------------------------------------------
+
+    def _get_photutils_background(self, cutout, mask_cutout):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine box size
+        if self.config.estimation.photutils.fixed_width is not None:
+            box_shape = (self.config.estimation.photutils.fixed_width, self.config.estimation.photutils.fixed_width)
+        else:
+            # Determine radius
+            self.determine_aperture_radius()
+            box_shape = (self.integer_aperture_diameter, self.integer_aperture_diameter)
+
+        # Determine filter size
+        filter_size = (self.config.estimation.photutils.filter_size, self.config.estimation.photutils.filter_size)
+
+        # NO SIGMA CLIP BECAUSE WE HAVE ALREADY DONE THAT OURSELVES
+        sigma_clip = None
+        # bkg_estimator = MedianBackground()
+        bkg_estimator = SExtractorBackground()
+        try:
+            bkg = Background2D(cutout, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
+                               bkg_estimator=bkg_estimator, mask=mask_cutout, filter_threshold=None,
+                               exclude_mesh_method="threshold",
+                               exclude_mesh_percentile=self.config.estimation.photutils.exclude_mesh_percentile)
+        except ValueError:
+
+            plotting.plot_box(cutout)
+            plotting.plot_mask(mask_cutout, title="mask")
+            raise RuntimeError("Sky subtraction is not possible for this image")
+
+        # Keep the background 2D object
+        self.photutils_bkg = bkg
+
+        #
+        self.phot_background_mesh = Frame(bkg.background_mesh)
+        self.phot_background_rms_mesh = Frame(bkg.background_rms_mesh)
+
+        # NEW NEW
+        self.phot_sky = Frame.nans_like(self.frame)
+        self.phot_sky.name = "phot_sky"
+        self.phot_sky.description = "photutils background"
+        self.phot_sky.unit = self.frame.unit
+        self.phot_sky.zero_point = self.frame.zero_point
+        self.phot_sky.filter = self.frame.filter
+        self.phot_sky.sky_subtracted = False
+        self.phot_sky.fwhm = self.frame.fwhm
+
+        self.phot_sky[self.cutout_y_slice, self.cutout_x_slice] = bkg.background
+
+        self.phot_rms = Frame.nans_like(self.frame)
+        self.phot_rms.name = "phot_rms"
+        self.phot_rms.description = "photutils rms"
+        self.phot_rms.unit = self.frame.unit
+        self.phot_rms.zero_point = self.frame.zero_point
+        self.phot_rms.filter = self.frame.filter
+        self.phot_rms.sky_subtracted = False
+        self.phot_rms.fwhm = self.frame.fwhm
+
+        self.phot_rms[self.cutout_y_slice, self.cutout_x_slice] = bkg.background_rms
+
+        # Return the background frame and the background rms
+        return bkg.background, bkg.background_rms
 
     # -----------------------------------------------------------------
 
@@ -483,6 +550,34 @@ class SkySubtractor(Configurable):
 
         # IDW (photutils default)
         elif self.config.estimation.photutils.sky_interpolation_method == "idw": self.sky = self._interpolate_idw(background)
+
+        # Invalid
+        else: raise ValueError("Invalid interpolation method")
+
+    # -----------------------------------------------------------------
+
+    def _interpolate_noise(self, background_rms):
+
+        """
+        This function ...
+        :param background_rms:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Interpolating the noise frame ...")
+
+        # Mean
+        if self.config.estimation.photutils.noise_interpolation_method == "mean": self.noise = self._interpolate_mean(background_rms)
+
+        # Median
+        elif self.config.estimation.photutils.noise_interpolation_method == "median": self.noise = self._interpolate_median(background_rms)
+
+        # Polynomial
+        elif self.config.estimation.photutils.noise_interpolation_method == "polynomial": self.noise = self._interpolate_polynomial(background_rms)
+
+        # IDW (photutils default)
+        elif self.config.estimation.photutils.noise_interpolation_method == "idw": self.noise = background_rms
 
         # Invalid
         else: raise ValueError("Invalid interpolation method")
@@ -581,111 +676,15 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _interpolate_idw(self, background):
+    def _interpolate_idw(self, frame):
 
         """
         This function ...
         :return:
         """
 
-        mean = np.nanmean(background)
-        return background.replace_nans(mean)
-
-    # -----------------------------------------------------------------
-
-    def _interpolate_noise(self, background_rms):
-
-        """
-        This function ...
-        :param background_rms:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Interpolating the noise frame ...")
-
-        # Mean
-        if self.config.estimation.photutils.noise_interpolation_method == "mean": self.noise = self._interpolate_mean(background_rms)
-
-        # Median
-        elif self.config.estimation.photutils.noise_interpolation_method == "median": self.noise = self._interpolate_median(background_rms)
-
-        # Polynomial
-        elif self.config.estimation.photutils.noise_interpolation_method == "polynomial": self.noise = self._interpolate_polynomial(background_rms)
-
-        # IDW (photutils default)
-        elif self.config.estimation.photutils.noise_interpolation_method == "idw": self.noise = self._interpolate_idw(background_rms)
-
-        # Invalid
-        else: raise ValueError("Invalid interpolation method")
-
-    # -----------------------------------------------------------------
-
-    def _get_photutils_background(self, cutout, mask_cutout):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine box size
-        if self.config.estimation.photutils.fixed_width is not None:
-            box_shape = (self.config.estimation.photutils.fixed_width, self.config.estimation.photutils.fixed_width)
-        else:
-            # Determine radius
-            self.determine_aperture_radius()
-            box_shape = (self.integer_aperture_diameter, self.integer_aperture_diameter)
-
-        # Determine filter size
-        filter_size = (self.config.estimation.photutils.filter_size, self.config.estimation.photutils.filter_size)
-
-        # NO SIGMA CLIP BECAUSE WE HAVE ALREADY DONE THAT OURSELVES
-        sigma_clip = None
-        # bkg_estimator = MedianBackground()
-        bkg_estimator = SExtractorBackground()
-        try:
-            bkg = Background2D(cutout, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
-                               bkg_estimator=bkg_estimator, mask=mask_cutout, filter_threshold=None,
-                               exclude_mesh_method="threshold",
-                               exclude_mesh_percentile=self.config.estimation.photutils.exclude_mesh_percentile)
-        except ValueError:
-
-            plotting.plot_box(cutout)
-            plotting.plot_mask(mask_cutout, title="mask")
-            raise RuntimeError("Sky subtraction is not possible for this image")
-
-        # Keep the background 2D object
-        self.photutils_bkg = bkg
-
-        #
-        self.phot_background_mesh = Frame(bkg.background_mesh)
-        self.phot_background_rms_mesh = Frame(bkg.background_rms_mesh)
-
-        # NEW NEW
-        self.phot_sky = Frame.nans_like(self.frame)
-        self.phot_sky.name = "phot_sky"
-        self.phot_sky.description = "photutils background"
-        self.phot_sky.unit = self.frame.unit
-        self.phot_sky.zero_point = self.frame.zero_point
-        self.phot_sky.filter = self.frame.filter
-        self.phot_sky.sky_subtracted = False
-        self.phot_sky.fwhm = self.frame.fwhm
-
-        self.phot_sky[self.cutout_y_slice, self.cutout_x_slice] = bkg.background
-
-        self.phot_rms = Frame.nans_like(self.frame)
-        self.phot_rms.name = "phot_rms"
-        self.phot_rms.description = "photutils rms"
-        self.phot_rms.unit = self.frame.unit
-        self.phot_rms.zero_point = self.frame.zero_point
-        self.phot_rms.filter = self.frame.filter
-        self.phot_rms.sky_subtracted = False
-        self.phot_rms.fwhm = self.frame.fwhm
-
-        self.phot_rms[self.cutout_y_slice, self.cutout_x_slice] = bkg.background_rms
-
-        # Return the background frame and the background rms
-        return bkg.background, bkg.background_rms
+        mean = np.nanmean(frame)
+        return frame.replace_nans(mean)
 
     # -----------------------------------------------------------------
 
