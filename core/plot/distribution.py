@@ -36,7 +36,7 @@ from ..tools.stringify import tostr
 
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
                       y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf", axes=None,
-                      xsize=5, ysize=5, return_image=False):
+                      xsize=5, ysize=5, return_image=False, colors=None, statistics=True):
 
     """
     This function ...
@@ -55,8 +55,13 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param xsize:
     :param ysize:
     :param return_image:
+    :param colors:
+    :param statistics:
     :return:
     """
+
+    # Set color (or sequences of colors)
+    if colors is not None: color = colors
 
     # Create figure if necessary, get the axes
     only_axes = False
@@ -102,10 +107,11 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     axes.set_xlim(x_min, x_max)
     axes.set_ylim(y_min, y_max)
 
-    if logscale: mean_line = axes.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
-    else: mean_line = axes.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
-    median_line = axes.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
-    max_line = axes.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+    if statistics:
+        if logscale: mean_line = axes.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
+        else: mean_line = axes.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
+        median_line = axes.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
+        max_line = axes.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
 
     # Axes were not provided, but figure was created here
     if not only_axes:

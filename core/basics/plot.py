@@ -25,6 +25,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoLocator, NullLocator
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 from mpl_toolkits.axes_grid1 import ImageGrid
+from matplotlib import cbook
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -2331,7 +2332,8 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_row_of_image_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0, colorbar_relsize=0.05, return_colorbars=False):
+    def create_row_of_image_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0, colorbar_relsize=0.05,
+                                  return_colorbars=False, share_colorbars=True, adjust_grid=False):
 
         """
         This function ...
@@ -2342,13 +2344,18 @@ class MPLFigure(Figure):
         :param hspace:
         :param colorbar_relsize:
         :param return_colorbars:
+        :param share_colorbars:
+        :param adjust_grid:
         :return:
         """
 
         # Set colorbar size in percentage
         cbar_size = str(colorbar_relsize * 100) + "%"
 
-        cbar_mode = "single"
+        # Set the colorbar mode
+        if share_colorbars: cbar_mode = "single"
+        else: cbar_mode = "edge"
+
         axes_pad = (wspace, hspace)
 
         axes_class = None
@@ -2357,31 +2364,70 @@ class MPLFigure(Figure):
         # No axes for the main figure
         self.ax.set_axis_off()
 
+        # The list of grids
         grids = []
-        colorbars = []
 
+        # IMPORTANT
+        share_all = True
+
+        # SET ASPECT
+        if adjust_grid: aspect = True # default
+        else: aspect = False # don't change the grid based on the shape of the images
+
+        cbar_set_cax = False
+        #cbar_set_cax = True
+
+        # Create the grids
         for index in range(ngrids):
 
+            # Determine subplot specified
             rect = "1" + str(ngrids) + str(index+1)
 
-            aspect = True
+            # Create the grid
             grid = ImageGrid(self.figure, rect, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=aspect,
-                             cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size,
-                             axes_class=axes_class, label_mode=label_mode)
+                             cbar_mode=cbar_mode, add_all=True, cbar_set_cax=cbar_set_cax, cbar_size=cbar_size,
+                             axes_class=axes_class, label_mode=label_mode, share_all=share_all)
             grids.append(grid)
 
-            colorbar = grid.cbar_axes[0]
-            colorbars.append(colorbar)
+            # Add the colorbars
+            #if share_colorbars:
+                #print(grid.cbar_axes)
+                #if len(grid.cbar_axes) > 1: raise RuntimeError("Something went wrong")
+            #    colorbar = grid.cbar_axes[0] # underneath, each separate panel has its own cbar axes reference
+            #    colorbars.append(colorbar)
+            #else:
+                #colorbars.extend(grid.cbar_axes) # underneath, each separate panel has its own cbar axes reference
+            #    colorbars_cols = []
+            #    for col_index in range(ncols):
+            #        colorbar_index = col_index * nrows
+            #        colorbars_col = grid.cbar_axes[colorbar_index:colorbar_index+nrows]
+            #        colorbars_cols.append(colorbars_col)
+            #    colorbars_last_col = colorbars_cols[-1]
+            #    colorbars.extend(colorbars_last_col)
+            #    #colorbars.extend(colorbars_cols)
+            #    #for row_index in range(nrows):
+            #        #colorbar_index =
+
+            #print(index, "ncolb", len(colorbars))
+
+        #ncolorbars = len(colorbars)
+        #print("ncolorbars", ncolorbars)
+        #print(colorbars)
 
         # Initialize structure to contain the plots
         plots = [[[None for i in range(ncols)] for j in range(nrows)] for k in range(ngrids)]
 
+        # Initialize structure to contain the colorbar axes
+        colorbars = [[[None for i in range(ncols)] for j in range(nrows)] for k in range(ngrids)]
+
         # Loop over the images
         for i in range(ngrids):
+
             index = 0
 
             grid = grids[i]
 
+            # Create the plots
             for row in range(nrows):
                 for col in range(ncols):
 
@@ -2389,12 +2435,28 @@ class MPLFigure(Figure):
                     ax = grid[index]
                     plot = ax
 
+                    # last column
+                    if col == ncols-1:
+                        #ax._sharex = None
+                        #ax._shared_x_axes = cbook.Grouper()
+                        #ax._adjustable = 'box'
+                        ax._sharey = None
+                        ax._shared_y_axes = cbook.Grouper()
+                        ax._adjustable = 'box'
+
                     # Create plot
                     plot = MPLPlot(plot=plot)
 
                     # Add the plot
                     plots[i][row][col] = plot
 
+                    # Get the colorbar axes
+                    colorbar = grid.cbar_axes[index]
+
+                    # Add the colorbar
+                    colorbars[i][row][col] = colorbar
+
+                    # Increment the index
                     index += 1
 
         # Return the plots (and errorbars)
@@ -2404,7 +2466,7 @@ class MPLFigure(Figure):
     # -----------------------------------------------------------------
 
     def create_image_grid(self, nrows, ncols, wspace=0.0, hspace=0.0, return_colorbar=False, colorbar_relsize=0.05,
-                          edgecolor=None, projection=None):
+                          edgecolor=None, projection=None, adjust_grid=False):
 
         """
         This function ...
@@ -2416,6 +2478,7 @@ class MPLFigure(Figure):
         :param colorbar_relsize:
         :param edgecolor:
         :param projection:
+        :param adjust_grid:
         :return:
         """
 
@@ -2455,13 +2518,17 @@ class MPLFigure(Figure):
             axes_class = None
             label_mode = "L"
 
-        # Create the grid
-        #aspect = None
-        aspect = True
-        grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=aspect, cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size, axes_class=axes_class, label_mode=label_mode)
+        # IMPORTANT
+        share_all = True
 
-        #print(nrows, ncols)
-        #grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols))
+        # SET ASPECT
+        if adjust_grid: aspect = True  # default
+        else: aspect = False  # don't change the grid based on the shape of the images
+
+        # Create the grid
+        grid = ImageGrid(self.figure, 111, nrows_ncols=(nrows, ncols), axes_pad=axes_pad, aspect=aspect,
+                         cbar_mode=cbar_mode, add_all=True, cbar_set_cax=False, cbar_size=cbar_size,
+                         axes_class=axes_class, label_mode=label_mode, share_all=share_all)
 
         if projection is not None:
 

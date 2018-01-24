@@ -20,6 +20,7 @@ from matplotlib import cm
 from collections import OrderedDict
 from abc import ABCMeta, abstractproperty
 from collections import defaultdict
+from matplotlib.colors import rgb2hex
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
@@ -137,7 +138,7 @@ class ImageGridPlotter(Configurable):
         """
 
         # Debugging
-        log.debug("Initializing the figure ...")
+        log.debug("Initializing the figure with size " + str(self.figsize) + " ...")
 
         # Create the plot
         if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
@@ -1363,7 +1364,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
         # Set background color: otherwise NaNs are not plotted (-> white/transparent)
-        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+        if self.config.background: plot.axes.set_facecolor(self.background_color)
 
         # Add mask if present
         if self.has_masks_for_frame(name):
@@ -1431,7 +1432,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
         # Set background color: otherwise NaNs are not plotted (-> white/transparent)
-        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+        if self.config.background: plot.axes.set_facecolor(self.background_color)
 
         # Create NaNs image
         #nans = np.full((100,100), np.nan)
@@ -1806,9 +1807,28 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.residuals = OrderedDict()
         self.distributions = OrderedDict()
 
-        # The colorbar(s)
-        #self.colorbar = None
+        # The colorbars
         self.colorbars = None
+
+        # Initialize list to contain the names of rows that have been plotted
+        self._plotted_rows = []
+
+        # Initialize vmin and vmax for the images and for the residuals
+        self._vmin = None
+        self._vmax = None
+        self._vmin_res = None
+        self._vmax_res = None
+
+        # Images
+        self._observation_images = OrderedDict()
+        self._model_images = OrderedDict()
+        self._residual_images = OrderedDict()
+        self._distribution_images = OrderedDict()
+
+        # Normalizations
+        self._observation_normalizations = OrderedDict()
+        self._model_normalizations = OrderedDict()
+        self._residual_normalizations = OrderedDict()
 
     # -----------------------------------------------------------------
 
@@ -1922,6 +1942,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Set residuals flag
         if with_residuals is None:
+
             # Residuals are passed
             if residuals is not None: with_residuals = True
             # If either observation or model is None, don't create residuals
@@ -2396,6 +2417,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # 4. Write
         if self.config.write: self.write()
 
+        # Uniformize the frames
+        if self.needs_uniform: self.uniformize()
+
         # 5. Make the plot
         self.plot()
 
@@ -2410,6 +2434,30 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         return self.config.ngrids == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def add_residuals_colorbars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.distributions # if distributions are plotted (with the colors), colormap is not necessary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_residuals_colorbars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.share_scale_residuals
 
     # -----------------------------------------------------------------
 
@@ -2428,6 +2476,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         #if self.config.weighed and not self.config.relative: raise ValueError("Cannot enable 'weighed' and disable 'relative' residual maps")
         if not self.config.relative and self.config.normalize: raise ValueError("Cannot plot the actual (not relative) values of the residuals when normalizing the frames is enabled")
 
+        # Other check
+        if self.config.share_scale_residuals and (self.config.same_residuals_scale and not self.config.share_scale): raise ValueError("Cannot share scales between residual maps and images, while also sharing the scale between the different residual maps, while the scales of the different images are not shared")
+
         # Load the images
         if self.no_rows:
             if self.config.from_data: self.load_data()
@@ -2444,7 +2495,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
         #else: self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids, return_colorbars=True)
 
-        self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids, return_colorbars=True)
+        self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns,
+                                                                           self.config.ngrids, return_colorbars=True,
+                                                                           share_colorbars=self.share_residuals_colorbars,
+                                                                           adjust_grid=self.config.adjust_grid)
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -2593,7 +2647,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         #print(self.config.plot.xsize, self.ncolumns, self.mean_width_to_height)
-        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height * 1.5
+        return self.config.plot.xsize * self.ncolumns * self.mean_width_to_height * self.config.ngrids
 
     # -----------------------------------------------------------------
 
@@ -2606,7 +2660,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         #print(self.config.plot.ysize, self.nrows)
-        return self.config.plot.ysize * self.nrows
+        return self.config.plot.ysize * self.max_nrows_per_grid
 
     # -----------------------------------------------------------------
 
@@ -3222,6 +3276,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             # Relative residuals
             else: residual = model - observation
 
+            # ABSOLUTE VALUES?
+            if self.config.absolute: residual = residual.absolute
+
             # Add the residual frame
             self.residuals[name] = residual
 
@@ -3597,6 +3654,20 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def residuals_reference_row_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.scale_residuals_reference is None: return None
+        elif self.config.scale_residuals_reference not in self.names: raise ValueError("Invalid residuals reference row name")
+        else: return self.config.scale_residuals_reference
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def reference_row_index(self):
 
         """
@@ -3608,76 +3679,108 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_reference_frame(self):
+    @lazyproperty
+    def residuals_reference_row_index(self):
 
         """
         This function ...
         :return:
         """
 
-        # Plot the frame
-        vmin, vmax = self._plot_row(self.reference_row_name, self.reference_row_index)
-
-        # Return
-        return vmin, vmax, self.reference_row_name
+        return self.index_for_row(self.residuals_reference_row_name)
 
     # -----------------------------------------------------------------
 
-    def _plot_row(self, name, index, vmin=None, vmax=None):
+    def plot_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the row
+        return self.plot_row(self.reference_row_name, self.reference_row_index)
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the row
+        return self.plot_row(self.residuals_reference_row_name, self.residuals_reference_row_index)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def adjust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.adjust_grid is not None: return self.config.adjust_grid
+        elif self.same_shapes: return True
+        elif self.config.uniformize: return True
+        else: return False  # if grid is adjusted when plotting images with different shapes, it looks bad
+
+    # -----------------------------------------------------------------
+
+    def plot_row(self, name, index):
 
         """
         This function ...
         :param name:
         :param index:
-        :param vmin:
-        :param vmax:
         :return:
         """
+
+        # Check
+        if self.is_plotted(name): log.warning("The '" + name + "' row has already been plotted")
 
         # Debugging
         log.debug("Adding the '" + name + "' row to the plot ...")
 
+        # Determine image scale
+        if self.config.share_scale: vmin, vmax = self._vmin, self._vmax
+        else: vmin = vmax = None
+
         # Plot the observation
-        vmin_observation, vmax_observation, obs_image, obs_normalization = self._plot_observation(name, index, vmin=vmin, vmax=vmax)
+        vmin_observation, vmax_observation, obs_image, obs_normalization = self.plot_observation(name, index, vmin=vmin, vmax=vmax)
 
         # Plot the model, on the same scale
-        vmin_model, vmax_model, model_image, model_normalization = self._plot_model(name, index, vmin=vmin_observation, vmax=vmax_observation)
+        self.plot_model(name, index, vmin=vmin_observation, vmax=vmax_observation, set_minmax=False)
 
-        # Plot the residuals
+        # Determine residuals scale
         if self.config.same_residuals_scale: vmin_res, vmax_res = vmin_observation, vmax_observation
         else: vmin_res = vmax_res = None
-        if self.do_residuals(name): vmin_res, vmax_res, res_image, res_normalization = self._plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
-        else: vmin_res = vmax_res = res_image = res_normalization = None
+
+        # Plot the residuals
+        if self.do_residuals(name): self.plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
 
         # Plot the distribution
-        if self.config.distributions: distr_image = self._plot_distribution(name, index)
-        else: distr_image = None
+        if self.config.distributions: self.plot_distribution(name, index)
 
-        #res_image = distr_image = vmin_res = vmax_res = res_normalization = None
+        # Plot the colorbar of the residual
+        # if self.share_residuals_colorbars: pass
+        # elif name == "0":
+        #     colorbars = self.colorbars[index]
+        #     for i, colorbar in enumerate(colorbars):
+        #         #if i == 0: continue # FIRST ROW
+        #         #if i == 1: continue # SECOND ROW
+        #         self.figure.figure.colorbar(res_image, cax=colorbar)
+        #     #colorbar = self.colorbars[index]
+        #     #self.figure.figure.colorbar(res_image, cax=colorbar)
+        #     #colorbar.get_xaxis().set_ticks([])
+        #     #colorbar.get_yaxis().set_ticks([])
+        #     #colorbar.set_axis_off()
 
-        # Make list of the images
-        images = [obs_image, model_image, res_image, distr_image]
-
-        # Return vmin and vmax
-        #if return_images:
-        #    if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, images, obs_normalization, res_normalization
-        #    else: return vmin_observation, vmax_observation, vmin_res, vmax_res, images
-        #else:
-        #    if return_normalizations: return vmin_observation, vmax_observation, vmin_res, vmax_res, obs_normalization, res_normalization
-        #    else: return vmin_observation, vmax_observation, vmin_res, vmax_res
-
-        #
-        result = Map()
-        result.vmin_observation = vmin_observation
-        result.vmax_observation = vmax_observation
-        result.vmin_res = vmin_res
-        result.vmax_res = vmax_res
-        result.images = images
-        result.obs_normalization = obs_normalization
-        result.res_normalization = res_normalization
-
-        # Return
-        return result
+        # Add to plotted row names
+        self._plotted_rows.append(name)
 
     # -----------------------------------------------------------------
 
@@ -3702,18 +3805,110 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        # Only single grid
-        #if self.single_grid: return self.plots[abs_row_index][col_index]
-
-        # Multiple grids
-        #else:
-
         grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
         return self.plots[grid][rel_row_index][col_index]
 
     # -----------------------------------------------------------------
 
-    def _plot_empty_row(self, name, index):
+    def get_colorbar(self, abs_row_index, col_index):
+
+        """
+        This function ...
+        :param abs_row_index:
+        :param col_index:
+        :return:
+        """
+
+        grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
+        return self.colorbars[grid][rel_row_index][col_index]
+
+    # -----------------------------------------------------------------
+
+    def get_observation_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._observation_images[name]
+
+    # -----------------------------------------------------------------
+
+    def get_observation_normalization(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._observation_normalizations[name]
+
+    # -----------------------------------------------------------------
+
+    def get_model_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._model_images[name]
+
+    # -----------------------------------------------------------------
+
+    def get_model_normalization(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._model_normalizations[name]
+
+    # -----------------------------------------------------------------
+
+    def get_residual_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._residual_images[name]
+
+    # -----------------------------------------------------------------
+
+    def get_residual_normalization(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._residual_normalizations[name]
+
+    # -----------------------------------------------------------------
+
+    def get_distribution_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._distribution_images[name]
+
+    # -----------------------------------------------------------------
+
+    def plot_empty_row(self, name, index):
 
         """
         This function ...
@@ -3721,6 +3916,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param index:
         :return:
         """
+
+        # Debugging
+        log.debug("Formatting empty row '" + name + "' ...")
 
         # Loop over the columns
         for col in self.column_indices:
@@ -3741,7 +3939,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
             # Set background color: otherwise NaNs are not plotted (-> white/transparent)
-            if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+            if self.config.background: plot.axes.set_facecolor(self.background_color)
 
             # Add the label
             if col == 0: plot.axes.text(0.95, 0.95, name, color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")
@@ -3853,7 +4051,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_frame(self, name, frame, row, col, vmin=None, vmax=None, add_label=True, colormap=None):
+    def _plot_frame(self, name, frame, row, col, vmin=None, vmax=None, add_label=True, colormap=None, scale=None):
 
         """
         This function ...
@@ -3865,6 +4063,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param vmax:
         :param add_label:
         :param colormap:
+        :param scale:
         :return:
         """
 
@@ -3884,7 +4083,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
         # Set background color: otherwise NaNs are not plotted (-> white/transparent)
-        if self.config.background: plot.axes.set_axis_bgcolor(self.background_color)
+        if self.config.background: plot.axes.set_facecolor(self.background_color)
 
         # Add mask if present
         if self.has_masks_for_row(name):
@@ -3892,17 +4091,28 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 mask = self.get_mask(name, label)
                 frame[mask] = nan
 
-        # Plot
-        if self.config.share_scale and vmin is not None: interval = [vmin, vmax]
+        # Set interval
+        if vmin is not None and vmax is not None: interval = [vmin, vmax]
+        elif (vmin is not None) or (vmax is not None): raise ValueError("Must pass vmin and vmax together")
         else: interval = self.config.interval
+
+        #else: aspect = "equal"
+        #aspect = (1., 1.)
+        aspect = "equal"
+        #aspect = "auto"
+
+        # Determine the scale
+        if scale is None: scale = self.config.scale # take the configured default when none is passed
+
+        # Determine the colormap
+        if colormap is None: colormap = self.colormap # take the configured default when none is passed
 
         # Plot
         #plot.axes.set_adjustable('box-forced')
-        if colormap is None: colormap = self.colormap
         vmin_image, vmax_image, image, normalization = plotting.plot_box(frame.data, axes=plot.axes, interval=interval,
-                                                                         scale=self.config.scale, cmap=colormap,
+                                                                         scale=scale, cmap=colormap,
                                                                          alpha=self.config.alpha, return_image=True,
-                                                                         return_normalization=True)
+                                                                         return_normalization=True, aspect=aspect)
 
         # Add region if present
         if self.has_regions_for_row(name):
@@ -3918,7 +4128,79 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def _plot_observation(self, name, index, vmin=None, vmax=None):
+    def _plot_residuals(self, name, residuals, row, col, colormap=None, scale=None, vmin=None, vmax=None):
+
+        """
+        This function ...
+        :param name:
+        :param residuals:
+        :param row:
+        :param col:
+        :param colormap:
+        :param scale:
+        :param vmin:
+        :param vmax:
+        :return:
+        """
+
+        # Get the plot
+        plot = self.get_plot(row, col)
+
+        # Color spines
+        plot.axes.spines['bottom'].set_color("white")
+        plot.axes.spines['top'].set_color("white")
+        plot.axes.spines['left'].set_color("white")
+        plot.axes.spines['right'].set_color("white")
+        plot.axes.tick_params(axis='x', colors="white", direction="inout")
+        plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+        # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+        if self.config.background: plot.axes.set_facecolor(self.residuals_background_color)
+
+        # Add mask if present
+        if self.has_masks_for_row(name):
+            for label in self.rows[name].masks:
+                mask = self.get_mask(name, label)
+                residuals[mask] = nan
+
+        aspect = "equal"
+
+        # Set interval
+        if vmin is not None and vmax is not None: interval = [vmin, vmax]
+        elif (vmin is not None) or (vmax is not None): raise ValueError("Must pass vmin and vmax together")
+        else: interval = self.config.residuals_interval
+
+        # Determine the scale
+        if scale is None: scale = "linear"
+
+        # Determine the colormap
+        if colormap is None: colormap = self.residuals_colormap
+
+        # Set flags
+        if self.config.absolute: around_zero = symmetric = False
+        else: around_zero = symmetric = True
+
+        # Plot
+        vmin_image, vmax_image, image, normalization = plotting.plot_box(residuals.data, axes=plot.axes, interval=interval,
+                                                                         scale=scale, cmap=colormap,
+                                                                         alpha=self.config.alpha, return_image=True,
+                                                                         return_normalization=True, aspect=aspect,
+                                                                         around_zero=around_zero, symmetric=symmetric,
+                                                                         check_around_zero=False)
+
+        # Add region if present
+        if self.config.regions_on_residuals:
+            if self.has_regions_for_row(name):
+                for label in self.rows[name].regions:
+                    regions = self.get_regions(name, label)
+                    for patch in regions.to_mpl_patches(): plot.axes.add_patch(patch)
+
+        # Return
+        return vmin_image, vmax_image, image, normalization
+
+    # -----------------------------------------------------------------
+
+    def plot_observation(self, name, index, vmin=None, vmax=None, set_minmax=None):
 
         """
         This function ...
@@ -3926,6 +4208,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param index:
         :param vmin:
         :param vmax:
+        :param set_minmax:
         :return:
         """
 
@@ -3935,12 +4218,26 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get the observation
         observation = self.get_observation(name)
 
+        # Set the normalization
+        if vmin is None and vmax is None and self.config.share_scale: vmin, vmax = self._vmin, self._vmax
+
         # Plot
-        return self._plot_frame(name, observation, index, observation_index, vmin=vmin, vmax=vmax, add_label=True)
+        vmin_image, vmax_image, image, normalization = self._plot_frame(name, observation, index, observation_index, vmin=vmin, vmax=vmax, add_label=True)
+
+        # Set the image and normalization
+        self._observation_images[name] = image
+        self._observation_normalizations[name] = normalization
+
+        # Set vmin and vmax
+        if set_minmax is None: set_minmax = self.config.share_scale
+        if set_minmax: self._vmin, self._vmax = vmin_image, vmax_image
+
+        # Return
+        return vmin_image, vmax_image, image, normalization
 
     # -----------------------------------------------------------------
 
-    def _plot_model(self, name, index, vmin=None, vmax=None):
+    def plot_model(self, name, index, vmin=None, vmax=None, set_minmax=None):
 
         """
         This function ...
@@ -3948,6 +4245,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param index:
         :param vmin:
         :param vmax:
+        :param set_minmax:
         :return:
         """
 
@@ -3957,12 +4255,26 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get the model
         model = self.get_model(name)
 
+        # Set the normalization if necessary
+        if vmin is None and vmax is None and self.config.share_scale: vmin, vmax = self._vmin, self._vmax
+
         # Plot
-        return self._plot_frame(name, model, index, model_index, vmin=vmin, vmax=vmax, add_label=False)
+        vmin_image, vmax_image, image, normalization = self._plot_frame(name, model, index, model_index, vmin=vmin, vmax=vmax, add_label=False)
+
+        # Set the image and the normalization
+        self._model_images[name] = image
+        self._model_normalizations[name] = normalization
+
+        # Set vmin and vmax
+        if set_minmax is None: set_minmax = self.config.share_scale
+        if set_minmax: self._vmin, self._vmax = vmin_image, vmax_image
+
+        # Return
+        return vmin_image, vmax_image, image, normalization
 
     # -----------------------------------------------------------------
 
-    def _plot_residuals(self, name, index, vmin=None, vmax=None):
+    def plot_residuals(self, name, index, vmin=None, vmax=None, set_minmax=None):
 
         """
         This function ...
@@ -3970,6 +4282,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param index:
         :param vmin:
         :param vmax:
+        :param set_minmax:
         :return:
         """
 
@@ -3978,13 +4291,34 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Get the residual map
         residuals = self.get_residuals(name)
+        #distribution = Distribution.from_data("residuals", residuals)
+        #plot_distribution(distribution)
+
+        # Set the vmin and vmax if necessary
+        if vmin is None and vmax is None and self.config.share_scale_residuals: vmin, vmax = self._vmin_res, self._vmax_res
 
         # Plot
-        return self._plot_frame(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax, add_label=False, colormap=self.residuals_colormap)
+        vmin_image, vmax_image, image, normalization = self._plot_residuals(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax)
+
+        # Set the residual image and the normalization
+        self._residual_images[name] = image
+        self._residual_normalizations[name] = normalization
+
+        # Set min and max
+        if set_minmax is None: set_minmax = self.config.share_scale_residuals
+        if set_minmax: self._vmin_res, self._vmax_res = vmin_image, vmax_image
+
+        # Plot colorbar
+        # Get the colorbar axes
+        #colorbar = self.get_colorbar(index, residuals_index)
+        #self.figure.figure.colorbar(image, cax=colorbar)
+
+        # Return
+        return vmin_image, vmax_image, image, normalization
 
     # -----------------------------------------------------------------
 
-    def _plot_distribution(self, name, index):
+    def plot_distribution(self, name, index):
 
         """
         This function ...
@@ -4015,8 +4349,24 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='x', colors="white", direction="inout")
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
+        # Define the colors
+        normalization = self.get_residual_normalization(name)
+        colors = []
+        for value in distribution.values:
+            #print("value", value)
+            normalized = normalization(value)
+            #print("normalized", normalized)
+            rgb = self.residuals_colormap(normalized)[0]
+            #print("color", rgb)
+            hex = rgb2hex(rgb)
+            #print(hex)
+            colors.append(hex)
+
         # Plot the distribution
-        image = plot_distribution(distribution, axes=plot.axes)
+        image = plot_distribution(distribution, axes=plot.axes, colors=colors)
+
+        # Set the image
+        self._distribution_images[index] = image
 
     # -----------------------------------------------------------------
 
@@ -4222,6 +4572,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def has_residuals(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.residuals and self.residuals[name] is not None
+
+    # -----------------------------------------------------------------
+
     def has_observation_data(self, name):
 
         """
@@ -4260,6 +4622,305 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def scale_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.share_scale: return self.config.scale_reference
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scale_reference(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.scale_reference is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scale_residuals_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.share_scale_residuals: return self.config.scale_residuals_reference
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scale_residuals_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.scale_residuals_reference is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def one_scale_reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_scale_reference and self.has_scale_residuals_reference: return self.scale_reference == self.scale_residuals_reference
+        elif not self.has_scale_reference and not self.has_scale_residuals_reference: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
+    def plot_references(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the reference row(s) ...")
+
+        #print(self.has_scale_reference, self.has_scale_residuals_reference)
+
+        # Image and residual map reference rows are the same
+        if self.has_scale_reference and self.has_scale_residuals_reference and self.one_scale_reference: self.plot_reference()
+
+        # Image and residual map reference rows are different
+        elif self.has_scale_reference and self.has_scale_residuals_reference:
+
+            self.plot_reference()
+            self.plot_residuals_reference()
+
+        # Reference row for the images
+        elif self.has_scale_reference: self.plot_reference()
+
+        # Reference row for the residual maps
+        elif self.has_scale_residuals_reference: self.plot_residuals_reference()
+
+    # -----------------------------------------------------------------
+
+    def is_plotted(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self._plotted_rows
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = None
+        for name in self.names:
+            xsize = self.get_xsize(name)
+            if value is None or xsize < value: value = xsize
+        return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = None
+        for name in self.names:
+            xsize = self.get_xsize(name)
+            if value is None or xsize > value: value = xsize
+        return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = None
+        for name in self.names:
+            ysize = self.get_ysize(name)
+            if value is None or ysize < value: value = ysize
+        return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        value = None
+        for name in self.names:
+            ysize = self.get_ysize(name)
+            if value is None or ysize > value: value = ysize
+        return value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def same_shapes(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        shapes = []
+        for name in self.names:
+            shape = self.get_shape(name)
+            shapes.append(shape)
+        return sequences.all_equal(shapes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_uniform(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.uniformize and not self.same_shapes
+
+    # -----------------------------------------------------------------
+
+    def uniformize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uniformizing the rows ...")
+
+        #print("min xsize:", self.min_xsize)
+        #print("max xsize:", self.max_xsize)
+        #print("min ysize:", self.min_ysize)
+        #print("max ysize:", self.max_ysize)
+
+        # Loop over the rows
+        for name in self.names:
+
+            # Get the xsize and ysize
+            xsize = self.get_xsize(name)
+            ysize = self.get_ysize(name)
+
+            # Check size
+            if xsize < self.max_xsize and ysize < self.max_ysize:
+
+                # Get x and y factor
+                x_factor = float(self.max_xsize) / xsize
+                y_factor = float(self.max_ysize) / ysize
+
+                # Determine factor
+                if x_factor > y_factor: factor = int(math.ceil(x_factor))
+                else: factor = int(math.ceil(y_factor))
+
+                # Upsample
+                self.upsample_row(name, factor)
+
+            # Check xsize
+            elif xsize < self.max_xsize:
+
+                # Determine the factor
+                factor = float(self.max_xsize) / xsize
+                factor = int(math.ceil(factor))
+
+                # Usample
+                self.upsample_row(name, factor)
+
+            # Check ysize
+            elif ysize < self.max_ysize:
+
+                # Determine the factor
+                factor = float(self.max_ysize) / ysize
+                factor = int(math.ceil(factor))
+
+                # Usample
+                self.upsample_row(name, factor)
+
+    # -----------------------------------------------------------------
+
+    def upsample_row(self, name, factor):
+
+        """
+        This function ...
+        :param name:
+        :param factor:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Upsampling the '" + name + "' row with a factor of " + str(factor) + " ...")
+
+        # Observation
+        if self.has_observation(name):
+
+            frame = self.get_observation(name)
+            frame.upsample(factor, order=0)
+
+        # Model
+        if self.has_model(name):
+
+            frame = self.get_model(name)
+            frame.upsample(factor, order=0)
+
+        # Residual map
+        if self.has_residuals(name):
+
+            frame = self.get_residuals(name)
+            frame.upsample(factor, order=0)
+
+    # -----------------------------------------------------------------
+
+    def plot_aplpy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #import aplpy
+        pass
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -4270,94 +4931,97 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Inform the user
         log.info("Plotting ...")
 
-        # Initialize vmin and vmax
-        vmin = vmax = None
-
-        # Initialize list
-        plotted = []
-
-        # The last image and normalization
-        #images = None
-        #image_normalization = None
-
-        plotted_errorbar = [False for _ in range(self.config.ngrids)]
-
-        # First plot the image of which we use the scale as reference
-        if self.config.share_scale and self.config.scale_reference is not None:
-
-            # Plot
-            vmin, vmax, name = self._plot_reference_frame()
-
-            # Add to plotted
-            plotted.append(name)
+        # Plot the references
+        self.plot_references()
 
         # Loop over the images
         for index, name in enumerate(self.names):
 
+            # Check
+            if self.is_plotted(name): continue
+
             # Debugging
             log.debug("Plotting the '" + name + "' row ...")
 
-            # Get name
-            name = self.names[index]
-            if name in plotted: continue
-
-            # Determine the grid index
-            grid_index = self.grid_assignment[index]
-
             # Has observation and model data
-            if self.has_data(name):
-
-                # Plot the frame
-                result = self._plot_row(name, index, vmin=vmin, vmax=vmax)
-                vmin_observation = result.vmin_observation
-                vmax_observation = result.vmax_observation
-                vmin_res = result.vmin_res
-                vmax_res = result.vmax_res
-                images = result.images
-                obs_normalization = result.obs_normalization
-                res_normalization = result.res_normalization
-
-                # Set vmin and vmax
-                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
-
-                # Set colorbar
-                if not plotted_errorbar[grid_index]:
-                    self._plot_colorbar(images[0], grid_index)
-                    plotted_errorbar[grid_index] = True
+            if self.has_data(name): self.plot_row(name, index)
 
             # Only observation data
-            elif self.has_observation_data(name):
-
-                # Plot
-                vmin_image, vmax_image, image, normalization = self._plot_observation(name, index, vmin=vmin, vmax=vmax)
-
-                # Set vmin and vmax
-                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
-
-                # Set colorbar
-                if not plotted_errorbar[grid_index]:
-                    self._plot_colorbar(image, grid_index)
-                    plotted_errorbar[grid_index] = True
+            elif self.has_observation_data(name): self.plot_observation(name, index)
 
             # Only model data
-            elif self.has_model_data(name):
-
-                # Plot
-                vmin_image, vmax_image, image, normalization = self._plot_model(name, index, vmin=vmin, vmax=vmax)
-
-                # Set vmin and vmax
-                if self.config.share_scale: vmin, vmax = vmin_image, vmax_image
-
-                # Set colorbar
-                if not plotted_errorbar[grid_index]:
-                    self._plot_colorbar(image, grid_index)
-                    plotted_errorbar[grid_index] = True
+            elif self.has_model_data(name): self.plot_model(name, index)
 
             # No data
-            else: self._plot_empty_row(name, index)
+            else: self.plot_empty_row(name, index)
+
+        # Plot empty rows
+        self.plot_empty_rows()
+
+        # Plot colorbars
+        self.plot_colorbars()
 
         # Finish the plot
         self.finish_plot()
+
+    # -----------------------------------------------------------------
+
+    def plot_colorbars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot colorbar
+        # Get the colorbar axes
+        # colorbar = self.get_colorbar(index, residuals_index)
+        # self.figure.figure.colorbar(image, cax=colorbar)
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_empty_rows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plotted = [[] for _ in range(self.config.ngrids)]
+
+        # Loop over the images
+        for index, name in enumerate(self.names):
+            grid, rel_row_index = self.get_grid_and_relative_row(index)
+            plotted[grid].append(rel_row_index)
+
+        # Loop over the empty rows
+        for grid_index, plotted_rows in enumerate(plotted):
+
+            for relative_row in range(self.max_nrows_per_grid):
+                if relative_row in plotted_rows: continue
+
+                # Loop over the columns
+                for col in self.column_indices:
+
+                    # Get the plot
+                    plot = self.plots[grid_index][relative_row][col]
+
+                    # Color spines
+                    plot.axes.spines['bottom'].set_color("white")
+                    plot.axes.spines['top'].set_color("white")
+                    plot.axes.spines['left'].set_color("white")
+                    plot.axes.spines['right'].set_color("white")
+
+                    # Color ticks
+                    # plot.axes.xaxis.label.set_color("white")
+                    # plot.axes.yaxis.label.set_color("white")
+                    plot.axes.tick_params(axis='x', colors="white", direction="inout")
+                    plot.axes.tick_params(axis='y', colors="white", direction="inout")
+
+                    # Set background color: otherwise NaNs are not plotted (-> white/transparent)
+                    #if self.config.background: plot.axes.set_facecolor(self.background_color)
 
     # -----------------------------------------------------------------
 

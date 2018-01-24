@@ -36,6 +36,8 @@ plotloc = [[0.09,0.825,0.3,0.115],[0.39,0.825,0.3,0.115],[0.69,0.825,0.3,0.115],
            [0.09,0.020,0.3,0.115]]
 # First row
 
+import aplpy
+
 f1 = aplpy.FITSFigure(path+'maps/plotimFUVJy.fits', figure=fig, subplot=plotloc[0])
 standard_setup(f1)
 #f1.show_colorscale(pmax=99.25, pmin=0.50,  cmap='hot')

@@ -535,7 +535,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None,
              regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False):
+             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True):
 
     """
     This function ...
@@ -566,8 +566,14 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param alpha:
     :param return_image:
     :param return_normalization:
+    :param aspect:
+    :param symmetric_method:
+    :param check_around_zero:
     :return:
     """
+
+    # Check parameters
+    if symmetric and not around_zero: raise ValueError("Cannot enable 'symmetric' but not 'around_zero'")
 
     # Other new colormaps: plasma, magma, inferno
 
@@ -604,46 +610,95 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         normalize_min = np.nanmin(data)
         normalize_max = np.nanmax(data)
 
+    nnegatives = np.sum(pixels < 0)
+    npositives = np.sum(pixels > 0)
+    has_negatives = nnegatives > 0
+    has_positives = npositives > 0
+
+    # Check around_zero flag
+    if check_around_zero and around_zero and not (has_negatives and has_positives): raise ValueError("Not around zero")
+
     # ZSCALE
-    if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(pixels)
+    if interval == "zscale":
+
+        vmin, vmax = ZScaleInterval().get_limits(pixels)
+        below_zero = vmin < 0
+        above_zero = vmax > 0
+
+        # Around zero
+        if around_zero and symmetric:
+            if check_around_zero and not (below_zero and above_zero): raise ValueError("Not around zero")
+
+            # Set max
+            if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+            elif symmetric_method == "max": vmax = max([abs(vmin), abs(vmax)])
+            elif symmetric_method == "min": vmax = min([abs(vmin), abs(vmax)])
+            else: raise ValueError("Invalid symmetric method")
+
+            # Set min
+            vmin = - vmax
 
     # PTS INTERVAL
     elif interval == "pts":
 
-        nnegatives = np.sum(data < 0)
-        npositives = np.sum(data > 0)
-
+        # Around zero
         if around_zero:
 
             vmin = 0.5 * normalize_min
             vmax = 0.5 * normalize_max
 
+            # Symmetric?
             if symmetric:
 
-                vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+                # Set max
+                if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+                elif symmetric_method == "max": vmax = max([abs(vmin), abs(vmax)])
+                elif symmetric_method == "min": vmax = min([abs(vmin), abs(vmax)])
+                else: raise ValueError("Invalid symmetric method")
+
+                # Set min
                 vmin = - vmax
 
+        # More positive values than negatives
         elif npositives > nnegatives:
 
             # Determine the maximum value in the box and the mimimum value for plotting
             vmin = max(normalize_min, 0.)
             vmax = 0.5 * (normalize_max + vmin)
 
+        # More negative values than positives
         else:
 
             vmax = min(normalize_max, 0.)
             vmin = 0.5 * (normalize_min + vmax)
 
     # MINIMAX
-    elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(pixels)
+    elif interval == "minmax":
+
+        vmin, vmax = MinMaxInterval().get_limits(pixels)
+        below_zero = vmin < 0
+        above_zero = vmax > 0
+
+        # Around zero?
+        if around_zero and symmetric:
+            if check_around_zero and not (below_zero and above_zero): raise ValueError("Not around zero")
+
+            # Set max
+            if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+            elif symmetric_method == "max": vmax = max([abs(vmin), abs(vmax)])
+            elif symmetric_method == "min": vmax = min([abs(vmin), abs(vmax)])
+            else: raise ValueError("Invalid symmetric method")
+
+            # Set min
+            vmin = - vmax
 
     # List or tuple of 2 values (min and max)
     elif isinstance(interval, list) or isinstance(interval, tuple):
 
         vmin, vmax = interval
 
-        if soft_min: vmin = max(vmin/soft_min_scaling, normalize_min)
-        if soft_max: vmax = min(vmax*soft_max_scaling, normalize_max)
+        if soft_min: vmin = max(vmin /soft_min_scaling, normalize_min)
+        if soft_max: vmax = min(vmax * soft_max_scaling, normalize_max)
 
     # String -> parse
     elif isinstance(interval, basestring):
@@ -693,7 +748,6 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     #     top = nypix
     # extent = (left, right, bottom, top)
     extent = None
-    aspect = "equal"
     image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap,
                 alpha=alpha, aspect=aspect, extent=extent)
 

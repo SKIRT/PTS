@@ -16,28 +16,52 @@ setup_log("DEBUG")
 
 # -----------------------------------------------------------------
 
-def make_random_frames(nframes, min_npixels=50, max_npixels=200):
+# Set seed
+np.random.seed(1)
+
+# -----------------------------------------------------------------
+
+def make_random_frame(nxpixels, nypixels=None):
+
+    """
+    This function ...
+    :param nxpixels:
+    :param nypixels:
+    :return:
+    """
+
+    # Set shape
+    if nypixels is None: nypixels = nxpixels
+    shape = (nypixels, nxpixels)
+
+    # Return the frame
+    return Frame.random(shape)
+
+# -----------------------------------------------------------------
+
+def make_random_frames(nframes, min_npixels=50, max_npixels=200, xsize=None, ysize=None):
 
     """
     This function ...
     :param nframes:
     :param min_npixels:
     :param max_npixels:
+    :param xsize:
+    :param ysize:
     :return:
     """
 
     frames = []
 
+    # Make nframes frames
     for _ in range(nframes):
 
-        xsize = int(np.random.uniform(min_npixels, max_npixels))
-        ysize = int(np.random.uniform(min_npixels, max_npixels))
-        shape = (ysize, xsize)
-
-        print(xsize, ysize)
+        # Determine shape
+        if xsize is None: xsize = int(np.random.uniform(min_npixels, max_npixels))
+        if ysize is None: ysize = int(np.random.uniform(min_npixels, max_npixels))
 
         # Create the random frame
-        frame = Frame.random(shape)
+        frame = make_random_frame(xsize, ysize)
 
         # Add the frame
         frames.append(frame)
@@ -125,7 +149,7 @@ def test_direct(figsize=(4,4), nframes=5):
             plot.axes.tick_params(axis='x', colors="white", direction="inout")
             plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
-            #plot.axes.set_axis_bgcolor("black")
+            #plot.axes.set_facecolor("black")
             #plot.axes.set_adjustable('box-forced')
 
             #im = np.arange(100)
@@ -171,33 +195,82 @@ def test_standard(nframes=5):
 
 # -----------------------------------------------------------------
 
-def test_residual(nframes=5, ngrids=2, max_nrows=3):
+def test_residual(nframes=5, ngrids=2, max_nrows=3, add_small=False, small_size=6, small_where="last",
+                  share_scale=True, scale_reference=None,
+                  share_scale_residuals=False, scale_residuals_reference=None, shape=None, adjust_grid=None,
+                  relative=True, absolute=False, distributions=False):
 
     """
     This function ...
     :param nframes:
     :param ngrids:
     :param max_nrows:
+    :param add_small:
+    :param small_size:
+    :param small_where:
+    :param share_scale:
+    :param scale_reference:
+    :param share_scale_residuals:
+    :param scale_residuals_reference:
+    :param shape:
+    :param adjust_grid:
+    :param relative:
+    :param absolute:
+    :param distributions:
     :return:
     """
 
+    # Same shape
+    if shape is not None: frames = make_random_frames(nframes, xsize=shape[1], ysize=shape[0])
+
     # Get frames
-    frames = make_random_frames(nframes)
+    elif add_small:
+
+        if small_where == "last":
+
+            frames = make_random_frames(nframes-1)
+            small_frame = make_random_frame(small_size)
+            frames.append(small_frame)
+
+        elif small_where == "first":
+
+            small_frame = make_random_frame(small_size)
+            frames = [small_frame]
+            frames.extend(make_random_frames(nframes-1))
+
+        else: raise ValueError("Invalid option for 'small_where'")
+
+    # Make all random frames
+    else: frames = make_random_frames(nframes)
 
     # Initialize the plotter
     plotter = ResidualImageGridPlotter()
-    #plotter.config.distributions = True
+    plotter.config.distributions = distributions
     plotter.config.max_nrows = max_nrows
     plotter.config.ngrids = ngrids
+
+    # Set scale references
+    plotter.config.share_scale = share_scale
+    plotter.config.scale_reference = scale_reference
+    plotter.config.share_scale_residuals = share_scale_residuals
+    plotter.config.scale_residuals_reference = scale_residuals_reference
+
+    plotter.config.adjust_grid = adjust_grid
+
+    plotter.config.relative = relative
+    plotter.config.absolute = absolute
 
     # Loop over the frames
     for index, frame in enumerate(frames):
 
         name = str(index)
 
+        # Show the shape of the image
+        #print(name, frame.xsize, frame.ysize)
+
         # Make observation and model frame
         observation = frame
-        model = frame * Frame.random_normal(frame.shape, mean=0.0, sigma=0.5)
+        model = frame + Frame.random_normal(frame.shape, mean=0.0, sigma=0.5)
 
         # Add row
         plotter.add_row(observation, model, name, with_residuals=True)
@@ -207,6 +280,12 @@ def test_residual(nframes=5, ngrids=2, max_nrows=3):
 
 # -----------------------------------------------------------------
 
-test_residual()
+#test_residual(add_small=True, small_where="first")
+#test_residual(add_small=True, small_where="last", share_scale_residuals=True, scale_residuals_reference="4", adjust_grid=True)
+#test_residual(add_small=True, small_where="last", adjust_grid=True)
+#test_residual(add_small=True, shape=(100,100), adjust_grid=True)
+
+test_residual(add_small=True, shape=(100,100), adjust_grid=True, relative=False, distributions=True)
+#test_residual(add_small=True, shape=(100,100), adjust_grid=True, relative=False)
 
 # -----------------------------------------------------------------

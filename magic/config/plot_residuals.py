@@ -95,6 +95,8 @@ definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
 definition.add_flag("background", "plot a background", True)
 
+definition.add_optional("residuals_interval", "string", "interval for residuals", "minmax")
+
 # -----------------------------------------------------------------
 
 definition.add_flag("weighed", "plot weighed residuals", None)
@@ -107,7 +109,9 @@ definition.add_flag("absolute", "show the residuals as absolute values", False)
 # Extra flags
 definition.add_flag("normalize", "normalize the images")
 definition.add_flag("share_scale", "share the scales of the images")
-definition.add_optional("scale_reference", "string", "name of the image to determine the scale for to use for the other images")
+definition.add_flag("share_scale_residuals", "share the scales of the residual maps")
+definition.add_optional("scale_reference", "string", "name of the row to determine the scale for to use for the other rows' images")
+definition.add_optional("scale_residuals_reference", "string", "name of the row to determine the scale of the residual map for to use for the other rows' residual maps")
 definition.add_flag("same_residuals_scale", "use the same scale for the residuals as for the observation and models")
 
 # -----------------------------------------------------------------
@@ -119,5 +123,17 @@ definition.add_flag("show", "show the plot (default is automatic)", None)
 
 # Add coordinates?
 definition.add_flag("coordinates", "show the coordinates", False)
+
+# -----------------------------------------------------------------
+
+# Adjust grid to images
+definition.add_flag("adjust_grid", "adjust the grid to the shape of the images", None)
+
+# Uniformize
+definition.add_flag("uniformize", "uniformize the rows", True)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("regions_on_residuals", "plot regions on residual maps", False)
 
 # -----------------------------------------------------------------

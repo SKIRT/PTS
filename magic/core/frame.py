@@ -4148,8 +4148,15 @@ class Frame(NDDataArray):
         # Check the unit
         original_unit = self._test_angular_or_intrinsic_area("downsampling", convert=convert)
 
+        # Set mode
+        #mode = "constant" # default
+        #mode = "nearest"
+        #mode = "reflect"
+        mode = "wrap"
+
         # Calculate the downsampled array
-        new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
+        zoom_factor = 1./factor
+        new_data = ndimage.interpolation.zoom(self._data, zoom=zoom_factor, order=order, mode=mode)
         new_xsize = new_data.shape[1]
         new_ysize = new_data.shape[0]
 
@@ -4159,10 +4166,6 @@ class Frame(NDDataArray):
 
         # No WCS
         else: nans, infs = self._downsample_masks(factor, new_xsize, new_ysize, nans, infs, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
-
-        #print(new_data.shape)
-        #if nans is not None: print(nans.data.shape)
-        #if infs is not None: print(infs.data.shape)
 
         # Apply masks
         if nans is not None: new_data[nans.data] = nan_value
@@ -4386,17 +4389,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def upsampled(self, factor, integers=False):
+    def upsampled(self, factor, order=3):
 
         """
         This function ...
         :param factor:
-        :param integers:
+        :param order:
         :return:
         """
 
         new = self.copy()
-        new.upsample(factor, integers)
+        new.upsample(factor, order=order)
         return new
 
     # -----------------------------------------------------------------
@@ -4470,20 +4473,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def upsample(self, factor, integers=False):
+    def upsample(self, factor, order=3):
 
         """
         This function ...
         :param factor:
-        :param integers:
+        :param order:
         :return:
         """
 
-        # Check if factor is 1.
-        if factor == 1: return
-
         # Just do inverse of downsample
-        else: self.downsample(factor)
+        self.downsample(1./factor, order=order)
 
     # -----------------------------------------------------------------
 
