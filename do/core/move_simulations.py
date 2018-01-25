@@ -35,6 +35,8 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("names", "string_list", "simulation names")
 definition.add_optional("remotes", "string_list", "remote hosts for which to look for matching simulations", default=host_ids, choices=host_ids)
 definition.add_flag("from_directories", "use directory names as simulation names")
+definition.add_optional("not_contains", "string_list", "ignore directories containing this string in their name")
+definition.add_optional("exact_not_name", "string_list", "ignore directories with these names")
 definition.add_optional("output", "directory_path", "output directory")
 definition.add_flag("per_host", "put the simulations in a separate subdirectory for each host")
 definition.add_flag("rename", "rename the simulation files to have the name of the simulation")
@@ -47,7 +49,7 @@ config = parse_arguments("move_simulations", definition, "Move the simulation ob
 # Set simulation names
 if config.from_directories:
     if config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
-    config.names = fs.directories_in_path(returns="name")
+    config.names = fs.directories_in_path(returns="name", not_contains=config.not_contains, exact_not_name=config.exact_not_name)
 
 # -----------------------------------------------------------------
 
