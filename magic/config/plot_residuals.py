@@ -95,7 +95,7 @@ definition.add_optional("scale", "string", "scaling", default_scale, scales)
 definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
 definition.add_flag("background", "plot a background", True)
-definition.add_optional("residuals_interval", "string", "interval for residuals", "minmax")
+definition.add_optional("residuals_interval", "string", "interval for residuals", "zscale") # other: minmax
 
 # -----------------------------------------------------------------
 
@@ -135,5 +135,11 @@ definition.add_flag("uniformize", "uniformize the rows", True)
 # -----------------------------------------------------------------
 
 definition.add_flag("regions_on_residuals", "plot regions on residual maps", False)
+
+# -----------------------------------------------------------------
+
+# Sigma-clipping
+definition.add_flag("sigma_clip_distributions", "use sigma-clipping on the residual values before creating distributions", True)
+definition.add_optional("sigma_clip_level", "positive_real", "sigma level for sigma clipping", 3.)
 
 # -----------------------------------------------------------------

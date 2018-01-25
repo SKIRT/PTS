@@ -3520,7 +3520,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             residuals = self.get_residuals(name)
 
             # Create the distribution
-            distribution = Distribution.from_data("Residual", residuals)
+            distribution = Distribution.from_data("Residual", residuals, sigma_clip=self.config.sigma_clip_distributions, sigma_level=self.config.sigma_clip_level)
 
             # Add the distribution
             self.distributions[name] = distribution
@@ -4596,6 +4596,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if vmin is not None and vmax is not None: x_limits = (vmin, vmax)
         elif (vmin is not None) or (vmax is not None): raise ValueError("Cannot specify only vmin or vmax")
         else: x_limits = None
+
+        print("x_limits", x_limits)
 
         # Plot the distribution
         image = plot_distribution(distribution, axes=plot.axes, colors=colors, x_limits=x_limits)

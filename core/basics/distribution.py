@@ -88,6 +88,8 @@ class Distribution(Curve):
         :return:
         """
 
+        from ..tools import numbers
+
         # Get the data
         if isinstance(data, np.ndarray): pass
         elif hasattr(data, "data"): data = data.data
@@ -98,6 +100,14 @@ class Distribution(Curve):
 
         # Get the finite values
         values = data[finite]
+
+        # Sigma clip
+        sigma_clip = kwargs.pop("sigma_clip", False)
+        if sigma_clip:
+            noriginal = len(values)
+            sigma_level = kwargs.pop("sigma_level", 3.)
+            values, nmasked = numbers.sigma_clip(values, sigma_level=sigma_level, return_nmasked=True)
+            print(str(nmasked) + " masked from " + str(noriginal))
 
         # Create the distribution
         return cls.from_values(name, values, **kwargs)

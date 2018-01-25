@@ -72,6 +72,9 @@ plotter.config.output = config.output
 
 #plotter.config.coordinates = True
 
+plotter.config.max_nrows = 3
+plotter.config.ngrids = 4
+
 # Write data
 plotter.config.write = config.write_data
 
