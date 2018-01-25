@@ -65,15 +65,15 @@ class SkiFile8:
 
             # Check
             if tree is not None: raise ValueError("Cannot define both filepath and tree")
-
-            if not filepath.lower().endswith((".ski","_parameters.xml")):
-                raise ValueError("Invalid filename extension for ski file")
+            if not filepath.lower().endswith((".ski","_parameters.xml")): raise ValueError("Invalid filename extension for ski file")
 
             # Set the path to the ski file
             self.path = os.path.expanduser(filepath)
 
             # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
-            self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
+            lines = arch.get_lines(self.path)
+            root = etree.fromstringlist(lines, parser=etree.XMLParser(remove_blank_text=True))
+            self.tree = etree.ElementTree(root)
 
             # Replace path by the full, absolute path
             self.path = os.path.abspath(self.path)

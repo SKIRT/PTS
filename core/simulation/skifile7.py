@@ -2485,7 +2485,10 @@ class SkiFile7:
             if alpha < Angle(0.0, "deg"): # alpha must be between 0 and 360 degrees
                 alpha = Angle(360., "deg") + alpha
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
-                alpha += Angle(180, "deg")
+                if alpha <= Angle(180, "deg"):# beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
+                    alpha += Angle(180, "deg")
+                elif alpha > Angle(180, "deg"):
+                    alpha = alpha - Angle(180, "deg")
                 beta = - beta
             if gamma < Angle(0.0,"deg"): # gamma must be between 0 and 360 degrees
                 gamma = Angle(360., "deg") + gamma
