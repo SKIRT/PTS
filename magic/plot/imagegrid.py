@@ -443,6 +443,19 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def use_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.coordinates is not None: return self.config.coordinates
+        else: return self.all_have_wcs
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -463,7 +476,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        if self.config.coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        if self.use_coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
         else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
 
         # Sort the frames on filter
@@ -480,6 +493,32 @@ class StandardImageGridPlotter(ImageGridPlotter):
         """
 
         return self.frames[name].wcs
+
+    # -----------------------------------------------------------------
+
+    def has_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_wcs(name) is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_have_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if not self.has_wcs(name): return False
+        return True
 
     # -----------------------------------------------------------------
 
@@ -2462,6 +2501,19 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def use_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.coordinates is not None: return self.config.coordinates
+        else: return self.all_have_wcs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def projections(self):
 
         """
@@ -2470,7 +2522,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Don't plot based on the coordinates
-        if not self.config.coordinates: return None
+        if not self.use_coordinates: return None
 
         # Initialize list structure
         projections = sequences.create_nested_3d(self.config.ngrids, self.max_nrows_per_grid, self.ncolumns)
@@ -2501,7 +2553,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         #return False
-        return self.config.coordinates
+        return self.use_coordinates
 
     # -----------------------------------------------------------------
 
@@ -2514,7 +2566,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         #return False
-        return self.config.coordinates
+        return self.use_coordinates
 
     # -----------------------------------------------------------------
 
@@ -2560,7 +2612,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if not self.config.relative and self.config.normalize: raise ValueError("Cannot plot the actual (not relative) values of the residuals when normalizing the frames is enabled")
 
         # Other check
-        if self.config.share_scale_residuals and (self.config.same_residuals_scale and not self.config.share_scale): raise ValueError("Cannot share scales between residual maps and images, while also sharing the scale between the different residual maps, while the scales of the different images are not shared")
+        #if self.config.share_scale_residuals and (self.config.same_residuals_scale and not self.config.share_scale): raise ValueError("Cannot share scales between residual maps and images, while also sharing the scale between the different residual maps, while the scales of the different images are not shared")
 
         # Load the images
         if self.no_rows:
@@ -2853,6 +2905,33 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         else:
             if model.wcs != observation.wcs: raise ValueError("Inconsistent coordinate systems for '" + name + "' row")
             return observation.wcs
+
+    # -----------------------------------------------------------------
+
+    def has_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_wcs(name) is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_have_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for name in self.names:
+            if not self.has_wcs(name): return False
+        return True
 
     # -----------------------------------------------------------------
 
@@ -3876,12 +3955,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Plot the model, on the same scale
         self.plot_model(name, index, vmin=vmin_observation, vmax=vmax_observation, set_minmax=False)
 
-        # Determine residuals scale
-        if self.config.same_residuals_scale: vmin_res, vmax_res = vmin_observation, vmax_observation
-        else: vmin_res = vmax_res = None
+        # Determine residuals scale # NO, WHY WOULD WE SHOW THE RESIDUALS ON THE SCALE OF THE IMAGES?
+        #if self.config.same_residuals_scale: vmin_res, vmax_res = vmin_observation, vmax_observation
+        #else: vmin_res = vmax_res = None
 
         # Plot the residuals
-        if self.do_residuals(name): vmin_res, vmax_res, res_image, res_normalization = self.plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
+        if self.do_residuals(name): vmin_res, vmax_res, res_image, res_normalization = self.plot_residuals(name, index) # vmin=vmin_res, vmax=vmax_res)
         else: vmin_res = vmax_res = res_image = res_normalization = None
 
         # Plot the distribution
@@ -4235,7 +4314,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         #aspect = (1., 1.)
         #aspect = "equal"
         #aspect = "auto"
-        if self.config.coordinates: aspect = "auto"
+        if self.use_coordinates: aspect = "auto"
         else: aspect = "equal"
 
         # Determine the scale
@@ -4301,7 +4380,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 residuals[mask] = nan
 
         #aspect = "equal"
-        if self.config.coordinates: aspect = "auto"
+        if self.use_coordinates: aspect = "auto"
         else: aspect = "equal"
 
         # Set interval
@@ -4333,7 +4412,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                                                                          around_zero=around_zero, symmetric=symmetric,
                                                                          check_around_zero=False)
 
-        print("limits res", vmin_image, vmax_image)
+        #print("limits res", vmin_image, vmax_image)
 
         # Add region if present
         if self.config.regions_on_residuals:

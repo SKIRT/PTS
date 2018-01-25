@@ -106,6 +106,6 @@ definition.add_flag("show", "show the plot (default is automatic)", None)
 # -----------------------------------------------------------------
 
 # Add coordinates?
-definition.add_flag("coordinates", "show the coordinates", True)
+definition.add_flag("coordinates", "plot using coordinates (by default, is determined by whether the images have coordinate systems)", None)
 
 # -----------------------------------------------------------------

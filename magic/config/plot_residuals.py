@@ -112,7 +112,7 @@ definition.add_flag("share_scale", "share the scales of the images")
 definition.add_flag("share_scale_residuals", "share the scales of the residual maps")
 definition.add_optional("scale_reference", "string", "name of the row to determine the scale for to use for the other rows' images")
 definition.add_optional("scale_residuals_reference", "string", "name of the row to determine the scale of the residual map for to use for the other rows' residual maps")
-definition.add_flag("same_residuals_scale", "use the same scale for the residuals as for the observation and models")
+#definition.add_flag("same_residuals_scale", "use the same scale for the residuals as for the observation and models")
 
 # -----------------------------------------------------------------
 
@@ -122,7 +122,7 @@ definition.add_flag("show", "show the plot (default is automatic)", None)
 # -----------------------------------------------------------------
 
 # Add coordinates?
-definition.add_flag("coordinates", "show the coordinates", False)
+definition.add_flag("coordinates", "show the coordinates (by default, is determined by whether the images have coordinate systems)", None)
 
 # -----------------------------------------------------------------
 

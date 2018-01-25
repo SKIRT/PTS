@@ -70,7 +70,7 @@ plotter.config.output = config.output
 #    plotter.config.scale_reference = config.share_scale_with
 #plotter.config.colormap = config.colormap
 
-plotter.config.coordinates = True
+#plotter.config.coordinates = True
 
 # Write data
 plotter.config.write = config.write_data
@@ -98,7 +98,7 @@ for path, name in fs.files_in_cwd(extension="fits", returns=["path", "name"]):
     reference = Frame.from_file(reference_path)
 
     # Add row
-    plotter.add_row(frame, reference, filter_name)
+    plotter.add_row(reference, frame, filter_name)
 
 # -----------------------------------------------------------------
 
