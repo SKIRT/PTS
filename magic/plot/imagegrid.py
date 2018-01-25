@@ -3857,6 +3857,15 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Debugging
         log.debug("Adding the '" + name + "' row to the plot ...")
 
+        # Get properties
+        unit = self.get_unit(name)
+        xsize = self.get_xsize(name)
+        ysize = self.get_ysize(name)
+
+        # Debugging
+        log.debug("Dimensions of row images: " + str(xsize) + " x " + str(ysize))
+        log.debug("Unit of row: " + str(unit))
+
         # Determine image scale
         if self.config.share_scale: vmin, vmax = self._vmin, self._vmax
         else: vmin = vmax = None
@@ -3872,10 +3881,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         else: vmin_res = vmax_res = None
 
         # Plot the residuals
-        if self.do_residuals(name): self.plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
+        if self.do_residuals(name): vmin_res, vmax_res, res_image, res_normalization = self.plot_residuals(name, index, vmin=vmin_res, vmax=vmax_res)
+        else: vmin_res = vmax_res = res_image = res_normalization = None
 
         # Plot the distribution
-        if self.config.distributions: self.plot_distribution(name, index)
+        if self.config.distributions: self.plot_distribution(name, index, vmin=vmin_res, vmax=vmax_res)
 
         # Plot the colorbar of the residual
         # if self.share_residuals_colorbars: pass
@@ -4223,8 +4233,10 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         #else: aspect = "equal"
         #aspect = (1., 1.)
-        aspect = "equal"
+        #aspect = "equal"
         #aspect = "auto"
+        if self.config.coordinates: aspect = "auto"
+        else: aspect = "equal"
 
         # Determine the scale
         if scale is None: scale = self.config.scale # take the configured default when none is passed
@@ -4280,7 +4292,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         plot.axes.tick_params(axis='y', colors="white", direction="inout")
 
         # Set background color: otherwise NaNs are not plotted (-> white/transparent)
-        if self.config.background: plot.axes.set_facecolor(self.residuals_background_color)
+        #if self.config.background: plot.axes.set_facecolor(self.residuals_background_color)
 
         # Add mask if present
         if self.has_masks_for_row(name):
@@ -4288,7 +4300,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 mask = self.get_mask(name, label)
                 residuals[mask] = nan
 
-        aspect = "equal"
+        #aspect = "equal"
+        if self.config.coordinates: aspect = "auto"
+        else: aspect = "equal"
 
         # Set interval
         if vmin is not None and vmax is not None: interval = [vmin, vmax]
@@ -4305,6 +4319,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if self.config.absolute: around_zero = symmetric = False
         else: around_zero = symmetric = True
 
+        #print("interval", interval)
+        #print("scale", scale)
+        #print("colormap", colormap)
+        #print("around_zero", around_zero)
+        #print("symmetric", symmetric)
+
         # Plot
         vmin_image, vmax_image, image, normalization = plotting.plot_box(residuals.data, axes=plot.axes, interval=interval,
                                                                          scale=scale, cmap=colormap,
@@ -4312,6 +4332,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                                                                          return_normalization=True, aspect=aspect,
                                                                          around_zero=around_zero, symmetric=symmetric,
                                                                          check_around_zero=False)
+
+        print("limits res", vmin_image, vmax_image)
 
         # Add region if present
         if self.config.regions_on_residuals:
@@ -4422,6 +4444,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Set the vmin and vmax if necessary
         if vmin is None and vmax is None and self.config.share_scale_residuals: vmin, vmax = self._vmin_res, self._vmax_res
 
+        #print(vmin, vmax)
+
         # Plot
         vmin_image, vmax_image, image, normalization = self._plot_residuals(name, residuals, index, residuals_index, vmin=vmin, vmax=vmax)
 
@@ -4443,12 +4467,14 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def plot_distribution(self, name, index):
+    def plot_distribution(self, name, index, vmin=None, vmax=None):
 
         """
         This function ...
         :param name:
         :param index:
+        :param vmin:
+        :param vmax:
         :return:
         """
 
@@ -4487,8 +4513,13 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             #print(hex)
             colors.append(hex)
 
+        # Set distribution x limits
+        if vmin is not None and vmax is not None: x_limits = (vmin, vmax)
+        elif (vmin is not None) or (vmax is not None): raise ValueError("Cannot specify only vmin or vmax")
+        else: x_limits = None
+
         # Plot the distribution
-        image = plot_distribution(distribution, axes=plot.axes, colors=colors)
+        image = plot_distribution(distribution, axes=plot.axes, colors=colors, x_limits=x_limits)
 
         # Set the image
         self._distribution_images[index] = image

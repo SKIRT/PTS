@@ -95,7 +95,6 @@ definition.add_optional("scale", "string", "scaling", default_scale, scales)
 definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
 definition.add_flag("background", "plot a background", True)
-
 definition.add_optional("residuals_interval", "string", "interval for residuals", "minmax")
 
 # -----------------------------------------------------------------
