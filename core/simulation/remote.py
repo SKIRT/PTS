@@ -82,6 +82,38 @@ def get_simulation_for_host(host_id, simulation_id):
 
 # -----------------------------------------------------------------
 
+def get_simulation_paths_for_host(host_id, as_dict=False, names=None):
+
+    """
+    This function ...
+    :param host_id:
+    :param as_dict:
+    :param names:
+    :return:
+    """
+
+    # Names are specified or we have to return as dict
+    if names is not None or as_dict:
+
+        # Get simulation objects, already filter on host
+        simulations = get_simulations_for_host(host_id, names=names)
+        nsimulations = len(simulations)
+
+        # As dictionary
+        if as_dict:
+
+            dictionary = OrderedDict((simulation.name, simulation.path) for simulation in simulations)
+            if len(dictionary) < nsimulations: raise ValueError("Something went wrong: simulation names not unique")
+            return dictionary
+
+        # Return the list of paths
+        else: return [simulation.path for simulation in simulations]
+
+    # No filtering on names is necessary, nor putting into dictionary: just return the list of paths
+    else: return [get_simulation_path_for_host(host_id, simulation_id) for simulation_id in introspection.simulation_ids_for_host(host_id)]
+
+# -----------------------------------------------------------------
+
 def get_simulations_for_host(host_id, as_dict=False, names=None):
 
     """
