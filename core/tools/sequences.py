@@ -19,6 +19,35 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def create_nested_2d(ni, nj, fill=None):
+
+    """
+    This function ...
+    :param ni:
+    :param nj:
+    :param fill:
+    :return:
+    """
+
+    return [[ fill for j in range(nj) ] for i in range(ni) ]
+
+# -----------------------------------------------------------------
+
+def create_nested_3d(ni, nj, nk, fill=None):
+
+    """
+    This function ...
+    :param ni:
+    :param nj:
+    :param nk:
+    :param fill:
+    :return:
+    """
+
+    return [[[ fill for k in range(nk) ] for j in range(nj) ] for i in range(ni) ]
+
+# -----------------------------------------------------------------
+
 def ordered(sequence):
 
     """

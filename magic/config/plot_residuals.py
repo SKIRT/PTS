@@ -78,6 +78,7 @@ definition.sections["plot"].optional["ysize"].default = 3
 
 # The plotting library to use
 definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)
+definition.add_flag("aplpy", "use the APLpy package", False)
 
 # -----------------------------------------------------------------
 

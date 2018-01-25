@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from textwrap import wrap
 from matplotlib.ticker import FormatStrFormatter
-import matplotlib.gridspec as gridspec
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoLocator, NullLocator
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -1978,12 +1978,22 @@ class MPLFigure(Figure):
 
         # Setup the figure
         self.figure = plt.figure(figsize=size)
-        plt.clf()
-        self.ax = self.figure.gca()
 
         # Properties
         self.transparent = False
         self.format = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.figure.gca()
 
     # -----------------------------------------------------------------
 
@@ -2001,7 +2011,7 @@ class MPLFigure(Figure):
 
     def create_column(self, size, share_axis=False, height_ratios=None, x_label=None, x_label_fontsize="small",
                       x_labels=None, y_labels=None, y_label_fontsize="small", x_scale="linear", x_scales=None, y_scales=None,
-                      x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False):
+                      x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False, projections=None):
 
         """
         This function ...
@@ -2020,6 +2030,7 @@ class MPLFigure(Figure):
         :param y_limits:
         :param x_log_scalar:
         :param y_log_scalar:
+        :param projections:
         :return:
         """
 
@@ -2029,7 +2040,7 @@ class MPLFigure(Figure):
         else: hspace = 0.05
 
         # Make the grid
-        gs = gridspec.GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace)
+        gs = GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace, wspace=wspace)
 
         # Create the (sub)plots
         plots = []
@@ -2038,7 +2049,12 @@ class MPLFigure(Figure):
             if x_labels is not None: raise ValueError("Cannot specify different x labels when sharing axis")
             if x_scales is not None: raise ValueError("Cannot specify different x scales when sharing axis")
 
-            first_mpl_plot = plt.subplot(gs[0])
+            # Get first projection
+            if projections is not None: projection = projections[0]
+            else: projection = None
+
+            # Create first plot
+            first_mpl_plot = self.figure.add_subplot(gs[0], projection=projection)
             first_plot = MPLPlot(plot=first_mpl_plot)
 
             if y_labels is not None:
@@ -2076,7 +2092,12 @@ class MPLFigure(Figure):
             # Create next plots
             for index in range(1, size):
 
-                next_plot = plt.subplot(gs[index], sharex=first_mpl_plot)
+                # Get projection
+                if projections is not None: projection = projections[index]
+                else: projection = None
+
+                # Create next plot
+                next_plot = self.figure.add_subplot(gs[index], sharex=first_mpl_plot, projection=projection)
                 next_plot = MPLPlot(plot=next_plot)
 
                 # Set y label
@@ -2117,8 +2138,13 @@ class MPLFigure(Figure):
             # Create plots
             for index in range(size):
 
+                # Get projection
+                if projections is not None: projection = projections[index]
+                else: projection = None
+
                 # Get plot
-                plot = plt.subplot(gs[index])
+                plot = self.figure.add_subplot(gs[index], projection=projection)
+                plot = MPLPlot(plot=plot)
 
                 if x_labels is not None:
                     label = x_labels[index]
@@ -2153,7 +2179,7 @@ class MPLFigure(Figure):
                     plot.set_ylim(*limits)
 
                 # Add the plot
-                plots.append(MPLPlot(plot=plot))
+                plots.append(plot)
 
         # Return the plots
         return plots
@@ -2162,7 +2188,8 @@ class MPLFigure(Figure):
 
     def create_row(self, size, share_axis=False, width_ratios=None, y_label=None, y_label_fontsize="small",
                    y_labels=None, x_labels=None, x_label_fontsize="small", y_scale="linear", y_scales=None,
-                   x_scales=None, y_limits=None, x_limits=None, y_log_scalar=False, x_log_scalar=False):
+                   x_scales=None, y_limits=None, x_limits=None, y_log_scalar=False, x_log_scalar=False,
+                   projections=None):
 
         """
         This function ...
@@ -2181,6 +2208,7 @@ class MPLFigure(Figure):
         :param x_limits:
         :param y_log_scalar:
         :param x_log_scalar:
+        :param projections:
         :return:
         """
 
@@ -2189,7 +2217,7 @@ class MPLFigure(Figure):
         else: wspace = 0.05
 
         # Make the grid
-        gs = gridspec.GridSpec(1, size, width_ratios=width_ratios, wspace=wspace)
+        gs = GridSpec(1, size, width_ratios=width_ratios, wspace=wspace)
 
         # Create the (sub)plots
         plots = []
@@ -2198,7 +2226,12 @@ class MPLFigure(Figure):
             if y_labels is not None: raise ValueError("Cannot specify different y labels when sharing axis")
             if y_scales is not None: raise ValueError("Cannot specify different y scales when sharing axis")
 
-            first_mpl_plot = plt.subplot(gs[0])
+            # Get the first projection
+            if projections is not None: projection = projections[0]
+            else: projection = None
+
+            # Create the first plot
+            first_mpl_plot = self.figure.add_subplot(gs[0], projection=projection)
             first_plot = MPLPlot(plot=first_mpl_plot)
 
             if x_labels is not None:
@@ -2237,7 +2270,12 @@ class MPLFigure(Figure):
             # Create next plots
             for index in range(1, size):
 
-                next_plot = plt.subplot(gs[index], sharey=first_mpl_plot)
+                # Get the next projection
+                if projections is not None: projection = projections[index]
+                else: projection = None
+
+                # Create the next plot
+                next_plot = self.figure.add_subplot(gs[index], sharey=first_mpl_plot, projection=projection)
                 next_plot = MPLPlot(plot=next_plot)
 
                 # Set x label
@@ -2275,8 +2313,13 @@ class MPLFigure(Figure):
             # Create plots
             for index in range(size):
 
+                # Get projection
+                if projections is not None: projection = projections[index]
+                else: projection = None
+
                 # Get plot
-                plot = plt.subplot(gs[index])
+                plot = self.figure.add_subplot(gs[index], projection=projection)
+                plot = MPLPlot(plot=plot)
 
                 if y_labels is not None:
                     label = y_labels[index]
@@ -2311,24 +2354,10 @@ class MPLFigure(Figure):
                     plot.set_xlim(*limits)
 
                 # Add the plot
-                plots.append(MPLPlot(plot=plot))
+                plots.append(plot)
 
         # Return the plots
         return plots
-
-    # -----------------------------------------------------------------
-
-    def create_row_of_grids(self, nrows, ncols, ngrids, wspace=0.0, hspace=0.0):
-
-        """
-        This functino ...
-        :param nrows:
-        :param ncols:
-        :param ngrids:
-        :param wspace:
-        :param hspace:
-        :return:
-        """
 
     # -----------------------------------------------------------------
 
@@ -2389,31 +2418,6 @@ class MPLFigure(Figure):
                              axes_class=axes_class, label_mode=label_mode, share_all=share_all)
             grids.append(grid)
 
-            # Add the colorbars
-            #if share_colorbars:
-                #print(grid.cbar_axes)
-                #if len(grid.cbar_axes) > 1: raise RuntimeError("Something went wrong")
-            #    colorbar = grid.cbar_axes[0] # underneath, each separate panel has its own cbar axes reference
-            #    colorbars.append(colorbar)
-            #else:
-                #colorbars.extend(grid.cbar_axes) # underneath, each separate panel has its own cbar axes reference
-            #    colorbars_cols = []
-            #    for col_index in range(ncols):
-            #        colorbar_index = col_index * nrows
-            #        colorbars_col = grid.cbar_axes[colorbar_index:colorbar_index+nrows]
-            #        colorbars_cols.append(colorbars_col)
-            #    colorbars_last_col = colorbars_cols[-1]
-            #    colorbars.extend(colorbars_last_col)
-            #    #colorbars.extend(colorbars_cols)
-            #    #for row_index in range(nrows):
-            #        #colorbar_index =
-
-            #print(index, "ncolb", len(colorbars))
-
-        #ncolorbars = len(colorbars)
-        #print("ncolorbars", ncolorbars)
-        #print(colorbars)
-
         # Initialize structure to contain the plots
         plots = [[[None for i in range(ncols)] for j in range(nrows)] for k in range(ngrids)]
 
@@ -2437,7 +2441,7 @@ class MPLFigure(Figure):
 
                     # last column
                     if col == ncols-1:
-                        #ax._sharex = None
+                        ax._sharex = None
                         #ax._shared_x_axes = cbook.Grouper()
                         #ax._adjustable = 'box'
                         ax._sharey = None
@@ -2626,83 +2630,694 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_grid(self, nrows, ncols, wspace=0.0, hspace=0.0):
+    def create_row_of_grids(self, nrows, ncols, ngrids, width_ratios=None, height_ratios=None, sharex=False, sharey=False,
+                            projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None, last_row_not_shared_x=None,
+                            last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
+                            last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
+                            columns_shared_x=None, columns_shared_y=None, share_per_row=True, share_per_column=True):
 
         """
         This function ...
         :param nrows:
         :param ncols:
-        :param wspace:
-        :param hspace:
+        :param ngrids:
+        :param width_ratios:
+        :param height_ratios:
+        :param sharex:
+        :param sharey:
+        :param projections:
+        :param first_row_not_shared_x:
+        :param first_row_not_shared_y:
+        :param last_row_not_shared_x:
+        :param last_row_not_shared_y:
+        :param first_column_not_shared_x:
+        :param first_column_not_shared_y:
+        :param last_column_not_shared_x:
+        :param last_column_not_shared_y:
+        :param rows_shared_x:
+        :param rows_shared_y:
+        :param columns_shared_x:
+        :param columns_shared_y:
+        :param share_per_row:
+        :param share_per_column:
         :return:
         """
 
-        # def standard_setup(sp):
-        #     sp.set_frame_color('black')
-        #     sp.set_tick_labels_font(size='10')
-        #     sp.set_axis_labels_font(size='12')
-        #     # sp.set_tick_labels_format(xformat='hh:mm',yformat='dd:mm')
-        #     sp.set_xaxis_coord_type('scalar')
-        #     sp.set_yaxis_coord_type('scalar')
-        #     sp.set_tick_color('black')
-        #     sp.recenter(x=0.0, y=0.0, width=3., height=0.6)
-        #     sp.set_tick_xspacing(0.4)
-        #     sp.set_tick_yspacing(0.25)
-        #     sp.set_system_latex(True)
-        #     sp.tick_labels.hide()
-        #     sp.axis_labels.hide()
+        # The main grid spec
+        main = GridSpec(1, ngrids)
 
-        # Create grid
-        # self._grid = AxesGrid(self._figure, 111,
-        #                      nrows_ncols=(nrows, self.ncols),
-        #                      axes_pad=0.0,
-        #                      label_mode="L",
-        #                      #share_all=True,
-        #                      share_all=False,
-        #                      cbar_location="right",
-        #                      cbar_mode="single",
-        #                      cbar_size="0.5%",
-        #                      cbar_pad="0.5%")  # cbar_mode="single"
+        # Initialize a list for the plots
+        plots = []
 
-        # Create the figure
-        #self._figure = plt.figure(figsize=(self.width, height))
-        #self._figure.subplots_adjust(hspace=0.0, wspace=0.0)
+        # Create the grids
+        for index in range(ngrids):
 
-        #self._figure.text(0.385, 0.97, "Offset from centre (degrees)", color='black', size='16', weight='bold')
-        #self._figure.text(0.02, 0.615, "Offset from centre (degrees)", color='black', size='16', weight='bold', rotation='vertical')
+            # Get the projections
+            if projections is not None: projections_grid = projections[index]
+            else: projections_grid = None
 
-        width_ratios = [1] * ncols
-        height_ratios = [1] * nrows
+            # Create the grid
+            grid_plots = self.create_grid(nrows, ncols, projections=projections_grid, subplotspec=main[index],
+                                          width_ratios=width_ratios, height_ratios=height_ratios, sharex=sharex, sharey=sharey,
+                                          first_row_not_shared_x=first_row_not_shared_x, first_row_not_shared_y=first_row_not_shared_y,
+                                          last_row_not_shared_x=last_row_not_shared_x, last_row_not_shared_y=last_row_not_shared_y,
+                                          first_column_not_shared_x=first_column_not_shared_x, first_column_not_shared_y=first_column_not_shared_y,
+                                          last_column_not_shared_x=last_column_not_shared_x, last_column_not_shared_y=last_column_not_shared_y,
+                                          rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y, columns_shared_x=columns_shared_x,
+                                          columns_shared_y=columns_shared_y, share_per_row=share_per_row, share_per_column=share_per_column)
+
+            # Add the plots
+            plots.append(grid_plots)
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def create_column_of_grids(self, nrows, ncols, ngrids, width_ratios=None, height_ratios=None, sharex=False, sharey=False,
+                            projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None, last_row_not_shared_x=None,
+                            last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
+                            last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
+                            columns_shared_x=None, columns_shared_y=None, share_per_row=True, share_per_column=True):
+
+        """
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param ngrids:
+        :param width_ratios:
+        :param height_ratios:
+        :param sharex:
+        :param sharey:
+        :param projections:
+        :param first_row_not_shared_x:
+        :param first_row_not_shared_y:
+        :param last_row_not_shared_x:
+        :param last_row_not_shared_y:
+        :param first_column_not_shared_x:
+        :param first_column_not_shared_y:
+        :param last_column_not_shared_x:
+        :param last_column_not_shared_y:
+        :param rows_shared_x:
+        :param rows_shared_y:
+        :param columns_shared_x:
+        :param columns_shared_y:
+        :param share_per_row:
+        :param share_per_column:
+        :return:
+        """
+
+        # The main grid spec
+        main = GridSpec(ngrids, 1)
+
+        # Initialize a list for the plots
+        plots = []
+
+        # Create the grids
+        for index in range(ngrids):
+
+            # Get the projections
+            if projections is not None: projections_grid = projections[index]
+            else: projections_grid = None
+
+            # Create the grid
+            grid_plots = self.create_grid(nrows, ncols, projections=projections_grid, subplotspec=main[index],
+                                          width_ratios=width_ratios, height_ratios=height_ratios, sharex=sharex, sharey=sharey,
+                                          first_row_not_shared_x=first_row_not_shared_x, first_row_not_shared_y=first_row_not_shared_y,
+                                          last_row_not_shared_x=last_row_not_shared_x, last_row_not_shared_y=last_row_not_shared_y,
+                                          first_column_not_shared_x=first_column_not_shared_x, first_column_not_shared_y=first_column_not_shared_y,
+                                          last_column_not_shared_x=last_column_not_shared_x, last_column_not_shared_y=last_column_not_shared_y,
+                                          rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y, columns_shared_x=columns_shared_x,
+                                          columns_shared_y=columns_shared_y, share_per_row=share_per_row, share_per_column=share_per_column)
+
+            # Add the plots
+            plots.append(grid_plots)
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def create_grid(self, nrows, ncols, width_ratios=None, height_ratios=None, sharex=False, sharey=False,
+                    projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None, last_row_not_shared_x=None,
+                    last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
+                    last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
+                    columns_shared_x=None, columns_shared_y=None, subplotspec=None, share_per_row=True, share_per_column=True):
+
+        """
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param width_ratios:
+        :param height_ratios:
+        :param sharex:
+        :param sharey:
+        :param projections:
+        :param first_row_not_shared_x: flag
+        :param first_row_not_shared_y: flag
+        :param last_row_not_shared_x: flag
+        :param last_row_not_shared_y: flag
+        :param first_column_not_shared_x: flag
+        :param first_column_not_shared_y: flag
+        :param last_column_not_shared_x: flag
+        :param last_column_not_shared_y: flag
+        :param rows_shared_x:
+        :param rows_shared_y:
+        :param columns_shared_x:
+        :param columns_shared_y:
+        :param subplotspec:
+        :param share_per_row: share only the y axes per row
+        :param share_per_column: share only the x axes per column
+        :return:
+        """
+
+        # Define wspace
+        if sharey: wspace = 0.0
+        else: wspace = 0.05
+
+        # Define hspace
+        if sharex: hspace = 0.0
+        else: hspace = 0.05
+
+        # Set width and height ratios
+        if width_ratios is None: width_ratios = [1] * ncols
+        if height_ratios is None: height_ratios = [1] * nrows
+
+        # Set list of shared x flags for rows
+        if rows_shared_x is None:
+            rows_shared_x = []
+            for row in range(nrows):
+                if row == 0 and first_row_not_shared_x: shared = False
+                elif row == nrows - 1 and last_row_not_shared_x: shared = False
+                else: shared = sharex
+                rows_shared_x.append(shared)
+        elif first_row_not_shared_x is not None or last_row_not_shared_x is not None: raise ValueError("Cannot specify first_row_not_shared_x or last_row_not_shared_x")
+
+        # Set list of shared y flags for rows
+        if rows_shared_y is None:
+            rows_shared_y = []
+            for row in range(nrows):
+                if row == 0 and first_row_not_shared_y: shared = False
+                elif row == nrows - 1 and last_row_not_shared_y: shared = False
+                else: shared = sharey
+                rows_shared_y.append(shared)
+        elif first_row_not_shared_y is not None or last_row_not_shared_y is not None: raise ValueError("Cannot specify first_row_not_shared_y or last_row_not_shared_y")
+
+        # Set list of shared x flags for columns
+        if columns_shared_x is None:
+            columns_shared_x = []
+            for col in range(ncols):
+                if col == 0 and first_column_not_shared_x: shared = False
+                elif col == ncols - 1 and last_column_not_shared_x: shared = False
+                else: shared = sharex
+                columns_shared_x.append(shared)
+        elif first_column_not_shared_x is not None or last_column_not_shared_x is not None: raise ValueError("Cannot specify first_column_not_shared_x or last_column_not_shared_x")
+
+        # Set list of shared y flags for columns
+        if columns_shared_y is None:
+            columns_shared_y = []
+            for col in range(ncols):
+                if col == 0 and first_column_not_shared_y: shared = False
+                elif col == ncols - 1 and last_column_not_shared_y: shared = False
+                else: shared = sharey
+                columns_shared_y.append(shared)
+        elif first_column_not_shared_y is not None or last_column_not_shared_y is not None: raise ValueError("Cannot specify first_column_not_shared_y or last_column_not_shared_y")
 
         # Create grid spec
-        gs = gridspec.GridSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios)
+        if subplotspec is not None: grid = GridSpecFromSubplotSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios, subplot_spec=subplotspec)
+        else: grid = GridSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios)
+
+        # Both axes are shared
+        if sharex and sharey: plots = self._create_grid_shared(grid, nrows, ncols, projections=projections,
+                                                               rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y,
+                                                               columns_shared_x=columns_shared_x, columns_shared_y=columns_shared_y,
+                                                               share_per_row=share_per_row, share_per_column=share_per_column)
+
+        # Only x axis is shared
+        elif sharex: plots = self._create_grid_shared_x(grid, nrows, ncols, projections=projections)
+
+        # Only y axis is shared
+        elif sharey: plots = self._create_grid_shared_y(grid, nrows, ncols, projections=projections)
+
+        # No axes are shared
+        else: plots = self._create_grid_not_shared(grid, nrows, ncols, projections=projections)
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_plot_shared(self, grid, row, col, sharex, sharey, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param row:
+        :param col:
+        :param sharex:
+        :param sharey:
+        :param projections:
+        :return:
+        """
+
+        # Get the grid spec
+        rect = grid[row, col]
+
+        # Get the projection
+        if projections is not None: projection = projections[row][col]
+        else: projection = None
+
+        # Create and return the plot
+        return self._create_plot_shared(rect, sharex, sharey, projection=projection)
+
+    # -----------------------------------------------------------------
+
+    def _create_plot_shared(self, rect, sharex, sharey, projection=None):
+
+        """
+        This function ...
+        :param rect:
+        :param sharex:
+        :param sharey:
+        :param projection:
+        :return:
+        """
+
+        # Get the axes
+        plot = self.figure.add_subplot(rect, projection=projection, sharex=sharex, sharey=sharey)
+
+        # Create plot
+        plot = MPLPlot(plot=plot)
+
+        # Return the plot
+        return plot
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_plot_shared_x(self, grid, row, col, sharex, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param row:
+        :param col:
+        :param sharex:
+        :param projections:
+        :return:
+        """
+
+        # Get the grid spec
+        rect = grid[row, col]
+
+        # Get the projection
+        if projections is not None: projection = projections[row][col]
+        else: projection = None
+
+        # Create and return the plot
+        return self._create_plot_shared_x(rect, sharex, projection=projection)
+
+    # -----------------------------------------------------------------
+
+    def _create_plot_shared_x(self, rect, sharex, projection=None):
+
+        """
+        This function ...
+        :param rect:
+        :param sharex:
+        :param projection:
+        :return:
+        """
+
+        # Get the axes
+        plot = self.figure.add_subplot(rect, projection=projection, sharex=sharex)
+
+        # Create plot
+        plot = MPLPlot(plot=plot)
+
+        # Return the plot
+        return plot
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_plot_shared_y(self, grid, row, col, sharey, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param row:
+        :param col:
+        :param sharey:
+        :param projections:
+        :return:
+        """
+
+        # Get the grid spec
+        rect = grid[row, col]
+
+        # Get the projection
+        if projections is not None: projection = projections[row][col]
+        else: projection = None
+
+        # Create and return the plot
+        return self._create_plot_shared_y(rect, sharey, projection=projection)
+
+    # -----------------------------------------------------------------
+
+    def _create_plot_shared_y(self, rect, sharey, projection=None):
+
+        """
+        This function ...
+        :param rect:
+        :param sharey:
+        :param projection:
+        :return:
+        """
+
+        # Get the axes
+        plot = self.figure.add_subplot(rect, projection=projection, sharey=sharey)
+
+        # Create plot
+        plot = MPLPlot(plot=plot)
+
+        # Return the plot
+        return plot
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_plot_not_shared(self, grid, row, col, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param row:
+        :param col:
+        :param projections:
+        :return:
+        """
+
+        # Get the grid spec
+        rect = grid[row, col]
+
+        # Get the projection
+        if projections is not None: projection = projections[row][col]
+        else: projection = None
+
+        # Create and return the plot
+        return self._create_plot_not_shared(rect, projection=projection)
+
+    # -----------------------------------------------------------------
+
+    def _create_plot_not_shared(self, rect, projection=None):
+
+        """
+        This function ...
+        :param rect:
+        :param projection:
+        :return:
+        """
+
+        # Get the axes
+        plot = self.figure.add_subplot(rect, projection=projection)
+
+        # Create plot
+        plot = MPLPlot(plot=plot)
+
+        # Return the plot
+        return plot
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_shared(self, grid, nrows, ncols, projections=None, rows_shared_x=None, rows_shared_y=None,
+                            columns_shared_x=None, columns_shared_y=None, share_per_row=True, share_per_column=True):
+
+        """
+        This function ...
+        :param grid:
+        :param nrows:
+        :param ncols:
+        :param projections:
+        :param rows_shared_x:
+        :param rows_shared_y:
+        :param columns_shared_x:
+        :param columns_shared_y:
+        :param share_per_row:
+        :param share_per_column:
+        :return:
+        """
 
         # Initialize structure to contain the plots
         plots = [[None for i in range(ncols)] for j in range(nrows)]
 
-        # Loop over the images
+        # Set indices
+        #first_row = 0
+        #first_column = 0
+        #last_row = nrows - 1
+        #last_column = ncols - 1
+
+        # Initialize lists of reference rows and columns
+        reference_rows = [] # reference row (for sharing x) per column
+        reference_columns = [] # reference column (for sharing y) per row
+
+        # Set reference rows (per column)
+        for col in range(ncols):
+            reference_row = None
+            for row in range(nrows):
+                shared_x = rows_shared_x[row] and columns_shared_x[col]
+                if shared_x:
+                    reference_row = row
+                    break
+            if reference_row is None: raise RuntimeError("Something went wrong")
+            reference_rows.append(reference_row)
+
+        # Set reference columns (per row)
         for row in range(nrows):
+            reference_column = None
+            for col in range(ncols):
+                shared_y = rows_shared_y[row] and columns_shared_y[col]
+                if shared_y:
+                    reference_column = col
+                    break
+            if reference_column is None: raise RuntimeError("Something went wrong")
+            reference_columns.append(reference_column)
+
+        #print("reference rows:", reference_rows)
+        #print("reference columns:", reference_columns)
+
+        # Create the reference plots
+        for col in reference_rows:
+            row = reference_rows[col]
+            if plots[row][col] is not None: continue # already created
+            plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+            #print("reference row plotted", row, col)
+            plots[row][col] = plot
+        for row in reference_columns:
+            col = reference_columns[row]
+            if plots[row][col] is not None: continue # already created
+            plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+            #print("reference col plotted", row, col)
+            plots[row][col] = plot
+
+        # Create the first plot
+        #plot = self._create_grid_plot_not_shared(grid, first_row, first_column, projections=projections)
+        #plots[first_row][first_column] = plot
+
+        # # Create the first row
+        # for col in range(1, ncols):
+        #
+        #     # Get sub plot specification
+        #     rect = grid[first_row, col]
+        #
+        #     # Shared?
+        #     #shared_x = rows_shared_x[first_row] and columns_shared_x[col]
+        #     shared_y = rows_shared_y[first_row] and columns_shared_y[col]
+        #
+        #     # Get the projection
+        #     if projections is not None: projection = projections[first_row][col]
+        #     else: projection = None
+        #
+        #     # Create the plot and add it
+        #     if shared_y: plot = self._create_plot_shared_y(rect, plots[first_row][first_column].axes, projection=projection)
+        #     else: plot = self._create_plot_not_shared(rect, projection=projection)
+        #     plots[first_row][col] = plot
+
+        # Create the next rows
+        #for row in range(1, nrows):
+        for row in range(nrows):
+
+            # Loop over the columns
+            for col in range(ncols):
+
+                # Already plotted
+                if plots[row][col] is not None: continue
+
+                #print("Creating plot " + str(row) + " " + str(col) + " ...")
+
+                # Shared?
+                shared_x = rows_shared_x[row] and columns_shared_x[col]
+                shared_y = rows_shared_y[row] and columns_shared_y[col]
+
+                #print("sharing x: " + str(shared_x))
+                #print("sharing y: " + str(shared_y))
+
+                # X and Y shared with other row and column
+                if shared_x and shared_y:
+
+                    reference_row = reference_rows[col]
+                    reference_col = reference_columns[row]
+                    #print("reference x", reference_row, col)
+                    #print("reference y", row, reference_col)
+
+                    # Share y only per row or for every row?
+                    if share_per_row: reference_y = (row, reference_col)
+                    else: reference_y = (reference_row, reference_col)
+
+                    # Share x only per column or for every column?
+                    if share_per_column: reference_x = (reference_row, col)
+                    else: reference_x = (reference_row, reference_col)
+
+                    # Is this plot it's own reference for either x or y?
+                    is_reference_x = reference_x == (row, col)
+                    is_reference_y = reference_y == (row, col)
+
+                    #print("reference x: ", reference_x, is_reference_x)
+                    #print("reference y: ", reference_y, is_reference_y)
+
+                    # This plot is its own reference for both x and y: don't share, just create the plot
+                    if is_reference_x and is_reference_y: plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+
+                    # This plot is its own reference for x: share y
+                    elif is_reference_x:
+
+                        reference_plot = plots[reference_y[0]][reference_y[1]]
+                        plot = self._create_grid_plot_shared_y(grid, row, col, reference_plot.axes, projections=projections)
+
+                    # This plot is its own reference for y: share x
+                    elif is_reference_y:
+
+                        reference_plot = plots[reference_x[0]][reference_x[1]]
+                        plot = self._create_grid_plot_shared_x(grid, row, col, reference_plot.axes, projections=projections)
+
+                    # This plot is not a reference for either x or y
+                    else:
+
+                        reference_x_plot = plots[reference_x[0]][reference_x[1]]
+                        reference_y_plot = plots[reference_y[0]][reference_y[1]]
+                        plot = self._create_grid_plot_shared(grid, row, col, reference_x_plot.axes, reference_y_plot.axes, projections=projections)
+
+                # X shared with other row
+                elif shared_x:
+
+                    reference_row = reference_rows[col]
+
+                    #if share_per_column: reference = (reference_row, col)
+                    #else: reference = (reference_row, reference_col)
+                    reference = (reference_row, col)
+                    is_reference = reference == (row, col)
+
+                    # This plot is its own reference
+                    if is_reference: plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+
+                    # This plot is not its own reference
+                    else:
+
+                        reference_plot = plots[reference[0]][reference[1]]
+                        plot = self._create_grid_plot_shared_x(grid, row, col, reference_plot.axes, projections=projections)
+
+                # Y shared with other columns
+                elif shared_y:
+
+                    reference_col = reference_columns[row]
+
+                    reference = (row, reference_col)
+                    is_reference = reference == (row, col)
+
+                    # This plot is its own reference
+                    if is_reference: plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+
+                    # This plot is not its own reference
+                    else:
+
+                        reference_plot = plots[reference[0]][reference[1]]
+                        plot = self._create_grid_plot_shared_y(grid, row, col, reference_plot.axes, projections=projections)
+
+                # No axis shared
+                else: plot = self._create_grid_plot_not_shared(grid, row, col, projections=projections)
+
+                # Create the plot and add it
+                plots[row][col] = plot
+
+        # Return the plots
+        return plots
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_shared_x(self, grid, nrows, ncols, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param nrows:
+        :param ncols:
+        :param projections:
+        :return:
+        """
+
+        # Initialize structure to contain the plots
+        plots = [[None for i in range(ncols)] for j in range(nrows)]
+
+        # Not yet implemented
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_shared_y(self, grid, nrows, ncols, projections=None):
+
+        """
+        This function ...
+        :param grid:
+        :param nrows:
+        :param ncols:
+        :param projections:
+        :return:
+        """
+
+        # Initialize structure to contain the plots
+        plots = [[None for i in range(ncols)] for j in range(nrows)]
+
+        # Not yet implemented
+        raise NotImplementedError("Not yet implemented")
+
+    # -----------------------------------------------------------------
+
+    def _create_grid_not_shared(self, grid, nrows, ncols, projections=None):
+
+        """
+        This function ...
+        :param gs:
+        :param nrows:
+        :param ncols:
+        :param projections:
+        :return:
+        """
+
+        # Initialize structure to contain the plots
+        plots = [[None for i in range(ncols)] for j in range(nrows)]
+
+        # Loop over the rows
+        for row in range(nrows):
+
+            # Loop over the columns
             for col in range(ncols):
 
                 # Get sub plot specification
-                subplotspec = gs[row, col]
+                rect = grid[row, col]
 
-                # points = subplotspec.get_position(self._figure).get_points()
-                # print(points)
-                # x_min = points[0, 0]
-                # x_max = points[1, 0]
-                # y_min = points[0, 1]
-                # y_max = points[1, 1]
-                # width = x_max - x_min
-                # height = y_max - y_min
-                # ax = self._figure.add_axes([x_min, y_min, width, height])
-
-                # ax = plt.subplot(subplotspec)
-                # shareax = ax if ax is not None else None
-                # ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy(), sharex=shareax, sharey=shareax)
+                # Get the projection
+                if projections is not None: projection = projections[row][col]
+                else: projection = None
 
                 # Get the axes
-                plot = plt.subplot(subplotspec) #projection=frame.wcs.to_astropy())
+                plot = self.figure.add_subplot(rect, projection=projection)
 
                 # Create plot
                 plot = MPLPlot(plot=plot)
@@ -2723,7 +3338,8 @@ class MPLFigure(Figure):
         :return:
         """
 
-        plt.xscale(scale)
+        #plt.xscale(scale)
+        self.ax.set_xscale(scale)
 
     # -----------------------------------------------------------------
 
@@ -2735,7 +3351,8 @@ class MPLFigure(Figure):
         :return:
         """
 
-        plt.yscale(scale)
+        #plt.yscale(scale)
+        self.ax.set_yscale(scale)
 
     # -----------------------------------------------------------------
 
@@ -2746,7 +3363,8 @@ class MPLFigure(Figure):
         :return:
         """
 
-        plt.xscale("log")
+        #plt.xscale("log")
+        self.set_xscale("log")
 
     # -----------------------------------------------------------------
 
@@ -2757,7 +3375,8 @@ class MPLFigure(Figure):
         :return:
         """
 
-        plt.yscale("log")
+        #plt.yscale("log")
+        self.set_yscale("log")
 
     # -----------------------------------------------------------------
 
@@ -2829,6 +3448,43 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def tight_layout(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.figure.tight_layout()
+
+    # -----------------------------------------------------------------
+
+    def set_xlabel(self, label, fontsize=18):
+
+        """
+        This function ...
+        :param label:
+        :param fontsize:
+        :return:
+        """
+
+        self.ax.set_xlabel(label, fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
+    def set_ylabel(self, label, fontsize=18):
+
+        """
+        This function ...
+        :param label:
+        :param fontsize:
+        :return:
+        """
+
+        self.ax.set_ylabel(label, fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
     def set_labels(self, x_label, y_label, fontsize=18):
 
         """
@@ -2840,8 +3496,11 @@ class MPLFigure(Figure):
         """
 
         # Labels
-        plt.xlabel(x_label, fontsize=fontsize)
-        plt.ylabel(y_label, fontsize=fontsize)
+        #plt.xlabel(x_label, fontsize=fontsize)
+        #plt.ylabel(y_label, fontsize=fontsize)
+
+        self.set_xlabel(x_label, fontsize=fontsize)
+        self.set_ylabel(y_label, fontsize=fontsize)
 
     # -----------------------------------------------------------------
 

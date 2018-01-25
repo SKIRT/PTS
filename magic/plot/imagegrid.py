@@ -349,7 +349,7 @@ class ImageGridPlotter(Configurable):
         log.debug("Finishing the plot ...")
 
         # Tight layout
-        plt.tight_layout()
+        self.figure.tight_layout()
 
         # Add title if requested
         if self.title is not None: self.figure.set_title(self.title)
@@ -2418,7 +2418,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if self.config.write: self.write()
 
         # Uniformize the frames
-        if self.needs_uniform: self.uniformize()
+        #if self.needs_uniform: self.uniformize()
 
         # 5. Make the plot
         self.plot()
@@ -2461,6 +2461,89 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Don't plot based on the coordinates
+        if not self.config.coordinates: return None
+
+        # Initialize list structure
+        projections = sequences.create_nested_3d(self.config.ngrids, self.max_nrows_per_grid, self.ncolumns)
+
+        # Loop over the images
+        for index, name in enumerate(self.names):
+
+            # Get the coordinate system
+            wcs = self.get_wcs(name)
+
+            # Get grid index and relative row index
+            grid, rel_row_index = self.get_grid_and_relative_row(index)
+
+            # Loop over the column indices
+            for col in self.column_indices_not_distributions: projections[grid][rel_row_index][col] = wcs.to_astropy()
+
+        # Return the projections
+        return projections
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return False
+        return self.config.coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return False
+        return self.config.coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_per_row(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_per_column(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return True
+        return False
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -2495,10 +2578,24 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
         #else: self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids, return_colorbars=True)
 
-        self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns,
-                                                                           self.config.ngrids, return_colorbars=True,
-                                                                           share_colorbars=self.share_residuals_colorbars,
-                                                                           adjust_grid=self.config.adjust_grid)
+        #self.plots, self.colorbars = self.figure.create_row_of_image_grids(self.max_nrows_per_grid, self.ncolumns,
+        #                                                                   self.config.ngrids, return_colorbars=True,
+        #                                                                   share_colorbars=self.share_residuals_colorbars,
+        #                                                                   adjust_grid=self.config.adjust_grid)
+
+        #self.plots = self.figure.create_grid(self.)
+
+        #print(self.projections)
+
+        # Debugging
+        log.debug("Creating the grid of plots ...")
+
+        # Create plots
+        self.plots = self.figure.create_row_of_grids(self.max_nrows_per_grid, self.ncolumns, self.config.ngrids,
+                                                     last_column_not_shared_y=self.last_column_not_shared_y,
+                                                     sharex=self.share_x, sharey=self.share_y,
+                                                     projections=self.projections, share_per_row=self.share_per_row,
+                                                     share_per_column=self.share_per_column)
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -3196,6 +3293,18 @@ class ResidualImageGridPlotter(ImageGridPlotter):
     # -----------------------------------------------------------------
 
     @property
+    def last_column_not_shared_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.distributions
+
+    # -----------------------------------------------------------------
+
+    @property
     def first_name(self):
 
         """
@@ -3278,6 +3387,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
             # ABSOLUTE VALUES?
             if self.config.absolute: residual = residual.absolute
+
+            # Set the coordinate system
+            residual.wcs = self.get_wcs(name)
 
             # Add the residual frame
             self.residuals[name] = residual
@@ -3792,7 +3904,19 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        return list(range(self.ncolumns))
+        return list(range(self.ncolumns)) # [0, 1, 2] or [0, 1, 2, 3]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def column_indices_not_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [0, 1, 2]
 
     # -----------------------------------------------------------------
 
@@ -3806,6 +3930,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         grid, rel_row_index = self.get_grid_and_relative_row(abs_row_index)
+        #print(abs_row_index, col_index, grid, rel_row_index)
         return self.plots[grid][rel_row_index][col_index]
 
     # -----------------------------------------------------------------
@@ -4916,8 +5041,65 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
-        #import aplpy
-        pass
+        import aplpy
+
+        left = [0.1, 0.3, 0.5, 0.7]
+        width = [0.2, 0.2, 0.2, 0.2]
+
+        rectLS = []
+        for x in left:
+            for y in left:
+                rectLS.append([x, y, 0.2, 0.2])
+
+        axLS = []
+
+        #fig = plt.figure()
+
+        # First row
+        #axLS.append(fig.add_axes(rectLS[0]))
+        #for i in [1, 2, 3]: axLS.append(fig.add_axes(rectLS[i], sharey=axLS[-1]))
+
+        # Second row
+        #axLS.append(fig.add_axes(rectLS[4]))
+        #for i in [1, 2, 3]: axLS.append(fig.add_axes(rectLS[i + 4], sharex=axLS[i], sharey=axLS[-1]))
+
+        # Third row
+        #axLS.append(fig.add_axes(rectLS[8]))
+        #for i in [5, 6, 7]: axLS.append(fig.add_axes(rectLS[i + 4], sharex=axLS[i], sharey=axLS[-1]))
+
+        # Fourth row
+        #axLS.append(fig.add_axes(rectLS[12]))
+        #for i in [9, 10, 11]: axLS.append(fig.add_axes(rectLS[i + 4], sharex=axLS[i], sharey=axLS[-1]))
+
+        # Loop over the images
+        for index, name in enumerate(self.names):
+
+            # Check
+            if self.is_plotted(name): continue
+
+            # Has observation and model data
+            #if self.has_data(name): self.plot_row(name, index)
+
+            # Only observation data
+            #elif self.has_observation_data(name): self.plot_observation(name, index)
+
+            # Only model data
+            #elif self.has_model_data(name): self.plot_model(name, index)
+
+            frame = self.get_observation(name)
+
+            #f1 = aplpy.FITSFigure(frame.wcs, figure=fig, subplot=plotloc[0])
+            f1 = aplpy.FITSFigure(frame.hdu, figure=self.figure.figure, subplot=rectLS[index])
+            #standard_setup(f1)
+            ## f1.show_colorscale(pmax=99.25, pmin=0.50,  cmap='hot')
+            f1.show_colorscale(vmin=0, vmax=0.00025, cmap='hot')
+            f1.add_beam(major=0.01, minor=0.01, angle=0, fill=True, color='white')
+
+            # f1.axis_labels.show_y()
+            #f1.tick_labels.set_xposition('top')
+            #f1.tick_labels.show()
+
+        plt.show()
 
     # -----------------------------------------------------------------
 
@@ -4930,6 +5112,24 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Plot using APLpy
+        if self.config.aplpy: self.plot_aplpy()
+
+        # Plot using imagegrid
+        else: self.plot_imagegrid()
+
+    # -----------------------------------------------------------------
+
+    def plot_imagegrid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting using ImageGrid ...")
 
         # Plot the references
         self.plot_references()
@@ -5110,5 +5310,29 @@ def crea_scale_bar(ax, x0, x1, y0, y1, pix2sec):
   yc = fabs(y0) + (y1-y0)* offset_y_factor
   ax.errorbar(xc, yc, xerr=scale_bar_length/pix2sec,color='black',capsize=1,c='black')
   ax.text(xc, yc, str(int(scale_bar_length*2.))+'\"', color='black',fontsize=fsize+1, horizontalalignment='center', verticalalignment='bottom')
+
+# -----------------------------------------------------------------
+
+def standard_setup(sp):
+
+    """
+    This function ...
+    :param sp:
+    :return:
+    """
+
+    sp.set_frame_color('black')
+    sp.set_tick_labels_font(size='10')
+    sp.set_axis_labels_font(size='12')
+    #sp.set_tick_labels_format(xformat='hh:mm',yformat='dd:mm')
+    sp.set_xaxis_coord_type('scalar')
+    sp.set_yaxis_coord_type('scalar')
+    sp.set_tick_color('black')
+    sp.recenter(x=0.0, y=0.0,width=3.,height=0.6)
+    sp.set_tick_xspacing(0.4)
+    sp.set_tick_yspacing(0.25)
+    sp.set_system_latex(True)
+    sp.tick_labels.hide()
+    sp.axis_labels.hide()
 
 # -----------------------------------------------------------------

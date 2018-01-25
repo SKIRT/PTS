@@ -5200,6 +5200,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def hdu(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from astropy.io.fits import PrimaryHDU
+        return PrimaryHDU(self.data, self.header)
+
+    # -----------------------------------------------------------------
+
     def save(self, header=None, origin=None, extra_header_info=None, add_meta=True):
 
         """

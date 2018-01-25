@@ -70,6 +70,8 @@ plotter.config.output = config.output
 #    plotter.config.scale_reference = config.share_scale_with
 #plotter.config.colormap = config.colormap
 
+plotter.config.coordinates = True
+
 # Write data
 plotter.config.write = config.write_data
 
