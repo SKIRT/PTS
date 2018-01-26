@@ -1039,7 +1039,7 @@ class WavelengthGridGenerator(Configurable):
             else: plot_filepath = None
 
             # Run the plotter
-            plotter.run(output=plot_filepath, seds=self.seds)
+            plotter.run(output=plot_filepath, seds=self.seds, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength)
 
     # -----------------------------------------------------------------
 

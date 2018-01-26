@@ -79,6 +79,13 @@ fitting_run = runs.load(config.run)
 #print("mean wavelengths: " + tostr(fitting_run.normalization_mean_wavelengths))
 #print("peak wavelengths: " + tostr(fitting_run.normalization_peak_wavelengths))
 
+# Show the fitting filters
+print("")
+print("FITTING FILTERS:")
+print("")
+for fltr in fitting_run.fitting_filters: print(" - " + tostr(fltr))
+print("")
+
 # -----------------------------------------------------------------
 
 # Determine the path to the wavelength grids directory

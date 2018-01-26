@@ -44,6 +44,7 @@ from ..tools import sequences
 from ..filter.filter import parse_filter
 from ..tools import types
 from ..tools import nr
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -3389,7 +3390,14 @@ class WavelengthGridPlotter(Configurable):
                     #print(plot_on_filter.min, plot_on_filter.max, curve.min_wavelength, curve.max_wavelength, wavelengths)
 
                     # Find interpolated normalized transmission value for the wavelength
-                    y = [curve.transmission_at(wavelength * self.config.wavelength_unit) for wavelength in wavelengths]
+                    #y = [curve.transmission_at(wavelength * self.config.wavelength_unit) for wavelength in wavelengths]
+                    y = []
+                    for wavelength_scalar in wavelengths:
+                        wavelength = wavelength_scalar * self.config.wavelength_unit
+                        if not curve.in_range(wavelength):
+                            log.warning("The wavelength " + tostr(wavelength) + " is not in the range of the transmission curve of the '" + tostr(plot_on_filter) + "' filter")
+                            y.append(0.)
+                        else: y.append(curve.transmission_at(wavelength))
 
                 # Set same y value for each point
                 else: y = [y_value for _ in wavelengths]

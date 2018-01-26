@@ -276,6 +276,31 @@ class TransmissionCurve(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.min_wavelength, self.max_wavelength, unit=self.table["Wavelength"].unit)
+
+    # -----------------------------------------------------------------
+
+    def in_range(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return wavelength in self.wavelength_range
+
+    # -----------------------------------------------------------------
+
     def save(self, path):
 
         """
