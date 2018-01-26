@@ -17,6 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.plot.sed import SEDPlotter
 from pts.core.basics.log import log
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -35,6 +36,9 @@ else: definition.add_required("run", "string", "name of the fitting run for whic
 
 # Generation
 definition.add_required("generation", "string", "generation name")
+
+# Number of random simulations
+definition.add_optional("random", "positive_integer", "pick a specified number of random simulations to plot")
 
 # Get configuration
 config = parse_arguments("plot_generation_seds", definition, "Plot the seds of all simulations of a generation")
@@ -66,18 +70,30 @@ plotter.add_sed(environment.truncated_sed, "Truncated observed fluxes")
 # Add simulation SEDs
 log.info("Adding the simulated SEDs ...")
 
+# Get the simulation names
+names = generation.simulation_names
+nsimulations = len(names)
+
+# Set number of SEDs
+if config.random is not None: nseds = config.random
+else: nseds = nsimulations
+
+# Get selected simulation names
+if config.random is not None: names = sequences.random_subset(names, config.random)
+
+# -----------------------------------------------------------------
+
 # Loop over the simulation names
-nsimulations = generation.nsimulations
-for index, simulation_name in enumerate(generation.simulation_names):
+for index, simulation_name in enumerate(names):
 
     # Debugging
-    log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index+1) + " of " + str(nsimulations) + ") ...")
+    log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index+1) + " of " + str(nseds) + ") ...")
 
     # Get the simulated SED
     sed = generation.get_simulation_sed(simulation_name)
 
     # Add the SED
-    plotter.add_sed(sed, simulation_name, ghost=True)
+    plotter.add_sed(sed, simulation_name, ghost=True, residuals=False)
 
 # -----------------------------------------------------------------
 
