@@ -1480,6 +1480,21 @@ def time_unit(argument):
 
 # -----------------------------------------------------------------
 
+def frequency_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from astropy.units import Unit
+    unit = Unit(argument)
+    if unit.physical_type != "frequency": raise ValueError("Not a frequency unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
 def length_unit(argument):
 
     """
@@ -1586,6 +1601,21 @@ def time_quantity(argument):
     from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "time": raise ValueError("Not a time")
+    return qty
+
+# -----------------------------------------------------------------
+
+def frequency_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from astropy.units import Quantity
+    qty = Quantity(argument)
+    if qty.unit.physical_type != "frequency": raise ValueError("Not a frequency")
     return qty
 
 # -----------------------------------------------------------------

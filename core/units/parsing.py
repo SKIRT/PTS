@@ -44,6 +44,44 @@ def parse_unit(argument, density=False, brightness=False, density_strict=False, 
 
 # -----------------------------------------------------------------
 
+def parse_unit_or_quantity(argument, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+    """
+    This function ...
+    :param argument:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
+    :return:
+    """
+
+    # Parse as quantity
+    quantity = parse_quantity(argument, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+    # Return
+    if quantity.value == 1.: return quantity.unit
+    else: return quantity
+
+# -----------------------------------------------------------------
+
+def is_photometric_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from .unit import PhotometricUnit
+
+    try:
+        unit = PhotometricUnit(argument)
+        return True
+    except ValueError: return False
+
+# -----------------------------------------------------------------
+
 def parse_photometric_unit(argument, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
     """
@@ -60,6 +98,29 @@ def parse_photometric_unit(argument, density=False, brightness=False, density_st
 
     unit = PhotometricUnit(argument, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
     return unit
+
+# -----------------------------------------------------------------
+
+def split_value_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    units = ""
+    number = 1.0
+    while argument:
+        try:
+            number = float(argument)
+            break
+        except ValueError:
+            units = argument[-1:] + units
+            argument = argument[:-1]
+
+    # Return
+    return number, units
 
 # -----------------------------------------------------------------
 
@@ -87,16 +148,8 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
     # Argument is a string
     elif types.is_string_type(argument):
 
-        # NEW IMPLEMENTATION
-        units = ""
-        number = 1.0
-        while argument:
-            try:
-                number = float(argument)
-                break
-            except ValueError:
-                units = argument[-1:] + units
-                argument = argument[:-1]
+        # Split
+        number, units = split_value_unit(argument)
 
         # Check whether unit is given
         if units == "":
@@ -122,6 +175,33 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
 
 # -----------------------------------------------------------------
 
+def is_photometric_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    # Argument is a quantity (or derived type)
+    if isinstance(argument, Quantity):
+
+        number = argument.value
+        unit = argument.unit
+        return is_photometric_unit(unit)
+
+    # Argument is a string
+    elif types.is_string_type(argument):
+
+        # Split
+        number, units = split_value_unit(argument)
+        return is_photometric_unit(units)
+
+    # Invalid input
+    else: raise ValueError("Argument must be either a string or a quantity")
+
+# -----------------------------------------------------------------
+
 def parse_angle(argument):
 
     """
@@ -132,5 +212,64 @@ def parse_angle(argument):
 
     quantity = parse_quantity(argument, physical_type="angle", default_unit="deg")
     return Angle(quantity.value, quantity.unit)
+
+# -----------------------------------------------------------------
+
+def possible_physical_types(argument):
+
+    """
+    This function ....
+    :param argument:
+    :return:
+    """
+
+    physical_types = set()
+
+    for density in True, False:
+        for brightness in True, False:
+
+            unit = parse_unit_or_quantity(argument, density=density, brightness=brightness)
+            physical_types.add(unit.physical_type)
+
+    # Return
+    return list(physical_types)
+
+# -----------------------------------------------------------------
+
+def possible_density_flags(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    flags = set()
+
+    for density in True, False:
+        unit = parse_unit_or_quantity(argument, density=density)
+        flags.add(unit.density)
+
+    # Return
+    return list(flags)
+
+# -----------------------------------------------------------------
+
+def possible_brightness_flags(arguments):
+
+    """
+    This function ...
+    :param arguments:
+    :return:
+    """
+
+    flags = set()
+
+    for brightness in True, False:
+        unit = parse_unit_or_quantity(arguments, brightness=brightness)
+        flags.add(unit.brightness)
+
+    # Return
+    return list(flags)
 
 # -----------------------------------------------------------------
