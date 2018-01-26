@@ -40,6 +40,7 @@ definition.add_optional("exact_not_name", "string_list", "ignore directories wit
 definition.add_optional("output", "directory_path", "output directory")
 definition.add_flag("per_host", "put the simulations in a separate subdirectory for each host")
 definition.add_flag("rename", "rename the simulation files to have the name of the simulation")
+definition.add_flag("ignore_missing", "ignore missing simulations (otherwise an error is thrown)")
 
 # Create the configuration
 config = parse_arguments("move_simulations", definition, "Move the simulation objects from the SKIRT run directory to another directory")
@@ -82,7 +83,9 @@ for simulation_name in config.names:
             break
 
     # Simulation file not found
-    if the_host_id is None: raise ValueError("Cannot find simulation file for simulation '" + simulation_name + "'")
+    if the_host_id is None:
+        if config.ignore_missing: continue
+        else: raise ValueError("Cannot find simulation file for simulation '" + simulation_name + "'")
 
     # Determine the output path
     if config.per_host:

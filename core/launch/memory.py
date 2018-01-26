@@ -359,7 +359,7 @@ class MemoryTable(SmartTable):
 
         index = self.index_for_simulation(simulation_name)
         self.remove_row(index)
-        
+
     # -----------------------------------------------------------------
 
     def index_for_simulation(self, simulation_name):
