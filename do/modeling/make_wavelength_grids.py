@@ -68,6 +68,9 @@ config = parse_arguments("make_wavelength_grids", definition, "(Re)make the wave
 # Load the fitting run
 fitting_run = runs.load(config.run)
 
+#print("wavelength range of fitting filters: " + tostr(fitting_run.fitting_wavelength_range))
+#print("wavelength range of fitting filters (min and max): " + tostr(fitting_run.absolute_fitting_wavelength_range))
+
 #print("filters: " + tostr(fitting_run.normalization_filters))
 #print("wavelengths: " + tostr(fitting_run.normalization_wavelengths))
 #print("center wavelengths: " + tostr(fitting_run.normalization_center_wavelengths))

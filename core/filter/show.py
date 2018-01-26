@@ -374,9 +374,9 @@ class FilterShower(Configurable):
             for spec in self.broad[label]:
 
                 fltr = BroadBandFilter(spec)
-
                 curve = TransmissionCurve.from_filter(fltr)
-                plotter.add_transmission_curve(curve, spec)
+                name = spec.replace("_", "\_")
+                plotter.add_transmission_curve(curve, name)
 
         # Loop over the narrow band filters
         for label in self.narrow:

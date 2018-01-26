@@ -1274,15 +1274,29 @@ def load_planck(filterspec):
     filename = instrument + "_BANDPASS_F" + frequency_string + ".txt"
     filepath = os.path.join(planck_transmissions_path, filename)
 
-    wavenumbers, transmissions = np.loadtxt(filepath, unpack=True, skiprows=2, usecols=(0, 1))
+    # Load the data
+    wavenumbers, transmissions, uncertanties = np.loadtxt(filepath, unpack=True, skiprows=2, usecols=(0, 1, 2))
 
     # Remove zero from the wavenumbers
     if wavenumbers[0] == 0:
         wavenumbers = wavenumbers[1:]
         transmissions = transmissions[1:]
+        uncertanties = uncertanties[1:]
 
     # HFI
     if instrument == "HFI":
+
+        # Only keep the rows where the transmission value is higher than 10 x the uncertainty
+        where = transmissions > 10. * uncertanties
+        wavenumbers = wavenumbers[where]
+        transmissions = transmissions[where]
+
+        # Only keep transmissions above 1/100 of the peak transmission
+        peak = np.max(transmissions)
+        where = transmissions > 0.005 * peak
+        wavenumbers = wavenumbers[where]
+        transmissions = transmissions[where]
+
         wavenumbers = wavenumbers * u("1/cm")
         wavelengths = (1.0 / wavenumbers).to("micron").value
 

@@ -40,6 +40,7 @@ from ...core.tools import sequences
 from ..build.component import get_model_definition
 from ...core.tools.utils import lazyproperty
 from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -331,6 +332,56 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.filters if self.fitting_configuration is not None else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.wavelength for fltr in self.fitting_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create initial wavelength range
+        wavelength_range = QuantityRange.infinitesimal(self.fitting_wavelengths[0])
+
+        # Adapt for the filters
+        for fltr in self.fitting_filters: wavelength_range.adjust(fltr.wavelength)
+
+        # Return the wavelength range
+        return wavelength_range
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absolute_fitting_wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create initial wavelength range
+        wavelength_range = QuantityRange.infinitesimal(self.fitting_wavelengths[0])
+
+        # Adapt for the filters
+        for fltr in self.fitting_filters: wavelength_range.adjust(fltr.range)
+
+        # Return the wavelength range
+        return wavelength_range
 
     # -----------------------------------------------------------------
 
