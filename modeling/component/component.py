@@ -673,6 +673,30 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_filters_no_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.observed_filters if fltr not in self.iras_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_no_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters_no_iras]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_filters_no_iras_planck(self):
 
         """

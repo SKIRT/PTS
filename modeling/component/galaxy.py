@@ -1244,68 +1244,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    #def truncation_mask_path(self, image_name):
-
-        #"""
-        #This function ...
-        #:param image_name:
-        #:return:
-        #"""
-
-        # Check whether mask is present with image name, or else use the reference mask file
-        #path = fs.join(self.truncation_masks_path, image_name + ".fits")
-        #if not fs.is_file(path): path = self.reference_mask_path
-
-        # Return None if truncation has not been performed yet
-        #if not fs.is_file(path): return None
-        #else: return path
-
-    # -----------------------------------------------------------------
-
-    #def truncation_mask(self, image_name):
-
-        #"""
-        #This function ...
-        #:param image_name:
-        #:return:
-        #"""
-
-        # Get the path to the truncation mask
-        #path = self.truncation_mask_path(image_name)
-
-        # Return None if no mask is present
-        #if path is None: return None
-
-        # Else, return the mask
-        #return Mask.from_file(path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def normalization_filters(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return [self.i1_filter, self.fuv_filter]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def normalization_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return [self.i1_filter.pivot, self.fuv_filter.pivot]
-        return [self.i1_wavelength, self.fuv_wavelength]
-
-    # -----------------------------------------------------------------
-
     @property
     def galaxy_properties(self):
 

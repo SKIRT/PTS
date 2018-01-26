@@ -231,7 +231,6 @@ class FittingRun(object):
         context = FittingContext.from_modeling_path(modeling_path)
 
         # Get model name
-        #model_name = get_model_for_run(modeling_path, name)
         model_name = context.get_model_for_run(name)
 
         # Create and return
@@ -646,6 +645,90 @@ class FittingRun(object):
         """
 
         return get_model_definition(self.modeling_path, self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_center_wavelengths(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.model_definition.normalization_center_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_effective_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_effective_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_pivot_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_pivot_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_mean_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_mean_wavelengths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_peak_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_peak_wavelengths
 
     # -----------------------------------------------------------------
 

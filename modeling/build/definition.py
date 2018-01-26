@@ -1092,54 +1092,6 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def i1_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return parse_filter("IRAC I1")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def i1_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.i1_filter.wavelength
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fuv_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return parse_filter("GALEX FUV")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fuv_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.fuv_filter.wavelength
-
-    # -----------------------------------------------------------------
-
     @property
     def ionizing_stars_sfr(self):
 
@@ -1152,7 +1104,7 @@ class ModelDefinition(object):
         sfr_scalar = self.ionizing_stars_parameters.sfr
 
         # Get the SFR
-        sfr_from_lum = Mappings.sfr_for_luminosity(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, self.ionizing_stars_luminosity, self.fuv_wavelength)
+        sfr_from_lum = Mappings.sfr_for_luminosity(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, self.ionizing_stars_luminosity, self.ionizing_stars_normalization_wavelength)
 
         # Check
         if not numbers.is_close(sfr_scalar, sfr_from_lum.to("Msun/yr").value): raise ValueError("Inconsistent SFR and FUV luminosity: " + str(sfr_scalar) + " =/= " + str(sfr_from_lum.to("Msun/yr").value))
@@ -1271,6 +1223,30 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_normalization_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter(self.bulge_parameters.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_normalization_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_parameters.wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
     def bulge_neutral_luminosity(self):
 
         """
@@ -1303,6 +1279,30 @@ class ModelDefinition(object):
         """
 
         return self.old_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_normalization_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter(self.old_stars_parameters.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_normalization_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.wavelength
 
     # -----------------------------------------------------------------
 
@@ -1355,6 +1355,30 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_stars_normalization_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter(self.young_stars_parameters.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_normalization_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_stars_parameters.wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_stars_neutral_luminosity(self):
 
         """
@@ -1399,6 +1423,30 @@ class ModelDefinition(object):
         """
 
         return self.ionizing_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_normalization_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return parse_filter(self.ionizing_stars_parameters.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_normalization_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters.wavelength
 
     # -----------------------------------------------------------------
 
@@ -1739,5 +1787,291 @@ class ModelDefinition(object):
         for name in self.dust_component_names:
             if name in basic_dust_component_names: continue
             else: yield name
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_parameters_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get component path
+        path = self.get_stellar_component_path(component_name)
+
+        # Determine the parameters file path
+        parameters_path = fs.join(path, parameters_filename)
+
+        # Check
+        if fs.is_file(parameters_path): return parameters_path
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_parameters_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get component path
+        path = self.get_dust_component_path(component_name)
+
+        # Determine the parameters file path
+        parameters_path = fs.join(path, parameters_filename)
+
+        # Check
+        if fs.is_file(parameters_path): return parameters_path
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_parameters(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the parameters filepath
+        path = self.get_stellar_component_parameters_path(name)
+
+        # Return
+        if path is None: return None
+        else: return open_mapping(path)
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_normalization_filter(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        parameters = self.get_stellar_component_parameters(name)
+        if parameters is None: return None
+        else: return parameters.filter
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_normalization_wavelength(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        parameters = self.get_stellar_component_parameters(name)
+        if parameters is None: return None
+        else: return parameters.wavelength
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_parameters(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the parameters filepath
+        path = self.get_dust_component_parameters_path(name)
+
+        # Return
+        if path is None: return None
+        else: return open_mapping(path)
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_deprojection_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get component path
+        path = self.get_stellar_component_path(component_name)
+
+        # Determine the deprojection file path
+        deprojection_path = fs.join(path, deprojection_filename)
+
+        # Return
+        if fs.is_file(deprojection_path): return deprojection_path
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_deprojection_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get component path
+        path = self.get_dust_component_path(component_name)
+
+        # Determine the deprojection file path
+        deprojection_path = fs.join(path, deprojection_filename)
+
+        # Return
+        if fs.is_file(deprojection_path): return deprojection_path
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get deprojection filepath
+        path = self.get_stellar_component_deprojection_path(component_name)
+
+        # Return
+        if path is None: return None
+        else: return DeprojectionModel3D.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        # Get deprojection filepath
+        path = self.get_dust_component_deprojection_path(component_name)
+
+        # Return
+        if path is None: return None
+        else: return DeprojectionModel3D.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a set of the filters
+        filters = set()
+
+        # Add the filters
+        filters.add(self.bulge_normalization_filter)
+        filters.add(self.old_stars_normalization_filter)
+        filters.add(self.young_stars_normalization_filter)
+        filters.add(self.ionizing_stars_normalization_filter)
+        for name in self.additional_stellar_names:
+            fltr = self.get_stellar_component_normalization_filter(name)
+            if fltr is not None: filters.add(fltr)
+
+        # Return the list of filters
+        return list(filters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a set of the wavelengths
+        wavelengths = set()
+
+        # Add the wavelengths
+        wavelengths.add(self.bulge_normalization_wavelength)
+        wavelengths.add(self.old_stars_normalization_wavelength)
+        wavelengths.add(self.young_stars_normalization_wavelength)
+        wavelengths.add(self.ionizing_stars_normalization_wavelength)
+        for name in self.additional_stellar_names:
+            wavelength = self.get_stellar_component_normalization_wavelength(name)
+            if wavelength is not None: wavelengths.add(wavelength)
+
+        # Return the list of wavelengths
+        return list(wavelengths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_center_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.center for fltr in self.normalization_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_effective_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.effective for fltr in self.normalization_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_pivot_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.pivot for fltr in self.normalization_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_mean_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.mean for fltr in self.normalization_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalization_peak_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.peak for fltr in self.normalization_filters]
 
 # -----------------------------------------------------------------

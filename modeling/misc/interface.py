@@ -149,6 +149,30 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def normalization_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.definition.normalization_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.definition.normalization_wavelengths
+
+    # -----------------------------------------------------------------
+
     def create_wavelength_grid(self, check_filters=True, output_path=None, plot=False):
 
         """

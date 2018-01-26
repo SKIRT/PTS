@@ -101,6 +101,7 @@ class RunsTable(SmartTable):
         """
 
         index = tables.find_index(self, run_name)
+        if index is None: raise ValueError("Fitting run '" + run_name + "' not found in the table")
         return self["Model name"][index]
 
 # -----------------------------------------------------------------

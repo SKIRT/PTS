@@ -46,10 +46,10 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         FittingInitializerBase.__init__(self, no_config=True)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
-        # The wavelength grid generators
-        self.basic_generator = None
-        self.refined_generator = None
-        self.highres_generator = None
+        # The wavelength grids
+        self.basic_wavelength_grids = None
+        self.refined_wavelength_grids = None
+        self.highres_wavelength_grids = None
 
     # -----------------------------------------------------------------
 
@@ -73,8 +73,8 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # 4. Set the stellar and dust components
         self.set_components()
 
-        # 5. Create the wavelength grids
-        self.create_wavelength_grids()
+        # 5. Get the wavelength grids
+        self.get_wavelength_grids()
 
         # 6. Adjust the ski template
         self.adjust_ski()
@@ -215,7 +215,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grids(self):
+    def get_wavelength_grids(self):
 
         """
         This function ...
@@ -223,16 +223,19 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Creating the wavelength grids ...")
+        log.info("Getting the wavelength grids ...")
 
         # Basic wavelength grids
-        if not self.has_basic: self.create_basic_wavelength_grids()
+        if self.has_basic: self.load_basic_wavelength_grids()
+        else: self.create_basic_wavelength_grids()
 
         # Refined wavelength grids
-        if not self.has_refined: self.create_refined_wavelength_grids()
+        if self.has_refined: self.load_refined_wavelength_grids()
+        else: self.create_refined_wavelength_grids()
 
         # High-resolution wavelength grids
-        if not self.has_highres: self.create_highres_wavelength_grids()
+        if self.has_highres: self.load_highres_wavelength_grids()
+        else: self.create_highres_wavelength_grids()
 
     # -----------------------------------------------------------------
 
@@ -332,42 +335,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Return
         return has_any and has_all
-
-    # -----------------------------------------------------------------
-
-    @property
-    def strong_emission_lines(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return strong_lines
-
-    # -----------------------------------------------------------------
-
-    @property
-    def important_emission_lines(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return important_lines
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def all_emission_lines(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
-        return get_identifiers()
 
     # -----------------------------------------------------------------
 
@@ -558,6 +525,30 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def normalization_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def normalization_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_definition.normalization_wavelengths
+
+    # -----------------------------------------------------------------
+
     def create_basic_wavelength_grids(self):
 
         """
@@ -568,92 +559,45 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating basic wavelength grids ...")
 
-        # Create generator
-        self.basic_generator = WavelengthGridGenerator()
-
-        # Set basic settings
-        self.basic_generator.config.ngrids = self.config.wg.ngrids_basic
-        self.basic_generator.config.npoints_range = self.config.wg.npoints_range_basic
-        self.basic_generator.config.range = self.config.wg.range
-
-        # Set other
-        self.basic_generator.config.add_emission_lines = self.config.wg.add_emission_lines
-        #self.basic_generator.config.emission_lines = self.important_emission_lines
-        self.basic_generator.config.emission_lines = self.strong_emission_lines
-        self.basic_generator.config.check_filters = self.observed_filters_no_iras_planck
-        self.basic_generator.config.adjust_to = self.fitting_filter_wavelengths
-        self.basic_generator.config.filters = None
-        self.basic_generator.config.fixed = self.normalization_wavelengths
-        self.basic_generator.config.plotting_filters = self.fitting_filters
-
-        # Set other flags
-        self.basic_generator.config.show = False
-        self.basic_generator.config.write = True
-        self.basic_generator.config.plot = True
-
-        # Writing
-        self.basic_generator.config.write_grids = True
-        self.basic_generator.config.write_elements = True
-        self.basic_generator.config.write_table = False
-
-        # Advanced
-        self.basic_generator.config.plot_resampled = True
-        self.basic_generator.config.plot_residuals = True
-
-        # Other
-        self.basic_generator.config.label = "basic"
-
-        # Generate the wavelength grids
-        self.basic_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.basic_grid_paths, plot_paths=self.basic_grid_paths)
+        # Generate the grids
+        self.basic_wavelength_grids = create_basic_wavelength_grids(self.config.wg.ngrids_basic, self.config.wg.npoints_range_basic,
+                                                                    self.config.wg.range, add_emission_lines=self.config.wg.add_emission_lines,
+                                                                    filters=self.fitting_filters, fixed=self.normalization_wavelengths,
+                                                                    check_filters=self.observed_filters_no_iras, plot_seds=self.template_seds,
+                                                                    table=self.wg_table, out_paths=self.basic_grid_paths, plot_paths=self.basic_grid_paths)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def basic_wavelength_grids(self):
+    def load_basic_wavelength_grids(self):
 
         """
         This function ...
         :return:
         """
 
-        grids = OrderedDict()
+        # Initialize the dictionary
+        self.basic_wavelength_grids = OrderedDict()
 
-        # Not generated this time
-        if self.basic_generator is None:
+        # Loop over the target npoints of the basic grids
+        for npoints in self.basic_npoints_list:
 
-            # Loop over the target npoints of the basic grids
-            for npoints in self.basic_npoints_list:
+            # Determine name
+            dirname = "basic_" + str(npoints)
 
-                # Determine path
-                dirname = "basic_" + str(npoints)
-                path = fs.join(self.wavelength_grids_path, dirname)
+            # Debugging
+            log.debug("Loading the '" + dirname + "' wavelength grid ...")
 
-                # Determine grid file path
-                grid_path = fs.join(path, "grid.dat")
+            # Determine path
+            path = fs.join(self.wavelength_grids_path, dirname)
 
-                # Load grid
-                grid = WavelengthGrid.from_file(grid_path)
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
 
-                # Add the grid
-                grids[npoints] = grid
+            # Load grid
+            grid = WavelengthGrid.from_file(grid_path)
 
-        # Generated
-        else:
-
-            # Loop over the grids
-            for index in range(self.basic_generator.ngrids):
-
-                # Get target npoints
-                target_npoints = self.basic_generator.get_target_npoints(index)
-
-                # Get wavelength grid
-                wavelength_grid = self.basic_generator.grids[index]
-
-                # Set the grid
-                grids[target_npoints] = wavelength_grid
-
-        # Return the grids
-        return grids
+            # Add the grid
+            self.basic_wavelength_grids[npoints] = grid
 
     # -----------------------------------------------------------------
 
@@ -667,91 +611,45 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating refined wavelength grids ...")
 
-        # Create generator
-        self.refined_generator = WavelengthGridGenerator()
-
-        # Set basic settings
-        self.refined_generator.config.ngrids = self.config.wg.ngrids_refined
-        self.refined_generator.config.npoints_range = self.config.wg.npoints_range_refined
-        self.refined_generator.config.range = self.config.wg.range
-
-        # Set other
-        self.refined_generator.config.add_emission_lines = self.config.wg.add_emission_lines
-        #self.refined_generator.config.emission_lines = self.important_emission_lines
-        self.refined_generator.config.emission_lines = self.strong_emission_lines
-        self.refined_generator.config.check_filters = self.observed_filters_no_iras_planck
-        self.refined_generator.config.adjust_to = self.fitting_filter_wavelengths
-        self.refined_generator.config.filters = self.fitting_filters
-        self.refined_generator.config.fixed = self.normalization_wavelengths
-
-        # Set other flags
-        self.refined_generator.config.show = False
-        self.refined_generator.config.write = True
-        self.refined_generator.config.plot = True
-
-        # Writing
-        self.refined_generator.config.write_grids = True
-        self.refined_generator.config.write_elements = True
-        self.refined_generator.config.write_table = False
-
-        # Advanced
-        self.refined_generator.config.plot_resampled = True
-        self.refined_generator.config.plot_residuals = True
-
-        # Other
-        self.refined_generator.config.label = "refined"
-
-        # Generate the refined wavelength grids
-        self.refined_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.refined_grid_paths, plot_paths=self.refined_grid_paths)
+        # Generate the wavelength grids
+        self.refined_wavelength_grids = create_refined_wavelength_grids(self.config.wg.ngrids_refined, self.config.wg.npoints_range_refined,
+                                                                        self.config.wg.range, add_emission_lines=self.config.wg.add_emission_lines,
+                                                                        filters=self.fitting_filters, fixed=self.normalization_wavelengths,
+                                                                        check_filters=self.observed_filters_no_iras, plot_seds=self.template_seds,
+                                                                        table=self.wg_table, out_paths=self.refined_grid_paths, plot_paths=self.refined_grid_paths)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def refined_wavelength_grids(self):
+    def load_refined_wavelength_grids(self):
 
         """
         This function ...
         :return:
         """
 
-        grids = OrderedDict()
+        # Initialize the dictionary
+        self.refined_wavelength_grids = OrderedDict()
 
-        # Not generated this time
-        if self.refined_generator is None:
+        # Loop over the target npoints of the refined grids
+        for npoints in self.refined_npoints_list:
 
-            # Loop over the target npoints of the refined grids
-            for npoints in self.refined_npoints_list:
+            # Determine name
+            dirname = "refined_" + str(npoints)
 
-                # Determine path
-                dirname = "refined_" + str(npoints)
-                path = fs.join(self.wavelength_grids_path, dirname)
+            # Debugging
+            log.debug("Loading the '" + dirname + "' wavelength grid ...")
 
-                # Determine grid file path
-                grid_path = fs.join(path, "grid.dat")
+            # Determine path
+            path = fs.join(self.wavelength_grids_path, dirname)
 
-                # Load grid
-                grid = WavelengthGrid.from_file(grid_path)
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
 
-                # Add the grid
-                grids[npoints] = grid
+            # Load grid
+            grid = WavelengthGrid.from_file(grid_path)
 
-        # Generated
-        else:
-
-            # Loop over the grids
-            for index in range(self.refined_generator.ngrids):
-
-                # Get target npoints
-                target_npoints = self.refined_generator.get_target_npoints(index)
-
-                # Get wavelength grid
-                wavelength_grid = self.refined_generator.grids[index]
-
-                # Set the grid
-                grids[target_npoints] = wavelength_grid
-
-        # Return the grids
-        return grids
+            # Add the grid
+            self.refined_wavelength_grids[npoints] = grid
 
     # -----------------------------------------------------------------
 
@@ -765,90 +663,45 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating high-resolution wavelength grids ...")
 
-        # Create generator
-        self.highres_generator = WavelengthGridGenerator()
-
-        # Set basic settings
-        self.highres_generator.config.ngrids = self.config.wg.ngrids_highres
-        self.highres_generator.config.npoints_range = self.config.wg.npoints_range_highres
-        self.highres_generator.config.range = self.config.wg.range
-
-        # Set other
-        self.highres_generator.config.add_emission_lines = self.config.wg.add_emission_lines
-        self.highres_generator.config.emission_lines = self.all_emission_lines
-        self.highres_generator.config.check_filters = self.observed_filters_no_iras_planck
-        self.highres_generator.config.adjust_to = self.fitting_filter_wavelengths
-        self.highres_generator.config.filters = self.fitting_filters
-        self.highres_generator.config.fixed = self.normalization_wavelengths
-
-        # Set other flags
-        self.highres_generator.config.show = False
-        self.highres_generator.config.write = True
-        self.highres_generator.config.plot = True
-
-        # Writing
-        self.highres_generator.config.write_grids = True
-        self.highres_generator.config.write_elements = True
-        self.highres_generator.config.write_table = False
-
-        # Advanced
-        self.highres_generator.config.plot_resampled = True
-        self.highres_generator.config.plot_residuals = True
-
-        # Other
-        self.highres_generator.config.label = "highres"
-
-        # Generate the high-resolution wavelength grids
-        self.highres_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.highres_grid_paths, plot_paths=self.highres_grid_paths)
+        # Generate the wavelength grids
+        self.highres_wavelength_grids = create_highres_wavelength_grids(self.config.wg.ngrids_highres, self.config.wg.npoints_range_highres,
+                                                                        self.config.wg.range, add_emission_lines=self.config.wg.add_emission_lines,
+                                                                        filters=self.fitting_filters, fixed=self.normalization_wavelengths,
+                                                                        check_filters=self.observed_filters_no_iras, plot_seds=self.template_seds,
+                                                                        table=self.wg_table, out_paths=self.highres_grid_paths, plot_paths=self.highres_grid_paths)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def highres_wavelength_grids(self):
+    def load_highres_wavelength_grids(self):
 
         """
         This function ...
         :return:
         """
 
-        grids = OrderedDict()
+        # Initialize the dictionary
+        self.highres_wavelength_grids = OrderedDict()
 
-        # Not generated this time
-        if self.highres_generator is None:
+        # Loop over the target npoints of the high-res grids
+        for npoints in self.highres_npoints_list:
 
-            # Loop over the target npoints of the high-res grids
-            for npoints in self.highres_npoints_list:
+            # Determine name
+            dirname = "highres_" + str(npoints)
 
-                # Determine path
-                dirname = "highres_" + str(npoints)
-                path = fs.join(self.wavelength_grids_path, dirname)
+            # Debugging
+            log.debug("Loading the '" + dirname + "' wavelength grid ...")
 
-                # Determine grid file path
-                grid_path = fs.join(path, "grid.dat")
+            # Determine path
+            path = fs.join(self.wavelength_grids_path, dirname)
 
-                # Load grid
-                grid = WavelengthGrid.from_file(grid_path)
+            # Determine grid file path
+            grid_path = fs.join(path, "grid.dat")
 
-                # Add the grid
-                grids[npoints] = grid
+            # Load grid
+            grid = WavelengthGrid.from_file(grid_path)
 
-        # Generated
-        else:
-
-            # Loop over the grids
-            for index in range(self.highres_generator.ngrids):
-
-                # Get target npoints
-                target_npoints = self.highres_generator.get_target_npoints(index)
-
-                # Get wavelength grid
-                wavelength_grid = self.highres_generator.grids[index]
-
-                # Set the grid
-                grids[target_npoints] = wavelength_grid
-
-        # Return
-        return grids
+            # Add the grid
+            self.highres_wavelength_grids[npoints] = grid
 
     # -----------------------------------------------------------------
 
@@ -1064,30 +917,49 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
 # -----------------------------------------------------------------
 
-def create_basic_wavelength_grids(ngrids):
+def create_basic_wavelength_grids(ngrids, npoints_range, wavelength_range, filters=None, fixed=None, plot_seds=None,
+                                  table=None, add_emission_lines=True, check_filters=None, out_paths=None, plot_paths=None):
 
     """
     This function ...
+    :param ngrids:
+    :param npoints_range:
+    :param wavelength_range:
+    :param filters:
+    :param fixed:
+    :param plot_seds:
+    :param table:
+    :param add_emission_lines:
+    :param check_filters:
+    :param out_paths:
+    :param plot_paths:
     :return:
     """
+
+    # Get list of strong emission lines
+    strong_emission_lines = strong_lines
+
+    # Get wavelengths from filters
+    if filters is not None: wavelengths = [fltr.wavelength for fltr in filters]
+    else: wavelengths = None
 
     # Create generator
     basic_generator = WavelengthGridGenerator()
 
     # Set basic settings
-    basic_generator.config.ngrids = self.config.wg.ngrids_basic
-    basic_generator.config.npoints_range = self.config.wg.npoints_range_basic
-    basic_generator.config.range = self.config.wg.range
+    basic_generator.config.ngrids = ngrids
+    basic_generator.config.npoints_range = npoints_range
+    basic_generator.config.range = wavelength_range
 
     # Set other
-    basic_generator.config.add_emission_lines = self.config.wg.add_emission_lines
+    basic_generator.config.add_emission_lines = add_emission_lines
     # basic_generator.config.emission_lines = self.important_emission_lines
-    basic_generator.config.emission_lines = self.strong_emission_lines
-    basic_generator.config.check_filters = self.observed_filters_no_iras_planck
-    basic_generator.config.adjust_to = self.fitting_filter_wavelengths
+    basic_generator.config.emission_lines = strong_emission_lines
+    basic_generator.config.check_filters = check_filters
+    basic_generator.config.adjust_to = wavelengths
     basic_generator.config.filters = None
-    basic_generator.config.fixed = self.normalization_wavelengths
-    basic_generator.config.plotting_filters = self.fitting_filters
+    basic_generator.config.fixed = fixed
+    basic_generator.config.plotting_filters = filters
 
     # Set other flags
     basic_generator.config.show = False
@@ -1107,97 +979,191 @@ def create_basic_wavelength_grids(ngrids):
     basic_generator.config.label = "basic"
 
     # Generate the wavelength grids
-    basic_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.basic_grid_paths, plot_paths=self.basic_grid_paths)
+    basic_generator.run(table=table, seds=plot_seds, out_paths=out_paths, plot_paths=plot_paths)
+
+    # Initialize dictionary for the grids
+    grids = OrderedDict()
+
+    # Loop over the grids
+    for index in range(basic_generator.ngrids):
+
+        # Get target npoints
+        target_npoints = basic_generator.get_target_npoints(index)
+
+        # Get wavelength grid
+        wavelength_grid = basic_generator.grids[index]
+
+        # Set the grid
+        grids[target_npoints] = wavelength_grid
+
+    # Return the grids
+    return grids
 
 # -----------------------------------------------------------------
 
-def create_refined_wavelength_grids(ngrids):
+def create_refined_wavelength_grids(ngrids, npoints_range, wavelength_range, filters=None, fixed=None, plot_seds=None,
+                                    table=None, add_emission_lines=True, check_filters=None, out_paths=None, plot_paths=None):
 
     """
     This function ...
+    :param ngrids:
+    :param npoints_range:
+    :param wavelength_range:
+    :param filters:
+    :param fixed:
+    :param plot_seds:
+    :param table:
+    :param add_emission_lines:
+    :param check_filters:
+    :param out_paths:
+    :param plot_paths:
     :return:
     """
 
+    # Get list of strong emission lines
+    strong_emission_lines = strong_lines
+
+    # Get wavelengths from filters
+    if filters is not None: wavelengths = [fltr.wavelength for fltr in filters]
+    else: wavelengths = None
+
     # Create generator
-    self.refined_generator = WavelengthGridGenerator()
+    refined_generator = WavelengthGridGenerator()
 
     # Set basic settings
-    self.refined_generator.config.ngrids = self.config.wg.ngrids_refined
-    self.refined_generator.config.npoints_range = self.config.wg.npoints_range_refined
-    self.refined_generator.config.range = self.config.wg.range
+    refined_generator.config.ngrids = ngrids
+    refined_generator.config.npoints_range = npoints_range
+    refined_generator.config.range = wavelength_range
 
     # Set other
-    self.refined_generator.config.add_emission_lines = self.config.wg.add_emission_lines
-    # self.refined_generator.config.emission_lines = self.important_emission_lines
-    self.refined_generator.config.emission_lines = self.strong_emission_lines
-    self.refined_generator.config.check_filters = self.observed_filters_no_iras_planck
-    self.refined_generator.config.adjust_to = self.fitting_filter_wavelengths
-    self.refined_generator.config.filters = self.fitting_filters
-    self.refined_generator.config.fixed = self.normalization_wavelengths
+    refined_generator.config.add_emission_lines = add_emission_lines
+    # refined_generator.config.emission_lines = self.important_emission_lines
+    refined_generator.config.emission_lines = strong_emission_lines
+    refined_generator.config.check_filters = check_filters
+    refined_generator.config.adjust_to = wavelengths
+    refined_generator.config.filters = filters
+    refined_generator.config.fixed = fixed
+    refined_generator.config.plotting_filters = filters
 
     # Set other flags
-    self.refined_generator.config.show = False
-    self.refined_generator.config.write = True
-    self.refined_generator.config.plot = True
+    refined_generator.config.show = False
+    refined_generator.config.write = True
+    refined_generator.config.plot = True
 
     # Writing
-    self.refined_generator.config.write_grids = True
-    self.refined_generator.config.write_elements = True
-    self.refined_generator.config.write_table = False
+    refined_generator.config.write_grids = True
+    refined_generator.config.write_elements = True
+    refined_generator.config.write_table = False
 
     # Advanced
-    self.refined_generator.config.plot_resampled = True
-    self.refined_generator.config.plot_residuals = True
+    refined_generator.config.plot_resampled = True
+    refined_generator.config.plot_residuals = True
 
     # Other
-    self.refined_generator.config.label = "refined"
+    refined_generator.config.label = "refined"
 
     # Generate the refined wavelength grids
-    self.refined_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.refined_grid_paths, plot_paths=self.refined_grid_paths)
+    refined_generator.run(table=table, seds=plot_seds, out_paths=out_paths, plot_paths=plot_paths)
+
+    # Initialize dictionary for the grids
+    grids = OrderedDict()
+
+    # Loop over the grids
+    for index in range(refined_generator.ngrids):
+
+        # Get target npoints
+        target_npoints = refined_generator.get_target_npoints(index)
+
+        # Get wavelength grid
+        wavelength_grid = refined_generator.grids[index]
+
+        # Set the grid
+        grids[target_npoints] = wavelength_grid
+
+    # Return the grids
+    return grids
 
 # -----------------------------------------------------------------
 
-def create_highres_wavelength_grids(ngrids):
+def create_highres_wavelength_grids(ngrids, npoints_range, wavelength_range, filters=None, fixed=None, plot_seds=None,
+                                    table=None, add_emission_lines=True, check_filters=None, out_paths=None, plot_paths=None):
 
     """
     This function ...
+    :param ngrids:
+    :param npoints_range:
+    :param wavelength_range:
+    :param filters:
+    :param fixed:
+    :param plot_seds:
+    :param table:
+    :param add_emission_lines:
+    :param check_filters:
+    :param out_paths:
+    :param plot_paths:
     :return:
     """
 
+    # Get list of all emission lines
+    all_emission_lines = get_identifiers()
+
+    # Get wavelengths from filters
+    if filters is not None: wavelengths = [fltr.wavelength for fltr in filters]
+    else: wavelengths = None
+
     # Create generator
-    self.highres_generator = WavelengthGridGenerator()
+    highres_generator = WavelengthGridGenerator()
 
     # Set basic settings
-    self.highres_generator.config.ngrids = self.config.wg.ngrids_highres
-    self.highres_generator.config.npoints_range = self.config.wg.npoints_range_highres
-    self.highres_generator.config.range = self.config.wg.range
+    highres_generator.config.ngrids = ngrids
+    highres_generator.config.npoints_range = npoints_range
+    highres_generator.config.range = wavelength_range
 
     # Set other
-    self.highres_generator.config.add_emission_lines = self.config.wg.add_emission_lines
-    self.highres_generator.config.emission_lines = self.all_emission_lines
-    self.highres_generator.config.check_filters = self.observed_filters_no_iras_planck
-    self.highres_generator.config.adjust_to = self.fitting_filter_wavelengths
-    self.highres_generator.config.filters = self.fitting_filters
-    self.highres_generator.config.fixed = self.normalization_wavelengths
+    highres_generator.config.add_emission_lines = add_emission_lines
+    highres_generator.config.emission_lines = all_emission_lines
+    highres_generator.config.check_filters = check_filters
+    highres_generator.config.adjust_to = wavelengths
+    highres_generator.config.filters = filters
+    highres_generator.config.fixed = fixed
+    highres_generator.config.plotting_filters = filters
 
     # Set other flags
-    self.highres_generator.config.show = False
-    self.highres_generator.config.write = True
-    self.highres_generator.config.plot = True
+    highres_generator.config.show = False
+    highres_generator.config.write = True
+    highres_generator.config.plot = True
 
     # Writing
-    self.highres_generator.config.write_grids = True
-    self.highres_generator.config.write_elements = True
-    self.highres_generator.config.write_table = False
+    highres_generator.config.write_grids = True
+    highres_generator.config.write_elements = True
+    highres_generator.config.write_table = False
 
     # Advanced
-    self.highres_generator.config.plot_resampled = True
-    self.highres_generator.config.plot_residuals = True
+    highres_generator.config.plot_resampled = True
+    highres_generator.config.plot_residuals = True
 
     # Other
-    self.highres_generator.config.label = "highres"
+    highres_generator.config.label = "highres"
 
     # Generate the high-resolution wavelength grids
-    self.highres_generator.run(table=self.wg_table, seds=self.template_seds, out_paths=self.highres_grid_paths, plot_paths=self.highres_grid_paths)
+    highres_generator.run(table=table, seds=plot_seds, out_paths=out_paths, plot_paths=plot_paths)
+
+    # Initialize dictionary for the grids
+    grids = OrderedDict()
+
+    # Loop over the grids
+    for index in range(highres_generator.ngrids):
+
+        # Get target npoints
+        target_npoints = highres_generator.get_target_npoints(index)
+
+        # Get wavelength grid
+        wavelength_grid = highres_generator.grids[index]
+
+        # Set the grid
+        grids[target_npoints] = wavelength_grid
+
+    # Return the grids
+    return grids
 
 # -----------------------------------------------------------------
