@@ -255,9 +255,9 @@ class SimulationAnalyser(Configurable):
         self.simulation = None
 
         # The lower-level analysers
-        self.basic_analyser = BasicAnalyser()
-        self.batch_analyser = BatchAnalyser()
-        self.scaling_analyser = ScalingAnalyser()
+        self.basic_analyser = None
+        self.batch_analyser = None
+        self.scaling_analyser = None
 
     # -----------------------------------------------------------------
 
@@ -285,6 +285,54 @@ class SimulationAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.do_basic
+
+    # -----------------------------------------------------------------
+
+    @property
+    def batch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.do_batch and self.simulation.from_batch and not self.analysed_batch
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scaling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.do_scaling and self.simulation.from_scaling_test and not self.analysed_scaling
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.do_extra
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -300,16 +348,16 @@ class SimulationAnalyser(Configurable):
         if self.simulation.analysis is None: return
 
         # 3. Run the basic analysis
-        if self.config.basic: self.analyse_basic()
+        if self.basic: self.analyse_basic()
 
         # 4. Run the batch analysis
-        if self.simulation.from_batch and not self.analysed_batch: self.analyse_batch()
+        if self.batch: self.analyse_batch()
 
-        # 5. Analyse the scaling, if the simulation is part of a scaling test
-        if self.simulation.from_scaling_test and not self.analysed_scaling: self.analyse_scaling()
+        # 5. Analyse the scaling
+        if self.scaling: self.analyse_scaling()
 
         # 6. Perform extra analysis
-        if self.config.extra: self.analyse_extra()
+        if self.extra: self.analyse_extra()
 
     # -----------------------------------------------------------------
 
@@ -328,6 +376,11 @@ class SimulationAnalyser(Configurable):
         if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
         elif self.config.remote is not None and self.config.id is not None: self.load_simulation()
         else: raise ValueError("No simulation is specified")
+
+        # Set the analysers
+        self.basic_analyser = BasicAnalyser(self.config.basic)
+        self.batch_analyser = BatchAnalyser(self.config.batch)
+        self.scaling_analyser = ScalingAnalyser()
 
         # Set flags
         self.basic_analyser.config.ignore_missing_data = self.config.ignore_missing_data

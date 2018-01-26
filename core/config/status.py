@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.core.config.analyse_simulation import definition as analysis_definition
 
 # -----------------------------------------------------------------
 
@@ -37,6 +38,7 @@ definition.add_flag("check_data", "for crashed simulations, check whether the si
 # -----------------------------------------------------------------
 
 definition.add_flag("ignore_missing_data", "ignore missing data when analysing the simulations", False)
+definition.add_flag("batch_replace", "replace timing and memory information when a simulation is ")
 
 # -----------------------------------------------------------------
 
@@ -46,5 +48,10 @@ definition.add_flag("offline", "run in offline mode: only analyse already retrie
 
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of allowed open files", 2000)
+
+# -----------------------------------------------------------------
+
+# Add section for analysis options
+definition.import_section("analysis", "analyser options", analysis_definition)
 
 # -----------------------------------------------------------------

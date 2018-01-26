@@ -21,4 +21,7 @@ definition.add_positional_optional("id", "integer", "ID of the simulation")
 # Add flags
 definition.add_flag("ignore_missing_data", "ignore missing data when analysing the simulations", False)
 
+# Replace already existing simulations
+definition.add_flag("replace", "replace the timing and memory information when a simulation is already in the table (otherwise, an error is raised)", False)
+
 # -----------------------------------------------------------------

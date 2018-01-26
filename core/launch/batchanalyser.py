@@ -220,11 +220,16 @@ class BatchAnalyser(Configurable):
         # Open the timing table
         timing_table = TimingTable.from_file(self.timing_table_path)
 
+        # Already simulation with this name in the table?
+        if timing_table.has_simulation(self.simulation.name):
+            if self.config.replace: timing_table.remove_simulation(self.simulation.name)
+            else: raise ValueError("Simulation with name '" + self.simulation.name + "' is already in the timing table")
+
         # Add an entry
         unique_name = timing_table.add_from_simulation(self.simulation, self.ski, self.log_file, self.timeline)
 
         # Check
-        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name")
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: this shouldn't happen")
 
         # Save the table
         timing_table.save()
@@ -251,11 +256,16 @@ class BatchAnalyser(Configurable):
         # Open the memory table
         memory_table = MemoryTable.from_file(self.memory_table_path)
 
+        # Already a simulation with this name in the table
+        if memory_table.has_simulation(self.simulation.name):
+            if self.config.replace: memory_table.remove_simulation(self.simulation.name)
+            else: raise ValueError("Simulation with name '" + self.simulation.name + "' is already in the memory table")
+
         # Add an entry
         unique_name = memory_table.add_from_simulation(self.simulation, self.ski, self.log_file)
 
         # Check
-        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name")
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: this shouldn't happen")
 
         # Save the table
         memory_table.save()

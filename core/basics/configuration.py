@@ -1919,6 +1919,32 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def section_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sections.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_section(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.section_names: raise ValueError("Not a section: '" + name + "'")
+        del self.sections[name]
+        del self.section_descriptions[name]
+
+    # -----------------------------------------------------------------
+
     def import_section(self, name, description, definition):
 
         """
@@ -2009,6 +2035,31 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fixed_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fixed.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_fixed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.fixed_names: raise ValueError("Not a fixed setting: '" + name + "'")
+        del self.fixed[name]
+
+    # -----------------------------------------------------------------
+
     def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None,
                      min_value=None, max_value=None, forbidden=None):
 
@@ -2035,6 +2086,31 @@ class ConfigurationDefinition(object):
         # Add
         self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list,
                                   suggestions=suggestions, min_value=min_value, max_value=max_value, forbidden=forbidden)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def required_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.required.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_required(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.required_names: raise ValueError("Not a required setting: '" + name + "'")
+        del self.required[name]
 
     # -----------------------------------------------------------------
 
@@ -2086,6 +2162,31 @@ class ConfigurationDefinition(object):
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
                                       dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value,
                                       max_value=max_value, forbidden=forbidden, default_alias=default_alias)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def positional_optional_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pos_optional.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_positional_optional(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.positional_optional_names: raise ValueError("Not a positional optional setting: '" + name + "'")
+        del self.pos_optional[name]
 
     # -----------------------------------------------------------------
 
@@ -2153,6 +2254,31 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def optional_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optional.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_optional(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.optional_names: raise ValueError("Not an optional setting: '" + name + "'")
+        del self.optional[name]
+
+    # -----------------------------------------------------------------
+
     def add_flag(self, name, description, default=False, letter=None, convert_default=False):
 
         """
@@ -2170,6 +2296,31 @@ class ConfigurationDefinition(object):
 
         # Add
         self.flags[name] = Map(description=description, letter=letter, default=default)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def flag_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.flags.keys()
+
+    # -----------------------------------------------------------------
+
+    def remove_flag(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name not in self.flag_names: raise ValueError("Not a flag setting: '" + name + "'")
+        del self.flags[name]
 
 # -----------------------------------------------------------------
 

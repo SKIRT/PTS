@@ -377,6 +377,19 @@ class TimingTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        self.remove_row(index)
+
+    # -----------------------------------------------------------------
+
     def index_for_simulation(self, simulation_name):
 
         """

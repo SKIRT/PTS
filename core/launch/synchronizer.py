@@ -57,7 +57,7 @@ class RemoteSynchronizer(Configurable):
         self._host_ids = None
 
         # The simulation results analyser
-        self.analyser = SimulationAnalyser()
+        self.analyser = None
 
         # Initialize a list to contain the retrieved simulations
         self.simulations = []
@@ -106,6 +106,9 @@ class RemoteSynchronizer(Configurable):
 
         # Call the setup function of the base class
         super(RemoteSynchronizer, self).setup(**kwargs)
+
+        # Create the simulation analyser
+        self.analyser = SimulationAnalyser(self.config.analysis)
 
         # Check flags
         if not self.config.retrieve and self.config.analyse: raise ValueError("Cannot analyse when retrieve is disabled")
