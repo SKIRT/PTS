@@ -1261,24 +1261,26 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
         mock_sed.add_point(fltr, fluxdensity, error)
 
     # Show which wavelengths are used to create filter frames
-    log.debug("Used the following wavelengths of the simulated SED to create mock observed flux points without spectral convolution:")
-    log.debug("")
-    for wavelength_micron in used_wavelengths:
-        filters = used_wavelengths[wavelength_micron]
-        filter_names = [str(f) for f in filters]
-        nfilters = len(filter_names)
-        if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
-        else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
-    log.debug("")
+    if len(used_wavelengths) > 0:
+        log.debug("Used the following wavelengths of the simulated SED to create mock observed flux points without spectral convolution:")
+        log.debug("")
+        for wavelength_micron in used_wavelengths:
+            filters = used_wavelengths[wavelength_micron]
+            filter_names = [str(f) for f in filters]
+            nfilters = len(filter_names)
+            if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
+            else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
+        log.debug("")
 
     # Show which wavelengths are used to create filter frames
-    log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
-    log.debug("")
-    for fltr in wavelengths_for_filters:
-        filter_name = str(fltr)
-        wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
-        log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
-    log.debug("")
+    if len(wavelengths_for_filters) > 0:
+        log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+        log.debug("")
+        for fltr in wavelengths_for_filters:
+            filter_name = str(fltr)
+            wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+            log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+        log.debug("")
 
     # Return the mock observed SED
     return mock_sed

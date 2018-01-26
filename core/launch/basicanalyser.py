@@ -1252,7 +1252,9 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.config.spectral_convolution = self.misc_options.fluxes_spectral_convolution
 
         # Set plot flag
-        self.flux_calculator.config.plot = self.misc_options.plot_fluxes
+        self.flux_calculator.config.plot = True
+        self.flux_calculator.config.plot_seds = self.misc_options.plot_fluxes
+        self.flux_calculator.config.plot_images = False
 
         # Run
         self.flux_calculator.run(**self.observed_fluxes_input)
@@ -1564,8 +1566,9 @@ class BasicAnalyser(Configurable):
         # Set spectral convolution flag
         self.image_flux_calculator.config.spectral_convolution = self.misc_options.fluxes_from_images_spectral_convolution
 
-        # Set plot flag
-        self.image_flux_calculator.config.plot = self.misc_options.plot_fluxes_from_images
+        # Set plot SEDs flag
+        self.image_flux_calculator.config.plot = True
+        self.image_flux_calculator.config.plot_seds = self.misc_options.plot_fluxes_from_images
 
         # Set from images flag
         self.image_flux_calculator.config.from_images = True

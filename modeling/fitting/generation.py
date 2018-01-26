@@ -34,7 +34,8 @@ from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.input import SimulationInput
-from ...core.data.sed import ObservedSED
+from ...core.data.sed import ObservedSED, SED
+from ...core.simulation.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -470,6 +471,57 @@ class Generation(object):
 
         path = self.get_simulation_output_path(name)
         return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_logfile_path(self, name):
+
+        """
+        :param name:
+        :return:
+        """
+
+        output_path = self.get_simulation_output_path(name)
+        return fs.join(output_path, self.object_name + "_log.txt")
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_logfile(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_logfile_path(name)
+        return LogFile.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_sed_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        output_path = self.get_simulation_output_path(name)
+        return fs.join(output_path, self.object_name + "_earth_sed.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_sed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_sed_path(name)
+        return SED.from_skirt(path)
 
     # -----------------------------------------------------------------
 

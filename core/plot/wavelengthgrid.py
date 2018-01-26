@@ -4709,7 +4709,7 @@ class WavelengthGridPlotter(Configurable):
         log.info("Finishing the plot ...")
 
         # Set the title
-        if self.title is not None: self.figure.set_title(self.title, width=60)  # self._figure.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: self.figure.set_title(self.title, width=60)
 
         # Plot
         self.figure.finish(out=self.out_path)
