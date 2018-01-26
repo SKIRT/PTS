@@ -40,6 +40,7 @@ definition.add_required("generation", "string", "generation name")
 
 # Flags
 definition.add_flag("sed", "show the SED")
+definition.add_flag("mock_sed", "show the mock SED")
 
 # Specifiy the indices of the different parameters
 definition.add_optional("indices", "integer_list", "indices of the chosen parameter values")
@@ -118,5 +119,12 @@ simulation = generation.get_simulation_or_basic(simulation_name)
 if config.sed:
     if not generation.has_sed_plot(simulation_name): raise IOError("No SED plot")
     else: fs.open_file(generation.get_simulation_sed_plot_path(simulation_name))
+
+# -----------------------------------------------------------------
+
+# Show the mock SED
+if config.mock_sed:
+    if not generation.has_mock_sed_plot(simulation_name): raise IOError("No mock SED plot")
+    else: fs.open_file(generation.get_simulation_mock_sed_plot_path(simulation_name))
 
 # -----------------------------------------------------------------

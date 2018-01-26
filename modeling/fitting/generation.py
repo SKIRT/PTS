@@ -688,6 +688,30 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_mock_sed_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_mock_sed_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_simulation_mock_sed_plot_path(name))
+
+    # -----------------------------------------------------------------
+
     def get_simulation_sed_differences_path(self, name):
 
         """
