@@ -261,7 +261,7 @@ class SKIRTLauncher(Configurable):
             self.remote.setup(self.config.remote, self.config.cluster_name)
 
         # Create output directory
-        if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
+        if self.config.create_output and not fs.is_directory(self.config.simulation_output): fs.create_directory(self.config.simulation_output)
 
         # Create the logging options
         if "logging_options" in kwargs and kwargs["logging_options"] is not None: self.logging_options = kwargs.pop("logging_options")
@@ -351,8 +351,7 @@ class SKIRTLauncher(Configurable):
         self.analysis_options.set_options(self.config.analysis)
 
         # Check the options
-        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
-                                    retrieve_types=self.config.retrieve_types)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.simulation_output, retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 
@@ -371,8 +370,7 @@ class SKIRTLauncher(Configurable):
         self.analysis_options = options
 
         # Check the options
-        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.output,
-                                    retrieve_types=self.config.retrieve_types)
+        self.analysis_options.check(logging_options=self.logging_options, output_path=self.config.simulation_output, retrieve_types=self.config.retrieve_types)
 
     # -----------------------------------------------------------------
 
@@ -387,7 +385,7 @@ class SKIRTLauncher(Configurable):
         log.info("Creating the simulation definition ...")
 
         # Create the simulation definition
-        self.definition = SingleSimulationDefinition(self.config.ski, self.config.output, self.config.input)
+        self.definition = SingleSimulationDefinition(self.config.ski, self.config.simulation_output, self.config.simulation_input)
 
     # -----------------------------------------------------------------
 
@@ -471,8 +469,7 @@ class SKIRTLauncher(Configurable):
         else:
 
             # If memory requirement is not set
-            if self.memory is None: self.memory = estimate_memory(self.definition.ski_path,
-                                                                  input_path=self.config.input, ncells=self.ncells)
+            if self.memory is None: self.memory = estimate_memory(self.definition.ski_path, input_path=self.config.simulation_input, ncells=self.ncells)
 
             # Determine the number of possible nprocesses
             processes = get_possible_nprocesses_in_memory(monitoring.free_memory(), self.memory.serial,

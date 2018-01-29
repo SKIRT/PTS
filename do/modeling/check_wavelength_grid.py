@@ -124,6 +124,8 @@ def check_grid_convolution():
     wavelengths_for_filters = OrderedDict()
 
     print("")
+    print(fmt.underlined + fmt.blue + "Filters for convolution:" + fmt.reset)
+    print("")
 
     # Loop over the fitting filters
     for fltr in fitting_run.fitting_filters:
@@ -154,12 +156,12 @@ def check_grid_convolution():
     # Show which wavelengths are used to create filter frames
     if len(wavelengths_for_filters) > 0:
         print("")
-        print("Wavelengths used for filters:")
+        print(fmt.underlined + fmt.blue + "Wavelengths used for filters:" + fmt.reset)
         print("")
         for fltr in wavelengths_for_filters:
             filter_name = str(fltr)
             wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
-            print(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+            print(" - " + fmt.bold + filter_name + fmt.reset + ": " + ", ".join(wavelength_strings))
         print("")
 
 # -----------------------------------------------------------------
@@ -178,6 +180,8 @@ def check_grid_no_convolution():
     # Keep track of the wavelengths that have already been used to
     used_wavelengths = defaultdict(list)
 
+    print("")
+    print(fmt.underlined + fmt.blue + "Filters without convolution:" + fmt.reset)
     print("")
 
     # Loop over the fitting filters
@@ -223,7 +227,7 @@ def check_grid_no_convolution():
     # Show which wavelengths are used to create filter frames
     if len(used_wavelengths) > 0:
         print("")
-        print("Used wavelengths and corresponding filter(s):")
+        print(fmt.underlined + fmt.blue + "Used wavelengths and corresponding filter(s):" + fmt.reset)
         print("")
         for wavelength_micron in used_wavelengths:
             filters = used_wavelengths[wavelength_micron]

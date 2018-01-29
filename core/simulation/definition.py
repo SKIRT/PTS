@@ -54,10 +54,8 @@ def create_definitions(path, output_path, input_path, recursive=False):
 
         # Open the ski file and check whether input is required
         ski = SkiFile(ski_path)
-        if ski.needs_input:
-            input_paths = ski.input_paths(input_path, path)
-        else:
-            input_paths = None
+        if ski.needs_input: input_paths = ski.input_paths(input_path, path)
+        else: input_paths = None
 
         # Determine output directory
         if recursive:
@@ -72,8 +70,7 @@ def create_definitions(path, output_path, input_path, recursive=False):
             ski_dir_paths.append(dir_path)
 
         # Create a directory in the output directory
-        else:
-            simulation_output_path = fs.create_directory_in(output_path, prefix)
+        else: simulation_output_path = fs.create_directory_in(output_path, prefix)
 
         # Create the simulation definition
         definition = SingleSimulationDefinition(ski_path, simulation_output_path, input_paths)
@@ -111,7 +108,7 @@ class SimulationDefinition(object):
 
         return copy.deepcopy(self)
 
-    # -----------------------------------------------------------------
+# -----------------------------------------------------------------
 
 class SingleSimulationDefinition(SimulationDefinition):
 

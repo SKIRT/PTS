@@ -1813,7 +1813,7 @@ class BatchLauncher(Configurable):
         log.info("Loading ski files in the current working directory into the queue ...")
 
         # Create simulation definitions from the working directory and add them to the queue
-        for definition in create_definitions(self.config.path, self.config.output, self.config.input, recursive=self.config.recursive):
+        for definition in create_definitions(self.config.path, self.config.simulation_output, self.config.simulation_input, recursive=self.config.recursive):
 
             # Add the definition to the queue
             self.add_to_queue(definition, definition.prefix)

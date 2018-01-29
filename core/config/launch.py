@@ -16,8 +16,8 @@ from pts.core.simulation.output import output_type_choices
 definition = ConfigurationDefinition()
 
 # Input and output
-definition.add_optional("input", "directory_path", "input directory for the simulation(s)", letter="i")
-definition.add_optional("output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o", convert_default=True)
+definition.add_optional("simulation_input", "directory_path", "input directory for the simulation(s)", letter="i")
+definition.add_optional("simulation_output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o", convert_default=True)
 
 # Various flags
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
