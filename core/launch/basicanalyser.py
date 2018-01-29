@@ -1181,8 +1181,22 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    # @lazyproperty
+    # def fluxes_reference_sed(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     from ..data.sed import ObservedSED
+    #     if self.misc_options.plot_fluxes_reference_sed is None: return None
+    #     else: return ObservedSED.from_file(self.misc_options.plot_fluxes_reference_sed)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def fluxes_reference_sed(self):
+    def fluxes_reference_seds(self):
 
         """
         This function ...
@@ -1190,8 +1204,11 @@ class BasicAnalyser(Configurable):
         """
 
         from ..data.sed import ObservedSED
-        if self.misc_options.plot_fluxes_reference_sed is None: return None
-        else: return ObservedSED.from_file(self.misc_options.plot_fluxes_reference_sed)
+        if self.misc_options.plot_fluxes_reference_seds is None: return None
+        else:
+            seds = OrderedDict()
+            for label in self.misc_options.plot_fluxes_reference_seds: seds[label] = ObservedSED.from_file(self.misc_options.plot_fluxes_reference_seds[label])
+            return seds
 
     # -----------------------------------------------------------------
 
@@ -1228,7 +1245,7 @@ class BasicAnalyser(Configurable):
         input_dict["instrument_names"] = self.misc_options.observation_instruments
         input_dict["errors"] = self.misc_options.flux_errors
         input_dict["no_spectral_convolution_filters"] = self.misc_options.no_fluxes_spectral_convolution_filters
-        input_dict["reference_sed"] = self.fluxes_reference_sed
+        input_dict["reference_seds"] = self.fluxes_reference_seds
 
         # Return the input
         return input_dict
@@ -1487,8 +1504,22 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    # @lazyproperty
+    # def fluxes_from_images_reference_sed(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     from ..data.sed import ObservedSED
+    #     if self.misc_options.plot_fluxes_from_images_reference_sed is None: return None
+    #     else: return ObservedSED.from_file(self.misc_options.plot_fluxes_from_images_reference_sed)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def fluxes_from_images_reference_sed(self):
+    def fluxes_from_images_reference_seds(self):
 
         """
         This function ...
@@ -1496,8 +1527,11 @@ class BasicAnalyser(Configurable):
         """
 
         from ..data.sed import ObservedSED
-        if self.misc_options.plot_fluxes_from_images_reference_sed is None: return None
-        else: return ObservedSED.from_file(self.misc_options.plot_fluxes_from_images_reference_sed)
+        if self.misc_options.plot_fluxes_from_images_reference_seds is None: return None
+        else:
+            seds = OrderedDict()
+            for label in self.misc_options.plot_fluxes_from_images_reference_seds: seds[label] = ObservedSED.from_file(self.misc_options.plot_fluxes_from_images_reference_seds[label])
+            return seds
 
     # -----------------------------------------------------------------
 
@@ -1536,7 +1570,7 @@ class BasicAnalyser(Configurable):
         input_dict["no_spectral_convolution_filters"] = self.misc_options.no_fluxes_from_images_spectral_convolution_filters
         input_dict["coordinate_systems"] = self.fluxes_from_images_coordinate_systems
         input_dict["masks"] = self.fluxes_from_images_masks
-        input_dict["reference_sed"] = self.fluxes_from_images_reference_sed
+        input_dict["reference_seds"] = self.fluxes_from_images_reference_seds
 
         # Remote
         input_dict["host_id"] = self.misc_options.fluxes_from_images_remote

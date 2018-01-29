@@ -1486,14 +1486,11 @@ def resample_filter_wavelengths(wavelengths, filters, min_wavelengths_in_filter=
             else: new_wavelengths = None
 
             # If FWHM of the filter is defined
-            if fltr.fwhm is not None:
-
-                min_wavelength_fwhm = fltr.mean - fltr.fwhm
-                max_wavelength_fwhm = fltr.mean + fltr.fwhm
+            if fltr.has_fwhm:
 
                 # Check that at least 3 wavelength points sample the inner range of the filter
-                current_indices = [i for i in range(len(wavelengths)) if min_wavelength_fwhm < wavelengths[i] < max_wavelength_fwhm]
-                if new_wavelengths is not None: current_indices_new = [i for i in range(len(new_wavelengths)) if min_wavelength_fwhm < new_wavelengths[i] < max_wavelength_fwhm]
+                current_indices = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range]
+                if new_wavelengths is not None: current_indices_new = [i for i in range(len(new_wavelengths)) if new_wavelengths[i] in fltr.fwhm_range]
                 else: current_indices_new = None
 
                 # Check if there are at least 3

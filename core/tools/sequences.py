@@ -384,6 +384,45 @@ def all_equal_to(lst, value):
 
 # -----------------------------------------------------------------
 
+def all_zero(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    return all_equal_to(lst, 0)
+
+# -----------------------------------------------------------------
+
+def has_equal_to(lst, value):
+
+    """
+    This function ...
+    :param lst:
+    :param value:
+    :return:
+    """
+
+    for item in lst:
+        if item == value: return True
+    return False
+
+# -----------------------------------------------------------------
+
+def has_zero(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    return has_equal_to(lst, 0)
+
+# -----------------------------------------------------------------
+
 def all_identical_to(lst, value):
 
     """
@@ -1512,6 +1551,18 @@ def noccurences(sequence, value):
     """
 
     return sequence.count(value)
+
+# -----------------------------------------------------------------
+
+def nzeros(sequence):
+
+    """
+    Thisn function ...
+    :param sequence:
+    :return:
+    """
+
+    return noccurences(sequence, 0)
 
 # -----------------------------------------------------------------
 

@@ -985,6 +985,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def wavelength_grid_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.wavelength_grids_path, extension="dat", not_contains="grids", returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_wavelength_grids(self):
 
         """
@@ -992,7 +1004,196 @@ class FittingRun(object):
         :return:
         """
 
-        return len(fs.files_in_path(self.wavelength_grids_path, extension="txt", not_contains="grids")) > 0
+        return len(self.wavelength_grid_names) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, name + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_wavelength_grid_path(name)
+
+        # Load the wavelength grid and return it
+        return WavelengthGrid.from_skirt_input(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid_data_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.wavelength_grids_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_data_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.wavelength_grids_path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Determine and return the plot path
+        return fs.join(data_path, "grid.pdf")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_data_grid_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Determine and return the grid filepath
+        return fs.join(data_path, "grid.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_data_grid(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_wavelength_grid_data_grid_path(name)
+
+        # Return
+        return WavelengthGrid.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_subgrid_paths(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Get filepaths
+        filepaths = fs.files_in_path(data_path, extension="dat", startswith="subgrid_")
+
+        # Create dictionary
+        paths = dict()
+        for filepath in filepaths:
+            subgrid = fs.strip_extension(fs.name(filepath)).split("subgrid_")[1]
+            paths[subgrid] = filepath
+
+        # Return the dictionary of paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_filter_wavelengths_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Return the path
+        return fs.join(data_path, "filter_wavelengths.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_line_wavelengths_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Return the path
+        return fs.join(data_path, "line_wavelengths.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_new_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Return the path
+        return fs.join(data_path, "new.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid_replaced_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get data directory path
+        data_path = self.get_wavelength_grid_data_path(name)
+
+        # Return the path
+        return fs.join(data_path, "replaced.dat")
 
     # -----------------------------------------------------------------
 
@@ -2423,47 +2624,6 @@ class FittingRun(object):
 
         # Initial value (False)
         else: return False
-
-    # -----------------------------------------------------------------
-
-    # @lazyproperty
-    # def highest_wavelength_grid_level(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Return the last filename, sorted as integers
-    #     return int(fs.files_in_path(self.wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
-
-    # -----------------------------------------------------------------
-
-    # @lazyproperty
-    # def current_wavelength_grid_level(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Generations exist
-    #     if len(self.generations_table) > 0: return self.generations_table["Wavelength grid level"][-1]
-    #
-    #     # Initial value
-    #     else: return 0
-
-    # -----------------------------------------------------------------
-
-    # def wavelength_grid_path_for_level(self, level):
-    #
-    #     """
-    #     This function ...
-    #     :param level:
-    #     :return:
-    #     """
-    #
-    #     return fs.join(self.wavelength_grids_path, str(level) + ".txt")
 
     # -----------------------------------------------------------------
 

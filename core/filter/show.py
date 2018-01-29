@@ -373,10 +373,16 @@ class FilterShower(Configurable):
             # Loop over the filters
             for spec in self.broad[label]:
 
+                # Add the filter transmission curve
                 fltr = BroadBandFilter(spec)
                 curve = TransmissionCurve.from_filter(fltr)
                 name = spec.replace("_", "\_")
                 plotter.add_transmission_curve(curve, name)
+
+                # Plot FWMH range?
+                if self.config.plot_fwhm:
+                    plotter.add_wavelength(fltr.absolute_fwhm_range.min, "Min (FWHM) " + name, color_as=name)
+                    plotter.add_wavelength(fltr.absolute_fwhm_range.max, "Max (FWHM) " + name, color_as=name)
 
         # Loop over the narrow band filters
         for label in self.narrow:

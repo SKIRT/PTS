@@ -1158,6 +1158,18 @@ class ChiSquaredTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def worst_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def best_simulation_name_and_chi_squared(self):
 
         """
@@ -1332,6 +1344,18 @@ class ModelProbabilitiesTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, simulation_name, parameter_values, probability):
 
         """
@@ -1369,6 +1393,54 @@ class ModelProbabilitiesTable(SmartTable):
 
         index = np.argmax(self["Probability"])
         return self["Simulation name"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.all_zero(self["Probability"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_zero_but_one(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nzeros == self.nsimulations - 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_zeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.has_zero(self["Probability"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nzeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.nzeros(self["Probability"])
 
 # -----------------------------------------------------------------
 

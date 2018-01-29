@@ -36,7 +36,8 @@ from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
 from ..basics.plot import MPLFigure, pretty_colors, dark_pretty_colors
 from ..tools import filesystem as fs
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -96,7 +97,6 @@ class TransmissionPlotter(Configurable):
 
         # The wavelengths
         self.wavelengths = []
-        self.wavelength_labels = dict()
 
         # The axis limits
         self._min_wavelength = None
@@ -209,20 +209,24 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_wavelength(self, wavelength, label=None):
+    def add_wavelength(self, wavelength, label=None, color_as=None):
 
         """
         This function ...
         :param wavelength:
         :param label:
+        :param color_as:
         :return:
         """
 
-        # Add the wavelength
-        self.wavelengths.append(wavelength)
+        # Create entry
+        entry = Map()
+        entry.label = label
+        entry.wavelength = wavelength
+        entry.color_as = color_as
 
-        # Set the label if a label is given
-        if label is not None: self.wavelength_labels[len(self.wavelengths)-1] = label
+        # Add the wavelength
+        self.wavelengths.append(entry)
 
     # -----------------------------------------------------------------
 
@@ -379,7 +383,8 @@ class TransmissionPlotter(Configurable):
             if min_wavelength is None or self.curves[label].min_wavelength < min_wavelength: min_wavelength = self.curves[label].min_wavelength
 
         # Check the wavelengths
-        for wavelength in self.wavelengths:
+        for entry in self.wavelengths:
+            wavelength = entry.wavelength
             if min_wavelength is None or wavelength.to("micron").value < min_wavelength: min_wavelength = wavelength.to("micron").value
 
         # Return the minimum wavelength
@@ -402,7 +407,8 @@ class TransmissionPlotter(Configurable):
             if max_wavelength is None or self.curves[label].max_wavelength > max_wavelength: max_wavelength = self.curves[label].max_wavelength
 
         # CHeck the wavelengths
-        for wavelength in self.wavelengths:
+        for entry in self.wavelengths:
+            wavelength = entry.wavelength
             if max_wavelength is None or wavelength.to("micron").value > max_wavelength: max_wavelength = wavelength.to("micron").value
 
         # Return the maximum wavelength
@@ -547,6 +553,8 @@ class TransmissionPlotter(Configurable):
         min_wavelength = float("inf")
         max_wavelength = 0.0
 
+        curve_colors = dict()
+
         # Plot the transmission curves
         counter = 0
         for label in self.sorted_labels:
@@ -557,6 +565,7 @@ class TransmissionPlotter(Configurable):
             transmissions = curve.transmissions()
 
             colorVal = scalarMap.to_rgba(counter)
+            curve_colors[label] = colorVal
 
             # Plot the curve
             plt.fill(wavelengths, transmissions, label=label, color=colorVal, alpha=0.5, linewidth=self.config.plot.linewidth)
@@ -569,10 +578,17 @@ class TransmissionPlotter(Configurable):
             counter += 1
 
         # Plot the wavelengths
-        for index, wavelength in enumerate(self.wavelengths):
+        #for index, wavelength in enumerate(self.wavelengths):
+        for entry in self.wavelengths:
 
-            label = self.wavelength_labels[index] if index in self.wavelength_labels else None
-            self.main_plot.axvline(wavelength.to("micron").value, color="0.8", label=label)
+            wavelength = entry.wavelength
+            label = entry.label
+            color_as = entry.color_as
+            if color_as is not None: color = curve_colors[color_as]
+            else: color = "0.8"
+
+            #label = self.wavelength_labels[index] if index in self.wavelength_labels else None
+            self.main_plot.axvline(wavelength.to("micron").value, color=color, label=label)
 
         # Add title if requested
         if self.config.plot.add_titles and self.title is not None: self.figure.set_title(self.title) # fontsize=self.config.plot.title_fontsize?

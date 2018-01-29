@@ -264,8 +264,8 @@ class AnalysisOptions(Options):
         self.misc.add_property("write_fluxes_images", "boolean", "write out the images created to calculate the fluxes", False)
         self.misc.add_property("plot_fluxes", "boolean", "plot the fluxes", False)
         self.misc.add_property("plot_fluxes_from_images", "boolean", "plot the fluxes from images", False)
-        self.misc.add_property("plot_fluxes_reference_sed", "file_path", "reference SED for plotting fluxes")
-        self.misc.add_property("plot_fluxes_from_images_reference_sed", "file_path", "reference SED for plotting fluxes")
+        self.misc.add_property("plot_fluxes_reference_seds", "string_filepath_dictionary", "reference SEDs for plotting fluxes")
+        self.misc.add_property("plot_fluxes_from_images_reference_seds", "string_filepath_dictionary", "reference SEDs for plotting fluxes")
         self.misc.add_property("plot_fluxes_images", "boolean", "plot the images created to calculate the fluxes", False)
 
         ## Observed fluxes from images REMOTE

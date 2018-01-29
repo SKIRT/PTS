@@ -894,10 +894,26 @@ class BroadBandFilter(Filter):
         self._WavelengthPivot = np.sqrt(integral1 / integral2)
 
         self._EffWidth = None
-        self._FWHM = None
+
+        # Calculate the FWHM
+        # difference between the two wavelengths for which filter transmission is half maximum
+        max_transmission_index = np.argmax(transmissions)
+        max_transmission = transmissions[max_transmission_index]
+        half_max_transmission = 0.5 * max_transmission
+        min_wavelength_fwhm = None
+        max_wavelength_fwhm = None
+        for wavelength, transmission in zip(wavelengths, transmissions):
+            if transmission > half_max_transmission:
+                min_wavelength_fwhm = wavelength
+                break
+        for wavelength, transmission in zip(reversed(wavelengths), reversed(transmissions)):
+            if transmission > half_max_transmission:
+                max_wavelength_fwhm = wavelength
+                break
+        fwhm = max_wavelength_fwhm - min_wavelength_fwhm
+        self._FWHM = fwhm
 
         # Set peak wavelength
-        max_transmission_index = np.argmax(transmissions)
         self._WavelengthPeak = wavelengths[max_transmission_index]
 
     # ---------- Retrieving information -------------------------------
@@ -1126,18 +1142,36 @@ class BroadBandFilter(Filter):
         from ..units.parsing import parse_unit as u
         return self.effective_bandwidth() * u("micron") if self._EffWidth is not None else None
 
+    ## This function returns the FWHM of the filter
+    def fwhm_micron(self):
+        return self._FWHM
+
     @property
     def fwhm(self):
         from ..units.parsing import parse_unit as u
         return self._FWHM * u("micron") if self._FWHM is not None else None
 
     @property
+    def has_fwhm(self):
+        return self.fwhm is not None
+
+    @property
+    def half_fwhm(self):
+        return 0.5 * self.fwhm
+
+    @property
     def fwhm_range(self):
         if self.fwhm is None: return None
         from ..basics.range import QuantityRange
-        minimum = max(self.mean - self.fwhm, self.min)
-        maximum = min(self.mean + self.fwhm, self.max)
+        minimum = max(self.mean - self.half_fwhm, self.min)
+        maximum = min(self.mean + self.half_fwhm, self.max)
         return QuantityRange(minimum, maximum)
+
+    @property
+    def absolute_fwhm_range(self):
+        if self.fwhm is None: return None
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.mean - self.half_fwhm, self.mean + self.half_fwhm)
 
     # ---------- Integrating --------------------------------------
 
@@ -1164,11 +1198,26 @@ class BroadBandFilter(Filter):
     #   per unit of wavelength. This can be an array with the same length as \em wavelengths, or a multi-dimensional
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
-    def convolve(self, wavelengths, densities, return_grid=False):
+    def convolve(self, wavelengths, densities, return_grid=False, check_sampling=False, min_npoints=8, min_npoints_fwhm=5):
 
         # define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
+
+        # check the sampling
+        if check_sampling:
+
+            # Get the wavelength indices in the ranges
+            indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in self.range.to("micron").value]
+            indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in self.fwhm_range.to("micron").value]
+
+            # Get the number of wavelengths in the ranges
+            nwavelengths_in_minmax = len(indices_in_minmax)
+            nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+            # Check
+            if nwavelengths_in_minmax < min_npoints: raise ValueError("Too few wavelengths within the filter wavelength range (" + str(min_wavelength) + " to " + str(max_wavelength) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
+            if nwavelengths_in_fwhm < min_npoints_fwhm: raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(min_wavelength_fwhm) + " to " + str(max_wavelength_fwhm) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
 
         # create a combined wavelength grid, restricted to the overlapping interval
         w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]

@@ -21,7 +21,6 @@ runs = FittingRuns(modeling_path)
 definition = definition.copy()
 
 # The fitting run for which to fit the SED
-# FITTING RUN
 if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
 elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
 else: definition.add_required("name", "string", "name of the fitting run", choices=runs.names)

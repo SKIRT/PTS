@@ -32,6 +32,8 @@ definition.add_optional("distance", "length_quantity", "distance")
 definition.add_optional("wavelength", "length_quantity", "wavelength")
 definition.add_optional("frequency", "frequency_quantity", "frequency")
 definition.add_optional("pixelscale", "pixelscale", "pixelscale")
+definition.add_optional("solid_angle", "solid_angle", "solid angle")
+definition.add_optional("filter", "filter", "filter")
 
 # Create the configuration
 config = parse_arguments("convert", definition, "Convert a quantity from one unit to another")
@@ -96,6 +98,8 @@ if config.distance is not None: conversion_info["distance"] = config.distance
 if config.wavelength is not None: conversion_info["wavelength"] = config.wavelength
 if config.frequency is not None: conversion_info["frequency"] = config.frequency
 if config.pixelscale is not None: conversion_info["pixelscale"] = config.pixelscale
+if config.solid_angle is not None: conversion_info["solid_angle"] = config.solid_angle
+if config.filter is not None: conversion_info["fltr"] = config.filter
 
 # -----------------------------------------------------------------
 

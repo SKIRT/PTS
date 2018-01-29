@@ -1873,6 +1873,21 @@ def angle(argument):
 
 # -----------------------------------------------------------------
 
+def solid_angle(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from astropy.units import Quantity
+    value = Quantity(argument)
+    if value.physical_type != "solid angle": raise ValueError("Not a solid angle")
+    return value
+
+# -----------------------------------------------------------------
+
 def errorbar(argument):
 
     """

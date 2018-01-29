@@ -1164,6 +1164,7 @@ class DistributionPlotter(Configurable):
                 # Add frequencies
                 if self.config.frequencies:
                     for value, frequency in zip(distribution.values, distribution.frequencies):
+                        #print(value, frequency)
                         y_value = frequency + 0.02
                         plot.text(value, y_value, tostr(frequency, round=True, ndigits=2), color=color, horizontalalignment='center', size="small") # fontweight='bold'?
 

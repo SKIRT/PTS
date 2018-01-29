@@ -75,6 +75,15 @@ generation = fitting_run.get_generation(config.generation)
 # Get the chi squared table
 chi_squared = generation.chi_squared_table
 
+# Get the maximum chi squared value
+min_chi_squared = chi_squared.best_chi_squared
+max_chi_squared = chi_squared.worst_chi_squared
+max_chi_squared_magnitude = numbers.order_of_magnitude(max_chi_squared)
+
+# Set number of digits for chi squared values
+chisq_ndecimal = 1
+chisq_ndigits = max_chi_squared_magnitude + 1 + chisq_ndecimal
+
 # -----------------------------------------------------------------
 
 # Check
@@ -110,6 +119,12 @@ print("")
 print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
 print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(nretrieved) + " (" + tostr(fraction_retrieved*100, round=True, ndigits=2) + "%)")
 print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
+print("")
+
+# -----------------------------------------------------------------
+
+print(fmt.bold + "Best chi squared: " + fmt.reset + tostr(min_chi_squared))
+print(fmt.bold + "Worst chi squared: " + fmt.reset + tostr(max_chi_squared))
 print("")
 
 # -----------------------------------------------------------------
@@ -172,11 +187,6 @@ if config.parameters:
     # Print
     print(" " * nspaces + "\t" + "\t".join(fitting_run.free_parameter_labels))
     print(" " * nspaces + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
-
-# -----------------------------------------------------------------
-
-chisq_ndecimal = 1
-chisq_ndigits = 7
 
 # -----------------------------------------------------------------
 

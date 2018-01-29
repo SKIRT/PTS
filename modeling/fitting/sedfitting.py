@@ -407,6 +407,18 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.parameter_units
+
+    # -----------------------------------------------------------------
+
     def calculate_model_probabilities_generation(self, generation_name):
 
         """
@@ -422,26 +434,30 @@ class SEDFitter(FittingComponent):
         simulation_names, parameter_values, chi_squared_values = self.get_simulation_names_parameters_and_chi_squared_for_generation(generation_name)
         nsimulations = len(simulation_names)
 
-        # Calculate the probability for each model
-        probabilities = np.exp(-0.5 * np.asarray(chi_squared_values))
+        # Convert chi squared values to probabilities
+        probabilities_table = chi_squared_to_probabilities(chi_squared_values, simulation_names, parameter_values, self.free_parameter_labels, self.parameter_units)
 
-        # Create the probabilities table
-        probabilities_table = ModelProbabilitiesTable(parameters=self.free_parameter_labels, units=self.fitting_run.parameter_units)
+        # Check the probabilities
+        if probabilities_table.all_zero:
 
-        # Add the entries to the model probabilities table
-        for i in range(nsimulations):
+            # Give warning
+            log.warning("All probabilities for the '" + generation_name + "' generation are zero")
 
-            # Get the simulation name
-            simulation_name = simulation_names[i]
+            # Get the minimum chi squared and subtract it from all chi squared values
+            min_chi_squared = min(chi_squared_values)
+            new_chi_squared_values = [value - min_chi_squared + 1 for value in chi_squared_values]
 
-            # Get a dictionary with the parameter values for this simulation
-            values = parameter_values[i]
+            # Try converting new chi squared values to probabilities
+            probabilities_table = chi_squared_to_probabilities(new_chi_squared_values, simulation_names, parameter_values,
+                                                               self.free_parameter_labels, self.parameter_units)
 
-            # Get the probability
-            probability = probabilities[i]
+            # Check again
+            if probabilities_table.all_zero: raise RuntimeError("All probabilities for the '" + generation_name + "' are still zero")
+            if probabilities_table.all_zero_but_one: raise RuntimeError("All probabilities for the '" + generation_name + "' are still zero")
+            if probabilities_table.has_zeros: log.warning("Some probabilities for the '" + generation_name + "' generation are zeros (" + str(probabilities_table.nzeros) + " out of " + str(nsimulations) + ")")
 
-            # Add an entry to the table
-            probabilities_table.add_entry(simulation_name, values, probability)
+        # Some zeros
+        elif probabilities_table.has_zeros: log.warning("Some probabilities for the '" + generation_name + "' generation are zeros (" + str(probabilities_table.nzeros) + " out of " + str(nsimulations) + ")")
 
         # Save the model probabilities table
         table_path = self.get_model_probabilities_table_path_for_generation(generation_name)
@@ -870,6 +886,47 @@ class SEDFitter(FittingComponent):
 
         # Write the animation
         self.animation.saveto(path)
+
+# -----------------------------------------------------------------
+
+def chi_squared_to_probabilities(chi_squared_values, simulation_names, parameter_values, parameter_labels, parameter_units):
+
+    """
+    This function ...
+    :param chi_squared_values:
+    :param simulation_names:
+    :param parameter_values:
+    :param parameter_labels:
+    :param parameter_units:
+    :return:
+    """
+
+    # Get number of simulations
+    nsimulations = len(simulation_names)
+
+    # Calculate the probability for each model
+    probabilities = np.exp(-0.5 * np.asarray(chi_squared_values))
+
+    # Create the probabilities table
+    probabilities_table = ModelProbabilitiesTable(parameters=parameter_labels, units=parameter_units)
+
+    # Add the entries to the model probabilities table
+    for i in range(nsimulations):
+
+        # Get the simulation name
+        simulation_name = simulation_names[i]
+
+        # Get a dictionary with the parameter values for this simulation
+        values = parameter_values[i]
+
+        # Get the probability
+        probability = probabilities[i]
+
+        # Add an entry to the table
+        probabilities_table.add_entry(simulation_name, values, probability)
+
+    # Return the probability table
+    return probabilities_table
 
 # -----------------------------------------------------------------
 

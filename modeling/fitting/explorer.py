@@ -1016,6 +1016,26 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def plot_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        paths = OrderedDict()
+
+        # Set the SED paths
+        paths["Observed clipped fluxes"] = self.observed_sed_path
+        paths["Observed truncated fluxes"] = self.truncated_sed_path
+
+        # Return the dictionary
+        return paths
+
+    # -----------------------------------------------------------------
+
     def set_misc_options(self):
 
         """
@@ -1049,7 +1069,7 @@ class ParameterExplorer(FittingComponent):
 
             # Plot fluxes
             self.launcher.config.analysis.misc.plot_fluxes_from_images = True
-            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_sed = self.fit_sed_path
+            self.launcher.config.analysis.misc.plot_fluxes_from_images_reference_seds = self.plot_sed_paths #self.fit_sed_path
 
             # Set remote for creating images from datacubes
             self.launcher.config.analysis.misc.fluxes_from_images_remote = self.other_host_id
@@ -1070,7 +1090,7 @@ class ParameterExplorer(FittingComponent):
 
             # Plot fluxes
             self.launcher.config.analysis.misc.plot_fluxes = True
-            self.launcher.config.analysis.misc.plot_fluxes_reference_sed = self.fit_sed_path
+            self.launcher.config.analysis.misc.plot_fluxes_reference_seds = self.plot_sed_paths #self.fit_sed_path
 
         # Observation filters and observation instruments
         self.launcher.config.analysis.misc.observation_filters = self.fitting_filter_names

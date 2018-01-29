@@ -53,6 +53,11 @@ default_filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "
 
 # -----------------------------------------------------------------
 
+check_npoints = 8
+check_npoints_fwhm = 5
+
+# -----------------------------------------------------------------
+
 class ObservedFluxCalculator(Configurable):
 
     """
@@ -117,8 +122,8 @@ class ObservedFluxCalculator(Configurable):
         # The images, per instrument
         self.images = dict()
 
-        # For plotting, reference SED
-        self.reference_sed = None
+        # For plotting, reference SEDs
+        self.reference_seds = None
 
         # The host id
         self.host_id = None
@@ -218,8 +223,9 @@ class ObservedFluxCalculator(Configurable):
         # Get the coordinate systems
         self.coordinate_systems = kwargs.pop("coordinate_systems", None)
 
-        # Reference SED
-        self.reference_sed = kwargs.pop("reference_sed", None)
+        # Reference SEDs
+        self.reference_seds = kwargs.pop("reference_seds", None)
+        if "reference_sed" in kwargs: self.reference_seds["Observation"] = kwargs.pop("reference_sed")
 
         # Get remote host ID
         self.get_host_id(**kwargs)
@@ -327,14 +333,14 @@ class ObservedFluxCalculator(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def has_reference_sed(self):
+    def has_reference_seds(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.reference_sed is not None
+        return self.reference_seds is not None
 
     # -----------------------------------------------------------------
 
@@ -911,7 +917,10 @@ class ObservedFluxCalculator(Configurable):
             plotter.add_sed(simulated_sed, "Simulation")
 
         # Add reference?
-        if self.has_reference_sed: plotter.add_sed(self.reference_sed, "Observation")
+        if self.has_reference_seds:
+
+            # Add the SEDs
+            for label in self.reference_seds: plotter.add_sed(self.reference_seds[label], label)
 
         # Run the plotter
         plotter.run(output=path)
@@ -1005,38 +1014,6 @@ def get_wavelength_and_fluxdensity_arrays(model_sed, conversion_info=None, wavel
 
 # -----------------------------------------------------------------
 
-def get_wavelength_and_fluxdensity_arrays_old(model_sed):
-
-    """
-    This function ...
-    :param model_sed: 
-    :return: 
-    """
-
-    # Get the wavelengths and flux densities
-    wavelengths = model_sed.wavelengths("micron", asarray=True)
-    fluxdensities = []
-    for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy", conversion_info=conversion_info)):
-
-        # 2 different ways should be the same:
-        # fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
-        # fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
-        # print(fluxdensity_, fluxdensity) # IS OK!
-
-        fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", wavelength=wavelength)
-        fluxdensities.append(fluxdensity.value)
-
-        # Add to data points for black body (to get spectral index)
-        if wavelength > 50. * u("micron"):
-
-            bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
-            bb_fluxdensities.append(fluxdensity_jy.to("W / (m2 * Hz)").value)  # must be frequency-fluxdensity
-
-    # Convert to array
-    fluxdensities = np.array(fluxdensities)  # in W / (m2 * micron)
-
-# -----------------------------------------------------------------
-
 def calculate_spectral_indices(model_sed, return_frequencies=False):
 
     """
@@ -1096,7 +1073,7 @@ def get_kbeam(fltr, spectral_indices, spire):
 # -----------------------------------------------------------------
 
 def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, spectral_indices, spire, errors=None,
-                                      return_wavelength_grid=False, result_unit="Jy"):
+                                      return_wavelength_grid=False, result_unit="Jy", check_npoints=True):
 
     """
     This function ...
@@ -1110,6 +1087,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
     :param errors:
     :param return_wavelength_grid:
     :param result_unit:
+    :param check_npoints:
     :return: 
     """
 
@@ -1127,7 +1105,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
     result_unit = u(result_unit)
 
     # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-    value, wavelength_grid = fltr.convolve(wavelengths, fluxdensities, return_grid=True)
+    value, wavelength_grid = fltr.convolve(wavelengths, fluxdensities, return_grid=True, check_sampling=check_npoints, min_npoints=check_npoints, min_npoints_fwhm=check_npoints_fwhm)
     fluxdensity = float(value) * fluxdensity_unit
     fluxdensity_value = fluxdensity.to(result_unit, equivalencies=spectral_density(fltr.pivot)).value  # convert back to Jy
 
@@ -1147,7 +1125,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
 # -----------------------------------------------------------------
 
 def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, errors=None,
-                                  return_wavelength=False, result_unit="Jy"):
+                                  return_wavelength=False, result_unit="Jy", check_difference=True):
 
     """
     This function ...
@@ -1159,6 +1137,7 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     :param errors:
     :param return_wavelength:
     :param result_unit:
+    :param check_difference:
     :return: 
     """
 
@@ -1166,10 +1145,17 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
 
     # Determine the filter wavelength
-    filter_wavelength = fltr.wavelength.to(wavelength_unit).value  # fltr.pivot.to(wavelength_unit).value
+    filter_wavelength = fltr.wavelength.to(wavelength_unit).value
 
     # Get the index of the wavelength closest to that of the filter
     index = sequences.find_closest_index(wavelengths, filter_wavelength)  # wavelengths are in micron
+
+    # Check the difference between the filter wavelength and the actual grid wavelength
+    if check_difference:
+
+        # Get the difference
+        difference = abs(filter_wavelength - wavelengths[index])
+        reldifference = filter_wavelength / wavelengths[index]
 
     # Get result unit
     result_unit = u(result_unit)
@@ -1228,34 +1214,10 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
             log.warning("The wavelength of the '" + str(fltr) + "' is not covered by the modeled SED: skipping this filter ...")
             continue
 
-        # Needs spectral convolution?
-        if needs_spectral_convolution(fltr, spectral_convolution):
-
-            # Calculate
-            fluxdensity, error, wavelength_grid = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, spectral_indices, spire, errors=errors, return_wavelength_grid=True)
-
-            # Create list of wavelengths
-            filter_wavelengths = [value * Unit("micron") for value in wavelength_grid]
-
-            # Add
-            wavelengths_for_filters[fltr] = filter_wavelengths
-
-        # No spectral convolution
-        else:
-
-            # Get the flux density
-            fluxdensity, error, wavelength = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, errors=errors, return_wavelength=True)
-
-            # Check the wavelength
-            wavelength_micron = wavelength.to("micron").value
-            if wavelength_micron in used_wavelengths:
-
-                filters = used_wavelengths[wavelength_micron]
-                filter_names = [str(f) for f in filters]
-                log.warning("The simulated flux for the wavelength '" + str(wavelength) + "' has already been used to create SED point(s) for the " + ", ".join(filter_names) + " filter(s)")
-
-            # Add the filter for the wavelength
-            used_wavelengths[wavelength_micron].append(fltr)
+        # Calculate the flux for this filter
+        fluxdensity, error = calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit,
+                                                   spectral_convolution=spectral_convolution, used_wavelengths=used_wavelengths,
+                                                   errors=errors, spectral_indices=spectral_indices, spire=spire, wavelengths_for_filters=wavelengths_for_filters)
 
         # Add a data point to the mock SED
         mock_sed.add_point(fltr, fluxdensity, error)
@@ -1310,5 +1272,65 @@ def needs_spectral_convolution(fltr, spectral_convolution):
 
     # Narrow band filters: no spectral convolution
     else: return False
+
+# -----------------------------------------------------------------
+
+def calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit,
+                          spectral_convolution=True, used_wavelengths=None, errors=None, spectral_indices=None,
+                          spire=None, wavelengths_for_filters=None):
+
+    """
+    This function ...
+    :param fltr:
+    :param wavelengths:
+    :param fluxdensities:
+    :param wavelength_unit:
+    :param fluxdensity_unit:
+    :param spectral_convolution:
+    :param used_wavelengths:
+    :param errors:
+    :param spectral_indices:
+    :param spire:
+    :param wavelengths_for_filters:
+    :return:
+    """
+
+    # Needs spectral convolution?
+    if needs_spectral_convolution(fltr, spectral_convolution):
+
+        # Calculate
+        fluxdensity, error, wavelength_grid = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities,
+                                                                                wavelength_unit, fluxdensity_unit,
+                                                                                spectral_indices, spire, errors=errors,
+                                                                                return_wavelength_grid=True)
+
+        # Create list of wavelengths
+        filter_wavelengths = [value * Unit("micron") for value in wavelength_grid]
+
+        # Add
+        if wavelengths_for_filters is not None: wavelengths_for_filters[fltr] = filter_wavelengths
+
+    # No spectral convolution
+    else:
+
+        # Get the flux density
+        fluxdensity, error, wavelength = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities,
+                                                                       wavelength_unit, fluxdensity_unit, errors=errors,
+                                                                       return_wavelength=True)
+
+        # Check the wavelength
+        if used_wavelengths is not None:
+
+            wavelength_micron = wavelength.to("micron").value
+            if wavelength_micron in used_wavelengths:
+                filters = used_wavelengths[wavelength_micron]
+                filter_names = [str(f) for f in filters]
+                log.warning("The simulated flux for the wavelength '" + str(wavelength) + "' has already been used to create SED point(s) for the " + ", ".join(filter_names) + " filter(s)")
+
+            # Add the filter for the wavelength
+            used_wavelengths[wavelength_micron].append(fltr)
+
+    # Return the fluxdensity and error
+    return fluxdensity, error
 
 # -----------------------------------------------------------------

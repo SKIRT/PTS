@@ -25,5 +25,6 @@ definition.add_flag("short", "short: only show the filter names", letter="s")
 definition.add_flag("aliases", "show aliases", letter="a")
 definition.add_flag("categorize", "categorize per instrument/observatory/system", True, letter="c")
 definition.add_flag("plot", "plot the filter transmission curves", letter="p")
+definition.add_flag("plot_fwhm", "plot the FWHM ranges of the filters")
 
 # -----------------------------------------------------------------
