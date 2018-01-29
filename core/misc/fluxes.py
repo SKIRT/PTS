@@ -45,6 +45,7 @@ from ..plot.sed import SEDPlotter
 from ..tools import formatting as fmt
 from ..remote.remote import Remote
 from ..prep.deploy import Deployer
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -55,6 +56,28 @@ default_filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "
 
 min_npoints = 8
 min_npoints_fwhm = 5
+
+# -----------------------------------------------------------------
+
+class WavelengthGridError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, filter=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param filter:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(WavelengthGridError, self).__init__(message)
+
+        # Set filter
+        self.filter = filter
 
 # -----------------------------------------------------------------
 
@@ -440,13 +463,20 @@ class ObservedFluxCalculator(Configurable):
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
             nprocesses = 1
-            frames = datacube.frames_for_filters(self.filters, convolve=spec_filters, nprocesses=nprocesses, check_previous_sessions=True, as_dict=True)
+            frames = datacube.frames_for_filters(self.filters, convolve=spec_filters, nprocesses=nprocesses,
+                                                 check_previous_sessions=True, as_dict=True, check=self.config.check_wavelengths,
+                                                 ignore_bad=self.config.ignore_bad)
 
             # Mask the images
             for fltr in frames:
 
                 # Check if should be masked
                 if not self.has_mask(instr_name, fltr): continue
+
+                # If frame is None:
+                if frames[fltr] is None:
+                    log.warning("The '" + str(fltr) + "' frame could not been created ...")
+                    continue
 
                 # Get the frame
                 frame = frames[fltr]
@@ -713,7 +743,8 @@ class ObservedFluxCalculator(Configurable):
             log.debug("Calculating the observed fluxes for the " + instr_name + " SED ...")
 
             # Convert model sed into observed SED
-            mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.spectral_convolution_filters, errors=self.errors)
+            mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.spectral_convolution_filters,
+                                       errors=self.errors, check=self.config.check_wavelengths, ignore_bad=self.config.ignore_bad)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[instr_name] = mock_sed
@@ -1073,7 +1104,7 @@ def get_kbeam(fltr, spectral_indices, spire):
 # -----------------------------------------------------------------
 
 def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, spectral_indices, spire, errors=None,
-                                      return_wavelength_grid=False, result_unit="Jy", check_npoints=True):
+                                      return_wavelength_grid=False, result_unit="Jy", check_npoints=True, ignore_bad=False):
 
     """
     This function ...
@@ -1088,6 +1119,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
     :param return_wavelength_grid:
     :param result_unit:
     :param check_npoints:
+    :param ignore_bad: ignore badly sampled, just give warning
     :return: 
     """
 
@@ -1104,8 +1136,36 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
     # Get result unit
     result_unit = u(result_unit)
 
+    # CHECK
+    if check_npoints:
+
+        # Get the wavelength indices in the ranges
+        indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.range.to("micron").value]
+        indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range.to("micron").value]
+
+        # Get the number of wavelengths in the ranges
+        nwavelengths_in_minmax = len(indices_in_minmax)
+        nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+        # Too little wavelengths in range?
+        if nwavelengths_in_minmax < min_npoints:
+
+            message = "Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")"
+            if ignore_bad: log.warning(message)
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # Too little wavelengths in FWHM range?
+        elif nwavelengths_in_fwhm < min_npoints_fwhm:
+
+            message = "Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")"
+            if ignore_bad: log.warning(message)
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # OK
+        else: log.debug("Enough wavelengths within the filter range")
+
     # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-    value, wavelength_grid = fltr.convolve(wavelengths, fluxdensities, return_grid=True, check_sampling=check_npoints, min_npoints=min_npoints, min_npoints_fwhm=min_npoints_fwhm)
+    value, wavelength_grid = fltr.convolve(wavelengths, fluxdensities, return_grid=True)
     fluxdensity = float(value) * fluxdensity_unit
     fluxdensity_value = fluxdensity.to(result_unit, equivalencies=spectral_density(fltr.pivot)).value  # convert back to Jy
 
@@ -1125,7 +1185,7 @@ def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, waveleng
 # -----------------------------------------------------------------
 
 def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit, errors=None,
-                                  return_wavelength=False, result_unit="Jy", check_difference=True):
+                                  return_wavelength=False, result_unit="Jy", check_difference=True, ignore_bad=False):
 
     """
     This function ...
@@ -1138,6 +1198,7 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     :param return_wavelength:
     :param result_unit:
     :param check_difference:
+    :param ignore_bad: ignore bad closest wavelengths, just give warning
     :return: 
     """
 
@@ -1150,12 +1211,44 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     # Get the index of the wavelength closest to that of the filter
     index = sequences.find_closest_index(wavelengths, filter_wavelength)  # wavelengths are in micron
 
+    # Get the actual wavelength
+    wavelength = wavelengths[index] * wavelength_unit
+
     # Check the difference between the filter wavelength and the actual grid wavelength
     if check_difference:
 
+        # max_reldifference = 1e-6
         # Get the difference
-        difference = abs(filter_wavelength - wavelengths[index])
-        reldifference = filter_wavelength / wavelengths[index]
+        #difference = abs(filter_wavelength - wavelengths[index])
+        #reldifference = difference / filter_wavelength
+
+        # Check grid wavelength in FWHM
+        in_fwhm = wavelength in fltr.fwhm_range
+
+        # Check whether the relative difference is smaller than 1e-6
+        # close = reldifference < max_reldifference
+
+        # Check grid wavelength in inner range
+        in_inner = wavelength in fltr.inner_range
+
+        # Not in FWHM range?
+        if not in_fwhm:
+
+            message = "Wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter"
+            if ignore_bad: log.warning(message)
+            raise WavelengthGridError(message, filter=fltr)
+
+        # elif not close: raise WavelengthGridError("Wavelength closest to the filter (" + tostr(wavelength) + ") differs more than " + tostr(max_reldifference*100) + "%", filter=fltr)
+
+        # Not in inner range?
+        elif not in_inner:
+
+            message = "Wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter"
+            if ignore_bad: log.warning(message)
+            raise WavelengthGridError(message, filter=fltr)
+
+        # OK
+        else: log.debug("Wavelength found close to the filter (" + tostr(wavelength) + ")")
 
     # Get result unit
     result_unit = u(result_unit)
@@ -1170,16 +1263,13 @@ def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, wavelength_u
     # Add a point to the mock SED
     error = errors[filter_name] if errors is not None and filter_name in errors else None
 
-    # Get the actual wavelength
-    wavelength = wavelengths[index] * wavelength_unit
-
     # Return the fluxdensity and error
     if return_wavelength: return fluxdensity, error, wavelength
     else: return fluxdensity, error
 
 # -----------------------------------------------------------------
 
-def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors=None, check=True):
+def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors=None, check=True, ignore_bad=False):
 
     """
     This function ...
@@ -1189,6 +1279,7 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
     :param spectral_convolution:
     :param errors:
     :param check:
+    :param ignore_bad:
     :return: 
     """
 
@@ -1216,21 +1307,30 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
             continue
 
         # Calculate the flux for this filter
-        fluxdensity, error = calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit,
+        try:
+
+            # Try calculating the flux density
+            fluxdensity, error = calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit,
                                                    spectral_convolution=spectral_convolution, used_wavelengths=used_wavelengths,
                                                    errors=errors, spectral_indices=spectral_indices, spire=spire,
                                                    wavelengths_for_filters=wavelengths_for_filters, check=check)
 
-        # Add a data point to the mock SED
-        mock_sed.add_point(fltr, fluxdensity, error)
+            # Add a data point to the mock SED
+            mock_sed.add_point(fltr, fluxdensity, error)
+
+        # Bad wavelength grid sampling
+        except WavelengthGridError as e:
+
+            if ignore_bad: log.warning("Bad sampling: " + str(e))
+            else: raise e
 
     # Show which wavelengths are used to create filter frames
     if len(used_wavelengths) > 0:
         log.debug("Used the following wavelengths of the simulated SED to create mock observed flux points without spectral convolution:")
         log.debug("")
         for wavelength_micron in used_wavelengths:
-            filters = used_wavelengths[wavelength_micron]
-            filter_names = [str(f) for f in filters]
+            filters_for_wavelength = used_wavelengths[wavelength_micron]
+            filter_names = [str(f) for f in filters_for_wavelength]
             nfilters = len(filter_names)
             if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
             else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
@@ -1279,7 +1379,7 @@ def needs_spectral_convolution(fltr, spectral_convolution):
 
 def calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, fluxdensity_unit,
                           spectral_convolution=True, used_wavelengths=None, errors=None, spectral_indices=None,
-                          spire=None, wavelengths_for_filters=None, check=True):
+                          spire=None, wavelengths_for_filters=None, check=True, ignore_bad=False):
 
     """
     This function ...
@@ -1295,6 +1395,7 @@ def calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, flu
     :param spire:
     :param wavelengths_for_filters:
     :param check:
+    :param ignore_bad:
     :return:
     """
 
@@ -1305,7 +1406,8 @@ def calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, flu
         fluxdensity, error, wavelength_grid = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities,
                                                                                 wavelength_unit, fluxdensity_unit,
                                                                                 spectral_indices, spire, errors=errors,
-                                                                                return_wavelength_grid=True, check_npoints=check)
+                                                                                return_wavelength_grid=True,
+                                                                                check_npoints=check, ignore_bad=ignore_bad)
 
         # Create list of wavelengths
         filter_wavelengths = [value * Unit("micron") for value in wavelength_grid]
@@ -1319,7 +1421,8 @@ def calculate_fluxdensity(fltr, wavelengths, fluxdensities, wavelength_unit, flu
         # Get the flux density
         fluxdensity, error, wavelength = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities,
                                                                        wavelength_unit, fluxdensity_unit, errors=errors,
-                                                                       return_wavelength=True, check_difference=check)
+                                                                       return_wavelength=True, check_difference=check,
+                                                                       ignore_bad=ignore_bad)
 
         # Check the wavelength
         if used_wavelengths is not None:

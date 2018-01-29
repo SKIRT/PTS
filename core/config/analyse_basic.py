@@ -22,3 +22,8 @@ definition.add_positional_optional("id", "integer", "ID of the simulation")
 definition.add_flag("ignore_missing_data", "ignore missing data when analysing the simulations", False)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("check_wavelengths", "check the sampling of the wavelength grid", True)
+definition.add_flag("ignore_bad", "ignore bad sampling of wavelength grid (just give warning)", False)
+
+# -----------------------------------------------------------------

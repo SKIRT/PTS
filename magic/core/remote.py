@@ -2206,7 +2206,21 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False):
+    def get_wavelength(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        from ...core.units.parsing import parse_quantity
+        return parse_quantity(self.session.get_simple_variable("str(" + self.label + ".get_wavelength(" + str(index) + "))"))
+
+    # -----------------------------------------------------------------
+
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False,
+                           check=True, ignore_bad=False, min_npoints=8, min_npoints_fwhm=5):
 
         """
         This function ...
@@ -2214,6 +2228,11 @@ class RemoteDataCube(RemoteImage):
         :param convolve:
         :param nprocesses:
         :param check_previous_sessions:
+        :param as_dict:
+        :param check:
+        :param ignore_bad:
+        :param min_npoints:
+        :param min_npoints_fwhm:
         :return:
         """
 
@@ -2232,6 +2251,42 @@ class RemoteDataCube(RemoteImage):
                 # Debugging
                 log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
 
+                # Check
+                if check:
+
+                    from ...core.misc.fluxes import WavelengthGridError
+
+                    # Get the wavelength indices in the ranges
+                    indices_in_minmax = [i for i in range(self.nframes) if self.get_wavelength(i) in fltr.range]
+                    indices_in_fwhm = [i for i in range(self.nframes) if self.get_wavelength(i) in fltr.fwhm_range]
+
+                    # Get the number of wavelengths in the ranges
+                    nwavelengths_in_minmax = len(indices_in_minmax)
+                    nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+                    # Too little wavelengths in range
+                    if nwavelengths_in_minmax < min_npoints:
+                        message = "Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            remoteframes.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # Too little wavelengths in FWHM range
+                    elif nwavelengths_in_fwhm < min_npoints_fwhm:
+                        message = "Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            remoteframes.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # OK
+                    else: log.debug("Enough wavelengths within the filter range")
+
                 # Add to list
                 for_convolution.append(fltr)
 
@@ -2247,6 +2302,44 @@ class RemoteDataCube(RemoteImage):
                 # Get the index of the wavelength closest to that of the filter
                 index = self.get_frame_index_for_wavelength(fltr.pivot)
 
+                # Get the wavelength
+                wavelength = self.get_wavelength(index)
+
+                # Check the difference between the filter wavelength and the actual grid wavelength
+                if check:
+
+                    from ...core.tools.stringify import tostr
+                    from ...core.misc.fluxes import WavelengthGridError
+
+                    # Check grid wavelength in FWHM
+                    in_fwhm = wavelength in fltr.fwhm_range
+
+                    # Check grid wavelength in inner range
+                    in_inner = wavelength in fltr.inner_range
+
+                    # Not in FWHM?
+                    if not in_fwhm:
+                        message = "Wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            remoteframes.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # Not in inner range
+                    elif not in_inner:
+                        message = "Wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            remoteframes.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # OK
+                    else: log.debug("Wavelength found close to the filter (" + tostr(wavelength) + ")")
+
                 # Assign a remote label to this result frame
                 label_i = get_new_label("Frame", self.session)
 
@@ -2259,10 +2352,14 @@ class RemoteDataCube(RemoteImage):
 
         # Calculate convolved frames (if necessary)
         if len(for_convolution) > 0:
+
             # Debugging
             log.debug(str(len(for_convolution)) + " filters require spectral convolution")
             convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+
+        # No spectral convolution needed
         else:
+
             # Debugging
             log.debug("Spectral convolution will be used for none of the filters")
             convolved_frames = []
@@ -2275,7 +2372,8 @@ class RemoteDataCube(RemoteImage):
             remoteframes[index] = remoteframe
 
         # Return the list of remote frames
-        return remoteframes
+        if as_dict: return {fltr: frame for fltr, frame in zip(filters, remoteframes)}
+        else: return remoteframes
 
     # -----------------------------------------------------------------
 

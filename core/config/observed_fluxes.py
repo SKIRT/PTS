@@ -42,3 +42,8 @@ definition.add_flag("deploy_pts", "deply (install or update) PTS on the remote h
 definition.add_flag("update_dependencies", "update PTS dependencies (use with care!)", False)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("check_wavelengths", "check the sampling of the wavelength grid", True)
+definition.add_flag("ignore_bad", "ignore bad sampling of wavelength grid (just give warning)", False)
+
+# -----------------------------------------------------------------

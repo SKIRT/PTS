@@ -419,6 +419,7 @@ class DataCube(Image):
 
         """
         This function ...
+        :param wavelength:
         :param return_wavelength:
         :return:
         """
@@ -728,14 +729,21 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def _initialize_frames_for_filters(self, filters, convolve=False):
+    def _initialize_frames_for_filters(self, filters, convolve=False, check=True, ignore_bad=False, min_npoints=8,
+                                       min_npoints_fwhm=5):
 
         """
         This function ...
         :param filters:
         :param convolve:
+        :param check:
+        :param ignore_bad:
+        :param min_npoints:
+        :param min_npoints_fwhm:
         :return:
         """
+
+        from ...core.misc.fluxes import WavelengthGridError
 
         # Initialize
         frames = []
@@ -750,6 +758,43 @@ class DataCube(Image):
 
                 # Debugging
                 log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+                # Get the array of wavelengths
+                wavelengths = self.wavelengths(unit="micron", asarray=True)
+
+                # Check
+                if check:
+
+                    # Get the wavelength indices in the ranges
+                    indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.range.to("micron").value]
+                    indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range.to("micron").value]
+
+                    # Get the number of wavelengths in the ranges
+                    nwavelengths_in_minmax = len(indices_in_minmax)
+                    nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+                    # Too little wavelengths in range
+                    if nwavelengths_in_minmax < min_npoints:
+                        message = "Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            frames.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # Too little wavelengths in FWHM range
+                    elif nwavelengths_in_fwhm < min_npoints_fwhm:
+                        message = "Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            frames.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # OK
+                    else: log.debug("Enough wavelengths within the filter range")
 
                 # Add to list
                 for_convolution.append(fltr)
@@ -768,6 +813,38 @@ class DataCube(Image):
 
                 # Get the wavelength
                 wavelength = self.get_wavelength(index)
+
+                # Check the difference between the filter wavelength and the actual grid wavelength
+                if check:
+
+                    # Check grid wavelength in FWHM
+                    in_fwhm = wavelength in fltr.fwhm_range
+
+                    # Check grid wavelength in inner range
+                    in_inner = wavelength in fltr.inner_range
+
+                    # Not in FWHM?
+                    if not in_fwhm:
+                        message = "Wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            frames.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # Not in inner range
+                    elif not in_inner:
+                        message = "Wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter"
+                        if ignore_bad:
+                            log.warning(message)
+                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                            frames.append(None)
+                            continue
+                        else: raise WavelengthGridError(message, filter=fltr)
+
+                    # OK
+                    else: log.debug("Wavelength found close to the filter (" + tostr(wavelength) + ")")
 
                 # Check the wavelength index
                 if index in used_wavelength_indices:
@@ -838,7 +915,8 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False):
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False,
+                           check=True, ignore_bad=False, min_npoints=8, min_npoints_fwhm=5):
 
         """
         This function ...
@@ -847,6 +925,10 @@ class DataCube(Image):
         :param nprocesses:
         :param check_previous_sessions:
         :param as_dict:
+        :param check:
+        :param ignore_bad:
+        :param min_npoints:
+        :param min_npoints_fwhm:
         :return:
         """
 
@@ -857,7 +939,11 @@ class DataCube(Image):
         nprocesses = min(nprocesses, len(filters))
 
         # Initialize
-        frames, for_convolution, used_wavelength_indices = self._initialize_frames_for_filters(filters, convolve=convolve)
+        frames, for_convolution, used_wavelength_indices = self._initialize_frames_for_filters(filters, convolve=convolve,
+                                                                                               check=check,
+                                                                                               ignore_bad=ignore_bad,
+                                                                                               min_npoints=min_npoints,
+                                                                                               min_npoints_fwhm=min_npoints_fwhm)
 
         # Show which wavelengths are used to create filter frames
         log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")
@@ -873,7 +959,8 @@ class DataCube(Image):
         log.debug("")
 
         # Create convolved frames
-        convolved_frames = self._create_convolved_frames(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
+        convolved_frames = self._create_convolved_frames(for_convolution, nprocesses=nprocesses,
+                                                         check_previous_sessions=check_previous_sessions)
 
         # Add the convolved frames to the list of frames
         for fltr, frame in zip(for_convolution, convolved_frames): frames[filters.index(fltr)] = frame

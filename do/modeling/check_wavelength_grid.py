@@ -138,7 +138,7 @@ def check_grid_convolution():
         nwavelengths_in_minmax = len(indices_in_minmax)
         nwavelengths_in_fwhm = len(indices_in_fwhm)
 
-        # Check
+        # SHow checks
         if nwavelengths_in_minmax < config.min_npoints:
             #raise ValueError("Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
             print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter wavelength range (" + tostr(fltr.min) + " to " + tostr(fltr.max) + ") for convolution (" + str(nwavelengths_in_minmax) + ")" + fmt.reset)

@@ -1235,26 +1235,11 @@ class BroadBandFilter(Filter):
     #   per unit of wavelength. This can be an array with the same length as \em wavelengths, or a multi-dimensional
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
-    def convolve(self, wavelengths, densities, return_grid=False, check_sampling=False, min_npoints=8, min_npoints_fwhm=5):
+    def convolve(self, wavelengths, densities, return_grid=False):
 
         # define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
-
-        # check the sampling
-        if check_sampling:
-
-            # Get the wavelength indices in the ranges
-            indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in self.range.to("micron").value]
-            indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in self.fwhm_range.to("micron").value]
-
-            # Get the number of wavelengths in the ranges
-            nwavelengths_in_minmax = len(indices_in_minmax)
-            nwavelengths_in_fwhm = len(indices_in_fwhm)
-
-            # Check
-            if nwavelengths_in_minmax < min_npoints: raise ValueError("Too few wavelengths within the filter wavelength range (" + str(self.min.to("micron").value) + " to " + str(self.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
-            if nwavelengths_in_fwhm < min_npoints_fwhm: raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(self.fwhm_min.to("micron").value) + " to " + str(self.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
 
         # create a combined wavelength grid, restricted to the overlapping interval
         w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]

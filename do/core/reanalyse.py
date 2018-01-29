@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.reanalyse Re-analyse a certain simulation.
+## \package pts.do.core.reanalyse Re-analyse certain simulations.
 
 # -----------------------------------------------------------------
 
@@ -24,7 +24,7 @@ from pts.core.basics.log import log
 # Create the configuration definition
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host to mount", choices=all_host_ids())
-definition.add_required("id", "positive_integer", "simulation ID")
+definition.add_required("ids", "positive_integer_list", "simulation IDs")
 definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
 definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
 definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)

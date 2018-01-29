@@ -1273,6 +1273,10 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.config.plot_seds = self.misc_options.plot_fluxes
         self.flux_calculator.config.plot_images = False
 
+        # EXTRA OPTIONS
+        self.flux_calculator.config.check_wavelengths = self.config.check_wavelengths
+        self.flux_calculator.config.ignore_bad = self.config.ignore_bad
+
         # Run
         self.flux_calculator.run(**self.observed_fluxes_input)
 
@@ -1610,6 +1614,10 @@ class BasicAnalyser(Configurable):
 
         # Plot
         self.image_flux_calculator.config.plot_images = self.misc_options.plot_fluxes_images
+
+        # EXTRA OPTIONS
+        self.image_flux_calculator.config.check_wavelengths = self.config.check_wavelengths
+        self.image_flux_calculator.config.ignore_bad = self.config.ignore_bad
 
         # Run
         self.image_flux_calculator.run(**self.observed_fluxes_from_images_input)

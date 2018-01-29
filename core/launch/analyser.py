@@ -35,7 +35,7 @@ all_steps = steps + [batch, scaling]
 
 # -----------------------------------------------------------------
 
-def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_features=None):
+def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_features=None, config=None):
 
     """
     This function ...
@@ -44,6 +44,7 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
     :param features:
     :param not_steps:
     :param not_features:
+    :param config:
     :return:
     """
 
@@ -129,17 +130,18 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
         if scaling in steps: simulation.analysed_scaling = False
 
     # Now analyse the simulation
-    analyse_simulation(simulation, not_steps=not_steps, not_features=not_features)
+    analyse_simulation(simulation, not_steps=not_steps, not_features=not_features, config=config)
 
 # -----------------------------------------------------------------
 
-def analyse_simulation(simulation, not_steps=None, not_features=None):
+def analyse_simulation(simulation, not_steps=None, not_features=None, config=None):
 
     """
     This function ...
     :param simulation:
     :param not_steps:
     :param not_features:
+    :param config:
     :return:
     """
 
@@ -225,7 +227,7 @@ def analyse_simulation(simulation, not_steps=None, not_features=None):
     elif not_features is not None: raise ValueError("Cannot specify features when step is not defined")
 
     # Create simulation analyser
-    analyser = SimulationAnalyser()
+    analyser = SimulationAnalyser(config=config)
 
     # Run the analyser on the simulation
     analyser.run(simulation=simulation)

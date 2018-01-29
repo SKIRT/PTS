@@ -17,6 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.launch.analyser import reanalyse_simulation, steps, batch
 from pts.core.basics.log import log
+from pts.core.config.analyse_simulation import definition as analysis_definition
 
 # -----------------------------------------------------------------
 
@@ -41,13 +42,16 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 definition.add_required("generation", "string", "generation name")
 
 # Simulations to reanalyse
-definition.add_positional_optional("simulations", "string_list", "simulation names")
+definition.add_optional("simulations", "string_list", "simulation names")
 
 # Reanalyse which steps?
 definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
 definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
 definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
 definition.add_optional("not_features", "string_list", "don't analyse these features (if a single not_step is defined)")
+
+# Add section for analysis options
+definition.import_section("analysis", "analyser options", analysis_definition)
 
 # Create the configuration
 config = parse_arguments("generation_reanalysis", definition)
@@ -70,6 +74,6 @@ for simulation in generation.simulations:
     log.info("Re-analysing simulation '" + simulation.name + "' ...")
 
     # Reanalyse the simulation
-    reanalyse_simulation(simulation, config.steps, config.features, not_steps=config.not_steps, not_features=config.not_features)
+    reanalyse_simulation(simulation, config.steps, config.features, not_steps=config.not_steps, not_features=config.not_features, config=config.analysis)
 
 # -----------------------------------------------------------------
