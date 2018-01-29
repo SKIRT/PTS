@@ -1787,7 +1787,7 @@ class SkiFile7:
     #   - if the normalization is by bolometric luminosity, returns (luminosity [as Astropy quantity], None)
     #   - if the normalization is by luminosity in a specific band, returns (luminosity [as Astropy quantity], Filter object)
     #   - if the normalization is by spectral luminosity at a specific wavelength, returns (spectral luminosity [as Astropy quantity], wavelength [as Astropy quantity])
-    def get_stellar_component_luminosity(self, component_id):
+    def get_stellar_component_luminosity(self, component_id, return_wavelength=True):
 
         # Get the stellar component normalization of the component
         normalization = self.get_stellar_component_normalization(component_id)
@@ -1812,7 +1812,8 @@ class SkiFile7:
             wavelength = self.get_quantity(normalization, "wavelength")
 
             # Return the luminosity and the wavelength as quantities
-            return luminosity, wavelength
+            if return_wavelength: return luminosity, wavelength
+            else: return luminosity
 
     ## For oligochromatic simulations
     def set_stellar_component_luminosities(self, component_id, luminosities):
@@ -3520,6 +3521,21 @@ class SkiFile7:
         # Return the instruments as a list
         if as_list: return instruments.getchildren()
         else: return instruments
+
+    ## This function returns the distance, if possible
+    def get_distance(self, return_none=False):
+        from ..tools import sequences
+        distances = []
+        for name in self.get_instrument_names():
+            distance = self.get_instrument_distance(name)
+            distances.append(distance)
+        if len(distances) == 0:
+            if return_none: return None
+            else: raise ValueError("Distance not defined in ski file")
+        if not sequences.all_close(distances):
+            if return_none: return None
+            else: raise ValueError("Distances are not equal")
+        else: return distances[0]
 
     ## This function returns the names of all the instruments in the ski file as a list
     def get_instrument_names(self):
