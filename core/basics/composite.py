@@ -272,6 +272,22 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        # Set the value
+        self.set_value(name, value)
+
+    # -----------------------------------------------------------------
+
+    def set_value(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        #print(name, value)
+
         # Hidden variable
         if name.startswith("_"):
             self.__dict__[name] = value
@@ -291,10 +307,17 @@ class SimplePropertyComposite(object):
             return
 
         # Set 'simple' property
+
+        # None
         if value is None: pass
+
+        # Property composite
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
 
+        # Dict-like
         elif isinstance(value, dict):  # elif isinstance(value, Map):
+
+            #print("VALUE", value)
 
             # There is a subsection with this name: fill in the attributes for that subsection
             #if name in self._descriptions:
@@ -323,7 +346,7 @@ class SimplePropertyComposite(object):
                 return
 
             # Set already existing dictionary's items
-            elif isinstance(self, dict):
+            elif isinstance(self.__dict__[name], dict):
 
                 for key in value: self.__dict__[name][key] = value
                 return
@@ -331,6 +354,7 @@ class SimplePropertyComposite(object):
             # Just set the whole dictionary as an attribute
             #else: pass #self.__dict__[name] = value
 
+        # Not dict-like
         else:
 
             # Check the type
@@ -600,6 +624,19 @@ class SimplePropertyComposite(object):
         """
 
         return self.get_value(name)
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        return self.set_value(name, value)
 
     # -----------------------------------------------------------------
 

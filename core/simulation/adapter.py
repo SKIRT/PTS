@@ -390,6 +390,7 @@ class SimulationAdapter(Configurable):
 
             # Each simulation had the same value: adapt each simulation simultaneously without prompting to proceed
             if len(unique_values) == 1:
+
                 if value != default:
                     set_value_for_simulations(self.simulations, name, value)
                     for simulation_id in self.simulation_ids: self.changed[simulation_id] = True
@@ -631,6 +632,12 @@ class AnalysisAdapter(Configurable):
         # Nothing
         else: raise ValueError("Names or IDs must be specified")
 
+        # Update analysis options in each simulation
+        if self.config.update:
+            for simulation_id in self.simulation_ids:
+                self.simulations[simulation_id].update_analysis_options()
+                #print(self.simulations[simulation_id].analysis.misc)
+
         # Set changed flags
         for simulation_id in self.simulation_ids: self.changed[simulation_id] = False
 
@@ -759,6 +766,20 @@ class AnalysisAdapter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_ptype(self, name, section_name=None):
+
+        """
+        This function ...
+        :param name:
+        :param section_name:
+        :return:
+        """
+
+        if section_name is not None: return self.simulations[self.simulation_ids[0]].analysis[section_name].get_ptype(name)
+        else: return self.simulations[self.simulation_ids[0]].analysis.get_ptype(name)
+
+    # -----------------------------------------------------------------
+
     def adapt_properties(self):
 
         """
@@ -781,11 +802,14 @@ class AnalysisAdapter(Configurable):
             # Get unique values
             unique_values = sequences.unique_values(values.values())
 
+            # Get the ptype
+            ptype = self.get_ptype(name)
+
             # Only one unique value
             if len(unique_values) == 1:
 
                 default = unique_values[0]
-                ptype, string = stringify(default)
+                #ptype, string = stringify(default)
                 choices = None
                 suggestions = None
 
@@ -796,7 +820,7 @@ class AnalysisAdapter(Configurable):
                 change = prompt_proceed("Change the analysis option '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
                 if not change: continue
                 default = None
-                ptype = get_common_ptype(unique_values)
+                #ptype = get_common_ptype(unique_values)
                 choices = None
                 suggestions = unique_values
 
@@ -856,12 +880,16 @@ class AnalysisAdapter(Configurable):
 
                 # Get unique values
                 unique_values = sequences.unique_values(values.values())
+                #print(unique_values)
+
+                # Get the ptype
+                ptype = self.get_ptype(name, section_name)
 
                 # Only one unique value
                 if len(unique_values) == 1:
 
                     default = unique_values[0]
-                    ptype, string = stringify(default)
+                    #ptype, string = stringify(default)
                     choices = None
                     suggestions = None
 
@@ -872,11 +900,12 @@ class AnalysisAdapter(Configurable):
                     change = prompt_proceed("Change the analysis option '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
                     if not change: continue
                     default = None
-                    ptype = get_common_ptype(unique_values)
+                    #ptype = get_common_ptype(unique_values)
                     choices = None
                     suggestions = unique_values
 
                 # Ask for the new value
+                #print(name, ptype, description, default, choices, suggestions)
                 value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
 
                 # Each simulation had the same value: adapt each simulation's analysis options simultaneously without prompting to proceed
@@ -886,8 +915,8 @@ class AnalysisAdapter(Configurable):
                         set_analysis_value_for_simulations(self.simulations, name, value, section=section_name)
                         for simulation_id in self.simulations: self.changed[simulation_id] = True
 
-                    # Different simulations had different values
-                    else: self.changed = set_analysis_value_for_simulations_prompt(self.simulations, name, value, changed=self.changed, section=section_name)
+                # Different simulations had different values
+                else: self.changed = set_analysis_value_for_simulations_prompt(self.simulations, name, value, changed=self.changed, section=section_name)
 
     # -----------------------------------------------------------------
 
@@ -978,9 +1007,16 @@ def set_analysis_value_for_simulation(simulation, name, value, section=None):
 
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+    if section is not None: log.debug("in section '" + section + "'")
+
+    #print(simulation.analysis[section][name])
+    #print(value)
 
     # Set the new value
-    if section is not None: simulation.analysis[section][name] = value
+    if section is not None:
+        section = simulation.analysis[section]
+        #print(section)
+        section[name] = value
     else: simulation.analysis[name] = value
 
 # -----------------------------------------------------------------
@@ -997,6 +1033,7 @@ def set_analysis_value_for_simulations(simulations, name, value, section=None):
 
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + " for all simulations ...")
+    if section is not None: log.debug("in section '" + section + "'")
 
     # Loop over the simulations
     for simulation_id in simulations:
@@ -1023,6 +1060,7 @@ def set_analysis_value_for_simulations_prompt(simulations, name, value, changed=
 
     # Debugging
     log.debug("Changing the values of '" + name + "' for each simulation ...")
+    if section is not None: log.debug("in section '" + section + "'")
 
     # Loop over the simulations, set the value
     for simulation_id in simulations:

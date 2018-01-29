@@ -19,6 +19,49 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def is_sequence(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from .types import is_sequence
+    return is_sequence(value)
+
+# -----------------------------------------------------------------
+
+def contains_sequence(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    for item in value:
+        if is_sequence(item): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def replace_sequences_by_tuples(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    new = []
+    for item in value:
+        if is_sequence(item): item = tuple(item)
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
+
 def create_nested_2d(ni, nj, fill=None):
 
     """
@@ -828,6 +871,9 @@ def unique_values(sequence, ignore=None, ignore_none=False):
     :param ignore_none:
     :return:
     """
+
+    # Contains other sequences (non-hashable)
+    if contains_sequence(sequence): sequence = replace_sequences_by_tuples(sequence)
 
     result = list(set(sequence))
     if ignore_none: result = removed(result, [None])
