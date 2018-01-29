@@ -24,6 +24,7 @@ from pts.core.units.parsing import parse_unit as u
 from pts.core.basics.log import log
 from pts.core.tools import formatting as fmt
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -122,8 +123,37 @@ def check_grid_convolution():
     # Wavelengths used for each filter
     wavelengths_for_filters = OrderedDict()
 
+    print("")
+
+    # Loop over the fitting filters
+    for fltr in fitting_run.fitting_filters:
+
+        # Get the wavelength indices in the ranges
+        indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.range.to("micron").value]
+        indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range.to("micron").value]
+
+        # Get the number of wavelengths in the ranges
+        nwavelengths_in_minmax = len(indices_in_minmax)
+        nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+        # Check
+        if nwavelengths_in_minmax < config.min_npoints:
+            #raise ValueError("Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
+            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter wavelength range (" + tostr(fltr.min) + " to " + tostr(fltr.max) + ") for convolution (" + str(nwavelengths_in_minmax) + ")" + fmt.reset)
+        elif nwavelengths_in_fwhm < config.min_npoints_fwhm:
+            #raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
+            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter FWHM wavelength range (" + tostr(fltr.fwhm_min) + " to " + tostr(fltr.fwhm_max) + ") for convolution (" + str(nwavelengths_in_fwhm) + ")" + fmt.reset)
+        else: print(fmt.green + " - " + str(fltr) + ": filter range is sampled well by the wavelengths")
+
+        # Set the wavelengths in the range
+        wavelengths_in_minmax = [wavelengths[index] for index in indices_in_minmax]
+
+        # Set the used wavelengths for this filter
+        wavelengths_for_filters[fltr] = wavelengths_in_minmax
+
     # Show which wavelengths are used to create filter frames
     if len(wavelengths_for_filters) > 0:
+        print("")
         print("Wavelengths used for filters:")
         print("")
         for fltr in wavelengths_for_filters:
@@ -131,6 +161,10 @@ def check_grid_convolution():
             wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
             print(" - " + filter_name + ": " + ", ".join(wavelength_strings))
         print("")
+
+# -----------------------------------------------------------------
+
+#max_reldifference = 1e-6
 
 # -----------------------------------------------------------------
 
@@ -143,6 +177,8 @@ def check_grid_no_convolution():
 
     # Keep track of the wavelengths that have already been used to
     used_wavelengths = defaultdict(list)
+
+    print("")
 
     # Loop over the fitting filters
     for fltr in fitting_run.fitting_filters:
@@ -157,13 +193,23 @@ def check_grid_no_convolution():
         wavelength = wavelengths[index] * wavelength_unit
 
         # Get the difference
-        difference = abs(filter_wavelength - wavelengths[index])
-        reldifference = difference / filter_wavelength
+        #difference = abs(filter_wavelength - wavelengths[index])
+        #reldifference = difference / filter_wavelength
 
         # Check grid wavelength in FWHM
         in_fwhm = wavelength in fltr.fwhm_range
 
-        print(fltr, filter_wavelength, wavelength, reldifference, in_fwhm)
+        # Check whether the relative difference is smaller than 1e-6
+        #close = reldifference < max_reldifference
+
+        # Check grid wavelength in inner range
+        in_inner = wavelength in fltr.inner_range
+
+        # Show
+        if not in_fwhm: print(fmt.red + " - " + str(fltr) + ": wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter" + fmt.reset)
+        #elif not close: print(fmt.yellow + " - " + str(fltr) + ": wavelength closest to the filter (" + tostr(wavelength) + ") differs more than " + tostr(max_reldifference*100) + "%" + fmt.reset)
+        elif not in_inner: print(fmt.yellow + " - " + str(fltr) + ": wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter" + fmt.reset)
+        else: print(fmt.green + " - " + str(fltr) + ": wavelength found close to the filter (" + tostr(wavelength) + ")" + fmt.reset)
 
         wavelength_micron = wavelength.to("micron").value
         if wavelength_micron in used_wavelengths:
@@ -174,8 +220,6 @@ def check_grid_no_convolution():
         # Add the filter for the wavelength
         used_wavelengths[wavelength_micron].append(fltr)
 
-    #print(used_wavelengths)
-
     # Show which wavelengths are used to create filter frames
     if len(used_wavelengths) > 0:
         print("")
@@ -185,8 +229,8 @@ def check_grid_no_convolution():
             filters = used_wavelengths[wavelength_micron]
             filter_names = [str(f) for f in filters]
             nfilters = len(filter_names)
-            if nfilters == 1: print(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
-            else: print(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
+            if nfilters == 1: print(fmt.green + " - " + str(wavelength_micron) + " micron: " + filter_names[0] + fmt.reset)
+            else: print(fmt.yellow + " - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
         print("")
 
 # -----------------------------------------------------------------

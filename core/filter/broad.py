@@ -1133,6 +1133,29 @@ class BroadBandFilter(Filter):
         from ..units.parsing import parse_unit as u
         return self.pivotwavelength() * u("micron")
 
+    @property
+    def inner_wavelengths(self):
+        wavelengths = []
+        if self.mean is not None: wavelengths.append(self.mean)
+        if self.peak is not None: wavelengths.append(self.peak)
+        if self.center is not None: wavelengths.append(self.center)
+        if self.effective is not None: wavelengths.append(self.effective)
+        if self.pivot is not None: wavelengths.append(self.pivot)
+        return wavelengths
+
+    @property
+    def inner_min(self):
+        return min(self.inner_wavelengths) * (1.-1e-6)
+
+    @property
+    def inner_max(self):
+        return max(self.inner_wavelengths) * (1.+1e-6)
+
+    @property
+    def inner_range(self):
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.inner_min, self.inner_max)
+
     ## This function returns the effective bandwith, in micron.
     def effective_bandwidth(self):
         return self._EffWidth
@@ -1160,18 +1183,32 @@ class BroadBandFilter(Filter):
         return 0.5 * self.fwhm
 
     @property
+    def fwhm_min(self):
+        return max(self.mean - self.half_fwhm, self.min)
+
+    @property
+    def fwhm_max(self):
+        return min(self.mean + self.half_fwhm, self.max)
+
+    @property
     def fwhm_range(self):
         if self.fwhm is None: return None
         from ..basics.range import QuantityRange
-        minimum = max(self.mean - self.half_fwhm, self.min)
-        maximum = min(self.mean + self.half_fwhm, self.max)
-        return QuantityRange(minimum, maximum)
+        return QuantityRange(self.fwhm_min, self.fwhm_max)
+
+    @property
+    def absolute_fwhm_min(self):
+        return self.mean - self.half_fwhm
+
+    @property
+    def absolute_fwhm_max(self):
+        return self.mean + self.half_fwhm
 
     @property
     def absolute_fwhm_range(self):
         if self.fwhm is None: return None
         from ..basics.range import QuantityRange
-        return QuantityRange(self.mean - self.half_fwhm, self.mean + self.half_fwhm)
+        return QuantityRange(self.absolute_fwhm_min, self.absolute_fwhm_max)
 
     # ---------- Integrating --------------------------------------
 
@@ -1216,8 +1253,8 @@ class BroadBandFilter(Filter):
             nwavelengths_in_fwhm = len(indices_in_fwhm)
 
             # Check
-            if nwavelengths_in_minmax < min_npoints: raise ValueError("Too few wavelengths within the filter wavelength range (" + str(min_wavelength) + " to " + str(max_wavelength) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
-            if nwavelengths_in_fwhm < min_npoints_fwhm: raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(min_wavelength_fwhm) + " to " + str(max_wavelength_fwhm) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
+            if nwavelengths_in_minmax < min_npoints: raise ValueError("Too few wavelengths within the filter wavelength range (" + str(self.min.to("micron").value) + " to " + str(self.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
+            if nwavelengths_in_fwhm < min_npoints_fwhm: raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(self.fwhm_min.to("micron").value) + " to " + str(self.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
 
         # create a combined wavelength grid, restricted to the overlapping interval
         w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]
