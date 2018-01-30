@@ -17,8 +17,8 @@ import math
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from textwrap import wrap
-#import seaborn as sns
 import matplotlib.gridspec as gridspec
+from matplotlib.ticker import LinearLocator, LogLocator, FormatStrFormatter
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -130,6 +130,23 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
         if logfrequency: axes.set_yscale("log", nonposx='clip')
         if logscale: axes.set_xscale("log")
+
+        # Set locator
+        if logscale:
+
+            # Set locator
+            log_subs = (1., 2., 5.)
+            major_locator = LogLocator(subs=log_subs)
+            # minor_locator = None
+
+            xaxis = axes.get_xaxis()
+
+            # Set the locators
+            xaxis.set_major_locator(major_locator)
+
+            # Set formatter
+            major_formatter = FormatStrFormatter('%g')
+            xaxis.set_major_formatter(major_formatter)
 
         plt.tight_layout()
         #plt.grid(alpha=0.8)

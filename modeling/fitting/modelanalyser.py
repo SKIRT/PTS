@@ -317,6 +317,9 @@ class SEDFitModelAnalyser(FittingComponent):
         # The mock observed SEDs
         self.mock_seds = dict()
 
+        # The weights
+        self._weights = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -512,6 +515,9 @@ class SEDFitModelAnalyser(FittingComponent):
         if "fitting_run" in kwargs: self.fitting_run = kwargs.pop("fitting_run")
         else: self.fitting_run = self.load_fitting_run(self.fitting_run_name)
 
+        # Get weights?
+        if "weights" in kwargs: self._weights = kwargs.pop("weights")
+
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
 
@@ -525,7 +531,8 @@ class SEDFitModelAnalyser(FittingComponent):
         :return:
         """
 
-        return self.fitting_run.weights
+        if self._weights is not None: return self._weights
+        else: return self.fitting_run.weights
 
     # -----------------------------------------------------------------
 
@@ -627,6 +634,68 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def has_weight(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Find the index of the current band in the weights table
+        index = tables.find_index(self.weights, key=[fltr.instrument, fltr.band], column_name=["Instrument", "Band"])
+        return index is not None
+
+    # -----------------------------------------------------------------
+
+    def get_weight(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Get index
+        index = tables.find_index(self.weights, key=[fltr.instrument, fltr.band], column_name=["Instrument", "Band"])
+        weight = self.weights["Weight"][index] # apparently, this is a string, so parsing the table went wrong ...
+        return float(weight)
+
+    # -----------------------------------------------------------------
+
+    def has_observed_flux(self, fltr):
+
+        """
+        Thisn function ...
+        :param fltr:
+        :return:
+        """
+
+        observed_fluxdensity = self.fit_sed.photometry_for_filter(fltr)
+        return observed_fluxdensity is not None
+
+    # -----------------------------------------------------------------
+
+    def get_observed_flux(self, fltr, unit="Jy"):
+
+        """
+        This function ...
+        :param fltr:
+        :param unit:
+        :return:
+        """
+
+        # Find the corresponding flux in the SED derived from observation
+        observed_fluxdensity = self.fit_sed.photometry_for_filter(fltr, unit=unit).value
+
+        # Find the corresponding flux error in the SED derived from observation
+        observed_fluxdensity_error = self.fit_sed.error_for_filter(fltr, unit=unit).average.to(unit).value
+
+        # Return the values
+        return observed_fluxdensity, observed_fluxdensity_error
+
+    # -----------------------------------------------------------------
+
     def calculate_differences(self):
 
         """
@@ -639,12 +708,9 @@ class SEDFitModelAnalyser(FittingComponent):
 
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
-        #mock_sed_name = self.object_name + "_earth"
-        #if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
         if earth_instrument_name not in self.mock_seds: raise RuntimeError("Could not find a mock observed SED for the 'earth' instrument")
 
         # Get the mock SED
-        #mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
         mock_sed = self.mock_seds[earth_instrument_name]
 
         # Loop over the entries in the fluxdensity table (SED) derived from the simulation
@@ -656,16 +722,24 @@ class SEDFitModelAnalyser(FittingComponent):
             fluxdensity = mock_sed["Photometry"][i]
             fltr = parse_filter_from_instrument_and_band(instrument, band)
 
-            # Find the corresponding flux in the SED derived from observation
-            observed_fluxdensity = self.fit_sed.photometry_for_band(instrument, band, unit="Jy").value
+            # No weight?
+            if not self.has_weight(fltr):
+                log.warning("A weight is not found for the '" + fltr + "' filter: skipping ...")
+                continue
 
-            # Find the corresponding flux error in the SED derived from observation
-            observed_fluxdensity_error = self.fit_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+            # Get the weight
+            weight = self.get_weight(fltr)
 
-            # If no match with (instrument, band) is found in the observed SED
-            if observed_fluxdensity is None:
+            # Show the weight
+            log.debug("The weight for the '" + str(fltr) + "' filter is " + tostr(weight))
+
+            # No observed flux?
+            if not self.has_observed_flux(fltr):
                 log.warning("The observed flux density could not be found for the " + instrument + " '" + fltr + "' filter")
                 continue
+
+            # Get fluxdensity and error
+            observed_fluxdensity, observed_fluxdensity_error = self.get_observed_flux(fltr)
 
             # Debugging
             log.debug("Calculating relative difference and chi squared term for the '" + str(fltr) + "' filter ...")
@@ -674,17 +748,6 @@ class SEDFitModelAnalyser(FittingComponent):
             # Calculate difference and relative difference
             difference = fluxdensity - observed_fluxdensity
             relative_difference = difference / observed_fluxdensity
-
-            # Find the index of the current band in the weights table
-            index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
-            if index is None: continue # Skip this band if a weight is not found
-
-            # Get the weight
-            weight = self.weights["Weight"][index] # apparently, this is a string, so parsing the table went wrong ...
-            weight = float(weight)
-
-            # Show the weight
-            log.debug("The weight for the '" + str(fltr) + "' filter is " + tostr(weight))
 
             # Calculate the chi squared term
             chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2

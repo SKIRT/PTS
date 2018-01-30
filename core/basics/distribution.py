@@ -116,7 +116,7 @@ class Distribution(Curve):
 
     @classmethod
     def from_values(cls, name, values, nbins=20, weights=None, unit=None, logarithmic=False, density=True,
-                    sigma_clip=False, sigma_level=3, clip_above=None, clip_below=None):
+                    sigma_clip=False, sigma_level=3, clip_above=None, clip_below=None, ignore_value=None):
 
         """
         This function ...
@@ -131,6 +131,7 @@ class Distribution(Curve):
         :param sigma_level:
         :param clip_above:
         :param clip_below:
+        :param ignore_value:
         :return:
         """
 
@@ -143,6 +144,9 @@ class Distribution(Curve):
         # Clip below or above?
         if clip_above is not None: values = sequences.clip_above(values, clip_above)
         if clip_below is not None: values = sequences.clip_below(values, clip_below)
+
+        # Ignore value?
+        if ignore_value is not None: values = sequences.removed_item(values, ignore_value)
 
         # Check whether has units
         if sequences.have_units(values):

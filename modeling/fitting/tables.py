@@ -1256,6 +1256,17 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_all_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remove_all_rows()
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, chi_squared):
 
         """
