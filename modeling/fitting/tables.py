@@ -985,7 +985,7 @@ class ParametersTable(SmartTable):
             if name == "Simulation name": continue
             labels.append(name)
 
-        return labels
+        return sequences.ordered(labels)
 
     # -----------------------------------------------------------------
 
@@ -1219,6 +1219,18 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def chi_squared_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
     def has_simulation(self, name):
 
         """
@@ -1370,6 +1382,30 @@ class ModelProbabilitiesTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Probability"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def nsimulations(self):
 
         """
@@ -1453,7 +1489,7 @@ class ModelProbabilitiesTable(SmartTable):
         :return:
         """
 
-        return sequences.has_zero(self["Probability"])
+        return sequences.has_zero(self.probabilities)
 
     # -----------------------------------------------------------------
 
@@ -1465,7 +1501,7 @@ class ModelProbabilitiesTable(SmartTable):
         :return:
         """
 
-        return sequences.nzeros(self["Probability"])
+        return sequences.nzeros(self.probabilities)
 
 # -----------------------------------------------------------------
 

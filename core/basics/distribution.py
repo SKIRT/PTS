@@ -167,6 +167,28 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @classmethod
+    def by_rank(cls, name, frequencies, y_name="Frequency", unit=None, sort=False):
+
+        """
+        This function ...
+        :param name:
+        :param frequencies:
+        :param y_name:
+        :param unit:
+        :param sort:
+        :return:
+        """
+
+        # Get the ranks as values
+        nfrequencies = len(frequencies)
+        values = np.array(range(nfrequencies), dtype=float)
+
+        # Return
+        return cls.from_columns(name, values, frequencies, y_name=y_name, unit=unit, sort=sort)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_columns(cls, name, values, frequencies, y_name="Frequency", unit=None, sort=False):
 
         """

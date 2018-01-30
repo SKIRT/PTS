@@ -12,11 +12,18 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.fitting.modelanalyser import SEDFitModelAnalyser
 from pts.core.basics.log import log
+from pts.core.tools import numbers
+from pts.core.basics.distribution import Distribution
+from pts.core.plot.distribution import plot_distribution
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -54,6 +61,7 @@ generation = fitting_run.get_generation(config.generation)
 # Set the simulation names
 if config.simulations is not None: simulation_names = config.simulations
 else: simulation_names = generation.simulation_names
+nsimulations = len(simulation_names)
 
 # -----------------------------------------------------------------
 
@@ -75,6 +83,10 @@ for simulation_name in simulation_names:
 
 # Save the chi squared table
 chi_squared.save()
+
+# -----------------------------------------------------------------
+
+nzeros = 0
 
 # -----------------------------------------------------------------
 
@@ -101,12 +113,45 @@ for simulation_name in simulation_names:
     analyser.run(simulation=simulation, fitting_run=fitting_run, mock_sed=mock_sed)
 
     # Get the chi squared
-    chi_squared = analyser.chi_squared
+    chisq = analyser.chi_squared
 
     # Get the differences table
     differences = analyser.differences
+    differences.sort()
+
+    distribution = Distribution.from_columns("Weighed squared difference", differences.wavelengths(add_unit=False), differences.chi_squared_terms(), unit="micron")
+    plot_distribution(distribution, logscale=True, statistics=False)
+    exit()
+
+    # Calculate the probability
+    probability = np.exp(-0.5 * chisq)
+    if probability == 0: nzeros += 1
 
     # Show chi squared
-    print(chi_squared)
+    log.debug("The chi squared value for simulation '" + simulation_name + "' is " + str(chisq) + " and the probability is " + str(probability))
+
+    # Debugging
+    log.debug("Adding to the chi squared table ...")
+
+    # Set the chi squared value
+    chi_squared.add_entry(simulation_name, chisq)
+
+    # Save the chi squared table
+    chi_squared.save()
+
+    # Debugging
+    log.debug("Writing the differences table ...")
+
+    # Set the differences path
+    differences_path = generation.get_simulation_misc_differences_path(simulation_name)
+
+    # Save the differences table
+    differences.saveto(differences_path)
+
+# -----------------------------------------------------------------
+
+# Show number of zeros
+if nzeros > 5: log.warning(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probabilities of zero")
+else: log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probability of zero")
 
 # -----------------------------------------------------------------

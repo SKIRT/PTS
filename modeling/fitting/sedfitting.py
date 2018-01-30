@@ -889,6 +889,48 @@ class SEDFitter(FittingComponent):
 
 # -----------------------------------------------------------------
 
+def chi_squared_table_to_probabilities(table, parameter_table):
+
+    """
+    This function ...
+    :param table:
+    :param parameter_table:
+    :return:
+    """
+
+    # Get the free parameter labels and the parameter units
+    parameter_labels = parameter_table.parameter_labels
+    parameter_units = parameter_table.parameter_units
+
+    # Sort the table for decreasing chi squared value
+    table.sort("Chi squared")
+    table.reverse()
+
+    # Get the chi squared values
+    chi_squared_values = list(table["Chi squared"])
+
+    # Initialize lists
+    simulation_names = []
+    parameter_values = []
+
+    # Loop over the simulations
+    for i in range(len(table)):
+
+        # Get the simulation name
+        simulation_name = table["Simulation name"][i]
+
+        # Get a dictionary with the parameter values for this simulation
+        values = parameter_table.parameter_values_for_simulation(simulation_name)
+
+        # Add to lists
+        simulation_names.append(simulation_name)
+        parameter_values.append(values)
+
+    # Calculate probabilities
+    return chi_squared_to_probabilities(chi_squared_values, simulation_names, parameter_values, parameter_labels, parameter_units)
+
+# -----------------------------------------------------------------
+
 def chi_squared_to_probabilities(chi_squared_values, simulation_names, parameter_values, parameter_labels, parameter_units):
 
     """

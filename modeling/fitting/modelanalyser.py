@@ -27,6 +27,7 @@ from ...core.simulation.remote import get_simulation_id, get_simulation_for_host
 from ...core.launch.analyser import SimulationAnalyser
 from .generation import Generation, GenerationInfo
 from ...core.tools.utils import lazyproperty
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -79,6 +80,28 @@ class FluxDifferencesTable(SmartTable):
         """
 
         return list(self["Band"])
+
+    # -----------------------------------------------------------------
+
+    def differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Relative difference"])
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_terms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Chi squared term"])
 
     # -----------------------------------------------------------------
 
@@ -631,6 +654,7 @@ class SEDFitModelAnalyser(FittingComponent):
             instrument = mock_sed["Instrument"][i]
             band = mock_sed["Band"][i]
             fluxdensity = mock_sed["Photometry"][i]
+            fltr = parse_filter_from_instrument_and_band(instrument, band)
 
             # Find the corresponding flux in the SED derived from observation
             observed_fluxdensity = self.fit_sed.photometry_for_band(instrument, band, unit="Jy").value
@@ -640,8 +664,12 @@ class SEDFitModelAnalyser(FittingComponent):
 
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
-                log.warning("The observed flux density could not be found for the " + instrument + " " + band + " band")
+                log.warning("The observed flux density could not be found for the " + instrument + " '" + fltr + "' filter")
                 continue
+
+            # Debugging
+            log.debug("Calculating relative difference and chi squared term for the '" + str(fltr) + "' filter ...")
+            log.debug("Observed flux: " + tostr(observed_fluxdensity) + " ± " + tostr(observed_fluxdensity_error))
 
             # Calculate difference and relative difference
             difference = fluxdensity - observed_fluxdensity
@@ -654,6 +682,9 @@ class SEDFitModelAnalyser(FittingComponent):
             # Get the weight
             weight = self.weights["Weight"][index] # apparently, this is a string, so parsing the table went wrong ...
             weight = float(weight)
+
+            # Show the weight
+            log.debug("The weight for the '" + str(fltr) + "' filter is " + tostr(weight))
 
             # Calculate the chi squared term
             chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
