@@ -75,15 +75,6 @@ generation = fitting_run.get_generation(config.generation)
 # Get the chi squared table
 chi_squared = generation.chi_squared_table
 
-# Get the maximum chi squared value
-min_chi_squared = chi_squared.best_chi_squared
-max_chi_squared = chi_squared.worst_chi_squared
-max_chi_squared_magnitude = numbers.order_of_magnitude(max_chi_squared)
-
-# Set number of digits for chi squared values
-chisq_ndecimal = 1
-chisq_ndigits = max_chi_squared_magnitude + 1 + chisq_ndecimal
-
 # -----------------------------------------------------------------
 
 # Check
@@ -123,9 +114,20 @@ print("")
 
 # -----------------------------------------------------------------
 
-print(fmt.bold + "Best chi squared: " + fmt.reset + tostr(min_chi_squared))
-print(fmt.bold + "Worst chi squared: " + fmt.reset + tostr(max_chi_squared))
-print("")
+if len(chi_squared) > 0:
+
+    # Get the maximum chi squared value
+    min_chi_squared = chi_squared.best_chi_squared
+    max_chi_squared = chi_squared.worst_chi_squared
+    max_chi_squared_magnitude = numbers.order_of_magnitude(max_chi_squared)
+
+    # Set number of digits for chi squared values
+    chisq_ndecimal = 1
+    chisq_ndigits = max_chi_squared_magnitude + 1 + chisq_ndecimal
+
+    print(fmt.bold + "Best chi squared: " + fmt.reset + tostr(min_chi_squared))
+    print(fmt.bold + "Worst chi squared: " + fmt.reset + tostr(max_chi_squared))
+    print("")
 
 # -----------------------------------------------------------------
 
