@@ -777,9 +777,6 @@ class ParameterExplorer(FittingComponent):
         # Debugging
         log.debug("Setting basic launcher options ...")
 
-        # Set path
-        self.launcher.config.path = self.generation_path
-
         # Write assignments and leftover queues (if not testing)
         self.launcher.config.write = not self.testing
 
@@ -2080,6 +2077,9 @@ class ParameterExplorer(FittingComponent):
         # Create the generation object
         self.generation = Generation(self.generation_info)
 
+        # Set working directory for the batch launcher
+        self.launcher.config.path = self.generation_path
+
     # -----------------------------------------------------------------
 
     def initialize_generation_tables(self):
@@ -2331,7 +2331,7 @@ class ParameterExplorer(FittingComponent):
             if self.testing: raise e
 
             # Something went wrong launching the simulations, show error message
-            log.error("No simulations could be launched: removing generation")
+            log.error("No simulations could be launched: removing generation ...")
             log.error(str(e))
             if log.is_debug(): traceback.print_exc()
             log.error("Try again later")
@@ -2396,7 +2396,7 @@ class ParameterExplorer(FittingComponent):
         if len(self.simulations) == 0:
 
             # Show error message
-            log.error("No simulations could be launched: removing generation")
+            log.error("No simulations could be launched: removing generation ...")
             log.error("Try again later")
             log.error("Cleaning up generation and quitting ...")
 
