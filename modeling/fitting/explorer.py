@@ -1532,8 +1532,6 @@ class ParameterExplorer(FittingComponent):
             # Set the range for this parameter
             self.ranges[label] = QuantityRange(min_value, max_value)
 
-        exit()
-
         # One more line
         log.debug("")
 
