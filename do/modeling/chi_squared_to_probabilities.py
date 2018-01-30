@@ -29,6 +29,11 @@ definition = ConfigurationDefinition()
 definition.add_required("chisquared", "file_path", "name of the chi squared table file")
 definition.add_required("parameters", "file_path", "name of parameters table file")
 
+# For plotting
+definition.add_flag("plot_ranks", "plot chi squared as a function of rank")
+definition.add_flag("plot_distribution", "plot distribution of chi squared values")
+definition.add_optional("max_chisquared", "positive_real", "maximum chi squared to show")
+
 # Create the configuration
 config = parse_arguments("chi_squared_to_probabilities", definition, "Convert chi squared table to proabilities")
 
@@ -61,14 +66,20 @@ else: log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations hav
 
 # -----------------------------------------------------------------
 
-# Plot histogram of the chi squared values w.r.t. simulation rank
-distribution = Distribution.by_rank("Simulation rank", chi_squared.chi_squared_values, y_name="Chi squared")
-plot_distribution(distribution, statistics=False)
+# Plot ranks?
+if config.plot_ranks:
+
+    # Plot histogram of the chi squared values w.r.t. simulation rank
+    distribution = Distribution.by_rank("Simulation rank", chi_squared.chi_squared_values, y_name="Chi squared")
+    plot_distribution(distribution, statistics=False)
 
 # -----------------------------------------------------------------
 
-# Make distribution of chi squared values and plot histogram
-distribution2 = Distribution.from_values("Chi squared", chi_squared.chi_squared_values, nbins=50)
-plot_distribution(distribution2)
+# Plot distribution?
+if config.plot_distribution:
+
+    # Make distribution of chi squared values and plot histogram
+    distribution2 = Distribution.from_values("Chi squared", chi_squared.chi_squared_values, nbins=50, clip_above=config.max_chisquared, density=False)
+    plot_distribution(distribution2)
 
 # -----------------------------------------------------------------

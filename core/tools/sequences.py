@@ -1822,3 +1822,37 @@ def find_unique_endswith(sequence, endswith):
     else: return result[0]
 
 # -----------------------------------------------------------------
+
+def clip_above(sequence, above):
+
+    """
+    Thisfunction ...
+    :param sequence:
+    :param above:
+    :return:
+    """
+
+    new = []
+    for item in sequence:
+        if item > above: continue
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
+
+def clip_below(sequence, below):
+
+    """
+    This function ...
+    :param sequence:
+    :param below:
+    :return:
+    """
+
+    new = []
+    for item in sequence:
+        if item < below: continue
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
