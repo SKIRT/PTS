@@ -40,3 +40,7 @@ definition.add_flag("rerun_all", "rerun all")
 definition.add_flag("plot", "make plots", True)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("per_generation", "only calculate probabilities per generation (because e.g. the fitting circumstances have changed)")
+
+# -----------------------------------------------------------------

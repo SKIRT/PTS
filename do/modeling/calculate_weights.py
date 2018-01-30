@@ -55,6 +55,9 @@ definition.add_flag("no_mir", "give no weight to MIR bands")
 definition.add_flag("no_fir", "give no weight to FIR bands")
 definition.add_flag("no_submm_microwave", "give no weight to submm/microwave bands")
 
+# Write the weights?
+definition.add_flag("write", "write the weights table", True)
+
 # Get configuration
 config = parse_arguments("calculate_weights", definition)
 
@@ -173,6 +176,7 @@ else: submm_microwave_weight = 0.
 
 # -----------------------------------------------------------------
 
+# Show weight per regime
 print("UV", uv_weight)
 print("Optical", optical_weight)
 print("NIR", nir_weight)
@@ -193,8 +197,11 @@ for fltr in weights: table.add_point(fltr, weights[fltr])
 
 # -----------------------------------------------------------------
 
+# Show the weights
 print(table)
 
-table.saveto("weights.dat")
+# -----------------------------------------------------------------
+
+if config.write: table.saveto("weights.dat")
 
 # -----------------------------------------------------------------

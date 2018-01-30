@@ -97,7 +97,7 @@ class SEDFitter(FittingComponent):
         self.calculate_probabilities()
 
         # 4. Calculate the probability distributions
-        self.create_distributions()
+        if not self.config.per_generation: self.create_distributions()
 
         # 5. Make an animation of the fitting procedure
         if self.config.visualise: self.animate()
@@ -262,10 +262,10 @@ class SEDFitter(FittingComponent):
         self.get_model_probabilities()
 
         # Calculate the parameter probabilities for each generation separately
-        self.calculate_parameter_probabilities()
+        if not self.config.per_generation: self.calculate_parameter_probabilities()
 
         # Calculate the combined probabilities for all generations
-        self.calculate_all_parameter_probabilities()
+        if not self.config.per_generation: self.calculate_all_parameter_probabilities()
 
     # -----------------------------------------------------------------
 
@@ -656,13 +656,13 @@ class SEDFitter(FittingComponent):
         self.write_parameter_probabilities()
 
         # Write all generations parameter probabilities
-        self.write_all_parameter_probabilities()
+        if not self.config.per_generation: self.write_all_parameter_probabilities()
 
         # Write the best parameters table
         self.write_best_parameters()
 
         # Write the probability distributions in table format
-        self.write_distributions()
+        if not self.config.per_generation: self.write_distributions()
 
         # Write the animated GIF
         if self.config.visualise: self.write_animation()
@@ -821,7 +821,7 @@ class SEDFitter(FittingComponent):
         self.plot_probabilities()
 
         # Plot the probability distributions as histograms
-        self.plot_distributions()
+        if not self.config.per_generation: self.plot_distributions()
 
     # -----------------------------------------------------------------
 
