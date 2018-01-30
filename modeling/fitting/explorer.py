@@ -316,6 +316,30 @@ class ParameterExplorer(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def last_previous_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.previous_generation_names[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_previous_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.get_generation(self.last_previous_generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def first_generation(self):
 
         """
@@ -1477,7 +1501,10 @@ class ParameterExplorer(FittingComponent):
             if label in self.ranges: continue
 
             # Get the parameter distribution
-            distribution = self.fitting_run.get_parameter_distribution(label)
+            if self.fitting_run.has_distribution(label): distribution = self.fitting_run.get_parameter_distribution(label)
+            else:
+                log.warning("Global parameter distribution for the '" + label + "' parameter not found: using parameter distribution for generation '" + self.last_previous_generation_name + "' ...")
+                distribution = self.fitting_run.get_parameter_distribution_for_generation(label, self.last_previous_generation_name)
 
             # Get the parameter unit
             unit = self.fitting_run.parameter_units[label]
@@ -1495,7 +1522,7 @@ class ParameterExplorer(FittingComponent):
             log.debug(" - Most probable value: " + tostr(distribution.most_frequent))
             log.debug(" - Least probable value: " + tostr(distribution.least_frequent))
             log.debug(" - Number of unique values: " + tostr(distribution.nvalues))
-            log.debug(" - Value(s) with (combined) >= 99% of the probablity: " + tostr(values))
+            log.debug(" - Value(s) with (combined) >= " + str(self.config.range_probability * 100) + "% of the probablity: " + tostr(values))
             log.debug(" - Combined probability: " + tostr(total_fraction * 100, round=True, ndigits=5) + "%")
             log.debug(" - Old minimum value: " + tostr(distribution.min_value))
             log.debug(" - Old maximum value: " + tostr(distribution.max_value))
@@ -1504,6 +1531,8 @@ class ParameterExplorer(FittingComponent):
 
             # Set the range for this parameter
             self.ranges[label] = QuantityRange(min_value, max_value)
+
+        exit()
 
         # One more line
         log.debug("")
@@ -1877,6 +1906,18 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def wavelength_grid_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid_name + ".dat"
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def wavelength_grid_path(self):
 
@@ -1885,7 +1926,7 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        return fs.join(self.wavelength_grids_path, self.wavelength_grid_name + ".dat")
+        return fs.join(self.wavelength_grids_path, self.wavelength_grid_filename)
 
     # -----------------------------------------------------------------
 
@@ -1997,7 +2038,7 @@ class ParameterExplorer(FittingComponent):
         if self.use_file_tree_dust_grid: self.simulation_input.add_file(self.representation.dust_grid_tree_path)
 
         # Determine and set the path to the appropriate wavelength grid file
-        self.simulation_input.add_file(self.wavelength_grid_path, name="wavelengths.txt")
+        self.simulation_input.add_file(self.wavelength_grid_path)
 
         # Debugging
         log.debug("The wavelength grid for the simulations contains " + str(self.nwavelengths) + " wavelength points")
@@ -2155,10 +2196,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to '" + self.wavelength_grid_name + "' ...")
+        log.debug("Setting the name of the wavelengths file to '" + self.wavelength_grid_filename + "' ...")
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid(self.wavelength_grid_name)
+        self.ski.set_file_wavelength_grid(self.wavelength_grid_filename)
 
     # -----------------------------------------------------------------
 

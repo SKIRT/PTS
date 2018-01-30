@@ -61,7 +61,7 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 # Ranges
 definition.add_flag("prompt_ranges", "prompt for the parameter ranges", True)
 definition.add_flag("auto_ranges", "determine the parameter ranges automatically based on the previous generation")
-definition.add_optional("range_probability", "percentage", "percentage of the total probability to use to select the new ranges automatically", .99)
+definition.add_optional("range_probability", "percentage", "percentage of the total probability to use to select the new ranges automatically", .999)
 
 # -----------------------------------------------------------------
 

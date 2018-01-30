@@ -2312,6 +2312,46 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_probability_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.prob_generations_path, generation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_distribution_path_for_generation(self, label, generation_name):
+
+        """
+        This function ...
+        :param label:
+        :param generation_name:
+        :return:
+        """
+
+        # Determine the path for the table
+        return fs.join(self.get_probability_path_for_generation(generation_name), label + ".dat")
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_distribution_for_generation(self, label, generation_name):
+
+        """
+        This function ...
+        :param label:
+        :param generation_name:
+        :return:
+        """
+
+        # Load the distribution and return it
+        return Distribution.from_file(self.get_parameter_distribution_path_for_generation(label, generation_name))
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def last_genetic_generation_index(self):
 
