@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 import requests
 from collections import OrderedDict
 from lxml import html
+import numpy as np
 
 # Import astronomical modules
 from astropy.io.fits import getheader
@@ -123,6 +124,20 @@ def get_cigale_dust_mass(galaxy_name):
 
 # -----------------------------------------------------------------
 
+def has_cigale_parameters(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    # Check whether has
+    database = DustPediaDatabase()
+    return database.get_cigale_parameters(galaxy_name)
+
+# -----------------------------------------------------------------
+
 def get_cigale_parameters(galaxy_name):
 
     """
@@ -132,7 +147,6 @@ def get_cigale_parameters(galaxy_name):
     """
 
     username, password = get_account()
-
     database = DustPediaDatabase()
 
     # Log-in
@@ -1748,6 +1762,23 @@ class DustPediaDatabase(object):
         if index is None: raise ValueError("Invalid galaxy name")
         value = self.cigale_table["FUV_att_err"][index]
         return value
+
+    # -----------------------------------------------------------------
+
+    def has_cigale_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        if index is None: return False
+
+        # Get first parameter value
+        dust_mass = self.cigale_table["Mdust__Mo"][index]
+        return not np.isnan(dust_mass)
 
     # -----------------------------------------------------------------
 

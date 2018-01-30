@@ -49,3 +49,7 @@ definition.add_flag("show", "show the components after the model is built", True
 definition.add_flag("use_defaults", "use default parameter values", False)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("prompt_parameters", "fill in the global SED fit parameters manually (don't try to fetch from DustPedia)", False)
+
+# -----------------------------------------------------------------

@@ -1510,6 +1510,90 @@ def length_unit(argument):
 
 # -----------------------------------------------------------------
 
+def mass_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+    if unit.physical_type != "mass": raise ValueError("Not a mass unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
+def is_mass_rate_unit(argument):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+
+    if len(unit.bases) != 2: return False
+
+    elif unit.bases[0].physical_type == "mass":
+
+        if unit.powers[0] != 1: return False
+
+        if unit.bases[1].physical_type == "time" and unit.powers[1] == -1: return True
+        elif unit.bases[1].physical_type == "frequency" and unit.powers[1] == 1: return True
+        else: return False
+
+    elif unit.bases[0].physical_type == "time":
+
+        if unit.powers[0] != -1: return False
+
+        if unit.bases[1].physical_type == "mass" and unit.powers[1] == 1: return True
+        else: return False
+
+    elif unit.bases[0].physical_type == "frequency":
+
+        if unit.powers[0] != 1: return False
+
+        if unit.bases[1].physical_type == "mass" and unit.powers[1] == 1: return True
+        else: return False
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def mass_rate_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+    if not is_mass_rate_unit(unit): raise ValueError("Not a mass rate unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
+def mass_density_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+    if unit.physical_type != "mass density": raise ValueError("Not a mass density unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
 def quantity(argument):
 
     """
@@ -1762,6 +1846,21 @@ def mass_quantity_range(argument):
     from ..basics.range import QuantityRange
     min_quantity, max_quantity = mass_quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def mass_rate_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if not is_mass_rate_unit(qty.unit): raise ValueError("Not a mass rate")
+    return qty
 
 # -----------------------------------------------------------------
 

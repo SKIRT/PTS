@@ -61,8 +61,14 @@ else: log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations hav
 
 # -----------------------------------------------------------------
 
-# Make distribution of the chi squared values
+# Plot histogram of the chi squared values w.r.t. simulation rank
 distribution = Distribution.by_rank("Simulation rank", chi_squared.chi_squared_values, y_name="Chi squared")
 plot_distribution(distribution, statistics=False)
+
+# -----------------------------------------------------------------
+
+# Make distribution of chi squared values and plot histogram
+distribution2 = Distribution.from_values("Chi squared", chi_squared.chi_squared_values, nbins=50)
+plot_distribution(distribution2)
 
 # -----------------------------------------------------------------

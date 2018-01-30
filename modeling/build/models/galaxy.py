@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from .dust import DustBuilder
 from .stars import StarsBuilder
@@ -26,7 +29,7 @@ from .general import write_component
 from ....core.tools import formatting as fmt
 from ....core.tools import filesystem as fs
 from ....core.tools.stringify import tostr
-from ....dustpedia.core.database import get_cigale_parameters
+from ....dustpedia.core.database import get_cigale_parameters, has_cigale_parameters
 
 # -----------------------------------------------------------------
 
@@ -445,7 +448,57 @@ class GalaxyModelBuilder(ModelBuilderBase, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Getting the global SED fitting results ...")
+        log.info("Getting the global SED fit parameters ...")
+
+        # Prompt for the parameters
+        if self.config.prompt_parameters: self.prompt_parameters()
+
+        # Fetch the parameters from the DustPedia archive
+        else: self.fetch_parameters()
+
+    # -----------------------------------------------------------------
+
+    def prompt_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for the global SED fit parameters ...")
+
+        # Initialize the dictionary of parameter values
+        self.parameters = OrderedDict()
+
+        # Prompt for each required parameter independently
+        self.parameters["sfr"] = prompt_variable("sfr", "mass_rate_quantity", "star formation rate")
+        #self.parameters["sfr_error"] = sfr_error
+        #self.parameters["stellar_mass"] = stellar_mass
+        #parameters["stellar_mass_error"] = stellar_mass_error
+        self.parameters["dust_mass"] = prompt_variable("dust_mass", "mass_quantity", "total dust mass")
+        #parameters["dust_mass_error"] = dust_mass_error
+        #parameters["stellar_luminosity"] = stellar_luminosity
+        #parameters["stellar_luminosity_error"] = stellar_luminosity_error
+        #parameters["dust_luminosity"] = dust_luminosity
+        #parameters["dust_luminosity_error"] = dust_luminosity_error
+        self.parameters["fuv_attenuation"] = prompt_variable("fuv_attenuation", "positive_real", "FUV attenuation")
+        #self.parameters["fuv_attenuation_error"] = fuv_attenuation_error
+
+    # -----------------------------------------------------------------
+
+    def fetch_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the global SED fitting results from the DustPedia archive ...")
+
+        # Check whether there are CIGALE parameters for this galaxy
+        if not has_cigale_parameters(self.ngc_name_nospaces): raise RuntimeError("There are no global SED fitting results for this galaxy")
 
         # Get the parameters from the DustPedia database
         self.parameters = get_cigale_parameters(self.ngc_name_nospaces)
