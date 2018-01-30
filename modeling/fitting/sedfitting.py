@@ -262,7 +262,7 @@ class SEDFitter(FittingComponent):
         self.get_model_probabilities()
 
         # Calculate the parameter probabilities for each generation separately
-        if not self.config.per_generation: self.calculate_parameter_probabilities()
+        self.calculate_parameter_probabilities()
 
         # Calculate the combined probabilities for all generations
         if not self.config.per_generation: self.calculate_all_parameter_probabilities()
