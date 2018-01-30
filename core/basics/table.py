@@ -375,6 +375,81 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_dictionaries(cls, *dictionaries, **kwargs):
+
+        """
+        This function ...
+        :param dictionaries:
+        :param kwargs:
+        :return:
+        """
+
+        from ..tools.stringify import stringify
+
+        # Get list of lists of property names
+        property_names = [dictionary.keys() for dictionary in dictionaries]
+
+        # Determine the column names, types and descriptions
+        column_names = sequences.union(*property_names)
+
+        # Get the column types, units and descriptions
+        prop_types = dict()
+        prop_units = dict()
+        prop_descriptions = dict()
+        for name in column_names:
+
+            # Get the types, units and descriptions
+            #types = [composite.type_for_property(name) for composite in composites]
+            #units = [composite.unit_for_property(name) for composite in composites]
+            #descriptions = [composite.description_for_property(name) for composite in composites]
+
+            types = []
+            units = []
+            descriptions = []
+
+            for dictionary in dictionaries:
+
+                # Get value
+                if name in dictionary:
+
+                    value = dictionary[name]
+
+                    # Check whether there is a unit
+                    if hasattr(value, "unit"): unit = value.unit
+                    else: unit = None
+
+                    # Get the type
+                    dtype, string = stringify(value)
+
+                # Not in this dictionary
+                else: unit = dtype = None
+
+                # Add the type and
+                types.append(dtype)
+                units.append(unit)
+
+            # Determine column type, unit and description
+            if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
+            else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
+
+            # Determine column unit
+            column_unit = sequences.get_first_not_none_value(units)
+
+            # Determine column description
+            #column_description = sequences.get_first_not_none_value(descriptions)
+            column_description = None
+
+            # Set type, unit and description
+            prop_types[name] = column_type
+            prop_units[name] = column_unit
+            prop_descriptions[name] = column_description
+
+        # Create and return
+        return cls.from_properties(column_names, prop_types, prop_units, prop_descriptions, dictionaries, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_composite(cls, composite, key_label="Property", value_label="Value", tostr_kwargs=None,
                        key_description="property name", value_description="property value"):
 
@@ -432,11 +507,63 @@ class SmartTable(Table):
         :return:
         """
 
-        # Import tostr function
-        from ..tools.stringify import tostr
-
         # Check number
         if len(composites) == 0: raise ValueError("No input is provided")
+
+        # Get list of lists of property names
+        property_names = [composite.property_names for composite in composites]
+
+        # Determine the column names, types and descriptions
+        column_names = sequences.union(*property_names)
+
+        # Get the column types, units and descriptions
+        prop_types = dict()
+        prop_units = dict()
+        prop_descriptions = dict()
+        for name in column_names:
+
+            # Get the types, units and descriptions
+            types = [composite.type_for_property(name) for composite in composites]
+            units = [composite.unit_for_property(name) for composite in composites]
+            descriptions = [composite.description_for_property(name) for composite in composites]
+
+            # Determine column type, unit and description
+            if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
+            else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
+
+            # Determine column unit
+            column_unit = sequences.get_first_not_none_value(units)
+
+            # Determine column description
+            column_description = sequences.get_first_not_none_value(descriptions)
+
+            # Set type, unit and description
+            prop_types[name] = column_type
+            prop_units[name] = column_unit
+            prop_descriptions[name] = column_description
+
+        # Create and return
+        kwargs["attr"] = True
+        return cls.from_properties(column_names, prop_types, prop_units, prop_descriptions, composites, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties(cls, property_names, property_types, property_units, property_descriptions, objects, **kwargs):
+
+        """
+        This function ...
+        :param property_names:
+        :param objects:
+        :param property_types:
+        :param property_units:
+        :param property_descriptions:
+        :param kwargs:
+        :return:
+        """
+
+        # Import tostr function
+        from ..tools.stringify import tostr
 
         # Get names
         labels = kwargs.pop("labels", None)
@@ -445,15 +572,14 @@ class SmartTable(Table):
         # Get tostr kwargs
         tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
-        # Get list of lists of property names
-        property_names = [composite.property_names for composite in composites]
-
-        # Determine the column names, types and descriptions
-        column_names = sequences.union(*property_names)
+        # Get flag
+        attr = kwargs.pop("attributes", False)
 
         # Add the label column name
-        if labels is not None: sequences.prepend(column_names, label)
-        else: labels = [None] * len(composites) # labels was None
+        if labels is not None: column_names = [label] + property_names #sequences.prepend(column_names, label)
+        else:
+            column_names = property_names
+            labels = [None] * len(objects) # labels was None
 
         # Create the table
         table = cls()
@@ -476,21 +602,12 @@ class SmartTable(Table):
 
             else:
 
-                # Get the types, units and descriptions
-                types = [composite.type_for_property(name) for composite in composites]
-                units = [composite.unit_for_property(name) for composite in composites]
-                descriptions = [composite.description_for_property(name) for composite in composites]
+                # Get type, unit and description
+                column_type = property_types[name]
+                column_unit = property_units[name]
+                column_description = property_descriptions[name]
 
-                # Determine column type, unit and description
-                if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
-                else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
-
-                # Determine column unit
-                column_unit = sequences.get_first_not_none_value(units)
-
-                # Determine column description
-                column_description = sequences.get_first_not_none_value(descriptions)
-
+                # Add column type and unit to lists
                 column_types.append(column_type)
                 column_units.append(column_unit)
 
@@ -528,7 +645,7 @@ class SmartTable(Table):
         if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = "--"
 
         # Add the rows
-        for composite_label, composite in zip(labels, composites):
+        for composite_label, obj in zip(labels, objects):
 
             values = []
 
@@ -539,11 +656,22 @@ class SmartTable(Table):
                 if name == label: value = composite_label
                 else:
 
-                    # Get the value
-                    if hasattr(composite, name):
-                        value = getattr(composite, name)
-                        if name in to_string: value = tostr(value, **tostr_kwargs)
-                    else: value = None
+                    # Properties are attributes of the objects
+                    if attr:
+
+                        # Get the value
+                        if hasattr(obj, name):
+                            value = getattr(obj, name)
+                            if name in to_string: value = tostr(value, **tostr_kwargs)
+                        else: value = None
+
+                    # Properties are items of the objects
+                    else:
+
+                        if name in obj:
+                            value = obj[name]
+                            if name in to_string: value = tostr(value, **tostr_kwargs)
+                        else: value = None
 
                 # Add the value
                 values.append(value)

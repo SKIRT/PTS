@@ -183,6 +183,17 @@ class DustPediaSample(object):
 
     # -----------------------------------------------------------------
 
+    def get_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary_sample
+
+    # -----------------------------------------------------------------
+
     def get_position(self, galaxy_name):
 
         """

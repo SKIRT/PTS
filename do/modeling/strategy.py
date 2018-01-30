@@ -50,7 +50,7 @@ database.login(username, password)
 name = sample.get_name(config.galaxy)
 
 # Get info
-info = database.get_galaxy_info(name)
+info = database.get_galaxy_info_table(name)
 
 # FIRST IMAGES AND THAN THIS FAILS FOR SOME REASON!!
 path = fs.join(introspection.pts_temp_dir, time.unique_name("cutouts_" + name) + ".png")

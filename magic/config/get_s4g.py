@@ -16,7 +16,8 @@ definition = ConfigurationDefinition()
 # The galaxy name
 definition.add_required("galaxy_name", "string", "galaxy name")
 
-# Flag
+# Flags
+definition.add_flag("write", "write the components and properties", False)
 definition.add_flag("show", "show the parameters", True)
 
 # The output directory

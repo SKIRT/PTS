@@ -5,15 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.s4g Contains the S4GDecomposer class.
+## \package pts.magic.services.s4g Contains the S4G class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
-
-# Import standard modules
-import math
 
 # Import astronomical modules
 from astropy.units import dimensionless_angles
@@ -31,9 +28,10 @@ from ...core.basics.configurable import Configurable
 from ..tools import catalogs
 from ..basics.coordinate import SkyCoordinate
 from ...modeling.basics.properties import GalaxyProperties
-from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D
 from ...core.tools import formatting as fmt
 from ...core.units.parsing import parse_unit as u
+from ...core.tools.utils import lazyproperty
+from ...core.tools.angles import quadrant
 
 # -----------------------------------------------------------------
 
@@ -53,10 +51,9 @@ def get_properties(galaxy_name):
     :return:
     """
 
+    # Run the S4G service for the specified galaxy
     s4g = S4G()
-
     s4g.config.galaxy_name = galaxy_name
-
     s4g.run()
 
     # Return the properties
@@ -72,14 +69,63 @@ def get_components(galaxy_name):
     :return:
     """
 
+    # Run the S4G service for the specified galaxy
     s4g = S4G()
-
     s4g.config.galaxy_name = galaxy_name
-
     s4g.run()
 
     # Return the components
     return s4g.components
+
+# -----------------------------------------------------------------
+
+def get_table_lines():
+
+    """
+    This function ...
+    :return:
+    """
+
+    lines = []
+    with open(local_table_path, 'r') as s4g_table:
+        for line in s4g_table:
+            splitted = line.split()
+            if len(splitted) < 2: continue
+            lines.append(line)
+    return lines
+
+# -----------------------------------------------------------------
+
+def get_galaxy_names():
+
+    """
+    This function ...
+    :return:
+    """
+
+    names = []
+    for line in get_table_lines():
+        splitted = line.split()
+        name = splitted[1]
+        names.append(name)
+    return names
+
+# -----------------------------------------------------------------
+
+def has_galaxy(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    # Get the NGC name of the galaxy
+    ngc_name = catalogs.get_ngc_name(name)
+    ngc_name_nospaces = ngc_name.replace(" ", "")
+
+    # Check
+    return ngc_name_nospaces in get_galaxy_names()
 
 # -----------------------------------------------------------------
 
@@ -102,24 +148,14 @@ class S4G(Configurable):
         # The inclination
         self.inclination = None
 
-        # Names
-        self.ngc_name = None
-        self.ngc_name_nospaces = None
-
-        # The Vizier querying object, specifying the necessary columns for this class
-        self.vizier = Vizier(columns=['Name', 'RAJ2000', 'DEJ2000', 'Dmean','e_Dmean', 'amaj', 'ell','[3.6]', '[4.5]', 'e_[3.6]', 'e_[4.5]', 'PA'])
-        self.vizier.ROW_LIMIT = -1
-
         # The galaxy properties object
         self.properties = None
 
         # The dictionary of components
         self.components = dict()
 
-        #
-        self.disk_pa = None
-        self.disk = None
-        self.bulge = None
+        # The Vizier service
+        self.vizier = None
 
     # -----------------------------------------------------------------
 
@@ -136,29 +172,14 @@ class S4G(Configurable):
         # 2. Get galaxy properties
         self.get_properties()
 
-        # Tracing spiral density waves in M81: (Kendall et. al, 2008)
-        # - Sersic bulge:
-        #    n = 2.62
-        #    Re = 46.2 arcsec
-        #    b/a = 0.71
-        #    PA = −31.9°
-        # - Exponential disk:
-        #    Rs = 155.4 arcsec
-        #    b/a = 0.52
-        #    PA = −28.3°
-
-        # self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
-
-        # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
-
-        # 3. Parse the S4G table 8 to get the decomposition parameters
-        self.get_parameters_from_table()
+        # 3. Get the components
+        self.get_components()
 
         # 4. Show
         if self.config.show: self.show()
 
         # 5. Writing
-        if self.config.output is not None: self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -180,8 +201,32 @@ class S4G(Configurable):
         self.properties = GalaxyProperties()
         self.properties.name = self.config.galaxy_name
 
-        # Set the path
-        #self.components_2d_s4g_path = fs.create_directory_in(self.components_2d_path, "S4G")
+        # Get the NGC name of the galaxy
+        self.properties.ngc_name = self.ngc_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngc_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return catalogs.get_ngc_name(self.config.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ngc_name_nospaces(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ngc_name.replace(" ", "")
 
     # -----------------------------------------------------------------
 
@@ -194,11 +239,6 @@ class S4G(Configurable):
 
         # Inform the user
         log.info("Getting the galaxy properties ...")
-
-        # Name
-        self.get_ngc_name()
-
-        #self.get_dustpedia_info()
 
         # S4G
         self.get_s4g_properties()
@@ -240,22 +280,6 @@ class S4G(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_ngc_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the NGC name of the galaxy
-        self.properties.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
-
-        # Set ...
-        self.ngc_name = self.properties.ngc_name
-        self.ngc_name_nospaces = self.ngc_name.replace(" ", "")
-
-    # -----------------------------------------------------------------
-
     def get_s4g_properties(self):
 
         """
@@ -265,6 +289,10 @@ class S4G(Configurable):
 
         # Inform the user
         log.info("Querying the S4G catalog ...")
+
+        # The Vizier querying object, specifying the necessary columns for this class
+        self.vizier = Vizier(columns=['Name', 'RAJ2000', 'DEJ2000', 'Dmean', 'e_Dmean', 'amaj', 'ell', '[3.6]', '[4.5]', 'e_[3.6]', 'e_[4.5]', 'PA'])
+        self.vizier.ROW_LIMIT = -1
 
         # Get parameters from S4G catalog
         result = self.vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
@@ -324,6 +352,24 @@ class S4G(Configurable):
         # absolute_magnitude_i1 = table["M3.6"][0]
         # absolute_magnitude_i2 = table["M4.5"][0]
         # stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
+
+    # -----------------------------------------------------------------
+
+    def get_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the components ...")
+
+        # self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
+        # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
+
+        # Parse the S4G table 8 to get the decomposition parameters
+        self.get_parameters_from_table()
 
     # -----------------------------------------------------------------
 
@@ -633,8 +679,17 @@ class S4G(Configurable):
                 # Add the disk to the components dictionary
                 self.components["disk"] = disk
 
-        # Set the disk position angle
-        self.disk_pa = self.components["disk"].position_angle
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_pa(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.components["disk"].position_angle
 
     # -----------------------------------------------------------------
 
@@ -684,6 +739,9 @@ class S4G(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the properties ...")
+
         # Determine the path and save
         path = self.output_path_file("properties.dat")
         self.properties.saveto(path)
@@ -697,6 +755,9 @@ class S4G(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the components ...")
+
         # Loop over the components
         for name in self.components:
 
@@ -705,23 +766,5 @@ class S4G(Configurable):
 
             # Save the model
             self.components[name].saveto(path)
-
-# -----------------------------------------------------------------
-
-def quadrant(angle):
-
-    """
-    This function ...
-    :param angle:
-    :return:
-    """
-
-    if -180 <= angle.to("deg").value < -90.: return 3
-    elif -90. <= angle.to("deg").value < 0.0: return 4
-    elif 0.0 <= angle.to("deg").value < 90.: return 1
-    elif 90. <= angle.to("deg").value < 180.: return 2
-    elif 180. <= angle.to("deg").value < 270.: return 3
-    elif 270. <= angle.to("deg").value <= 360.: return 4
-    else: raise ValueError("Failed to determine quadrant for " + str(angle))
 
 # -----------------------------------------------------------------

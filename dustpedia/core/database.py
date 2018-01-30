@@ -22,6 +22,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.io.fits import getheader
 from astropy.units import Unit
+from astropy.coordinates import Angle, SkyCoord
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
@@ -40,6 +41,8 @@ from ...core.tools import archive
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools.utils import lazyproperty
+from ...core.basics.map import Map
+from ...core.tools.utils import memoize_method
 
 # -----------------------------------------------------------------
 
@@ -415,6 +418,7 @@ class DustPediaDatabase(object):
         data = [name_column, ra_column, dec_column, stage_column, type_column, v_column, d25_column, i_column]
         table = tables.new(data, names)
 
+        # Return the table
         return table
 
     # -----------------------------------------------------------------
@@ -695,6 +699,136 @@ class DustPediaDatabase(object):
 
         # Return
         return observatories
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_observatories(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return self.get_image_filters_per_observatory(galaxy_name).keys()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_galex(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "GALEX" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_sdss(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "SDSS" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_2mass(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "2MASS" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_spitzer(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "Spitzer" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_wise(self, galaxy_name):
+
+        """
+        Thisf unction ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "WISE" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_pacs(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "Pacs" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_spire(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "SPIRE" in self.get_observatories(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_herschel(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return self.has_pacs or self.has_spire
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_planck(self, galaxy_name):
+
+        """
+        Thisf unction ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "Planck" in self.get_observatories(galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -1128,11 +1262,8 @@ class DustPediaDatabase(object):
         # Inform the user
         log.info("Getting general information about galaxy '" + galaxy_name + "' ...")
 
-        # Set the names of the table columns
-        names = ["Name", "RA", "DEC", "Hubble Stage", "Hubble Type", "V", "D25", "Inclination"]
-
+        # Get page
         r = self.session.get(data_link + "?GalaxyName="+galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
-
         page_as_string = r.content
 
         tree = html.fromstring(page_as_string)
@@ -1188,10 +1319,38 @@ class DustPediaDatabase(object):
             elif "D25 (arcmin)" in line: d25 = float(line.split(": ")[1])
             elif "Inclination (deg.)" in line: i = float(line.split(": ")[1])
 
-        data = [[name], [ra], [dec], [stage], [type], [v], [d25], [i]]
+        # Create mapping
+        info = Map()
+        info.name = name
+        info.position = SkyCoord(ra=ra, dec=dec, unit="deg")
+        info.stage = stage
+        info.type = type
+        info.velocity = v * u("km/s")
+        info.d25 = Angle(d25, "arcmin")
+        info.inclination = Angle(i, "deg")
 
+        # Return the info
+        return info
+
+    # -----------------------------------------------------------------
+
+    def get_galaxy_info_table(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the info
+        info = self.get_galaxy_info(galaxy_name)
+
+        # Set the names of the table columns
+        names = ["Name", "RA", "DEC", "Hubble Stage", "Hubble Type", "V", "D25", "Inclination"]
+        data = [[info.name], [info.position.ra.degree], [info.position.dec.degree], [info.stage], [info.type], [info.velocity.to("km/s").value], [info.d25.to("arcmin").value], [info.inclination.degree]]
+
+        # Create and return the table
         table = tables.new(data, names)
-
         return table
 
     # -----------------------------------------------------------------
@@ -1493,6 +1652,24 @@ class DustPediaDatabase(object):
         index = self.get_black_body_galaxy_index(galaxy_name)
         value = self.dust_black_body_table["nchi2"][index]
         return value
+
+    # -----------------------------------------------------------------
+
+    def has_dust_black_body_table_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the index of the galaxy in the black body table
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        if index is None: return False
+
+        # Get first parameter value
+        temperature = self.dust_black_body_table["Tdust__K"][index]
+        return not np.isnan(temperature)
 
     # -----------------------------------------------------------------
 
