@@ -1875,32 +1875,53 @@ class ParameterExplorer(FittingComponent):
         # Use high-resolution grids
         if self.highres_wavelength_grid:
 
-            if self.fitting_run.is_highres_current_wavelength_grid:
+            # Target number of wavelengths is defined
+            if self.config.nwavelengths is not None: return "highres_" + str(self.config.nwavelengths)
+
+            # Refine from previous high-resolution grid?
+            elif self.fitting_run.is_highres_current_wavelength_grid:
 
                 if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
                 else: return self.fitting_run.current_wavelength_grid_name
 
-            else: return self.fitting_run.lowest_highres_wavelength_grid_name
+            # Get lowest npoints wavelength grid of high-resolution grids
+            else:
+                if self.config.refine_spectral: log.warning("Not refining more: previous generation did not use high-resolution wavelength grid")
+                return self.fitting_run.lowest_highres_wavelength_grid_name
 
         # Spectral convolution: use refined grids
         elif self.spectral_convolution:
 
+            # Target number of wavelengths is defined
+            if self.config.nwavelengths is not None: return "refined_" + str(self.config.nwavelengths)
+
+            # Refine from previous refined grid?
             if self.fitting_run.is_refined_current_wavelength_grid:
 
                 if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
                 else: return self.fitting_run.current_wavelength_grid_name
 
-            else: return self.fitting_run.lowest_refined_wavelength_grid_name
+            # Get lowest npoints wavelength grid of refined grids
+            else:
+                if self.config.refine_spectral: log.warning("Not refining more: previous generation did not use refined wavelength grid")
+                return self.fitting_run.lowest_refined_wavelength_grid_name
 
         # Basic grids
         else:
 
+            # Target number of wavelengths is defined
+            if self.config.nwavelengths is not None: return "basic_" + str(self.config.nwavelengths)
+
+            # Refine from previous basic grid?
             if self.fitting_run.is_basic_current_wavelength_grid:
 
                 if self.config.refine_spectral: return self.fitting_run.next_wavelength_grid_name
                 else: return self.fitting_run.current_wavelength_grid_name
 
-            else: return self.fitting_run.lowest_basic_wavelength_grid_name
+            # Get lowest npoints wavelength grid of basic grids
+            else:
+                if self.config.refine_spectral: raise ValueError("Cannot refine: use 'nwavelengths' to define a specific wavelength grid (and 'highres' to control whether to use high-resolution grid)")
+                return self.fitting_run.lowest_basic_wavelength_grid_name
 
     # -----------------------------------------------------------------
 

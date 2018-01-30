@@ -141,10 +141,10 @@ def check_grid_convolution():
         # SHow checks
         if nwavelengths_in_minmax < config.min_npoints:
             #raise ValueError("Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")")
-            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter wavelength range (" + tostr(fltr.min) + " to " + tostr(fltr.max) + ") for convolution (" + str(nwavelengths_in_minmax) + ")" + fmt.reset)
+            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter wavelength range (" + tostr(fltr.min) + " to " + tostr(fltr.max) + ") for convolution (" + str(nwavelengths_in_minmax) + " instead of " + str(config.min_npoints) + ")" + fmt.reset)
         elif nwavelengths_in_fwhm < config.min_npoints_fwhm:
             #raise ValueError("Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")")
-            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter FWHM wavelength range (" + tostr(fltr.fwhm_min) + " to " + tostr(fltr.fwhm_max) + ") for convolution (" + str(nwavelengths_in_fwhm) + ")" + fmt.reset)
+            print(fmt.red + " - " + str(fltr) + ": too few wavelengths within the filter FWHM wavelength range (" + tostr(fltr.fwhm_min) + " to " + tostr(fltr.fwhm_max) + ") for convolution (" + str(nwavelengths_in_fwhm) + " instead of " + str(config.min_npoints_fwhm) + ")" + fmt.reset)
         else: print(fmt.green + " - " + str(fltr) + ": filter range is sampled well by the wavelengths")
 
         # Set the wavelengths in the range

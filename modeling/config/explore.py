@@ -61,7 +61,7 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 # Ranges
 definition.add_flag("prompt_ranges", "prompt for the parameter ranges", True)
 definition.add_flag("auto_ranges", "determine the parameter ranges automatically based on the previous generation")
-definition.add_optional("range_probability", "percentage", "percentage of the total probability to use to select the new ranges automatically", .999)
+definition.add_optional("range_probability", "percentage", "percentage of the total probability to use to select the new ranges automatically", "99.9", convert_default=True)
 
 # -----------------------------------------------------------------
 
@@ -80,13 +80,14 @@ definition.add_flag("visualise", "make visualisations")
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
 definition.add_flag("adjust_npackages", "adjust the number of packages to the number of dust cells", True)
-definition.add_optional("ncells_npackages_factor", "percentage", "relative number of photon packages w.r.t. the number of dust cells (used when adjust_npackages is enabled)", 0.75)
+definition.add_optional("ncells_npackages_factor", "percentage", "relative number of photon packages w.r.t. the number of dust cells (used when adjust_npackages is enabled)", "75", convert_default=True)
 definition.add_optional("npackages", "positive_real", "define the number of photon packages explicitly")
 
 # Use a different wavelength grid or use a different representation
 definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)
 definition.add_flag("refine_spatial", "increase the spatial resolution of the model for the new batch of simulations", False)
 definition.add_flag("highres", "use high-resolution wavelength grids (default is same as previous generation)", None)
+definition.add_optional("nwavelengths", "positive_integer", "target number of wavelengths of the desired wavelength grid")
 
 # -----------------------------------------------------------------
 

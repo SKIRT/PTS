@@ -26,9 +26,9 @@ definition.add_flag("methods", "make a separate table for each method", True)
 # Filtering maps
 definition.add_flag("filter", "filter the maps", True)
 definition.add_optional("central_ellipse_factor", "real", "central ellipse factor for filtering", default_central_ellipse_factor)
-definition.add_optional("ninvalid_pixels_tolerance", "percentage", "number of invalid pixels tolerated within central ellipse", 10)
-definition.add_optional("nzero_pixels_tolerance", "percentage", "number of zero pixels tolerated within central ellipse", 40)
-definition.add_optional("nnegative_pixels_tolerance", "percentage", "number of negative pixels tolerated within central ellipse", 20)
+definition.add_optional("ninvalid_pixels_tolerance", "percentage", "number of invalid pixels tolerated within central ellipse", "10", convert_default=True)
+definition.add_optional("nzero_pixels_tolerance", "percentage", "number of zero pixels tolerated within central ellipse", "40", convert_default=True)
+definition.add_optional("nnegative_pixels_tolerance", "percentage", "number of negative pixels tolerated within central ellipse", "20", convert_default=True)
 
 definition.add_flag("hide_invalid", "hide invalid maps", False)
 definition.add_flag("hide_zero", "hide maps with too many zeros", False)
