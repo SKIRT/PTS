@@ -1008,8 +1008,14 @@ class Generation(object):
         ski_path = self.get_simulation_ski_path(name)
         out_path = self.get_simulation_output_path(name)
 
-        # Create and return the simulation
-        return SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
+        # Create the simulation object
+        simulation = SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
+
+        # Set the modeling path
+        simulation.analysis.modeling_path = self.modeling_path
+
+        # Return the simulation
+        return simulation
 
     # -----------------------------------------------------------------
 

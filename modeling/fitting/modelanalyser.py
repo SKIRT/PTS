@@ -291,11 +291,8 @@ class SEDFitModelAnalyser(FittingComponent):
         # The calculated chi squared value
         self.chi_squared = None
 
-        # The chi squared table
-        self.chi_squared_table = None
-
         # The mock observed SEDs
-        self.mock_seds = None
+        self.mock_seds = dict()
 
     # -----------------------------------------------------------------
 
@@ -339,14 +336,8 @@ class SEDFitModelAnalyser(FittingComponent):
         # 3. Calculate the chi squared for this model
         self.calculate_chi_squared()
 
-        # 4. Load the chi squared table
-        self.load_chi_squared_table()
-
-        # 5. Update the status of the generation if necessary
-        self.update_generation()
-
-        # 6. Write
-        self.write()
+        # 4. Write
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -364,7 +355,6 @@ class SEDFitModelAnalyser(FittingComponent):
         self.simulation = None
         self.differences = None
         self.chi_squared = None
-        self.chi_squared_table = None
 
     # -----------------------------------------------------------------
 
@@ -487,13 +477,17 @@ class SEDFitModelAnalyser(FittingComponent):
         super(SEDFitModelAnalyser, self).setup(**kwargs)
 
         # Get the simulation
-        if not self.has_simulation: self.get_simulation(**kwargs)
+        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
+        elif not self.has_simulation: self.load_simulation()
 
-        # Get the mock seds
-        self.get_mock_seds(**kwargs)
+        # Get the mock sed(s)
+        if "mock_seds" in kwargs: self.mock_seds = kwargs.pop("mock_seds")
+        elif "mock_sed" in kwargs: self.mock_seds[earth_instrument_name] = kwargs.pop("mock_sed")
+        else: self.get_mock_seds(**kwargs)
 
         # Load the fitting run
-        self.fitting_run = self.load_fitting_run(self.fitting_run_name)
+        if "fitting_run" in kwargs: self.fitting_run = kwargs.pop("fitting_run")
+        else: self.fitting_run = self.load_fitting_run(self.fitting_run_name)
 
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
@@ -509,19 +503,6 @@ class SEDFitModelAnalyser(FittingComponent):
         """
 
         return self.fitting_run.weights
-
-    # -----------------------------------------------------------------
-
-    def get_simulation(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        if "simulation" in kwargs: self.simulation = kwargs.pop("simulation")
-        else: self.load_simulation()
 
     # -----------------------------------------------------------------
 
@@ -737,7 +718,19 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_chi_squared_table(self):
+    @lazyproperty
+    def chi_squared_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.chi_squared_table_for_generation(self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
 
         """
         This function ...
@@ -745,10 +738,16 @@ class SEDFitModelAnalyser(FittingComponent):
         """
 
         # Inform the user
-        log.info("Loading the chi squared table ...")
+        log.info("Writing ...")
 
-        # Open the table
-        self.chi_squared_table = self.fitting_run.chi_squared_table_for_generation(self.generation_name)
+        # Update the status of the generation if necessary
+        self.update_generation()
+
+        # Write the flux differences
+        self.write_differences()
+
+        # Write the chi-squared value
+        self.write_chi_squared()
 
     # -----------------------------------------------------------------
 
@@ -758,6 +757,9 @@ class SEDFitModelAnalyser(FittingComponent):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.info("Updating the generation status ...")
 
         # Find the index in the table for this generation
         index = tables.find_index(self.fitting_run.generations_table, self.generation_name, "Generation name")
@@ -774,24 +776,6 @@ class SEDFitModelAnalyser(FittingComponent):
             # Update the generations table
             self.fitting_run.generations_table.set_finishing_time(self.generation_name, time.timestamp())
             self.fitting_run.generations_table.save()
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the flux differences
-        self.write_differences()
-
-        # Write the chi-squared value
-        self.write_chi_squared()
 
     # -----------------------------------------------------------------
 

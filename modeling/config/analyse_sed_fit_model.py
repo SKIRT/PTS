@@ -19,4 +19,7 @@ definition.add_required("remote", "string", "name of the remote host", choices=f
 definition.add_positional_optional("id", "positive_integer", "simulation ID")
 definition.add_optional("name", "string", "simulation name")
 
+# Flags
+definition.add_flag("write", "write the results", True)
+
 # -----------------------------------------------------------------

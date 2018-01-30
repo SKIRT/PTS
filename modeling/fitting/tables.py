@@ -1182,6 +1182,18 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return tables.find_index(self, simulation_name, "Simulation name")
+
+    # -----------------------------------------------------------------
+
     def chi_squared_for(self, simulation_name):
 
         """
@@ -1190,7 +1202,7 @@ class ChiSquaredTable(SmartTable):
         :return:
         """
 
-        index = tables.find_index(self, simulation_name, "Simulation name")
+        index = self.index_for_simulation(simulation_name)
         return self["Chi squared"][index]
 
     # -----------------------------------------------------------------
@@ -1216,6 +1228,19 @@ class ChiSquaredTable(SmartTable):
         """
 
         return name in self.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def remove_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = self.index_for_simulation(name)
+        self.remove_row(index)
 
     # -----------------------------------------------------------------
 
