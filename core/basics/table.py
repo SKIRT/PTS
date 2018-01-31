@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import StringIO
+import warnings
 from collections import OrderedDict, defaultdict
 
 # Import astronomical modules
@@ -392,6 +393,15 @@ class SmartTable(Table):
         # Determine the column names, types and descriptions
         column_names = sequences.union(*property_names)
 
+        # Sort column names?
+        first = kwargs.pop("first", None)
+        last = kwargs.pop("last", None)
+        if first is not None or last is not None: column_names = sequences.sort_with_first_last(column_names, first=first, last=last)
+
+        # Ignore all None?
+        ignore_none = kwargs.pop("ignore_none", False)
+        remove_columns = []
+
         # Get the column types, units and descriptions
         prop_types = dict()
         prop_units = dict()
@@ -429,7 +439,9 @@ class SmartTable(Table):
                 units.append(unit)
 
             # Determine column type, unit and description
-            if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
+            if sequences.all_equal_to(types, 'None') or sequences.all_none(types):
+                if ignore_none: remove_columns.append(name)
+                column_type = 'None'
             else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
 
             # Determine column unit
@@ -443,6 +455,9 @@ class SmartTable(Table):
             prop_types[name] = column_type
             prop_units[name] = column_unit
             prop_descriptions[name] = column_description
+
+        # Remove columns
+        if len(remove_columns) > 0: column_names = sequences.removed(column_names, remove_columns)
 
         # Create and return
         return cls.from_properties(column_names, prop_types, prop_units, prop_descriptions, dictionaries, **kwargs)
@@ -515,6 +530,11 @@ class SmartTable(Table):
 
         # Determine the column names, types and descriptions
         column_names = sequences.union(*property_names)
+
+        # Sort column names?
+        first = kwargs.pop("first", None)
+        last = kwargs.pop("last", None)
+        if first is not None or last is not None: column_names = sequences.sort_with_first_last(column_names, first=first, last=last)
 
         # Get the column types, units and descriptions
         prop_types = dict()
@@ -925,23 +945,112 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, format=None):
 
         """
         This function ...
+        :param path:
+        :param format:
         :return:
         """
 
+        # Guess the format
+        if format is None:
+            first_line = fs.get_first_line(path)
+            if "ECSV" in first_line: format = "ecsv"
+            elif "PTS data format" in first_line: format = "pts"
+
+        #fill_values = [('--', '0')]
         fill_values = [('--', '0')]
 
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
-        # Open the table
-        table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)
+        # PTS format
+        if format == "pts":
 
-        # Set masks
-        set_table_masks(table)
+            # Read the lines
+            lines = fs.read_lines(path)
+
+            #header.append("PTS data format")
+            # for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
+
+            # Set density and brightness lists
+            #if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
+            #if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
+
+            # Set unit string line for the header
+            #unit_string = ""
+            #for name in self.column_names:
+            #    unit = self.column_unit(name)
+            #    if unit is None: unit_string += ' ""'
+            #    else: unit_string += " " + tostr(unit)
+            #header.append(unit_string.strip())
+
+            # Initialize the data lines and header lines
+            data_lines = []
+            header = []
+
+            # Loop over the lines of the file
+            for line in lines:
+
+                # Header line
+                if line.startswith("#"): header.append(line[2:])
+                else:
+                    #line = line.replace('""', "--")
+                    data_lines.append(line)
+
+            # Put last header line (colum names) as first data line (and remove it from the header)
+            sequences.prepend(data_lines, "# " + header[-1])
+            header = header[:-1]
+
+            #print("DATA")
+            #for line in data_lines: print(line)
+            #print("")
+            #print("HEADER")
+            #for line in header: print(line)
+            #print("")
+
+            #filehandle = StringIO.StringIO()
+            #for line in data_lines: filehandle.write(line + "\n")
+
+            # Call the constructor from Astropy, to read in plain ascii format
+            table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
+
+            # Search for density and brightness, set meta info
+            for line in header:
+                if line.startswith("density:"): table.meta["density"] = eval("[" + line.split("density: ")[1] + "]")
+                elif line.startswith("brightness:"): table.meta["brightness"] = eval("[" + line.split("brightness: ")[1] + "]")
+
+            # Set units
+            unit_string = header[-1]
+            unit_strings = unit_string.split()
+            #print(len(unit_strings), len(table.colnames))
+            #print(unit_strings)
+            for unit_string, colname in zip(unit_strings, table.colnames):
+                if unit_string == '""': continue
+                table[colname].unit = unit_string
+
+        # ECSV format (with masks and units in the meta info)
+        elif format == "ecsv":
+
+            # Read
+            table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.ecsv")
+
+            # Set masks
+            set_table_masks(table)
+
+        # Write the table in the desired format (by Astropy)
+        elif format == "csv": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.csv")
+
+        # HTML
+        elif format == "html": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.html")
+
+        # Latex
+        elif format == "latex": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.latex")
+
+        # All other
+        else: table = super(SmartTable, cls).read(path, fill_values=fill_values, format=format)
 
         # Set the path
         table.path = path
@@ -1333,7 +1442,104 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path):
+    def saveto(self, path, format="pts"):
+
+        """
+        This function ...
+        :param path:
+        :param format:
+        :return:
+        """
+
+        # Import tostr function
+        from ..tools.stringify import tostr
+
+        # Setup if necessary
+        if len(self.colnames) == 0: self.setup()
+
+        # If the file already exists, remove
+        if fs.is_file(path): fs.remove_file(path)
+
+        # PTS format
+        if format == "pts":
+
+            # Create string buffer
+            import StringIO
+            output = StringIO.StringIO()
+
+            # Write to buffer, get the lines
+            self.write(output, format="ascii.commented_header")
+            data_lines = output.getvalue().split("\n")
+
+            # Get masks
+            #masks = self.get_masks()
+
+            # Create header
+            header = []
+            header.append("PTS data format")
+            #for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
+
+            # Set density and brightness lists
+            if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
+            if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
+
+            # Set unit string line for the header
+            unit_string = ""
+            for name in self.column_names:
+                unit = self.column_unit(name)
+                if unit is None: unit_string += ' ""'
+                else: unit_string += " " + tostr(unit)
+            header.append(unit_string.strip())
+
+            # Create lines
+            lines = []
+            for line in header: lines.append("# " + line)
+            #lines.append("# " + data_lines[0]) # add line with the column names
+            #for line in data_lines[1:]:
+            for line in data_lines:
+                if not line: continue # empty line at the end
+                lines.append(line)
+
+            # Write the lines
+            fs.write_lines(path, lines)
+
+        # ECSV format (with masks and units in the meta info)
+        elif format == "ecsv":
+
+            # Get masks
+            masks = self.get_masks_int()
+
+            # Set masks in meta
+            for name in masks: self.meta[name + " mask"] = masks[name]
+
+            # Replace masked values (not masked anymore)
+            self.replace_masked_values()
+
+            # Save
+            self.write(path, format="ascii.ecsv")
+
+            # Set the masks back (because they were set to False by replace_masked_values, necessary to avoid writing out
+            # '""' (empty string) for each masked value, which is unreadable by Astropy afterwards)
+            self.set_masks(masks)
+
+        # Write the table in the desired format (by Astropy)
+        elif format == "csv": self.write(path, format="ascii.csv")
+
+        # HTML
+        elif format == "html": self.write(path, format="ascii.html")
+
+        # Latex
+        elif format == "latex": self.write(path, format="ascii.latex")
+
+        # All other
+        else: self.write(path, format=format)
+
+        # Set the path
+        self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_csv(self, path):
 
         """
         This function ...
@@ -1341,33 +1547,121 @@ class SmartTable(Table):
         :return:
         """
 
-        #print(self.colnames)
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "csv": warnings.warn("The extension is not 'csv'")
+        else: path = path + ".csv"
 
-        # Setup if necessary
-        if len(self.colnames) == 0: self.setup()
+        # Save
+        self.saveto(path, format="csv")
 
-        # Get masks
-        masks = self.get_masks()
+    # -----------------------------------------------------------------
 
-        # Replace masked values (not masked anymore)
-        self.replace_masked_values()
+    def saveto_ecsv(self, path):
 
-        # Set masks in meta
-        for name in masks: self.meta[name + " mask"] = masks[name]
+        """
+        This function ...
+        :param path:
+        :return:
+        """
 
-        # If the file already exists, remove
-        if fs.is_file(path): fs.remove_file(path)
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "ecsv": warnings.warn("The extension is not 'ecsv'")
+        else: path = path + ".ecsv"
 
-        # Write the table in ECSV format
-        #self.write(path, format="ascii.ecsv", overwrite=True)
-        self.write(path, format="ascii.ecsv")
+        # Save
+        self.saveto(path, format="ecsv")
 
-        # Set the path
-        self.path = path
+    # -----------------------------------------------------------------
 
-        # Set the masks back (because they were set to False by replace_masked_values, necessary to avoid writing out
-        # '""' (empty string) for each masked value, which is unreadable by Astropy afterwards)
-        self.set_masks(masks)
+    def saveto_html(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "html": warnings.warn("The extension if not 'html'")
+        else: path = path + ".html"
+
+        # Save
+        self.saveto(path, format="html")
+
+    # -----------------------------------------------------------------
+
+    def saveto_latex(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "text": warnings.warn("The extension is not 'tex'")
+        else: path = path + ".tex"
+
+        # Save
+        self.saveto(path, format="latex")
+
+    # -----------------------------------------------------------------
+
+    def saveto_votable(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "votable": warnings.warn("The extension is not 'xml'")
+        else: path = path + ".xml"
+
+        # Save
+        self.saveto(path, format="votable")
+
+    # -----------------------------------------------------------------
+
+    def saveto_ascii(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "ascii": warnings.warn("The extension is not 'ascii'")
+        else: path = path + ".ascii"
+
+        # Save
+        self.saveto(path, format="ascii")
+
+    # -----------------------------------------------------------------
+
+    def saveto_pts(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Check or add extension
+        if fs.has_extension(path):
+            if fs.get_extension(path) != "dat": warnings.warn("The extension is not 'dat'")
+        else: path = path + ".dat"
+
+        # Save
+        self.saveto(path, format="pts")
 
     # -----------------------------------------------------------------
 
@@ -1380,7 +1674,21 @@ class SmartTable(Table):
 
         masks = dict()
         for name in self.colnames:
-            masks[name] = [int(boolean) for boolean in self[name].mask] #list(self[name].mask)
+            masks[name] = [boolean for boolean in self[name].mask]
+        return masks
+
+    # -----------------------------------------------------------------
+
+    def get_masks_int(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        masks = dict()
+        for name in self.colnames:
+            masks[name] = [int(boolean) for boolean in self[name].mask]
         return masks
 
     # -----------------------------------------------------------------

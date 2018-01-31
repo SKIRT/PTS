@@ -1295,10 +1295,11 @@ class DustPediaDatabase(object):
 
                 column_index += 1
 
+        # Get the lines with the galaxy info that are not empty
         splitted = galaxy_info.split("\r\n")
-
         lines = [split.strip() for split in splitted if split.strip()]
 
+        # Initialize variables
         name = None
         ra = None
         dec = None
@@ -1308,16 +1309,52 @@ class DustPediaDatabase(object):
         d25 = None
         i = None
 
+        # Loop over the lines
         for line in lines:
 
+            # Galaxy name
             if "Name" in line: name = line.split(": ")[1]
+
+            # Right ascension
             elif "RA(2000)" in line: ra = float(line.split(": ")[1])
+
+            # Declination
             elif "DEC(2000)" in line: dec = float(line.split(": ")[1])
-            elif "Hubble Stage(T)" in line: stage = float(line.split(": ")[1])
-            elif "Hubble Type: Sab" in line: type = line.split(": ")[1]
-            elif "V (km/s)" in line: v = float(line.split(": ")[1])
-            elif "D25 (arcmin)" in line: d25 = float(line.split(": ")[1])
-            elif "Inclination (deg.)" in line: i = float(line.split(": ")[1])
+
+            # Hubble stage
+            elif "Hubble Stage(T)" in line:
+
+                splitted = line.split(": ")
+                if len(splitted) > 1 and splitted[1].strip() != "": stage = float(splitted[1])
+                else: stage = None
+
+            # Hubble stage
+            elif "Hubble Type" in line:
+
+                splitted = line.split(": ")
+                if len(splitted) > 1 and splitted[1].strip() != "": type = splitted[1].strip()
+                else: type = None
+
+            # Velocity
+            elif "V (km/s)" in line:
+
+                splitted = line.split(": ")
+                if len(splitted) > 1 and splitted[1].strip() != "": v = float(splitted[1])
+                else: v = None
+
+            # D25
+            elif "D25 (arcmin)" in line:
+
+                splitted = line.split(": ")
+                if len(splitted) > 1 and splitted[1].strip() != "": d25 = float(splitted[1])
+                else: d25 = None
+
+            # Inclination angle
+            elif "Inclination (deg.)" in line:
+
+                splitted = line.split(": ")
+                if len(splitted) > 1 and splitted[1].strip() != "": i = float(splitted[1])
+                else: i = None
 
         # Create mapping
         info = Map()
@@ -1325,9 +1362,9 @@ class DustPediaDatabase(object):
         info.position = SkyCoord(ra=ra, dec=dec, unit="deg")
         info.stage = stage
         info.type = type
-        info.velocity = v * u("km/s")
-        info.d25 = Angle(d25, "arcmin")
-        info.inclination = Angle(i, "deg")
+        info.velocity = v * u("km/s") if v is not None else None
+        info.d25 = Angle(d25, "arcmin") if d25 is not None else None
+        info.inclination = Angle(i, "deg") if i is not None else None
 
         # Return the info
         return info

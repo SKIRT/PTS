@@ -1762,6 +1762,9 @@ def sort_with_first_last(sequence, first=None, last=None):
     :return:
     """
 
+    if first is not None and not is_sequence(first): first = [first]
+    if last is not None and not is_sequence(last): last = [last]
+
     firsts = []
     between = []
     lasts = []

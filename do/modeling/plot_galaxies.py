@@ -27,6 +27,7 @@ from pts.core.basics.table import SmartTable
 # Create the configuration
 definition = ConfigurationDefinition()
 
+#
 definition.add_optional("ngalaxies", "positive_integer", "max number of galaxies")
 
 # Get configuration
@@ -46,128 +47,7 @@ galaxy_names = sample.get_names()
 
 # -----------------------------------------------------------------
 
-s4g_names = get_galaxy_names()
 
-# -----------------------------------------------------------------
-
-galaxies = []
-
-# -----------------------------------------------------------------
-
-# Loop over the names
-for galaxy_name in galaxy_names:
-
-    # Get info
-    info = database.get_galaxy_info(galaxy_name)
-
-    # Has S4G decomposition
-    has_s4g = galaxy_name in s4g_names
-
-    # Initialize the parameters
-    sfr = None
-    sfr_error = None
-    dust_mass = None
-    dust_mass_error = None
-    dust_luminosity = None
-    dust_luminosity_error = None
-    dust_temperature = None
-    dust_temperature_error = None
-    stellar_mass = None
-    stellar_mass_error = None
-    stellar_luminosity = None
-    stellar_luminosity_error = None
-
-    # There are results from CIGALE fits
-    if database.has_cigale_parameters(galaxy_name):
-
-        # Get the parameters
-        parameters = database.get_cigale_parameters(galaxy_name)
-
-        # Dust parameters
-        dust_mass = parameters["dust_mass"]
-        dust_mass_error = parameters["dust_mass_error"]
-        dust_luminosity = parameters["dust_luminosity"]
-        dust_luminosity_error = parameters["dust_luminosity_error"]
-        fuv_attenuation = parameters["fuv_attenuation"]
-        fuv_attenuation_error = parameters["fuv_attenuation_error"]
-
-        # Stellar parameters
-        sfr = parameters["sfr"]
-        sfr_error = parameters["sfr_error"]
-        stellar_mass = parameters["stellar_mass"]
-        stellar_mass_error = parameters["stellar_mass_error"]
-        stellar_luminosity = parameters["stellar_luminosity"]
-        stellar_luminosity_error = parameters["stellar_luminosity_error"]
-
-    # There are results from black body fits
-    elif database.has_dust_black_body_table_parameters(galaxy_name):
-
-        # Get parameters
-        parameters = database.get_dust_black_body_table_parameters(galaxy_name)
-
-        # Dust parameters
-        dust_mass = parameters["dust_mass"]
-        dust_mass_error = parameters["dust_mass_error"]
-        dust_luminosity = parameters["dust_luminosity"]
-        dust_luminosity_error = parameters["dust_luminosity_error"]
-        dust_temperature = parameters["dust_temperature"]
-        dust_temperature_error = parameters["dust_temperature_error"]
-
-    else: log.warning("No model parameters available for galaxy '" + galaxy_name + "'")
-
-    # Check presence of data
-    has_galex = database.has_galex(galaxy_name)
-    has_sdss = database.has_sdss(galaxy_name)
-    has_2mass = database.has_2mass(galaxy_name)
-    has_spitzer = database.has_spitzer(galaxy_name)
-    has_wise = database.has_wise(galaxy_name)
-    has_pacs = database.has_pacs(galaxy_name)
-    has_spire = database.has_spire(galaxy_name)
-    has_planck = database.has_planck(galaxy_name)
-
-    # Set galaxy properties
-    properties = Map()
-
-    # Set basic info
-    properties.name = info.name
-    #properties.position = info.position
-    properties.ra = info.position.ra
-    properties.dec = info.position.dec
-    properties.stage = info.stage
-    properties.type = info.type
-    properties.velocity = info.velocity
-    properties.d25 = info.d25
-    properties.inclination = info.inclination
-
-    # Set model properties
-    properties.sfr = sfr
-    properties.sfr_error = sfr_error
-    properties.dust_mass = dust_mass
-    properties.dust_mass_error = dust_mass_error
-    properties.dust_luminosity = dust_luminosity
-    properties.dust_luminosity_error = dust_luminosity_error
-    properties.dust_temperature = dust_temperature
-    properties.dust_temperature_error = dust_temperature_error
-    properties.stellar_mass = stellar_mass
-    properties.stellar_mass_error = stellar_mass_error
-    properties.stellar_luminosity = stellar_luminosity
-    properties.stellar_luminosity_error = stellar_luminosity_error
-
-    # Set flags
-    properties.has_galex = has_galex
-    properties.has_sdss = has_sdss
-    properties.has_2mass = has_2mass
-    properties.has_spitzer = has_spitzer
-    properties.has_wise = has_wise
-    properties.has_pacs = has_pacs
-    properties.has_spire = has_spire
-    properties.has_planck = has_planck
-
-    # Add properties
-    galaxies.append(properties)
-
-    # Limit of number of galaxies
-    if config.ngalaxies is not None and len(galaxies) == config.ngalaxies: break
 
 # -----------------------------------------------------------------
 
