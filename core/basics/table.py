@@ -1019,8 +1019,17 @@ class SmartTable(Table):
 
             # Search for density and brightness, set meta info
             for line in header:
-                if line.startswith("density:"): table.meta["density"] = eval("[" + line.split("density: ")[1] + "]")
-                elif line.startswith("brightness:"): table.meta["brightness"] = eval("[" + line.split("brightness: ")[1] + "]")
+                if line.startswith("density:"):
+
+                    density_string = line.split("density: ")[1]
+                    string = "[" + ",".join('"' + s + '"' for s in density_string.split(",")) + "]"
+                    table.meta["density"] = eval(string)
+
+                elif line.startswith("brightness:"):
+
+                    brightness_string = line.split("brightness: ")[1]
+                    string = "[" + ",".join('"' + s + '"' for s in brightness_string.split(",")) + "]"
+                    table.meta["brightness"] = eval(string)
 
             # Set units
             unit_string = header[-1]
