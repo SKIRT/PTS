@@ -438,7 +438,8 @@ class DustPediaDatabase(object):
         log.info("Getting the URLs of the available images for galaxy '" + galaxy_name + "' ...")
 
         # Go to the page
-        r = self.session.get(data_link + "?GalaxyName="+galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+        formatted_galaxy_name = galaxy_name.replace("+", "%2B")
+        r = self.session.get(data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
 
         page_as_string = r.content
 
@@ -1263,7 +1264,8 @@ class DustPediaDatabase(object):
         log.info("Getting general information about galaxy '" + galaxy_name + "' ...")
 
         # Get page
-        r = self.session.get(data_link + "?GalaxyName="+galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+        formatted_galaxy_name = galaxy_name.replace("+", "%2B")
+        r = self.session.get(data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
         page_as_string = r.content
 
         tree = html.fromstring(page_as_string)
@@ -1405,7 +1407,8 @@ class DustPediaDatabase(object):
 
         # http://dustpedia.astro.noa.gr/MBB?GalaxyName=NGC3031&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search
 
-        r = self.session.get(mbb_link + "?GalaxyName=" + galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+        formatted_galaxy_name = galaxy_name.replace("+", "%2B")
+        r = self.session.get(mbb_link + "?GalaxyName=" + formatted_galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
 
         page_as_string = r.content
 
