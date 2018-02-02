@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.dustpedia.core.photometry import DustPediaPhotometry
@@ -310,9 +313,9 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     else: mu25_mu70 = None
 
     # 25-60
-    if iras25_flux is not None and iras60_flux is not None: mu25_mu70 = calculate_colour(iras25_flux, iras60_flux)
-    elif mips24_flux is not None and iras60_flux is not None: mu25_mu70 = calculate_colour(mips24_flux, iras60_flux)
-    else: mu25_mu70 = None
+    if iras25_flux is not None and iras60_flux is not None: mu25_mu60 = calculate_colour(iras25_flux, iras60_flux)
+    elif mips24_flux is not None and iras60_flux is not None: mu25_mu60 = calculate_colour(mips24_flux, iras60_flux)
+    else: mu25_mu60 = None
 
     # 60-100
     if iras60_flux is not None and pgreen_flux is not None: mu60_mu100 = calculate_colour(iras60_flux, pgreen_flux)
@@ -568,41 +571,41 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     properties.hfi_2100_flux = hfi_2100_lum
     properties.hfi_3000_flux = hfi_3000_lum
 
-    properties.fuv_nuv = fuv_nuv
-    properties.fuv_h = fuv_h
-    properties.fuv_j = fuv_j
-    properties.fuv_k = fuv_k
-    properties.fuv_u = fuv_u
-    properties.fuv_g = fuv_g
-    properties.fuv_r = fuv_r
-    properties.fuv_i = fuv_i
-    properties.fuv_z = fuv_z
-    properties.fuv_mu3 = fuv_mu3
-    properties.fuv_mu4 = fuv_mu4
-    properties.nuv_h = nuv_h
-    properties.nuv_j = nuv_j
-    properties.nuv_k = nuv_k
-    properties.nuv_u = nuv_u
-    properties.nuv_g = nuv_g
-    properties.nuv_r = nuv_r
-    properties.nuv_i = nuv_i
-    properties.nuv_z = nuv_z
-    properties.nuv_mu3 = nuv_mu3
-    properties.nuv_mu4 = nuv_mu4
-    properties.mu25_mu70 = mu25_mu70
-    properties.mu25_mu70 = mu25_mu70
-    properties.mu60_mu100 = mu60_mu100
-    properties.mu70_mu100 = mu70_mu100
-    properties.mu100_mu160 = mu100_mu160
-    properties.mu160_mu250 = mu160_mu250
-    properties.mu250_mu350 = mu250_mu350
-    properties.mu350_mu500 = mu350_mu500
-    properties.mu350_mu550 = mu350_mu550
-    properties.mu500_mu850 = mu500_mu850
-    properties.mu550_mu850 = mu550_mu850
-    properties.mu850_mu1380 = mu850_mu1380
-    properties.mu1380_mu2100 = mu1380_mu2100
-    properties.mu2100_mu3000 = mu2100_mu3000
+    properties.fuv_nuv = fuv_nuv if fuv_nuv is not None and not np.isnan(fuv_nuv) else None
+    properties.fuv_h = fuv_h if fuv_h is not None and not np.isnan(fuv_h) else None
+    properties.fuv_j = fuv_j if fuv_j is not None and not np.isnan(fuv_j) else None
+    properties.fuv_k = fuv_k if fuv_k is not None and not np.isnan(fuv_k) else None
+    properties.fuv_u = fuv_u if fuv_u is not None and not np.isnan(fuv_u) else None
+    properties.fuv_g = fuv_g if fuv_g is not None and not np.isnan(fuv_g) else None
+    properties.fuv_r = fuv_r if fuv_r is not None and not np.isnan(fuv_r) else None
+    properties.fuv_i = fuv_i if fuv_i is not None and not np.isnan(fuv_i) else None
+    properties.fuv_z = fuv_z if fuv_z is not None and not np.isnan(fuv_z) else None
+    properties.fuv_mu3 = fuv_mu3 if fuv_mu3 is not None and not np.isnan(fuv_mu3) else None
+    properties.fuv_mu4 = fuv_mu4 if fuv_mu4 is not None and not np.isnan(fuv_mu4) else None
+    properties.nuv_h = nuv_h if nuv_h is not None and not np.isnan(nuv_h) else None
+    properties.nuv_j = nuv_j if nuv_j is not None and not np.isnan(nuv_j) else None
+    properties.nuv_k = nuv_k if nuv_k is not None and not np.isnan(nuv_k) else None
+    properties.nuv_u = nuv_u if nuv_u is not None and not np.isnan(nuv_u) else None
+    properties.nuv_g = nuv_g if nuv_g is not None and not np.isnan(nuv_g) else None
+    properties.nuv_r = nuv_r if nuv_r is not None and not np.isnan(nuv_r) else None
+    properties.nuv_i = nuv_i if nuv_i is not None and not np.isnan(nuv_i) else None
+    properties.nuv_z = nuv_z if nuv_z is not None and not np.isnan(nuv_z) else None
+    properties.nuv_mu3 = nuv_mu3 if nuv_mu3 is not None and not np.isnan(nuv_mu3) else None
+    properties.nuv_mu4 = nuv_mu4 if nuv_mu4 is not None and not np.isnan(nuv_mu4) else None
+    properties.mu25_mu70 = mu25_mu70 if mu25_mu70 is not None and not np.isnan(mu25_mu70) else None
+    properties.mu25_mu60 = mu25_mu60 if mu25_mu60 is not None and not np.isnan(mu25_mu60) else None
+    properties.mu60_mu100 = mu60_mu100 if mu60_mu100 is not None and not np.isnan(mu60_mu100) else None
+    properties.mu70_mu100 = mu70_mu100 if mu70_mu100 is not None and not np.isnan(mu70_mu100) else None
+    properties.mu100_mu160 = mu100_mu160 if mu100_mu160 is not None and not np.isnan(mu100_mu160) else None
+    properties.mu160_mu250 = mu160_mu250 if mu160_mu250 is not None and not np.isnan(mu160_mu250) else None
+    properties.mu250_mu350 = mu250_mu350 if mu250_mu350 is not None and not np.isnan(mu250_mu350) else None
+    properties.mu350_mu500 = mu350_mu500 if mu350_mu500 is not None and not np.isnan(mu350_mu500) else None
+    properties.mu350_mu550 = mu350_mu550 if mu350_mu550 is not None and not np.isnan(mu350_mu550) else None
+    properties.mu500_mu850 = mu500_mu850 if mu500_mu850 is not None and not np.isnan(mu500_mu850) else None
+    properties.mu550_mu850 = mu550_mu850 if mu550_mu850 is not None and not np.isnan(mu550_mu850) else None
+    properties.mu850_mu1380 = mu850_mu1380 if mu850_mu1380 is not None and not np.isnan(mu850_mu1380) else None
+    properties.mu1380_mu2100 = mu1380_mu2100 if mu1380_mu2100 is not None and not np.isnan(mu1380_mu2100) else None
+    properties.mu2100_mu3000 = mu2100_mu3000 if mu2100_mu3000 is not None and not np.isnan(mu2100_mu3000) else None
 
     # Set model properties
     properties.sfr = sfr

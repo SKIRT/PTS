@@ -513,7 +513,9 @@ def all_equal(lst, ignore_none=False, ignore=None):
 
     # ELIF because ignore is also passed to find_first_not_none
     elif ignore is not None and first == ignore:
-        try: first = find_first(lst, ignore=ignore)
+        try:
+            if ignore_none: first = find_first_not_none(lst, ignore=ignore)
+            else: first = find_first(lst, ignore=ignore)
         except: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
 
     #print(first)

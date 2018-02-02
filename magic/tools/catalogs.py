@@ -792,6 +792,11 @@ def get_galaxy_s4g_one_component_info(name):
 
     # Get the "galaxies" table
     result = vizier.query_object(name, catalog=["J/ApJS/219/4/galaxies"])
+
+    # No results?
+    if len(result) == 0: return None, None, None, None, None, None
+
+    # Get table
     table = result[0]
 
     # PA: [0.2/180] Outer isophote position angle
