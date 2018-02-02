@@ -444,7 +444,7 @@ class PhotometricQuantity(Quantity):
         frequency = kwargs.pop("frequency", None)
         distance = kwargs.pop("distance", None)
         solid_angle = kwargs.pop("solid_angle", None)
-        fltr = kwargs.pop("fltr", None)
+        fltr = kwargs.pop("fltr", kwargs.pop("filter", None))
         pixelscale = kwargs.pop("pixelscale", None)
 
         # Equivalencies

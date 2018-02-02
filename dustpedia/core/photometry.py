@@ -212,20 +212,22 @@ class DustPediaPhotometry(object):
 
     # -----------------------------------------------------------------
 
-    def get_sed(self, galaxy_name, add_iras=True, add_planck=True):
+    def get_sed(self, galaxy_name, add_iras=True, add_planck=True, exact_name=False):
             
         """
         This function ...
         :param galaxy_name:
         :param add_iras:
         :param add_planck:
+        :param exact_name:
         """
 
         # Inform the user
         log.info("Getting the DustPedia SED for galaxy '" + galaxy_name + "' ...")
 
         # Get DustPedia name of galaxy
-        objname = self.sample.get_name(galaxy_name)
+        if exact_name: objname = galaxy_name
+        else: objname = self.sample.get_name(galaxy_name)
 
         # Find in table
         index = tables.find_index(self.aperture, objname, "name")
@@ -244,8 +246,7 @@ class DustPediaPhotometry(object):
             filters.append(self.aperture_filters[colname])
             fluxes.append(flux)
 
-            if colname + "_err" in self.aperture.colnames:
-                errors.append(self.aperture[colname + "_err"][index])
+            if colname + "_err" in self.aperture.colnames: errors.append(self.aperture[colname + "_err"][index])
             else: errors.append(None)
 
         index = tables.find_index(self.iras_scanpi, objname, "name")
@@ -265,8 +266,7 @@ class DustPediaPhotometry(object):
                 fluxes.append(flux)
 
                 # Add error
-                if colname + "_err" in self.iras_scanpi.colnames:
-                    errors.append(self.iras_scanpi[colname + "_err"][index])
+                if colname + "_err" in self.iras_scanpi.colnames: errors.append(self.iras_scanpi[colname + "_err"][index])
                 else: errors.append(None)
 
         index = tables.find_index(self.planck, objname, "name")
@@ -284,14 +284,19 @@ class DustPediaPhotometry(object):
                 filters.append(self.planck_filters[colname])
                 fluxes.append(flux)
 
-                if colname + "_err" in self.planck.colnames:
-                    errors.append(self.planck[colname + "_err"][index])
+                if colname + "_err" in self.planck.colnames: errors.append(self.planck[colname + "_err"][index])
                 else: errors.append(None)
 
+        # Create the observed SED
         sed = ObservedSED(photometry_unit="Jy")
 
+        # Add the points
         for i in range(len(filters)):
-            sed.add_point(filters[i], fluxes[i], errors[i])
+            fltr = filters[i]
+            flux = fluxes[i]
+            error = errors[i]
+            if error < 0: error = None
+            sed.add_point(fltr, flux, error)
 
         # Return the SED
         return sed

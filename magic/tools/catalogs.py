@@ -906,6 +906,8 @@ def get_galaxy_info(name, position):
         ned_result = Ned.query_object(name)
         ned_entry = ned_result[0]
 
+        #print(ned_entry)
+
         # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
         if ned_entry["Object Name"].startswith("2MASX "): gal_name = name
         else: gal_name = ned_entry["Object Name"]
@@ -919,8 +921,10 @@ def get_galaxy_info(name, position):
         if isinstance(gal_type, np.ma.core.MaskedConstant): gal_type = None
 
         # Get the distance
-        ned_distance = ned_entry["Distance (arcmin)"]
-        if isinstance(ned_distance, np.ma.core.MaskedConstant): ned_distance = None
+        # THIS IS PROBABLY NOT AN ACTUAL DISTANCE?
+        #ned_distance = ned_entry["Distance (arcmin)"]
+        #if isinstance(ned_distance, np.ma.core.MaskedConstant): ned_distance = None
+        ned_distance = None
 
     except astroquery.exceptions.RemoteServiceError:
 
@@ -1025,6 +1029,15 @@ def get_galaxy_info(name, position):
         gal_distance = ned_distance
         gal_inclination = None
         gal_d25 = diameter
+
+    # Distance not found?
+    if gal_distance is None:
+
+        grav_result = viz.query_object(name, catalog="VII/267/gwgc")
+        if len(grav_result) > 0:
+
+            table = grav_result[0]
+            gal_distance = table["Dist"][0] * u("Mpc")
 
     # Get the size of major and minor axes
     gal_major = diameter
