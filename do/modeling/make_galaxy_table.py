@@ -383,10 +383,10 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     #if "ESO" not in gal_name and "NGC" not in gal_name and "PGC" not in gal_name and not gal_name.startswith("IC") and "UGCA" not in gal_name:
     #    common_name = gal_name
 
-    print(common_name)
-    print(gal_names)
+    #print(common_name)
+    #print(gal_names)
     #continue
-    print(gal_distance)
+    #print(gal_distance)
 
     # Convert fluxes to luminosities
     if gal_distance is not None:
@@ -453,9 +453,9 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
     if has_s4g:
         s4g_name, position_angle, ellipticity, sersic_index, effective_radius, magnitude = get_galaxy_s4g_one_component_info(galaxy_name)
-        print(position_angle, ellipticity, sersic_index, effective_radius)
+        #print(position_angle, ellipticity, sersic_index, effective_radius)
 
-    continue
+    #continue
 
     # There are results from CIGALE fits
     if database.has_cigale_parameters(galaxy_name):
@@ -510,6 +510,8 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
     # Set basic info
     properties.name = info.name
+    properties.common_name = common_name
+    properties.names = "  ".join(gal_names) if gal_names is not None and len(gal_names) > 0 else None
     properties.ra = info.position.ra
     properties.dec = info.position.dec
     properties.stage = info.stage
@@ -552,7 +554,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     properties.i4 = i4_lum
     properties.mips24 = mips24_lum
     properties.mips70 = mips70_lum
-    properties.mips100 = mips100_lum
+    properties.mips160 = mips160_lum
     properties.pblue_flux = pblue_lum
     properties.pgreen_flux = pgreen_lum
     properties.pred_flux = pred_lum
