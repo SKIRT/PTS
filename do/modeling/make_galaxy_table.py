@@ -28,6 +28,7 @@ from pts.magic.tools.catalogs import get_galaxy_info, get_galaxy_s4g_one_compone
 from pts.core.tools import strings
 from pts.magic.tools.colours import calculate_colour
 from pts.core.filter.filter import parse_filter
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -36,9 +37,15 @@ definition = ConfigurationDefinition()
 
 # Maximum number of galaxies
 definition.add_optional("ngalaxies", "positive_integer", "max number of galaxies")
+definition.add_optional("filename", "string", "galaxy table filename", "galaxies")
+definition.add_flag("random", "make random subset of ngalaxies galaxies")
+
+# Galaxy names
+definition.add_optional("names", "string_list", "galaxy names")
+definition.add_optional("extend", "file_path", "extend existing table file")
 
 # Get configuration
-config = parse_arguments("plot_galaxies", definition)
+config = parse_arguments("make_galaxy_table", definition)
 
 # -----------------------------------------------------------------
 
@@ -49,9 +56,36 @@ database = DustPediaDatabase()
 
 # -----------------------------------------------------------------
 
-sample = DustPediaSample()
-galaxy_names = sample.get_names()
+current_table = None
+
+if config.names is not None:
+
+    if config.extend is not None: raise ValueError("Cannot specify names and extend")
+    galaxy_names = config.names
+
+else:
+
+    sample = DustPediaSample()
+    galaxy_names = sample.get_names()
+
+    # Check from current table
+    if config.extend is not None:
+
+        current_table = SmartTable.from_file(config.extend)
+        current_galaxy_names = list(current_table["name"])
+        galaxy_names = sequences.elements_not_in_other(galaxy_names, current_galaxy_names)
+
+    # Make subset
+    if config.ngalaxies is not None:
+
+        if config.random: galaxy_names = sequences.random_subset(galaxy_names, config.ngalaxies, avoid_duplication=True)
+        else: galaxy_names = sequences.get_first_values(galaxy_names, config.ngalaxies)
+
+# -----------------------------------------------------------------
+
 ngalaxies = len(galaxy_names)
+
+# -----------------------------------------------------------------
 
 # Photometry
 photometry = DustPediaPhotometry()
@@ -108,6 +142,15 @@ hfi_850_filter = parse_filter("HFI 353")
 hfi_1380_filter = parse_filter("HFI 217")
 hfi_2100_filter = parse_filter("HFI 143")
 hfi_3000_filter = parse_filter("HFI 100")
+
+# -----------------------------------------------------------------
+
+#print(current_table.column_unit("iras12"), current_table.column_unit("iras25"), current_table.column_unit("2mass_h"))
+#exit()
+
+# Load table to extend
+if config.extend is not None: table = current_table
+else: table = None
 
 # -----------------------------------------------------------------
 
@@ -547,7 +590,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     properties.wise_w2 = w2_lum
     properties.wise_w3 = w3_lum
     properties.wise_w4 = w4_lum
-    properties.iras_12 = iras12_lum
+    properties.iras12 = iras12_lum
     properties.iras25 = iras25_lum
     properties.iras60 = iras60_lum
     properties.iras100 = iras100_lum
@@ -634,18 +677,17 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     # Add properties
     galaxies.append(properties)
 
-    # Limit of number of galaxies
-    if config.ngalaxies is not None and len(galaxies) == config.ngalaxies: break
+    # Extend?
+    if config.extend is not None: table.add_row_from_dict(properties)
 
 # -----------------------------------------------------------------
 
 # Create table
-table = SmartTable.from_dictionaries(*galaxies, first="name", ignore_none=True)
+if config.extend is None: table = SmartTable.from_dictionaries(*galaxies, first="name", ignore_none=True)
 
 # -----------------------------------------------------------------
 
 # Save the table
-filename = "galaxies"
-table.saveto_pts(filename)
+table.saveto_pts(config.filename)
 
 # -----------------------------------------------------------------

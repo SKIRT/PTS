@@ -1017,6 +1017,15 @@ class SmartTable(Table):
             # Call the constructor from Astropy, to read in plain ascii format
             table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
 
+            # FIX BOOLEAN COLUMNS
+            to_boolean = []
+            for column_name in table.colnames:
+                values = list(table[column_name])
+                #value_strings = [str(value) for value in values] # actually not necessary
+                #print(column_name, values)
+                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
+                if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
+
             # Search for density and brightness, set meta info
             for line in header:
                 if line.startswith("density:"):
@@ -1034,11 +1043,27 @@ class SmartTable(Table):
             # Set units
             unit_string = header[-1]
             unit_strings = unit_string.split()
+            assert len(unit_strings) == len(table.colnames)
             #print(len(unit_strings), len(table.colnames))
             #print(unit_strings)
             for unit_string, colname in zip(unit_strings, table.colnames):
                 if unit_string == '""': continue
                 table[colname].unit = unit_string
+
+            # DO THIS AT THE END BECAUSE OTHERWISE UNITS ASSIGNED TO THE WRONG COLUMNS
+            # Loop over the columns to convert to booleans
+            for column_name in to_boolean:
+                booleans = []
+                for index in range(len(table)):
+                    if table[column_name].mask[index]:
+                        boolean = None  # masked?
+                    else:
+                        value = table[column_name][index]
+                        boolean = eval(value)
+                    booleans.append(boolean)
+                # remove original column
+                table.remove_column(column_name)
+                table[column_name] = booleans
 
         # ECSV format (with masks and units in the meta info)
         elif format == "ecsv":
@@ -1161,8 +1186,10 @@ class SmartTable(Table):
 
                 #print(self.column_info)
 
+                #print(value, colname)
+
                 column_unit = self.column_unit(colname)
-                #print(colname, column_unit)
+                #print(colname, self.column_type(colname), column_unit)
                 #column_unit = self.column_info[i][2]
                 assert column_unit is not None
 
@@ -1346,6 +1373,34 @@ class SmartTable(Table):
 
         # Add the row
         super(SmartTable, self).add_row(new_values, mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def add_row_from_dict(self, dictionary, conversion_info=None):
+
+        """
+        This function ...
+        :param dictionary:
+        :param conversion_info:
+        :return:
+        """
+
+        # Initialize list for the values
+        values = []
+
+        # Loop over the column names
+        for column_name in self.column_names:
+
+            if column_name not in dictionary: value = None
+            else: value = dictionary[column_name]
+
+            # Add the value
+            values.append(value)
+
+        #print(values)
+
+        # Add row
+        self.add_row(values, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 

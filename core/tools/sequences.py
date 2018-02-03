@@ -412,16 +412,20 @@ def find_exact_index(seq, value):
 
 # -----------------------------------------------------------------
 
-def all_equal_to(lst, value):
+def all_equal_to(lst, value, ignore=None, ignore_none=False):
 
     """
     This function ...
     :param lst:
     :param value:
+    :param ignore:
+    :param ignore_none:
     :return:
     """
 
     for item in lst:
+        if ignore is not None and item == ignore: continue
+        if ignore_none and item is None: continue
         if item != value: return False
     return True
 
@@ -747,7 +751,6 @@ def equal_sequences(*sequences):
     :return:
     """
 
-    import numpy as np
     from . import types
 
     if not equal_sizes(*sequences): return False
@@ -1418,6 +1421,19 @@ def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
 
 # -----------------------------------------------------------------
 
+def get_first_values(sequence, nvalues):
+
+    """
+    This function ...
+    :param sequence:
+    :param nvalues:
+    :return:
+    """
+
+    return sequence[:nvalues]
+
+# -----------------------------------------------------------------
+
 def all_except_indices(sequence, indices):
 
     """
@@ -1561,17 +1577,17 @@ def is_descending(sequence):
 
 # -----------------------------------------------------------------
 
-def all_true(sequence):
-
-    """
-    This function ...
-    :param sequence:
-    :return:
-    """
-
-    for item in sequence:
-        if not item: return False
-    return True
+# def all_true(sequence):
+#
+#     """
+#     This function ...
+#     :param sequence:
+#     :return:
+#     """
+#
+#     for item in sequence:
+#         if not item: return False
+#     return True
 
 # -----------------------------------------------------------------
 
@@ -1859,5 +1875,26 @@ def clip_below(sequence, below):
         if item < below: continue
         new.append(item)
     return new
+
+# -----------------------------------------------------------------
+
+def all_strings(sequence, ignore=None, ignore_none=False, ignore_instance=None):
+
+    """
+    This function ...
+    :param sequence:
+    :param ignore:
+    :param ignore_none:
+    :param ignore_instance:
+    :return:
+    """
+
+    from .types import is_string_type
+    for item in sequence:
+        if ignore is not None and item == ignore: continue
+        if ignore_none and item is None: continue
+        if ignore_instance is not None and isinstance(item, ignore_instance): continue
+        if not is_string_type(item): return False
+    return True
 
 # -----------------------------------------------------------------

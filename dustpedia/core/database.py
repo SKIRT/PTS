@@ -659,15 +659,21 @@ class DustPediaDatabase(object):
         # Initialize list
         filters = []
 
+        formatted_galaxy_name = galaxy_name.replace("+", "%2B")
+
         # Loop over the image names
         names = self.get_image_names(galaxy_name, error_maps=False)
         for name in names:
 
-            # Skip DSS
-            if "DSS" in name and "SDSS" not in name: continue
+            #print(name, galaxy_name)
 
             # Get the filter
-            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            fltr_string = name.split(formatted_galaxy_name + "_")[1].split(".fits")[0]
+
+            # Skip DSS
+            if "DSS" in fltr_string and "SDSS" not in fltr_string: continue
+
+            # Get the filter
             fltr = parse_filter(fltr_string)
 
             # Add the filter
