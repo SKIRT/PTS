@@ -145,9 +145,6 @@ hfi_3000_filter = parse_filter("HFI 100")
 
 # -----------------------------------------------------------------
 
-#print(current_table.column_unit("iras12"), current_table.column_unit("iras25"), current_table.column_unit("2mass_h"))
-#exit()
-
 # Load table to extend
 if config.extend is not None: table = current_table
 else: table = None
@@ -162,6 +159,9 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
     # Get info
     info = database.get_galaxy_info(galaxy_name)
+
+    # Check name
+    if info.name != galaxy_name: raise RuntimeError("Something went wrong")
 
     # Get photometry
     observed_sed = photometry.get_sed(galaxy_name, add_iras=True, add_planck=True, exact_name=True)
@@ -575,7 +575,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     properties.sersic_index = sersic_index
     properties.effective_radius = effective_radius
 
-    # Set fluxes
+    # Set luminosities
     properties.galex_fuv = fuv_lum
     properties.galex_nuv = nuv_lum
     properties.sdss_u = u_lum
@@ -601,19 +601,20 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     properties.mips24 = mips24_lum
     properties.mips70 = mips70_lum
     properties.mips160 = mips160_lum
-    properties.pblue_flux = pblue_lum
-    properties.pgreen_flux = pgreen_lum
-    properties.pred_flux = pred_lum
-    properties.psw_flux = psw_lum
-    properties.pmw_flux = pmw_lum
-    properties.plw_flux = plw_lum
-    properties.hfi_350_flux = hfi_350_lum
-    properties.hfi_550_flux = hfi_550_lum
-    properties.hfi_850_flux = hfi_850_lum
-    properties.hfi_1380_flux = hfi_1380_lum
-    properties.hfi_2100_flux = hfi_2100_lum
-    properties.hfi_3000_flux = hfi_3000_lum
+    properties.pblue = pblue_lum
+    properties.pgreen = pgreen_lum
+    properties.pred = pred_lum
+    properties.psw = psw_lum
+    properties.pmw = pmw_lum
+    properties.plw = plw_lum
+    properties.hfi_350 = hfi_350_lum
+    properties.hfi_550 = hfi_550_lum
+    properties.hfi_850 = hfi_850_lum
+    properties.hfi_1380 = hfi_1380_lum
+    properties.hfi_2100 = hfi_2100_lum
+    properties.hfi_3000 = hfi_3000_lum
 
+    # Set colours
     properties.fuv_nuv = fuv_nuv if fuv_nuv is not None and not np.isnan(fuv_nuv) else None
     properties.fuv_h = fuv_h if fuv_h is not None and not np.isnan(fuv_h) else None
     properties.fuv_j = fuv_j if fuv_j is not None and not np.isnan(fuv_j) else None

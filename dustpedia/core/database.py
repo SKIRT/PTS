@@ -497,7 +497,22 @@ class DustPediaDatabase(object):
 
         #self.session.prepare_request()
 
-        return image_links
+        #print(image_links)
+
+        # Filter out galaxies that match to the specified name (e.g. NGC1351 and NGC1351A)
+        galaxy_image_links = []
+        for link in image_links:
+            image_name = link.split("imageName=")[1].split("&instrument")[0]
+            image_galaxy_name = image_name.split("_")[0]
+            #print(image_galaxy_name, formatted_galaxy_name)
+            if image_galaxy_name != formatted_galaxy_name: continue
+            galaxy_image_links.append(link)
+
+        #print(galaxy_image_links)
+
+        # Return
+        #return image_links
+        return galaxy_image_links
 
     # -----------------------------------------------------------------
 
@@ -665,7 +680,7 @@ class DustPediaDatabase(object):
         names = self.get_image_names(galaxy_name, error_maps=False)
         for name in names:
 
-            #print(name, galaxy_name)
+            #print(name, galaxy_name, formatted_galaxy_name)
 
             # Get the filter
             fltr_string = name.split(formatted_galaxy_name + "_")[1].split(".fits")[0]
@@ -1277,13 +1292,22 @@ class DustPediaDatabase(object):
         tree = html.fromstring(page_as_string)
 
         table_list = [ e for e in tree.iter() if e.tag == 'table']
+        #print(len(table_list), table_list)
         table = table_list[-1]
 
         table_rows = [ e for e in table.iter() if e.tag == 'tr']
 
         galaxy_info = None
 
-        for row in table_rows[1:]:
+        #print([row.text_content() for row in table_rows])
+        #print("nrows", len(table_rows))
+
+        # Get appropriate rows
+        if len(table_rows) == 2: rows = table_rows[1:]
+        #elif len(table_rows) == 3: rows = [table_rows[0]]
+        else: rows = [table_rows[1]]
+
+        for row in rows:
 
             column_index = 0
 
@@ -1298,14 +1322,19 @@ class DustPediaDatabase(object):
                     #for ee in e.itersiblings(): print(ee.text_content())
 
                     galaxy_info = e.text_content()
+                    break
 
                     #print(galaxy_info)
 
                 column_index += 1
 
+        #print(galaxy_info)
+
         # Get the lines with the galaxy info that are not empty
         splitted = galaxy_info.split("\r\n")
         lines = [split.strip() for split in splitted if split.strip()]
+
+        #print(lines)
 
         # Initialize variables
         name = None
