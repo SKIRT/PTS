@@ -193,6 +193,7 @@ if config.parameters:
 # -----------------------------------------------------------------
 
 # Loop over the simulations
+nfinished = 0
 for simulation_name in generation.simulation_names:
 
     # Get the simulation
@@ -239,20 +240,29 @@ for simulation_name in generation.simulation_names:
         # Has chi squared
         if generation.is_analysed(simulation_name):
 
+            nfinished += 1
             chisq = chi_squared.chi_squared_for(simulation_name)
             print(" - " + fmt.green + simulation_name + extra_string + ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
 
         # Has miscellaneous output, but no chi squared
-        elif generation.has_misc_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": no chisq" + "\t" + parameters_string + fmt.reset)
+        elif generation.has_misc_output(simulation_name):
+            nfinished += 1
+            print(" - " + fmt.yellow + simulation_name + extra_string + ": no chisq" + "\t" + parameters_string + fmt.reset)
 
         # Has plotting output
-        elif generation.has_plotting_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": plotted" + "\t" + parameters_string + fmt.reset)
+        elif generation.has_plotting_output(simulation_name):
+            nfinished += 1
+            print(" - " + fmt.yellow + simulation_name + extra_string + ": plotted" + "\t" + parameters_string + fmt.reset)
 
         # Has extraction output
-        elif generation.has_extraction_output(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": extracted" + "\t" + parameters_string + fmt.reset)
+        elif generation.has_extraction_output(simulation_name):
+            nfinished += 1
+            print(" - " + fmt.yellow + simulation_name + extra_string + ": extracted" + "\t" + parameters_string + fmt.reset)
 
         # Has simulation output
-        elif generation.is_retrieved(simulation_name): print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved" + "\t" + parameters_string + fmt.reset)
+        elif generation.is_retrieved(simulation_name):
+            nfinished += 1
+            print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved" + "\t" + parameters_string + fmt.reset)
 
         # No simulation output
         else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown" + "\t"  + parameters_string + fmt.reset)
@@ -263,11 +273,18 @@ for simulation_name in generation.simulation_names:
         # Already analysed
         if simulation.analysed:
 
+            # Finished
+            nfinished += 1
+
             # Get chi squared
             chisq = chi_squared.chi_squared_for(simulation_name)
             print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
 
-        elif simulation.retrieved: print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+        elif simulation.retrieved:
+
+            nfinished += 1
+            print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+
         else:
 
             # Not yet retrieved, what is the status?
@@ -275,7 +292,9 @@ for simulation_name in generation.simulation_names:
             else: simulation_status = " unknown"
 
             # Show
-            if simulation_status == "finished": print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+            if simulation_status == "finished":
+                nfinished += 1
+                print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
             else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
 
     # Get timing
@@ -327,6 +346,13 @@ for simulation_name in generation.simulation_names:
         spectra_memories.append(spectra_memory)
         dust_memories.append(dust_memory)
         writing_memories.append(writing_memory)
+
+# -----------------------------------------------------------------
+
+# Show number of finished simulations
+print("")
+fraction_finished = float(nfinished) / nsimulations
+print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(nfinished) + " (" + tostr(fraction_finished*100, round=True, ndigits=2) + "%)")
 
 # -----------------------------------------------------------------
 

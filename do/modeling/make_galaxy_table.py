@@ -160,6 +160,11 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     # Get info
     info = database.get_galaxy_info(galaxy_name)
 
+    # Check
+    if info is None:
+        log.warning("Could not find data for galaxy '" + galaxy_name + "' on the database")
+        continue
+
     # Check name
     if info.name != galaxy_name: raise RuntimeError("Something went wrong")
 

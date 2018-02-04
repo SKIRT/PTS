@@ -984,7 +984,7 @@ class Configuration(Map):
         """
 
         # If 'output' is defined in the config
-        if "output" in self:
+        if "output" in self and self["output"] is not None:
 
             full_output_path = fs.absolute_or_in(self["output"], self["path"])
             if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)

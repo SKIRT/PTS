@@ -689,7 +689,10 @@ class DustPediaDatabase(object):
             if "DSS" in fltr_string and "SDSS" not in fltr_string: continue
 
             # Get the filter
-            fltr = parse_filter(fltr_string)
+            try: fltr = parse_filter(fltr_string)
+            except ValueError:
+                log.warning("Invalid filter string: '" + fltr_string + "': skipping image ...")
+                continue
 
             # Add the filter
             filters.append(fltr)
@@ -1286,13 +1289,19 @@ class DustPediaDatabase(object):
 
         # Get page
         formatted_galaxy_name = galaxy_name.replace("+", "%2B")
-        r = self.session.get(data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+        url = data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search"
+        #print(url)
+        r = self.session.get(url)
         page_as_string = r.content
 
         tree = html.fromstring(page_as_string)
 
         table_list = [ e for e in tree.iter() if e.tag == 'table']
         #print(len(table_list), table_list)
+
+        # No result for this galaxy
+        if len(table_list) == 0: return None
+
         table = table_list[-1]
 
         table_rows = [ e for e in table.iter() if e.tag == 'tr']
