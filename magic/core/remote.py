@@ -1138,29 +1138,37 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def downsampled(self, factor, order=3):
-
-        """
-        This function ...
-        :return:
-        """
-
-        new = self.copy()
-        new.downsample(factor, order)
-        return new
-
-    # -----------------------------------------------------------------
-
-    def downsample(self, factor, order=3):
+    def downsampled(self, factor, order=3, dilate_nans=True, dilate_infs=True, convert=None):
 
         """
         This function ...
         :param factor:
         :param order:
+        :param dilate_nans:
+        :param dilate_infs:
+        :param convert:
         :return:
         """
 
-        self.session.send_line_and_raise(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
+        new = self.copy()
+        new.downsample(factor, order, dilate_nans=dilate_nans, dilate_infs=dilate_infs, convert=convert)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def downsample(self, factor, order=3, dilate_nans=True, dilate_infs=True, convert=None):
+
+        """
+        This function ...
+        :param factor:
+        :param order:
+        :param dilate_nans:
+        :param dilate_infs:
+        :param convert:
+        :return:
+        """
+
+        self.session.send_line_and_raise(self.label + ".downsample(" + str(factor) + ", " + str(order) + ", dilate_nans=" + str(dilate_nans) + ", dilate_infs=" + str(dilate_infs) + ", convert=" + str(convert) + ")")
 
     # -----------------------------------------------------------------
 

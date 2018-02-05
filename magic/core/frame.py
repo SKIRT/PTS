@@ -4103,7 +4103,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def downsampled(self, factor, order=3, dilate_nans=True, dilate_infs=True):
+    def downsampled(self, factor, order=3, dilate_nans=True, dilate_infs=True, convert=None):
 
         """
         This function ...
@@ -4111,11 +4111,12 @@ class Frame(NDDataArray):
         :param order:
         :param dilate_nans:
         :param dilate_infs:
+        :param convert:
         :return:
         """
 
         new = self.copy()
-        new.downsample(factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs)
+        new.downsample(factor, order=order, dilate_nans=dilate_nans, dilate_infs=dilate_infs, convert=convert)
         return new
 
     # -----------------------------------------------------------------

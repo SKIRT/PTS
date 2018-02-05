@@ -456,6 +456,63 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def share_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return False
+        return self.use_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def share_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return False
+        return self.use_coordinates
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Don't plot based on the coordinates
+        if not self.use_coordinates: return None
+
+        # Initialize list structure
+        projections = sequences.create_nested_2d(self.nrows, self.ncolumns)
+
+        # Loop over the images
+        for index, name in enumerate(self.names):
+
+            # Get row and col
+            row, col = self.get_row_and_col(index)
+
+            # Get the coordinate system
+            wcs = self.get_wcs(name)
+
+            # Loop over the column indices
+            projections[row][col] = wcs.to_astropy()
+
+        # Return the projections
+        return projections
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -476,8 +533,11 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.initialize_figure()
 
         # Setup the plots
-        if self.use_coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
-        else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+        #if self.use_coordinates: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white", projection=self.projection)
+        #else: self.plots, self.colorbar = self.figure.create_image_grid(self.nrows, self.ncolumns, return_colorbar=True, edgecolor="white")
+
+        # Create plots
+        self.plots = self.figure.create_grid(self.nrows, self.ncolumns, sharex=self.share_x, sharey=self.share_y, projections=self.projections)
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
@@ -1705,6 +1765,23 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def get_row_and_col(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Get row and column index
+        row = int(index / self.ncolumns)
+        col = index % self.ncolumns
+
+        # Return
+        return row, col
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -1736,9 +1813,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Loop over the images
         for index in range(self.npanels):
 
-            # Get row and column index
-            row = int(index / self.ncolumns)
-            col = index % self.ncolumns
+            # Get row and col
+            row, col = self.get_row_and_col(index)
 
             # Plot a frame
             if index < self.nframes:
@@ -1765,43 +1841,47 @@ class StandardImageGridPlotter(ImageGridPlotter):
             # Empty
             else: self._plot_empty(row, col)
 
-        # Set colorbar
+        # Check if any is plotted
         if image is None: raise RuntimeError("No image is plotted")
-        self.figure.figure.colorbar(image, cax=self.colorbar)
-        #print(normalization)
-        #colorbar = self.colorbar.colorbar(image, norm=normalization) # doesn't set the scale
 
-        #self.colorbar.solids.set_rasterized(True)
-        #self.colorbar.outline.set_visible(False)
-        #self.colorbar.set_ticks([])
-        self.colorbar.get_xaxis().set_ticks([])
-        self.colorbar.get_yaxis().set_ticks([])
+        # Set colorbar
+        if self.colorbar is not None:
 
-        self.colorbar.set_axis_off()
+            self.figure.figure.colorbar(image, cax=self.colorbar)
+            #print(normalization)
+            #colorbar = self.colorbar.colorbar(image, norm=normalization) # doesn't set the scale
 
-        #print(vars(self.colorbar))
+            #self.colorbar.solids.set_rasterized(True)
+            #self.colorbar.outline.set_visible(False)
+            #self.colorbar.set_ticks([])
+            self.colorbar.get_xaxis().set_ticks([])
+            self.colorbar.get_yaxis().set_ticks([])
 
-        # DOESN'T WORK
-        #self.colorbar.yaxis._visible = False
+            self.colorbar.set_axis_off()
 
-        # DOESN'T WORK
-        #from matplotlib.spines import Spine
-        #for child in self.colorbar.get_children():
-        #    if isinstance(child, Spine):
-        #        child.set_color("white")
+            #print(vars(self.colorbar))
 
-        # DOESN'T WORK
-        # Color spines
-        #self.colorbar.spines['bottom'].set_color("white")
-        #self.colorbar.spines['top'].set_color("white")
-        #self.colorbar.spines['left'].set_color("white")
-        #self.colorbar.spines['right'].set_color("white")
+            # DOESN'T WORK
+            #self.colorbar.yaxis._visible = False
 
-        # Color ticks
-        #self.colorbar.xaxis.label.set_color("white")
-        #self.colorbar.yaxis.label.set_color("white")
-        #self.colorbar.tick_params(axis='x', colors="white")
-        #self.colorbar.tick_params(axis='y', colors="white")
+            # DOESN'T WORK
+            #from matplotlib.spines import Spine
+            #for child in self.colorbar.get_children():
+            #    if isinstance(child, Spine):
+            #        child.set_color("white")
+
+            # DOESN'T WORK
+            # Color spines
+            #self.colorbar.spines['bottom'].set_color("white")
+            #self.colorbar.spines['top'].set_color("white")
+            #self.colorbar.spines['left'].set_color("white")
+            #self.colorbar.spines['right'].set_color("white")
+
+            # Color ticks
+            #self.colorbar.xaxis.label.set_color("white")
+            #self.colorbar.yaxis.label.set_color("white")
+            #self.colorbar.tick_params(axis='x', colors="white")
+            #self.colorbar.tick_params(axis='y', colors="white")
 
         # Finish the plot
         self.finish_plot()
