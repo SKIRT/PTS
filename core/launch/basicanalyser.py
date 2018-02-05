@@ -1276,6 +1276,8 @@ class BasicAnalyser(Configurable):
         # EXTRA OPTIONS
         self.flux_calculator.config.check_wavelengths = self.config.check_wavelengths
         self.flux_calculator.config.ignore_bad = self.config.ignore_bad
+        self.flux_calculator.config.skip_ignored_bad_convolution = self.config.skip_ignored_bad_convolution
+        self.flux_calculator.config.skip_ignored_bad_closest = self.config.skip_ignored_bad_closest
 
         # DEPLOYMENT
         self.flux_calculator.config.deploy_pts = self.config.deploy_pts
@@ -1622,6 +1624,8 @@ class BasicAnalyser(Configurable):
         # EXTRA OPTIONS
         self.image_flux_calculator.config.check_wavelengths = self.config.check_wavelengths
         self.image_flux_calculator.config.ignore_bad = self.config.ignore_bad
+        self.image_flux_calculator.config.skip_ignored_bad_convolution = self.config.skip_ignored_bad_convolution
+        self.image_flux_calculator.config.skip_ignored_bad_closest = self.config.skip_ignored_bad_closest
 
         # DEPLOYMENT
         self.image_flux_calculator.config.deploy_pts = self.config.deploy_pts

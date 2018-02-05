@@ -428,6 +428,19 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def get_frame_index_for_filter(self, fltr, return_wavelength=False):
+
+        """
+        This function ...
+        :param fltr:
+        :param return_wavelength:
+        :return:
+        """
+
+        return self.get_frame_index_for_wavelength(fltr.wavelength, return_wavelength=return_wavelength)
+
+    # -----------------------------------------------------------------
+
     def get_frame_name_for_wavelength(self, wavelength):
 
         """
@@ -729,8 +742,267 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def get_wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None, inclusive=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param inclusive:
+        :return:
+        """
+
+        return self.wavelength_grid.wavelengths(unit=unit, asarray=asarray, add_unit=add_unit, min_wavelength=min_wavelength, max_wavelength=max_wavelength, inclusive=inclusive)
+
+    # -----------------------------------------------------------------
+
+    def _check_sampling_for_filter_convolution(self, fltr, wavelengths=None, ignore_bad=False,
+                                     min_npoints=8, min_npoints_fwhm=5, skip_ignored_bad_convolution=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param wavelengths:
+        :return:
+        """
+
+        from ...core.misc.fluxes import WavelengthGridError
+
+        # Get the wavelengths
+        if wavelengths is None: wavelengths = self.get_wavelengths(unit="micron", add_unit=True)
+
+        # Get the wavelength indices in the ranges
+        indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.range.to("micron")]
+        indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range.to("micron")]
+
+        # Get the number of wavelengths in the ranges
+        nwavelengths_in_minmax = len(indices_in_minmax)
+        nwavelengths_in_fwhm = len(indices_in_fwhm)
+
+        # Too little wavelengths in range
+        if nwavelengths_in_minmax < min_npoints:
+
+            # Warning message
+            message = "Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")"
+
+            # Ignore: don't give error
+            if ignore_bad:
+
+                # Warning
+                log.warning(message)
+
+                # Skip filter?
+                if skip_ignored_bad_convolution:
+
+                    log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                    return False # CHECK FAILED
+
+                # Use filter
+                else:
+                    log.warning("Spectral convolution will still be attempted ...")
+                    return True # CHECK OK
+
+            # Error message
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # Too little wavelengths in FWHM range
+        elif nwavelengths_in_fwhm < min_npoints_fwhm:
+
+            # Warning message
+            message = "Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")"
+
+            # Ignore: don't give error
+            if ignore_bad:
+
+                # Warning
+                log.warning(message)
+
+                # Skip filter?
+                if skip_ignored_bad_convolution:
+
+                    log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                    return False # CHECK FAILED
+
+                # Use filter
+                else:
+                    log.warning("Spectral convolution will still be attempted ...")
+                    return True # CHECK OK
+
+            # Error message
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # OK
+        else: log.debug("Enough wavelengths within the filter range")
+
+    # -----------------------------------------------------------------
+
+    def _check_sampling_for_filter_closest(self, fltr, wavelength=None, ignore_bad=False, skip_ignored_bad_closest=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param wavelength:
+        :param ignore_bad:
+        :param skip_ignored_bad_closest:
+        :return:
+        """
+
+        from ...core.misc.fluxes import WavelengthGridError
+
+        # Get wavelength?
+        if wavelength is None: wavelength = self.get_wavelength(self.get_frame_index_for_filter(fltr))
+
+        # Check grid wavelength in FWHM
+        in_fwhm = wavelength in fltr.fwhm_range
+
+        # Check grid wavelength in inner range
+        in_inner = wavelength in fltr.inner_range
+
+        # Not in FWHM?
+        if not in_fwhm:
+
+            # Warning message
+            message = "Wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter"
+
+            # Ignore bad sampling: don't give error
+            if ignore_bad:
+
+                # Warning
+                log.warning(message)
+
+                # Skip filter?
+                if skip_ignored_bad_closest:
+
+                    log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                    return False # CHECK FAILED
+
+                # Use filter
+                else:
+                    log.warning("The wavelength '" + tostr(wavelength) + "' will still be used to represent the '" + str(fltr) + "' filter ...")
+                    return True # CHECK OK
+
+            # Error
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # Not in inner range
+        elif not in_inner:
+
+            # Warning message
+            message = "Wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter"
+
+            # Ignore bad sampling: don't give error
+            if ignore_bad:
+
+                # Warning
+                log.warning(message)
+
+                # Skip filter?
+                if skip_ignored_bad_closest:
+                    log.warning("Skipping the '" + str(fltr) + "' filter ...")
+                    #frames.append(None)
+                    #continue
+                    return False # CHECK FAILED
+
+                # Use filter
+                else:
+                    log.warning("The wavelength '" + tostr(wavelength) + "' will still be used to represent the '" + str(fltr) + "' filter ...")
+                    return True # CHECK OK
+
+            # Error
+            else: raise WavelengthGridError(message, filter=fltr)
+
+        # OK
+        else:
+            log.debug("Wavelength found close to the filter (" + tostr(wavelength) + ")")
+            return True # CHECK OK
+
+    # -----------------------------------------------------------------
+
+    def _initialize_frame_for_filter(self, fltr, convolve, used_wavelength_indices=None, check=True, ignore_bad=False,
+                                     min_npoints=8, min_npoints_fwhm=5, skip_ignored_bad_convolution=True,
+                                     skip_ignored_bad_closest=True, wavelengths=None):
+
+        """
+        This function ...
+        :param fltr:
+        :param convolve:
+        :param used_wavelength_indices:
+        :param check:
+        :param ignore_bad:
+        :param min_npoints:
+        :param min_npoints_fwhm:
+        :param skip_ignored_bad_convolution:
+        :param skip_ignored_bad_closest:
+        :param wavelengths:
+        :return:
+        """
+
+        # Needs spectral convolution?
+        if needs_spectral_convolution(fltr, convolve):
+
+            # Debugging
+            log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+            # Check
+            if check and not self._check_sampling_for_filter_convolution(fltr, wavelengths=wavelengths, ignore_bad=ignore_bad,
+                                                                         min_npoints=min_npoints, min_npoints_fwhm=min_npoints_fwhm,
+                                                                         skip_ignored_bad_convolution=skip_ignored_bad_convolution):
+                # Return no frame, and also to_convolve = False
+                return None, False
+
+            # Return no frame, but to_convolve = True
+            return None, True
+
+        # No spectral convolution
+        else:
+
+            # Debugging
+            log.debug("Getting the frame for the " + str(fltr) + " filter ...")
+
+            # Get the index of the wavelength closest to that of the filter
+            index = self.get_frame_index_for_filter(fltr)
+
+            # Get the wavelength
+            wavelength = self.get_wavelength(index)
+
+            # Check the difference between the filter wavelength and the actual grid wavelength
+            if check and not self._check_sampling_for_filter_closest(fltr, wavelength=wavelength, ignore_bad=ignore_bad,
+                                                                     skip_ignored_bad_closest=skip_ignored_bad_closest):
+
+                # Return no frame, and also to_convolve = False
+                return None, False
+
+            # Check the wavelength index
+            if used_wavelength_indices is not None:
+
+                # Already in the dictionary: frame of datacube already used for other filter
+                if index in used_wavelength_indices:
+                    filters = used_wavelength_indices[index]
+                    filter_names = [str(f) for f in filters]
+                    log.warning("The frame for the wavelength '" + str(wavelength) + "' has already been used to create the " + ", ".join(filter_names) + " frame(s)")
+
+                # Add the filter for the wavelength index
+                used_wavelength_indices[index].append(fltr)
+
+            # Make a copy of the frame
+            frame = self.frames[index].copy()
+
+            # Set the filter
+            frame.filter = fltr
+
+            # Set the exact frame wavelength
+            frame.wavelength = wavelength
+
+            # Return the frame, and to_convolve = False
+            return frame, False
+
+    # -----------------------------------------------------------------
+
     def _initialize_frames_for_filters(self, filters, convolve=False, check=True, ignore_bad=False, min_npoints=8,
-                                       min_npoints_fwhm=5):
+                                       min_npoints_fwhm=5, skip_ignored_bad_convolution=True, skip_ignored_bad_closest=True):
 
         """
         This function ...
@@ -740,132 +1012,33 @@ class DataCube(Image):
         :param ignore_bad:
         :param min_npoints:
         :param min_npoints_fwhm:
+        :param skip_ignored_bad_convolution:
+        :param skip_ignored_bad_closest:
         :return:
         """
-
-        from ...core.misc.fluxes import WavelengthGridError
 
         # Initialize
         frames = []
         for_convolution = []
         used_wavelength_indices = defaultdict(list)
 
+        # Get the array of wavelengths
+        wavelengths = self.get_wavelengths(unit="micron", add_unit=True)
+
         # Loop over the filters
         for fltr in filters:
 
-            # Needs spectral convolution?
-            if needs_spectral_convolution(fltr, convolve):
+            # Create initialized frame
+            frame, to_convolve = self._initialize_frame_for_filter(fltr, convolve, used_wavelength_indices=used_wavelength_indices,
+                                                                   check=check, ignore_bad=ignore_bad, min_npoints=min_npoints,
+                                                                   min_npoints_fwhm=min_npoints_fwhm, skip_ignored_bad_convolution=skip_ignored_bad_convolution,
+                                                                   skip_ignored_bad_closest=skip_ignored_bad_closest, wavelengths=wavelengths)
 
-                # Debugging
-                log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+            # Add the frame
+            frames.append(frame)
 
-                # Get the array of wavelengths
-                wavelengths = self.wavelengths(unit="micron", asarray=True)
-
-                # Check
-                if check:
-
-                    # Get the wavelength indices in the ranges
-                    indices_in_minmax = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.range.to("micron").value]
-                    indices_in_fwhm = [i for i in range(len(wavelengths)) if wavelengths[i] in fltr.fwhm_range.to("micron").value]
-
-                    # Get the number of wavelengths in the ranges
-                    nwavelengths_in_minmax = len(indices_in_minmax)
-                    nwavelengths_in_fwhm = len(indices_in_fwhm)
-
-                    # Too little wavelengths in range
-                    if nwavelengths_in_minmax < min_npoints:
-                        message = "Too few wavelengths within the filter wavelength range (" + str(fltr.min.to("micron").value) + " to " + str(fltr.max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_minmax) + ")"
-                        if ignore_bad:
-                            log.warning(message)
-                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
-                            frames.append(None)
-                            continue
-                        else: raise WavelengthGridError(message, filter=fltr)
-
-                    # Too little wavelengths in FWHM range
-                    elif nwavelengths_in_fwhm < min_npoints_fwhm:
-                        message = "Too few wavelengths within the filter FWHM wavelength range (" + str(fltr.fwhm_min.to("micron").value) + " to " + str(fltr.fwhm_max.to("micron").value) + " micron) for convolution (" + str(nwavelengths_in_fwhm) + ")"
-                        if ignore_bad:
-                            log.warning(message)
-                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
-                            frames.append(None)
-                            continue
-                        else: raise WavelengthGridError(message, filter=fltr)
-
-                    # OK
-                    else: log.debug("Enough wavelengths within the filter range")
-
-                # Add to list
-                for_convolution.append(fltr)
-
-                # Add placeholder
-                frames.append(None)
-
-            # No spectral convolution
-            else:
-
-                # Debugging
-                log.debug("Getting the frame for the " + str(fltr) + " filter ...")
-
-                # Get the index of the wavelength closest to that of the filter
-                index = self.get_frame_index_for_wavelength(fltr.pivot)
-
-                # Get the wavelength
-                wavelength = self.get_wavelength(index)
-
-                # Check the difference between the filter wavelength and the actual grid wavelength
-                if check:
-
-                    # Check grid wavelength in FWHM
-                    in_fwhm = wavelength in fltr.fwhm_range
-
-                    # Check grid wavelength in inner range
-                    in_inner = wavelength in fltr.inner_range
-
-                    # Not in FWHM?
-                    if not in_fwhm:
-                        message = "Wavelength (" + tostr(wavelength) + ") not in the FWHM range (" + tostr(fltr.fwhm_range) + ") of the filter"
-                        if ignore_bad:
-                            log.warning(message)
-                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
-                            frames.append(None)
-                            continue
-                        else: raise WavelengthGridError(message, filter=fltr)
-
-                    # Not in inner range
-                    elif not in_inner:
-                        message = "Wavelength (" + tostr(wavelength) + ") not in the inner range (" + tostr(fltr.inner_range) + ") of the filter"
-                        if ignore_bad:
-                            log.warning(message)
-                            log.warning("Skipping the '" + str(fltr) + "' filter ...")
-                            frames.append(None)
-                            continue
-                        else: raise WavelengthGridError(message, filter=fltr)
-
-                    # OK
-                    else: log.debug("Wavelength found close to the filter (" + tostr(wavelength) + ")")
-
-                # Check the wavelength index
-                if index in used_wavelength_indices:
-                    filters = used_wavelength_indices[index]
-                    filter_names = [str(f) for f in filters]
-                    log.warning("The frame for the wavelength '" + str(wavelength) + "' has already been used to create the " + ", ".join(filter_names) + " frame(s)")
-
-                # Add the filter for the wavelength index
-                used_wavelength_indices[index].append(fltr)
-
-                # Make a copy of the frame
-                frame = self.frames[index].copy()
-
-                # Set the filter
-                frame.filter = fltr
-
-                # Set the exact frame wavelength
-                frame.wavelength = wavelength
-
-                # Get the frame
-                frames.append(frame)
+            # Add to list for convolution
+            if to_convolve: for_convolution.append(fltr)
 
         # Return
         return frames, for_convolution, used_wavelength_indices
@@ -916,7 +1089,8 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     def frames_for_filters(self, filters, convolve=False, nprocesses=8, check_previous_sessions=False, as_dict=False,
-                           check=True, ignore_bad=False, min_npoints=8, min_npoints_fwhm=5):
+                           check=True, ignore_bad=False, min_npoints=8, min_npoints_fwhm=5,
+                           skip_ignored_bad_convolution=True, skip_ignored_bad_closest=True):
 
         """
         This function ...
@@ -929,6 +1103,8 @@ class DataCube(Image):
         :param ignore_bad:
         :param min_npoints:
         :param min_npoints_fwhm:
+        :param skip_ignored_bad_convolution:
+        :param skip_ignored_bad_closest:
         :return:
         """
 
@@ -943,7 +1119,9 @@ class DataCube(Image):
                                                                                                check=check,
                                                                                                ignore_bad=ignore_bad,
                                                                                                min_npoints=min_npoints,
-                                                                                               min_npoints_fwhm=min_npoints_fwhm)
+                                                                                               min_npoints_fwhm=min_npoints_fwhm,
+                                                                                               skip_ignored_bad_convolution=skip_ignored_bad_convolution,
+                                                                                               skip_ignored_bad_closest=skip_ignored_bad_closest)
 
         # Show which wavelengths are used to create filter frames
         log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")

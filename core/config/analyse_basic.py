@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.core.config.observed_fluxes import default_min_points_per_filter, default_min_points_per_fwhm
 
 # -----------------------------------------------------------------
 
@@ -23,8 +24,13 @@ definition.add_flag("ignore_missing_data", "ignore missing data when analysing t
 
 # -----------------------------------------------------------------
 
+# Special options for misc/flux calculation
 definition.add_flag("check_wavelengths", "check the sampling of the wavelength grid", True)
 definition.add_flag("ignore_bad", "ignore bad sampling of wavelength grid (just give warning)", False)
+definition.add_flag("skip_ignored_bad_convolution", "skip filters that are ignored because of bad sampling (for convolution)", True)
+definition.add_flag("skip_ignored_bad_closest", "skip filters that are ignored because the closest wavelength is outside of the inner region of the filter wavelength range", True)
+definition.add_optional("min_npoints", "positive_integer", "minimum number of points required in filter wavelength range", default_min_points_per_filter)
+definition.add_optional("min_npoints_fwhm", "positive_integer", "minimum number of points required in FWHM filter wavelength range", default_min_points_per_fwhm)
 
 # -----------------------------------------------------------------
 
