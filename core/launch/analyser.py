@@ -415,12 +415,11 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         log.info("Clearing the simulation analyser ...")
 
-        # Set the simulation to None
+        # Set everything to None
         self.simulation = None
-
-        # Clear the analysers
-        self.basic_analyser.clear()
-        self.scaling_analyser.clear()
+        self.basic_analyser = None
+        self.batch_analyser = None
+        self.scaling_analyser = None
 
     # -----------------------------------------------------------------
 

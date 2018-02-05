@@ -32,7 +32,7 @@ definition = ConfigurationDefinition()
 # The fitting run name
 if runs.empty: raise ValueError("No fitting runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the fitting run", runs.single_name)
-else: definition.add_required("run", "string", "name of the fitting run for which to (re)make the wavelength grids", choices=runs.names)
+else: definition.add_required("run", "string", "name of the fitting run", choices=runs.names)
 
 # Generation
 definition.add_required("generation", "string", "generation name")
