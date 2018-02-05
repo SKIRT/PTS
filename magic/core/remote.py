@@ -80,6 +80,7 @@ def import_necessary_modules(session):
     session.import_package_update("Frame", from_name="pts.magic.core.frame", show_output=log.is_debug())
     session.import_package_update("Image", from_name="pts.magic.core.image", show_output=log.is_debug())
     session.import_package_update("DataCube", from_name="pts.magic.core.datacube", show_output=log.is_debug())
+    session.import_package_update("Mask", from_name="pts.magic.core.mask", show_output=log.is_debug())
     session.import_package_update("ConvolutionKernel", from_name="pts.magic.core.kernel", show_output=log.is_debug())
     session.import_package_update("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem", show_output=log.is_debug())
     session.import_package_update("archive", from_name="pts.core.tools", show_output=log.is_debug())
@@ -926,6 +927,42 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    def apply_mask_nans(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :param return_complement:
+        :return:
+        """
+
+        # Make the mask remote
+        transfer_object("to_nans_mask", mask, "Mask", self.session, "fits", compress=True, show_output=True)
+
+        # Apply the mask
+        self.session.send_line_and_raise(self.label + ".apply_mask_nans(to_nans_mask, invert=" + str(invert) + ")", timeout=None, show_output=True)
+
+    # -----------------------------------------------------------------
+
+    def apply_mask_infs(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :param return_complement:
+        :return:
+        """
+
+        # Make the mask remote
+        transfer_object("to_infs_mask", mask, "Mask", self.session, "fits", compress=True, show_output=True)
+
+        # Apply the mask
+        self.session.send_line_and_raise(self.label + ".apply_mask_infs(to_infs_mask, invert=" + str(invert) + ")", timeout=None, show_output=True)
+
+    # -----------------------------------------------------------------
+
     def convolved(self, *args, **kwargs):
 
         """
@@ -957,71 +994,39 @@ class RemoteFrame(object):
             self.fwhm = kernel_fwhm
             return
 
-        # SAVE KERNEL LOCALLY
-
-        # Determine temporary directory path
-        temp_path = tempfile.gettempdir()
-
-        # Determine local FITS path
-        local_path = fs.join(temp_path, "kernel.fits")
-
-        # Save the kernel locally
-        kernel.saveto(local_path)
-
-        # UPLOAD KERNEL
-
-        # Remote temp path
-        remote_temp_path = self.session.session_temp_directory
-
-        # Upload the kernel file
-        remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
-        log.info("Uploading the kernel to " + remote_kernel_path + " ...")
-        self.session.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
-
-        # Open the kernel remotely
-        self.session.send_line_and_raise("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
-
-        # Prepare the kernel if necessary
-        #self.remote.send_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
-
-        # Check where the NaNs are at
-        #self.remote.send_line("nans_mask = np.isnan(" + self.label + "._data)")
-
-        # Assert that the kernel is normalized
-        #self.remote.send_line("assert kernel.normalized")
-
-        # Do the convolution
-        #self.remote. .... ETC
-
-
-        # OR JUST: (does constant check again and creates copy for the prepared kernel, but... much more maintainable in this way)
+        # Make the kernel remote
+        transfer_object("kernel", kernel, "ConvolutionKernel", self.session, "fits", compress=True, show_output=True)
 
         # Do the convolution on the remote frame
         self.session.send_line_and_raise(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
-    def rebinned(self, reference_wcs):
-
-        """
-        This function ...
-        :param reference_wcs:
-        :return:
-        """
-
-        new = self.copy()
-        new.rebin(reference_wcs)
-        return new
-
-    # -----------------------------------------------------------------
-
-    def rebin(self, reference_wcs, exact=False, parallel=True):
+    def rebinned(self, reference_wcs, exact=False, parallel=True, convert=None):
 
         """
         This function ...
         :param reference_wcs:
         :param exact:
         :param parallel:
+        :param convert:
+        :return:
+        """
+
+        new = self.copy()
+        new.rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
+        :param convert:
         :return:
         """
 
@@ -1035,7 +1040,7 @@ class RemoteFrame(object):
         footprint_label = get_new_label("Frame", self.session)
 
         # Rebin, get the footprint
-        self.session.send_line_and_raise(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
+        self.session.send_line_and_raise(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ", convert=" + str(convert) + ")", timeout=None, show_output=True)
 
         # Create a new remoteframe instance for the footprint
         remote_footprint_frame = RemoteFrame(footprint_label, self.session)
@@ -2424,16 +2429,91 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
-    def to_wavelength_density(self, new_unit, wavelength_unit):
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None):
 
         """
         This function ...
-        :param new_unit:
-        :param wavelength_unit:
+        :param distance:
         :return:
         """
 
-        # Convert to wavelength density remotely
-        self.session.send_line_and_raise(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
+        from ...core.tools.stringify import tostr
+
+        # Determine distance string
+        if distance is not None:
+            distance_string = tostr(distance)
+            self.session.import_package("parse_quantity", from_name="pts.core.units.parsing")
+            parse_distance_string = "parse_quantity('" + distance_string + "')"
+        else: parse_distance_string = "None"
+
+        # Send command
+        self.session.send_line_and_raise(self.label + ".convert_to_corresponding_wavelength_density_unit(distance=" + parse_distance_string +")")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_or_intrinsic_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.evaluate_boolean_expression(self.label + ".is_per_angular_or_intrinsic_area")
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_non_angular_or_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Send command
+        self.session.send_line_and_raise(self.label + ".convert_to_corresponding_non_angular_or_intrinsic_area_unit()")
+
+# -----------------------------------------------------------------
+
+def transfer_object(name, obj, classname, session, extension, compress=False, show_output=False):
+
+    """
+    This function ...
+    :param name:
+    :param obj:
+    :param classname:
+    :param session:
+    :param extension:
+    :param compress:
+    :param show_output:
+    :return:
+    """
+
+    # Determine temporary directory path
+    temp_path = tempfile.gettempdir()
+
+    # Determine filename
+    filename = name + "." + extension
+
+    # Determine local FITS path
+    local_path = fs.join(temp_path, filename)
+
+    # Save the object locally
+    obj.saveto(local_path)
+
+    # Remote temp path
+    remote_temp_path = session.session_temp_directory
+
+    # Determine path
+    remote_kernel_path = fs.join(remote_temp_path, filename)
+
+    # Inform the user
+    log.info("Uploading '" + name + "' to " + remote_kernel_path + " ...")
+
+    # Upload the file
+    session.remote.upload(local_path, remote_temp_path, compress=compress, show_output=show_output)
+
+    # Open the kernel remotely
+    session.send_line_and_raise(name + " = " + classname + ".from_file('" + remote_kernel_path + "')")
 
 # -----------------------------------------------------------------

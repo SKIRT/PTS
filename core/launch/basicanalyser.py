@@ -1277,6 +1277,10 @@ class BasicAnalyser(Configurable):
         self.flux_calculator.config.check_wavelengths = self.config.check_wavelengths
         self.flux_calculator.config.ignore_bad = self.config.ignore_bad
 
+        # DEPLOYMENT
+        self.flux_calculator.config.deploy_pts = self.config.deploy_pts
+        self.flux_calculator.config.update_dependencies = self.config.update_dependencies
+
         # Run
         self.flux_calculator.run(**self.observed_fluxes_input)
 
@@ -1618,6 +1622,10 @@ class BasicAnalyser(Configurable):
         # EXTRA OPTIONS
         self.image_flux_calculator.config.check_wavelengths = self.config.check_wavelengths
         self.image_flux_calculator.config.ignore_bad = self.config.ignore_bad
+
+        # DEPLOYMENT
+        self.image_flux_calculator.config.deploy_pts = self.config.deploy_pts
+        self.image_flux_calculator.config.update_dependencies = self.config.update_dependencies
 
         # Run
         self.image_flux_calculator.run(**self.observed_fluxes_from_images_input)
