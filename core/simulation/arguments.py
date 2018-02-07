@@ -235,7 +235,7 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_definition(cls, definition, logging_options, parallelization, emulate=False):
+    def from_definition(cls, definition, logging_options=None, parallelization=None, emulate=False):
 
         """
         This function ...
@@ -546,7 +546,7 @@ class SkirtArguments(object):
         properties.append("simulations: " + str(self.parallel.simulations))
         properties.append("threads: " + str(self.parallel.threads))
         properties.append("processes: " + str(self.parallel.processes))
-        properties.append("data-parallization: " + str(self.parallel.dataparallel))
+        properties.append("data-parallelization: " + str(self.parallel.dataparallel))
         properties.append("number of threads per core: " + str(self.parallel.threads_per_core))
         if self.simulation_name is not None: properties.append("simulation name: " + str(self.simulation_name))
 

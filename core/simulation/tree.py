@@ -18,6 +18,7 @@ from . import textfile
 from ..basics.range import QuantityRange
 from ..tools.utils import lazyproperty
 from ..basics.distribution import Distribution
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -63,6 +64,60 @@ class TreeNode(object):
         """
 
         return len(self.children)
+
+# -----------------------------------------------------------------
+
+def get_nnodes(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    # Example:
+    # Total number of nodes: 5787413
+
+    # Read header of the file
+    lines = fs.get_header_lines(filepath)
+
+    # Look for number of nodes
+    nnodes = None
+    for line in lines:
+        if "Total number of nodes" in line:
+            nnodes = int(line.split(": ")[1])
+            break
+    if nnodes is None: raise IOError("Something went wrong")
+
+    # Return
+    return nnodes
+
+# -----------------------------------------------------------------
+
+def get_nleaves(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    # Example:
+    # Total number of leaves: 2893707
+
+    # Read header of the file
+    lines = fs.get_header_lines(filepath)
+
+    # Look for the number of leaves
+    nleaves = None
+    for line in lines:
+        if "Total number of leaves" in line:
+            nleaves = int(line.split(": ")[1])
+            break
+    if nleaves is None: raise IOError("Something went wrong")
+
+    # Return
+    return nleaves
 
 # -----------------------------------------------------------------
 

@@ -1557,7 +1557,7 @@ class Remote(object):
         # Loop over the versions
         for version in versions:
 
-            print(version)
+            #print(version)
 
             # Get python version
             python_version = version.split("/")[1].split("-")[0]

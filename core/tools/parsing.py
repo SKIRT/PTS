@@ -2647,7 +2647,7 @@ def parallelization(argument, default_nthreads_per_core=1):
 
     """
     This function ...
-    :param argument:
+    :param argument: NCORES:NPROCS:NTHRPCORE:DATAP
     :param default_nthreads_per_core:
     :return:
     """

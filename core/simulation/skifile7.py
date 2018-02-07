@@ -456,6 +456,14 @@ class SkiFile7:
         elif self.has_element("meshR"): return 1
         else: raise ValueError("The grid dimension could not be determined")
 
+    ## This function returns the number of dust cells, either defined by the ski file, or from the input grid file
+    def get_ncells(self, input_path=None):
+        if self.filetreegrid():
+            if input_path is None: raise ValueError("Grid is defined in a file but input path was not specified")
+            return self.ncellsfiletree(input_path)
+        elif self.treegrid(): raise ValueError("The number of dust cells cannot be determined for a regular tree grid")
+        else: return self.ncells()
+
     ## This function returns the number of dust cells
     def ncells(self):
 
@@ -515,6 +523,73 @@ class SkiFile7:
     ## This function returns True if a file tree dust grid is used and False otherwise
     def filetreegrid(self):
         return self.gridtype() == "FileTreeDustGrid"
+
+    ## This property returns the filename of the filetree
+    @property
+    def filetreegrid_name(self):
+        grid = self.get_dust_grid()
+        return grid.get("filename")
+
+    ## This function
+    def filetreegrid_path(self, input_path):
+
+        filename = self.filetreegrid_name
+
+        # Simulation input is specified
+        if input_path is not None:
+
+            # List of file paths
+            if types.is_sequence(input_path):
+
+                for path in input_path:
+                    if os.path.basename(path) == filename:
+                        filepath = path
+                        break
+                else: raise ValueError("The list of input paths does not contain the path to the file tree grid file")
+
+            # Directory path
+            elif types.is_string_type(input_path): filepath = os.path.join(input_path, filename)
+
+            # Simulation input object
+            elif isinstance(input_path, SimulationInput):
+
+                # Check whether present in simulation input
+                if filename not in input_path: raise ValueError("The file '" + filename + "' with the tree could not be found within the simulation input specification")
+
+                # Otherwise, set the path
+                filepath = input_path[filename]
+
+            # Dictionary
+            elif types.is_dictionary(input_path):
+
+                # Check whether present in simulation input
+                if filename not in input_path: raise ValueError("The file '" + filename + "' with the tree could not be found within the simulation input specification")
+
+                # Otherwise, set the path
+                filepath = input_path[filename]
+
+            # Invalid
+            else: raise ValueError("Invalid value for 'input_path': '" + str(input_path) + "'")
+
+        # Input path is not specified
+        else: filepath = filename
+
+        # Return
+        return filepath
+
+    ## This function returns the file tree
+    def filetreegrid_tree(self, input_path):
+        filepath = self.filetreegrid_path(input_path)
+        from .tree import DustGridTree
+        return DustGridTree.from_file(filepath)
+
+    ## This function returns the number of dust cells for a filetree grid
+    def ncellsfiletree(self, input_path):
+        #tree = self.filetreegrid_tree(input_path)
+        #return tree.nleaves
+        filepath = self.filetreegrid_path(input_path)
+        from .tree import get_nleaves
+        return get_nleaves(filepath)
 
     ## This function returns True when a tree dust grid is used that is not a file tree dust grid
     def treegrid_notfile(self):

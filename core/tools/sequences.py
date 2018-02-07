@@ -1463,6 +1463,21 @@ def get_first_values(sequence, nvalues):
 
 # -----------------------------------------------------------------
 
+def get_last_values(sequence, nvalues):
+
+    """
+    This function ...
+    :param sequence:
+    :param nvalues:
+    :return:
+    """
+
+    nitems = len(sequence)
+    if nvalues >= nitems: return sequence[:]
+    else: return sequence[nitems-nvalues:]
+
+# -----------------------------------------------------------------
+
 def all_except_indices(sequence, indices):
 
     """

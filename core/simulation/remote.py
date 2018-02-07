@@ -552,7 +552,8 @@ class SKIRTRemote(Remote):
     # -----------------------------------------------------------------
 
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-                     remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False):
+                     remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False,
+                     simulation_id=None, save_simulation=True):
 
         """
         This function ...
@@ -565,6 +566,8 @@ class SKIRTRemote(Remote):
         :param analysis_options:
         :param emulate:
         :param has_remote_input:
+        :param simulation_id:
+        :param save_simulation:
         :return:
         """
 
@@ -595,7 +598,7 @@ class SKIRTRemote(Remote):
         if scheduling_options is not None: self.scheduling_options[name] = scheduling_options
 
         # Generate a new simulation ID based on the ID's currently in use
-        simulation_id = self._new_simulation_id()
+        if simulation_id is not None: simulation_id = self._new_simulation_id()
 
         # Create a simulation object
         simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
@@ -610,7 +613,7 @@ class SKIRTRemote(Remote):
         if analysis_options is not None: simulation.set_analysis_options(analysis_options)
 
         # Save the simulation object
-        simulation.save()
+        if save_simulation: simulation.save()
 
         # Return the simulation object
         return simulation
@@ -1932,12 +1935,13 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def iterate_simulations(self, invalid="ignore", add_path=False):
+    def iterate_simulations(self, invalid="ignore", add_path=False, simulation_names=None):
 
         """
         This function ...
         :param invalid:
         :param add_path:
+        :param simulation_names:
         :return:
         """
 
@@ -1956,16 +1960,22 @@ class SKIRTRemote(Remote):
                 log.error("Skipping this simulation ...")
                 continue
 
+            # Name in list?
+            if simulation_names is not None and simulation.name not in simulation_names: continue
+
             # Yield the simulation
             if add_path: yield simulation, path
             else: yield simulation
 
     # -----------------------------------------------------------------
 
-    def get_status(self):
+    def get_status(self, as_dict=False, returns=("path", "status"), simulation_names=None):
 
         """
         This function ..
+        :param as_dict:
+        :param returns:
+        :param simulation_names:
         :return:
         """
 
@@ -1991,16 +2001,29 @@ class SKIRTRemote(Remote):
         else: states = self.screen_states() # Get state of screen sessions
 
         # Loop over the simulations for this remote host
-        for simulation, path in self.iterate_simulations(add_path=True):
+        for simulation, path in self.iterate_simulations(add_path=True, simulation_names=simulation_names):
 
             # Get the status of the simulation
             simulation_status = self.get_simulation_status(simulation, screen_states=states, jobs_status=jobs_status, session=session)
 
+            # Construct item
+            item = []
+            for rtype in returns:
+                if rtype == "name": item.append(simulation.name)
+                elif rtype == "path": item.append(path)
+                elif rtype == "id": item.append(id)
+                elif rtype == "status": item.append(simulation_status)
+                elif rtype == "simulation": item.append(simulation)
+                else: raise ValueError("Unknown return variable '" + rtype + "'")
+
             # Add the simulation properties to the list
-            entries.append((path, simulation_status))
+            entries.append(tuple(item))
 
         # Return the list of simulation properties
-        return entries
+        if as_dict:
+            if len(returns) != 2: raise ValueError("Cannot return as dict if number of return variables is not 2")
+            return OrderedDict(entries)
+        else: return entries
 
     # -----------------------------------------------------------------
 

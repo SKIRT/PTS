@@ -313,6 +313,11 @@ class SkirtSimulation(object):
         from .definition import SingleSimulationDefinition
         return SingleSimulationDefinition(self.ski_path, self.output_path, self.input_path, name=self.name)
 
+    ## This function returns a SkirtArguments object
+    def get_arguments(self, logging_options=None, parallelization=None):
+        from .arguments import SkirtArguments
+        return SkirtArguments.from_definition(self.definition, logging_options=logging_options, parallelization=parallelization)
+
     ## This property returns a SimulationInput object
     @property
     def input(self):

@@ -266,6 +266,18 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
+    def get_logging_options(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.arguments[simulation_name].logging
+
+    # -----------------------------------------------------------------
+
     def get_skirt_path(self, simulation_name):
 
         """
