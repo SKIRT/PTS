@@ -7,14 +7,20 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.remote.host import find_host_ids
+from pts.core.remote.host import find_host_ids, find_hosts
+
+# -----------------------------------------------------------------
+
+all_host_ids = find_host_ids()
+all_hosts = find_hosts()
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
-definition.add_positional_optional("host_ids", "string_list", "remote host IDs", choices=find_host_ids(), default=find_host_ids())
-definition.add_positional_optional("clustername", "string", "cluster name")
+
+# Remote hosts
+definition.add_positional_optional("hosts", "host_list", "remote hosts", choices=all_host_ids, default=all_hosts)
 
 # Add flags
 definition.add_flag("show", "show the loads", True)

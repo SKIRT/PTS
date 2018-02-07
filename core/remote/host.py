@@ -354,6 +354,54 @@ class Host(SimplePropertyComposite):
     # -----------------------------------------------------------------
 
     @property
+    def has_cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cluster_name is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cluster(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_cluster_name and self.has_clusters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nclusters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.clusters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_clusters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nclusters > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def cluster(self):
 
         """

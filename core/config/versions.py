@@ -18,11 +18,9 @@ all_hosts = find_hosts()
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
-definition.add_positional_optional("host_ids", "host_list", "remote host(s)", choices=all_host_ids, default=all_hosts)
-definition.add_positional_optional("clustername", "string", "cluster name (if one host is specified)")
 
-# Add optional
-definition.add_optional("not_remotes", "string_list", "skip these remote hosts", choices=find_host_ids())
+# Remote hosts
+definition.add_positional_optional("hosts", "host_list", "remote host", choices=all_host_ids, default=all_hosts)
 
 # Add flag
 definition.add_flag("show", "show the versions on the terminal", True)

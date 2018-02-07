@@ -47,7 +47,6 @@ fill_ski | -- | simulation.fill.SkiFiller | arguments | Fill a ski file with the
 
 # REMOTE
 versions | -- | remote.versionchecker.VersionChecker | arguments | Check versions of compiler, python, qmake, SKIRT and PTS on remote hosts
-load | -- | remote.load.LoadChecker | arguments | Check the load of remote systems
 
 # FILTERS
 filters | -- | filter.show.FilterShower | arguments | Show the narrow- and broad band filters defined in PTS

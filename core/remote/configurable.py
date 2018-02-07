@@ -139,19 +139,20 @@ class RemotesConfigurable(Configurable):
         else:
 
             # Gather host IDs
-            if self.config.not_remotes is not None: host_ids = [host_id for host_id in self.config.host_ids if host_id not in self.config.not_remotes]
-            else: host_ids = self.config.host_ids
-
-            # Check
-            if self.config.clustername is not None and len(host_ids) > 1: raise ValueError("Cannot specify cluster name for more than one remote")
+            #if self.config.not_remotes is not None: host_ids = [host_id for host_id in self.config.host_ids if host_id not in self.config.not_remotes]
+            #else: host_ids = self.config.host_ids
 
             # Loop over the different hosts
-            for host_id in host_ids:
+            #for host_id in host_ids:
+            for host in self.config.hosts:
 
-                # Setup the remote (login)
+                # Create the remote object
                 remote = Remote(log_conda=kwargs.pop("log_conda", False))
-                if not remote.setup(host_id, one_attempt=self.config.one_attempt, cluster_name=self.config.clustername):
-                    log.warning("Remote host '" + host_id + "' is down: skipping")
+
+                # Login to the remote
+                #if not remote.setup(host_id, one_attempt=self.config.one_attempt, cluster_name=self.config.clustername):
+                if not remote.setup(host, one_attempt=self.config.one_attempt):
+                    log.warning("Remote host '" + host.id + "' is down: skipping")
                     continue
 
                 # Add the remote to the list

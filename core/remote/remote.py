@@ -242,7 +242,9 @@ class Remote(object):
         """
 
         # Create the host object
-        if isinstance(host_id, Host): self.host = host_id
+        if isinstance(host_id, Host):
+            self.host = host_id
+            if cluster_name is not None: raise ValueError("Cannot specify cluster name if host is given")
         elif types.is_string_type(host_id): self.host = load_host(host_id, cluster_name)
         else: raise ValueError("Invalid value for 'host_id'")
 

@@ -6,22 +6,25 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.remote.host import find_host_ids
+from pts.core.remote.host import find_host_ids, find_hosts
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import introspection
+
+# -----------------------------------------------------------------
+
+all_host_ids = find_host_ids()
+all_hosts = find_hosts()
+nhosts = len(all_hosts)
+has_hosts = nhosts > 0
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Add optional
-host_ids = find_host_ids()
-if len(host_ids) > 0: definition.add_positional_optional("host_ids", "string_list", "remote host ids", choices=host_ids, default=host_ids)
-else: definition.add_fixed("host_ids", "remote host_ids", [])
-
-# Cluster name
-definition.add_positional_optional("clustername", "string", "name of the cluster (if one host is specified)")
+# The remote hosts
+if has_hosts: definition.add_positional_optional("hosts", "host_list", "remote hosts", choices=all_host_ids, default=all_hosts)
+else: definition.add_fixed("hosts", "remote hosts", [])
 
 # Add optional
 definition.add_optional("pts_repo_name", "string", "PTS repository name to deploy remotely", "origin", choices=introspection.pts_git_remotes())
