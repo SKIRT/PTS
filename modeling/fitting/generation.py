@@ -36,6 +36,8 @@ from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.input import SimulationInput
 from ...core.data.sed import ObservedSED, SED
 from ...core.simulation.logfile import LogFile
+from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...magic.core.datacube import DataCube
 
 # -----------------------------------------------------------------
 
@@ -525,6 +527,32 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_datacube_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        output_path = self.get_simulation_output_path(name)
+        return fs.join(output_path, self.object_name + "_earth_total.fits")
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_datacube(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_datacube_path(name)
+        return DataCube.from_file(path, self.wavelength_grid)
+
+    # -----------------------------------------------------------------
+
     def get_simulation_extract_path(self, name):
 
         """
@@ -648,6 +676,81 @@ class Generation(object):
         """
 
         path = self.get_simulation_misc_fluxes_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_misc_image_fluxes_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_path(name), "image fluxes")
+
+    # -----------------------------------------------------------------
+
+    def has_misc_image_fluxes(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_misc_image_fluxes_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_misc_image_fluxes_images_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_image_fluxes_path(name), "images")
+
+    # -----------------------------------------------------------------
+
+    def has_misc_image_fluxes_images(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_misc_image_fluxes_images_path(name)
+        return fs.is_directory(path) and not fs.is_empty(path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_misc_image_fluxes_images_earth_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_image_fluxes_images_path(name), "earth")
+
+    # -----------------------------------------------------------------
+
+    def has_misc_image_fluxes_images_earth(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_misc_image_fluxes_images_earth_path(name)
         return fs.is_directory(path) and not fs.is_empty(path)
 
     # -----------------------------------------------------------------
@@ -992,6 +1095,18 @@ class Generation(object):
         """
 
         return fs.join(self.wavelength_grids_path, self.wavelength_grid_name + ".dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
 
     # -----------------------------------------------------------------
 

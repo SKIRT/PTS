@@ -4515,7 +4515,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload_file_to(self, filepath, destination, remove=False, new_name=None, show_output=False):
+    def upload_file_to(self, filepath, destination, remove=False, new_name=None, show_output=False, replace=True):
 
         """
         This function ...
@@ -4524,12 +4524,18 @@ class Remote(object):
         :param remove:
         :param new_name:
         :param show_output:
+        :param replace:
         :return:
         """
 
         # Determine the remote file path
         filename = new_name if new_name is not None else fs.name(filepath)
         remote_path = fs.join(destination, filename)
+
+        # Already a file on the remote?
+        if self.is_file(remote_path):
+            if replace: self.remove_file(remote_path)
+            else: raise IOError("Already a file on the remote: '" + remote_path + "'")
 
         # Upload the file
         self.upload(filepath, remote_path, show_output=show_output)
@@ -4542,6 +4548,47 @@ class Remote(object):
 
         # Return the remote file path
         return remote_path
+
+    # -----------------------------------------------------------------
+
+    def upload_files_to(self, filepaths, destination, remove=False, show_output=False, replace=True):
+
+        """
+        This function ...
+        :param filepaths:
+        :param destination:
+        :param remove:
+        :param show_output:
+        :param replace:
+        :return:
+        """
+
+        # Initialize a list for the remote filepaths
+        remote_paths = []
+
+        # Upload each file
+        for filepath in filepaths: remote_paths.append(self.upload_file_to(filepath, destination, remove=remove, show_output=show_output, replace=replace))
+
+        # Return the list of remote filepaths
+        return remote_paths
+
+    # -----------------------------------------------------------------
+
+    def upload_files_in_path_to(self, path, destination, remove=False, show_output=False, replace=True, **kwargs):
+
+        """
+        This function ...
+        :param path:
+        :param destination:
+        :param remove:
+        :param show_output:
+        :param replace:
+        :param kwargs:
+        :return:
+        """
+
+        # Upload
+        return self.upload_files_to(fs.files_in_path(path, **kwargs), destination, remove=remove, show_output=show_output, replace=replace)
 
     # -----------------------------------------------------------------
 
@@ -6683,7 +6730,9 @@ class Remote(object):
 
         if self.host.quota_command is None: return None
 
+        #print(self.host.quota_command)
         output = self.execute(self.host.quota_command)
+        #print(output)
 
         quotas = dict()
 

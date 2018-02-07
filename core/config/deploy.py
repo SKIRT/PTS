@@ -20,6 +20,9 @@ host_ids = find_host_ids()
 if len(host_ids) > 0: definition.add_positional_optional("host_ids", "string_list", "remote host ids", choices=host_ids, default=host_ids)
 else: definition.add_fixed("host_ids", "remote host_ids", [])
 
+# Cluster name
+definition.add_positional_optional("clustername", "string", "name of the cluster (if one host is specified)")
+
 # Add optional
 definition.add_optional("pts_repo_name", "string", "PTS repository name to deploy remotely", "origin", choices=introspection.pts_git_remotes())
 definition.add_optional("skirt_repo_name", "string", "SKIRT repository name to deploy remotely", "origin", choices=introspection.skirt_git_remotes())
@@ -39,9 +42,8 @@ definition.add_optional("pts_on", "string_list", "hosts on which PTS should be i
 
 # -----------------------------------------------------------------
 
-# Dangerous stuff!
+# Dangerous stuff
 definition.add_flag("clean", "do a completely clean install (remove existing installations) (use with care!)", False)
-
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
 # -----------------------------------------------------------------

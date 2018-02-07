@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import filesystem as fs
 from pts.core.basics.log import log
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments, prompt_proceed
 from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.launch.analyser import reanalyse_simulation, all_steps, analyse_simulation
+from pts.core.launch.analyser import reanalyse_simulation, all_steps, analyse_simulation, show_analysis_steps
 from pts.core.config.analyse_simulation import definition as analysis_definition
 from pts.core.tools.stringify import tostr
 
@@ -79,6 +78,9 @@ else: simulations = generation.retrieved_simulations
 
 # Loop over the retrieved simulations
 for simulation in simulations:
+
+    # Show steps that will be performed
+    show_analysis_steps(simulation)
 
     # Get parameter values
     parameter_values = generation.get_parameter_values_for_simulation(simulation.name)

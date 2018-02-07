@@ -26,9 +26,35 @@ from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoL
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib import cbook
+#from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
+
+# -----------------------------------------------------------------
+
+import Tkinter
+import threading
+import matplotlib.backends.backend_tkagg
+
+#root = Tkinter.Tk()
+
+# From https://stackoverflow.com/questions/7275646/creating-a-matplotlib-interactive-plotting-window-for-an-existing-figure
+class Plotter():
+    def __init__(self,fig):
+        t = threading.Thread(target=self.PlottingThread,args=(fig,))
+        t.start()
+
+    def PlottingThread(self,fig):
+        canvas = matplotlib.backends.backend_tkagg.FigureCanvasTkAgg(fig, master=root)
+        canvas.show()
+        canvas.get_tk_widget().pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
+
+        toolbar = matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg(canvas, root)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
+
+        Tkinter.mainloop()
 
 # -----------------------------------------------------------------
 
@@ -3606,18 +3632,26 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def show(self):
+    def show(self, block=True):
 
         """
         This function ...
+        :param block
         :return:
         """
 
         # Inform the user
         log.info("Showing the plot ...")
 
-        # Show
-        plt.show()
+        # SHow the figure
+        #Plotter(self.figure)
+
+        # Wait untill key is pressed
+        #result = raw_input("press ENTER to continue")
+
+        # Show the figure
+        if block: self.figure.show() #block=block)
+        else: self.figure.draw()
 
     # -----------------------------------------------------------------
 

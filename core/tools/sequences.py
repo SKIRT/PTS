@@ -91,6 +91,35 @@ def create_nested_3d(ni, nj, nk, fill=None):
 
 # -----------------------------------------------------------------
 
+def iterate_2d(structure):
+
+    """
+    This function ...
+    :param structure:
+    :return:
+    """
+
+    for i in range(len(structure)):
+        for j in range(len(structure[i])):
+            yield structure[i][j]
+
+# -----------------------------------------------------------------
+
+def iterate_3d(structure):
+
+    """
+    This function ...
+    :param structure:
+    :return:
+    """
+
+    for i in range(len(structure)):
+        for j in range(len(structure[i])):
+            for k in range(len(structure[i][j])):
+                yield structure[i][j][k]
+
+# -----------------------------------------------------------------
+
 def ordered(sequence):
 
     """

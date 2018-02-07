@@ -346,6 +346,9 @@ class ObservedFluxCalculator(Configurable):
         # Update PTS dependencies
         deployer.config.update_dependencies = self.config.update_dependencies
 
+        # Password
+        deployer.config.pubkey_password = self.config.pubkey_password
+
         # Run the deployer
         deployer.run()
 
@@ -937,7 +940,7 @@ class ObservedFluxCalculator(Configurable):
         if self.config.plot_seds: self.plot_seds()
 
         # Plot the images
-        if self.config.plot_images: self.plot_images()
+        #if self.config.plot_images: self.plot_images()
 
     # -----------------------------------------------------------------
 

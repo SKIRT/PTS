@@ -317,7 +317,8 @@ class SimplePropertyComposite(object):
         # Dict-like
         elif isinstance(value, dict):  # elif isinstance(value, Map):
 
-            #print("VALUE", value)
+            print("NAME", name)
+            print("VALUE", value)
 
             # There is a subsection with this name: fill in the attributes for that subsection
             #if name in self._descriptions:
@@ -348,7 +349,7 @@ class SimplePropertyComposite(object):
             # Set already existing dictionary's items
             elif isinstance(self.__dict__[name], dict):
 
-                for key in value: self.__dict__[name][key] = value
+                for key in value: self.__dict__[name][key] = value[key]
                 return
 
             # Just set the whole dictionary as an attribute
@@ -1594,6 +1595,8 @@ def load_properties(properties, fh_or_iterator, indent=""):
         if rest == "":
 
             #expect_section = name
+
+            #print(name, properties[name])
 
             # Load properties
             properties[name] = dict()

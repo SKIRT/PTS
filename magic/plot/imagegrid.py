@@ -529,6 +529,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
             if self.config.from_data: self.load_data()
             else: self.load_images()
 
+        # Still no images
+        if self.no_frames: raise RuntimeError("No frames are loaded")
+
         # Initialize the figure
         self.initialize_figure()
 
@@ -541,6 +544,52 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
         # Sort the frames on filter
         if self.config.sort_filters: self.sort()
+
+        # Show the grid
+        if self.config.show_grid: self.show_grid()
+
+    # -----------------------------------------------------------------
+
+    def show_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the grid ...")
+
+        # Create plots
+        viz_figure = MPLFigure(size=self.figsize)
+        viz_plots = viz_figure.create_grid(self.nrows, self.ncolumns, sharex=self.share_x, sharey=self.share_y)
+
+        #for plots_row in viz_plots:
+        #    for plot in plots_row:
+        for plot in sequences.iterate_2d(viz_plots):
+
+            axes = plot.axes
+            # print(axes)
+
+            adress = str(hex(id(axes)))
+
+            print('<%s.%s object at %s>' % (
+                axes.__class__.__module__,
+                axes.__class__.__name__,
+                hex(id(axes))
+            ))
+
+            print("x")
+            for ax in axes.get_shared_x_axes(): print(ax)
+            print("y")
+            for ax in axes.get_shared_y_axes(): print(ax)
+            # print(vars(axes))
+
+            # Plot the text
+            plot.text(0.5, 0.5, adress)
+
+        # Show
+        viz_figure.show()
 
     # -----------------------------------------------------------------
 
@@ -2698,6 +2747,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         if self.no_rows:
             if self.config.from_data: self.load_data()
             else: self.load_images()
+
+        # Still no rows?
+        if self.no_rows: raise RuntimeError("No rows are loaded")
 
         # Initialize the figure
         self.initialize_figure()

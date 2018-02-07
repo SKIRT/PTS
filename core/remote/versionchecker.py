@@ -106,33 +106,11 @@ class VersionChecker(RemotesConfigurable):
             # Get the operating system
             os_version = remote.operating_system_short
 
+            # Get version of compiler, MPI, qmake, and python
             compiler_version = modules.versions["cpp"]
             mpi_compiler_version = modules.versions["mpi"]
             qmake_version = modules.versions["qmake"]
             python_version = modules.versions["python"]
-
-            # Loading compilers
-            #compiler_path = remote.find_and_load_cpp_compiler(show_output=log.is_debug())
-            #mpi_compiler_path = remote.find_and_load_mpi_compiler(show_output=log.is_debug())
-
-            # Get C++ compiler and MPI compiler version
-            #compiler_version = remote.version_of(compiler_path, show_output=log.is_debug()) if compiler_path is not None else None
-            #mpi_compiler_version = remote.version_of(mpi_compiler_path, show_output=log.is_debug()) if mpi_compiler_path is not None else None
-
-            # Load Qt module, find the qmake path
-            #qmake_path = remote.find_and_load_qmake(show_output=log.is_debug())
-
-            # Get qmake version
-            #qmake_version = remote.version_of(qmake_path, show_output=log.is_debug()) if qmake_path is not None else None
-
-            # Load python
-            #python_path = remote.find_and_load_python(show_output=log.is_debug())
-
-            # Get python version
-            #python_version = remote.custom_python_version_long(python_path)
-
-            # Get conda version
-            #conda_version = remote.conda_version
 
             # Find conda
             conda_installation_path, conda_main_executable_path = remote.find_conda()

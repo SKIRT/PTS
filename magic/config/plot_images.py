@@ -109,3 +109,7 @@ definition.add_flag("show", "show the plot (default is automatic)", None)
 definition.add_flag("coordinates", "plot using coordinates (by default, is determined by whether the images have coordinate systems)", None)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("show_grid", "show the grid prior to plotting")
+
+# -----------------------------------------------------------------

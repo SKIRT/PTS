@@ -796,10 +796,10 @@ class BasicAnalyser(Configurable):
         self.show_misc_options()
 
         # If requested, make RGB images of the output FITS files
-        if self.rgb: self.make_rgb()
+        if self.rgb and not self.has_rgb: self.make_rgb()
 
         # If requested, make datacube animations from the output datacubes
-        if self.animations: self.make_animations()
+        if self.animations and not self.has_animations: self.make_animations()
 
         # Observed fluxes
         if self.observed_fluxes: self.get_observed_fluxes()
@@ -1630,6 +1630,7 @@ class BasicAnalyser(Configurable):
         # DEPLOYMENT
         self.image_flux_calculator.config.deploy_pts = self.config.deploy_pts
         self.image_flux_calculator.config.update_dependencies = self.config.update_dependencies
+        self.image_flux_calculator.config.pubkey_password = self.config.pubkey_password
 
         # Run
         self.image_flux_calculator.run(**self.observed_fluxes_from_images_input)

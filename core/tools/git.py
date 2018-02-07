@@ -65,6 +65,20 @@ def checkout_new_branch(repo_path, branch_name, origin_branch_name, show_output=
 
 # -----------------------------------------------------------------
 
+def check_repository(repo_path, show_output=False):
+
+    """
+    This function ...
+    :param repo_path:
+    :param show_output:
+    :return:
+    """
+
+    command = "git fsck"
+    terminal.execute(command, cwd=repo_path, show_output=show_output)
+
+# -----------------------------------------------------------------
+
 def get_hash_remote_repository(url):
 
     """

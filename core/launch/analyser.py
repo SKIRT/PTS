@@ -23,6 +23,7 @@ from ..tools import filesystem as fs
 from ..simulation.remote import get_simulation_for_host
 from ..tools import sequences
 from .options import extraction_names, plotting_names, misc_names
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -231,6 +232,251 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
 
     # Run the analyser on the simulation
     analyser.run(simulation=simulation)
+
+# -----------------------------------------------------------------
+
+def show_analysis_steps(simulation, do_basic=True, do_batch=True, do_scaling=True, do_extra=True):
+
+    """
+    This function ...
+    :param simulation:
+    :param do_basic:
+    :param do_batch:
+    :param do_scaling:
+    :param do_extra:
+    :return:
+    """
+
+    # Set flags
+    basic = do_basic
+    batch = do_batch and simulation.from_batch
+    scaling = do_scaling and simulation.from_scaling_test
+    extra = do_extra
+
+    print("")
+
+    # Show basic analysis steps
+    if basic:
+
+        print(" - basic:")
+        print("")
+        show_basic_analysis_steps(simulation)
+        print("")
+
+    # Show batch
+    if batch:
+
+        if simulation.analysed_batch: print(fmt.green + " - batch: analysed" + fmt.reset)
+        else: print(fmt.yellow + " - batch: not yet analysed" + fmt.reset)
+        print("")
+
+    # Show scaling
+    if scaling:
+
+        if simulation.analysed_scaling: print(fmt.green + " - scaling: analysed" + fmt.reset)
+        else: print(fmt.yellow + " - scaling: not yet analysed" + fmt.reset)
+        print("")
+
+    # Show extra analysis steps
+    if extra:
+
+        print(" - extra")
+        print("")
+        show_extra_analysis_steps(simulation)
+        print("")
+
+# -----------------------------------------------------------------
+
+def show_basic_analysis_steps(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    # Set flags
+    extraction = simulation.analysis.any_extraction
+    plotting = simulation.analysis.any_plotting
+    miscellaneous = simulation.analysis.any_misc
+
+    if extraction:
+
+        print("    * extraction:")
+        print("")
+        show_extraction_steps(simulation)
+        print("")
+
+    if plotting:
+
+        print("    * plotting:")
+        print("")
+        show_plotting_steps(simulation)
+        print("")
+
+    if miscellaneous:
+
+        print("    * miscellaneous:")
+        print("")
+        show_misc_steps(simulation)
+        print("")
+
+# -----------------------------------------------------------------
+
+def show_extraction_steps(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    from .options import progress_name, timeline_name, memory_name
+
+    # Get options
+    extraction_options = simulation.analysis.extraction
+
+    # Set flags
+    progress_extraction = extraction_options.progress
+    timeline_extraction = extraction_options.timeline
+    memory_extraction = extraction_options.memory
+
+    # Extracted?
+    extracted_progress = progress_name in simulation.analysed_extraction
+    extracted_timeline =  timeline_name in simulation.analysed_extraction
+    extracted_memory = memory_name in simulation.analysed_extraction
+
+    if progress_extraction:
+        if extracted_progress: print(fmt.green + "       + progress: extracted" + fmt.reset)
+        else: print(fmt.yellow + "       + progress: not yet extracted" + fmt.reset)
+
+    if timeline_extraction:
+        if extracted_timeline: print(fmt.green + "       + timeline: extracted" + fmt.reset)
+        else: print(fmt.yellow + "       + timeline: not yet extracted" + fmt.reset)
+
+    if memory_extraction:
+        if extracted_memory: print(fmt.green + "       + memory: extracted" + fmt.reset)
+        else: print(fmt.yellow + "       + memory: not yet extracted" + fmt.reset)
+
+# -----------------------------------------------------------------
+
+def show_plotting_steps(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    from .options import progress_name, timeline_name, memory_name, seds_name, grids_name
+
+    # Get options
+    plotting_options = simulation.analysis.plotting
+
+    # Set flags
+    seds_plotting = plotting_options.seds
+    grids_plotting = plotting_options.grids
+    progress_plotting = plotting_options.progress
+    timeline_plotting = plotting_options.timeline
+    memory_plotting = plotting_options.memory
+
+    # Plotted?
+    plotted_seds = seds_name in simulation.analysed_plotting
+    plotted_grids = grids_name in simulation.analysed_plotting
+    plotted_progress = progress_name in simulation.analysed_plotting
+    plotted_timeline = timeline_name in simulation.analysed_plotting
+    plotted_memory = memory_name in simulation.analysed_plotting
+
+    if seds_plotting:
+        if plotted_seds: print(fmt.green + "       + seds: plotted" + fmt.reset)
+        else: print(fmt.yellow + "       + seds: not yet plotted" + fmt.reset)
+
+    if grids_plotting:
+        if plotted_grids: print(fmt.green + "       + grids: plotted" + fmt.reset)
+        else: print(fmt.yellow + "       + grids: not yet plotted" + fmt.reset)
+
+    if progress_plotting:
+        if plotted_progress: print(fmt.green + "       + progress: plotted" + fmt.reset)
+        else: print(fmt.yellow + "       + progress: not yet plotted" + fmt.reset)
+
+    if timeline_plotting:
+        if plotted_timeline: print(fmt.green + "       + timeline: plotted" + fmt.reset)
+        else: print(fmt.yellow + "       + timeline: not yet plotted" + fmt.reset)
+
+    if memory_plotting:
+        if plotted_memory: print(fmt.green + "       + memory: plotted" + fmt.reset)
+        else: print(fmt.yellow + "       + memory: not yet plotted" + fmt.reset)
+
+# -----------------------------------------------------------------
+
+def show_misc_steps(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    from .options import rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name
+
+    # Get options
+    misc_options = simulation.analysis.misc
+
+    # Set flags
+    rgb = misc_options.rgb
+    animations = misc_options.animations
+    observed_fluxes = misc_options.fluxes
+    observed_fluxes_from_images = misc_options.fluxes_from_images
+    observed_images = misc_options.images
+
+    # Analysed?
+    has_rgb = rgb_name in simulation.analysed_misc
+    has_animations = animations_name in simulation.analysed_misc
+    has_fluxes = fluxes_name in simulation.analysed_misc
+    has_fluxes_from_images = fluxes_from_images_name in simulation.analysed_misc
+    has_images = images_name in simulation.analysed_misc
+
+    # Show
+
+    if rgb:
+        if has_rgb: print(fmt.green + "       + rgb: created" + fmt.reset)
+        else: print(fmt.yellow + "       + rgb: not yet created" + fmt.reset)
+
+    if animations:
+        if has_animations: print(fmt.green + "       + animations: created" + fmt.reset)
+        else: print(fmt.yellow + "       + animations: not yet created" + fmt.reset)
+
+    if observed_fluxes:
+        if has_fluxes: print(fmt.green + "       + fluxes: calculated" + fmt.reset)
+        else: print(fmt.yellow + "       + fluxes: not yet calculated" + fmt.reset)
+
+    if observed_fluxes_from_images:
+        if has_fluxes_from_images: print(fmt.green + "       + fluxes from images: calculated" + fmt.reset)
+        else: print(fmt.yellow + "       + fluxes from images: not yet calculated" + fmt.reset)
+
+    if observed_images:
+        if has_images: print(fmt.green + "       + images: created" + fmt.reset)
+        else: print(fmt.yellow + "       + images: not yet created" + fmt.reset)
+
+# -----------------------------------------------------------------
+
+def show_extra_analysis_steps(simulation):
+
+    """
+    This function ....
+    :param simulation:
+    :return:
+    """
+
+    # Loop over the 'extra' analyser classes that are defined for this simulation
+    for analyser_class in simulation.analyser_classes:
+
+        # Get name
+        class_name = analyser_class.__name__
+
+        # Check
+        if class_name in simulation.analysed_extra: print(fmt.green + "    * " + class_name + ": analysed" + fmt.reset)
+        else: print(fmt.yellow + "    * " + class_name + ": not yet analysed" + fmt.reset)
 
 # -----------------------------------------------------------------
 

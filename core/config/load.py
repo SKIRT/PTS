@@ -14,7 +14,7 @@ from pts.core.remote.host import find_host_ids
 # Create the configuration definition
 definition = ConfigurationDefinition()
 definition.add_positional_optional("host_ids", "string_list", "remote host IDs", choices=find_host_ids(), default=find_host_ids())
-definition.add_optional("cluster_name", "string", "cluster name")
+definition.add_positional_optional("clustername", "string", "cluster name")
 
 # Add flags
 definition.add_flag("show", "show the loads", True)

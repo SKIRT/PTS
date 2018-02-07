@@ -161,6 +161,11 @@ def load_host(host_id, clustername=None):
     :return:
     """
 
+    # Check if host ID and clustername are defined as one string
+    if ":" in host_id:
+        if clustername is not None: raise ValueError("Clustername is defined in host name and separately")
+        host_id, clustername = host_id.split(":")
+
     ## Read the host configuration file
 
     # Determine the path to the configuration file for the specified host and check if it is present
