@@ -107,16 +107,17 @@ class VersionChecker(RemotesConfigurable):
             os_version = remote.operating_system_short
 
             # Get version of compiler, MPI, qmake, and python
-            compiler_version = modules.versions["cpp"]
-            mpi_compiler_version = modules.versions["mpi"]
-            qmake_version = modules.versions["qmake"]
-            python_version = modules.versions["python"]
+            compiler_version = modules.versions["cpp"] if "cpp" in modules.versions else None
+            mpi_compiler_version = modules.versions["mpi"] if "mpi" in modules.versions else None
+            qmake_version = modules.versions["qmake"] if "qmake" in modules.versions else None
+            python_version = modules.versions["python"] if "python" in modules.versions else None
 
             # Find conda
             conda_installation_path, conda_main_executable_path = remote.find_conda()
 
             # Check conda version
-            conda_version = remote.conda_version_at(conda_main_executable_path)
+            if conda_main_executable_path is not None: conda_version = remote.conda_version_at(conda_main_executable_path)
+            else: conda_version = None
 
             # Get SKIRT and PTS version
             skirt_version = remote.skirt_version

@@ -645,10 +645,26 @@ def stringify_not_list(value, **kwargs):
     # Parallelization
     elif introspection.lazy_isinstance(value, "Parallelization", "pts.core.simulation.parallelization"): return "parallelization", introspection.lazy_call("represent_parallelization", "pts.core.simulation.parallelization", value)
 
+    # Host
+    elif introspection.lazy_isinstance(value, "Host", "pts.core.remote.host"): return "host", str_from_host(value)
+
     # Unrecognized
     else:
         warnings.warn("Unrecognized type: " + str(type(value)))
         return None, str(value)
+
+# -----------------------------------------------------------------
+
+def str_from_host(host):
+
+    """
+    This function ...
+    :param host:
+    :return:
+    """
+
+    if host.cluster_name is not None: return host.id + ":" + host.cluster_name
+    else: return host.id
 
 # -----------------------------------------------------------------
 

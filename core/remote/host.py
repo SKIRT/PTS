@@ -106,6 +106,19 @@ def find_host_ids(schedulers=None, protocol="ssh"):
 
 # -----------------------------------------------------------------
 
+def find_hosts(schedulers=None, protocol="ssh"):
+
+    """
+    This function ...
+    :param schedulers:
+    :param protocol:
+    :return:
+    """
+
+    return [load_host(host_id) for host_id in find_host_ids(schedulers=schedulers, protocol=protocol)]
+
+# -----------------------------------------------------------------
+
 def has_simulations(host_id):
 
     """
@@ -393,5 +406,27 @@ class Host(SimplePropertyComposite):
 
         # If no VPN service is specified in the host configuration file, assume VPN is not required
         else: return False
+
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if types.is_string_type(other):
+
+            if ":" in other: host_id, clustername = other.split(":")
+            else: host_id, clustername = other, None
+
+            if clustername is None: return self.id == host_id
+            else: return self.id == host_id and self.cluster_name == clustername
+
+        elif isinstance(other, Host): return self.id == other.id and self.cluster_name == other.cluster_name
+
+        else: raise ValueError("Invalid input: must be string or Host")
 
 # -----------------------------------------------------------------

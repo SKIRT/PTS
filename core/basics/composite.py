@@ -317,8 +317,8 @@ class SimplePropertyComposite(object):
         # Dict-like
         elif isinstance(value, dict):  # elif isinstance(value, Map):
 
-            print("NAME", name)
-            print("VALUE", value)
+            #print("NAME", name)
+            #print("VALUE", value)
 
             # There is a subsection with this name: fill in the attributes for that subsection
             #if name in self._descriptions:

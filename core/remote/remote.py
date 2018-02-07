@@ -522,12 +522,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def load_module(self, module_name, show_output=False):
+    def load_module(self, module_name, show_output=False, return_success=False):
 
         """
         This function ...
         :param module_name:
         :param show_output:
+        :param return_success:
         :return:
         """
 
@@ -535,12 +536,22 @@ class Remote(object):
 
         # Look for errors
         for line in output:
+
             if "Lmod has detected the following error" in line:
+
+                # Create error message
                 error_message = line.split("error:")[1].strip()
                 if "see output of 'ml'" in error_message:
                     error_message.replace("(see output of 'ml')", "")
                     error_message += " Loaded modules: " + ", ".join(self.loaded_modules)
-                raise RuntimeError(error_message)
+
+                if return_success:
+                    log.warning(error_message)
+                    return False
+                else: raise RuntimeError(error_message)
+
+        # Success: no error encountered
+        return True
 
     # -----------------------------------------------------------------
 
@@ -655,9 +666,9 @@ class Remote(object):
             if triggered:
 
                 if not line.strip(): break
+                if "Other possible modules matches" in line: break
 
                 version = line.strip()
-
                 versions.append(version)
 
             elif "Versions:" in line: triggered = True
@@ -1471,22 +1482,35 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def custom_python_version_long(self, path):
+    def custom_python_version_long(self, path, show_output=False):
 
         """
         This function ...
         :param path:
+        :param show_output:
         :return:
         """
 
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        # Otherwise, assure that the logfile is set to 'None'
+        if show_output: self.ssh.logfile = sys.stdout
+        else: self.ssh.logfile = None
+
         # Launch interactive python session
         self.ssh.sendline(path)
-        self.ssh.expect(">>>")
+
+        #self.ssh.expect(">>>")
+        index = self.ssh.expect([">>>", self.ssh.PROMPT, pexpect.EOF, "[PEXPECT]$"])
+        #print(index)
+        if index != 0: return None
         output = self.ssh.before.split("\r\n")[1:-1]
 
         # Close python again
         self.ssh.sendline("exit()")
         self.ssh.prompt()
+
+        # Set the log file back to 'None'
+        self.ssh.logfile = None
 
         # Get distribution and version, and architecture
         distribution_and_version = output[0].split("|")[0].split("(")[0].strip()
@@ -1526,7 +1550,12 @@ class Remote(object):
         latest_intel_version = None
         latest_intel_year = None
 
+        #print(versions)
+
+        # Loop over the versions
         for version in versions:
+
+            print(version)
 
             # Get python version
             python_version = version.split("/")[1].split("-")[0]
@@ -1604,7 +1633,8 @@ class Remote(object):
             if latest_module_name is None: raise RuntimeError("Git not available from the modules")
 
             # load the module
-            self.load_module(latest_module_name)
+            loaded = self.load_module(latest_module_name, return_success=True)
+            if not loaded: log.warning("Could not load the git module: finding system git installation ...")
 
         else: latest_module_name = None
 
@@ -1648,7 +1678,9 @@ class Remote(object):
         # Find latest Intel Compiler Toolkit version and load it
         intel_version = self._find_latest_iimpi_version_module(show_output=show_output)
         if intel_version is None: self.warning("Intel Cluster Toolkit Compiler Edition could not be found")
-        elif intel_version not in self.loaded_modules: self.load_module(intel_version, show_output=show_output) # Load the module
+        elif intel_version not in self.loaded_modules:
+            loaded = self.load_module(intel_version, show_output=show_output, return_success=True) # Load the module
+            if not loaded: log.warning("The intel compiler module '" + intel_version + "' could not be loaded")
 
         # Return the module name
         return intel_version

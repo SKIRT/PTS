@@ -270,16 +270,18 @@ class Modules(object):
         if path is not None:
 
             # Get the version
-            version = self.remote.custom_python_version_long(path)
+            version = self.remote.custom_python_version_long(path, show_output=True)
+            if version is None: log.warning("Could not load the python module '" + module + "'")
+            else:
 
-            # Debugging
-            log.debug("The path of the Python installation is '" + path + "'")
-            log.debug("The version of Python is '" + version + "'")
+                # Debugging
+                log.debug("The path of the Python installation is '" + path + "'")
+                log.debug("The version of Python is '" + version + "'")
 
-            # Add module path and version
-            self.names["python"] = module
-            self.paths["python"] = path
-            self.versions["python"] = version
+                # Add module path and version
+                self.names["python"] = module
+                self.paths["python"] = path
+                self.versions["python"] = version
 
         # Python is not found
         else: log.debug("Python installation is not found on the remote")

@@ -2691,3 +2691,28 @@ def username_password(argument):
     return credentials
 
 # -----------------------------------------------------------------
+
+def host(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..remote.host import load_host
+    return load_host(argument)
+
+# -----------------------------------------------------------------
+
+def host_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [host(arg) for arg in string_list(argument)]
+
+# -----------------------------------------------------------------
