@@ -21,6 +21,8 @@ from pts.core.basics.distribution import Distribution
 from pts.core.plot.distribution import plot_distributions
 from pts.modeling.fitting.refitter import get_and_show_best_simulations
 from pts.core.tools import filesystem as fs
+from pts.core.plot.sed import SEDPlotter
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -48,6 +50,8 @@ definition.add_flag("sed", "show the SED plot")
 definition.add_flag("counts", "show the counts")
 definition.add_flag("plot_counts", "plot the counts")
 definition.add_flag("statistics", "show statistics", True)
+definition.add_flag("combined_seds", "show combined SED plot")
+definition.add_optional("seds_output", "string", "combined SED plot output file")
 
 # Create the configuration
 config = parse_arguments("show_best_simulations", definition)
@@ -182,5 +186,35 @@ if config.statistics:
         print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(parameter_units[label]))
         if config.nsimulations > 1: print("    * Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(parameter_units[label]))
     print("")
+
+# -----------------------------------------------------------------
+
+if config.combined_seds:
+
+    # Create the SED plotter
+    plotter = SEDPlotter()
+
+    # Inform the user
+    log.info("Adding the observed SEDs ...")
+
+    # Add observed SEDs
+    plotter.add_sed(environment.observed_sed, "Clipped observed fluxes")
+    plotter.add_sed(environment.truncated_sed, "Truncated observed fluxes")
+
+    # Loop over the simulation names
+    nseds = config.nsimulations
+    for index, simulation_name in enumerate(simulation_names):
+
+        # Debugging
+        log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(nseds) + ") ...")
+
+        # Get the simulated SED
+        sed = generation.get_simulation_sed(simulation_name)
+
+        # Add the SED
+        plotter.add_sed(sed, simulation_name, ghost=True, residuals=False)
+
+    # Run the plotter
+    plotter.run(output=config.seds_output)
 
 # -----------------------------------------------------------------

@@ -40,6 +40,9 @@ definition.add_required("generation", "string", "generation name")
 # Number of random simulations
 definition.add_optional("random", "positive_integer", "pick a specified number of random simulations to plot")
 
+# Output file
+definition.add_optional("output", "string", "output file name")
+
 # Get configuration
 config = parse_arguments("plot_generation_seds", definition, "Plot the seds of all simulations of a generation")
 
@@ -98,6 +101,6 @@ for index, simulation_name in enumerate(names):
 # -----------------------------------------------------------------
 
 # Run the plotter
-plotter.run()
+plotter.run(output=config.output)
 
 # -----------------------------------------------------------------
