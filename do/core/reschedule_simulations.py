@@ -281,7 +281,9 @@ for simulation_name in simulations:
     logging = logging_options[simulation_name] if logging_options is not None else None
 
     # Is this simulation shared?
-    if config.remote_input_path is not None: remote_input_path = config.remote_input_path
+    if config.remote_input_path is not None:
+        shared = False
+        remote_input_path = config.remote_input_path
     else:
         shared = sequences.in_one(simulation_name, shared_groups, allow_more=False)
         if shared:
@@ -397,7 +399,7 @@ if config.assignment is not None:
     for simulation in new_simulations:
 
         # Set properties
-        assignment.set_host_for_simulation(simulation.name, config.host, config.cluster_name)
+        assignment.set_host_for_simulation(simulation.name, config.host.id, config.host.cluster_name)
         assignment.set_id_for_simulation(simulation.name, simulation.id)
         assignment.set_success_for_simulation(simulation.name)
 
