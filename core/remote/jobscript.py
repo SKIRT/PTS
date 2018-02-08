@@ -76,13 +76,83 @@ class JobScript(object):
         output_path = None
         error_path = None
         mail = False
+        nodes = None
+        ppn = None
 
-        with open(path, 'r') as fh:
-            for line in fh:
-                line = line[:-1]
+        header_lines = []
+        pbs_lines = []
+        modules = []
+        commands = []
 
+        # Loop over the lines
+        from ..tools import filesystem as fs
+        body = False
+        last_comment = None
+        for line in fs.read_lines(path):
 
-        jobscript = cls()
+            # PBS options
+            if line.startswith("#PBS"):
+                pbs_lines.append(line.split("#PBS ")[1])
+                last_comment = None
+                body = True
+
+            # Comment or header
+            elif line.startswith("#"):
+
+                if body: last_comment = line[2:]
+                else:
+                    header_lines.append(line[2:])
+                    last_comment = None
+
+            # Module
+            elif line.startswith("module load"):
+                modules.append(line.split("module load ")[1])
+                last_comment = None
+
+            # Other not empty lines
+            elif line.strip():
+                commands.append((line, last_comment))
+                last_comment = None
+
+        #print(header_lines)
+        #print(pbs_lines)
+        #print(modules)
+        #print(commands)
+
+        extra_header_lines = []
+        for line in header_lines:
+            if line.startswith("/bin/sh"): continue
+            elif line.startswith("Batch script created with"): continue
+            else: extra_header_lines.append(line)
+
+        for line in pbs_lines:
+            if line.startswith("-m"): mail = True
+            elif line.startswith("-o"): output_path = line.split("-o ")[1]
+            elif line.startswith("-e"): error_path = line.split("-e ")[1]
+            elif line.startswith("-N"): name = line.split("-N ")[1]
+            elif line.startswith("-l"):
+                if "walltime=" in line:
+                    timeformat = line.split("walltime=")[1]
+                    hours, minutes, seconds = timeformat.split(":")
+                    walltime = float(hours) + float(minutes)/60 + float(seconds)/3600
+                elif "nodes=" in line and "ppn=" in line:
+                    nodes = int(line.split("nodes=")[1].split(":")[0])
+                    ppn = int(line.split("ppn=")[1])
+                else: raise ValueError("Unrecognized option: '" + line + "'")
+            else: raise ValueError("Unrecognized option: '" + line + "'")
+
+        # Create the jobscript object
+        jobscript = cls(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
+
+        # Set the commands and modules
+        jobscript.commands = commands
+        jobscript.modules = modules
+
+        # Set the path
+        jobscript.path = path
+
+        # Return the object
+        return jobscript
 
     # -----------------------------------------------------------------
 
