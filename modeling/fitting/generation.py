@@ -1014,7 +1014,10 @@ class Generation(object):
 
         host_id = self.get_host_id(name)
         simulation_id = self.get_simulation_id(name)
-        return has_simulation_for_host(host_id, simulation_id)
+        if not has_simulation_for_host(host_id, simulation_id): return False
+        else:
+            simulation = get_simulation_for_host(host_id, simulation_id)
+            return simulation == name
 
     # -----------------------------------------------------------------
 
@@ -1070,7 +1073,9 @@ class Generation(object):
         """
 
         # Load and return the simulation
-        return get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+        simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+        if simulation.name != name: raise RuntimeError("Wrong simulation!")
+        return simulation
 
     # -----------------------------------------------------------------
 
