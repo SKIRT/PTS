@@ -374,7 +374,7 @@ class SKIRTJobScript(_JobScript):
         mpi_command += " --hybrid " + str(processes_per_node)
 
         # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True)
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True, report_bindings=False)
 
         # Add the SKIRT command
         self.add_command(command, "Launch SKIRT")

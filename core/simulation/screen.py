@@ -121,6 +121,9 @@ class ScreenScript(object):
             # Add
             screen.add_simulation(arguments.simulation_name, arguments)
 
+        # Set the path
+        screen.path = path
+
         # Return the screen script
         return screen
 

@@ -137,12 +137,12 @@ class JobScript(object):
         lines.append("")
 
         # Import modules
-        lines.append("Load the necessary modules")
+        lines.append("# Load the necessary modules")
         for module in self.modules:
             lines.append("module load " + module)
 
         # Empty line
-        lines.append("")
+        #lines.append("")
 
         # Add the commands
         for command, comment in self.commands:

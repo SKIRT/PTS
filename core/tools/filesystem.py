@@ -237,16 +237,17 @@ def absolute_or_in_cwd(path):
 
 # -----------------------------------------------------------------
 
-def is_subdirectory(path, parent_path):
+def is_subdirectory(path, parent_path, check_existing=True):
 
     """
     This function returns whether
     :param path:
     :param parent_path:
+    :param check_existing:
     :return:
     """
 
-    if not is_directory(path): raise ValueError("Not a directory: " + path)
+    if check_existing and not is_directory(path): raise ValueError("Not a directory: " + path)
 
     path = os.path.realpath(path)
     parent_path = os.path.realpath(parent_path)

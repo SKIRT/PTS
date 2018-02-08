@@ -417,7 +417,7 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=True, to_string=False, remote=None):
+    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=True, to_string=False, remote=None, report_bindings=None):
 
         """
         This function ...
@@ -427,6 +427,7 @@ class SkirtArguments(object):
         :param bind_to_cores:
         :param to_string:
         :param remote:
+        :param report_bindings:
         :return:
         """
 
@@ -435,7 +436,7 @@ class SkirtArguments(object):
         mpirun_path = mpirun_path if mpirun_path is not None else self.mpirun_path
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, self.parallel.threads_per_core, scheduler, remote)
+        arguments = skirt_command(skirt_path, mpirun_path, bind_to_cores, self.parallel.processes, self.parallel.threads, self.parallel.threads_per_core, scheduler, remote, report_bindings=report_bindings)
 
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -566,7 +567,7 @@ class SkirtArguments(object):
 
 # -----------------------------------------------------------------
 
-def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None):
+def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None, report_bindings=None):
 
     """
     This function ...
@@ -578,6 +579,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
     :param threads_per_core:
     :param scheduler:
     :param remote:
+    :param report_bindings:
     :return:
     """
 
@@ -614,8 +616,10 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 
         # Add report bindings option
-        if remote is None: command += ["--report-bindings"] # assume most recent version
-        elif remote.mpi_has_report_bindings_option: command += ["--report-bindings"]
+        if remote is None:
+            if report_bindings is None: report_bindings = True # assume most recent version
+        elif report_bindings is None: report_bindings = remote.mpi_has_report_bindings_option
+        if report_bindings: command += ["--report-bindings"]
 
         # Add the SKIRT path and return the final command list
         command += [skirt_path]

@@ -74,6 +74,10 @@ definition.add_optional("jobscripts_path", "directory_path", "path of the direct
 
 # Flags
 definition.add_flag("dry", "run in dry mode")
+definition.add_flag("mail", "send mail when jobs start")
+
+# Give remote input directory
+definition.add_optional("remote_input_path", "string", "remote input directory")
 
 # Read the command line arguments
 config = parse_arguments("reschedule_simulations", definition, description="Relaunch simulations in a screen from a local script file")
@@ -114,7 +118,7 @@ if config.screen is not None:
         simulation_names = sequences.get_last_values(screen.simulation_names, config.nsimulations)
 
         # Give warning that simulations are still in the queue (cannot stop the queue without stopping other simulations)
-        log.warning("The simulations will still in the queue of remote host '" + screen.host_id + "'")
+        log.warning("The simulations will still be in the queue of remote host '" + screen.host_id + "'")
 
     # Not-finished simulations from the screen
     else:
@@ -277,13 +281,15 @@ for simulation_name in simulations:
     logging = logging_options[simulation_name] if logging_options is not None else None
 
     # Is this simulation shared?
-    shared = sequences.in_one(simulation_name, shared_groups, allow_more=False)
-    if shared:
-        # Determine key
-        shared_key = tuple(sequences.pick_contains(shared_groups, simulation_name))
-        if shared_key in shared_input_paths: remote_input_path = shared_input_paths[shared_key]
-        else: remote_input_path = None
-    else: shared_key = remote_input_path = None
+    if config.remote_input_path is not None: remote_input_path = config.remote_input_path
+    else:
+        shared = sequences.in_one(simulation_name, shared_groups, allow_more=False)
+        if shared:
+            # Determine key
+            shared_key = tuple(sequences.pick_contains(shared_groups, simulation_name))
+            if shared_key in shared_input_paths: remote_input_path = shared_input_paths[shared_key]
+            else: remote_input_path = None
+        else: shared_key = remote_input_path = None
 
     # Set scheduling options
     scheduling_options = SchedulingOptions()
@@ -292,6 +298,7 @@ for simulation_name in simulations:
     scheduling_options.full_node = True
     scheduling_options.walltime = runtime * 1.2
     if config.jobscripts_path is not None: scheduling_options.local_jobscript_path = fs.join(config.jobscripts_path, simulation_name + ".sh")
+    scheduling_options.mail = config.mail
 
     # Show
     #print(logging)

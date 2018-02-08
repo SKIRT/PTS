@@ -610,7 +610,7 @@ class SKIRTRemote(Remote):
         local_output_path = definition.output_path
 
         # Create the remote simulation directory
-        remote_simulation_path = self.create_simulation_directory(definition, clear_existing=clear_existing, dry=dry)
+        remote_simulation_path = self.create_simulation_directory(definition, clear_existing=clear_existing, dry=dry, remote_input_path=remote_input_path)
 
         # Set the name if none is given
         if name is None: name = fs.name(remote_simulation_path) # = remote_simulation_name
@@ -626,7 +626,9 @@ class SKIRTRemote(Remote):
         if scheduling_options is not None: self.scheduling_options[name] = scheduling_options
 
         # Generate a new simulation ID based on the ID's currently in use
-        if simulation_id is not None: simulation_id = self._new_simulation_id()
+        if simulation_id is None: simulation_id = self._new_simulation_id()
+        # Check that the simulation ID is an integer
+        if not types.is_integer_type(simulation_id): raise ValueError("Simulation ID should be an integer")
 
         # Create a simulation object
         simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
@@ -748,7 +750,6 @@ class SKIRTRemote(Remote):
         handles = dict()
 
         # Loop over the items in the queue
-        #for arguments, name in self.queue:
         for name in self.simulation_names:
 
             # Get entry in the queue
@@ -1091,13 +1092,14 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_directory(self, definition, clear_existing=False, dry=False):
+    def create_simulation_directory(self, definition, clear_existing=False, dry=False, remote_input_path=None):
 
         """
         This function ...
         :param definition:
         :param clear_existing:
         :param dry:
+        :param remote_input_path:
         :return:
         """
 
@@ -1111,7 +1113,9 @@ class SKIRTRemote(Remote):
 
         # Determine the full path of the simulation directory on the remote system
         remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
-        if self.is_directory(remote_simulation_path):
+        if remote_input_path is not None: contains_input = self.is_subdirectory(remote_input_path, remote_simulation_path)
+        else: contains_input = False
+        if self.is_directory(remote_simulation_path) and not contains_input:
             if clear_existing:
                 if not dry: self.remove_directory(remote_simulation_path)
                 else: log.warning("[DRY] Not removing directory '" + remote_simulation_path + "' ...")
@@ -1172,7 +1176,9 @@ class SKIRTRemote(Remote):
         remote_input_path = self.prepare_input(definition.input_path, remote_simulation_path, remote_input_path, has_remote_input=has_remote_input, dry=dry)
 
         # Create the remote output directory
-        if not dry: self.create_directory(remote_output_path)
+        if not self.is_directory(remote_output_path):
+            if not dry: self.create_directory(remote_output_path)
+            else: log.warning("[DRY] Not creating directory '" + remote_output_path + "' ...")
 
         # Set the remote ski file path
         local_ski_path = definition.ski_path
@@ -1441,6 +1447,7 @@ class SKIRTRemote(Remote):
         # module spider mympirun
         #modules.append("vsc-mympirun/3.4.3-intel-2016b-Python-2.7.12")
         modules.append("iimpi/2016b") # this loads GCC, icc, impi, python, iimpi, vsc-base, vsc-mympirun etc.
+        modules.append("vsc-mympirun") # this loads mympirun
 
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = fs.name(local_jobscript_path)
@@ -1475,7 +1482,9 @@ class SKIRTRemote(Remote):
         # Upload and submit
         job_id = None
         if dry: log.warning("[DRY] Dry mode is enabled, run job '" + jobscript_name + "' by locating the job script file at '" + local_jobscript_path + "' and following the instructions therein")
-        else: job_id = self.upload_and_submit_job(local_jobscript_path, remote_jobscript_path, remote_simulation_path)
+        else:
+            job_id = self.upload_and_submit_job(local_jobscript_path, remote_jobscript_path, remote_simulation_path)
+            log.debug("The job ID for the simulation is '" + str(job_id) + "'")
 
         # Return the job ID
         return job_id
