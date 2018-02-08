@@ -1523,7 +1523,8 @@ class SKIRTRemote(Remote):
 
         # Create the job script
         jobscript = SKIRTJobScript(name, arguments, self.host.cluster, self.skirt_path, self.host.mpi_command, walltime,
-                                   modules, mail=mail, bind_to_cores=self.host.force_process_binding, extra_header_lines=header_lines)
+                                   modules, mail=mail, bind_to_cores=self.host.force_process_binding,
+                                   extra_header_lines=header_lines, hyperthreading=self.use_hyperthreading_skirt)
 
         # Save the job script locally
         if save_jobscript: jobscript.saveto(local_jobscript_path)

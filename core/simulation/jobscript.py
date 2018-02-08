@@ -292,7 +292,7 @@ class SKIRTJobScript(_JobScript):
     """
 
     def __init__(self, name, arguments, cluster, skirt_path, mpi_command, walltime, modules, mail=False,
-                 bind_to_cores=False, extra_header_lines=None):
+                 bind_to_cores=False, extra_header_lines=None, hyperthreading=None):
 
         """
         The constructor ...
@@ -305,6 +305,7 @@ class SKIRTJobScript(_JobScript):
         :param mail:
         :param bind_to_cores:
         :param extra_header_lines:
+        :param hyperthreading:
         """
 
         # Determine the paths to the output and error files
@@ -312,7 +313,15 @@ class SKIRTJobScript(_JobScript):
         error_file_path = fs.join(arguments.output_path, "error_" + name + ".txt")
 
         cores_per_node = cluster.cores_per_socket * cluster.sockets_per_node
-        threads_per_core = cluster.threads_per_core
+
+        # Set number of threads per core
+        if hyperthreading is None: hyperthreading = cluster.threads_per_core > 1
+
+        # Set number of threads per core based on hyperthreading flag
+        if hyperthreading: threads_per_core = cluster.threads_per_core
+        else: threads_per_core = 1
+
+        # Determine number of threads per node
         threads_per_node = threads_per_core * cores_per_node
 
         # Determine number of processors per process
