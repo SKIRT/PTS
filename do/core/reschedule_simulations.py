@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.simulation.screen import ScreenScript
@@ -25,6 +28,9 @@ from pts.core.tools.stringify import tostr
 from pts.core.launch.options import LoggingOptions
 from pts.core.advanced.runtimeestimator import RuntimeEstimator
 from pts.core.launch.timing import TimingTable
+from pts.core.basics.handle import ExecutionHandle
+from pts.core.launch.batchlauncher import SimulationAssignmentTable
+from pts.core.launch.options import SchedulingOptions
 
 # -----------------------------------------------------------------
 
@@ -58,6 +64,16 @@ definition.add_optional("runtime", "time_quantity", "estimated runtime for the s
 
 # Logging options
 definition.import_section_from_composite_class("logging", "logging options", LoggingOptions)
+
+# Flags
+definition.add_flag("backup", "make backup of the screen script, assignment scheme, and the original simulation objects")
+definition.add_optional("backup_path", "directory_path", "backup directory path")
+
+# Jobscripts path
+definition.add_optional("jobscripts_path", "directory_path", "path of the directory for the jobscripts to be saved locally")
+
+# Flags
+definition.add_flag("dry", "run in dry mode")
 
 # Read the command line arguments
 config = parse_arguments("reschedule_simulations", definition, description="Relaunch simulations in a screen from a local script file")
@@ -98,7 +114,7 @@ if config.screen is not None:
         simulation_names = sequences.get_last_values(screen.simulation_names, config.nsimulations)
 
         # Give warning that simulations are still in the queue (cannot stop the queue without stopping other simulations)
-        log.warning("The simulations are still in the queue")
+        log.warning("The simulations will still in the queue of remote host '" + screen.host_id + "'")
 
     # Not-finished simulations from the screen
     else:
@@ -158,9 +174,6 @@ elif config.ids is not None:
     # Check that the remote host has been specified
     if config.from_host is None: raise ValueError("From host must be specified")
 
-    # Get the names
-    #simulation_names =
-
     # Get the simulations
     simulations = dict()
     for simulation_id in config.ids:
@@ -170,6 +183,9 @@ elif config.ids is not None:
 
         # Add the simulation under its name
         simulations[simulation.name] = simulation
+
+    # Set the simulation names
+    simulation_names = [simulation.name for simulation in simulations]
 
 # Nothing
 else: raise ValueError("Too little input")
@@ -204,7 +220,6 @@ if remote.scheduler:
         # Get number of wavelengths and number of dust cells
         nwavelengths = first_ski.get_nwavelengths(input_path=first_simulation.input)
         ncells = first_ski.get_ncells(input_path=first_simulation.input)
-
         #print("nwavelengths:", nwavelengths)
         #print("ncells:", ncells)
 
@@ -212,36 +227,174 @@ if remote.scheduler:
         runtime = runtime_estimator.runtime_for(first_ski, config.parallelization, config.host.id, config.host.cluster_name, nwavelengths=nwavelengths, ncells=ncells, plot_path=plot_path)
 
         # Debugging
-        log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
+        log.debug("The estimated runtime for this host is " + str(runtime) + " seconds (" + str(runtime/3600) + " hours)")
 
     # No timing info
     else: raise ValueError("When scheduling to remote with scheduling system, runtime or timing table path must be specified")
 
+# No scheduling system: runtime doesn't have to be calculated
+else: runtime = None
+
 # -----------------------------------------------------------------
+
+shared_input = defaultdict(list)
+
+# Check which simulations share input
+for simulation_name in simulations:
+
+    simulation = simulations[simulation_name]
+    remote_input_path = simulation.remote_input_path
+    if remote_input_path is None: continue
+
+    # Add name for this input directory
+    shared_input[remote_input_path].append(simulation_name)
+
+# -----------------------------------------------------------------
+
+shared_groups = shared_input.values()
+#print(shared_groups)
+
+# -----------------------------------------------------------------
+
+shared_input_paths = dict()
+
+# -----------------------------------------------------------------
+
+# Create list of the new simulations
+new_simulations = []
 
 # Loop over the simulations
 for simulation_name in simulations:
 
-    print(simulation_name)
+    # Inform the user
+    log.info("Adding simulation '" + simulation_name + "' to the remote queue ...")
 
+    # Get simulation
     simulation = simulations[simulation_name]
-    handle = simulation.handle
-    #print(handle)
+    #handle = simulation.handle
 
-    # Get definition
-    #definition = simulation.definition
-    #print(definition)
+    # Get logging options
     logging = logging_options[simulation_name] if logging_options is not None else None
-    #arguments = simulation.get_arguments(logging_options=logging, parallelization=config.parallelization)
-    #print(arguments)
+
+    # Is this simulation shared?
+    shared = sequences.in_one(simulation_name, shared_groups, allow_more=False)
+    if shared:
+        # Determine key
+        shared_key = tuple(sequences.pick_contains(shared_groups, simulation_name))
+        if shared_key in shared_input_paths: remote_input_path = shared_input_paths[shared_key]
+        else: remote_input_path = None
+    else: shared_key = remote_input_path = None
+
+    # Set scheduling options
+    scheduling_options = SchedulingOptions()
+    scheduling_options.nodes = 1
+    scheduling_options.ppn = remote.host.cluster.sockets_per_node * remote.host.cluster.cores_per_socket # full node
+    scheduling_options.full_node = True
+    scheduling_options.walltime = runtime * 1.2
+    if config.jobscripts_path is not None: scheduling_options.local_jobscript_path = fs.join(config.jobscripts_path, simulation_name + ".sh")
+
+    # Show
+    #print(logging)
+    #print(config.parallelization)
+    #print(scheduling_options)
+    #continue
 
     # Add to the queue
     new_simulation = remote.add_to_queue(simulation.definition, name=simulation_name, logging_options=logging,
-                                         parallelization=config.parallelization, simulation_id=simulation.id, save_simulation=False)
+                                         parallelization=config.parallelization, remote_input_path=remote_input_path,
+                                         clear_existing=True, dry=config.dry, scheduling_options=scheduling_options)
+
+    #print(new_simulation.remote_input_path)
+
+    # If the input directory is shared between the different simulations
+    if shared and shared_key not in shared_input_paths: shared_input_paths[shared_key] = new_simulation.remote_input_path
+
+    # Add the new simulation
+    new_simulations.append(new_simulation)
 
 # -----------------------------------------------------------------
 
 # Launch the queue
-remote.start_queue()
+handles = remote.start_queue(dry=config.dry)
+
+# -----------------------------------------------------------------
+
+# Set the handles
+for simulation in new_simulations:
+
+    # If all simulations should have the same handle
+    if isinstance(handles, ExecutionHandle): simulation.handle = handles
+    else: simulation.handle = handles[simulation.name]  # get the handle for this particular simulation
+
+    # Save the simulation
+    if not config.dry: simulation.save()
+
+# -----------------------------------------------------------------
+
+# Make backups
+if config.backup:
+
+    # Create backup directory
+    if config.backup_path is None: backup_path = fs.create_directory_in_cwd("backup_reschedule")
+    else: backup_path = config.backup_path
+
+    # Backup screen script
+    if config.screen is not None: fs.copy_file(config.screen, backup_path)
+
+    # Backup assignment table
+    if config.assignment is not None: fs.copy_file(config.assignment, backup_path)
+
+    # Backup the simulation files
+    for simulation_name in simulations: fs.copy_file(simulations[simulation_name].path, backup_path)
+
+# -----------------------------------------------------------------
+
+# Remove the original simulation files
+for simulation_name in simulations:
+
+    simulation = simulations[simulation_name]
+    if not config.dry: fs.remove_file(simulation.path)
+    else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
+
+# -----------------------------------------------------------------
+
+# Clear the list of simulations
+simulations = []
+
+# -----------------------------------------------------------------
+
+# Adapt the screen script
+if config.screen is not None:
+
+    # Load screen script
+    screen = ScreenScript.from_file(config.screen)
+
+    # Remove the simulations that have been scheduled to the other remote
+    for simulation_name in simulation_names:
+
+        # Remove the simulation from the screen script
+        #if not config.dry: screen.remove_simulation(simulation_name)
+        #else: log.warning("[DRY] Not removing the simulation entry '" + simulation_name + "' from the screen script ...")
+        screen.remove_simulation(simulation_name)
+
+    # Save the screen script
+    if not config.dry: screen.save()
+
+# Adapt the assignment scheme
+if config.assignment is not None:
+
+    # Load the assignment scheme
+    assignment = SimulationAssignmentTable.from_file(config.assignment)
+
+    # Change the assignment
+    for simulation in new_simulations:
+
+        # Set properties
+        assignment.set_host_for_simulation(simulation.name, config.host, config.cluster_name)
+        assignment.set_id_for_simulation(simulation.name, simulation.id)
+        assignment.set_success_for_simulation(simulation.name)
+
+    # Save the assignment scheme
+    if not config.dry: assignment.save()
 
 # -----------------------------------------------------------------

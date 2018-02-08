@@ -575,6 +575,20 @@ def create_directory_in(base_path, name, clear=False, recursive=False):
 
 # -----------------------------------------------------------------
 
+def create_directory_in_cwd(name, clear=False):
+
+    """
+    This function ...
+    :param name:
+    :param clear:
+    :param recursive:
+    :return:
+    """
+    
+    return create_directory_in(cwd(), name, clear=clear)
+
+# -----------------------------------------------------------------
+
 def create_directories(*paths, **kwargs):
     
     """

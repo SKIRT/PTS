@@ -1306,6 +1306,27 @@ def in_all(item, sequences):
 
 # -----------------------------------------------------------------
 
+def in_one(item, sequences, allow_more=True):
+
+    """
+    This function ...
+    :param item:
+    :param sequences:
+    :param allow_more:
+    :return:
+    """
+
+    count = 0
+    for sequence in sequences:
+        if item in sequence: count += 1
+
+    if count == 0: return False
+    elif count == 1: return True
+    elif allow_more: return False
+    else: raise ValueError("Count > 1")
+
+# -----------------------------------------------------------------
+
 def in_some(item, sequences):
 
     """
@@ -1318,6 +1339,21 @@ def in_some(item, sequences):
     for sequence in sequences:
         if item in sequence: return True
     return False
+
+# -----------------------------------------------------------------
+
+def pick_contains(sequences, item):
+
+    """
+    This function ...
+    :param sequences:
+    :param item:
+    :return:
+    """
+
+    for sequence in sequences:
+        if item in sequence: return sequence
+    return None
 
 # -----------------------------------------------------------------
 

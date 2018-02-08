@@ -35,6 +35,7 @@ from ..tools import numbers
 from .output import get_output_type, get_parent_type
 from .data import SimulationData
 from .screen import ScreenScript
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -425,7 +426,7 @@ class SKIRTRemote(Remote):
         self.local_skirt_host_run_dir = None
 
         # Initialize an empty list for the simulation queue
-        self.queue = []
+        self.queue = OrderedDict()
 
         # Initialize a dictionary for the scheduling options
         self.scheduling_options = dict()
@@ -551,9 +552,33 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.queue.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulation_names)
+
+    # -----------------------------------------------------------------
+
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
                      remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False,
-                     simulation_id=None, save_simulation=True):
+                     simulation_id=None, save_simulation=True, clear_existing=False, dry=False):
 
         """
         This function ...
@@ -568,6 +593,8 @@ class SKIRTRemote(Remote):
         :param has_remote_input:
         :param simulation_id:
         :param save_simulation:
+        :param clear_existing:
+        :param dry:
         :return:
         """
 
@@ -577,22 +604,23 @@ class SKIRTRemote(Remote):
         # If a name is given for the simulation, check whether it doesn't contain spaces
         if name is not None and " " in name: raise ValueError("The simulation name cannot contain spaces")
 
-        # Get local input and output path
+        # Get local ski path, local input and output path
+        local_ski_path = definition.ski_path
         local_input_path = definition.input_path
         local_output_path = definition.output_path
 
         # Create the remote simulation directory
-        remote_simulation_path = self.create_simulation_directory(definition)
-        remote_simulation_name = fs.name(remote_simulation_path)
+        remote_simulation_path = self.create_simulation_directory(definition, clear_existing=clear_existing, dry=dry)
 
         # Set the name if none is given
-        if name is None: name = remote_simulation_name
+        if name is None: name = fs.name(remote_simulation_path) # = remote_simulation_name
 
         # Make preparations for this simulation, create the SkirtArguments object
-        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate, has_remote_input=has_remote_input)
+        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate, has_remote_input=has_remote_input, dry=dry)
 
         # Add the SkirtArguments object to the queue
-        self.queue.append((arguments, name))
+        if name in self.simulation_names: raise ValueError("Simulation name '" + name + "' is not unique")
+        self.queue[name] = (arguments, local_ski_path, local_input_path, local_output_path)
 
         # If scheduling options are defined, add them to the dictionary
         if scheduling_options is not None: self.scheduling_options[name] = scheduling_options
@@ -613,24 +641,25 @@ class SKIRTRemote(Remote):
         if analysis_options is not None: simulation.set_analysis_options(analysis_options)
 
         # Save the simulation object
-        if save_simulation: simulation.save()
+        if save_simulation:
+            if not dry: simulation.save()
+            else: log.warning("[DRY] Not saving the simulation object ...")
 
         # Return the simulation object
         return simulation
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, queue_name=None, local_script_path=None, screen_output_path=None, group_simulations=False,
-                    group_walltime=None, use_pts=False, jobscripts_path=None, attached=False, dry=False):
+    def start_queue(self, queue_name=None, local_script_path=None, screen_output_path=None, schedule_method="separate",
+                    group_walltime=None, jobscripts_path=None, attached=False, dry=False):
 
         """
         This function ...
         :param queue_name:
         :param local_script_path:
         :param screen_output_path:
-        :param group_simulations:
+        :param schedule_method:
         :param group_walltime:
-        :param use_pts:
         :param jobscripts_path:
         :param attached:
         :param dry:
@@ -647,9 +676,7 @@ class SKIRTRemote(Remote):
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
-        if self.scheduler: handles = self.start_queue_jobs(group_simulations=group_simulations,
-                                                           group_walltime=group_walltime,
-                                                           use_pts=use_pts,
+        if self.scheduler: handles = self.start_queue_jobs(schedule_method, group_walltime=group_walltime,
                                                            jobscripts_path=jobscripts_path, queue_name=queue_name, dry=dry)
 
         # Else, initiate a screen session in which the simulations are executed
@@ -663,14 +690,12 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_jobs(self, group_simulations=False, group_walltime=None, use_pts=False, jobscripts_path=None,
-                         queue_name=None, dry=False):
+    def start_queue_jobs(self, method="separate", group_walltime=None, jobscripts_path=None, queue_name=None, dry=False):
 
         """
         This function ...
-        :param group_simulations:
+        :param method: 'separate', 'worker', 'group', 'pts'
         :param group_walltime:
-        :param use_pts:
         :param jobscripts_path:
         :param queue_name:
         :param dry:
@@ -680,51 +705,122 @@ class SKIRTRemote(Remote):
         # Inform the user
         log.info("Starting the queue by scheduling the simulations in one or multiple jobs ...")
 
+        # Determine the preferred walltime per job
+        # For group methods
+        preferred_walltime = group_walltime if group_walltime is not None else self.host.preferred_walltime
+
         # Determine queue name
         if queue_name is None: queue_name = time.unique_name("simulations")
 
-        # Group simulations in one job script
-        if group_simulations:
+        # Schedule simulations as separate jobs
+        if method == "separate": handles = self._start_queue_jobs_separate(jobscripts_path=jobscripts_path, dry=dry)
 
-            # Determine the preferred walltime per job
-            preferred_walltime = group_walltime if group_walltime is not None else self.host.preferred_walltime
+        # Use the worker framework
+        elif method == "worker": handles = self._start_queue_jobs_worker(dry=dry)
 
-            # Use PTS or jobs
-            if use_pts: handles = self._start_queue_jobs_pts(preferred_walltime, queue_name)
-            else: handles = self._start_queue_jobs_groups(preferred_walltime, jobscripts_path)
+        # Group simulations in jobs
+        elif method == "group": handles = self._start_queue_jobs_groups(preferred_walltime, jobscripts_path, dry=dry)
 
-        # Don't group simulations
-        else:
+        # Dynamic method
+        elif method == "pts": handles = self._start_queue_jobs_pts(preferred_walltime, queue_name, dry=dry)
 
-            # Initialize a list to contain the execution handles
-            handles = dict()
-
-            # Loop over the items in the queue
-            for arguments, name in self.queue:
-
-                # Check whether scheduling options are defined for this simulation
-                scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
-
-                # Submit the simulation to the remote scheduling system
-                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, jobscript_dir_path=jobscripts_path, dry=dry)
-
-                # Set the execution handle
-                if job_id is not None: handle = ExecutionHandle.job(job_id, self.host_id)
-                else: handle = ExecutionHandle.postponed(self.host_id)
-                handles[name] = handle
+        # Invalid method
+        else: raise ValueError("Invalid method: '" + method + "'")
 
         # Return execution handles
         return handles
 
     # -----------------------------------------------------------------
 
-    def _start_queue_jobs_pts(self, preferred_walltime, queue_name):
+    def _start_queue_jobs_separate(self, jobscripts_path=None, dry=False):
+
+        """
+        This function ...
+        :param jobscripts_path:
+        :param dry:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Starting simulations in the queue as separate jobs ...")
+
+        # Initialize a list to contain the execution handles
+        handles = dict()
+
+        # Loop over the items in the queue
+        #for arguments, name in self.queue:
+        for name in self.simulation_names:
+
+            # Get entry in the queue
+            arguments, local_ski_path, local_input_path, local_output_path = self.queue[name]
+
+            # Check whether scheduling options are defined for this simulation
+            scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+
+            # Submit the simulation to the remote scheduling system
+            job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=local_ski_path, jobscript_dir_path=jobscripts_path, dry=dry)
+
+            # Set the execution handle
+            if job_id is not None: handle = ExecutionHandle.job(job_id, self.host_id)
+            else: handle = ExecutionHandle.postponed(self.host_id)
+            handles[name] = handle
+
+        # Return the handles
+        return handles
+
+    # -----------------------------------------------------------------
+
+    def _start_queue_jobs_worker(self, dry=False):
+
+        """
+        This function ...
+        :param dry:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Starting simulations in the queue within the worker framework ...")
+
+        # Loop over the items in the queue
+        #for arguments, name in self.queue:
+
+        #handle = ExecutionHandle.group_job(job_id, self.host_id)
+
+        # Return the handle(s)
+        #return handle
+
+        # EXAMPLE:
+        ## !/bin/bash -l
+        ## PBS -l nodes=1:ppn=1
+        ## PBS -l walltime=00:15:00
+        #cd $PBS_O_WORKDIR
+        #INPUT_FILE = "input_${PBS_ARRAYID}.dat"
+        #OUTPUT_FILE = "output_${PBS_ARRAYID}.dat"
+        #my_prog - input ${INPUT_FILE} - output ${OUTPUT_FILE}
+
+        # SUBMISSION:
+        # wsub -t 1-100 -batch test_set.pbs
+        # OUTPUT:
+        # total number of work items: 100
+        # 123456.master15.delcatty.gent.vsc
+
+        raise NotImplementedError("")
+
+    # -----------------------------------------------------------------
+
+    def _start_queue_jobs_pts(self, preferred_walltime, queue_name, dry=False):
 
         """
         This function ...
         :param preferred_walltime:
+        :param dry:
         :return:
         """
+
+        # Debugging
+        log.debug("Starting simulations in the queue using dynamic group assignment with PTS ...")
+
+        if dry: raise NotImplementedError("Not yet implemented")
 
         # Initialize a list to contain the execution handles
         #handles = dict()
@@ -770,14 +866,20 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def _start_queue_jobs_groups(self, preferred_walltime, jobscripts_path):
+    def _start_queue_jobs_groups(self, preferred_walltime, jobscripts_path, dry=False):
 
         """
         This function ...
         :param preferred_walltime:
         :param jobscripts_path:
+        :param dry:
         :return:
         """
+
+        # Debugging
+        log.debug("Starting simulations in the queue using grouping into jobs ...")
+
+        if dry: raise NotImplementedError("Not implemented")
 
         # Initialize a list to contain the execution handles
         handles = dict()
@@ -792,7 +894,11 @@ class SKIRTRemote(Remote):
         simulations_for_job = []
 
         # Loop over the items in the queue
-        for arguments, name in self.queue:
+        #for arguments, name in self.queue:
+        for name in self.simulation_names:
+
+            # Get entry in the queue
+            arguments, local_ski_path, local_input_path, local_output_path = self.queue[name]
 
             # Get the estimated walltime
             estimated_walltime = self.scheduling_options[name].walltime
@@ -868,7 +974,10 @@ class SKIRTRemote(Remote):
         screen = ScreenScript(screen_name, self.host_id, screen_output_path, skirt_path=self.skirt_path, mpirun_path=self.mpirun_path, remote=self)
 
         # Loop over the items in the queue, add a line for each simulation
-        for arguments, name in self.queue: screen.add_simulation(name, arguments)
+        #for arguments, name in self.queue: screen.add_simulation(name, arguments)
+        for name in self.simulation_names:
+            arguments, local_ski_path, local_input_path, local_output_path = self.queue[name]
+            screen.add_simulation(name, arguments)
 
         # Determine local script path
         if local_script_path is None: local_script_path = fs.join(introspection.pts_temp_dir, screen_name + ".sh")
@@ -896,7 +1005,8 @@ class SKIRTRemote(Remote):
         """
 
         # Empty the queue and clear the scheduling options dictionary
-        self.queue = []
+        #self.queue = []
+        self.queue = OrderedDict()
         self.scheduling_options = dict()
 
     # -----------------------------------------------------------------
@@ -981,11 +1091,13 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_directory(self, definition):
+    def create_simulation_directory(self, definition, clear_existing=False, dry=False):
 
         """
         This function ...
         :param definition:
+        :param clear_existing:
+        :param dry:
         :return:
         """
 
@@ -999,10 +1111,15 @@ class SKIRTRemote(Remote):
 
         # Determine the full path of the simulation directory on the remote system
         remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
-        if self.is_directory(remote_simulation_path): raise IOError("Simulation directory already exists")
+        if self.is_directory(remote_simulation_path):
+            if clear_existing:
+                if not dry: self.remove_directory(remote_simulation_path)
+                else: log.warning("[DRY] Not removing directory '" + remote_simulation_path + "' ...")
+            else: raise IOError("Simulation directory already exists")
 
         # Create the remote simulation directory
-        self.create_directory(remote_simulation_path)
+        if not dry: self.create_directory(remote_simulation_path)
+        else: log.warning("[DRY] Not creating directory '" + remote_simulation_path + "' ...")
 
         # Return the path to the remote simulation directory
         return remote_simulation_path
@@ -1010,7 +1127,7 @@ class SKIRTRemote(Remote):
     # -----------------------------------------------------------------
 
     def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None,
-                emulate=False, has_remote_input=False):
+                emulate=False, has_remote_input=False, dry=False):
 
         """
         This function ...
@@ -1021,6 +1138,7 @@ class SKIRTRemote(Remote):
         :param remote_input_path:
         :param emulate:
         :param has_remote_input:
+        :param dry:
         :return:
         """
 
@@ -1032,7 +1150,9 @@ class SKIRTRemote(Remote):
 
             # Create the output directory
             output_path = self.absolute_path(self.host.output_path)
-            if not self.is_directory(output_path): self.create_directory(output_path)
+            if not self.is_directory(output_path):
+                if not dry: self.create_directory(output_path)
+                else: log.warning("[DRY] Not creating directory '" + output_path + "' ...")
 
             # Get the name of the remote simulation directory and use use that name for the output directory
             remote_simulation_name = fs.name(remote_simulation_path)
@@ -1049,10 +1169,10 @@ class SKIRTRemote(Remote):
         else: remote_output_path = fs.join(remote_simulation_path, "out")
 
         # Prepare the input (upload it)
-        remote_input_path = self.prepare_input(definition.input_path, remote_simulation_path, remote_input_path, has_remote_input=has_remote_input)
+        remote_input_path = self.prepare_input(definition.input_path, remote_simulation_path, remote_input_path, has_remote_input=has_remote_input, dry=dry)
 
         # Create the remote output directory
-        self.create_directory(remote_output_path)
+        if not dry: self.create_directory(remote_output_path)
 
         # Set the remote ski file path
         local_ski_path = definition.ski_path
@@ -1065,14 +1185,15 @@ class SKIRTRemote(Remote):
         arguments.output_path = remote_output_path
 
         # Copy the input directory and the ski file to the remote host
-        self.upload(local_ski_path, remote_simulation_path)
+        if not dry: self.upload(local_ski_path, remote_simulation_path)
+        else: log.warning("[DRY] Not uploading '" + local_ski_path + "' to '" + remote_simulation_path + "' ...")
 
         # Return the SKIRT arguments instance
         return arguments
 
     # -----------------------------------------------------------------
 
-    def prepare_input(self, input_path, remote_simulation_path, remote_input_path=None, has_remote_input=False):
+    def prepare_input(self, input_path, remote_simulation_path, remote_input_path=None, has_remote_input=False, dry=False):
 
         """
         This function ...
@@ -1080,6 +1201,7 @@ class SKIRTRemote(Remote):
         :param remote_simulation_path:
         :param remote_input_path:
         :param has_remote_input:
+        :param dry:
         :return:
         """
 
@@ -1099,7 +1221,8 @@ class SKIRTRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Copy the input directory to the remote host
-                self.upload(input_path, remote_input_path, show_output=True)
+                if not dry: self.upload(input_path, remote_input_path, show_output=True)
+                else: log.warning("[DRY] Not uploading '" + input_path + "' to '" + remote_input_path + "' ...")
 
             # The specified remote input directory (for re-usage of already uploaded input) does not exist
             else:
@@ -1119,7 +1242,8 @@ class SKIRTRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Create the remote directory
-                self.create_directory(remote_input_path)
+                if not dry: self.create_directory(remote_input_path)
+                else: log.warning("[DRY] Not creating directory '" + remote_input_path + "' ...")
 
                 # Check which files are actually local and which are already remote
                 if has_remote_input:
@@ -1130,10 +1254,13 @@ class SKIRTRemote(Remote):
                 else: remote_input_file_paths = None
 
                 # Upload the local input files to the new remote directory
-                self.upload(local_input_file_paths, remote_input_path)
+                if not dry: self.upload(local_input_file_paths, remote_input_path)
+                else: log.warning("[DRY] Not uploading '" + tostr(local_input_file_paths) + "' to '" + remote_input_path + "' ...")
 
                 # Copy the already remote files to the new remote directory
-                if remote_input_file_paths is not None: self.copy_files(remote_input_file_paths, remote_input_path)
+                if remote_input_file_paths is not None:
+                    if dry: log.warning("[DRY] Not copying files '" + tostr(remote_input_file_paths) + "' to '" + remote_input_path + "' ...")
+                    else: self.copy_files(remote_input_file_paths, remote_input_path)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
             else:
@@ -1153,7 +1280,8 @@ class SKIRTRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Create the remote directory
-                self.create_directory(remote_input_path)
+                if not dry: self.create_directory(remote_input_path)
+                else: log.warning("[DRY] Not creating directory '" + remote_input_path + "' ...")
 
                 # Upload the local input files to the new remote directory
                 for name, path in input_path:
@@ -1162,7 +1290,8 @@ class SKIRTRemote(Remote):
                     log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
 
                     # Upload the file, giving it the desired name
-                    self.upload(path, remote_input_path, new_name=name)
+                    if not dry: self.upload(path, remote_input_path, new_name=name)
+                    else: log.warning("[DRY] Not uploading '" + path + "' to '" + remote_input_path)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
             else:
@@ -1179,7 +1308,8 @@ class SKIRTRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Create the remote directory
-                self.create_directory(remote_input_path)
+                if not dry: self.create_directory(remote_input_path)
+                else: log.warning("[DRY] Not creating directory '" + remote_input_path + "' ...")
 
                 # Upload the local input files to the new remote directory
                 for name, path in input_path.items():
@@ -1194,7 +1324,8 @@ class SKIRTRemote(Remote):
                             log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
 
                             # Upload
-                            self.upload(path, remote_input_path, new_name=name)
+                            if not dry: self.upload(path, remote_input_path, new_name=name)
+                            else: log.warning("[DRY] Not uploading '" + path + "' to '" + remote_input_path + "' ...")
 
                         # Is remote
                         elif self.is_file(path):
@@ -1203,7 +1334,8 @@ class SKIRTRemote(Remote):
                             log.debug("Copying the '" + path + "' file from '" + fs.directory_of(path) + "' to '" + remote_input_path + "' under the name '" + name + "'")
 
                             # Copy
-                            self.copy_file(path, remote_input_path, new_name=name)
+                            if not dry: self.copy_file(path, remote_input_path, new_name=name)
+                            else: log.warning("[DRY] Not copying file '" + path + "' to '" + remote_input_path + "' ...")
 
                         # Not found
                         else: raise ValueError("The input file '" + name + "' is not found remotely or locally")
@@ -1215,7 +1347,8 @@ class SKIRTRemote(Remote):
                         log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
 
                         # Upload the file, giving it the desired name
-                        self.upload(path, remote_input_path, new_name=name)
+                        if not dry: self.upload(path, remote_input_path, new_name=name)
+                        else: log.warning("[DRY] Not uploading '" + path + "' to '" + remote_input_path + "' ...")
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
             else:
@@ -1269,7 +1402,7 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None, dry=False):
+    def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None, dry=False, save_jobscript=True):
 
         """
         This function ...
@@ -1279,12 +1412,14 @@ class SKIRTRemote(Remote):
         :param local_ski_path:
         :param jobscript_dir_path:
         :param dry:
+        :param save_jobscript:
         :return:
         """
 
         # Inform the suer
         log.info("Scheduling simulation '" + name + "' on the remote host ...")
 
+        # Jobscript directory path is given
         if jobscript_dir_path is None:
 
             # Determine the jobscript path
@@ -1334,12 +1469,12 @@ class SKIRTRemote(Remote):
                                    modules, mail=mail, bind_to_cores=self.host.force_process_binding, extra_header_lines=header_lines)
 
         # Save the job script locally
-        jobscript.saveto(local_jobscript_path)
+        if save_jobscript: jobscript.saveto(local_jobscript_path)
+        else: jobscript.path = local_jobscript_path
 
         # Upload and submit
-        if dry:
-            log.warning("Dry mode is enabled, run job '" + jobscript_name + "' by locating the job script file at '" + local_jobscript_path + "' and following the instructions therein")
-            job_id = None
+        job_id = None
+        if dry: log.warning("[DRY] Dry mode is enabled, run job '" + jobscript_name + "' by locating the job script file at '" + local_jobscript_path + "' and following the instructions therein")
         else: job_id = self.upload_and_submit_job(local_jobscript_path, remote_jobscript_path, remote_simulation_path)
 
         # Return the job ID
@@ -1370,6 +1505,33 @@ class SKIRTRemote(Remote):
 
         # The queue number of the submitted job is used to identify this simulation
         job_id = int(output[0].split(".")[0])
+        return job_id
+
+    # -----------------------------------------------------------------
+
+    def upload_and_submit_worker_job(self, local_jobscript_path, local_data_path, remote_path):
+
+        """
+        This function ...
+        :param local_jobscript_path:
+        :param local_data_path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Uploading and submitting ")
+
+        # Upload
+
+        # Execute the command
+        command = "wsub -batch " + remote_jobscript_path + " -data " + remote_data_path
+        output = self.execute(command)
+
+        # Get the number of work items
+        nitems = int(output[0].split("work items: ")[1])
+
+        # Get the queue number
+        job_id = int(output[1].split(".")[0])
         return job_id
 
     # -----------------------------------------------------------------
