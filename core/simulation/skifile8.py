@@ -614,7 +614,7 @@ class SkiFile8:
 
     ## This function returns the tree sample count
     def tree_sample_count(self):
-        return int(self.get_dust_grid().attrib["sampleCount"])
+        return int(self.get_dust_grid().attrib["numSamples"])
 
     ## This function returns the maximum optical depth of the tree
     def tree_max_optical_depth(self):
@@ -626,7 +626,7 @@ class SkiFile8:
 
     # This function returns the maximum density dispersion of the tree
     def tree_max_dens_disp(self):
-        return float(self.get_dust_grid().attrib["maxDensDispFraction"])
+        return float(self.get_dust_grid().attrib["maxDensityDispersion"])
 
     ## This function returns the number of dust components
     def ncomponents(self):
