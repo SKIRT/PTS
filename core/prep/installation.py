@@ -394,7 +394,8 @@ class SKIRTInstaller(Installer):
 
         # Check if already present
         if fs.is_directory(self.skirt_root_path):
-            if self.config.force: fs.remove_directory(self.skirt_root_path)
+            if self.config.force: fs.remove_directories_in_path(self.skirt_root_path, exact_not_name="run")
+            #fs.remove_directory(self.skirt_root_path)
             elif self.config.finish: pass
             else: raise RuntimeError("SKIRT is already installed (or partly present)")
 
@@ -429,7 +430,8 @@ class SKIRTInstaller(Installer):
 
         # Check if already present
         if self.remote.is_directory(self.skirt_root_path):
-            if self.config.force: self.remote.remove_directory(self.skirt_root_path)
+            if self.config.force: self.remote.remove_directories_in_path(self.skirt_root_path, exact_not_name="run")
+            #self.remote.remove_directory(self.skirt_root_path)
             elif self.config.finish: pass
             else: raise RuntimeError("SKIRT is already installed (or partly present) on the remote host")
 

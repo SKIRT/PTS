@@ -3042,6 +3042,31 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def remove_directories(self, paths):
+
+        """
+        This function ...
+        :param paths:
+        :return:
+        """
+
+        for path in paths: self.remove_directory(path)
+
+    # -----------------------------------------------------------------
+
+    def remove_directories_in_path(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        self.remove_directories(self.directories_in_path(*args, **kwargs))
+
+    # -----------------------------------------------------------------
+
     def change_cwd(self, path):
 
         """
