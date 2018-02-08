@@ -24,13 +24,13 @@ from pts.core.basics.log import log
 from pts.core.remote.host import find_hosts, find_host_ids
 from pts.core.simulation.remote import get_simulation_for_host, get_simulations_for_host
 from pts.core.tools import sequences
-from pts.core.tools.stringify import tostr
 from pts.core.launch.options import LoggingOptions
 from pts.core.advanced.runtimeestimator import RuntimeEstimator
 from pts.core.launch.timing import TimingTable
 from pts.core.basics.handle import ExecutionHandle
 from pts.core.launch.batchlauncher import SimulationAssignmentTable
 from pts.core.launch.options import SchedulingOptions
+from pts.core.simulation.remote import is_finished_status
 
 # -----------------------------------------------------------------
 
@@ -81,22 +81,6 @@ definition.add_optional("remote_input_path", "string", "remote input directory")
 
 # Read the command line arguments
 config = parse_arguments("reschedule_simulations", definition, description="Relaunch simulations in a screen from a local script file")
-
-# -----------------------------------------------------------------
-
-#fs.set_nallowed_open_files(2000)
-
-# -----------------------------------------------------------------
-
-def is_finished_status(stat):
-
-    """
-    This function ...
-    :param stat:
-    :return:
-    """
-
-    return stat in ["finished", "retrieved", "analysed"]
 
 # -----------------------------------------------------------------
 

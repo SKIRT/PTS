@@ -19,6 +19,7 @@ from pts.core.simulation.remote import SKIRTRemote
 from pts.core.tools import filesystem as fs
 from pts.core.basics.log import log
 from pts.core.simulation.simulation import RemoteSimulation
+from pts.core.simulation.remote import is_finished_status
 
 # -----------------------------------------------------------------
 
@@ -121,7 +122,7 @@ for simulation_name in screen.simulation_names:
 
     # Check status
     status = simulations[simulation_name][1]
-    if status == "finished" or status == "retrieved" or status == "analysed":
+    if is_finished_status(status):
 
         # Relaunch finished simulations
         if config.finished:

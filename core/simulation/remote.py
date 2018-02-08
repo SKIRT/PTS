@@ -39,6 +39,18 @@ from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
+def is_finished_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat in ["finished", "retrieved", "analysed"]
+
+# -----------------------------------------------------------------
+
 def get_simulation_path_for_host(host_id, simulation_id):
 
     """
@@ -578,7 +590,7 @@ class SKIRTRemote(Remote):
 
     def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
                      remote_input_path=None, analysis_options=None, emulate=False, has_remote_input=False,
-                     simulation_id=None, save_simulation=True, clear_existing=False, dry=False):
+                     simulation_id=None, save_simulation=True, clear_existing=False, dry=False, simulation=None):
 
         """
         This function ...
@@ -595,6 +607,7 @@ class SKIRTRemote(Remote):
         :param save_simulation:
         :param clear_existing:
         :param dry:
+        :param simulation:
         :return:
         """
 
@@ -630,8 +643,9 @@ class SKIRTRemote(Remote):
         # Check that the simulation ID is an integer
         if not types.is_integer_type(simulation_id): raise ValueError("Simulation ID should be an integer")
 
-        # Create a simulation object
-        simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
+        # Create a simulation object (or adapt one)
+        if simulation is None: simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
+        else: self.adapt_simulation_object(simulation, arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
 
         # Set the parallelization properties to the simulation object
         processes = arguments.parallel.processes
@@ -1409,6 +1423,41 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    def adapt_simulation_object(self, simulation, arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path):
+
+        """
+        This function ...
+        :param simulation:
+        :param arguments:
+        :param name:
+        :param simulation_id:
+        :param remote_simulation_path:
+        :param local_ski_path:
+        :param local_input_path:
+        :param local_output_path:
+        :return:
+        """
+
+        # Set basic properties
+        simulation.ski_path = local_ski_path
+        simulation.input_path = local_input_path
+        simulation.output_path = local_output_path
+
+        # Set the host ID and cluster name (if applicable)
+        simulation.host_id = self.host_id
+        simulation.cluster_name = self.cluster_name
+
+        # Set other attributes
+        simulation.id = simulation_id
+        simulation.name = name
+        simulation.remote_ski_path = arguments.ski_pattern
+        simulation.remote_simulation_path = remote_simulation_path
+        simulation.remote_input_path = arguments.input_path
+        simulation.remote_output_path = arguments.output_path
+        simulation.submitted_at = time.timestamp()
+
+    # -----------------------------------------------------------------
+
     def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None, dry=False, save_jobscript=True):
 
         """
@@ -2107,12 +2156,10 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def iterate_simulations(self, invalid="ignore", add_path=False, simulation_names=None):
+    def iterate_simulations(self, simulation_names=None):
 
         """
         This function ...
-        :param invalid:
-        :param add_path:
         :param simulation_names:
         :return:
         """
@@ -2126,7 +2173,9 @@ class SKIRTRemote(Remote):
             try: simulation = RemoteSimulation.from_file(path)
             except EOFError:
 
-                log.error("The simulation file '" + path + "' is not readable: perhaps serialization has failed")
+                message = "The simulation file '" + path + "' is not readable: perhaps serialization has failed"
+
+                log.error(message)
                 remove = prompt_proceed("remove the simulation file?")
                 if remove: fs.remove_file(path)
                 log.error("Skipping this simulation ...")
@@ -2136,18 +2185,18 @@ class SKIRTRemote(Remote):
             if simulation_names is not None and simulation.name not in simulation_names: continue
 
             # Yield the simulation
-            if add_path: yield simulation, path
-            else: yield simulation
+            yield simulation
 
     # -----------------------------------------------------------------
 
-    def get_status(self, as_dict=False, returns=("path", "status"), simulation_names=None):
+    def get_status(self, as_dict=False, returns=("path", "status"), simulation_names=None, simulations=None):
 
         """
         This function ..
         :param as_dict:
         :param returns:
         :param simulation_names:
+        :param simulations:
         :return:
         """
 
@@ -2166,14 +2215,23 @@ class SKIRTRemote(Remote):
             jobs_status = self.get_jobs_status()
 
             # Start a remote python session
-            if self.has_pts: session = self.load_queues_in_session()
-            else: session = None
+            #if self.has_pts: session = self.load_queues_in_session()
+            #else: session = None
+            session = None
 
         # If the remote host does not use a scheduling system
         else: states = self.screen_states() # Get state of screen sessions
 
+        # Get the simulations
+        if simulations is None: simulations = self.iterate_simulations(simulation_names=simulation_names)
+        else:
+            if simulation_names is not None: raise ValueError("Cannot specify simulation names and simulation objects")
+            if types.is_dictionary(simulations): simulations = simulations.values()
+            elif types.is_sequence(simulations): pass
+            else: raise ValueError("Container type of the simulations not recognized")
+
         # Loop over the simulations for this remote host
-        for simulation, path in self.iterate_simulations(add_path=True, simulation_names=simulation_names):
+        for simulation in simulations:
 
             # Get the status of the simulation
             simulation_status = self.get_simulation_status(simulation, screen_states=states, jobs_status=jobs_status, session=session)
@@ -2182,7 +2240,7 @@ class SKIRTRemote(Remote):
             item = []
             for rtype in returns:
                 if rtype == "name": item.append(simulation.name)
-                elif rtype == "path": item.append(path)
+                elif rtype == "path": item.append(simulation.path)
                 elif rtype == "id": item.append(id)
                 elif rtype == "status": item.append(simulation_status)
                 elif rtype == "simulation": item.append(simulation)
@@ -2241,9 +2299,9 @@ class SKIRTRemote(Remote):
             if jobs_status is None: jobs_status = self.get_jobs_status()
 
             # Check session
-            if session is None:
-                if self.has_pts: session = self.load_queues_in_session()
-                else: session = None
+            #if session is None:
+                #if self.has_pts: session = self.load_queues_in_session()
+                #else: session = None
 
             # Get the status
             simulation_status = self._get_simulation_status_scheduler(simulation, jobs_status, session)
