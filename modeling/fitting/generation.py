@@ -956,13 +956,14 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_paths_for_host(self, host_id, as_dict=True, id_or_name="name"):
+    def get_simulation_paths_for_host(self, host_id, as_dict=True, id_or_name="name", not_exist="error"):
 
         """
         This function ...
         :param host_id:
         :param as_dict:
         :param id_or_name:
+        :param not_exist:
         :return:
         """
 
@@ -972,7 +973,12 @@ class Generation(object):
 
             # Get the filepath
             filepath = get_simulation_path_for_host(host_id, simulation_id)
-            if not fs.is_file(filepath): raise ValueError("Simulation file does not exist")
+            if not fs.is_file(filepath):
+                if not_exist == "error": raise ValueError("Simulation file does not exist")
+                elif not_exist == "ignore": continue
+                elif not_exist == "none": filepath = None
+                elif not_exist == "pass": pass
+                else: raise ValueError("Invalid input for 'not_exist'")
 
             # Set key
             if id_or_name == "id": key = simulation_id
