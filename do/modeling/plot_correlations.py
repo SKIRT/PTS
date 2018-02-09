@@ -17,7 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.basics.table import SmartTable
 from pts.core.tools import filesystem as fs
 from pts.core.tools import sequences
-from pts.core.tools import terminal
+from pts.magic.tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -133,17 +133,13 @@ for column_a, column_b in sequences.combinations(column_names, 2):
         else: continue
 
     # Logscales
-    if a_is_colour or column_a in linear_scales: xlog = "false"
-    else: xlog = "true"
-    if b_is_colour or column_b in linear_scales: ylog = "false"
-    else: ylog = "true"
+    if a_is_colour or column_a in linear_scales: xlog = False
+    else: xlog = True
+    if b_is_colour or column_b in linear_scales: ylog = False
+    else: ylog = True
 
-    # Make command
-    command = "topcat -stilts plot2plane xlog=" + xlog + " ylog=" + ylog + " in=" + filepath + " ifmt=ASCII x=" + column_a + " y=" + column_b + " legend=false layer_1=Mark layer_2=LinearFit out=" + output_path
-    print(command)
-
-    # Execute the plotting command
-    terminal.execute(command)
+    # Plot
+    plotting.plot_table(filepath, column_a, column_b, output_path, x_log=xlog, y_log=ylog)
 
     ncombinations += 1
 

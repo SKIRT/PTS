@@ -15,79 +15,77 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.tools import introspection
-from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
+from pts.core.basics.table import SmartTable
+from pts.core.tools import tables
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
+# Required
+definition.add_required("filename", "file_path", "data table filename")
+
 # Get configuration
 config = parse_arguments("list_galaxies", definition)
 
 # -----------------------------------------------------------------
 
-# Local table path
-local_table_path = fs.join(introspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
+# Determine full path
+filepath = fs.absolute_or_in_cwd(config.filename)
+
+# Load the table
+table = SmartTable.from_file(filepath)
+galaxy_names = list(table["name"])
 
 # -----------------------------------------------------------------
 
-def get_galaxy_names_s4g():
-
-    """
-    This function ...
-    :return:
-    """
-
-    names = []
-
-    with open(local_table_path, 'r') as s4g_table:
-
-        for line in s4g_table:
-
-            splitted = line.split()
-
-            if len(splitted) < 2: continue
-
-            # Get the galaxy name and add it to the list
-            name = splitted[1]
-            names.append(name)
-
-    # Return the list of galaxy names
-    return names
+#print(table.colnames)
 
 # -----------------------------------------------------------------
 
-# Get the account info
-username, password = get_account()
+table.sort("d25")
 
-# Create the database instance
-database = DustPediaDatabase()
+#index = tables.find_index(table, "NGC3031", "name")
+#d25_m81 = table["d25"][index]
+#print(d25_m81)
 
-# Login with the user and password
-#database.login(username, password)
+# -----------------------------------------------------------------
 
-# EARLY TYPE SPIRALS: early-type (Sa–Sab) spiral galaxies
+#print(table["d25"])
 
-parameters = {"D25": (5., None),
-              "Hubble type": ["Sa", "Sab", "Sb"]}
+#print(table)
 
-table = database.get_galaxies(parameters)
+# -----------------------------------------------------------------
 
-s4g_names = get_galaxy_names_s4g()
+names = []
 
-has_s4g_column = []
+index = len(table)
+while len(names) < 10:
 
-for i in range(len(table)):
+    index = index - 1
+    #print(index)
+    name = table["name"][index]
+    has_s4g = table["has_s4g"][index]
+    has_galex = table["has_galex"][index]
+    has_pacs = table["has_pacs"][index]
+    has_spire = table["has_spire"][index]
 
-    name = table["Name"][i]
+    if not has_s4g: continue
+    if not has_galex: continue
+    #if not has_pacs: continue
+    #if not has_spire: continue
 
-    has_s4g_column.append(name in s4g_names)
+    inclination = table["inclination"][index]
+    if inclination > 65: continue
 
-table["In S4G"] = has_s4g_column
+    #print(name, has_s4g, has_galex, has_pacs, has_spire, inclination)
 
-print(table)
+    common_name = table["common_name"][index]
+
+    print(name, common_name)
+
+    names.append(name)
 
 # -----------------------------------------------------------------

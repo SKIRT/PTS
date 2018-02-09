@@ -896,7 +896,7 @@ def get_ra_dec_degrees_from_values(ra, dec, ra_unit, dec_unit):
 
 # -----------------------------------------------------------------
 
-def get_galaxy_info(name, position):
+def get_galaxy_info(name, position=None):
 
     """
     This function ...

@@ -840,7 +840,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        return self.has_pacs or self.has_spire
+        return self.has_pacs(galaxy_name) or self.has_spire(galaxy_name)
 
     # -----------------------------------------------------------------
 

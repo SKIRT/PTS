@@ -1805,3 +1805,28 @@ def plot_difference_model(box, model):
     plt.show()
 
 # -----------------------------------------------------------------
+
+def plot_table(filepath, column_x, column_y, output_path, x_log=False, y_log=False):
+
+    """
+    This function ...
+    :param xlog:
+    :param ylog:
+    :param output_path:
+    :return:
+    """
+
+    from ...core.tools import terminal
+
+    # Set log flags
+    xlog = "true" if x_log else "false"
+    ylog = "true" if y_log else "false"
+
+    # Make command
+    command = "topcat -stilts plot2plane xlog=" + xlog + " ylog=" + ylog + " in=" + filepath + " ifmt=ASCII x=" + column_x + " y=" + column_y + " legend=false layer_1=Mark layer_2=LinearFit out=" + output_path
+    #print(command)
+
+    # Execute the plotting command
+    terminal.execute(command)
+
+# -----------------------------------------------------------------

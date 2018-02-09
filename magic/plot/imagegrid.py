@@ -435,6 +435,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Uniformize the frames
+        self.uniformize()
+
         # 2. Write
         if self.config.write: self.write()
 
@@ -1593,6 +1596,19 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
+    def uniformize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Uniformizing the frames ...")
+
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -2576,6 +2592,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Uniformize the frames
+        # if self.needs_uniform: self.uniformize()
+
         # 2. Create the residuals
         if self.needs_residuals: self.create_residuals()
 
@@ -2584,9 +2603,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # 4. Write
         if self.config.write: self.write()
-
-        # Uniformize the frames
-        #if self.needs_uniform: self.uniformize()
 
         # 5. Make the plot
         self.plot()
