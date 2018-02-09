@@ -1001,11 +1001,12 @@ class SKIRTRemote(Remote):
         screen.saveto(local_script_path)
 
         # Start a screen session, UNLESS DRY MODE IS ENABLED, IN WHICH CASE THE USER HAS TO UPLOAD AND RUN THE SCRIPT HIM/HERSELF
-        if not dry: self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
+        if not dry: remote_script_path = self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
+        else: remote_script_path = None
 
         # Create the execution handle
         if attached: handle = ExecutionHandle.tty(self.tty, self.host_id)
-        else: handle = ExecutionHandle.screen(screen_name, self.host_id, screen_output_path)
+        else: handle = ExecutionHandle.screen(screen_name, self.host_id, remote_screen_output_path=screen_output_path, remote_screen_script_path=remote_script_path)
 
         # Return the execution handle(s)
         return handle
@@ -1994,7 +1995,7 @@ class SKIRTRemote(Remote):
         elif simulation.retrieved: simulation_status = "retrieved"
 
         # Get the simulation status from the remote log file if not yet retrieved
-        else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name, screen_states=screen_states)
+        else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name, screen_states=screen_states, remote_ski_path=simulation.remote_ski_path)
 
         # Return the simulation status
         return simulation_status
@@ -2328,7 +2329,7 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def status_from_log_file(self, file_path, handle, simulation_prefix, screen_states=None):
+    def status_from_log_file(self, file_path, handle, simulation_prefix, screen_states=None, remote_ski_path=None):
 
         """
         This function ...
@@ -2336,6 +2337,7 @@ class SKIRTRemote(Remote):
         :param handle:
         :param simulation_prefix:
         :param screen_states:
+        :param remote_ski_path:
         :return:
         """
 
@@ -2398,8 +2400,43 @@ class SKIRTRemote(Remote):
 
                 # Set status of simulation
                 if active_screen:
-                    # CAN ALSO BE CRASHED (OR OUTPUT HAS BEEN DELETED ACCIDENTLY)
+
+                    # # CAN ALSO BE CRASHED (OR OUTPUT HAS BEEN DELETED ACCIDENTLY)
+                    # screen_script_path = handle.remote_screen_script_path
+                    # screen_output_path = handle.remote_screen_output_path
+                    #
+                    # # IDEALLY WE WOULD LOCATE THE REMOTE PATH OF THE SCREEN SCRIPT
+                    # # THIS WILL WORK IN THE FUTURE, JUST ADDED REMOTE SCREEN SCRIPT PATH TO EXECUTION HANDLES FOR FUTURE SIMULATIONS
+                    # if screen_script_path is not None and self.is_file(screen_script_path) and screen_output_path is not None and remote_ski_path is not None:
+                    #
+                    #     #raise NotImplementedError("Not yet implemented")
+                    #     screenlog_path = fs.join(screen_output_path, "screenlog.0")
+                    #     last_line_starting_simulation = self.get_last_line_containing_memoize(screenlog_path, "Constructing a simulation from ski file")
+                    #     if last_line_starting_simulation is None: simulation_status = "queued" # nothing has started yet
+                    #     else:
+                    #         ski_path = last_line_starting_simulation.split("from ski file '")[1].split("'")[0]
+                    #         # Open the screen script
+                    #         screen = ScreenScript.from_remote_file(screen_script_path, self)
+                    #         #past_simulations = screen.get_simulations_before_ski_path(ski_path)
+                    #         past_ski_paths = screen.get_ski_paths_before_ski_path(ski_path)
+                    #         if remote_ski_path in past_ski_paths: simulation_status = "invalid: output missing"
+                    #         else: simulation_status = "queued"
+                    #
+                    # # LOOK AT SCREEN OUTPUT TO SEE WHETHER SIMULATION HAS STARTED
+                    # elif screen_output_path is not None and remote_ski_path is not None:
+                    #
+                    #     # VERY SLOW METHOD TO DO FOR EACH QUEUED SIMULATION
+                    #
+                    #     screenlog_path = fs.join(screen_output_path, "screenlog.0")
+                    #     if self.is_file(screenlog_path) and self.contains_line(screenlog_path, "Constructing a simulation from ski file '" + remote_ski_path + "'"): simulation_status = "invalid: output missing"
+                    #     else: simulation_status = "queued"
+                    #
+                    # # NO INFORMATION FROM THE SCREEN: ASSUME STILL QUEUED
+                    # else: simulation_status = "queued"
+
                     simulation_status = "queued"
+
+                # Screen is not active anymore
                 else: simulation_status = "cancelled"
 
             # Attached terminal session

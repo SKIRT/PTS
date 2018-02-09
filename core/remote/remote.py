@@ -38,6 +38,7 @@ from ..units.parsing import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings, types
 from ..tools.utils import lazyproperty
+from ..tools.utils import memoize_method
 
 # -----------------------------------------------------------------
 
@@ -1968,7 +1969,7 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     def start_screen(self, name, local_script_path, script_destination, screen_output_path=None,
-                     keep_remote_script=False, attached=False):
+                     keep_remote_script=True, attached=False):
 
         """
         This function ...
@@ -2004,6 +2005,9 @@ class Remote(object):
 
         # Remove the remote shell script
         if not keep_remote_script: self.execute("rm " + remote_script_path, output=False)
+
+        # Return the remote screen script file path
+        return remote_script_path
 
     # -----------------------------------------------------------------
 
@@ -3882,7 +3886,7 @@ class Remote(object):
         :return:
         """
 
-        # Make absolute
+        # Make path absolute
         path = self.absolute_path(path)
 
         #command = "cat '" + path + "' | while read CMD; do     echo $CMD; done" # DOES WEIRD THINGS
@@ -3898,6 +3902,81 @@ class Remote(object):
         for line in output:
             if add_sep: yield line + "\n"
             else: yield line
+
+    # -----------------------------------------------------------------
+
+    def filter_lines(self, path, string, full=False):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :param full:
+        :return:
+        """
+
+        # Make path absolute
+        path = self.absolute_path(path)
+
+        # Create the command
+        if full: command = 'grep -F "' + string + '" "' + path + '" -x --color=never'
+        else: command = 'grep -F "' + string + '" "' + path + '" --color=never'
+
+        # Get the output of the grep
+        output = self.execute(command)
+
+        # Return the lines
+        return output
+
+    # -----------------------------------------------------------------
+
+    def contains_line(self, path, string, full=False):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :param full:
+        :return:
+        """
+
+        # Get the lines that match
+        lines = self.filter_lines(path, string, full=full)
+
+        # Matching lines?
+        return len(lines) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_last_line_containing(self, path, string):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        # Get the matching lines
+        lines = self.filter_lines(path, string, full=False)
+
+        # Return the last line
+        if len(lines) > 0: return lines[-1]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_last_line_containing_memoize(self, path, string):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        return self.get_last_line_containing(path, string)
 
     # -----------------------------------------------------------------
 

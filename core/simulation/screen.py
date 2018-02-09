@@ -81,6 +81,35 @@ class ScreenScript(object):
         :return:
         """
 
+        script = cls.from_lines(fs.get_lines(path))
+        script.path = path
+        return script
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        return cls.from_lines(remote.get_lines(path))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_lines(cls, lines):
+
+        """
+        This function ...
+        :param lines:
+        :return:
+        """
+
         # Get info
         # filename = fs.strip_extension(fs.name(path))
         # queue_name = strings.split_at_last(filename, "_")[0]
@@ -91,7 +120,7 @@ class ScreenScript(object):
         screen_name = None
 
         # Get launch info
-        header = fs.get_header_lines(path)
+        header = get_header_lines(lines)
         next_output_path = False
         for line in header:
             if next_output_path:
@@ -105,7 +134,7 @@ class ScreenScript(object):
         screen = cls(screen_name, host_id, screen_output_path)
 
         # Loop over the simulation lines
-        for line in fs.read_lines(path):
+        for line in lines:
 
             # Skip comments and empty lines
             if line.startswith("#"): continue
@@ -120,9 +149,6 @@ class ScreenScript(object):
 
             # Add
             screen.add_simulation(arguments.simulation_name, arguments)
-
-        # Set the path
-        screen.path = path
 
         # Return the screen script
         return screen
@@ -163,6 +189,18 @@ class ScreenScript(object):
         """
 
         return [arguments.mpirun_path for arguments in self.arguments.values()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [arguments.ski_pattern for arguments in self.arguments.values()]
 
     # -----------------------------------------------------------------
 
@@ -218,6 +256,52 @@ class ScreenScript(object):
         """
 
         return self.arguments.pop(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulations_before(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return sequences.before(self.simulation_names, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulations_before_ski_path(self, ski_path):
+
+        """
+        This function ...
+        :param ski_path:
+        :return:
+        """
+
+        # Get indices before specified ski path
+        indices = sequences.indices_before(self.ski_paths, ski_path)
+
+        # Return the simulation names
+        names = self.simulation_names
+        return [names[index] for index in indices]
+
+    # -----------------------------------------------------------------
+
+    def get_ski_paths_before_ski_path(self, ski_path):
+
+        """
+        This function ...
+        :param ski_path:
+        :return:
+        """
+
+        # Get indices before specified ski path
+        indices = sequences.indices_before(self.ski_paths, ski_path)
+
+        # Return
+        ski_paths = self.ski_paths
+        return [ski_paths[index] for index in indices]
 
     # -----------------------------------------------------------------
 
@@ -404,5 +488,30 @@ class ScreenScript(object):
 
         # Save to the original path
         self.saveto(self.path)
+
+# -----------------------------------------------------------------
+
+def get_header_lines(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    header_lines = []
+
+    # Loop over the lines
+    for line in lines:
+
+        # We are no longer at the header
+        if not line.startswith("#"): break
+
+        # Clean line
+        line = line.split("#", 1)[1].strip()
+        header_lines.append(line)
+
+    # Return the lines
+    return header_lines
 
 # -----------------------------------------------------------------

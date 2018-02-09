@@ -25,7 +25,7 @@ class ExecutionHandle(object):
     This class ...
     """
 
-    def __init__(self, type, value=None, host_id=None, remote_screen_output_path=None):
+    def __init__(self, type, value=None, host_id=None, remote_screen_output_path=None, remote_screen_script_path=None):
 
         """
         The constructor ...
@@ -33,6 +33,7 @@ class ExecutionHandle(object):
         :param value:
         :param host_id:
         :param remote_screen_output_path:
+        :param remote_screen_script_path:
         """
 
         # Type (job, screen or tty) and value (job ID, screen name or session number)
@@ -44,6 +45,7 @@ class ExecutionHandle(object):
 
         # Extra information
         self.remote_screen_output_path = remote_screen_output_path
+        self.remote_screen_script_path = remote_screen_script_path
 
     # -----------------------------------------------------------------
 
@@ -86,17 +88,18 @@ class ExecutionHandle(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def screen(cls, screen_name, host_id, remote_screen_output_path=None):
+    def screen(cls, screen_name, host_id, remote_screen_output_path=None, remote_screen_script_path=None):
 
         """
         This function ...
         :param screen_name:
         :param host_id:
         :param remote_screen_output_path:
+        :param remote_screen_script_path:
         :return:
         """
 
-        return cls(screen, screen_name, host_id, remote_screen_output_path)
+        return cls(screen, screen_name, host_id, remote_screen_output_path=remote_screen_output_path, remote_screen_script_path=remote_screen_script_path)
 
     # -----------------------------------------------------------------
 

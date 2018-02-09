@@ -179,6 +179,24 @@ def before(sequence, element):
 
 # -----------------------------------------------------------------
 
+def indices_before(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    indices = []
+    for index, el in enumerate(sequence):
+        if el == element: break
+        indices.append(index)
+    else: raise ValueError("Element not in sequence")
+    return indices
+
+# -----------------------------------------------------------------
+
 def before_and_including(sequence, element):
 
     """
