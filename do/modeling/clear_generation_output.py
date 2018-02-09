@@ -43,7 +43,7 @@ definition.add_flag("adapt_simulations", "unset retrieved and analysed flags of 
 definition.add_required("generation", "string", "generation to remove (none means all)")
 
 # Get configuration
-config = parse_arguments("clear_generation_output", definition)
+config = parse_arguments("clear_generation_output", definition, "Clear the output of all simulations of a certain generation")
 
 # -----------------------------------------------------------------
 

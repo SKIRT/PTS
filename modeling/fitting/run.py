@@ -41,6 +41,7 @@ from ..build.component import get_model_definition
 from ...core.tools.utils import lazyproperty
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.range import QuantityRange
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -2349,6 +2350,44 @@ class FittingRun(object):
 
         # Load the distribution and return it
         return Distribution.from_file(self.get_parameter_distribution_path_for_generation(label, generation_name))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highest_grid_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        highest_index = -1
+
+        # Find the highest index
+        names = self.grid_generations
+        for name in names:
+            index_string = name.split("grid_")[1]
+            if not strings.is_integer(index_string): continue
+            index = int(index_string)
+            if index > highest_index: highest_index = index
+
+        # Return the highest index
+        if highest_index >= 0: return highest_index
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highest_grid_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = self.highest_grid_generation_index
+        if index is None: return None
+        else: return "grid_" + str(index)
 
     # -----------------------------------------------------------------
 

@@ -653,7 +653,7 @@ class RemoteSynchronizer(Configurable):
         # Inform the user
         #log.info("SKIRT simulations:")
 
-        first = True
+        #first = True
 
         # Loop over the different hosts
         for host_id in self.host_ids:
@@ -683,10 +683,10 @@ class RemoteSynchronizer(Configurable):
             # Get the status of the different simulations
             for path, simulation_status in status:
 
-                if first:
-                    # Inform the user
-                    log.info("SKIRT simulations:")
-                    first = False
+                #if first:
+                #    # Inform the user
+                #    log.info("SKIRT simulations:")
+                #    first = False
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)

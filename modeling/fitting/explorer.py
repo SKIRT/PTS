@@ -1388,7 +1388,15 @@ class ParameterExplorer(FittingComponent):
         log.info("Setting grid model generator ...")
 
         # Set a name for the generation
-        self.generation_name = time.unique_name("grid")
+        #self.generation_name = time.unique_name("grid")
+
+        # Determine grid generation index
+        highest_index = self.fitting_run.highest_grid_generation_index
+        if highest_index is None: generation_index = 0
+        else: generation_index = highest_index + 1
+
+        # Set generation name
+        self.generation_name = "grid_" + str(generation_index)
 
         # Create the model generator
         self.generator = GridModelGenerator()
@@ -2532,6 +2540,18 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
+
+    # -----------------------------------------------------------------
+
     def fill_tables(self):
 
         """
@@ -2547,7 +2567,8 @@ class ParameterExplorer(FittingComponent):
         for name in self.model_names:
 
             # Generate the simulation name
-            simulation_name = generate_simulation_name()
+            #simulation_name = generate_simulation_name()
+            simulation_name = self.run_name + "__" + self.generation_name + "__" + str(counter)
 
             # Debugging
             log.debug("Adding an entry to the individuals table with:")

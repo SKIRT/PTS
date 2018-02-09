@@ -1332,6 +1332,21 @@ def remove_hash_words(string):
 
 # -----------------------------------------------------------------
 
+def is_integer(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    try:
+        int(string)
+        return True
+    except ValueError: return False
+
+# -----------------------------------------------------------------
+
 def integer(number, ndigits, fill="0"):
 
     """
@@ -1384,3 +1399,4 @@ def number(real, ndecimal, ndigits, fill="0"):
     return before + "." + after
 
 # -----------------------------------------------------------------
+
